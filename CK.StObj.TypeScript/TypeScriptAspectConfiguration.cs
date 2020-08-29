@@ -49,7 +49,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets whether TypeScript generated properties should be PascalCased.
-        /// Defaults to false.
+        /// Defaults to false (identifiers are camelCased).
         /// </summary>
         public bool PascalCase { get; set; }
 

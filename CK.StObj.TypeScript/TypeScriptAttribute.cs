@@ -19,6 +19,9 @@ namespace CK.StObj.TypeScript
         Type? _sameFolderAs;
         Type? _sameFileAs;
 
+        /// <summary>
+        /// Initializes a new empty <see cref="TypeScriptAttribute"/>.
+        /// </summary>
         public TypeScriptAttribute()
             : base( "CK.StObj.TypeScript.Engine.TypeScriptImpl, CK.StObj.TypeScript.Engine" )
         {

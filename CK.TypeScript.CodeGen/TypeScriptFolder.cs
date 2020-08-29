@@ -10,6 +10,9 @@ using System.Text.Json;
 
 namespace CK.TypeScript.CodeGen
 {
+    /// <summary>
+    /// Folder in a <see cref="TypeScriptCodeGenerationContext.Root"/>.
+    /// </summary>
     public class TypeScriptFolder
     {
         readonly TypeScriptCodeGenerationContext _g;

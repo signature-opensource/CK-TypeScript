@@ -24,7 +24,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Configures the <see cref="TypeScriptAttribute"/> that will be used
-        /// by <see cref="TypeScriptGenerator.GetTSTypeFile(Type)"/> to create the file for the type.
+        /// by <see cref="TypeScriptGenerator.GetTSTypeFile"/> to create the file for the type.
         /// <para>
         /// Note that if a global <see cref="ITSCodeGenerator"/> has preempted the code generation (see <see cref="TSTypeFile.GlobalControl"/>),
         /// then this is not called.
@@ -40,8 +40,7 @@ namespace CK.Setup
         bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, TypeScriptAttribute a, IReadOnlyList<ITSCodeGeneratorType> generatorTypes );
 
         /// <summary>
-        /// Generates the TypeScript code. The <paramref name="file"/> exposes
-        /// the <see cref="TSTypeFile.TypeScriptGenerator"/> and the generator to the current <see cref="TypeScriptGenerator.BinPath"/>.
+        /// Generates the TypeScript code. The <paramref name="file"/> exposes the <see cref="TSTypeFile.TypeScriptGenerator"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="file">The file that must be generated (<see cref="TSTypeFile.EnsureFile"/> may be called).</param>

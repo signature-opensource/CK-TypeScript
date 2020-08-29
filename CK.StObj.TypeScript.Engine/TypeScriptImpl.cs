@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace CK.StObj.TypeScript.Engine
 {
-    public class TypeScriptImpl : ITSCodeGeneratorAutoDiscovery
+    internal class TypeScriptImpl : ITSCodeGeneratorAutoDiscovery
     {
         readonly Type _type;
 

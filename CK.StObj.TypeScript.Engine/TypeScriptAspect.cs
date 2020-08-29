@@ -10,6 +10,9 @@ using System.Text;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Aspect that drives TypeScript code generation. Implements <see cref="TypeScriptAspectConfiguration"/>.
+    /// </summary>
     public class TypeScriptAspect : IStObjEngineAspect
     {
         readonly TypeScriptAspectConfiguration _config;
@@ -27,7 +30,7 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
         {
-            _basePath = context.ExternalConfiguration.BasePath;
+            _basePath = context.StObjEngineConfiguration.BasePath;
             return true;
         }
 
@@ -66,7 +69,7 @@ namespace CK.Setup
             }
             TypeScriptCodeGenerationContext? g;
             var binPath = genBinPath.CurrentRun;
-            var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>()?.Element( "OutputPath" )?.Value )
+            var paths = binPath.BinPathConfigurations.SelectMany( c => c.GetAspectConfiguration<TypeScriptAspect>()?.Elements( "OutputPath" ).Select( e => e.Value ) )
                             .Where( p => !String.IsNullOrWhiteSpace( p ) )
                             .Select( p => MakeAbsolute( _basePath, p ) )
                             .Where( p => !p.IsEmptyPath );

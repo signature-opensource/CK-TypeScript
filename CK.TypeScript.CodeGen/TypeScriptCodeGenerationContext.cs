@@ -6,6 +6,10 @@ using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
+    /// <summary>
+    /// TypeScript code generation context exposes a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
+    /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="TypeScriptFolder.Save"/>d.
+    /// </summary>
     public class TypeScriptCodeGenerationContext
     {
         readonly IReadOnlyList<NormalizedPath> _paths;
