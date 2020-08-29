@@ -15,6 +15,9 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         string Closer { get; }
 
+        /// <summary>
+        /// Gets an optional memory associated to this part.
+        /// </summary>
         IDictionary<object, object?> Memory { get; }
 
         /// <summary>

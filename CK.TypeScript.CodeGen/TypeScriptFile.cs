@@ -19,7 +19,7 @@ namespace CK.TypeScript.CodeGen
             _next = folder._firstFile;
             folder._firstFile = this;
             Imports = new FileImportCodePart( this );
-            Body = new RawCodePart( String.Empty );
+            Body = new FileBodyCodePart( this );
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the code section of this file.
         /// </summary>
-        public ITSCodePart Body { get; }
+        public ITSFileBodySection Body { get; }
 
         public void Save( IActivityMonitor monitor, IReadOnlyList<NormalizedPath> outputPaths )
         {

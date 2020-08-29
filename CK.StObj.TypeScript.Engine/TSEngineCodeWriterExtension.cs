@@ -47,6 +47,5 @@ namespace CK.TypeScript.CodeGen
                 .CloseBlock();
         }
 
-
     }
 }

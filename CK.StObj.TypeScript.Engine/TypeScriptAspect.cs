@@ -6,13 +6,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+
 namespace CK.Setup
 {
     public class TypeScriptAspect : IStObjEngineAspect
     {
         readonly TypeScriptAspectConfiguration _config;
-        readonly Dictionary<IGeneratedBinPath, TypeScriptCodeGenerationContext?> _contexts;
         NormalizedPath _basePath;
+        TypeScriptGenerator?[] _generators;
 
         /// <summary>
         /// Initializes a new aspect from its configuration.
@@ -21,7 +23,6 @@ namespace CK.Setup
         public TypeScriptAspect( TypeScriptAspectConfiguration config )
         {
             _config = config;
-            _contexts = new Dictionary<IGeneratedBinPath, TypeScriptCodeGenerationContext?>();
         }
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
@@ -30,58 +31,28 @@ namespace CK.Setup
             return true;
         }
 
-        bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEngineRunContext context )
+        bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
         {
-            
+            _generators = new TypeScriptGenerator?[context.AllBinPaths.Count];
+
             int idx = 0;
-            foreach( var binPath in context.AllBinPaths )
+            foreach( var genBinPath in context.AllBinPaths )
             {
-                var g = GetTypeScriptCodeGenerationContext( monitor, binPath );
-
-                var second = new List<MultiPassCodeGeneration>();
-                secondPass[i++] = (g, second);
-                if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second ) )
+                TypeScriptCodeGenerationContext? tsContext = CreateGenerationContext( monitor, genBinPath );
+                if( tsContext != null )
                 {
-                    _status.Success = false;
-                    break;
-                }
-            }
-
-            // Calls all ICodeGenerator items.
-            foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ITSCodeGenerator>() ) )
-            {
-                var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
-                if( second != null ) collector.Add( second );
-            }
-        }
-
-        bool IStObjEngineAspect.Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context )
-        {
-            bool success = true;
-            if( context.EngineStatus.Success )
-            {
-                using( monitor.OpenInfo( $"Saving TypeScript files." ) )
-                {
-                    foreach( var kv in _contexts )
+                    var g = new TypeScriptGenerator( tsContext, genBinPath );
+                    _generators[idx++] = g;
+                    if( !g.BuildTSTypeFilesFromAttributes( monitor ) || !g.CallCodeGenerators( monitor ) )
                     {
-                        if( kv.Value != null && _contexts.TryGetValue( kv.Key, out var tsCodeContext ) && tsCodeContext != null )
-                        {
-                            success &= tsCodeContext.Root.Save( monitor, tsCodeContext.OutputPaths );
-                        }
+                        return false;
                     }
                 }
             }
-            return success;
+            return true;
         }
 
-        /// <summary>
-        /// Gets the <see cref="TypeScriptCodeGenerationContext"/> to use for a <see cref="IGeneratedBinPath"/>.
-        /// Returns null if no TypeScript generation should be done.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="binPath">The current BinPath.</param>
-        /// <returns>The generator to use or null if no TypeScript generation should be done.</returns>
-        public TypeScriptCodeGenerationContext? GetTypeScriptCodeGenerationContext( IActivityMonitor monitor, IGeneratedBinPath binPath )
+        TypeScriptCodeGenerationContext? CreateGenerationContext( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
         {
             static NormalizedPath MakeAbsolute( NormalizedPath basePath, NormalizedPath p )
             {
@@ -93,27 +64,47 @@ namespace CK.Setup
                 }
                 return p.ResolveDots();
             }
-
-            if( !_contexts.TryGetValue( binPath, out var context ) )
+            TypeScriptCodeGenerationContext? g;
+            var binPath = genBinPath.CurrentRun;
+            var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>()?.Element( "OutputPath" )?.Value )
+                            .Where( p => !String.IsNullOrWhiteSpace( p ) )
+                            .Select( p => MakeAbsolute( _basePath, p ) )
+                            .Where( p => !p.IsEmptyPath );
+            if( !paths.Any() )
             {
-                var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>()?.Element( "OutputPath" )?.Value )
-                                             .Where( p => !String.IsNullOrWhiteSpace( p ) )
-                                             .Select( p => MakeAbsolute( _basePath, p ) )
-                                             .Where( p => !p.IsEmptyPath );
-                if( !paths.Any() )
+                if( binPath.BinPathConfigurations.Count != 0 )
                 {
-
                     monitor.Warn( $"Skipped TypeScript generation for BinPathConfiguration {binPath.Names}: <TypeScript><OutputPath>...</OutputPath></TypeScript> element not found or empty." );
-                    context = null;
                 }
-                else
-                {
-                    context = new TypeScriptCodeGenerationContext( paths, _config.PascalCase );
-                }
-                _contexts.Add( binPath, context );
+                g = null;
             }
-            return context;
+            else
+            {
+                g = new TypeScriptCodeGenerationContext( paths, _config.PascalCase );
+            }
+
+            return g;
         }
+
+        bool IStObjEngineAspect.Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context )
+        {
+            bool success = true;
+            if( context.EngineStatus.Success )
+            {
+                using( monitor.OpenInfo( $"Saving TypeScript files." ) )
+                {
+                    foreach( var g in _generators )
+                    {
+                        if( g != null )
+                        {
+                            success &= g.Context.Root.Save( monitor, g.Context.OutputPaths );
+                        }
+                    }
+                }
+            }
+            return success;
+        }
+
 
     }
 }

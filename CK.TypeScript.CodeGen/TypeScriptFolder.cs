@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -155,6 +156,67 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
+        /// <summary>
+        /// Finds a folder below this one by returning its depth.
+        /// This returns 0 when this is the same as <paramref name="other"/>
+        /// and -1 if other is not subordinated to this folder.
+        /// </summary>
+        /// <param name="other">The other folder to locate.</param>
+        /// <returns>The depth of the other folder below this one.</returns>
+        public int FindBelow( TypeScriptFolder other )
+        {
+            int depth = 0;
+            TypeScriptFolder? c = other;
+            while( c != this )
+            {
+                ++depth;
+                c = c.Parent;
+                if( c == null ) return -1;
+            }
+            return depth;
+        }
+
+        /// <summary>
+        /// Gets a relative path from this folder to another one.
+        /// This folder and the other one must belong to the same <see cref="TypeScriptCodeGenerationContext"/>
+        /// otherwise an <see cref="InvalidOperationException"/> is thrown.
+        /// </summary>
+        /// <param name="f">The folder to target.</param>
+        /// <returns>The relative path from this one to the other one.</returns>
+        public NormalizedPath GetRelativePathTo( TypeScriptFolder f )
+        {
+            var source = this;
+            NormalizedPath result = new NormalizedPath();
+            do
+            {
+                int below = source.FindBelow( f );
+                if( below >= 0 )
+                {
+                    if( below == 0 ) return result;
+                    if( below == 1 ) return result.AppendPart( f.Name );
+                    var path = new string[below];
+                    var idx = path.Length;
+                    do
+                    {
+                        path[--idx] = f.Name;
+                        f = f.Parent!;
+                    }
+                    while( idx > 0 );
+                    foreach( var p in path ) result = result.AppendPart( p );
+                    return result;
+                }
+                result = result.AppendPart( ".." );
+            }
+            while( (source = source.Parent!) != null );
+            throw new InvalidOperationException( "TypeScriptFolder must belong to the same TypeScriptCodeGenerationContext." );
+        }
+
+        /// <summary>
+        /// Saves this folder, its files and all its subordinated folders, into one or more actual paths on the file system.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="outputPaths">Any number of target directories.</param>
+        /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
         public bool Save( IActivityMonitor monitor, IReadOnlyList<NormalizedPath> outputPaths )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
