@@ -69,7 +69,10 @@ namespace CK.Setup
             }
             TypeScriptCodeGenerationContext? g;
             var binPath = genBinPath.CurrentRun;
-            var paths = binPath.BinPathConfigurations.SelectMany( c => c.GetAspectConfiguration<TypeScriptAspect>()?.Elements( "OutputPath" ).Select( e => e.Value ) )
+            var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
+                            .Where( c => c != null )
+                            .SelectMany( c => c!.Elements( "OutputPath" ) )
+                            .Select( e => e.Value )
                             .Where( p => !String.IsNullOrWhiteSpace( p ) )
                             .Select( p => MakeAbsolute( _basePath, p ) )
                             .Where( p => !p.IsEmptyPath );

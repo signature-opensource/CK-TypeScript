@@ -220,7 +220,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, IReadOnlyList<NormalizedPath> outputPaths )
+        public bool Save( IActivityMonitor monitor, IReadOnlyCollection<NormalizedPath> outputPaths )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
             {

@@ -12,7 +12,7 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public class TypeScriptCodeGenerationContext
     {
-        readonly IReadOnlyList<NormalizedPath> _paths;
+        readonly HashSet<NormalizedPath> _paths;
         readonly bool _pascalCase;
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptCodeGenerationContext( IEnumerable<NormalizedPath> outputPaths, bool pascalCase )
         {
             if( outputPaths == null || !outputPaths.Any() ) throw new ArgumentException( "Must not be null or empty.", nameof(outputPaths) );
-            _paths = outputPaths.ToList();
+            _paths = new HashSet<NormalizedPath>( outputPaths );
             _pascalCase = pascalCase;
             Root = new TypeScriptFolder( this );
         }
@@ -36,7 +36,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the output paths. Never empty.
         /// </summary>
-        public IReadOnlyList<NormalizedPath> OutputPaths => _paths;
+        public IReadOnlyCollection<NormalizedPath> OutputPaths => _paths;
 
         /// <summary>
         /// Gets the root folder into which type script files must be generated.
