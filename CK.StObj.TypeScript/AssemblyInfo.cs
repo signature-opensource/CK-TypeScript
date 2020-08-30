@@ -1,4 +1,4 @@
 
 [assembly: CK.Setup.IsModel()]
-[assembly: CK.Setup.RequiredSetupDependency( "CK.Cris.Engine" )]
+[assembly: CK.Setup.RequiredSetupDependency( "CK.StObj.TypeScript.Engine" )]
 
