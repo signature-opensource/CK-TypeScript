@@ -10,6 +10,7 @@ using System.Diagnostics;
 
 namespace CK.StObj.TypeScript.Engine
 {
+
     /// <summary>
     /// Centralizes code generation information for a type.
     /// </summary>
@@ -18,7 +19,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Discovery constructor. Also memorizes the attribute if it exists (or a new one).
         /// Actual initialization is deffered (this is to handle a single pass on attributes).
-        /// Deferred initialization is required because SameFolderAs property.
+        /// Deferred initialization is required because of SameFileAs and SameFolderAs properties.
         /// </summary>
         internal TSTypeFile( TypeScriptGenerator g, Type t, IReadOnlyList<ITSCodeGeneratorType> generators, TypeScriptAttribute? attr )
         {

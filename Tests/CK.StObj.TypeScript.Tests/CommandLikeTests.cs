@@ -165,6 +165,7 @@ namespace CK.StObj.TypeScript.Tests
                 if( t == typeof( int ) || t == typeof( float ) || t == typeof( double ) ) body.Append( "number" );
                 else if( t == typeof( bool ) ) body.Append( "boolean" );
                 else if( t == typeof( string ) ) body.Append( "string" );
+                else if( t == typeof( object ) ) body.Append( "unknown" );
                 else
                 {
                     var other = g.GetTSTypeFile( monitor, t );

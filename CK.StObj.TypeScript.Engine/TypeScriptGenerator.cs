@@ -89,7 +89,6 @@ namespace CK.Setup
         }
 
 
-
         internal bool BuildTSTypeFilesFromAttributes( IActivityMonitor monitor )
         {
             List<ITSCodeGenerator>? globals = null;
