@@ -19,6 +19,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <param name="imports">Required imports if any.</param>
         public TSType( NullableTypeTree t, string typeName, IReadOnlyList<TSTypeFile> imports )
         {
+            if( !t.IsNormalNull ) throw new ArgumentException( "NullableTypeTree must be IsNormalNull.", nameof( t ) ); 
             Type = t;
             TypeName = typeName;
             Imports = imports;
@@ -30,7 +31,7 @@ namespace CK.StObj.TypeScript.Engine
         public NullableTypeTree Type { get; }
 
         /// <summary>
-        /// Gets the TypeScript type name to use.
+        /// Gets the TypeScript type name to use for this <see cref="Type"/>.
         /// </summary>
         public string TypeName { get; }
 
@@ -39,5 +40,7 @@ namespace CK.StObj.TypeScript.Engine
         /// are required to use the <see cref="TypeName"/>.
         /// </summary>
         public IReadOnlyList<TSTypeFile> Imports { get; }
+
+        public override string ToString() => TypeName;
     }
 }
