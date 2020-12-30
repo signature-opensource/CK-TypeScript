@@ -14,14 +14,14 @@ namespace CK.TypeScript.CodeGen
     public static class TSCodeWriterExtensions
     {
         /// <summary>
-        /// Appends raw C# code only once: the code itself is used as a key in <see cref="INamedScope.Memory"/> to
+        /// Appends raw C# code only once: the code itself is used as a key in <see cref="ITSCodePart.Memory"/> to
         /// avoid adding it twice.
         /// </summary>
-        /// <typeparam name="T">Must be both a <see cref="ITSCodeWriter"/> and <see cref="INamedScope"/>.</typeparam>
+        /// <typeparam name="T">Must be a <see cref="ITSCodePart"/>.</typeparam>
         /// <param name="this">This named scope and code writer.</param>
         /// <param name="code">Raw code to append. Must not be null, empty or white space.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T AppendOnce<T>( this T @this, string code ) where T : ITSCodeWriter, ITSCodePart
+        static public T AppendOnce<T>( this T @this, string code ) where T : ITSCodePart
         {
             if( String.IsNullOrWhiteSpace( code ) ) throw new ArgumentException( "To guaranty AppendOnce semantics, code must not be null or white space.", nameof( code ) );
             if( !@this.Memory.ContainsKey( code ) )
@@ -309,6 +309,7 @@ namespace CK.TypeScript.CodeGen
         /// <typeparam name="T">The code part type.</typeparam>
         /// <param name="this">This code part.</param>
         /// <param name="part">The part to use to inject code at this location (or at the top).</param>
+        /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This part to enable fluent syntax.</returns>
         public static T CreatePart<T>( this T @this, out ITSCodePart part, string closer = "", bool top = false ) where T : ITSCodePart
@@ -324,6 +325,8 @@ namespace CK.TypeScript.CodeGen
         /// <typeparam name="T">The code part type.</typeparam>
         /// <param name="this">This code part.</param>
         /// <param name="part">The named part to use to inject code at this location (or at the top).</param>
+        /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
+        /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This code part to enable fluent syntax.</returns>
         public static T CreateNamedPart<T>( this T @this, out ITSNamedCodePart part, string name, string closer = "", bool top = false ) where T : ITSCodePart

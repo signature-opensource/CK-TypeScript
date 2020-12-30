@@ -1,7 +1,7 @@
-
+﻿
 version: build{build}
 image: Visual Studio 2019
-clone_folder: C:\CKli-World\CK-Database-Projects\CK-CodeGen
+clone_folder: C:\CKli-World\CK-Crs-Projects\CK-StObj-TypeScript
 branches:
   only:
     - master

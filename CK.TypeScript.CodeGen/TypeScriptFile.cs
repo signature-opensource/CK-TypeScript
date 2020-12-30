@@ -8,6 +8,9 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 
 {
+    /// <summary>
+    /// TypeScript file in a <see cref="TypeScriptFolder"/>.
+    /// </summary>
     public class TypeScriptFile
     {
         internal TypeScriptFile? _next;
@@ -19,7 +22,7 @@ namespace CK.TypeScript.CodeGen
             _next = folder._firstFile;
             folder._firstFile = this;
             Imports = new FileImportCodePart( this );
-            Body = new RawCodePart( String.Empty );
+            Body = new FileBodyCodePart( this );
         }
 
         /// <summary>
@@ -41,9 +44,15 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the code section of this file.
         /// </summary>
-        public ITSCodePart Body { get; }
+        public ITSFileBodySection Body { get; }
 
-        public void Save( IActivityMonitor monitor, IReadOnlyList<NormalizedPath> outputPaths )
+        /// <summary>
+        /// Saves this file into one or more actual paths on the file system.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="outputPaths">Any number of target directories.</param>
+        /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
+        public void Save( IActivityMonitor monitor, IReadOnlyCollection<NormalizedPath> outputPaths )
         {
             monitor.Trace( $"Saving '{Name}'." );
             var imports = Imports.ToString();
@@ -54,7 +63,6 @@ namespace CK.TypeScript.CodeGen
                 File.WriteAllText( p.AppendPart( Name ), all );
             }
         }
-
 
         /// <summary>
         /// Overridden to return this file name.

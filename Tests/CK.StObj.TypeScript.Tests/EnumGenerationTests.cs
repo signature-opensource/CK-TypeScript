@@ -81,7 +81,34 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void simple_enum_generation()
         {
-            var (output1, output2) = GenerateTSCode( "simple_enum_generation", typeof(Simple) );
+            var (output1, output2) = GenerateTSCode( "simple_enum_generation", typeof( Simple ) );
+
+            var f1 = output1.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f2 = output2.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
+            File.Exists( f1 ).Should().BeTrue();
+            File.Exists( f2 ).Should().BeTrue();
+
+            var s = File.ReadAllText( f1 );
+            s.Should().StartWith( "export enum Simple" );
+            s.Should().Be( File.ReadAllText( f2 ) );
+        }
+
+        [Test]
+        public void each_BinPath_can_have_multiple_OutputPath()
+        {
+            var output1 = TestHelper.CleanupFolder( _outputFolder.AppendPart( "each_BinPath_can_have_multiple_OutputPath" ).AppendPart( "o1" ), false );
+            var output2 = TestHelper.CleanupFolder( _outputFolder.AppendPart( "each_BinPath_can_have_multiple_OutputPath" ).AppendPart( "o2" ), false );
+
+            var config = new StObjEngineConfiguration();
+            config.Aspects.Add( new TypeScriptAspectConfiguration() );
+            var b = new BinPathConfiguration();
+            b.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output1 ), new XElement( "OutputPath", output2 ) ) );
+            config.BinPaths.Add( b );
+
+            var engine = new StObjEngine( TestHelper.Monitor, config );
+            engine.Run( new MonoCollectorResolver( typeof( Simple ) ) ).Should().BeTrue( "StObjEngine.Run worked." );
+            Directory.Exists( output1 ).Should().BeTrue();
+            Directory.Exists( output2 ).Should().BeTrue();
 
             var f1 = output1.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
             var f2 = output2.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );

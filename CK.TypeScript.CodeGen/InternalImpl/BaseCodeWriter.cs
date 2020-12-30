@@ -37,7 +37,7 @@ namespace CK.TypeScript.CodeGen
             return null;
         }
 
-        internal SmarterStringBuilder Build( SmarterStringBuilder b )
+        internal virtual SmarterStringBuilder Build( SmarterStringBuilder b )
         {
             b.AppendLine();
             foreach( var c in Parts )

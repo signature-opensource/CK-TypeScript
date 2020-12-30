@@ -20,6 +20,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="enumType">The enum type.</param>
         /// <param name="typeName">Teh TypeScript type name.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
@@ -46,7 +47,6 @@ namespace CK.TypeScript.CodeGen
                 } )
                 .CloseBlock();
         }
-
 
     }
 }

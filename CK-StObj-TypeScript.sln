@@ -28,6 +28,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.StObj.TypeScript.Tests",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.TypeScript.CodeGen", "CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj", "{84308966-201E-4AB8-B99E-FECCC6B2E87F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{15D424C9-4E64-4EF0-8B75-3342C9D29175}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +52,10 @@ Global
 		{84308966-201E-4AB8-B99E-FECCC6B2E87F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{84308966-201E-4AB8-B99E-FECCC6B2E87F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{84308966-201E-4AB8-B99E-FECCC6B2E87F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15D424C9-4E64-4EF0-8B75-3342C9D29175}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15D424C9-4E64-4EF0-8B75-3342C9D29175}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15D424C9-4E64-4EF0-8B75-3342C9D29175}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15D424C9-4E64-4EF0-8B75-3342C9D29175}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
