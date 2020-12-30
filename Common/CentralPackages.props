@@ -1,9 +1,9 @@
 <Project>
   <ItemGroup>
-    <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="13.3.1--0018-develop" />
-    <PackageReference Update="CK.StObj.Model" Version="14.0.4--0042-develop" />
-    <PackageReference Update="CK.StObj.Runtime" Version="14.0.4--0042-develop" />
-    <PackageReference Update="CK.Testing.StObjEngine" Version="14.0.4--0042-develop" />
+    <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="13.3.1" />
+    <PackageReference Update="CK.StObj.Model" Version="15.0.0" />
+    <PackageReference Update="CK.StObj.Runtime" Version="15.0.0" />
+    <PackageReference Update="CK.Testing.StObjEngine" Version="15.0.0" />
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
