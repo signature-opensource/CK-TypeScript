@@ -253,7 +253,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends the code of a collection of objetcs of a given type <typeparamref name="T"/>.
+        /// Appends the code of a collection of objects of a given type <typeparamref name="T"/>.
         /// The code is either "null", "[]" or an array
         /// with the items appended with <see cref="Append{T}(T, object)"/>: only
         /// basic types are supported.
@@ -278,9 +278,9 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends the code source for an untyped object.
-        /// Only types that are implemented throug one of the existing Append, AppendArray (all IEnumerable are
+        /// Only types that are implemented through one of the existing Append, AppendArray (all IEnumerable are
         /// handled) and enum values.
-        /// extension methods are supported: an <see cref="ArgumentException"/> is thrown for unsuported type.
+        /// extension methods are supported: an <see cref="ArgumentException"/> is thrown for unsupported type.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
