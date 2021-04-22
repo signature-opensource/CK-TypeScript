@@ -51,14 +51,30 @@ namespace CK.StObj.TypeScript.Engine
             TypeName = typeName;
             GlobalControl = globalControl;
 
-            _toString += $" code will be generated in '{FullFilePath}' by ";
+            _toString += $" will be generated in '{FullFilePath}' by ";
             if( globalControl != null )
             {
-                _toString += $"'{globalControl.GetType().Name}' global {nameof( ITSCodeGenerator )}."; 
+                _toString += $"the '{globalControl.GetType().Name}' global {nameof( ITSCodeGenerator )}."; 
             }
             else
             {
-                _toString += $" {Generators.Count} type bound {nameof( ITSCodeGeneratorType )}.";
+                if( Generators.Count == 0 )
+                {
+                    _toString += "... no generator. ";
+                    if( Type.IsEnum )
+                    {
+                        _toString += $" But since this is an enum, a default generation will be done.";
+
+                    }
+                    else
+                    {
+                        _toString += $" This should eventually fail.";
+                    }
+                }
+                else
+                {
+                    _toString += $" {Generators.Count} type bound {nameof( ITSCodeGeneratorType )}.";
+                }
             }
         }
 
