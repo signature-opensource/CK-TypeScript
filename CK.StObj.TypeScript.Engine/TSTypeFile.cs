@@ -12,10 +12,19 @@ namespace CK.StObj.TypeScript.Engine
 {
 
     /// <summary>
-    /// Centralizes code generation information for a type.
+    /// Centralizes code generation information for a <see cref="Type"/>.
+    /// Instances are automatically created once by a call to <see cref="TypeScriptGenerator.GetTSTypeFile(IActivityMonitor, Type)"/>
+    /// and as soon as it has been created, there must be a way to generate the corresponding code into the <see cref="File"/>:
+    /// <list type="bullet">
+    ///   <item>The associated <see cref="GlobalControl"/> generator does the job (<see cref="ITSCodeGenerator.GenerateCode(IActivityMonitor, TypeScriptGenerator)"/> handles it).</item>
+    ///   <item>If <see cref="GlobalControl"/> is null then the type bound <see cref="Generators"/> are used (by calling <see cref="ITSCodeGeneratorType.GenerateCode(IActivityMonitor, TSTypeFile)"/>).</item>
+    ///   <item>If there is no generator at all, then an error is raised (except for <see cref="Enum"/> for which a default generator exists).</item>
+    /// </list>
     /// </summary>
     public class TSTypeFile
     {
+        string _toString;
+
         /// <summary>
         /// Discovery constructor. Also memorizes the attribute if it exists (or a new one).
         /// Actual initialization is deferred (this is to handle a single pass on attributes).
@@ -27,26 +36,35 @@ namespace CK.StObj.TypeScript.Engine
             Type = t;
             Generators = generators;
             Attribute = attr ?? new TypeScriptAttribute();
+            _toString = $"TypeScript for '{Type}'"; 
         }
 
         internal TypeScriptAttribute Attribute;
 
         internal void Initialize( NormalizedPath folder, string fileName, string typeName, ITSCodeGenerator? globalControl )
         {
+            Debug.Assert( !IsInitialized );
+
             Folder = folder;
             FileName = fileName;
             FullFilePath = folder.AppendPart( fileName );
             TypeName = typeName;
             GlobalControl = globalControl;
+
+            _toString += $" code will be generated in '{FullFilePath}' by ";
+            if( globalControl != null )
+            {
+                _toString += $"'{globalControl.GetType().Name}' global {nameof( ITSCodeGenerator )}."; 
+            }
+            else
+            {
+                _toString += $" {Generators.Count} type bound {nameof( ITSCodeGeneratorType )}.";
+            }
         }
 
         internal bool IsInitialized => FileName != null;
 
-        internal TSTypeFile( TypeScriptGenerator g, NormalizedPath folder, string fileName, string typeName, Type t, ITSCodeGenerator? globalControl, IReadOnlyList<ITSCodeGeneratorType> generators )
-            : this( g, t, generators, null )
-        {
-            Initialize( folder, fileName, typeName, globalControl );
-        }
+        public override string ToString() => _toString;
 
         /// <summary>
         /// Gets the <see cref="Setup.TypeScriptGenerator"/>.

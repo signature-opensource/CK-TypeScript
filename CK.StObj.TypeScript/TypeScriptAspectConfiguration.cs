@@ -8,7 +8,7 @@ namespace CK.Setup
     /// <summary>
     /// Configures TypeScript generation.
     /// Each <see cref="BinPathConfiguration"/> that requires TypeScript code to be generated must
-    /// contain a TypeScript element with an OutputPath child element.
+    /// contain a &lt;TypeScript&gt; element with an &lt;OutputPath&gt; child element.
     /// This OutputPath can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
     /// final path will be resolved.
     /// </summary>

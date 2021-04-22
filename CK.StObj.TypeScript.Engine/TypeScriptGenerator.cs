@@ -186,6 +186,7 @@ namespace CK.Setup
                 fileName ??= attr.FileName ?? (defName + ".ts");
                 string typeName = attr.TypeName ?? defName;
                 f.Initialize( folder, fileName, typeName, globalControl );
+                monitor.Trace( f.ToString() );
             }
             return f;
         }
@@ -194,30 +195,40 @@ namespace CK.Setup
         {
             Debug.Assert( _success );
             // Executes all the globals.
-            foreach( var global in _globals )
+            using( monitor.OpenInfo( $"Executing the {_globals.Count} global {nameof(ITSCodeGenerator)} TypeScript generators." ) )
             {
-                if( !global.GenerateCode( monitor, this ) )
+                foreach( var global in _globals )
                 {
-                    return _success = false;
-                }
-            }
-            // 
-            for( int i = 0; i < _typeFiles.Count; ++i )
-            {
-                var f = _typeFiles[i];
-                if( !f.IsInitialized )
-                {
-                    HashSet<Type>? _ = null;
-                    EnsureInitialized( monitor, f, ref _ );
-                }
-                if( _success )
-                {
-                    if( f.GlobalControl == null )
+                    using( monitor.OpenTrace( $"Executing '{global.GetType().FullName}' global TypeScript generator." ) )
                     {
-                        _success &= f.Implement( monitor );
+                        if( !global.GenerateCode( monitor, this ) )
+                        {
+                            monitor.CloseGroup( "Failed." );
+                            return _success = false;
+                        }
                     }
                 }
-                if( !_success ) return false;
+            }
+            //
+            using( monitor.OpenInfo( $"Ensuring that {_typeFiles.Count} types are initialized and implemented." ) )
+            {
+                for( int i = 0; i < _typeFiles.Count; ++i )
+                {
+                    var f = _typeFiles[i];
+                    if( !f.IsInitialized )
+                    {
+                        HashSet<Type>? _ = null;
+                        EnsureInitialized( monitor, f, ref _ );
+                    }
+                    if( _success )
+                    {
+                        if( f.GlobalControl == null )
+                        {
+                            _success &= f.Implement( monitor );
+                        }
+                    }
+                    if( !_success ) return false;
+                }
             }
             Debug.Assert( _success );
             return _success;
