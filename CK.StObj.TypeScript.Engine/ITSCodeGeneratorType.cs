@@ -8,8 +8,7 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Type Script code generator for a type. This interface is typically implemented
-    /// by delegated attribute classes.
+    /// Type Script code generator for a type. This interface is typically implemented by delegated attribute classes.
     /// <para>
     /// Whenever an attribute implementation with this interface exists on a type, the implementation of
     /// the <see cref="TypeScriptAttribute"/> (if the attribute exists) does nothing: it is up to this ITSCodeGeneratorType
@@ -36,8 +35,15 @@ namespace CK.Setup
         /// already be configured by other <see cref="ITSCodeGeneratorType"/>.
         /// </param>
         /// <param name="generatorTypes">All the generators bound to this type (including this one).</param>
+        /// <param name="finalizer">
+        /// The current optional finalizer function that will be eventually called (regardless of current generation already done).
+        /// This function can be replaced/composed as needed.
+        /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, TypeScriptAttribute a, IReadOnlyList<ITSCodeGeneratorType> generatorTypes );
+        bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
+                                           TypeScriptAttribute a,
+                                           IReadOnlyList<ITSCodeGeneratorType> generatorTypes,
+                                           ref Func<IActivityMonitor, TSTypeFile, bool>? finalizer );
 
         /// <summary>
         /// Generates the TypeScript code. The <paramref name="file"/> exposes the <see cref="TSTypeFile.TypeScriptGenerator"/>.

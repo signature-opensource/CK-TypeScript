@@ -13,24 +13,24 @@ namespace CK.StObj.TypeScript.Engine
 
     /// <summary>
     /// Centralizes code generation information for a <see cref="Type"/>.
-    /// Instances are automatically created once by a call to <see cref="TypeScriptGenerator.GetTSTypeFile(IActivityMonitor, Type)"/>
-    /// and as soon as it has been created, there must be a way to generate the corresponding code into the <see cref="File"/>:
-    /// <list type="bullet">
-    ///   <item>The associated <see cref="GlobalControl"/> generator does the job (<see cref="ITSCodeGenerator.GenerateCode(IActivityMonitor, TypeScriptGenerator)"/> handles it).</item>
-    ///   <item>If <see cref="GlobalControl"/> is null then the type bound <see cref="Generators"/> are used (by calling <see cref="ITSCodeGeneratorType.GenerateCode(IActivityMonitor, TSTypeFile)"/>).</item>
-    ///   <item>If there is no generator at all, then an error is raised (except for <see cref="Enum"/> for which a default generator exists).</item>
-    /// </list>
+    /// Instances are automatically created because the type has a [<see cref="TypeScriptAttribute"/>] (or other attribute that are implemented by a <see cref="ITSCodeGeneratorType"/>)
+    /// or by a call to <see cref="TypeScriptGenerator.GetTSTypeFile(IActivityMonitor, Type)"/> or <see cref="TypeScriptGenerator.DeclareTSType(IActivityMonitor, IEnumerable{Type})"/>
+    /// (typically from a global <see cref="ITSCodeGenerator"/>).
+    /// Once created, there must be a way to generate the corresponding code into the <see cref="File"/>: at least one participant
+    /// must call <see cref="EnsureFile()"/> otherwise an error is raised.
     /// </summary>
     public class TSTypeFile
     {
         string _toString;
+        TypeScriptFile? _file;
+        Func<IActivityMonitor, TSTypeFile, bool>? _finalizer;
 
         /// <summary>
         /// Discovery constructor. Also memorizes the attribute if it exists (or a new one).
         /// Actual initialization is deferred (this is to handle a single pass on attributes).
         /// Deferred initialization is required because of SameFileAs and SameFolderAs properties.
         /// </summary>
-        internal TSTypeFile( TypeScriptGenerator g, Type t, IReadOnlyList<ITSCodeGeneratorType> generators, TypeScriptAttribute? attr )
+        internal TSTypeFile( TypeScriptGenerator g, Type t, IList<ITSCodeGeneratorType> generators, TypeScriptAttribute? attr )
         {
             TypeScriptGenerator = g;
             Type = t;
@@ -41,7 +41,7 @@ namespace CK.StObj.TypeScript.Engine
 
         internal TypeScriptAttribute Attribute;
 
-        internal void Initialize( NormalizedPath folder, string fileName, string typeName, ITSCodeGenerator? globalControl )
+        internal void Initialize( NormalizedPath folder, string fileName, string typeName, Func<IActivityMonitor, TSTypeFile, bool>? finalizer )
         {
             Debug.Assert( !IsInitialized );
 
@@ -49,33 +49,9 @@ namespace CK.StObj.TypeScript.Engine
             FileName = fileName;
             FullFilePath = folder.AppendPart( fileName );
             TypeName = typeName;
-            GlobalControl = globalControl;
-
-            _toString += $" will be generated in '{FullFilePath}' by ";
-            if( globalControl != null )
-            {
-                _toString += $"the '{globalControl.GetType().Name}' global {nameof( ITSCodeGenerator )}."; 
-            }
-            else
-            {
-                if( Generators.Count == 0 )
-                {
-                    _toString += "... no generator. ";
-                    if( Type.IsEnum )
-                    {
-                        _toString += $" But since this is an enum, a default generation will be done.";
-
-                    }
-                    else
-                    {
-                        _toString += $" This should eventually fail.";
-                    }
-                }
-                else
-                {
-                    _toString += $" {Generators.Count} type bound {nameof( ITSCodeGeneratorType )}.";
-                }
-            }
+            _finalizer = finalizer;
+            _toString += $" will be generated in '{FullFilePath}'.";
+            _file = TypeScriptGenerator.Context.Root.FindOrCreateFile( FullFilePath );
         }
 
         internal bool IsInitialized => FileName != null;
@@ -113,47 +89,61 @@ namespace CK.StObj.TypeScript.Engine
         public string TypeName { get; private set; }
 
         /// <summary>
-        /// Gets the global code generator that take the control of the code generation: none of the
-        /// other <see cref="ITSCodeGenerator.GenerateCode"/> nor <see cref="ITSCodeGeneratorType.GenerateCode"/> will be called.
-        /// When null, all <see cref="Generators"/> are used and when there is no type generator at all, a default implementation
-        /// (only for enums) is used.
+        /// Gets the associated file.
         /// </summary>
-        public ITSCodeGenerator? GlobalControl { get; private set; }
+        public TypeScriptFile File
+        {
+            get
+            {
+                Debug.Assert( _file != null, "Exposed TSTypedFile has necessarily been initialized." );
+                return _file;
+            }
+        }
 
         /// <summary>
-        /// Gets the associated file if <see cref="EnsureFile"/> has been called.
+        /// Gets the code part with the <see cref="TypeName"/> name if it has been created, null otherwise.
+        /// The code part may have been created by <see cref="EnsureTypePart(string)"/> or directly on
+        /// the file's body. 
         /// </summary>
-        public TypeScriptFile? File { get; private set; }
+        public ITSNamedCodePart? TypePart => File.Body.FindNamedPart( TypeName );
 
         /// <summary>
-        /// Gets all the generators bound to this <see cref="Type"/>.
+        /// Ensures that a code part named <see cref="TypeName"/> exists in this file's body.
         /// </summary>
-        public IReadOnlyList<ITSCodeGeneratorType> Generators { get; }
+        /// <param name="closer">
+        /// By default, the type part will be closed with the "}": a closing
+        /// bracket should not be generated and, more importantly, it means that the type part can
+        /// easily be extended.
+        /// </param>
+        /// <returns></returns>
+        public ITSNamedCodePart EnsureTypePart( string closer = "}" ) => File.Body.FindOrCreateNamedPart( TypeName, closer );
 
         /// <summary>
-        /// Ensures that the <see cref="File"/> has been created.
+        /// Gets a mutable list of the generators bound to this <see cref="Type"/>.
         /// </summary>
-        /// <returns>The associated file.</returns>
-        public TypeScriptFile EnsureFile() => File ??= TypeScriptGenerator.Context.Root.FindOrCreateFile( FullFilePath );
+        public IList<ITSCodeGeneratorType> Generators { get; }
 
         internal bool Implement( IActivityMonitor monitor )
         {
-            Debug.Assert( GlobalControl == null );
-            if( Generators.Count > 0 )
+            if( Generators.Count > 0 || _finalizer != null )
             {
                 foreach( var g in Generators )
                 {
                     if( !g.GenerateCode( monitor, this ) ) return false;
                 }
+                if( _finalizer != null && !_finalizer( monitor, this ) ) return false;
                 return true;
             }
-            // If there is no global or type bound code generator, handles the default: only enums are supported.
-            if( Type.IsEnum )
+            if( TypePart == null )
             {
-                EnsureFile().Body.Append( "export " ).AppendEnumDefinition( monitor, Type, TypeName );
-                return true;
+                // If there is no TypePart, handles the default: only enums are supported.
+                if( Type.IsEnum )
+                {
+                    EnsureTypePart( closer: "" ).Append( "export " ).AppendEnumDefinition( monitor, Type, TypeName );
+                    return true;
+                }
+                monitor.Error( $"Missing TypeScript generation in '{FileName}'. Part '{TypeName}' has not been created by any type bound ITSCodeGeneratorType, finalizer generator or global ITSCodeGenerator." );
             }
-            monitor.Error( $"TypeScript generation for '{Type.Name}' must be handled by a global ITSCodeGenerator or a ITSCodeGeneratorType." );
             return false;
         }
     }

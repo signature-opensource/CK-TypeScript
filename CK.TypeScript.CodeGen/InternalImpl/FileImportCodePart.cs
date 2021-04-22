@@ -7,6 +7,7 @@ namespace CK.TypeScript.CodeGen
     class FileImportCodePart : BaseCodeWriter, ITSFileImportSection
     {
         List<(TypeScriptFile File, List<string> Types)>? _imports;
+        int _importCount;
 
         public FileImportCodePart( TypeScriptFile f )
         {
@@ -21,8 +22,15 @@ namespace CK.TypeScript.CodeGen
             if( file == File ) return;
 
             var types = EnsureFile( file );
-            if( !types.Contains( typeName ) ) types.Add( typeName );
+            if( !types.Contains( typeName ) )
+            {
+                ++_importCount;
+                types.Add( typeName );
+            }
         }
+
+        public int ImportCount => _importCount;
+
 
         internal override SmarterStringBuilder Build( SmarterStringBuilder b )
         {

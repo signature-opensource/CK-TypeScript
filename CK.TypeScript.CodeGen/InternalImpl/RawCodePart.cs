@@ -45,12 +45,19 @@ namespace CK.TypeScript.CodeGen
             if( _namedParts == null ) _namedParts = new Dictionary<string, NamedCodePart>();
             var p = new NamedCodePart( name, closer );
             _namedParts.Add( name, p );
+            if( top ) Parts.Insert( 0, p );
+            else Parts.Add( p );
             return p;
         }
 
-        public void Build( Action<string> collector, bool closeScope )
+        internal override SmarterStringBuilder Build( SmarterStringBuilder b )
         {
-            var b = new SmarterStringBuilder( collector );
+            Build( b, true );
+            return b;
+        }
+
+        public void Build( SmarterStringBuilder b, bool closeScope )
+        {
             base.Build( b );
             if( closeScope && Closer.Length != 0 ) b.AppendLine().Append( Closer );
         }

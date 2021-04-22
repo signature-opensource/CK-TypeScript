@@ -58,7 +58,8 @@ namespace CK.StObj.TypeScript.Tests
             return output;
         }
 
-        public interface ICommand
+        [CKTypeDefiner]
+        public interface ICommand : IPoco
         {
             object CommandModel { get; }
         }
@@ -93,14 +94,27 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [TypeScript( SameFileAs = typeof( ICommandOne ) )]
-        public interface ICommandThree : ICommandOne
+        public interface ICommandThree : ICommand
         {
+            int NumberThree { get; set; }
+        }
+
+        public interface ICommandFour : ICommand
+        {
+            int NumberFour { get; set; }
         }
 
         public class TypseScriptCommandSupportImpl : ITSCodeGenerator
         {
-            public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, TypeScriptGenerator generator, Type type, TypeScriptAttribute attr, IReadOnlyList<ITSCodeGeneratorType> generatorTypes, ref ITSCodeGenerator currentHandler )
+            public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
+                                                      TypeScriptGenerator generator,
+                                                      Type type,
+                                                      TypeScriptAttribute attr,
+                                                      IList<ITSCodeGeneratorType> generatorTypes,
+                                                      ref Func<IActivityMonitor, TSTypeFile, bool>? finalizer )
             {
+                // All ICommand here (without specified TypeScript Folder) will be in Cris/Commands.
+                // Their FileName will be without the "I" and prefixed by "CMD".
                 if( typeof(ICommand).IsAssignableFrom( type ) )
                 {
                     if( attr.SameFolderAs == null )
@@ -113,67 +127,17 @@ namespace CK.StObj.TypeScript.Tests
                             attr.Folder = "Cris/Commands/" + attr.Folder.Substring( autoMapping.Length );
                         }
                     }
-                    if( attr.FileName == null && attr.SameFileAs == null ) attr.FileName = type.Name.Substring( 1 ) + ".ts";
-                    // Takes control of all ICommand interfaces:
-                    currentHandler = this;
+                    if( attr.FileName == null && attr.SameFileAs == null ) attr.FileName = "CMD" + type.Name.Substring( 1 ) + ".ts";
                 }
                 return true;
             }
 
+            // The Cris command directory generator declares all the ICommand.
             public bool GenerateCode( IActivityMonitor monitor, TypeScriptGenerator g )
             {
-                Generate( monitor, g, typeof( ICommandOne ) );
-                Generate( monitor, g, typeof( ICommandTwo ) );
-                Generate( monitor, g, typeof( ICommandThree ) );
-
-                // Skip "object CommandModel" property for ICommand.
-                var f = g.GetTSTypeFile( monitor, typeof( ICommand ) );
-                f.EnsureFile().Body.Append( "export interface " ).Append( f.TypeName ).OpenBlock().CloseBlock();
-
+                g.DeclareTSType( monitor, typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof( ICommandFour ) );
                 return true;
             }
-
-            TSTypeFile Generate( IActivityMonitor monitor, TypeScriptGenerator g, Type i )
-            {
-                var f = g.GetTSTypeFile( monitor, i );
-                var file = f.EnsureFile();
-                file.Body.Append( "export interface " ).Append( f.TypeName );
-                bool hasInterface = false;
-                foreach( Type b in i.GetInterfaces() )
-                {
-                    if( !hasInterface )
-                    {
-                        file.Body.Append( " extends " );
-                        hasInterface = true;
-                    }
-                    else file.Body.Append( ", " );
-                    AppendTypeName( file.Body, monitor, g, b );
-                }
-                file.Body.OpenBlock();
-                foreach( var p in i.GetProperties() )
-                {
-                    file.Body.Append( g.ToIdentifier( p.Name ) ).Append( ": " );
-                    AppendTypeName( file.Body, monitor, g, p.PropertyType );
-                    file.Body.Append( ";" ).NewLine();
-                }
-                file.Body.CloseBlock();
-                return f;
-            }
-
-            void AppendTypeName( ITSFileBodySection body, IActivityMonitor monitor, TypeScriptGenerator g, Type t )
-            {
-                if( t == typeof( int ) || t == typeof( float ) || t == typeof( double ) ) body.Append( "number" );
-                else if( t == typeof( bool ) ) body.Append( "boolean" );
-                else if( t == typeof( string ) ) body.Append( "string" );
-                else if( t == typeof( object ) ) body.Append( "unknown" );
-                else
-                {
-                    var other = g.GetTSTypeFile( monitor, t );
-                    body.File.Imports.EnsureImport( other.TypeName, other.EnsureFile() );
-                    body.Append( other.TypeName );
-                }
-            }
-
         }
 
         // This static class is only here to trigger the global ITSCodeGenerator.
@@ -185,16 +149,28 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void command_like_sample()
         {
-            var output = GenerateTSCode( "command_like_sample", typeof( Power ), typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof(TypseScriptCommandSupport) );
+            var output = GenerateTSCode( "command_like_sample",
+                                         typeof( ICommandOne ),
+                                         typeof( ICommandTwo ),
+                                         typeof( ICommandThree ),
+                                         typeof( ICommandFour ),
+                                         typeof( TypseScriptCommandSupport ) );
 
-            var fPower = output.Combine( "TheFolder/Power.ts" );
-            var fCommand = output.Combine( "Cris/Commands/TypeScript/Tests/CommandTwo.ts" );
-            var fOne = output.Combine( "TheFolder/CommandOne.ts" );
-            var fTwo = output.Combine( "Cris/Commands/TypeScript/Tests/CommandTwo.ts" );
+            var fPower = output.Combine( "CK/StObj/TypeScript/Tests/Power.ts" );
+            var fOne = output.Combine( "TheFolder/CMDCommandOne.ts" );
+            var fTwo = output.Combine( "Cris/Commands/TypeScript/Tests/CMDCommandTwo.ts" );
 
             File.ReadAllText( fPower ).Should().StartWith( "export enum Power" );
             var tOne = File.ReadAllText( fOne );
+            tOne.Should().Contain( "import { Power } from '../CK/StObj/TypeScript/Tests/Power';" )
+                     .And.Contain( "import { ICommandTwo } from '../Cris/Commands/TypeScript/Tests/CMDCommandTwo';" );
+
+            tOne.Should().Contain( "export interface ICommandOne" )
+                     .And.Contain( "friend: ICommandTwo;" );
+
             var tTwo = File.ReadAllText( fTwo );
+            tTwo.Should().Contain( "import { ICommandOne, ICommandThree } from '../../../../TheFolder/CMDCommandOne';" );
+
         }
 
 

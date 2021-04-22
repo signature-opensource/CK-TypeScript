@@ -127,7 +127,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Finds an exisitng file in this folder or returns null.
+        /// Finds an existing file in this folder or returns null.
         /// </summary>
         /// <param name="name">The file's name. Must not be empty and must end with '.ts'.</param>
         /// <returns>The existing file or null.</returns>

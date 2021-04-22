@@ -25,7 +25,8 @@ namespace CK.Setup
         /// <summary>
         /// This method has 2 responsibilities: it can configure the <see cref="TypeScriptAttribute"/> that will be used
         /// by <see cref="TypeScriptGenerator.GetTSTypeFile"/> to create the file for the given <paramref name="type"/>,
-        /// and it also enables a global generator to preempt the code generation for the type (see <see cref="TSTypeFile.GlobalControl"/>).
+        /// and it also enables a global generator to mess with type bound generators by modifying the <paramref name="generatorTypes"/>
+        /// mutable list and/or injecting a <paramref name="finalizer"/> function.
         /// <para>
         /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because of
         /// the <see cref="TypeScriptAttribute.SameFolderAs"/> that may be resolved by the handling of another type
@@ -34,33 +35,35 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// In practice this should not be an issue and if is, it up to this global code generator to correctly handle
-        /// these "after my generate" new incoming types.
+        /// these "after my GenerateCode call" new incoming types.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="generator">The code generator to use.</param>
-        /// <param name="type">The type that must be generated.</param>
+        /// <param name="type">The type whose TypeScript code must be generated.</param>
         /// <param name="attr">The attribute to configure. May be an empty one or the existing attribute on the type.</param>
-        /// <param name="generatorTypes">All the generators bound to this type.</param>
-        /// <param name="currentHandler">
-        /// The current global handler that takes control of the code generation for the type.
-        /// This will eventually be the <see cref="TSTypeFile.GlobalControl"/>.
+        /// <param name="generatorTypes">Mutable list of the generators bound to this type.</param>
+        /// <param name="finalizer">
+        /// The current optional finalizer function that will be eventually called (regardless of current generation already done).
+        /// This function can be replaced/composed as needed.
         /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
         bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                            TypeScriptGenerator generator,
-                                           Type type, TypeScriptAttribute attr, IReadOnlyList<ITSCodeGeneratorType> generatorTypes,
-                                           ref ITSCodeGenerator? currentHandler );
+                                           Type type,
+                                           TypeScriptAttribute attr,
+                                           IList<ITSCodeGeneratorType> generatorTypes,
+                                           ref Func<IActivityMonitor, TSTypeFile, bool>? finalizer );
 
         /// <summary>
         /// Generates any TypeScript in the provided context.
-        /// This is called once and only once before type bound <see cref="ITSCodeGeneratorType.GenerateCode"/>
+        /// This is called once and only once before type bound methods <see cref="ITSCodeGeneratorType.GenerateCode"/>
         /// are called.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="context">The generator context to use.</param>
+        /// <param name="generator">The generator to use.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool GenerateCode( IActivityMonitor monitor, TypeScriptGenerator context );
+        bool GenerateCode( IActivityMonitor monitor, TypeScriptGenerator generator );
 
     }
 }

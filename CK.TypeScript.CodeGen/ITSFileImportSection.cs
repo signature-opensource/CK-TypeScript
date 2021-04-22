@@ -22,6 +22,12 @@ namespace CK.TypeScript.CodeGen
         void EnsureImport( string typeName, TypeScriptFile file );
 
         /// <summary>
+        /// Gets the number of different <see cref="EnsureImport(string, TypeScriptFile)"/>
+        /// that have been done.
+        /// </summary>
+        int ImportCount { get; }
+
+        /// <summary>
         /// Gets the current import code section.
         /// </summary>
         /// <returns>The import section. Can be empty.</returns>

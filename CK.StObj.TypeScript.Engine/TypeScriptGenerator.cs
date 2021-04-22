@@ -68,6 +68,25 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Declares the <see cref="TSTypeFile"/> for a set of types: the TypeScript code for
+        /// these types must eventually be generated.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="types">The types for which TypeScript must be generated.</param>
+        public void DeclareTSType( IActivityMonitor monitor, IEnumerable<Type> types )
+        {
+            foreach( var t in types ) GetTSTypeFile( monitor, t );
+        }
+
+        /// <summary>
+        /// Declares the <see cref="TSTypeFile"/> for a set of types: the TypeScript code for
+        /// these types must eventually be generated.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="t">One or more types for which TypeScript must be generated.</param>
+        public void DeclareTSType( IActivityMonitor monitor, params Type[] t ) => DeclareTSType( monitor, (IEnumerable<Type>)t );
+
+        /// <summary>
         /// Gets a identifier that follows <see cref="TypeScriptCodeGenerationContext.PascalCase"/> configuration.
         /// Only the first character is handled.
         /// </summary>
@@ -75,7 +94,7 @@ namespace CK.Setup
         /// <returns>A formatted identifier.</returns>
         public string ToIdentifier( string s )
         {
-            if( s.Length == 0  && Char.IsUpper( s, 0 ) != Context.PascalCase )
+            if( s.Length != 0  && Char.IsUpper( s, 0 ) != Context.PascalCase )
             {
                 return Context.PascalCase
                         ? (s.Length == 1
@@ -91,7 +110,9 @@ namespace CK.Setup
 
         internal bool BuildTSTypeFilesFromAttributes( IActivityMonitor monitor )
         {
-            List<ITSCodeGenerator>? globals = null;
+            var globals = new List<ITSCodeGenerator>();
+            globals.Add( new TypeScriptIPocoGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
+
             // Reused per type.
             TypeScriptImpl? impl = null;
             List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
@@ -105,7 +126,6 @@ namespace CK.Setup
                 {
                     if( m is ITSCodeGenerator g )
                     {
-                        if( globals == null ) globals = new List<ITSCodeGenerator>();
                         globals.Add( g );
                     }
                     if( m is TypeScriptImpl a ) impl = a;
@@ -121,7 +141,7 @@ namespace CK.Setup
                     _typeFiles.Add( f );
                 }
             }
-            _globals = (IReadOnlyList<ITSCodeGenerator>?)globals ?? Array.Empty<ITSCodeGenerator>();
+            _globals = globals;
             return _success;
         }
 
@@ -141,53 +161,48 @@ namespace CK.Setup
 
         TSTypeFile EnsureInitialized( IActivityMonitor monitor, TSTypeFile f, ref HashSet<Type>? cycleDetector )
         {
-            if( !f.IsInitialized )
+            Debug.Assert( !f.IsInitialized );
+            TypeScriptAttribute attr = f.Attribute;
+            var generators = f.Generators;
+            var t = f.Type;
+
+            Func<IActivityMonitor, TSTypeFile, bool>? finalizer = null;
+            foreach( var g in _globals )
             {
-                TypeScriptAttribute attr = f.Attribute;
-                var generators = f.Generators;
-                var t = f.Type;
-
-                ITSCodeGenerator? globalControl = null;
-                foreach( var g in _globals )
-                {
-                    _success &= g.ConfigureTypeScriptAttribute( monitor, this, t, attr, generators, ref globalControl );
-                }
-                if( globalControl == null )
-                {
-                    if( generators.Count > 0 )
-                    {
-                        foreach( var g in generators )
-                        {
-                            _success &= g.ConfigureTypeScriptAttribute( monitor, attr, generators );
-                        }
-                    }
-                }
-
-                NormalizedPath folder;
-                string? fileName = null;
-                Type? refTarget = attr.SameFileAs ?? attr.SameFolderAs;
-                if( refTarget != null )
-                {
-                    if( cycleDetector == null ) cycleDetector = new HashSet<Type>();
-                    if( !cycleDetector.Add( t ) ) throw new InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {cycleDetector.Select( c => c.Name ).Concatenate( " => " )}." );
-
-                    var target = DoGetTSTypeFile( monitor, refTarget, ref cycleDetector );
-                    folder = target.Folder;
-                    if( attr.SameFileAs != null )
-                    {
-                        fileName = target.FileName;
-                    }
-                }
-                else
-                {
-                    folder = attr.Folder ?? t.Namespace!.Replace( '.', '/' );
-                }
-                var defName = t.GetExternalName() ?? t.Name;
-                fileName ??= attr.FileName ?? (defName + ".ts");
-                string typeName = attr.TypeName ?? defName;
-                f.Initialize( folder, fileName, typeName, globalControl );
-                monitor.Trace( f.ToString() );
+                _success &= g.ConfigureTypeScriptAttribute( monitor, this, t, attr, f.Generators, ref finalizer );
             }
+            if( generators.Count > 0 )
+            {
+                foreach( var g in generators )
+                {
+                    _success &= g.ConfigureTypeScriptAttribute( monitor, attr, (IReadOnlyList<ITSCodeGeneratorType>)f.Generators, ref finalizer );
+                }
+            }
+
+            NormalizedPath folder;
+            string? fileName = null;
+            Type? refTarget = attr.SameFileAs ?? attr.SameFolderAs;
+            if( refTarget != null )
+            {
+                if( cycleDetector == null ) cycleDetector = new HashSet<Type>();
+                if( !cycleDetector.Add( t ) ) throw new InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {cycleDetector.Select( c => c.Name ).Concatenate( " => " )}." );
+
+                var target = DoGetTSTypeFile( monitor, refTarget, ref cycleDetector );
+                folder = target.Folder;
+                if( attr.SameFileAs != null )
+                {
+                    fileName = target.FileName;
+                }
+            }
+            else
+            {
+                folder = attr.Folder ?? t.Namespace!.Replace( '.', '/' );
+            }
+            var defName = t.GetExternalName() ?? t.Name;
+            fileName ??= attr.FileName ?? (defName + ".ts");
+            string typeName = attr.TypeName ?? defName;
+            f.Initialize( folder, fileName, typeName, finalizer );
+            monitor.Trace( f.ToString() );
             return f;
         }
 
@@ -220,17 +235,9 @@ namespace CK.Setup
                         HashSet<Type>? _ = null;
                         EnsureInitialized( monitor, f, ref _ );
                     }
-                    if( _success )
-                    {
-                        if( f.GlobalControl == null )
-                        {
-                            _success &= f.Implement( monitor );
-                        }
-                    }
-                    if( !_success ) return false;
+                    _success &= f.Implement( monitor );
                 }
             }
-            Debug.Assert( _success );
             return _success;
         }
 

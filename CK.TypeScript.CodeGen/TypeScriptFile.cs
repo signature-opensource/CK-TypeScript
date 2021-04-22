@@ -48,6 +48,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Saves this file into one or more actual paths on the file system.
+        /// The <see cref="Body"/> can be null (only <see cref="Imports"/> if any will be generated).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>

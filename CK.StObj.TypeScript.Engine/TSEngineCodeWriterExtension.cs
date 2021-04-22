@@ -22,7 +22,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="this">This code writer.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="enumType">The enum type.</param>
-        /// <param name="typeName">Teh TypeScript type name.</param>
+        /// <param name="typeName">The TypeScript type name.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T AppendEnumDefinition<T>( this T @this, IActivityMonitor monitor, Type enumType, string typeName ) where T : ITSCodeWriter
         {
@@ -34,18 +34,18 @@ namespace CK.TypeScript.CodeGen
                 return @this;
             }
             return @this.Append( "enum " ).Append( typeName )
-                .OpenBlock()
-                .Append( b =>
-                {
-                    string[] names = Enum.GetNames( enumType );
-                    int[] values = Enum.GetValues( enumType ).Cast<object>().Select( x => Convert.ToInt32( x ) ).ToArray();
-                    for( int i = 0; i < names.Length; ++i )
-                    {
-                        if( i > 0 ) b.Append( "," ).NewLine();
-                        b.Append( names[i] ).Append( " = " ).Append( values[i] );
-                    }
-                } )
-                .CloseBlock();
+                        .OpenBlock()
+                        .Append( b =>
+                        {
+                            string[] names = Enum.GetNames( enumType );
+                            int[] values = Enum.GetValues( enumType ).Cast<object>().Select( x => Convert.ToInt32( x ) ).ToArray();
+                            for( int i = 0; i < names.Length; ++i )
+                            {
+                                if( i > 0 ) b.Append( "," ).NewLine();
+                                b.Append( names[i] ).Append( " = " ).Append( values[i] );
+                            }
+                        } )
+                        .CloseBlock();
         }
 
     }

@@ -50,8 +50,8 @@ namespace CK.TypeScript.CodeGen
         /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
         /// <param name="closer">
         /// <see cref="Closer"/> of the subordinate part.
-        /// When not null, it must be the same as the Closer of the existing part if it has been already crated.
-        /// When let to null, it lets the exisiting Closer as-is if the part exists or defaults to the empty string if
+        /// When not null, it must be the same as the Closer of the existing part if it has been already created.
+        /// When let to null, it lets the existing Closer as-is if the part exists or defaults to the empty string if
         /// the part must be created.
         /// </param>
         /// <param name="top">
@@ -69,15 +69,7 @@ namespace CK.TypeScript.CodeGen
         ITSNamedCodePart? FindNamedPart( string name );
 
         /// <summary>
-        /// Collects the whole code into a string collector, optionnaly closing the
-        /// scope with the <see cref="Closer"/> or leaving it opened.
-        /// </summary>
-        /// <param name="collector">The string collector to write to.</param>
-        /// <param name="closeScope">True to close the scope.</param>
-        void Build( Action<string> collector, bool closeScope );
-
-        /// <summary>
-        /// Collects the whole code into a <see cref="StringBuilder"/>, optionnaly closing the
+        /// Collects the whole code into a <see cref="StringBuilder"/>, optionally closing the
         /// scope with the <see cref="Closer"/> or leaving it opened.
         /// </summary>
         /// <param name="b">The string builder to write to.</param>
