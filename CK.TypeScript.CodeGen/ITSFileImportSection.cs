@@ -5,15 +5,11 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// The import section of a <see cref="TypeScriptFile"/>.
+    /// The import section of a <see cref="TypeScriptFile"/> is a <see cref="ITSCodeWriter"/>
+    /// that generates a first part with imports declarations from <see cref="EnsureImport(string, TypeScriptFile)"/>.
     /// </summary>
     public interface ITSFileImportSection : ITSCodeWriter
     {
-        /// <summary>
-        /// Gets the file of this import section.
-        /// </summary>
-        TypeScriptFile File { get; }
-
         /// <summary>
         /// Ensures that an import of the type name from the corresponding file exists.
         /// </summary>

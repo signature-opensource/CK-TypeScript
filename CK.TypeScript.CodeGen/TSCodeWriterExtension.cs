@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
+using System.Xml.Linq;
+using CK.Core;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -41,7 +43,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="this">This code writer.</param>
         /// <param name="code">Raw code to append.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T Append<T>( this T @this, string code ) where T : ITSCodeWriter
+        static public T Append<T>( this T @this, string? code ) where T : ITSCodeWriter
         {
             @this.DoAdd( code );
             return @this;
@@ -82,7 +84,7 @@ namespace CK.TypeScript.CodeGen
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T OpenBlock<T>( this T @this ) where T : ITSCodeWriter => @this.Append( Environment.NewLine ).Append( '{' ).NewLine();
+        static public T OpenBlock<T>( this T @this ) where T : ITSCodeWriter => @this.Append( " {" ).NewLine();
 
         /// <summary>
         /// Appends a "}" on a new independent line.
@@ -90,7 +92,7 @@ namespace CK.TypeScript.CodeGen
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T CloseBlock<T>( this T @this ) where T : ITSCodeWriter => @this.Append( Environment.NewLine ).Append( '}' ).NewLine();
+        static public T CloseBlock<T>( this T @this ) where T : ITSCodeWriter => @this.NewLine().Append( '}' ).NewLine();
 
         /// <summary>
         /// Appends either "true" or "false".
@@ -277,6 +279,15 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Appends an identifier (simple call to <see cref="TypeScriptRoot.ToIdentifier(string)"/>).
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="name">.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        static public T AppendIdentifier<T>( this T @this, string name ) where T : ITSCodeWriter => Append( @this, @this.File.Folder.Root.ToIdentifier( name ) );
+
+        /// <summary>
         /// Appends the code source for an untyped object.
         /// Only types that are implemented through one of the existing Append, AppendArray (all IEnumerable are
         /// handled) and enum values.
@@ -356,6 +367,7 @@ namespace CK.TypeScript.CodeGen
             f( @this );
             return @this;
         }
+
 
     }
 }

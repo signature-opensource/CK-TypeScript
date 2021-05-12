@@ -11,18 +11,18 @@ using System.Text.Json;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Folder in a <see cref="TypeScriptCodeGenerationContext.Root"/>.
+    /// Folder in a <see cref="TypeScriptRoot.Root"/>.
     /// </summary>
     public class TypeScriptFolder
     {
-        readonly TypeScriptCodeGenerationContext _g;
+        readonly TypeScriptRoot _g;
         TypeScriptFolder? _firstChild;
         TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
 
         static readonly char[] _invalidFileNameChars = Path.GetInvalidFileNameChars();
 
-        internal TypeScriptFolder( TypeScriptCodeGenerationContext g )
+        internal TypeScriptFolder( TypeScriptRoot g )
         {
             _g = g;
             Name = String.Empty;
@@ -39,7 +39,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets this folder's name.
-        /// This string is empty when this is the <see cref="TypeScriptCodeGenerationContext.Root"/>, otherwise
+        /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
         /// it necessarily not ends with '.ts'.
         /// </summary>
         public string Name { get; }
@@ -50,9 +50,14 @@ namespace CK.TypeScript.CodeGen
         public bool IsRoot => Name.Length == 0;
 
         /// <summary>
-        /// Gets the parent folder. Null when this is the <see cref="TypeScriptCodeGenerationContext.Root"/>.
+        /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
         /// </summary>
         public TypeScriptFolder? Parent { get; }
+
+        /// <summary>
+        /// Gets the root TypeScript context.
+        /// </summary>
+        public TypeScriptRoot Root => _g;
 
         /// <summary>
         /// Finds or creates a folder.
@@ -77,7 +82,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Finds an exisitng folder or returns null.
+        /// Finds an existing folder or returns null.
         /// </summary>
         /// <param name="name">The folder's name. Must not be empty nor ends with '.ts'.</param>
         /// <returns>The existing folder or null.</returns>
@@ -181,7 +186,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets a relative path from this folder to another one.
-        /// This folder and the other one must belong to the same <see cref="TypeScriptCodeGenerationContext"/>
+        /// This folder and the other one must belong to the same <see cref="TypeScriptRoot"/>
         /// otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="f">The folder to target.</param>

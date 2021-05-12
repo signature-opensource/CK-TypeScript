@@ -8,7 +8,8 @@ namespace CK.TypeScript.CodeGen
     {
         Dictionary<string, NamedCodePart>? _namedParts;
 
-        internal RawCodePart( string closer )
+        internal RawCodePart( TypeScriptFile f, string closer )
+            : base( f )
         {
             Closer = closer;
         }
@@ -19,7 +20,7 @@ namespace CK.TypeScript.CodeGen
 
         public ITSCodePart CreatePart( string closer = "", bool top = false )
         {
-            var p = new RawCodePart( closer );
+            var p = new RawCodePart( File, closer );
             if( top ) Parts.Insert( 0, p );
             else Parts.Add( p );
             return p;
@@ -43,7 +44,7 @@ namespace CK.TypeScript.CodeGen
         ITSNamedCodePart DoCreate( string name, string closer, bool top )
         {
             if( _namedParts == null ) _namedParts = new Dictionary<string, NamedCodePart>();
-            var p = new NamedCodePart( name, closer );
+            var p = new NamedCodePart( File, name, closer );
             _namedParts.Add( name, p );
             if( top ) Parts.Insert( 0, p );
             else Parts.Add( p );

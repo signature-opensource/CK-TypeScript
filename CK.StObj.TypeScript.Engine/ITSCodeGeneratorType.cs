@@ -22,31 +22,25 @@ namespace CK.Setup
     public interface ITSCodeGeneratorType : ITSCodeGeneratorAutoDiscovery
     {
         /// <summary>
-        /// Configures the <see cref="TypeScriptAttribute"/> that will be used
-        /// by <see cref="TypeScriptGenerator.GetTSTypeFile"/> to create the file for the type.
-        /// <para>
-        /// Note that if a global <see cref="ITSCodeGenerator"/> has preempted the code generation (see <see cref="TSTypeFile.GlobalControl"/>),
-        /// then this is not called.
-        /// </para>
+        /// Configures the <see cref="TypeScriptAttribute"/> that will be used by <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/>
+        /// to create the Type - File association and allows implementations to freely interact with the <paramref name="builder"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
+        /// <param name="builder">
+        /// The builder with the <see cref="ITSTypeFileBuilder.Type"/> that is handled, the <see cref="ITSTypeFileBuilder.Context"/>,
+        /// its <see cref="ITSTypeFileBuilder.Generators"/> that includes this one and the current <see cref="ITSTypeFileBuilder.Finalizer"/>.
+        /// </param>
         /// <param name="a">
         /// The attribute to configure. May be an empty one or the existing attribute on the type and may
-        /// already be configured by other <see cref="ITSCodeGeneratorType"/>.
-        /// </param>
-        /// <param name="generatorTypes">All the generators bound to this type (including this one).</param>
-        /// <param name="finalizer">
-        /// The current optional finalizer function that will be eventually called (regardless of current generation already done).
-        /// This function can be replaced/composed as needed.
+        /// already be configured by other global <see cref="ITSCodeGenerator"/> or by previous <see cref="ITSCodeGeneratorType"/>.
         /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
         bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
-                                           TypeScriptAttribute a,
-                                           IReadOnlyList<ITSCodeGeneratorType> generatorTypes,
-                                           ref Func<IActivityMonitor, TSTypeFile, bool>? finalizer );
+                                           ITSTypeFileBuilder builder,
+                                           TypeScriptAttribute a );
 
         /// <summary>
-        /// Generates the TypeScript code. The <paramref name="file"/> exposes the <see cref="TSTypeFile.TypeScriptGenerator"/>.
+        /// Generates the TypeScript code. The <paramref name="file"/> exposes the <see cref="TSTypeFile.Context"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="file">The file that must be generated (<see cref="TSTypeFile.EnsureFile"/> may be called).</param>

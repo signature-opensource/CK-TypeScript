@@ -17,7 +17,7 @@ namespace CK.Setup
     {
         readonly TypeScriptAspectConfiguration _config;
         NormalizedPath _basePath;
-        TypeScriptGenerator?[] _generators;
+        TypeScriptContext?[] _generators;
 
         /// <summary>
         /// Initializes a new aspect from its configuration.
@@ -36,15 +36,15 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
         {
-            _generators = new TypeScriptGenerator?[context.AllBinPaths.Count];
+            _generators = new TypeScriptContext?[context.AllBinPaths.Count];
 
             int idx = 0;
             foreach( var genBinPath in context.AllBinPaths )
             {
-                TypeScriptCodeGenerationContext? tsContext = CreateGenerationContext( monitor, genBinPath );
+                TypeScriptRoot? tsContext = CreateGenerationContext( monitor, genBinPath );
                 if( tsContext != null )
                 {
-                    var g = new TypeScriptGenerator( tsContext, genBinPath );
+                    var g = new TypeScriptContext( tsContext, genBinPath );
                     _generators[idx++] = g;
                     if( !g.BuildTSTypeFilesFromAttributes( monitor )
                         || !g.CallCodeGenerators( monitor ) )
@@ -56,7 +56,7 @@ namespace CK.Setup
             return true;
         }
 
-        TypeScriptCodeGenerationContext? CreateGenerationContext( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
+        TypeScriptRoot? CreateGenerationContext( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
         {
             static NormalizedPath MakeAbsolute( NormalizedPath basePath, NormalizedPath p )
             {
@@ -68,7 +68,7 @@ namespace CK.Setup
                 }
                 return p.ResolveDots();
             }
-            TypeScriptCodeGenerationContext? g;
+            TypeScriptRoot? g;
             var binPath = genBinPath.CurrentRun;
             var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
@@ -87,7 +87,7 @@ namespace CK.Setup
             }
             else
             {
-                g = new TypeScriptCodeGenerationContext( paths, _config.PascalCase );
+                g = new TypeScriptRoot( paths, _config.PascalCase, _config.GenerateDocumentation );
             }
 
             return g;
@@ -104,7 +104,7 @@ namespace CK.Setup
                     {
                         if( g != null )
                         {
-                            success &= g.Context.Root.Save( monitor, g.Context.OutputPaths );
+                            success &= g.Root.Root.Save( monitor, g.Root.OutputPaths );
                         }
                     }
                 }

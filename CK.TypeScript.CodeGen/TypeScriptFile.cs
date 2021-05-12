@@ -9,7 +9,8 @@ namespace CK.TypeScript.CodeGen
 
 {
     /// <summary>
-    /// TypeScript file in a <see cref="TypeScriptFolder"/>.
+    /// A TypeScript file resides in a definitive <see cref="TypeScriptFolder"/>
+    /// and exposes a <see cref="Imports"/> and a <see cref="Body"/> sections.
     /// </summary>
     public class TypeScriptFile
     {

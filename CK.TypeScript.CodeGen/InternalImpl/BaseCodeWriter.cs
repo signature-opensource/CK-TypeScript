@@ -9,10 +9,13 @@ namespace CK.TypeScript.CodeGen
         internal readonly List<object> Parts;
         Dictionary<object, object?>? _memory;
 
-        public BaseCodeWriter()
+        public BaseCodeWriter( TypeScriptFile f )
         {
+            File = f;
             Parts = new List<object>();
         }
+
+        public TypeScriptFile File { get; }
 
         public void DoAdd( string? code )
         {

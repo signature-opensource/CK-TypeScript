@@ -10,11 +10,9 @@ namespace CK.TypeScript.CodeGen
         int _importCount;
 
         public FileImportCodePart( TypeScriptFile f )
+            : base( f )
         {
-            File = f;
         }
-
-        public TypeScriptFile File { get; }
 
         public void EnsureImport( string typeName, TypeScriptFile file )
         {
@@ -36,7 +34,7 @@ namespace CK.TypeScript.CodeGen
         {
             if( _imports != null )
             {
-                var import = new BaseCodeWriter();
+                var import = new BaseCodeWriter( File );
                 foreach( var e in _imports )
                 {
                     import.Append( "import { " ).Append( e.Types ).Append( " } from " )

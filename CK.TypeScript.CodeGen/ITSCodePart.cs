@@ -5,7 +5,7 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Extends <see cref="ITSCodeWriter"/> to support multiple parts, an optional <see cref="Closer"/> suffix and a <see cref="Memory"/>.
+    /// Extends <see cref="ITSCodeWriter"/> to support multiple parts, optionals <see cref="Closer"/> suffix and a <see cref="Memory"/>.
     /// </summary>
     public interface ITSCodePart : ITSCodeWriter
     {
@@ -76,6 +76,12 @@ namespace CK.TypeScript.CodeGen
         /// <param name="closeScope">True to close the scope before returning the builder.</param>
         /// <returns>The string builder.</returns>
         StringBuilder Build( StringBuilder b, bool closeScope );
+
+        /// <summary>
+        /// Gets the current text.
+        /// </summary>
+        /// <returns>The current text (with the <see cref="Closer"/>). Can be empty.</returns>
+        string ToString();
 
     }
 

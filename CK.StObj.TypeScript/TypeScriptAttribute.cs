@@ -90,6 +90,9 @@ namespace CK.StObj.TypeScript
         /// Gets or sets another type which defines the <see cref="Folder"/>.
         /// Folder MUST be null and <see cref="SameFileAs"/> must be null or be the same as the new value otherwise
         /// an <see cref="InvalidOperationException"/> is raised.
+        /// <para>
+        /// This defaults to <see cref="SameFileAs"/>.
+        /// </para>
         /// </summary>
         public Type? SameFolderAs
         {

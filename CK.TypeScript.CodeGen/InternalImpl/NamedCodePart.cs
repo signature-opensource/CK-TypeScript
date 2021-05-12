@@ -2,8 +2,8 @@ namespace CK.TypeScript.CodeGen
 {
     internal class NamedCodePart : RawCodePart, ITSNamedCodePart
     {
-        internal NamedCodePart( string name, string closer )
-            : base( closer )
+        internal NamedCodePart( TypeScriptFile f, string name, string closer )
+            : base( f, closer )
         {
             Name = name;
         }
