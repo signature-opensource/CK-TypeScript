@@ -67,7 +67,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <remarks>
         /// This is better not to use this directly: hiding this shared storage behind extension methods
-        /// like <see cref="TSDocHelper.AppendDocumentation{T}(T, IActivityMonitor, System.Reflection.MemberInfo)"/> should
+        /// like <see cref="TSCodeWriterDocumentationExtensions.AppendDocumentation{T}(T, IActivityMonitor, System.Reflection.MemberInfo)"/> should
         /// be done.
         /// </remarks>
         public IDictionary<object, object?> Memory => _memory ?? (_memory = new Dictionary<object, object?>());

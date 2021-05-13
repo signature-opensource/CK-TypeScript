@@ -8,10 +8,10 @@ using System.Xml.Linq;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Provides helpers and extension methods on <see cref="ITSCodeWriter"/> that helps
+    /// Provides extension methods on <see cref="ITSCodeWriter"/> that helps
     /// managing TypeScript comments generation.
     /// </summary>
-    public static class TSDocHelper
+    public static class TSCodeWriterDocumentationExtensions
     {
         /// <summary>
         /// Appends a /** ... */ block of commented lines.

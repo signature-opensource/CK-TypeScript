@@ -204,8 +204,6 @@ namespace CK.StObj.TypeScript.Tests
                                 + newLine + "@param tBis SECOND generic type."
                                 + newLine + "@param eTBis SECOND generic type DEPENDENT."
                                 + newLine + "@returns The returned generic tuple." );
-
-
         }
 
         /// <summary>
@@ -305,7 +303,7 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void comments_textualize_code_references()
+        public void comments_textual_code_references_by_DocumentationCodeRef_TextOnly()
         {
             var output = LocalTestHelper.GetOutputFolder();
             var ctx = new TypeScriptRoot( new[] { output }, false, true );
@@ -327,6 +325,30 @@ namespace CK.StObj.TypeScript.Tests
                       .And.Contain( "The property is WithCodeReference.p." )
                       .And.Contain( "The field is WithCodeReference.f." )
                       .And.Contain( "The event is WithCodeReference.e." );
+        }
+
+        /// <summary>
+        /// A buggy reference: <see cref="TypeNotFound"/>.
+        /// </summary>
+        [TypeScript( Folder = "" )]
+        public class BuggyReference
+        {
+        }
+
+        [Test]
+        public void comments_code_reference_error_displays_a_Strikethrough_buggy_ref()
+        {
+            var output = LocalTestHelper.GetOutputFolder();
+            var ctx = new TypeScriptRoot( new[] { output }, false, true );
+
+            var f = ctx.Root.FindOrCreateFile( "BuggyReference.ts" );
+            GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );
+            ctx.Save( TestHelper.Monitor );
+
+            var s = f.Body.ToString();
+            File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+
+            s.Should().Contain( "A buggy reference: ~~!:TypeNotFound~~." );
         }
 
         static void GenerateMembersDocumentation( TypeScriptFile f, Type t, string header )

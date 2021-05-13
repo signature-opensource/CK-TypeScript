@@ -131,25 +131,36 @@ namespace CK.TypeScript.CodeGen
                                 {
                                     var cref = (string)c.AttributeRequired( "cref" );
                                     char kind = cref[0];
-                                    string tName;
-                                    string? mName;
-                                    if( kind == 'T' )
+                                    if( kind == '!' )
                                     {
-                                        tName = cref.Substring( 2 );
-                                        mName = null;
+                                        Append( $"~~{cref}~~" );
                                     }
                                     else
                                     {
-                                        int iPar = cref.IndexOf( '(' );
-                                        if( iPar < 0 ) iPar = cref.Length;
-                                        int idx = cref.LastIndexOf( '.', iPar - 1 );
-                                        tName = cref.Substring( 2, idx - 2 );
-                                        ++idx;
-                                        mName = cref.Substring( idx, iPar - idx );
-                                        if( mName == "#ctor" ) mName = "constructor";
+                                        string tName;
+                                        string? mName;
+                                        if( kind == 'T' )
+                                        {
+                                            tName = cref.Substring( 2 );
+                                            mName = null;
+                                        }
+                                        else
+                                        {
+                                            if( kind != 'P' && kind != 'F' && kind != 'M' && kind != 'E' )
+                                            {
+                                                throw new CKException( $"Unsupported cref '{cref}' in element '{e}'." );
+                                            }
+                                            int iPar = cref.IndexOf( '(' );
+                                            if( iPar < 0 ) iPar = cref.Length;
+                                            int idx = cref.LastIndexOf( '.', iPar - 1 );
+                                            tName = cref.Substring( 2, idx - 2 );
+                                            ++idx;
+                                            mName = cref.Substring( idx, iPar - idx );
+                                            if( mName == "#ctor" ) mName = "constructor";
+                                        }
+                                        var h = source.File.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
+                                        Append( h.GetTSDocLink( source, kind, tName, mName, c.Value ) );
                                     }
-                                    var h = source.File.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
-                                    Append( h.GetTSDocLink( source, kind, tName, mName, c.Value ) );
                                     trimFirstLine = startNewLine = false;
                                     break;
                                 }
