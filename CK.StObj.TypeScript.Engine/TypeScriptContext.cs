@@ -55,6 +55,11 @@ namespace CK.Setup
         public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
 
         /// <summary>
+        /// Gets the Poco code generator (the first <see cref="GlobalGenerators"/>).
+        /// </summary>
+        public TSIPocoCodeGenerator PocoCodeGenerator => (TSIPocoCodeGenerator)_globals[0];
+
+        /// <summary>
         /// Gets a <see cref="TSTypeFile"/> for a type if it has been declared so far and is not
         /// an intrinsic types (see remarks of <see cref="DeclareTSType(IActivityMonitor, Type, bool)"/>).
         /// </summary>

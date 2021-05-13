@@ -34,7 +34,7 @@ namespace CK.StObj.TypeScript.Engine
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
     /// it is not initiated by an attribute like other code generators (typically thanks to a <see cref="ContextBoundDelegationAttribute"/>).
     /// </remarks>
-    internal class TSIPocoCodeGenerator : ITSCodeGenerator
+    public class TSIPocoCodeGenerator : ITSCodeGenerator
     {
         readonly IPocoSupportResult _poco;
 
@@ -128,7 +128,13 @@ namespace CK.StObj.TypeScript.Engine
             return true;
         }
 
-        bool ITSCodeGenerator.GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
+        /// <summary>
+        /// Does nothing (it is the <see cref="ConfigureTypeScriptAttribute"/> method that sets a <see cref="ITSTypeFileBuilder.Finalizer"/>). 
+        /// </summary>
+        /// <param name="monitor">Unused.</param>
+        /// <param name="context">Unused.</param>
+        /// <returns>Always true.</returns>
+        public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
         TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoRootInfo root )
         {

@@ -30,7 +30,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets the generated file.
         /// There is one <see cref="ITSNamedCodePart"/> by IPoco interface (named with the interface's name)
-        /// plus the <see cref="PocoClassPart"/>.
+        /// in addition to the <see cref="PocoClassPart"/>.
         /// </summary>
         public TSTypeFile TypeFile { get; }
 
