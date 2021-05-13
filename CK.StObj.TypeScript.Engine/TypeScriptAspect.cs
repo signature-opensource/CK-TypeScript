@@ -46,8 +46,7 @@ namespace CK.Setup
                 {
                     var g = new TypeScriptContext( tsContext, genBinPath );
                     _generators[idx++] = g;
-                    if( !g.BuildTSTypeFilesFromAttributes( monitor )
-                        || !g.CallCodeGenerators( monitor ) )
+                    if( !g.Run( monitor ) )
                     {
                         return false;
                     }

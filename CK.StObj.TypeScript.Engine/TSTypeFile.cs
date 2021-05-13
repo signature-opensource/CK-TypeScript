@@ -57,7 +57,7 @@ namespace CK.StObj.TypeScript.Engine
         public override string ToString() => _toString;
 
         /// <summary>
-        /// Gets the <see cref="Setup.TypeScriptContext"/>.
+        /// Gets the <see cref="TypeScriptContext"/>.
         /// </summary>
         public TypeScriptContext Context { get; }
 

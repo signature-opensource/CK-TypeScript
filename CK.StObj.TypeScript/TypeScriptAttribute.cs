@@ -23,7 +23,20 @@ namespace CK.StObj.TypeScript
         /// Initializes a new empty <see cref="TypeScriptAttribute"/>.
         /// </summary>
         public TypeScriptAttribute()
-            : base( "CK.StObj.TypeScript.Engine.TypeScriptImpl, CK.StObj.TypeScript.Engine" )
+            : base( "CK.StObj.TypeScript.Engine.TypeScriptAttributeImpl, CK.StObj.TypeScript.Engine" )
+        {
+        }
+
+        /// <summary>
+        /// Base class constructor for specialized <see cref="TypeScriptAttribute"/> that
+        /// can be bound to a specialized implementation that supports type generator
+        /// (the ITSCodeGeneratorType from CK.StObj.TypeScript.Engine).
+        /// <para>
+        /// 
+        /// </para>
+        /// </summary>
+        protected TypeScriptAttribute( string actualAttributeTypeAssemblyQualifiedName )
+            : base( actualAttributeTypeAssemblyQualifiedName )
         {
         }
 

@@ -8,7 +8,8 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Type Script code generator for a type. This interface is typically implemented by delegated attribute classes.
+    /// Type Script code generator for a type. This interface is typically implemented by delegated attribute classes
+    /// (that could specialize <see cref="TypeScriptAttributeImpl"/>).
     /// <para>
     /// Whenever an attribute implementation with this interface exists on a type, the implementation of
     /// the <see cref="TypeScriptAttribute"/> (if the attribute exists) does nothing: it is up to this ITSCodeGeneratorType

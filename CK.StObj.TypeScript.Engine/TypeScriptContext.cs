@@ -179,44 +179,6 @@ namespace CK.Setup
             }
             return f;
         }
-
-        internal bool BuildTSTypeFilesFromAttributes( IActivityMonitor monitor )
-        {
-            var globals = new List<ITSCodeGenerator>();
-            globals.Add( new TSIPocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
-
-            // Reused per type.
-            TypeScriptImpl? impl = null;
-            List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
-
-            foreach( var attributeCache in _attributeCache.Values )
-            {
-                impl = null;
-                generators.Clear();
-
-                foreach( var m in attributeCache.GetTypeCustomAttributes<ITSCodeGeneratorAutoDiscovery>() )
-                {
-                    if( m is ITSCodeGenerator g )
-                    {
-                        globals.Add( g );
-                    }
-                    if( m is TypeScriptImpl a ) impl = a;
-                    if( m is ITSCodeGeneratorType tG )
-                    {
-                        generators.Add( tG );
-                    }
-                }
-                if( impl != null || generators.Count > 0 )
-                {
-                    var f = new TSTypeFile( this, attributeCache.Type, generators.ToArray(), impl?.Attribute );
-                    _typeMappings.Add( attributeCache.Type, f );
-                    _typeFiles.Add( f );
-                }
-            }
-            _globals = globals;
-            return _success;
-        }
-
         TSTypeFile EnsureInitialized( IActivityMonitor monitor, TSTypeFile f, ref HashSet<Type>? cycleDetector )
         {
             Debug.Assert( !f.IsInitialized );
@@ -288,7 +250,6 @@ namespace CK.Setup
         {
             return name.Replace( '<', '{' ).Replace( '>', '}' );
         }
-
         internal static string GetSafeName( Type t )
         {
             var n = t.Name;
@@ -301,19 +262,75 @@ namespace CK.Setup
             return n;
         }
 
-        internal bool CallCodeGenerators( IActivityMonitor monitor )
+        internal bool Run( IActivityMonitor monitor )
         {
+            return BuildTSTypeFilesFromAttributesAndDiscoverGenerators( monitor )
+                   && CallCodeGenerators( monitor, true )
+                   && CallCodeGenerators( monitor, false )
+                   && EnsureTypesGeneration( monitor );
+        }
+
+        bool BuildTSTypeFilesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor )
+        {
+            var globals = new List<ITSCodeGenerator>();
+            globals.Add( new TSIPocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
+
+            // Reused per type.
+            TypeScriptAttributeImpl? impl = null;
+            List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
+
+            foreach( ITypeAttributesCache attributeCache in _attributeCache.Values )
+            {
+                impl = null;
+                generators.Clear();
+
+                foreach( var m in attributeCache.GetTypeCustomAttributes<ITSCodeGeneratorAutoDiscovery>() )
+                {
+                    if( m is ITSCodeGenerator g )
+                    {
+                        globals.Add( g );
+                    }
+                    if( m is TypeScriptAttributeImpl a )
+                    {
+                        if( impl != null )
+                        {
+                            monitor.Error( $"Multiple TypeScriptImpl decorates '{attributeCache.Type}'." );
+                            _success = false;
+                        }
+                        impl = a;
+                    }
+                    if( m is ITSCodeGeneratorType tG )
+                    {
+                        generators.Add( tG );
+                    }
+                }
+                if( impl != null || generators.Count > 0 )
+                {
+                    var f = new TSTypeFile( this, attributeCache.Type, generators.ToArray(), impl?.Attribute );
+                    _typeMappings.Add( attributeCache.Type, f );
+                    _typeFiles.Add( f );
+                }
+            }
+            _globals = globals;
+            return _success;
+        }
+
+        bool CallCodeGenerators( IActivityMonitor monitor, bool initialize )
+        {
+            string action = initialize ? "Initializing" : "Executing";
             Debug.Assert( _success );
             // Executes all the globals.
-            using( monitor.OpenInfo( $"Executing the {_globals.Count} global {nameof(ITSCodeGenerator)} TypeScript generators." ) )
+            using( monitor.OpenInfo( $"{action} the {_globals.Count} global {nameof(ITSCodeGenerator)} TypeScript generators." ) )
             {
                 foreach( var global in _globals )
                 {
-                    using( monitor.OpenTrace( $"Executing '{global.GetType().FullName}' global TypeScript generator." ) )
+                    using( monitor.OpenTrace( $"{action} '{global.GetType().FullName}' global TypeScript generator." ) )
                     {
                         try
                         {
-                            _success = global.GenerateCode( monitor, this );
+                            _success = initialize
+                                        ? global.Initialize( monitor, this )
+                                        : global.GenerateCode( monitor, this );
                         }
                         catch( Exception ex )
                         {
@@ -328,7 +345,11 @@ namespace CK.Setup
                     }
                 }
             }
-            //
+            return _success;
+        }
+
+        bool EnsureTypesGeneration( IActivityMonitor monitor )
+        {
             using( monitor.OpenInfo( $"Ensuring that {_typeFiles.Count} types are initialized and implemented." ) )
             {
                 for( int i = 0; i < _typeFiles.Count; ++i )

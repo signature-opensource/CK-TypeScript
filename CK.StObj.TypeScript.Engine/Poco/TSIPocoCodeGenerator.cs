@@ -12,9 +12,23 @@ namespace CK.StObj.TypeScript.Engine
     /// <summary>
     /// Handles TypeScript generation of <see cref="IPoco"/> by reproducing the IPoco interfaces
     /// in the TypeScript world.
+    /// <para>
     /// This generator doesn't generate any IPoco by default: they must be "asked" to be generated
-    /// by instantiating a <see cref="TSTypeFile"/> for the IPoco interface, its <see cref="ConfigureTypeScriptAttribute"/>
-    /// method only sets a <see cref="ITSTypeFileBuilder.Finalizer"/>.
+    /// by instantiating a <see cref="TSTypeFile"/> for the IPoco interface.
+    /// </para>
+    /// <para>
+    /// The actual generator is configured by the <see cref="ConfigureTypeScriptAttribute"/> method that
+    /// sets a <see cref="ITSTypeFileBuilder.Finalizer"/>.
+    /// </para>
+    /// <para>
+    /// In other words, this code generator is "passive": it will only generate code for IPoco that
+    /// have been declared (either by a TypeScriptAttribute or explicitly <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/>
+    /// (typically because they appear in other types that must be generated).
+    /// </para>
+    /// <para>
+    /// This "on demand" generation acts as a kind of "tree shaking": only the transitive closure of the referenced types
+    /// of an explicitly generated type is generated.
+    /// </para>
     /// </summary>
     /// <remarks>
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
@@ -29,6 +43,32 @@ namespace CK.StObj.TypeScript.Engine
             _poco = poco;
         }
 
+        /// <summary>
+        /// Raised when a poco is generated.
+        /// This enables extensions to inject codes in the <see cref="PocoGeneratedEventArgs.TypeFile"/>.
+        /// </summary>
+        public event EventHandler<PocoGeneratedEventArgs>? PocoGenerated;
+
+        /// <summary>
+        /// If the type is a <see cref="IPoco"/>, the <see cref="IPocoRootInfo.PrimaryInterface"/> sets the type name
+        /// and the folder and file for all other IPoco interfaces and the class.
+        /// <para>
+        /// Interfaces that are not IPoco (the ones in <see cref="IPocoRootInfo.OtherInterfaces"/>) are ignored by default.
+        /// If another such interface is declared (<see cref="TypeScriptContext.FindDeclaredTSType"/> returned the type file),
+        /// then it is imported and appears in the "extends" base interfaces.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="builder">
+        /// The builder with the <see cref="ITSTypeFileBuilder.Type"/> that is handled, the <see cref="ITSTypeFileBuilder.Context"/>,
+        /// its <see cref="ITSTypeFileBuilder.Generators"/> that includes this one and the current <see cref="ITSTypeFileBuilder.Finalizer"/>.
+        /// </param>
+        /// <param name="attr">
+        /// The attribute to configure. It is empty or the attribute on the type (this generator
+        /// is the first one in the <see cref="TypeScriptContext.GlobalGenerators"/>: it is the first to be solicited).
+        /// </param>
+        /// <returns>True on success, false on error (errors must be logged).</returns>
+        /// <returns></returns>
         public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                                   ITSTypeFileBuilder builder,
                                                   TypeScriptAttribute attr )
@@ -116,6 +156,8 @@ namespace CK.StObj.TypeScript.Engine
                     b.AppendImportedTypeName( itf );
                 }
                 b.OpenBlock();
+                // Trick: copy the interface properties instead of recomputing them
+                //        by finding the "Props" named part in each interface code.
                 foreach( var itf in interfaces )
                 {
                     var props = itf.File.Body.FindNamedPart( itf.TypeName )!.FindNamedPart( "Props" );
@@ -123,6 +165,7 @@ namespace CK.StObj.TypeScript.Engine
                     b.Append( $"// Properties from {itf.TypeName}." ).NewLine()
                      .Append( props.ToString() );
                 }
+                PocoGenerated?.Invoke( this, new PocoGeneratedEventArgs( monitor, tsTypedFile, b, root ) );
             }
             return tsTypedFile;
         }

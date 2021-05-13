@@ -49,15 +49,27 @@ namespace CK.Setup
         bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                            ITSTypeFileBuilder builder,
                                            TypeScriptAttribute a );
+
+        /// <summary>
+        /// Optional extension point (default implementation returns true) called once
+        /// all the <see cref="TypeScriptContext.GlobalGenerators"/> have been discovered.
+        /// Typically used to subscribe to events that may be raised by other global
+        /// generators (like <see cref="TSIPocoCodeGenerator.PocoGenerated"/>).
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="context">The generation context.</param>
+        /// <returns>True on success, false on error (errors must be logged).</returns>
+        bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
+
         /// <summary>
         /// Generates any TypeScript in the provided context.
-        /// This is called once and only once before type bound methods <see cref="ITSCodeGeneratorType.GenerateCode"/>
+        /// This is called once and only once before any type bound methods <see cref="ITSCodeGeneratorType.GenerateCode"/>
         /// are called.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="generator">The generator to use.</param>
+        /// <param name="context">The generation context.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool GenerateCode( IActivityMonitor monitor, TypeScriptContext generator );
+        bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context );
 
     }
 }
