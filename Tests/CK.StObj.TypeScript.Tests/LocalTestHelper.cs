@@ -1,4 +1,5 @@
 using CK.Setup;
+using CK.Testing;
 using CK.Text;
 using FluentAssertions;
 using System;
@@ -14,14 +15,18 @@ namespace CK.StObj.TypeScript.Tests
 {
     static class LocalTestHelper
     {
-        public static readonly NormalizedPath OutputFolder = TestHelper.TestProjectFolder.AppendPart( "TestOutput" );
+        public static readonly NormalizedPath OutputFolder = TestHelper.TestProjectFolder.AppendPart( "TypeScriptOutput" );
 
         public static NormalizedPath GetOutputFolder( [CallerMemberName]string? testName = null )
         {
             return TestHelper.CleanupFolder( OutputFolder.AppendPart( testName ), false );
         }
 
-        class MonoCollectorResolver : IStObjCollectorResultResolver
+        /// <summary>
+        /// Simple, mono bin path, implementation that uses the TestHelper to collect the StObj
+        /// based on an explicit list of types.
+        /// </summary>
+        public class MonoCollectorResolver : IStObjCollectorResultResolver
         {
             readonly Type[] _types;
 
@@ -39,7 +44,6 @@ namespace CK.StObj.TypeScript.Tests
             {
                 throw new NotImplementedException( "There is only one BinPath: only the unified one is required." );
             }
-
         }
 
         public static NormalizedPath GenerateTSCode( string testName, params Type[] types )
@@ -49,9 +53,14 @@ namespace CK.StObj.TypeScript.Tests
 
         public static NormalizedPath GenerateTSCode( string testName, IStObjCollectorResultResolver collectorResults )
         {
+            return GenerateTSCode( testName, new TypeScriptAspectConfiguration(), collectorResults );
+        }
+
+        public static NormalizedPath GenerateTSCode( string testName, TypeScriptAspectConfiguration tsConfig, IStObjCollectorResultResolver collectorResults )
+        {
             NormalizedPath output = GetOutputFolder( testName );
             var config = new StObjEngineConfiguration();
-            config.Aspects.Add( new TypeScriptAspectConfiguration() );
+            config.Aspects.Add( tsConfig );
             var b = new BinPathConfiguration();
             b.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output ) ) );
             config.BinPaths.Add( b );
@@ -61,6 +70,7 @@ namespace CK.StObj.TypeScript.Tests
             Directory.Exists( output ).Should().BeTrue();
             return output;
         }
+
 
     }
 }

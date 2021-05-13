@@ -30,7 +30,6 @@ namespace CK.TypeScript.CodeGen
             var keyCache = "XDoc:" + a.FullName;
             if( cache != null && cache.TryGetValue( keyCache, out var oDoc ) )
             {
-                Debug.Assert( oDoc != null );
                 if( oDoc == null ) return null;
                 xDoc = (XDocument)oDoc;
             }
