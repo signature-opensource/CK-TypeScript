@@ -336,13 +336,13 @@ namespace CK.TypeScript.CodeGen
         /// <typeparam name="T">The code part type.</typeparam>
         /// <param name="this">This code part.</param>
         /// <param name="part">The named part to use to inject code at this location (or at the top).</param>
-        /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
+        /// <param name="name">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This code part to enable fluent syntax.</returns>
-        public static T CreateNamedPart<T>( this T @this, out ITSNamedCodePart part, string name, string closer = "", bool top = false ) where T : ITSCodePart
+        public static T CreateNamedPart<T>( this T @this, out ITSKeyedCodePart part, string name, string closer = "", bool top = false ) where T : ITSCodePart
         {
-            part = @this.CreateNamedPart( name, closer, top );
+            part = @this.CreateKeyedPart( name, closer, top );
             return @this;
         }
 

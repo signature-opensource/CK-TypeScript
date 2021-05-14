@@ -166,7 +166,7 @@ namespace CK.StObj.TypeScript.Engine
                 //        by finding the "Props" named part in each interface code.
                 foreach( var itf in interfaces )
                 {
-                    var props = itf.File.Body.FindNamedPart( itf.TypeName )!.FindNamedPart( "Props" );
+                    var props = itf.File.Body.FindKeyedPart( itf.TypeName )!.FindKeyedPart( "Props" );
                     Debug.Assert( props != null );
                     b.Append( $"// Properties from {itf.TypeName}." ).NewLine()
                      .Append( props.ToString() );
@@ -227,7 +227,7 @@ namespace CK.StObj.TypeScript.Engine
                         }
                     }
                     b.OpenBlock();
-                    var props = b.CreateNamedPart( "Props" );
+                    var props = b.CreateKeyedPart( "Props" );
                     bool success = true;
                     foreach( var iP in i.PocoInterface.GetProperties() )
                     {
@@ -243,7 +243,7 @@ namespace CK.StObj.TypeScript.Engine
             }
             return tsTypedFile;
 
-            static void AddBaseInterface( ITSNamedCodePart b, ref bool hasInterface, TSTypeFile fInterface )
+            static void AddBaseInterface( ITSKeyedCodePart b, ref bool hasInterface, TSTypeFile fInterface )
             {
                 if( !hasInterface )
                 {

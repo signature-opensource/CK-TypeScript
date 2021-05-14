@@ -126,7 +126,7 @@ namespace CK.StObj.TypeScript.Engine
         /// The code part may have been created by <see cref="EnsureTypePart(string)"/> or directly on
         /// the file's body. 
         /// </summary>
-        public ITSNamedCodePart? TypePart => File.Body.FindNamedPart( TypeName );
+        public ITSKeyedCodePart? TypePart => File.Body.FindKeyedPart( TypeName );
 
         /// <summary>
         /// Ensures that a code part named <see cref="TypeName"/> exists in this file's body.
@@ -141,7 +141,7 @@ namespace CK.StObj.TypeScript.Engine
         /// current writing position in the code.
         /// </param>
         /// <returns>The part for this type.</returns>
-        public ITSNamedCodePart EnsureTypePart( string closer = "}", bool top = false ) => File.Body.FindOrCreateNamedPart( TypeName, closer, top );
+        public ITSKeyedCodePart EnsureTypePart( string closer = "}", bool top = false ) => File.Body.FindOrCreateKeyedPart( TypeName, closer, top );
 
         internal bool Implement( IActivityMonitor monitor )
         {

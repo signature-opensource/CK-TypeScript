@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen
 {
     class RawCodePart : BaseCodeWriter, ITSCodePart
     {
-        Dictionary<string, NamedCodePart>? _namedParts;
+        Dictionary<object, KeyedCodePart>? _namedParts;
 
         internal RawCodePart( TypeScriptFile f, string closer )
             : base( f )
@@ -16,7 +16,7 @@ namespace CK.TypeScript.CodeGen
 
         public string Closer { get; }
 
-        public ITSNamedCodePart CreateNamedPart( string name, string closer, bool top = false ) => DoCreate( name, closer, top );
+        public ITSKeyedCodePart CreateKeyedPart( object key, string closer, bool top = false ) => DoCreate( key, closer, top );
 
         public ITSCodePart CreatePart( string closer = "", bool top = false )
         {
@@ -26,11 +26,11 @@ namespace CK.TypeScript.CodeGen
             return p;
         }
 
-        public ITSNamedCodePart? FindNamedPart( string name ) => _namedParts?.GetValueOrDefault( name );
+        public ITSKeyedCodePart? FindKeyedPart( object key ) => _namedParts?.GetValueOrDefault( key );
 
-        public ITSNamedCodePart FindOrCreateNamedPart( string name, string? closer = null, bool top = false )
+        public ITSKeyedCodePart FindOrCreateKeyedPart( object key, string? closer = null, bool top = false )
         {
-            if( _namedParts != null && _namedParts.TryGetValue( name, out var p ) )
+            if( _namedParts != null && _namedParts.TryGetValue( key, out var p ) )
             {
                 if( closer != null && p.Closer != closer )
                 {
@@ -38,14 +38,14 @@ namespace CK.TypeScript.CodeGen
                 }
                 return p;
             }
-            return DoCreate( name, closer ?? String.Empty, top );
+            return DoCreate( key, closer ?? String.Empty, top );
         }
 
-        ITSNamedCodePart DoCreate( string name, string closer, bool top )
+        ITSKeyedCodePart DoCreate( object key, string closer, bool top )
         {
-            if( _namedParts == null ) _namedParts = new Dictionary<string, NamedCodePart>();
-            var p = new NamedCodePart( File, name, closer );
-            _namedParts.Add( name, p );
+            if( _namedParts == null ) _namedParts = new Dictionary<object, KeyedCodePart>();
+            var p = new KeyedCodePart( File, key, closer );
+            _namedParts.Add( key, p );
             if( top ) Parts.Insert( 0, p );
             else Parts.Add( p );
             return p;

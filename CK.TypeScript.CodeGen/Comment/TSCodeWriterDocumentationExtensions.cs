@@ -27,7 +27,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends a /** ... */ block of text with multiple lines automatically left aligned.
-        /// See <see cref="DocumentationBuilder.AppendMultiLines(string, bool, bool, bool)"/>
+        /// See <see cref="DocumentationBuilder.AppendMultiLines(string, bool, bool, bool, bool)"/>
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>

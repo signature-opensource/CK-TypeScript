@@ -19,7 +19,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <param name="tsTypedFile">The generated Poco file.</param>
         /// <param name="pocoClassPart">The code part of the poco class.</param>
         /// <param name="pocoInfo">The poco information.</param>
-        public PocoGeneratedEventArgs( IActivityMonitor monitor, TSTypeFile tsTypedFile, ITSNamedCodePart pocoClassPart, IPocoRootInfo pocoInfo )
+        public PocoGeneratedEventArgs( IActivityMonitor monitor, TSTypeFile tsTypedFile, ITSKeyedCodePart pocoClassPart, IPocoRootInfo pocoInfo )
             : base( monitor )
         {
             TypeFile = tsTypedFile;
@@ -29,7 +29,7 @@ namespace CK.StObj.TypeScript.Engine
 
         /// <summary>
         /// Gets the generated file.
-        /// There is one <see cref="ITSNamedCodePart"/> by IPoco interface (named with the interface's name)
+        /// There is one <see cref="ITSKeyedCodePart"/> by IPoco interface (named with the interface's name)
         /// in addition to the <see cref="PocoClassPart"/>.
         /// </summary>
         public TSTypeFile TypeFile { get; }
@@ -37,7 +37,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets the poco class part.
         /// </summary>
-        public ITSNamedCodePart PocoClassPart { get; }
+        public ITSKeyedCodePart PocoClassPart { get; }
 
         /// <summary>
         /// Gets the poco information.
