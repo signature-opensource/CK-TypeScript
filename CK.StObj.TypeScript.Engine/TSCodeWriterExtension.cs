@@ -88,6 +88,11 @@ namespace CK.TypeScript.CodeGen
         /// multiple <see cref="TypeScriptFile.Imports"/>.
         /// Since types may be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/>, this may
         /// fail, so this returns a boolean (instead of the "fluent" standard code writer).
+        /// <para>
+        /// <c>typeof(void)</c> is mapped to <c>void</c>, <c>object</c> is mapped to <c>unknown</c>, <c>int</c>, <c>float</c>
+        /// and <c>double</c> are mapped to <c>number</c>, <c>bool</c> is mapped to <c>boolean</c> and <c>string</c> is mapped to <c>string</c>.
+        /// Value tuple are mapped as array, list, set and dictionary are mapped to Array, Set or Map.
+        /// </para>
         /// </summary>
         /// <param name="b">This code writer.</param>
         /// <param name="monitor">The monitor to use.</param>
@@ -141,6 +146,7 @@ namespace CK.TypeScript.CodeGen
                     success &= DeclareAndImportAndAppendTypeName( b, monitor, g, t );
                 }
             }
+            else if( t == typeof( void ) ) b.Append( "void" );
             else if( t == typeof( int ) || t == typeof( float ) || t == typeof( double ) ) b.Append( "number" );
             else if( t == typeof( bool ) ) b.Append( "boolean" );
             else if( t == typeof( string ) ) b.Append( "string" );
@@ -157,6 +163,11 @@ namespace CK.TypeScript.CodeGen
         /// multiple <see cref="TypeScriptFile.Imports"/>.
         /// Since one or more types may required to be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)">declared</see>,
         /// this may fail, so this returns a boolean (instead of the "fluent" standard code writer).
+        /// <para>
+        /// <c>typeof(void)</c> is mapped to <c>void</c>, <c>object</c> is mapped to <c>unknown</c>, <c>int</c>, <c>float</c>
+        /// and <c>double</c> are mapped to <c>number</c>, <c>bool</c> is mapped to <c>boolean</c> and <c>string</c> is mapped to <c>string</c>.
+        /// Value tuple are mapped as array, list, set and dictionary are mapped to Array, Set or Map.
+        /// </para>
         /// </summary>
         /// <param name="b">This code writer.</param>
         /// <param name="monitor">The monitor to use.</param>
@@ -216,6 +227,7 @@ namespace CK.TypeScript.CodeGen
                     success &= DeclareAndImportAndAppendTypeName( b, monitor, g, t );
                 }
             }
+            else if( t == typeof( void ) ) b.Append( "void" );
             else if( t == typeof( int ) || t == typeof( float ) || t == typeof( double ) ) b.Append( "number" );
             else if( t == typeof( bool ) ) b.Append( "boolean" );
             else if( t == typeof( string ) ) b.Append( "string" );

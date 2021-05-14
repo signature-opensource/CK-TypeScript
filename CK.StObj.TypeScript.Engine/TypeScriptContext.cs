@@ -17,9 +17,12 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Central class that handles TypeScript generation in a <see cref="TypeScriptRoot"/> and <see cref="ICodeGenerationContext"/>.
+    /// Central class that handles TypeScript generation in a <see cref="TypeScriptRoot"/> (the <see cref="Root"/>)
+    /// and <see cref="ICodeGenerationContext"/> (the <see cref="CodeContext"/>).
+    /// <para>
     /// This is instantiated and made available to the participants (<see cref="ITSCodeGenerator"/> and <see cref="ITSCodeGeneratorType"/>)
     /// only if the configuration actually allows the TypeScript generation for this <see cref="CodeContext"/>.
+    /// </para>
     /// </summary>
     public class TypeScriptContext
     {

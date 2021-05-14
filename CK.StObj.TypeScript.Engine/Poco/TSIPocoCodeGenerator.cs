@@ -171,7 +171,17 @@ namespace CK.StObj.TypeScript.Engine
                     b.Append( $"// Properties from {itf.TypeName}." ).NewLine()
                      .Append( props.ToString() );
                 }
-                PocoGenerated?.Invoke( this, new PocoGeneratedEventArgs( monitor, tsTypedFile, b, root ) );
+                var h = PocoGenerated;
+                if( h != null )
+                {
+                    var ev = new PocoGeneratedEventArgs( monitor, tsTypedFile, b, root );
+                    h.Invoke( this, ev );
+                    if( ev.HasError )
+                    {
+                        monitor.Error( $"Error occurred while raising PocoGenerated event." );
+                        return null;
+                    }
+                }
             }
             return tsTypedFile;
         }

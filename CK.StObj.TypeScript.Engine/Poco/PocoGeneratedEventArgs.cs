@@ -44,5 +44,28 @@ namespace CK.StObj.TypeScript.Engine
         /// </summary>
         public IPocoRootInfo PocoRootInfo { get; }
 
+        /// <summary>
+        /// Gets the generation context.
+        /// </summary>
+        public TypeScriptContext Context => TypeFile.Context;
+
+        /// <summary>
+        /// Gets whether <see cref="SetError(string?)"/> has been called at least once.
+        /// </summary>
+        public bool HasError { get; private set; }
+
+        /// <summary>
+        /// Sets an error.
+        /// </summary>
+        /// <param name="message">Optional error message to write into the <see cref="EventMonitoredArgs.Monitor">Monitor</see></param>
+        public void SetError( string? message = null )
+        {
+            if( !String.IsNullOrEmpty( message ) )
+            {
+                Monitor.Error( message );
+            }
+            HasError = true;
+        }
+
     }
 }
