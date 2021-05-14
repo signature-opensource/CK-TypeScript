@@ -122,7 +122,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var fOne = output.Combine( "TheFolder/CommandOne.ts" );
             var tOne = File.ReadAllText( fOne );
-            tOne.Should().Contain( "import { Power } from 'Power';" )
+            tOne.Should().Contain( "import { Power } from './Power';" )
                      .And.Contain( "import { ICommandTwo } from '../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo';" );
 
             tOne.Should().Contain( "export interface ICommandOne" )
