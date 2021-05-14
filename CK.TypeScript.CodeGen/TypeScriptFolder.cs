@@ -222,6 +222,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The relative path from this one to the other one.</returns>
         public NormalizedPath GetRelativePathTo( TypeScriptFolder f )
         {
+            bool above = false;
             var source = this;
             NormalizedPath result = new NormalizedPath();
             do
@@ -229,23 +230,30 @@ namespace CK.TypeScript.CodeGen
                 int below = source.FindBelow( f );
                 if( below >= 0 )
                 {
-                    if( below == 0 ) return result;
-                    if( below == 1 ) return result.AppendPart( f.Name );
-                    var path = new string[below];
-                    var idx = path.Length;
-                    do
-                    {
-                        path[--idx] = f.Name;
-                        f = f.Parent!;
-                    }
-                    while( idx > 0 );
-                    foreach( var p in path ) result = result.AppendPart( p );
-                    return result;
+                    var p = BuildPath( f, result, below );
+                    return above ? p : new NormalizedPath( "." ).Combine( p );
                 }
                 result = result.AppendPart( ".." );
+                above = true;
             }
             while( (source = source.Parent!) != null );
-            throw new InvalidOperationException( "TypeScriptFolder must belong to the same TypeScriptCodeGenerationContext." );
+            throw new InvalidOperationException( "TypeScriptFolder must belong to the same TypeScriptRoot." );
+
+            static NormalizedPath BuildPath( TypeScriptFolder f, NormalizedPath result, int below )
+            {
+                if( below == 0 ) return result;
+                if( below == 1 ) return result.AppendPart( f.Name );
+                var path = new string[below];
+                var idx = path.Length;
+                do
+                {
+                    path[--idx] = f.Name;
+                    f = f.Parent!;
+                }
+                while( idx > 0 );
+                foreach( var p in path ) result = result.AppendPart( p );
+                return result;
+            }
         }
 
         /// <summary>
