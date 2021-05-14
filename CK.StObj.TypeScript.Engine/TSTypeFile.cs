@@ -122,14 +122,14 @@ namespace CK.StObj.TypeScript.Engine
         }
 
         /// <summary>
-        /// Gets the code part with the <see cref="TypeName"/> name if it has been created, null otherwise.
-        /// The code part may have been created by <see cref="EnsureTypePart(string)"/> or directly on
+        /// Gets the code part with the <see cref="Type"/> key if it has been created, null otherwise.
+        /// The code part may have been created by <see cref="EnsureTypePart"/> or directly on
         /// the file's body. 
         /// </summary>
-        public ITSKeyedCodePart? TypePart => File.Body.FindKeyedPart( TypeName );
+        public ITSKeyedCodePart? TypePart => File.Body.FindKeyedPart( Type );
 
         /// <summary>
-        /// Ensures that a code part named <see cref="TypeName"/> exists in this file's body.
+        /// Ensures that a code part with the key <see cref="Type"/> exists in this file's body.
         /// </summary>
         /// <param name="closer">
         /// By default, the type part will be closed with the "}": a closing
@@ -141,7 +141,7 @@ namespace CK.StObj.TypeScript.Engine
         /// current writing position in the code.
         /// </param>
         /// <returns>The part for this type.</returns>
-        public ITSKeyedCodePart EnsureTypePart( string closer = "}", bool top = false ) => File.Body.FindOrCreateKeyedPart( TypeName, closer, top );
+        public ITSKeyedCodePart EnsureTypePart( string closer = "}", bool top = false ) => File.Body.FindOrCreateKeyedPart( Type, closer, top );
 
         internal bool Implement( IActivityMonitor monitor )
         {

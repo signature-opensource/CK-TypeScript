@@ -20,7 +20,7 @@ namespace CK.TypeScript.CodeGen
         /// avoid adding it twice.
         /// </summary>
         /// <typeparam name="T">Must be a <see cref="ITSCodePart"/>.</typeparam>
-        /// <param name="this">This named scope and code writer.</param>
+        /// <param name="this">This code part.</param>
         /// <param name="code">Raw code to append. Must not be null, empty or white space.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T AppendOnce<T>( this T @this, string code ) where T : ITSCodePart
@@ -330,19 +330,19 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Creates a named part of code inside this part.
+        /// Creates a keyed part of code inside this part.
         /// This signature allows a fluent code to "emit" one or more insertion points.
         /// </summary>
         /// <typeparam name="T">The code part type.</typeparam>
         /// <param name="this">This code part.</param>
-        /// <param name="part">The named part to use to inject code at this location (or at the top).</param>
-        /// <param name="name">The <see cref="ITSKeyedCodePart.Key"/>.</param>
+        /// <param name="part">Outputs the keyed part to use to inject code at this location (or at the <paramref name="top"/>).</param>
+        /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This code part to enable fluent syntax.</returns>
-        public static T CreateNamedPart<T>( this T @this, out ITSKeyedCodePart part, string name, string closer = "", bool top = false ) where T : ITSCodePart
+        public static T CreateKeyedPart<T>( this T @this, out ITSKeyedCodePart part, object key, string closer = "", bool top = false ) where T : ITSCodePart
         {
-            part = @this.CreateKeyedPart( name, closer, top );
+            part = @this.CreateKeyedPart( key, closer, top );
             return @this;
         }
 

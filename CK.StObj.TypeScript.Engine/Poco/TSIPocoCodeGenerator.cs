@@ -163,10 +163,10 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 b.OpenBlock();
                 // Trick: copy the interface properties instead of recomputing them
-                //        by finding the "Props" named part in each interface code.
+                //        by finding the "Props" keyed part in each interface code.
                 foreach( var itf in interfaces )
                 {
-                    var props = itf.File.Body.FindKeyedPart( itf.TypeName )!.FindKeyedPart( "Props" );
+                    var props = itf.File.Body.FindKeyedPart( itf.Type )!.FindKeyedPart( "Props" );
                     Debug.Assert( props != null );
                     b.Append( $"// Properties from {itf.TypeName}." ).NewLine()
                      .Append( props.ToString() );

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
     class RawCodePart : BaseCodeWriter, ITSCodePart
     {
-        Dictionary<object, KeyedCodePart>? _namedParts;
+        Dictionary<object, KeyedCodePart>? _keyedParts;
 
         internal RawCodePart( TypeScriptFile f, string closer )
             : base( f )
@@ -16,25 +17,27 @@ namespace CK.TypeScript.CodeGen
 
         public string Closer { get; }
 
+        public IEnumerable<ITSCodePart> Parts => Content.OfType<ITSCodePart>();
+
         public ITSKeyedCodePart CreateKeyedPart( object key, string closer, bool top = false ) => DoCreate( key, closer, top );
 
         public ITSCodePart CreatePart( string closer = "", bool top = false )
         {
             var p = new RawCodePart( File, closer );
-            if( top ) Parts.Insert( 0, p );
-            else Parts.Add( p );
+            if( top ) Content.Insert( 0, p );
+            else Content.Add( p );
             return p;
         }
 
-        public ITSKeyedCodePart? FindKeyedPart( object key ) => _namedParts?.GetValueOrDefault( key );
+        public ITSKeyedCodePart? FindKeyedPart( object key ) => _keyedParts?.GetValueOrDefault( key );
 
         public ITSKeyedCodePart FindOrCreateKeyedPart( object key, string? closer = null, bool top = false )
         {
-            if( _namedParts != null && _namedParts.TryGetValue( key, out var p ) )
+            if( _keyedParts != null && _keyedParts.TryGetValue( key, out var p ) )
             {
                 if( closer != null && p.Closer != closer )
                 {
-                    throw new ArgumentException( $"Existing named part Closer is '{p.Closer}' whereas closer parameter is '{closer}'.", nameof(closer) );
+                    throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof(closer) );
                 }
                 return p;
             }
@@ -43,11 +46,11 @@ namespace CK.TypeScript.CodeGen
 
         ITSKeyedCodePart DoCreate( object key, string closer, bool top )
         {
-            if( _namedParts == null ) _namedParts = new Dictionary<object, KeyedCodePart>();
+            if( _keyedParts == null ) _keyedParts = new Dictionary<object, KeyedCodePart>();
             var p = new KeyedCodePart( File, key, closer );
-            _namedParts.Add( key, p );
-            if( top ) Parts.Insert( 0, p );
-            else Parts.Add( p );
+            _keyedParts.Add( key, p );
+            if( top ) Content.Insert( 0, p );
+            else Content.Add( p );
             return p;
         }
 

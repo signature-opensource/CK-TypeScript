@@ -6,25 +6,28 @@ namespace CK.TypeScript.CodeGen
 {
     class BaseCodeWriter : ITSCodeWriter
     {
-        internal readonly List<object> Parts;
+        /// <summary>
+        /// Heterogeneous list of BaseCodeWriter and string.
+        /// </summary>
+        internal readonly List<object> Content;
         Dictionary<object, object?>? _memory;
 
         public BaseCodeWriter( TypeScriptFile f )
         {
             File = f;
-            Parts = new List<object>();
+            Content = new List<object>();
         }
 
         public TypeScriptFile File { get; }
 
         public void DoAdd( string? code )
         {
-            if( !String.IsNullOrEmpty( code ) ) Parts.Add( code );
+            if( !String.IsNullOrEmpty( code ) ) Content.Add( code );
         }
 
         internal bool? StartsWith( string prefix )
         {
-            foreach( var o in Parts )
+            foreach( var o in Content )
             {
                 if( o is string s )
                 {
@@ -43,7 +46,7 @@ namespace CK.TypeScript.CodeGen
         internal virtual SmarterStringBuilder Build( SmarterStringBuilder b )
         {
             b.AppendLine();
-            foreach( var c in Parts )
+            foreach( var c in Content )
             {
                 if( c is BaseCodeWriter p ) p.Build( b );
                 else b.Append( (string)c );

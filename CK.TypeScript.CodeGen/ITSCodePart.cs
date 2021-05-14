@@ -21,6 +21,11 @@ namespace CK.TypeScript.CodeGen
         IDictionary<object, object?> Memory { get; }
 
         /// <summary>
+        /// Gets the created parts (keyed or not).
+        /// </summary>
+        public IEnumerable<ITSCodePart> Parts { get; }
+
+        /// <summary>
         /// Creates a segment of code inside this code.
         /// </summary>
         /// <param name="closer">Optional <see cref="Closer"/> of the subordinate part.</param>
