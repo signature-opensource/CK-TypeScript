@@ -4,6 +4,7 @@ using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
+
     class FileImportCodePart : BaseCodeWriter, ITSFileImportSection
     {
         List<(TypeScriptFile File, List<string> Types)>? _imports;
@@ -14,17 +15,19 @@ namespace CK.TypeScript.CodeGen
         {
         }
 
-        public void EnsureImport( string typeName, TypeScriptFile file )
+        public TSFileImportedSection EnsureImport( string typeName, TypeScriptFile file )
         {
             if( file == null ) throw new ArgumentNullException( nameof( file ) );
-            if( file == File ) return;
-
-            var types = EnsureFile( file );
-            if( !types.Contains( typeName ) )
+            if( file != File )
             {
-                ++_importCount;
-                types.Add( typeName );
+                var types = EnsureFile( file );
+                if( !types.Contains( typeName ) )
+                {
+                    ++_importCount;
+                    types.Add( typeName );
+                }
             }
+            return new TSFileImportedSection( File, file );
         }
 
         public int ImportCount => _importCount;

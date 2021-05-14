@@ -15,7 +15,8 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="typeName">The imported type name.</param>
         /// <param name="file">The referenced file.</param>
-        void EnsureImport( string typeName, TypeScriptFile file );
+        /// <returns>This section with an additional <see cref="TSFileImportedSection.AddType(string)"/> to enable fluent syntax.</returns>
+        TSFileImportedSection EnsureImport( string typeName, TypeScriptFile file );
 
         /// <summary>
         /// Gets the number of different <see cref="EnsureImport(string, TypeScriptFile)"/>
