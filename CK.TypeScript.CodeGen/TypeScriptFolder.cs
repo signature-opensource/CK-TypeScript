@@ -122,6 +122,24 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? new TypeScriptFile( this, name );
 
         /// <summary>
+        /// Finds or creates a file in this folder.
+        /// </summary>
+        /// <param name="name">The file's name to find or create. Must not be empty and must end with '.ts'.</param>
+        /// <param name="created">True if the file has been created, false if it already existed.</param>
+        /// <returns>The file.</returns>
+        public TypeScriptFile FindOrCreateFile( string name, out bool created )
+        {
+            created = false;
+            TypeScriptFile? f = FindFile( name );
+            if( f == null )
+            {
+                f = new TypeScriptFile( this, name );
+                created = true;
+            }
+            return f;
+        }
+
+        /// <summary>
         /// Finds or creates a file in this folder or a subordinated folder.
         /// </summary>
         /// <param name="filePath">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
@@ -129,6 +147,17 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptFile FindOrCreateFile( NormalizedPath filePath )
         {
             return FindOrCreateFolder( filePath.RemoveLastPart() ).FindOrCreateFile( filePath.LastPart );
+        }
+
+        /// <summary>
+        /// Finds or creates a file in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="filePath">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
+        /// <param name="created">True if the file has been created, false if it already existed.</param>
+        /// <returns>The file.</returns>
+        public TypeScriptFile FindOrCreateFile( NormalizedPath filePath, out bool created )
+        {
+            return FindOrCreateFolder( filePath.RemoveLastPart() ).FindOrCreateFile( filePath.LastPart, out created );
         }
 
         /// <summary>
