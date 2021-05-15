@@ -15,19 +15,25 @@ namespace CK.TypeScript.CodeGen
         {
         }
 
-        public TSFileImportedSection EnsureImport( string typeName, TypeScriptFile file )
+        public ITSFileImportSection EnsureImport( TypeScriptFile file, string typeName, params string[] typeNames )
         {
             if( file == null ) throw new ArgumentNullException( nameof( file ) );
             if( file != File )
             {
                 var types = EnsureFile( file );
+                Add( types, typeName );
+                foreach( var t in typeNames ) Add( types, t );
+            }
+            return this;
+
+            void Add( List<string> types, string typeName )
+            {
                 if( !types.Contains( typeName ) )
                 {
                     ++_importCount;
                     types.Add( typeName );
                 }
             }
-            return new TSFileImportedSection( File, file );
         }
 
         public int ImportCount => _importCount;

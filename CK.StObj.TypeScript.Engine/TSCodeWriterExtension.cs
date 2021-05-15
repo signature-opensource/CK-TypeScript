@@ -74,11 +74,11 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <typeparam name="T">The code writer type.</typeparam>
         /// <param name="this">This code writer.</param>
-        /// <param name="t">The type name to append.</param>
-        /// <returns>The code writer.</returns>
+        /// <param name="t">The type to import.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendImportedTypeName<T>( this T @this, TSTypeFile t ) where T : ITSCodeWriter
         {
-            @this.File.Imports.EnsureImport( t.TypeName, t.File );
+            @this.File.Imports.EnsureImport( t.File, t.TypeName );
             @this.Append( t.TypeName );
             return @this;
         }

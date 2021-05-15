@@ -222,19 +222,19 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The relative path from this one to the other one.</returns>
         public NormalizedPath GetRelativePathTo( TypeScriptFolder f )
         {
-            bool above = false;
+            bool firstLook = true;
             var source = this;
-            NormalizedPath result = new NormalizedPath();
+            NormalizedPath result = new NormalizedPath( "." );
             do
             {
                 int below = source.FindBelow( f );
                 if( below >= 0 )
                 {
                     var p = BuildPath( f, result, below );
-                    return above ? p : new NormalizedPath( "." ).Combine( p );
+                    return p;
                 }
-                result = result.AppendPart( ".." );
-                above = true;
+                result = firstLook ? new NormalizedPath( ".." ) : result.AppendPart( ".." );
+                firstLook = false;
             }
             while( (source = source.Parent!) != null );
             throw new InvalidOperationException( "TypeScriptFolder must belong to the same TypeScriptRoot." );
