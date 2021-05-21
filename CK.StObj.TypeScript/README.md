@@ -69,11 +69,11 @@ and requests a code generation for it (but does not provide a generator).
 Actual generators are either global [ITSCodeGenerator](../CK.StObj.TypeScript.Engine/ITSCodeGenerator.cs) or bound
 to a type [ITSCodeGeneratorType](../CK.StObj.TypeScript.Engine/ITSCodeGeneratorType.cs)
 
-`TypeScriptAttribute` is optional: types can be declared as a TypeScript type on
-the [TypeScriptContext](../CK.StObj.TypeScript.Engine/TypeScriptContext.cs) (methods `DeclareTSType`)
-and *missing attribute* can be configured by code generators.
+`TypeScriptAttribute` is optional: types can be declared as a being TypeScript types thanks to the
+`DeclareTSType` methods of the central [TypeScriptContext](../CK.StObj.TypeScript.Engine/TypeScriptContext.cs).
+This enables code generators to create/check/alter any *missing attribute*.
 
 An example of a global code generator is the `IPoco` generator [TSIPocoCodeGenerator](../CK.StObj.TypeScript.Engine/Poco/TSIPocoCodeGenerator.cs).
-An example of a type bound code generator is [in tests](../Tests/CK.StObj.TypeScript.Tests/CodeGeneratorTypeSample/).
+An example of a type bound code generator is [here (in tests)](../Tests/CK.StObj.TypeScript.Tests/CodeGeneratorTypeSample/).
 
 

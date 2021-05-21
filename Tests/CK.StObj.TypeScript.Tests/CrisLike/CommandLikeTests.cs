@@ -123,7 +123,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var fOne = output.Combine( "TheFolder/CommandOne.ts" );
             var tOne = File.ReadAllText( fOne );
             tOne.Should().Contain( "import { Power } from './Power';" )
-                     .And.Contain( "import { ICommandTwo } from '../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo';" );
+                     .And.Contain( "import { ICommandTwo, CommandTwo } from '../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo';" );
 
             tOne.Should().Contain( "export interface ICommandOne" )
                      .And.Contain( "friend: ICommandTwo;" );
@@ -193,7 +193,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
         public interface IValueTupleCommand : ICommandAuthenticated, ICommand<int>
         {
-            (int, string, object, List<string?>, object?) Power { get; set; }
+            (int, string, string?, object, List<string?>, object?) Power { get; set; }
         }
 
         [Test]
@@ -204,17 +204,31 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( FakeCommandDirectory ) );
         }
 
-        public interface IWithObjectCommand : ICommandAuthenticatedDevice, ICommand<object>
+        /// <summary>
+        /// This command requires authentication and is device dependent.
+        /// It returns an optional object as its result.
+        /// </summary>
+        public interface IWithObjectCommand : ICommandAuthenticatedDevice, ICommand<object?>
         {
-            int Power { get; set; }
+            /// <summary>
+            /// Gets the power of this command.
+            /// </summary>
+            int? Power { get; set; }
         }
 
+        /// <summary>
+        /// This command extends <see cref="IWithObjectCommand"/> with the power of the string.
+        /// </summary>
         public interface IWithObjectSpecializedAsStringCommand : IWithObjectCommand, ICommand<string>
         {
+            /// <summary>
+            /// Gets the power of the string.
+            /// <para>
+            /// The string has a great power!
+            /// </para>
+            /// </summary>
             int PowerString { get; set; }
         }
-
-
 
         [Test]
         public void command_with_simple_results_specialized()

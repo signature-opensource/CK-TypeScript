@@ -9,32 +9,19 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     class SmarterStringBuilder
     {
-        readonly Action<string> _collector;
-
-        /// <summary>
-        /// Exposes the wrapped String builder or null if this
-        /// builder is based on a Action{string} delegate.
-        /// </summary>
-        public readonly StringBuilder? Builder;
+        public readonly StringBuilder Builder;
 
         public bool HasNewLine { get; set; }
 
         public SmarterStringBuilder( StringBuilder b )
         {
             Builder = b;
-            _collector = s => b.Append( s );
-            HasNewLine = true;
-        }
-
-        public SmarterStringBuilder( Action<string> collector )
-        {
-            _collector = collector;
             HasNewLine = true;
         }
 
         public SmarterStringBuilder Append( string s )
         {
-            _collector( s );
+            Builder.Append( s );
             HasNewLine = s.EndsWith( Environment.NewLine, StringComparison.Ordinal );
             return this;
         }
@@ -43,12 +30,12 @@ namespace CK.TypeScript.CodeGen
         {
             if( !HasNewLine )
             {
-                _collector( Environment.NewLine );
+                Builder.Append( Environment.NewLine );
                 HasNewLine = true;
             }
             return this;
         }
 
-        public override string ToString() => Builder?.ToString() ?? "";
+        public override string ToString() => Builder.ToString();
     }
 }

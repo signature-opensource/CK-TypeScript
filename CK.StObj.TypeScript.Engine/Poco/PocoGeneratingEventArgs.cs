@@ -1,53 +1,43 @@
 using CK.Core;
-using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace CK.StObj.TypeScript.Engine
 {
+
     /// <summary>
-    /// Raised by <see cref="TSIPocoCodeGenerator.PocoGenerated"/>.
+    /// Raised by <see cref="TSIPocoCodeGenerator.PocoGenerating"/>.
     /// </summary>
-    public class PocoGeneratedEventArgs : EventMonitoredArgs
+    public class PocoGeneratingEventArgs : EventMonitoredArgs
     {
         /// <summary>
-        /// Initializes a new <see cref="PocoGeneratedEventArgs"/>.
+        /// Initializes a new <see cref="PocoGeneratingEventArgs"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="tsTypedFile">The generated Poco file.</param>
         /// <param name="pocoClassPart">The code part of the poco class.</param>
         /// <param name="pocoInfo">The poco information.</param>
-        public PocoGeneratedEventArgs( IActivityMonitor monitor, TSTypeFile tsTypedFile, ITSKeyedCodePart pocoClassPart, IPocoRootInfo pocoInfo )
+        public PocoGeneratingEventArgs( IActivityMonitor monitor,
+                                        TSTypeFile tsTypedFile,
+                                        TypeScriptPocoClass pocoClass )
             : base( monitor )
         {
             TypeFile = tsTypedFile;
-            PocoRootInfo = pocoInfo;
-            PocoClassPart = pocoClassPart;
+            PocoClass = pocoClass;
         }
 
         /// <summary>
         /// Gets the generated file.
         /// There is one <see cref="ITSKeyedCodePart"/> by IPoco interface (their key is the interface's type)
-        /// in addition to the <see cref="PocoClassPart"/>.
+        /// in addition to the <see cref="PocoClass"/>'s part.
         /// </summary>
         public TSTypeFile TypeFile { get; }
 
         /// <summary>
-        /// Gets the poco class part.
+        /// Gets the poco class description.
         /// </summary>
-        public ITSKeyedCodePart PocoClassPart { get; }
-
-        /// <summary>
-        /// Gets the poco information.
-        /// </summary>
-        public IPocoRootInfo PocoRootInfo { get; }
-
-        /// <summary>
-        /// Gets the generation context.
-        /// </summary>
-        public TypeScriptContext Context => TypeFile.Context;
+        public TypeScriptPocoClass PocoClass { get; }
 
         /// <summary>
         /// Gets whether <see cref="SetError(string?)"/> has been called at least once.

@@ -25,21 +25,21 @@ namespace CK.TypeScript.CodeGen
         /// Helpers that extracts the leaf of the <paramref name="targetType"/> and append
         /// the <paramref name="targetMember"/>, following <see cref="TypeScriptRoot.PascalCase"/> convention.
         /// </summary>
-        /// <param name="source">The source code writer.</param>
+        /// <param name="source">The source file.</param>
         /// <param name="targetType">The full target type name.</param>
         /// <param name="targetMember">The optional member name.</param>
         /// <returns>The formatted reference.</returns>
-        public static string GetBasicLink( ITSCodeWriter source, string targetType, string? targetMember )
+        public static string GetBasicLink( TypeScriptFile source, string targetType, string? targetMember )
         {
             return targetType.Substring( targetType.LastIndexOf( '.' ) + 1 )
                         + (!String.IsNullOrEmpty( targetMember )
-                            ? "." + source.File.Folder.Root.ToIdentifier( targetMember )
+                            ? "." + source.Folder.Root.ToIdentifier( targetMember )
                             : String.Empty);
         }
 
         class TextOnlyHandler : IXmlDocumentationCodeRefHandler
         {
-            public string GetTSDocLink( ITSCodeWriter source, char targetKind, string targetType, string? targetMember, string? elemenText )
+            public string GetTSDocLink( TypeScriptFile source, char targetKind, string targetType, string? targetMember, string? elemenText )
             {
                 return String.IsNullOrWhiteSpace( elemenText )
                         ? GetBasicLink( source, targetType, targetMember )
@@ -49,7 +49,7 @@ namespace CK.TypeScript.CodeGen
 
         class BasicLinkHandler : IXmlDocumentationCodeRefHandler
         {
-            public string GetTSDocLink( ITSCodeWriter source, char targetKind, string targetType, string? targetMember, string? elemenText )
+            public string GetTSDocLink( TypeScriptFile source, char targetKind, string targetType, string? targetMember, string? elemenText )
             {
                 string link = GetBasicLink( source, targetType, targetMember );
                 return String.IsNullOrWhiteSpace( elemenText )

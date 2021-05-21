@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
 using CK.Text;
@@ -35,7 +35,7 @@ namespace CK.StObj.TypeScript.Tests
                                                     : "class " ).Append( file.TypeName )
                 .OpenBlock();
             // Thanks to the "}" closer, this part stays "opened": the closing } will be
-            // called when generating the final text.
+            // appended when generating the final text (via ToString or Build methods).
             return true;
         }
     }

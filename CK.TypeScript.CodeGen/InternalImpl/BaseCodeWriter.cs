@@ -45,13 +45,11 @@ namespace CK.TypeScript.CodeGen
 
         internal virtual SmarterStringBuilder Build( SmarterStringBuilder b )
         {
-            b.AppendLine();
             foreach( var c in Content )
             {
                 if( c is BaseCodeWriter p ) p.Build( b );
                 else b.Append( (string)c );
             }
-            b.AppendLine();
             return b;
         }
 

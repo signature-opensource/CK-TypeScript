@@ -19,12 +19,17 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Must compute the TS documentation text for a code reference (typically &lt;see cref="..." /&gt;).
         /// </summary>
+        /// <remarks>
+        /// Even if this origin source is not really used by the <see cref="DocumentationCodeRef"/> default
+        /// implementations, this is useful if, with specialized implementations, a cross reference to the
+        /// target must be emitted.
+        /// </remarks>
         /// <param name="source">The documentation location.</param>
         /// <param name="targetKind">The target can be 'T', 'M', 'P', 'F' or 'E'.</param>
         /// <param name="targetType">The documentation target type in dotted notation (nested types also use a dot).</param>
         /// <param name="targetMember">For 'M', 'P', 'F' or 'E', this is the member name. Null for 'T'.</param>
         /// <param name="elemenText">Optional text defined in the reference.</param>
         /// <returns>The TypeScript fragment of comment to insert.</returns>
-        string GetTSDocLink( ITSCodeWriter source, char targetKind, string targetType, string? targetMember, string? elemenText );
+        string GetTSDocLink( TypeScriptFile source, char targetKind, string targetType, string? targetMember, string? elemenText );
     }
 }

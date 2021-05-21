@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -34,7 +35,7 @@ namespace CK.StObj.TypeScript.Engine
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
     /// it is not initiated by an attribute like other code generators (typically thanks to a <see cref="ContextBoundDelegationAttribute"/>).
     /// </remarks>
-    public class TSIPocoCodeGenerator : ITSCodeGenerator
+    public partial class TSIPocoCodeGenerator : ITSCodeGenerator
     {
         readonly IPocoSupportResult _poco;
 
@@ -44,10 +45,10 @@ namespace CK.StObj.TypeScript.Engine
         }
 
         /// <summary>
-        /// Raised when a poco is generated.
-        /// This enables extensions to inject codes in the <see cref="PocoGeneratedEventArgs.TypeFile"/>.
+        /// Raised when a poco is about to be generated.
+        /// This enables extensions to inject codes in the <see cref="PocoGeneratingEventArgs.TypeFile"/>.
         /// </summary>
-        public event EventHandler<PocoGeneratedEventArgs>? PocoGenerated;
+        public event EventHandler<PocoGeneratingEventArgs>? PocoGenerating;
 
         /// <summary>
         /// If the type is a <see cref="IPoco"/>, the <see cref="IPocoRootInfo.PrimaryInterface"/> sets the type name
@@ -146,44 +147,96 @@ namespace CK.StObj.TypeScript.Engine
         {
             if( tsTypedFile.TypePart == null )
             {
+                // Creates a part at the top of the file for the implementation class.
                 var b = tsTypedFile.EnsureTypePart();
+
+                // Generates the signature 
                 b.Append( "export class " ).Append( tsTypedFile.TypeName );
                 List<TSTypeFile> interfaces = new();
                 foreach( IPocoInterfaceInfo i in root.Interfaces )
                 {
                     var itf = EnsurePocoInterface( monitor, tsTypedFile.Context, i );
                     if( itf == null ) return null;
-                    if( interfaces.Count == 0 )
-                    {
-                        b.Append( " implements " );
-                    }
-                    else b.Append( ", " );
+                    b.Append( interfaces.Count == 0 ? " implements " : ", " );
                     interfaces.Add( itf );
                     b.AppendImportedTypeName( itf );
                 }
                 b.OpenBlock();
-                // Trick: copy the interface properties instead of recomputing them
-                //        by finding the "Props" keyed part in each interface code.
-                foreach( var itf in interfaces )
+
+                // Creates the mutable lists of properties and create method parameters.
+                var propList = new List<TypeScriptPocoPropertyInfo>( root.PropertyList.Count );
+                var createParamList = new List<TypeScriptVarType>( root.PropertyList.Count );
+                foreach( var p in root.PropertyList )
                 {
-                    var props = itf.File.Body.FindKeyedPart( itf.Type )!.FindKeyedPart( "Props" );
-                    Debug.Assert( props != null );
-                    b.Append( $"// Properties from {itf.TypeName}." ).NewLine()
-                     .Append( props.ToString() );
+                    var propName = tsTypedFile.Context.Root.ToIdentifier( p.PropertyName );
+                    var propType = GetPropertyTypeScriptType( monitor, tsTypedFile.Context, tsTypedFile.File, p );
+                    if( propType == null ) return null;
+                    var paramName = TypeScriptRoot.ToIdentifier( propName, false );
+
+                    // Unifies the documentations from possibly more than one property declarations
+                    // into a documentation text (without the stars).
+                    var docElements = XmlDocumentationReader.GetDocumentationFor( monitor, p.DeclaredProperties );
+                    var propComment = new DocumentationBuilder( withStars: false ).AppendDocumentation( b.File, docElements ).GetFinalText();
+                    var paramComment = RemoveGetsOrSetsPrefix( propComment );
+
+                    var prop = new TypeScriptPocoPropertyInfo( p, propType, propName, paramName, propComment, paramComment );
+                    if( p.AutoInstantiated )
+                    {
+                        // The property is new'ed: its DefaultValue has been set to "new propType()". This works perfectly for
+                        // (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map) but not for Poco: the interface must
+                        // be replaced by its implementation class.
+                        IPocoInterfaceInfo? iPoco = _poco.Find( p.PropertyType );
+                        if( iPoco != null )
+                        {
+                            var c = tsTypedFile.Context.DeclareTSType( monitor, iPoco.Root.PocoClass, requiresFile: true );
+                            if( c == null ) return null;
+                            tsTypedFile.File.Imports.EnsureImport( c.File, c.TypeName );
+                            prop.Property.DefaultValue = $"new {c.TypeName}()";
+                        }
+                        if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) )
+                        {
+                            var implFile = tsTypedFile.Context.FindDeclaredTSType( p.PropertyType );
+                        }
+                    }
+                    propList.Add( prop );
+
+                    // If the property is new'ed, we don't expect a parameter.
+                    if( !p.AutoInstantiated )
+                    {
+                        createParamList.Add( new TypeScriptVarType( paramName, propType ) { Optional = p.IsEventuallyNullable, Comment = paramComment } );
+                    }
                 }
-                var h = PocoGenerated;
+
+                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, propList, createParamList );
+                var h = PocoGenerating;
                 if( h != null )
                 {
-                    var ev = new PocoGeneratedEventArgs( monitor, tsTypedFile, b, root );
+                    var ev = new PocoGeneratingEventArgs( monitor, tsTypedFile, pocoClass );
                     h.Invoke( this, ev );
                     if( ev.HasError )
                     {
-                        monitor.Error( $"Error occurred while raising PocoGenerated event." );
+                        monitor.Error( "Error occurred while raising PocoGenerating event." );
                         return null;
                     }
                 }
+
+                pocoClass.AppendProperties( b );
+                pocoClass.AppendCreateMethod( b );
             }
             return tsTypedFile;
+        }
+
+        static readonly Regex _rGetSet = new Regex( @"^\s*Gets?(\s+(or\s+)?sets?)?\s+", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
+
+        static string RemoveGetsOrSetsPrefix( string text )
+        {
+            var m = _rGetSet.Match( text );
+            if( m.Success )
+            {
+                text = text.Substring( m.Length );
+                text = TypeScriptRoot.ToIdentifier( text, true );
+            }
+            return text;
         }
 
         TSTypeFile? EnsurePocoInterface( IActivityMonitor monitor, TypeScriptContext g, IPocoInterfaceInfo i )
@@ -237,7 +290,6 @@ namespace CK.StObj.TypeScript.Engine
                         }
                     }
                     b.OpenBlock();
-                    var props = b.CreateKeyedPart( "Props" );
                     bool success = true;
                     foreach( var iP in i.PocoInterface.GetProperties() )
                     {
@@ -246,7 +298,10 @@ namespace CK.StObj.TypeScript.Engine
                         IPocoPropertyInfo? p = i.Root.Properties.GetValueOrDefault( iP.Name );
                         if( p != null )
                         {
-                            success &= AppendProperty( monitor, tsTypedFile.Context, props, p );
+                            b.AppendDocumentation( monitor, iP )
+                             .AppendIdentifier( p.PropertyName );
+                            success &= AppendPocoPropertyTypeQualifier( monitor, tsTypedFile.Context, b, p );
+                            b.Append( ";" ).NewLine();
                         }
                     }
                 }
@@ -265,10 +320,10 @@ namespace CK.StObj.TypeScript.Engine
             }
         }
 
-        bool AppendProperty( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )
+        bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )
         {
             bool success = true;
-            b.AppendIdentifier( p.PropertyName ).Append( p.IsEventuallyNullable ? "?: " : ": " );
+            b.Append( p.IsEventuallyNullable ? "?: " : ": " );
             bool hasUnions = false;
             foreach( var (t, nullInfo) in p.PropertyUnionTypes )
             {
@@ -280,8 +335,24 @@ namespace CK.StObj.TypeScript.Engine
             {
                 success &= b.AppendComplexTypeName( monitor, g, p.PropertyNullableTypeTree, withUndefined: false );
             }
-            b.Append( ";" ).NewLine();
             return success;
+        }
+
+        static string? GetPropertyTypeScriptType( IActivityMonitor monitor, TypeScriptContext g, TypeScriptFile file, IPocoPropertyInfo p )
+        {
+            var b = file.CreateDetachedPart();
+            bool hasUnions = false;
+            foreach( var (t, nullInfo) in p.PropertyUnionTypes )
+            {
+                if( hasUnions ) b.Append( "|" );
+                hasUnions = true;
+                if( !b.AppendComplexTypeName( monitor, g, t ) ) return null;
+            }
+            if( !hasUnions )
+            {
+                if( !b.AppendComplexTypeName( monitor, g, p.PropertyNullableTypeTree, withUndefined: false ) ) return null;
+            }
+            return b.ToString();
         }
 
     }

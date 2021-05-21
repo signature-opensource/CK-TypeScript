@@ -66,6 +66,22 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Attempts to get documentation elements for multiple members at once.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="members">The members for which the documentation must be obtained.</param>
+        /// <param name="cache">Optional cache to avoid reloading the same file.</param>
+        /// <returns>The set of available elements.</returns>
+        public static IEnumerable<XElement> GetDocumentationFor( IActivityMonitor monitor, IEnumerable<MemberInfo> members, IDictionary<object, object?>? cache = null )
+        {
+            return members.Select( m => (XDoc: GetXmlDocumentation( monitor, m.Module.Assembly, cache ), M: m ) )
+                          .Where( m => m.XDoc != null )
+                          .Select( m => GetDocumentationElement( m.XDoc!, GetNameAttributeValueFor( m.M ) ) )
+                          .Where( e => e != null )
+                          .Select( e => e! );
+        }
+
+        /// <summary>
         /// Encapsulates the <c>/doc/members/member[@name='{0}']</c> lookup in the Xml documentation file.
         /// </summary>
         /// <param name="xDoc">The Xml documentation file.</param>

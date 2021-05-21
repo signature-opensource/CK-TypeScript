@@ -48,6 +48,13 @@ namespace CK.TypeScript.CodeGen
         public ITSFileBodySection Body { get; }
 
         /// <summary>
+        /// Creates a part that is bound to this file but whose content
+        /// is not in this <see cref="Body"/>.
+        /// </summary>
+        /// <returns></returns>
+        public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
+
+        /// <summary>
         /// Saves this file into one or more actual paths on the file system.
         /// The <see cref="Body"/> can be null (only <see cref="Imports"/> if any will be generated).
         /// </summary>

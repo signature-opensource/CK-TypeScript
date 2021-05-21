@@ -367,9 +367,8 @@ namespace CK.StObj.TypeScript.Tests
                           }
                           w.AppendDocumentation( TestHelper.Monitor, m );
 
-                          if( m.Name == ".ctor" ) w.Append( "constructor" );
-                          else w.AppendIdentifier( m.Name );
-                          w.Append( ": any; // " ).Append( m.ToString() );
+                          if( m.Name == ".ctor" ) w.Append( "constructor() {}" );
+                          else w.AppendIdentifier( m.Name ).Append( ": any; // " ).Append( m.ToString() );
                       }
                   } )
                   .CloseBlock();

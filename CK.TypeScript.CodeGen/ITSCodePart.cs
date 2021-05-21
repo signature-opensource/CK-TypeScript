@@ -6,6 +6,8 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Extends <see cref="ITSCodeWriter"/> to support multiple parts, optionals <see cref="Closer"/> suffix and a <see cref="Memory"/>.
+    /// Such parts can be created from a parent part (typically from a <see cref="TypeScriptFile.Body"/>), or as detached, independent
+    /// parts thanks to <see cref="TypeScriptFile.CreateDetachedPart()"/>.
     /// </summary>
     public interface ITSCodePart : ITSCodeWriter
     {

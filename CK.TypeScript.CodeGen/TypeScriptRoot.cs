@@ -86,11 +86,20 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="name">The identifier.</param>
         /// <returns>A formatted identifier.</returns>
-        public string ToIdentifier( string name )
+        public string ToIdentifier( string name ) => ToIdentifier( name, PascalCase );
+
+        /// <summary>
+        /// Ensures that an identifier follows the PascalCase xor camelCase convention.
+        /// Only the first character is handled.
+        /// </summary>
+        /// <param name="name">The identifier.</param>
+        /// <param name="pascalCase">The target casing.</param>
+        /// <returns>A formatted identifier.</returns>
+        public static string ToIdentifier( string name, bool pascalCase )
         {
-            if( name.Length != 0 && Char.IsUpper( name, 0 ) != PascalCase )
+            if( name.Length != 0 && Char.IsUpper( name, 0 ) != pascalCase )
             {
-                return PascalCase
+                return pascalCase
                         ? (name.Length == 1
                             ? name.ToUpperInvariant()
                             : Char.ToUpperInvariant( name[0] ) + name.Substring( 1 ))
@@ -100,6 +109,5 @@ namespace CK.TypeScript.CodeGen
             }
             return name;
         }
-
     }
 }

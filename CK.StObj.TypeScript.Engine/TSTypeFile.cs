@@ -132,7 +132,7 @@ namespace CK.StObj.TypeScript.Engine
         /// Ensures that a code part with the key <see cref="Type"/> exists in this file's body.
         /// </summary>
         /// <param name="closer">
-        /// By default, the type part will be closed with the "}": a closing
+        /// By default, the type part will be closed with the "}" + <see cref="Environment.NewLine"/>: a closing
         /// bracket should not be generated and, more importantly, it means that the type part can
         /// easily be extended.
         /// </param>
@@ -141,7 +141,7 @@ namespace CK.StObj.TypeScript.Engine
         /// current writing position in the code.
         /// </param>
         /// <returns>The part for this type.</returns>
-        public ITSKeyedCodePart EnsureTypePart( string closer = "}", bool top = false ) => File.Body.FindOrCreateKeyedPart( Type, closer, top );
+        public ITSKeyedCodePart EnsureTypePart( string closer = "}\n", bool top = false ) => File.Body.FindOrCreateKeyedPart( Type, closer, top );
 
         internal bool Implement( IActivityMonitor monitor )
         {

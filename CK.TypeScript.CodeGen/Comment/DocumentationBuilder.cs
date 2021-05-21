@@ -2,48 +2,70 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
 {
-    class DocumentationBuilder
+    /// <summary>
+    /// Helper to build documentation.
+    /// </summary>
+    public class DocumentationBuilder
     {
         readonly StringBuilder _b;
+        readonly bool _withStars;
         bool _lastLineIsEmpty;
         bool _waitingForNewline;
         string? _finalResult;
 
-        public DocumentationBuilder()
+        /// <summary>
+        /// Initializes a new documentation builder.
+        /// </summary>
+        /// <param name="withStars">False to let the text naked. By default, a star comment is generated.</param>
+        public DocumentationBuilder( bool withStars = true )
         {
-            _b = new StringBuilder( "/**" );
-            _waitingForNewline = true;
+            _withStars = withStars;
+            if( withStars )
+            {
+                _b = new StringBuilder( "/**" );
+                _waitingForNewline = true;
+            }
+            else
+            {
+                _b = new StringBuilder();
+            }
         }
+
+        /// <summary>
+        /// Gets whether at least one character has been added.
+        /// </summary>
+        public bool IsEmpty => _b.Length == (_withStars ? 3 : 0);
 
         /// <summary>
         /// Gets the final result and closes this builder.
         /// </summary>
-        /// <returns>The final text.</returns>
+        /// <returns>The final text that may be the empty string if no documentation has been added.</returns>
         public string GetFinalText()
         {
             if( _finalResult == null )
             {
-                if( _b.Length > 3 )
+                if( IsEmpty )
                 {
-                    _b.Append( Environment.NewLine ).Append( " **/" );
-                    _finalResult = _b.ToString();
+                    _finalResult = String.Empty;
                 }
                 else
                 {
-                    _finalResult = String.Empty;
+                    if( _withStars ) _b.Append( Environment.NewLine ).Append( " **/" ).Append( Environment.NewLine );
+                    _finalResult = _b.ToString();
                 }
             }
             return _finalResult;
         }
 
         /// <summary>
-        /// Appends a mapping from C# Xml documentation
-        /// (see https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/documentation-comments)
+        /// Appends a mapping of any number of C# Xml documentation by merging their different parts.
+        /// This adapts C# (see https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/documentation-comments)
         /// into TS documentation (see https://typedoc.org/guides/doccomments).
         /// <para>
         /// Processed elements are &lt;summary&gt;, &lt;value&gt;, &lt;remarks&gt;, &lt;typeparam&gt;, &lt;param&gt; and &lt;returns&gt;.
@@ -51,38 +73,69 @@ namespace CK.TypeScript.CodeGen
         /// Each block is processed by <see cref="AppendLinesFromXElement"/>.
         /// </para>
         /// </summary>
-        /// <param name="source">Source code writer.</param>
+        /// <param name="source">Source code file that is used to locate and use the <see cref="IXmlDocumentationCodeRefHandler"/>.</param>
         /// <param name="xDoc">The Xml documentation element. Ignored when null.</param>
         /// <returns>This builder to enable fluent syntax.</returns>
-        public DocumentationBuilder AppendDocumentation( ITSCodeWriter source, XElement? xDoc )
+        public DocumentationBuilder AppendDocumentation( TypeScriptFile source, IEnumerable<XElement> xDoc )
         {
             CheckBuilderClosed();
-            if( xDoc == null ) return this;
 
-            AppendLinesFromXElement( source, xDoc.Element( "summary" ), true, true );
-            AppendLinesFromXElement( source, xDoc.Element( "value" ), true, true );
-            foreach( var rem in xDoc.Elements( "remarks" ) )
+            foreach( var x in DistinctByValue( xDoc.Elements().Where( e => e.Name.LocalName == "summary" || e.Name.LocalName == "value" ) ) )
+            {
+                AppendLinesFromXElement( source, x, true, true );
+            }
+            foreach( var rem in DistinctByValue( xDoc.Elements( "remarks" ) ) )
             {
                 AppendEmptyLine();
                 AppendLinesFromXElement( source, rem, true, true );
             }
-            foreach( var typeParam in xDoc.Elements( "typeparam" ) )
+            foreach( var typeParam in xDoc.Elements( "typeparam" ).GroupBy( eP => eP.Attribute( "name" ).Value ) )
             {
-                Append( $"@typeParam {typeParam.Attribute( "name" ).Value} ", true );
-                AppendLinesFromXElement( source, typeParam, true, false );
+                Append( $"@typeParam {typeParam.Key} ", true );
+                bool isNext = false;
+                foreach( var e in DistinctByValue( typeParam ) )
+                {
+                    AppendLinesFromXElement( source, e, true, startNewLine: isNext );
+                    isNext = true;
+                }
             }
-            foreach( var param in xDoc.Elements( "param" ) )
+            foreach( var param in xDoc.Elements( "param" ).GroupBy( eP => eP.Attribute( "name" ).Value ) )
             {
-                Append( $"@param {param.Attribute( "name" ).Value} ", true );
-                AppendLinesFromXElement( source, param, true, false );
+                Append( $"@param {param.Key} ", true );
+                bool isNext = false;
+                foreach( var e in DistinctByValue( param ) )
+                {
+                    AppendLinesFromXElement( source, e, true, isNext );
+                    isNext = true;
+                }
             }
-            var ret = xDoc.Element( "returns" );
-            if( ret != null )
+            var ret = xDoc.Elements( "returns" );
+            if( ret.Any() )
             {
                 Append( "@returns ", true );
-                AppendLinesFromXElement( source, ret, true, false );
+                bool isNext = false;
+                foreach( var r in DistinctByValue( ret ) )
+                {
+                    AppendLinesFromXElement( source, r, true, isNext );
+                    isNext = true;
+                }
             }
             return this;
+        }
+
+        static IEnumerable<XElement> DistinctByValue( IEnumerable<XElement> elements )
+        {
+            var already = new List<string>();
+            foreach( var e in elements )
+            {
+                var normalized = e.Value.ToLowerInvariant().Trim();
+                if( !already.Contains( normalized ) )
+                {
+                    already.Add( normalized );
+                    yield return e;
+
+                }
+            }
         }
 
         /// <summary>
@@ -92,12 +145,12 @@ namespace CK.TypeScript.CodeGen
         /// Any other elements are handled as "transparent" elements.
         /// Consecutive empty lines are collapsed into a single empty line.
         /// </summary>
-        /// <param name="source">Source code writer.</param>
+        /// <param name="source">Source code file that is used to locate and use the <see cref="IXmlDocumentationCodeRefHandler"/>.</param>
         /// <param name="e">The documentation element. Ignored when null.</param>
         /// <param name="trimFirstLine">True to remove all leading white spaces.</param>
         /// <param name="startNewLine">False to append the first line to the end of the current last line.</param>
         /// <returns>This builder to enable fluent syntax.</returns>
-        public DocumentationBuilder AppendLinesFromXElement( ITSCodeWriter source, XElement? e, bool trimFirstLine, bool startNewLine )
+        public DocumentationBuilder AppendLinesFromXElement( TypeScriptFile source, XElement? e, bool trimFirstLine, bool startNewLine )
         {
             CheckBuilderClosed();
             if( e != null )
@@ -111,13 +164,13 @@ namespace CK.TypeScript.CodeGen
                         {
                             case "code":
                                 Append( "```", true );
-                                AppendMultiLines( c.Value, false, true, true, true );
+                                AppendText( c.Value, false, true, true, true );
                                 AppendLine( "```", true );
                                 trimFirstLine = startNewLine = true;
                                 break;
                             case "c":
                                 Append( "`", false );
-                                AppendMultiLines( c.Value, false, true, false, false );
+                                AppendText( c.Value, false, true, false, false );
                                 Append( "`", false );
                                 trimFirstLine = startNewLine = false;
                                 break;
@@ -158,7 +211,7 @@ namespace CK.TypeScript.CodeGen
                                             mName = cref.Substring( idx, iPar - idx );
                                             if( mName == "#ctor" ) mName = "constructor";
                                         }
-                                        var h = source.File.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
+                                        var h = source.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
                                         Append( h.GetTSDocLink( source, kind, tName, mName, c.Value ) );
                                     }
                                     trimFirstLine = startNewLine = false;
@@ -178,7 +231,7 @@ namespace CK.TypeScript.CodeGen
                     }
                     else if( n is XText t )
                     {
-                        AppendMultiLines( t.Value, trimFirstLine, true, startNewLine, false );
+                        AppendText( t.Value, trimFirstLine, true, startNewLine, false );
                     }
                 }
             }
@@ -187,6 +240,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends multiple lines at once, removing their common white spaces prefix.
+        /// See <see cref="AppendText(string, bool, bool, bool, bool)"/> to append a block of text.
         /// </summary>
         /// <param name="lines">Documentation lines to add.</param>
         /// <param name="startNewLine">
@@ -219,7 +273,7 @@ namespace CK.TypeScript.CodeGen
         /// </param>
         /// <param name="endWithNewline">True to end the current line after the fragment.</param>
         /// <returns>This builder to enable fluent syntax.</returns>
-        public DocumentationBuilder AppendMultiLines( string text, bool trimFirstLine, bool trimLastLines, bool startNewLine, bool endWithNewline )
+        public DocumentationBuilder AppendText( string text, bool trimFirstLine, bool trimLastLines, bool startNewLine, bool endWithNewline )
         {
             CheckBuilderClosed();
             if( text != null )
@@ -365,9 +419,11 @@ namespace CK.TypeScript.CodeGen
                 {
                     if( _lastLineIsEmpty )
                     {
-                        _b.Append( Environment.NewLine ).Append( " * " );
+                        _b.Append( Environment.NewLine );
+                        if( _withStars ) _b.Append( " * " );
                     }
-                    _b.Append( Environment.NewLine ).Append( " * " );
+                    _b.Append( Environment.NewLine );
+                    if( _withStars ) _b.Append( " * " );
                     _waitingForNewline = false;
                 }
                 _b.Append( lineFragment );

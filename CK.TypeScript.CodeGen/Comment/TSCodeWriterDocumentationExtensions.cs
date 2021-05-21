@@ -27,7 +27,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends a /** ... */ block of text with multiple lines automatically left aligned.
-        /// See <see cref="DocumentationBuilder.AppendMultiLines(string, bool, bool, bool, bool)"/>
+        /// See <see cref="DocumentationBuilder.AppendText(string, bool, bool, bool, bool)"/>
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -38,11 +38,11 @@ namespace CK.TypeScript.CodeGen
         public static T AppendDocumentation<T>( this T @this, string? text, bool trimFirstLine = true, bool trimLastLines = true ) where T : ITSCodeWriter
         {
             if( string.IsNullOrWhiteSpace( text ) ) return @this;
-            return @this.NewLine().Append( new DocumentationBuilder().AppendMultiLines( text, trimFirstLine, trimLastLines, false, false ).GetFinalText() ).NewLine();
+            return @this.NewLine().Append( new DocumentationBuilder().AppendText( text, trimFirstLine, trimLastLines, false, false ).GetFinalText() );
         }
 
         /// <summary>
-        /// See <see cref="DocumentationBuilder.AppendDocumentation(ITSCodeWriter, XElement?)"/>
+        /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -51,12 +51,26 @@ namespace CK.TypeScript.CodeGen
         public static T AppendDocumentation<T>( this T @this, XElement? xDoc ) where T : ITSCodeWriter
         {
             if( xDoc == null ) return @this;
-            return @this.NewLine().Append( new DocumentationBuilder().AppendDocumentation( @this, xDoc ).GetFinalText() ).NewLine();
+            var text = new DocumentationBuilder().AppendDocumentation( @this.File, new[] { xDoc } ).GetFinalText();
+            return text.Length > 0 ? @this.NewLine().Append( text ) : @this;
+        }
+
+        /// <summary>
+        /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="xDoc">The Xml documentation element. Ignored when null.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        public static T AppendDocumentation<T>( this T @this, IEnumerable<XElement> xDoc ) where T : ITSCodeWriter
+        {
+            var text = new DocumentationBuilder().AppendDocumentation( @this.File, xDoc ).GetFinalText();
+            return text.Length > 0 ? @this.NewLine().Append( text ).NewLine() : @this;
         }
 
         /// <summary>
         /// Appends the documentation of a type, method, property, event or constructor if <see cref="TypeScriptRoot.GenerateDocumentation"/> is true.
-        /// See <see cref="DocumentationBuilder.AppendDocumentation(ITSCodeWriter, XElement?)"/>.
+        /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -74,7 +88,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends the documentation of a type, method, property, event or constructor.
-        /// See <see cref="DocumentationBuilder.AppendDocumentation(ITSCodeWriter, XElement?)"/>.
+        /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -86,6 +100,22 @@ namespace CK.TypeScript.CodeGen
             if( xmlDoc == null ) throw new ArgumentNullException( nameof( xmlDoc ) );
             var xDoc = XmlDocumentationReader.GetDocumentationElement( xmlDoc, XmlDocumentationReader.GetNameAttributeValueFor( member ) );
             return xDoc != null ? AppendDocumentation<T>( @this, xDoc ) : @this;
+        }
+
+        /// <summary>
+        /// Appends the documentation of a type, method, property, event or constructor from multiples
+        /// documentation elements that will be merged.
+        /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="members">The members for which the documentation must be emitted.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        public static T AppendDocumentation<T>( this T @this, IActivityMonitor monitor, IEnumerable<MemberInfo> members ) where T : ITSCodeWriter
+        {
+            var elements = XmlDocumentationReader.GetDocumentationFor( monitor, members );
+            return AppendDocumentation<T>( @this, elements );
         }
 
     }

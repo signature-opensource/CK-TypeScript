@@ -368,6 +368,28 @@ namespace CK.TypeScript.CodeGen
             return @this;
         }
 
+        /// <summary>
+        /// Appends a <see cref="TypeScriptVarType"/>.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="decl">The declaration.</param>
+        /// <param name="withComment">False to skip the initial <see cref="TypeScriptVarType.Comment"/> if any.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        public static T Append<T>( this T @this, TypeScriptVarType decl, bool withComment = true ) where T : ITSCodeWriter
+        {
+            if( withComment && !String.IsNullOrWhiteSpace( decl.Comment ) ) @this.AppendDocumentation( decl.Comment );
+            @this.Append( decl.Name )
+                 .Append( decl.Optional ? "?: " : ": " )
+                 .Append( decl.Type );
+            if( !String.IsNullOrWhiteSpace( decl.DefaultValue ) )
+            {
+                @this.Append( " = " ).Append( decl.DefaultValue );
+            }
+            return @this;
+        }
+
+
 
     }
 }
