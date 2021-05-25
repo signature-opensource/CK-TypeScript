@@ -183,8 +183,8 @@ namespace CK.StObj.TypeScript.Engine
                     if( p.AutoInstantiated )
                     {
                         // The property is new'ed: its DefaultValue has been set to "new propType()". This works perfectly for
-                        // (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map) but not for Poco: the interface must
-                        // be replaced by its implementation class.
+                        // (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map) but not for Poco: the interface's name
+                        // must be replaced by its implementation class' name.
                         IPocoInterfaceInfo? iPoco = _poco.Find( p.PropertyType );
                         if( iPoco != null )
                         {
@@ -192,10 +192,6 @@ namespace CK.StObj.TypeScript.Engine
                             if( c == null ) return null;
                             tsTypedFile.File.Imports.EnsureImport( c.File, c.TypeName );
                             prop.Property.DefaultValue = $"new {c.TypeName}()";
-                        }
-                        if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) )
-                        {
-                            var implFile = tsTypedFile.Context.FindDeclaredTSType( p.PropertyType );
                         }
                     }
                     propList.Add( prop );
