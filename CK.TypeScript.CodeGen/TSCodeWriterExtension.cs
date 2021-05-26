@@ -91,8 +91,9 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
+        /// <param name="withSemiColon">True to add a ";" after the bracket.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T CloseBlock<T>( this T @this ) where T : ITSCodeWriter => @this.NewLine().Append( '}' ).NewLine();
+        static public T CloseBlock<T>( this T @this, bool withSemiColon = false ) where T : ITSCodeWriter => @this.NewLine().Append( withSemiColon ? "};" : "}" ).NewLine();
 
         /// <summary>
         /// Appends either "true" or "false".

@@ -140,7 +140,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <returns>Always true.</returns>
         public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
-        TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoRootInfo root )
+        internal TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoRootInfo root )
         {
             var t = g.DeclareTSType( monitor, root.PocoClass, requiresFile: true );
             return t != null ? EnsurePocoClass( monitor, t, root ) : null;
@@ -150,6 +150,10 @@ namespace CK.StObj.TypeScript.Engine
         {
             if( tsTypedFile.TypePart == null )
             {
+                // Creates a part at the top of the file for the implementation class: this
+                // handles any possible reentrancy here.
+                var b = tsTypedFile.EnsureTypePart();
+
                 var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
                 if( iPocoFile == null ) return null;
                 if( iPocoFile.TypePart == null )
@@ -160,9 +164,6 @@ namespace CK.StObj.TypeScript.Engine
                         .Append( "[SymbolPoco]: unknown;" )
                         .CloseBlock();
                 }
-
-                // Creates a part at the top of the file for the implementation class.
-                var b = tsTypedFile.EnsureTypePart();
 
                 // Generates the signature with all its interfaces.
                 b.Append( "export class " ).Append( tsTypedFile.TypeName );
@@ -217,11 +218,12 @@ namespace CK.StObj.TypeScript.Engine
                     }
                 }
 
+                // Raises the Generating event with the mutable TypeScriptPocoClass payload. 
                 var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, propList, createParamList );
                 var h = PocoGenerating;
                 if( h != null )
                 {
-                    var ev = new PocoGeneratingEventArgs( monitor, tsTypedFile, pocoClass );
+                    var ev = new PocoGeneratingEventArgs( monitor, tsTypedFile, pocoClass, this );
                     h.Invoke( this, ev );
                     if( ev.HasError )
                     {

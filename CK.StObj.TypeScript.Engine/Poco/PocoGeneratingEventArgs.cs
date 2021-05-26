@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Text;
@@ -11,6 +12,8 @@ namespace CK.StObj.TypeScript.Engine
     /// </summary>
     public class PocoGeneratingEventArgs : EventMonitoredArgs
     {
+        readonly TSIPocoCodeGenerator _pocoCodeGenerator;
+
         /// <summary>
         /// Initializes a new <see cref="PocoGeneratingEventArgs"/>.
         /// </summary>
@@ -18,13 +21,16 @@ namespace CK.StObj.TypeScript.Engine
         /// <param name="tsTypedFile">The generated Poco file.</param>
         /// <param name="pocoClassPart">The code part of the poco class.</param>
         /// <param name="pocoInfo">The poco information.</param>
+        /// <param name="pocoCodeGenerator">The code generator.</param>
         public PocoGeneratingEventArgs( IActivityMonitor monitor,
                                         TSTypeFile tsTypedFile,
-                                        TypeScriptPocoClass pocoClass )
+                                        TypeScriptPocoClass pocoClass,
+                                        TSIPocoCodeGenerator pocoCodeGenerator )
             : base( monitor )
         {
             TypeFile = tsTypedFile;
             PocoClass = pocoClass;
+            _pocoCodeGenerator = pocoCodeGenerator;
         }
 
         /// <summary>
@@ -38,6 +44,17 @@ namespace CK.StObj.TypeScript.Engine
         /// Gets the poco class description.
         /// </summary>
         public TypeScriptPocoClass PocoClass { get; }
+
+        /// <summary>
+        /// Attempts to generate the TypeScript of a IPoco.
+        /// Note that reentrant calls are safe: they return the <see cref="TSTypeFile"/> under construction.
+        /// </summary>
+        /// <remarks>
+        /// This enables dependencies among Pocos to be expressed.
+        /// </remarks>
+        /// <param name="root">The poco for which TypeScript must be generated.</param>
+        /// <returns>The type file on success, null on error.</returns>
+        public TSTypeFile? EnsurePoco( IPocoRootInfo root ) => _pocoCodeGenerator.EnsurePocoClass( Monitor, TypeFile.Context, root );
 
         /// <summary>
         /// Gets whether <see cref="SetError(string?)"/> has been called at least once.
