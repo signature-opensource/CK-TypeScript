@@ -9,6 +9,7 @@ using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 
 namespace CK.StObj.TypeScript.Tests
 {

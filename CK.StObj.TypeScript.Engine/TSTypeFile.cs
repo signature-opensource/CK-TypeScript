@@ -145,6 +145,7 @@ namespace CK.StObj.TypeScript.Engine
 
         internal bool Implement( IActivityMonitor monitor )
         {
+            // Run the generators and the finalizer.
             if( Generators.Count > 0 || Finalizer != null )
             {
                 foreach( var g in Generators )
@@ -154,6 +155,7 @@ namespace CK.StObj.TypeScript.Engine
                 if( Finalizer != null && !Finalizer( monitor, this ) ) return false;
                 return true;
             }
+            // The TypePart should have been generated...
             if( TypePart == null )
             {
                 // If there is no TypePart, handles the default: only enums are supported.
@@ -164,8 +166,9 @@ namespace CK.StObj.TypeScript.Engine
                     return true;
                 }
                 monitor.Error( $"Missing TypeScript generation in '{FileName}'. Part '{TypeName}' has not been created by any type bound ITSCodeGeneratorType, finalizer generator or global ITSCodeGenerator." );
+                return false;
             }
-            return false;
+            return true;
         }
     }
 }

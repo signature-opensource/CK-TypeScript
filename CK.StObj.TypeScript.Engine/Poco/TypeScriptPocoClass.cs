@@ -162,7 +162,9 @@ namespace CK.StObj.TypeScript.Engine
                         }
                     }
                 }
-                b.Append( "return c;" ).CloseBlock().CloseBlock();
+                b.CloseBlock()
+                 .Append( "return c;" )
+                 .CloseBlock();
             }
             else
             {

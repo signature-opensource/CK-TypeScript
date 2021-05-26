@@ -122,7 +122,10 @@ namespace CK.StObj.TypeScript.Engine
                     }
                     else
                     {
-                        monitor.Warn( $"Type {type} extends IPoco but cannot be found in the registered interfaces. It is ignored." );
+                        if( type != typeof( IPoco ) && type != typeof( IClosedPoco ) )
+                        {
+                            monitor.Warn( $"Interface '{type}' is a IPoco but cannot be found in the registered interfaces. It is ignored." );
+                        }
                     }
                 }
             }
@@ -147,10 +150,21 @@ namespace CK.StObj.TypeScript.Engine
         {
             if( tsTypedFile.TypePart == null )
             {
+                var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
+                if( iPocoFile == null ) return null;
+                if( iPocoFile.TypePart == null )
+                {
+                    iPocoFile.EnsureTypePart( closer: String.Empty )
+                        .Append( "export const SymbolPoco = Symbol();" ).NewLine()
+                        .Append( "export interface IPoco" ).OpenBlock()
+                        .Append( "[SymbolPoco]: unknown;" )
+                        .CloseBlock();
+                }
+
                 // Creates a part at the top of the file for the implementation class.
                 var b = tsTypedFile.EnsureTypePart();
 
-                // Generates the signature 
+                // Generates the signature with all its interfaces.
                 b.Append( "export class " ).Append( tsTypedFile.TypeName );
                 List<TSTypeFile> interfaces = new();
                 foreach( IPocoInterfaceInfo i in root.Interfaces )
@@ -216,7 +230,14 @@ namespace CK.StObj.TypeScript.Engine
                     }
                 }
 
+                // Writes the properties.
                 pocoClass.AppendProperties( b );
+
+                // Defines the symbol marker and the constructor.
+                tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolPoco" );
+                b.Append( "[SymbolPoco]: unknown;" ).NewLine()
+                 .Append( "constructor() { this[SymbolPoco] = null; }" ).NewLine();
+
                 pocoClass.AppendCreateMethod( b );
             }
             return tsTypedFile;
@@ -253,10 +274,13 @@ namespace CK.StObj.TypeScript.Engine
                 // Double check here since EnsurePocoClass may have called us already.
                 if( tsTypedFile.TypePart == null )
                 {
+                    var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
+                    Debug.Assert( iPocoFile != null, "EnsurePocoClass did the job." );
+                    tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "IPoco" );
+
                     var b = tsTypedFile.EnsureTypePart();
                     b.AppendDocumentation( monitor, i.PocoInterface );
-                    b.Append( "export interface " ).Append( tsTypedFile.TypeName );
-                    bool hasInterface = false;
+                    b.Append( "export interface " ).Append( tsTypedFile.TypeName ).Append( " extends IPoco" );
                     foreach( Type baseInterface in i.PocoInterface.GetInterfaces() )
                     {
                         // If the base interface is a "normal" IPoco interface, then we ensure that it is
@@ -268,7 +292,7 @@ namespace CK.StObj.TypeScript.Engine
                         {
                             var fInterface = EnsurePocoInterface( monitor, tsTypedFile.Context, baseItf );
                             if( fInterface == null ) return null;
-                            AddBaseInterface( b, ref hasInterface, fInterface );
+                            b.Append( ", " ).AppendImportedTypeName( fInterface );
                         }
                         else
                         {
@@ -280,7 +304,7 @@ namespace CK.StObj.TypeScript.Engine
                                 var declared = tsTypedFile.Context.FindDeclaredTSType( baseInterface );
                                 if( declared != null )
                                 {
-                                    b.AppendImportedTypeName( declared );
+                                    b.Append( ", " ).AppendImportedTypeName( declared );
                                 }
                             }
                         }
@@ -295,7 +319,8 @@ namespace CK.StObj.TypeScript.Engine
                         if( p != null )
                         {
                             b.AppendDocumentation( monitor, iP )
-                             .AppendIdentifier( p.PropertyName );
+                             .AppendIdentifier( p.PropertyName )
+                             .Append( p.IsEventuallyNullable ? "?: " : ": " );
                             success &= AppendPocoPropertyTypeQualifier( monitor, tsTypedFile.Context, b, p );
                             b.Append( ";" ).NewLine();
                         }
@@ -303,25 +328,13 @@ namespace CK.StObj.TypeScript.Engine
                 }
             }
             return tsTypedFile;
-
-            static void AddBaseInterface( ITSKeyedCodePart b, ref bool hasInterface, TSTypeFile fInterface )
-            {
-                if( !hasInterface )
-                {
-                    b.Append( " extends " );
-                    hasInterface = true;
-                }
-                else b.Append( ", " );
-                b.AppendImportedTypeName( fInterface );
-            }
         }
 
-        bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )
+        static bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )
         {
             bool success = true;
-            b.Append( p.IsEventuallyNullable ? "?: " : ": " );
             bool hasUnions = false;
-            foreach( var (t, nullInfo) in p.PropertyUnionTypes )
+            foreach( var t in p.PropertyUnionTypes )
             {
                 if( hasUnions ) b.Append( "|" );
                 hasUnions = true;
@@ -337,18 +350,9 @@ namespace CK.StObj.TypeScript.Engine
         static string? GetPropertyTypeScriptType( IActivityMonitor monitor, TypeScriptContext g, TypeScriptFile file, IPocoPropertyInfo p )
         {
             var b = file.CreateDetachedPart();
-            bool hasUnions = false;
-            foreach( var (t, nullInfo) in p.PropertyUnionTypes )
-            {
-                if( hasUnions ) b.Append( "|" );
-                hasUnions = true;
-                if( !b.AppendComplexTypeName( monitor, g, t ) ) return null;
-            }
-            if( !hasUnions )
-            {
-                if( !b.AppendComplexTypeName( monitor, g, p.PropertyNullableTypeTree, withUndefined: false ) ) return null;
-            }
-            return b.ToString();
+            return AppendPocoPropertyTypeQualifier( monitor, g, b, p )
+                    ? b.ToString()
+                    : null;
         }
 
     }

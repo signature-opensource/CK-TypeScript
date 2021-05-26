@@ -36,7 +36,7 @@ namespace CK.TypeScript.CodeGen
         {
             if( _keyedParts != null && _keyedParts.TryGetValue( key, out var p ) )
             {
-                if( closer != null && p.Closer != closer )
+                if( closer != null && p.Closer != closer.NormalizeEOL() )
                 {
                     throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof(closer) );
                 }

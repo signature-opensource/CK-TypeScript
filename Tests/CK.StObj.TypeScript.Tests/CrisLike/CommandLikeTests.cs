@@ -191,7 +191,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         {
         }
 
-        public interface IValueTupleCommand : ICommandAuthenticated, ICommand<int>
+        public interface IValueTupleCommand : ICommandAuthUnsafe, ICommand<int>
         {
             (int, string, string?, object, List<string?>, object?) Power { get; set; }
         }
@@ -208,7 +208,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         /// This command requires authentication and is device dependent.
         /// It returns an optional object as its result.
         /// </summary>
-        public interface IWithObjectCommand : ICommandAuthenticatedDevice, ICommand<object?>
+        public interface IWithObjectCommand : ICommandAuthDeviceId, ICommand<object?>
         {
             /// <summary>
             /// Gets the power of this command.
@@ -251,7 +251,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             string SuperResult { get; set; }
         }
 
-        public interface IWithObjectSpecializedAsPocoCommand : IWithObjectCommand, ICommandAuthenticatedDevice, ICommand<IResult>
+        public interface IWithObjectSpecializedAsPocoCommand : IWithObjectCommand, ICommandAuthDeviceId, ICommand<IResult>
         {
             int PowerPoco { get; set; }
         }

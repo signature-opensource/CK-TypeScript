@@ -8,10 +8,10 @@ using System.Text;
 namespace CK.StObj.TypeScript.Tests.CrisLike
 {
     /// <summary>
-    /// Extends the basic <see cref="ICommandAuthenticated"/> to add the <see cref="DeviceId"/> field.
+    /// Extends the basic <see cref="ICommandAuthUnsafe"/> to add the <see cref="ActualActorId"/> field.
     /// </summary>
     [CKTypeDefiner]
-    public interface ICommandAuthenticatedImpersonation : ICommandAuthenticated
+    public interface ICommandAuthImpersonation : ICommandAuthUnsafe
     {
         /// <summary>
         /// Gets or sets the actual actor identifier: the one that is connected, regardless of any impersonation.
