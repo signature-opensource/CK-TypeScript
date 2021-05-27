@@ -18,9 +18,15 @@ namespace CK.StObj.TypeScript.Tests
         [TypeScript]
         public interface IWithUnions : IPoco
         {
+            /// <summary>
+            /// Gets or sets a nullable int or a non nullable string.
+            /// </summary>
             [UnionType]
             object? NullableIntOrString { get; set; }
 
+            /// <summary>
+            /// Gets or sets a complex algebraic type.
+            /// </summary>
             [UnionType]
             object NonNullableListOrArrayOrDouble { get; set; }
 
@@ -37,12 +43,40 @@ namespace CK.StObj.TypeScript.Tests
             var output = LocalTestHelper.GenerateTSCode( nameof( with_union_types ), typeof( IWithUnions ) );
         }
 
+        /// <summary>
+        /// Demonstrates the read only properties support.
+        /// </summary>
         [TypeScript]
         public interface IWithReadOnly : IPoco
         {
+            /// <summary>
+            /// Gets or sets the required target path.
+            /// </summary>
+            string TargetPath { get; set; }
+
+            /// <summary>
+            /// Gets or sets the power.
+            /// </summary>
+            int? Power { get; set; }
+
+            /// <summary>
+            /// Gets the mutable list of string values.
+            /// </summary>
             IList<string> List { get; }
-            IDictionary<string, double> Map { get; }
+
+            /// <summary>
+            /// Gets the mutable map from name to numeric values.
+            /// </summary>
+            IDictionary<string, double?> Map { get; }
+
+            /// <summary>
+            /// Gets the mutable set of unique string.
+            /// </summary>
             ISet<string> Set { get; }
+
+            /// <summary>
+            /// Gets the algebraic types demonstrations.
+            /// </summary>
             IWithUnions Poco { get; }
         }
 

@@ -180,7 +180,8 @@ namespace CK.StObj.TypeScript.Engine
 
                 // Creates the mutable lists of properties and create method parameters.
                 var propList = new List<TypeScriptPocoPropertyInfo>( root.PropertyList.Count );
-                var createParamList = new List<TypeScriptVarType>( root.PropertyList.Count );
+                int readOnlyPropertyCount = 0;
+                int requiredParameterCount = 0;
                 foreach( var p in root.PropertyList )
                 {
                     var propName = tsTypedFile.Context.Root.ToIdentifier( p.PropertyName );
@@ -195,7 +196,7 @@ namespace CK.StObj.TypeScript.Engine
                     var paramComment = RemoveGetsOrSetsPrefix( propComment );
 
                     var prop = new TypeScriptPocoPropertyInfo( p, propType, propName, paramName, propComment, paramComment );
-                    if( p.AutoInstantiated )
+                    if( p.IsReadOnly )
                     {
                         // The property is new'ed: its DefaultValue has been set to "new propType()". This works perfectly for
                         // (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map) but not for Poco: the interface's name
@@ -209,17 +210,33 @@ namespace CK.StObj.TypeScript.Engine
                             prop.Property.DefaultValue = $"new {c.TypeName}()";
                         }
                     }
-                    propList.Add( prop );
-
-                    // If the property is new'ed, we don't expect a parameter.
-                    if( !p.AutoInstantiated )
+                    // The lists is ordered:
+                    //  - The required parameters first.
+                    //  - Then comes the optional parameters:
+                    //    - for the simple nullable properties,
+                    //    - and then the read only properties.
+                    if( p.IsNullable || p.IsReadOnly )
                     {
-                        createParamList.Add( new TypeScriptVarType( paramName, propType ) { Optional = p.IsEventuallyNullable, Comment = paramComment } );
+                        if( p.IsReadOnly )
+                        {
+                            // Inserts at the end.
+                            propList.Add( prop );
+                            readOnlyPropertyCount++;
+                        }
+                        else
+                        {
+                            // Inserts before the last readOnlyPropertyCount.
+                            propList.Insert( propList.Count - readOnlyPropertyCount, prop );
+                        }
+                    }
+                    else
+                    {
+                        // Inserts at the required parameter index (and increments the index).
+                        propList.Insert( requiredParameterCount++, prop );
                     }
                 }
-
                 // Raises the Generating event with the mutable TypeScriptPocoClass payload. 
-                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, propList, createParamList );
+                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, propList, requiredParameterCount, readOnlyPropertyCount );
                 var h = PocoGenerating;
                 if( h != null )
                 {
@@ -235,11 +252,69 @@ namespace CK.StObj.TypeScript.Engine
                 // Writes the properties.
                 pocoClass.AppendProperties( b );
 
-                // Defines the symbol marker and the constructor.
+                // Defines the symbol marker and the constructor(s).
                 tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolPoco" );
                 b.NewLine()
-                 .Append( "[SymbolPoco]: unknown;" ).NewLine()
-                 .Append( "constructor() { this[SymbolPoco] = null; }" ).NewLine();
+                 .Append( "[SymbolPoco]: unknown;" ).NewLine();
+
+                if( readOnlyPropertyCount == 0 )
+                {
+                    b.Append( "constructor() { this[SymbolPoco] = null; }" ).NewLine();
+                }
+                else
+                {
+                    // Using parts to:
+                    //   - better see the structure.
+                    //   - and generate the code in one pass.
+                    //   - and reuse the createSignaturePart as the implSignaturePart.
+                    //
+                    // The first constructor overload is the one with the (all optional) parameters.
+                    // Then comes the empty one.
+                    b.CreatePart( out var docPart )
+                     .Append( "constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()
+                     .AppendDocumentation( $"Initializes a new empty {pocoClass.TypeName}." )
+                     .Append( "constructor()" ).NewLine()
+                     .Append( "// Implementation." ).NewLine()
+                     .Append( "constructor( " ).CreatePart( out var implSignaturePart ).Append( ") " ).OpenBlock()
+                        .Append( "this[SymbolPoco] = null;" ).NewLine()
+                        .CreatePart( out var implPart )
+                     .CloseBlock();
+
+                    var docBuilder = new DocumentationBuilder();
+                    docBuilder.Append( $"Initializes a new {pocoClass.TypeName} with initial values for the readonly properties.", endWithNewline: true )
+                              .Append( "Use one of the create methods to set all properties.", endWithNewline: true );
+
+                    bool paramsOnOneLine = readOnlyPropertyCount <= 2;
+                    if( !paramsOnOneLine )
+                    {
+                        createSignaturePart.NewLine();
+                    }
+                    bool atLeastOne = false;
+                    foreach( var prop in propList.Skip( propList.Count - readOnlyPropertyCount ) )
+                    {
+                        // Adds the @param to the doc if any.
+                        if( !String.IsNullOrEmpty( prop.ParameterComment ) )
+                        {
+                            docBuilder.Append( "@param " ).Append( prop.ParameterName ).Append( " " );
+                            docBuilder.AppendText( prop.ParameterComment, trimFirstLine: true, trimLastLines: true, startNewLine: false, endWithNewline: true );
+                        }
+                        if( atLeastOne )
+                        {
+                            implPart.NewLine();
+                            createSignaturePart.Append( "," );
+                            if( !paramsOnOneLine ) createSignaturePart.NewLine();
+                        }
+                        else atLeastOne = true;
+                        createSignaturePart.Append( prop.ParameterName ).Append( "?: " ).Append( prop.Property.Type );
+
+                        implPart.Append( "this." ).Append( prop.Property.Name ).Append( " = typeof " ).Append( prop.ParameterName ).Append( " === \"undefined\" ? " )
+                                .Append( prop.Property.DefaultValue )
+                                .Append( " : " ).Append( prop.ParameterName ).Append( ";" );
+                    }
+
+                    docPart.Append( docBuilder.GetFinalText() );
+                    implSignaturePart.Append( createSignaturePart.ToString() );
+                }
 
                 pocoClass.AppendCreateMethod( b );
             }
@@ -322,8 +397,9 @@ namespace CK.StObj.TypeScript.Engine
                         if( p != null )
                         {
                             b.AppendDocumentation( monitor, iP )
+                             .Append( p.IsReadOnly ? "readonly " : "" )
                              .AppendIdentifier( p.PropertyName )
-                             .Append( p.IsEventuallyNullable ? "?: " : ": " );
+                             .Append( p.IsNullable ? "?: " : ": " );
                             success &= AppendPocoPropertyTypeQualifier( monitor, tsTypedFile.Context, b, p );
                             b.Append( ";" ).NewLine();
                         }

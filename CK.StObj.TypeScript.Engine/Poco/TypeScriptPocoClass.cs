@@ -16,20 +16,38 @@ namespace CK.StObj.TypeScript.Engine
                                       ITSCodePart p,
                                       IPocoRootInfo info,
                                       List<TypeScriptPocoPropertyInfo> props,
-                                      List<TypeScriptVarType> createParams )
+                                      int requiredParameterCount,
+                                      int readOnlyPropertyCount )
         {
             TypeName = className;
             Part = p;
             PocoRootInfo = info;
             Properties = props;
             CreateMethodDocumentation = new DocumentationBuilder();
-            CreateParameters = createParams;
+            ReadOnlyPropertyCount = readOnlyPropertyCount;
+            RequiredParameterCount = requiredParameterCount;
         }
 
         /// <summary>
         /// Gets the class name.
         /// </summary>
         public string TypeName { get; }
+
+        /// <summary>
+        /// Gets the number of required parameters in create method.
+        /// Required parameters are the first in the CreateParameters list.
+        /// </summary>
+        public int RequiredParameterCount { get; }
+
+        /// <summary>
+        /// Gets the number of properties that are read only. They must be assigned in the constructor,
+        /// either by being created (the <see cref="TypeScriptVarType.DefaultValue"/> of the <see cref="TypeScriptPocoPropertyInfo.Property"/>
+        /// contains the new statement) or from the <see cref="TypeScriptPocoPropertyInfo.CreateMethodParameter"/>.
+        /// <para>
+        /// Note that these read only properties appear as optional in the create method.
+        /// </para>
+        /// </summary>
+        public int ReadOnlyPropertyCount { get; }
 
         /// <summary>
         /// Gets the poco class part (the class appears at the top of the file, followed by interfaces).
@@ -42,9 +60,11 @@ namespace CK.StObj.TypeScript.Engine
         public IPocoRootInfo PocoRootInfo { get; }
 
         /// <summary>
-        /// Gets a mutable list of properties that will be generated.
+        /// Gets a list of the properties that will be generated with their <see cref="TypeScriptPocoPropertyInfo.CreateMethodParameter"/>.
+        /// First comes the properties that requires a parameter in the create method, then the simple optional properties and then the
+        /// read only properties (that are optionals since we can automatically instantiate them).
         /// </summary>
-        public List<TypeScriptPocoPropertyInfo> Properties { get; }
+        public IReadOnlyList<TypeScriptPocoPropertyInfo> Properties { get; }
 
         /// <summary>
         /// Gets the create method documentation.
@@ -52,16 +72,19 @@ namespace CK.StObj.TypeScript.Engine
         /// </summary>
         public DocumentationBuilder CreateMethodDocumentation { get; }
 
-        /// <summary>
-        /// Gets a mutable list of the create method parameters.
-        /// </summary>
-        public List<TypeScriptVarType> CreateParameters { get; }
-
         internal void AppendProperties( ITSCodePart b )
         {
             foreach( var p in Properties )
             {
-                b.Append( p.Property ).Append( ";" ).NewLine();
+                if( !String.IsNullOrWhiteSpace( p.Property.Comment ) )
+                {
+                    b.AppendDocumentation( p.Property.Comment );
+                }
+                if( p.PocoProperty.IsReadOnly ) b.Append( "readonly " );
+                b.Append( p.Property.Name )
+                 .Append( p.Property.Optional ? "?: " : ": " )
+                 .Append( p.Property.Type )
+                 .Append( ";" ).NewLine();
             }
         }
 
@@ -72,32 +95,45 @@ namespace CK.StObj.TypeScript.Engine
                 b.Append( "static create( config" ).Append( withUndefined ? "?" : "" ).Append( ": (c: " ).Append( typeName ).Append( ") => void ) : " ).Append( typeName ).NewLine();
             }
 
-            // Sorts the parameters: first come the required ones.
-            CreateParameters.Sort( ( x, y ) => x.Optional ? (y.Optional ? 0 : 1) : (y.Optional ? -1 : 0) );
-
             // First comes the create overload with all the parameters (it's the default one).
             if( CreateMethodDocumentation.IsEmpty )
             {
                 CreateMethodDocumentation.Append( "Factory method that exposes all the properties as parameters.", endWithNewline: true );
             }
-            foreach( var p in CreateParameters )
+            int createParams = 0;
+            foreach( var prop in Properties )
             {
-                if( !String.IsNullOrEmpty( p.Comment ) )
+                var p = prop.CreateMethodParameter;
+                if( p == null ) continue;
+
+                var auto = prop.PocoProperty.IsReadOnly
+                            ? " (Optional, automatically instantiated.) "
+                            : prop.Property.Optional
+                                ? " (Optional, defaults to undefined) "
+                                : " ";
+                bool hasComment = !String.IsNullOrEmpty( p.Comment );
+                ++createParams;
+                if( auto.Length > 1 || hasComment )
                 {
-                    CreateMethodDocumentation.Append( "@param " ).Append( p.Name ).Append( " " );
-                    CreateMethodDocumentation.AppendText( p.Comment, trimFirstLine: true, trimLastLines: true, startNewLine: false, endWithNewline: true );
+                    CreateMethodDocumentation.Append( "@param " ).Append( p.Name ).Append( auto, endWithNewline: !hasComment );
+                    if( hasComment )
+                    {
+                        CreateMethodDocumentation.AppendText( p.Comment!, trimFirstLine: true, trimLastLines: true, startNewLine: false, endWithNewline: true );
+                    }
                 }
             }
-
             string firstParameterName = "config";
-            bool paramsOnOneLine = CreateParameters.Count <= 2;
+            bool paramsOnOneLine = createParams <= 2;
             b.Append( CreateMethodDocumentation.GetFinalText() )
              .Append( "static create( " );
             if( !paramsOnOneLine ) b.NewLine();
 
             bool atLeastOne = false;
-            foreach( var p in CreateParameters )
+            foreach( var prop in Properties )
             {
+                var p = prop.CreateMethodParameter;
+                if( p == null ) continue;
+                
                 if( atLeastOne )
                 {
                     b.Append( "," );
@@ -127,8 +163,11 @@ namespace CK.StObj.TypeScript.Engine
                 b.Append( "static create( " );
                 if( !paramsOnOneLine ) b.NewLine();
                 atLeastOne = false;
-                foreach( var p in CreateParameters )
+                foreach( var prop in Properties )
                 {
+                    var p = prop.CreateMethodParameter;
+                    if( p == null ) continue;
+
                     if( atLeastOne )
                     {
                         b.Append( "," );
@@ -144,24 +183,33 @@ namespace CK.StObj.TypeScript.Engine
                     }
                 }
                 b.Append( " )" ).OpenBlock()
-                 .Append( "const c = new " ).Append( TypeName ).Append( "();" ).NewLine()
+                 .Append( "const c = new " ).Append( TypeName ).Append( "(" ).CreatePart( out var ctorParamsPart ).Append( ");" ).NewLine()
                  .Append( "if( typeof " ).Append( firstParameterName ).Append( " === 'function' ) " ).Append( firstParameterName ).Append( "(c);" ).NewLine()
                  .Append( "else" ).OpenBlock();
 
+                bool atLeastOneReadOnly = false;
                 atLeastOne = false;
-                foreach( var p in Properties )
+                foreach( var prop in Properties )
                 {
-                    if( atLeastOne ) b.NewLine();
-                    else atLeastOne = true;
-                    if( p.OverriddenAssignmentCreateMethodCode != null )
+                    if( prop.PocoProperty.IsReadOnly )
                     {
-                        b.Append( p.OverriddenAssignmentCreateMethodCode );
+                        if( atLeastOneReadOnly ) ctorParamsPart.Append( ", " );
+                        else atLeastOneReadOnly = true;
+                        ctorParamsPart.Append( prop.CreateMethodParameter?.Name ?? "undefined" );
+                    }
+                    if( prop.OverriddenAssignmentCreateMethodCode != null )
+                    {
+                        if( atLeastOne ) b.NewLine();
+                        else atLeastOne = true;
+                        b.Append( prop.OverriddenAssignmentCreateMethodCode );
                     }
                     else
                     {
-                        if( CreateParameters.Any( a => a.Name == p.ParameterName ) )
+                        if( prop.CreateMethodParameter != null && !prop.PocoProperty.IsReadOnly )
                         {
-                            b.Append( "c." ).Append( p.Property.Name ).Append( " = " ).Append( p.ParameterName ).Append( ";" );
+                            if( atLeastOne ) b.NewLine();
+                            else atLeastOne = true;
+                            b.Append( "c." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.CreateMethodParameter.Name ).Append( ";" );
                         }
                     }
                 }

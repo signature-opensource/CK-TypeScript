@@ -20,13 +20,14 @@ namespace CK.StObj.TypeScript.Engine
             PocoProperty = p;
             Property = new TypeScriptVarType( propName, propType );
             Property.Comment = propComment;
-            Property.Optional = p.IsEventuallyNullable;
-            if( p.AutoInstantiated )
+            Property.Optional = p.IsNullable;
+            if( p.IsReadOnly )
             {
                 Property.DefaultValue = "new " + propType + "()";
             }
             ParameterName = paramName;
             ParameterComment = paramComment;
+            CreateMethodParameter = new TypeScriptVarType( paramName, propType ) { Optional = p.IsNullable || p.IsReadOnly, Comment = paramComment };
         }
 
         /// <summary>
@@ -50,6 +51,14 @@ namespace CK.StObj.TypeScript.Engine
         /// This is the comment in C# without the "Gets or sets " prefix if any.
         /// </summary>
         public string? ParameterComment { get; }
+
+        /// <summary>
+        /// Gets or sets the parameter of the create method.
+        /// This is initially never null: each property has necessarily a parameter in the create method, but this
+        /// can be typically set to null by <see cref="TSIPocoCodeGenerator.PocoGenerating"/> handlers to
+        /// remove the parameter.
+        /// </summary>
+        public TypeScriptVarType? CreateMethodParameter { get; set; }
 
         /// <summary>
         /// Gets or sets the code that assigns the <see cref="Property"/> from the parameters
