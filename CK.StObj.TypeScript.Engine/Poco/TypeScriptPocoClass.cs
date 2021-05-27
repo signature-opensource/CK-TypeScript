@@ -148,8 +148,11 @@ namespace CK.StObj.TypeScript.Engine
                  .Append( "if( typeof " ).Append( firstParameterName ).Append( " === 'function' ) " ).Append( firstParameterName ).Append( "(c);" ).NewLine()
                  .Append( "else" ).OpenBlock();
 
+                atLeastOne = false;
                 foreach( var p in Properties )
                 {
+                    if( atLeastOne ) b.NewLine();
+                    else atLeastOne = true;
                     if( p.OverriddenAssignmentCreateMethodCode != null )
                     {
                         b.Append( p.OverriddenAssignmentCreateMethodCode );
@@ -158,7 +161,7 @@ namespace CK.StObj.TypeScript.Engine
                     {
                         if( CreateParameters.Any( a => a.Name == p.ParameterName ) )
                         {
-                            b.Append( "c." ).Append( p.Property.Name ).Append( " = " ).Append( p.ParameterName ).Append( ";" ).NewLine();
+                            b.Append( "c." ).Append( p.Property.Name ).Append( " = " ).Append( p.ParameterName ).Append( ";" );
                         }
                     }
                 }

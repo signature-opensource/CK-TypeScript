@@ -31,11 +31,25 @@ namespace CK.StObj.TypeScript.Tests
             }
         }
 
-
         [Test]
         public void with_union_types()
         {
             var output = LocalTestHelper.GenerateTSCode( nameof( with_union_types ), typeof( IWithUnions ) );
+        }
+
+        [TypeScript]
+        public interface IWithReadOnly : IPoco
+        {
+            IList<string> List { get; }
+            IDictionary<string, double> Map { get; }
+            ISet<string> Set { get; }
+            IWithUnions Poco { get; }
+        }
+
+        [Test]
+        public void array_set_maps_and_IPoco_can_be_readonly()
+        {
+            var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly ), typeof( IWithReadOnly ), typeof( IWithUnions ) );
         }
     }
 }

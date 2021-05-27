@@ -237,7 +237,8 @@ namespace CK.StObj.TypeScript.Engine
 
                 // Defines the symbol marker and the constructor.
                 tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolPoco" );
-                b.Append( "[SymbolPoco]: unknown;" ).NewLine()
+                b.NewLine()
+                 .Append( "[SymbolPoco]: unknown;" ).NewLine()
                  .Append( "constructor() { this[SymbolPoco] = null; }" ).NewLine();
 
                 pocoClass.AppendCreateMethod( b );
