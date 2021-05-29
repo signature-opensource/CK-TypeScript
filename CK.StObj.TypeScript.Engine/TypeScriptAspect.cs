@@ -11,7 +11,7 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Aspect that drives TypeScript code generation. Implements <see cref="TypeScriptAspectConfiguration"/>.
+    /// Aspect that drives TypeScript code generation. Handles (and initialized by one) <see cref="TypeScriptAspectConfiguration"/>.
     /// </summary>
     public class TypeScriptAspect : IStObjEngineAspect
     {

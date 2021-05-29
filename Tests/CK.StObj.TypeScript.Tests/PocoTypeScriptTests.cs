@@ -83,7 +83,7 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void array_set_maps_and_IPoco_can_be_readonly()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly ), typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly ), typeof( IWithReadOnly ), typeof( IWithUnions ), typeof( PocoJsonSerializer ) );
         }
     }
 }

@@ -8,9 +8,9 @@ namespace CK.Setup
     /// <summary>
     /// Configures TypeScript generation.
     /// Each <see cref="BinPathConfiguration"/> that requires TypeScript code to be generated must
-    /// contain a &lt;TypeScript&gt; element with an &lt;OutputPath&gt; child element.
-    /// This OutputPath can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
-    /// final path will be resolved.
+    /// contain a &lt;TypeScript&gt; element with one or more &lt;OutputPath&gt; children elements.
+    /// These OutputPaths can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
+    /// final paths will be resolved.
     /// </summary>
     public class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
     {
