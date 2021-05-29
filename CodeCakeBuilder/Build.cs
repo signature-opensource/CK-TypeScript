@@ -59,19 +59,26 @@ namespace CodeCake
                     globalInfo.GetDotnetSolution().Pack();
                 } );
 
-            Task( "Push-Artifacts" )
+            Task( "Push-Runtimes-and-Engines" )
+                .IsDependentOn( "Unit-Testing" )
+                .WithCriteria( () => globalInfo.IsValid )
+                .Does( () =>
+                {
+                    StandardPushCKSetupComponents( globalInfo );
+                } );
+
+            Task( "Push-NuGet-Packages" )
                 .IsDependentOn( "Create-NuGet-Packages" )
                 .WithCriteria( () => globalInfo.IsValid )
                 .Does( () =>
                 {
                     globalInfo.PushArtifacts();
-                    StandardPushCKSetupComponents( globalInfo );
-               } );
+                } );
 
             // The Default task for this script can be set here.
             Task( "Default" )
-                .IsDependentOn( "Push-Artifacts" );
-
+                .IsDependentOn( "Push-Runtimes-and-Engines" )
+                .IsDependentOn( "Push-NuGet-Packages" );
         }
 
     }
