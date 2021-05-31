@@ -60,7 +60,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Poco code generator (the first <see cref="GlobalGenerators"/>).
         /// </summary>
-        public TSIPocoCodeGenerator PocoCodeGenerator => (TSIPocoCodeGenerator)_globals[0];
+        public TSJsonCodeGenerator JsonCodeGenerator => (TSJsonCodeGenerator)_globals[0];
+
+        /// <summary>
+        /// Gets the Poco code generator (the second <see cref="GlobalGenerators"/>).
+        /// </summary>
+        public TSIPocoCodeGenerator PocoCodeGenerator => (TSIPocoCodeGenerator)_globals[1];
 
         /// <summary>
         /// Gets a <see cref="TSTypeFile"/> for a type if it has been declared so far and is not
@@ -281,9 +286,10 @@ namespace CK.Setup
         bool BuildTSTypeFilesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor )
         {
             var globals = new List<ITSCodeGenerator>();
+            globals.Add( new TSJsonCodeGenerator() );
             globals.Add( new TSIPocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
 
-            // Reused per type.
+            // Thes variables are reused per type.
             TypeScriptAttributeImpl? impl = null;
             List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
 

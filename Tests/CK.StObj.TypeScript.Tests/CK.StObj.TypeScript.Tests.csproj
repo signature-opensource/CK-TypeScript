@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="CK.Testing.StObjEngine" />
     <PackageReference Include="nunit" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" />

@@ -32,8 +32,9 @@ namespace CK.StObj.TypeScript.Engine
     /// </para>
     /// </summary>
     /// <remarks>
-    /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
-    /// it is not initiated by an attribute like other code generators (typically thanks to a <see cref="ContextBoundDelegationAttribute"/>).
+    /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the second <see cref="TypeScriptContext.GlobalGenerators"/>
+    /// (after <see cref="TSJsonCodeGenerator)"/>, it is not initiated by an attribute like other code generators (typically thanks to
+    /// a <see cref="ContextBoundDelegationAttribute"/>).
     /// </remarks>
     public partial class TSIPocoCodeGenerator : ITSCodeGenerator
     {
@@ -154,6 +155,7 @@ namespace CK.StObj.TypeScript.Engine
                 // handles any possible reentrancy here.
                 var b = tsTypedFile.EnsureTypePart();
 
+                // Ensures that the CK/Core/IPoco.ts is here.
                 var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
                 if( iPocoFile == null ) return null;
                 if( iPocoFile.TypePart == null )
