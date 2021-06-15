@@ -23,6 +23,17 @@ namespace CK.Setup
     public interface ITSCodeGenerator : ITSCodeGeneratorAutoDiscovery
     {
         /// <summary>
+        /// Optional extension point (default implementation returns true) called once
+        /// all the <see cref="TypeScriptContext.GlobalGenerators"/> have been discovered.
+        /// Typically used to subscribe to events that may be raised by other global
+        /// generators (like <see cref="TSIPocoCodeGenerator.PocoGenerating"/>).
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="context">The generation context.</param>
+        /// <returns>True on success, false on error (errors must be logged).</returns>
+        bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
+
+        /// <summary>
         /// Configures the <see cref="TypeScriptAttribute"/> that will be used by <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/>
         /// to create the Type - File association and allows implementations to freely interact with the <paramref name="builder"/>.
         /// <para>
@@ -49,17 +60,6 @@ namespace CK.Setup
         bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                            ITSTypeFileBuilder builder,
                                            TypeScriptAttribute a );
-
-        /// <summary>
-        /// Optional extension point (default implementation returns true) called once
-        /// all the <see cref="TypeScriptContext.GlobalGenerators"/> have been discovered.
-        /// Typically used to subscribe to events that may be raised by other global
-        /// generators (like <see cref="TSIPocoCodeGenerator.PocoGenerating"/>).
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="context">The generation context.</param>
-        /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
         /// <summary>
         /// Generates any TypeScript in the provided context.

@@ -60,6 +60,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         public interface ICommandFour : ICommand
         {
             int NumberFour { get; set; }
+
+            Guid? UniqueId { get; set; }
         }
 
         // Hard coded Cris-like CommandDirectoryImpl.

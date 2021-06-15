@@ -70,7 +70,7 @@ namespace CK.StObj.TypeScript.Engine
         /// is the first one in the <see cref="TypeScriptContext.GlobalGenerators"/>: it is the first to be solicited).
         /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        /// <returns></returns>
+        /// <returns>Always true.</returns>
         public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                                   ITSTypeFileBuilder builder,
                                                   TypeScriptAttribute attr )

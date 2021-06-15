@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 namespace CK.StObj.TypeScript.Engine
 {
     /// <summary>
-    /// Handles TypeScript generation ofJSon serialization.
+    /// Handles TypeScript generation of code that handles JSon serialization.
     /// </summary>
     /// <remarks>
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>.
@@ -22,7 +22,6 @@ namespace CK.StObj.TypeScript.Engine
                                                   ITSTypeFileBuilder builder,
                                                   TypeScriptAttribute attr )
         {
-
             return true;
         }
 
@@ -33,8 +32,6 @@ namespace CK.StObj.TypeScript.Engine
         /// <param name="context">Unused.</param>
         /// <returns>Always true.</returns>
         public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
-
-
 
     }
 }
