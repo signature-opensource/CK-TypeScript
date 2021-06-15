@@ -2,10 +2,10 @@
   <ItemGroup>
     <PackageReference Update="Microsoft.Playwright" Version="1.11.1-alpha-2" />
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="14.1.1--0003-develop" />
-    <PackageReference Update="CK.StObj.Model" Version="16.1.1--0017-develop" />
-    <PackageReference Update="CK.Poco.Json" Version="16.1.1--0017-develop" />
-    <PackageReference Update="CK.StObj.Runtime" Version="16.1.1--0017-develop" />
-    <PackageReference Update="CK.Testing.StObjEngine" Version="16.1.1--0017-develop" />
+    <PackageReference Update="CK.StObj.Model" Version="16.1.1--0023-develop" />
+    <PackageReference Update="CK.Poco.Json" Version="16.1.1--0023-develop" />
+    <PackageReference Update="CK.StObj.Runtime" Version="16.1.1--0023-develop" />
+    <PackageReference Update="CK.Testing.StObjEngine" Version="16.1.1--0023-develop" />
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
