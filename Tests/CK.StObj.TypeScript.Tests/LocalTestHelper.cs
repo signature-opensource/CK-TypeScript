@@ -129,7 +129,7 @@ namespace CK.StObj.TypeScript.Tests
 
                 var r1 = new Utf8JsonReader( bin1 );
 
-                var o2 = directory.ReadPocoValue( ref r1 );
+                var o2 = directory.Read( ref r1, new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard } );
 
                 m.Position = 0;
                 using( var w2 = new Utf8JsonWriter( m ) )

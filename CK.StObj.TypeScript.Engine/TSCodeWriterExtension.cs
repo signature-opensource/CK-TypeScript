@@ -220,7 +220,7 @@ namespace CK.TypeScript.CodeGen
             if( t.IsArray )
             {
                 part.Append( "Array<" );
-                if( !AppendComplexTypeName( part, monitor, g, type.SubTypes[0] ) ) return false;
+                if( !AppendComplexTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
                 part.Append( ">" );
             }
             else if( type.Kind.IsTupleType() )
@@ -238,26 +238,26 @@ namespace CK.TypeScript.CodeGen
             else if( t.IsGenericType )
             {
                 var tDef = t.GetGenericTypeDefinition();
-                if( type.SubTypes.Count == 2 && (tDef == typeof( IDictionary<,> ) || tDef == typeof( Dictionary<,> )) )
+                if( type.RawSubTypes.Count == 2 && (tDef == typeof( IDictionary<,> ) || tDef == typeof( Dictionary<,> )) )
                 {
                     part.Append( "Map<" );
-                    if( !AppendComplexTypeName( part, monitor, g, type.SubTypes[0] ) ) return false;
+                    if( !AppendComplexTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
                     part.Append( "," );
-                    if( !AppendComplexTypeName( part, monitor, g, type.SubTypes[1] ) ) return false;
+                    if( !AppendComplexTypeName( part, monitor, g, type.RawSubTypes[1] ) ) return false;
                     part.Append( ">" );
                 }
-                else if( type.SubTypes.Count == 1 )
+                else if( type.RawSubTypes.Count == 1 )
                 {
                     if( tDef == typeof( ISet<> ) || tDef == typeof( HashSet<> ) )
                     {
                         part.Append( "Set<" );
-                        if( !AppendComplexTypeName( part, monitor, g, type.SubTypes[0] ) ) return false;
+                        if( !AppendComplexTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
                         part.Append( ">" );
                     }
                     else if( tDef == typeof( IList<> ) || tDef == typeof( List<> ) )
                     {
                         part.Append( "Array<" );
-                        if( !AppendComplexTypeName( part, monitor, g, type.SubTypes[0] ) ) return false;
+                        if( !AppendComplexTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
                         part.Append( ">" );
                     }
                 }

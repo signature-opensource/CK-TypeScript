@@ -33,7 +33,7 @@ namespace CK.StObj.TypeScript.Tests
             struct UnionTypes
             {
                 public (int?,string) NullableIntOrString { get; }
-                public (List<string?>,IDictionary<IPoco,ISet<int?>>[],double) NonNullableListOrArrayOrDouble { get; }
+                public (IList<string?>,IDictionary<IPoco,ISet<int?>>[],double) NonNullableListOrArrayOrDouble { get; }
             }
         }
 
