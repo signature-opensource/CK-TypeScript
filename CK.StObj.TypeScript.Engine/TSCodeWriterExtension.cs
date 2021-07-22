@@ -9,6 +9,7 @@ using CK.Setup;
 using CK.Core;
 using CK.StObj.TypeScript.Engine;
 using CK.CodeGen;
+using System.Numerics;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -83,101 +84,12 @@ namespace CK.TypeScript.CodeGen
             return @this;
         }
 
-        /// <summary>
-        /// Calls <see cref="AppendComplexTypeName(ITSCodeWriter, IActivityMonitor, TypeScriptContext, Type)"/> and
-        /// returns the computed type name on success.
-        /// </summary>
-        /// <param name="b">This code part.</param>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="g">The generator.</param>
-        /// <param name="type">The type whose name must be appended.</param>
-        /// <returns>The generated type name (that can be reused in the same file) or null on error.</returns>
-        public static string? AppendAndGetComplexTypeName( this ITSCodePart b, IActivityMonitor monitor, TypeScriptContext g, Type type )
-        {
-            var p = b.CreatePart();
-            return AppendComplexTypeName( p, monitor, g, type ) ? p.ToString() : null;
-        }
-
-        /// <summary>
-        /// Appends a type that may be complex: a <see cref="TSTypeFile"/> may be declared for it and it may require
-        /// multiple <see cref="TypeScriptFile.Imports"/>.
-        /// <para>
-        /// Since one or more types may required to be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)">declared</see>,
-        /// this may fail, and since the computed type name can be reused, this returns the (null on error) type name
-        /// (instead of the "fluent" standard code writer).
-        /// </para>
-        /// <para>
-        /// <c>typeof(void)</c> is mapped to <c>void</c>, <c>object</c> is mapped to <c>unknown</c>, <c>int</c>, <c>float</c>
-        /// and <c>double</c> are mapped to <c>number</c>, <c>bool</c> is mapped to <c>boolean</c> and <c>string</c> is mapped to <c>string</c>.
-        /// Value tuples are mapped as array, list, set and dictionary are mapped to Array, Set or Map.
-        /// </para>
-        /// </summary>
-        /// <param name="b">This code part.</param>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="g">The generator.</param>
-        /// <param name="type">The type whose name must be appended.</param>
-        /// <returns>The generated type name (that can be reused in the same file) or null on error.</returns>
-        public static bool AppendComplexTypeName( this ITSCodeWriter b, IActivityMonitor monitor, TypeScriptContext g, Type type )
-        {
-            if( type.IsArray )
-            {
-                b.Append( "Array<" );
-                if( !AppendComplexTypeName( b, monitor, g, type.GetElementType()! ) ) return false;
-                b.Append( ">" );
-            }
-            else if( type.IsValueTuple() )
-            {
-                b.Append( "[" );
-                foreach( var s in type.GetGenericArguments() )
-                {
-                    if( !AppendComplexTypeName( b, monitor, g, s ) ) return false;
-                }
-                b.Append( "]" );
-            }
-            else if( type.IsGenericType )
-            {
-                var tDef = type.GetGenericTypeDefinition();
-                if( tDef == typeof( IDictionary<,> ) || tDef == typeof( Dictionary<,> ) )
-                {
-                    var args = type.GetGenericArguments();
-                    b.Append( "Map<" );
-                    if( !AppendComplexTypeName( b, monitor, g, args[0] ) ) return false;
-                    b.Append( "," );
-                    if( !AppendComplexTypeName( b, monitor, g, args[1] ) ) return false;
-                    b.Append( ">" );
-                }
-                else if( tDef == typeof( ISet<> ) || tDef == typeof( HashSet<> ) )
-                {
-                    b.Append( "Set<" );
-                    if( !AppendComplexTypeName( b, monitor, g, type.GetGenericArguments()[0] ) ) return false;
-                    b.Append( ">" );
-                }
-                else if( tDef == typeof( IList<> ) || tDef == typeof( List<> ) )
-                {
-                    b.Append( "Array<" );
-                    if( !AppendComplexTypeName( b, monitor, g, type.GetGenericArguments()[0] ) ) return false;
-                    b.Append( ">" );
-                }
-                else
-                {
-                    if( !DeclareAndImportAndAppendTypeName( b, monitor, g, type ) ) return false;
-                }
-            }
-            else if( type == typeof( void ) ) b.Append( "void" );
-            else if( type == typeof( int ) || type == typeof( float ) || type == typeof( double ) ) b.Append( "number" );
-            else if( type == typeof( bool ) ) b.Append( "boolean" );
-            else if( type == typeof( string ) ) b.Append( "string" );
-            else if( type == typeof( object ) ) b.Append( "unknown" );
-            else
-            {
-                if( !DeclareAndImportAndAppendTypeName( b, monitor, g, type ) ) return false;
-            }
-            return true;
-        }
 
         /// <summary>
         /// Calls <see cref="AppendComplexTypeName(ITSCodeWriter, IActivityMonitor, TypeScriptContext, NullableTypeTree, bool)"/> and
         /// returns the computed type name on success.
+        /// Since one or more types may required to be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)">declared</see>,
+        /// this may fail: this returns the (null on error) type name (instead of the "fluent" standard code writer).
         /// </summary>
         /// <param name="b">This code part.</param>
         /// <param name="monitor">The monitor to use.</param>
@@ -187,21 +99,29 @@ namespace CK.TypeScript.CodeGen
         /// False to ignore the nullable informations on the <paramref name="type"/>.
         /// By default, if the type is nullable, the generated type name will be <c>|undefined</c>.
         /// </param>
+        /// <param name="alwaysUsePocoClass">
+        /// False to consider a IPoco interface as the interface: by default, all IPoco interface are mapped to
+        /// their class type name (that is the primary interface name without the I prefix).
+        /// </param>
         /// <returns>The generated type name (that can be reused in the same file) or null on error.</returns>
-        public static string? AppendAndGetComplexTypeName( this ITSCodePart b, IActivityMonitor monitor, TypeScriptContext g, NullableTypeTree type, bool withUndefined = true )
+        public static string? AppendAndGetComplexTypeName( this ITSCodePart b,
+                                                           IActivityMonitor monitor,
+                                                           TypeScriptContext g,
+                                                           NullableTypeTree type,
+                                                           bool withUndefined = true,
+                                                           bool alwaysUsePocoClass = true )
         {
             var p = b.CreatePart();
-            return AppendComplexTypeName( p, monitor, g, type, withUndefined ) ? p.ToString() : null;
+            return AppendComplexTypeName( p, monitor, g, type, withUndefined, alwaysUsePocoClass ) ? p.ToString() : null;
         }
 
         /// <summary>
         /// Appends a type that may be complex: a <see cref="TSTypeFile"/> may be declared for it and it may require
         /// multiple <see cref="TypeScriptFile.Imports"/>.
-        /// Since one or more types may required to be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)">declared</see>,
-        /// this may fail: this returns the (null on error) type name (instead of the "fluent" standard code writer).
         /// <para>
-        /// <c>typeof(void)</c> is mapped to <c>void</c>, <c>object</c> is mapped to <c>unknown</c>, <c>int</c>, <c>float</c>
-        /// and <c>double</c> are mapped to <c>number</c>, <c>bool</c> is mapped to <c>boolean</c> and <c>string</c> is mapped to <c>string</c>.
+        /// <c>typeof(void)</c> is mapped to <c>void</c>, <c>object</c> is mapped to <c>unknown</c>, "small" numerics are mapped to <c>number</c>,
+        /// <c>long</c>, <c>ulong</c>, <c>decimal</c> and <c>BigInteger</c> are mapped to <c>BigInteger</c>, <c>bool</c> is mapped to <c>boolean</c>
+        /// and <c>string</c> is mapped to <c>string</c>.
         /// Value tuple are mapped as array, list, set and dictionary are mapped to Array, Set or Map.
         /// </para>
         /// </summary>
@@ -213,10 +133,21 @@ namespace CK.TypeScript.CodeGen
         /// False to ignore the nullable informations on the <paramref name="type"/>.
         /// By default, if the type is nullable, the generated type name will be <c>|undefined</c>.
         /// </param>
+        /// <param name="alwaysUsePocoClass">
+        /// False to consider a IPoco interface as the interface: by default, all IPoco interface are mapped to
+        /// their class type name (that is the primary interface name without the I prefix).
+        /// </param>
         /// <returns>True on success, false on error.</returns>
-        public static bool AppendComplexTypeName( this ITSCodeWriter part, IActivityMonitor monitor, TypeScriptContext g, NullableTypeTree type, bool withUndefined = true )
+        public static bool AppendComplexTypeName( this ITSCodeWriter part,
+                                                  IActivityMonitor monitor,
+                                                  TypeScriptContext g,
+                                                  NullableTypeTree type,
+                                                  bool withUndefined = true,
+                                                  bool alwaysUsePocoClass = true )
         {
             var t = type.Type;
+            IPocoInterfaceInfo? iPoco = null;
+
             if( t.IsArray )
             {
                 part.Append( "Array<" );
@@ -266,10 +197,28 @@ namespace CK.TypeScript.CodeGen
                     if( !DeclareAndImportAndAppendTypeName( part, monitor, g, t ) ) return false;
                 }
             }
+            else if( alwaysUsePocoClass && (iPoco = g.PocoCodeGenerator.PocoSupport.Find( t )) != null )
+            {
+                var c = g.DeclareTSType( monitor, iPoco.Root.PocoClass, requiresFile: true );
+                if( c == null ) return false;
+                part.File.Imports.EnsureImport( c.File, c.TypeName );
+                part.Append( c.TypeName );
+            }
             else if( t == typeof( void ) ) part.Append( "void" );
-            else if( t == typeof( int ) || t == typeof( float ) || t == typeof( double ) ) part.Append( "number" );
             else if( t == typeof( bool ) ) part.Append( "boolean" );
             else if( t == typeof( string ) ) part.Append( "string" );
+            else if( t == typeof( int )
+                     || t == typeof( uint )
+                     || t == typeof( short )
+                     || t == typeof( ushort )
+                     || t == typeof( byte )
+                     || t == typeof( sbyte )
+                     || t == typeof( float )
+                     || t == typeof( double ) ) part.Append( "number" );
+            else if( t == typeof( long )
+                     || t == typeof( ulong )
+                     || t == typeof( decimal )
+                     || t == typeof( BigInteger ) ) part.Append( "BigInteger" );
             else if( t == typeof( object ) ) part.Append( "unknown" );
             else
             {

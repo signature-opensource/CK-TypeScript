@@ -1,5 +1,6 @@
 using CK.Setup;
 using CK.TypeScript.CodeGen;
+using System;
 using System.Linq;
 
 namespace CK.StObj.TypeScript.Engine
@@ -25,9 +26,13 @@ namespace CK.StObj.TypeScript.Engine
             {
                 Property.DefaultValue = "new " + propType + "()";
             }
-            ParameterName = paramName;
-            ParameterComment = paramComment;
-            CreateMethodParameter = new TypeScriptVarType( paramName, propType ) { Optional = p.IsNullable || p.IsReadOnly, Comment = paramComment };
+            CtorParameterName = paramName;
+            CtorParameterComment = paramComment;
+            CreateMethodParameter = new TypeScriptVarType( paramName, propType )
+            {
+                Optional = p.IsNullable || p.IsReadOnly,
+                Comment = paramComment
+            };
         }
 
         /// <summary>
@@ -37,20 +42,21 @@ namespace CK.StObj.TypeScript.Engine
 
         /// <summary>
         /// Gets the property description.
+        /// Its <see cref="TypeScriptVarType.DefaultValue"/> is handled by the Poco constructor.
         /// </summary>
         public TypeScriptVarType Property { get; }
 
         /// <summary>
-        /// Gets or sets the parameter name for this property.
+        /// Gets the constructor parameter name for this property.
         /// This is the <see cref="IPocoPropertyInfo.PropertyName"/> in camel case.
         /// </summary>
-        public string ParameterName { get; }
+        public string CtorParameterName { get; }
 
         /// <summary>
-        /// Gets the comments to use in TypeScript for the parameter that corresponds to the property.
+        /// Gets the comments to use in TypeScript for the constructor parameter that corresponds to the property.
         /// This is the comment in C# without the "Gets or sets " prefix if any.
         /// </summary>
-        public string? ParameterComment { get; }
+        public string? CtorParameterComment { get; }
 
         /// <summary>
         /// Gets or sets the parameter of the create method.
@@ -65,7 +71,7 @@ namespace CK.StObj.TypeScript.Engine
         /// in the generated <c>create</c> method.
         /// The newly created command is the variable <c>c</c>.
         /// <para>
-        /// When null (the default), "c.propertyName = parameterName;" is used if this <see cref="ParameterName"/> can be found
+        /// When null (the default), "c.propertyName = parameterName;" is used if this <see cref="CtorParameterName"/> can be found
         /// in the <see cref="TypeScriptPocoClass.CreateParameters"/> list.
         /// This enables more complex expressions (multiple parameters or derivations from other parameters) to be generated.
         /// </para>

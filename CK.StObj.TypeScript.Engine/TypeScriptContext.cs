@@ -278,7 +278,7 @@ namespace CK.Setup
         internal bool Run( IActivityMonitor monitor )
         {
             return BuildTSTypeFilesFromAttributesAndDiscoverGenerators( monitor )
-                   && CallCodeGenerators( monitor, true )
+                   && CallCodeGenerators( monitor, initialize: true )
                    && CallCodeGenerators( monitor, false )
                    && EnsureTypesGeneration( monitor );
         }
@@ -289,7 +289,7 @@ namespace CK.Setup
             globals.Add( new TSJsonCodeGenerator() );
             globals.Add( new TSIPocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
 
-            // Thes variables are reused per type.
+            // These variables are reused per type.
             TypeScriptAttributeImpl? impl = null;
             List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
 

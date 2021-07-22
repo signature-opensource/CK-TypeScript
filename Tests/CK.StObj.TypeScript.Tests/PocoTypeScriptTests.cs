@@ -2,6 +2,7 @@ using CK.Core;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -19,7 +20,7 @@ namespace CK.StObj.TypeScript.Tests
         public interface IWithUnions : IPoco
         {
             /// <summary>
-            /// Gets or sets a nullable int or a non nullable string.
+            /// Gets or sets a nullable int or string.
             /// </summary>
             [UnionType]
             object? NullableIntOrString { get; set; }
@@ -30,9 +31,12 @@ namespace CK.StObj.TypeScript.Tests
             [UnionType]
             object NonNullableListOrArrayOrDouble { get; set; }
 
+            [DefaultValue(3712)]
+            int WithDefaultValue { get; set; }
+
             struct UnionTypes
             {
-                public (int?,string) NullableIntOrString { get; }
+                public (int,string)? NullableIntOrString { get; }
                 public (IList<string?>,IDictionary<IPoco,ISet<int?>>[],double) NonNullableListOrArrayOrDouble { get; }
             }
         }
@@ -52,6 +56,7 @@ namespace CK.StObj.TypeScript.Tests
             /// <summary>
             /// Gets or sets the required target path.
             /// </summary>
+            [DefaultValue( "The/Default/Path" )]
             string TargetPath { get; set; }
 
             /// <summary>
@@ -81,9 +86,12 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void array_set_maps_and_IPoco_can_be_readonly()
+        public void array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly ), typeof( IWithReadOnly ), typeof( IWithUnions ), typeof( PocoJsonSerializer ) );
+            var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible ),
+                                                         typeof( IWithReadOnly ),
+                                                         typeof( IWithUnions ),
+                                                         typeof( PocoJsonSerializer ) );
         }
     }
 }

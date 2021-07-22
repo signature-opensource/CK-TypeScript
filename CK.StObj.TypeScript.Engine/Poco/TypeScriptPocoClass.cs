@@ -88,7 +88,7 @@ namespace CK.StObj.TypeScript.Engine
             }
         }
 
-        internal void AppendCreateMethod( ITSCodePart b )
+        internal void AppendCreateMethod( IActivityMonitor monitor, ITSCodePart b )
         {
             static void AppendCreateWithConfigSignature( ITSCodePart b, string typeName, bool withUndefined )
             {
@@ -108,9 +108,13 @@ namespace CK.StObj.TypeScript.Engine
 
                 var auto = prop.PocoProperty.IsReadOnly
                             ? " (Optional, automatically instantiated.) "
-                            : prop.Property.Optional
-                                ? " (Optional, defaults to undefined) "
-                                : " ";
+                            : p.Optional // If the create parameter is optional, it can be its own default value or the property's one?.
+                                ? (p.HasDefaultValue
+                                    ? " (Optional, defaults to: " + p.DefaultValue + ") "
+                                    : prop.Property.HasDefaultValue
+                                        ? " (Optional, defaults to: " + prop.Property.DefaultValue + ") "
+                                        : " (Optional, defaults to undefined) ")
+                            : " ";
                 bool hasComment = !String.IsNullOrEmpty( p.Comment );
                 ++createParams;
                 if( auto.Length > 1 || hasComment )
@@ -174,7 +178,7 @@ namespace CK.StObj.TypeScript.Engine
                         if( !paramsOnOneLine ) b.NewLine();
                     }
                     b.Append( p.Name )
-                     .Append( atLeastOne || p.Optional ? "?: " : ": " )
+                     .Append( atLeastOne || p.Optional || p.HasDefaultValue ? "?: " : ": " )
                      .Append( p.Type );
                     if( !atLeastOne )
                     {
@@ -209,7 +213,33 @@ namespace CK.StObj.TypeScript.Engine
                         {
                             if( atLeastOne ) b.NewLine();
                             else atLeastOne = true;
-                            b.Append( "c." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.CreateMethodParameter.Name ).Append( ";" );
+                            // If the create parameter has a default value, use it over the potential
+                            // default value of the property set in the constructor.
+                            if( prop.CreateMethodParameter.HasDefaultValue && prop.CreateMethodParameter.DefaultValue != prop.Property.DefaultValue )
+                            {
+                                if( prop.Property.HasDefaultValue )
+                                {
+                                    monitor.Warn( $"{prop.PocoProperty}: Default value on the CreateMethodParameter overrides the properties's default value." );
+                                }
+                                b.Append( "c." ).Append( prop.Property.Name ).Append( " = " )
+                                 .Append( "typeof " ).Append( prop.CreateMethodParameter.Name ).Append( " === \"undefined\" ? " )
+                                                     .Append( prop.CreateMethodParameter.DefaultValue )
+                                                     .Append( " : " ).Append( prop.CreateMethodParameter.Name ).Append( ";" );
+                            }
+                            else
+                            {
+                                // If the CreateMethodParameter is optional (that is true by default if the property has a default value),
+                                // we preserve the default set by the constructor.
+                                if( prop.CreateMethodParameter.Optional )
+                                {
+                                    b.Append( "if( typeof " ).Append( prop.CreateMethodParameter.Name ).Append( " !== \"undefined\" ) " )
+                                     .Append( "c." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.CreateMethodParameter.Name ).Append( ";" );
+                                }
+                                else
+                                {
+                                    b.Append( "c." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.CreateMethodParameter.Name ).Append( ";" );
+                                }
+                            }
                         }
                     }
                 }

@@ -32,18 +32,20 @@ namespace CK.StObj.TypeScript.Engine
     /// </para>
     /// </summary>
     /// <remarks>
-    /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the second <see cref="TypeScriptContext.GlobalGenerators"/>
-    /// (after <see cref="TSJsonCodeGenerator)"/>, it is not initiated by an attribute like other code generators (typically thanks to
-    /// a <see cref="ContextBoundDelegationAttribute"/>).
+    /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
+    /// it is not initiated by an attribute like other code generators (typically thanks to a <see cref="ContextBoundDelegationAttribute"/>).
     /// </remarks>
     public partial class TSIPocoCodeGenerator : ITSCodeGenerator
     {
-        readonly IPocoSupportResult _poco;
-
         internal TSIPocoCodeGenerator( IPocoSupportResult poco )
         {
-            _poco = poco;
+            PocoSupport = poco;
         }
+
+        /// <summary>
+        /// Gets the descriptor of all the existing Pocos.
+        /// </summary>
+        public IPocoSupportResult PocoSupport { get; }
 
         /// <summary>
         /// Raised when a poco is about to be generated.
@@ -81,7 +83,7 @@ namespace CK.StObj.TypeScript.Engine
             {
                 if( type.IsClass )
                 {
-                    var pocoClass = _poco.Roots.FirstOrDefault( root => root.PocoClass == type );
+                    var pocoClass = PocoSupport.Roots.FirstOrDefault( root => root.PocoClass == type );
                     if( pocoClass != null )
                     {
                         attr.TypeName = TypeScriptContext.GetPocoClassNameFromPrimaryInterface( pocoClass );
@@ -95,7 +97,7 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 else
                 {
-                    if( _poco.AllInterfaces.TryGetValue( type, out IPocoInterfaceInfo? itf ) )
+                    if( PocoSupport.AllInterfaces.TryGetValue( type, out IPocoInterfaceInfo? itf ) )
                     {
                         if( itf.Root.PrimaryInterface != itf.PocoInterface )
                         {
@@ -187,7 +189,7 @@ namespace CK.StObj.TypeScript.Engine
                 foreach( var p in root.PropertyList )
                 {
                     var propName = tsTypedFile.Context.Root.ToIdentifier( p.PropertyName );
-                    var propType = GetPropertyTypeScriptType( monitor, tsTypedFile.Context, tsTypedFile.File, p );
+                    var propType = GetPropertyTypeScriptType( monitor, tsTypedFile, p );
                     if( propType == null ) return null;
                     var paramName = TypeScriptRoot.ToIdentifier( propName, false );
 
@@ -197,27 +199,34 @@ namespace CK.StObj.TypeScript.Engine
                     var propComment = new DocumentationBuilder( withStars: false ).AppendDocumentation( b.File, docElements ).GetFinalText();
                     var paramComment = RemoveGetsOrSetsPrefix( propComment );
 
+                    // When p.IsReadOnly, the DefaultValue is "new propType()". This works perfectly for (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map)
+                    // and for Poco since the interface's name is mapped to its implementation class' name.
                     var prop = new TypeScriptPocoPropertyInfo( p, propType, propName, paramName, propComment, paramComment );
-                    if( p.IsReadOnly )
+                    Debug.Assert( prop.CreateMethodParameter != null, "Never null on initialization." );
+                    // If a DefaultValue attribute exists on the property, tries to get its TypeScript representation.
+                    if( p.HasDefaultValue )
                     {
-                        // The property is new'ed: its DefaultValue has been set to "new propType()". This works perfectly for
-                        // (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map) but not for Poco: the interface's name
-                        // must be replaced by its implementation class' name.
-                        IPocoInterfaceInfo? iPoco = _poco.Find( p.PropertyType );
-                        if( iPoco != null )
+                        Debug.Assert( !p.IsReadOnly );
+                        var temp = tsTypedFile.File.CreateDetachedPart();
+                        if( temp.TryAppend( p.DefaultValue ) )
                         {
-                            var c = tsTypedFile.Context.DeclareTSType( monitor, iPoco.Root.PocoClass, requiresFile: true );
-                            if( c == null ) return null;
-                            tsTypedFile.File.Imports.EnsureImport( c.File, c.TypeName );
-                            prop.Property.DefaultValue = $"new {c.TypeName}()";
+                            // This default value will be set in the Poco constructor: the create
+                            // parameter becomes optional.
+                            prop.Property.DefaultValue = temp.ToString();
+                            prop.CreateMethodParameter.Optional = true;
+                        }
+                        else
+                        {
+                            monitor.Warn( $"Unable to generate TypeScript code for DefaultValue attribute on {p}." );
                         }
                     }
+
                     // The lists is ordered:
                     //  - The required parameters first.
                     //  - Then comes the optional parameters:
-                    //    - for the simple nullable properties,
+                    //    - first the simple nullable properties or the ones with a default value,
                     //    - and then the read only properties.
-                    if( p.IsNullable || p.IsReadOnly )
+                    if( p.IsNullable || p.IsReadOnly || prop.Property.HasDefaultValue )
                     {
                         if( p.IsReadOnly )
                         {
@@ -233,6 +242,7 @@ namespace CK.StObj.TypeScript.Engine
                     }
                     else
                     {
+                        // p is not nullable, not readonly and has no default value: it is required.
                         // Inserts at the required parameter index (and increments the index).
                         propList.Insert( requiredParameterCount++, prop );
                     }
@@ -259,9 +269,12 @@ namespace CK.StObj.TypeScript.Engine
                 b.NewLine()
                  .Append( "[SymbolPoco]: unknown;" ).NewLine();
 
+                ITSCodePart ctorBody;
                 if( readOnlyPropertyCount == 0 )
                 {
-                    b.Append( "constructor() { this[SymbolPoco] = null; }" ).NewLine();
+                    b.Append( "constructor()" ).OpenBlock()
+                     .CreatePart( out ctorBody )
+                     .CloseBlock();
                 }
                 else
                 {
@@ -278,8 +291,7 @@ namespace CK.StObj.TypeScript.Engine
                      .Append( "constructor()" ).NewLine()
                      .Append( "// Implementation." ).NewLine()
                      .Append( "constructor( " ).CreatePart( out var implSignaturePart ).Append( ") " ).OpenBlock()
-                        .Append( "this[SymbolPoco] = null;" ).NewLine()
-                        .CreatePart( out var implPart )
+                        .CreatePart( out ctorBody )
                      .CloseBlock();
 
                     var docBuilder = new DocumentationBuilder();
@@ -295,30 +307,35 @@ namespace CK.StObj.TypeScript.Engine
                     foreach( var prop in propList.Skip( propList.Count - readOnlyPropertyCount ) )
                     {
                         // Adds the @param to the doc if any.
-                        if( !String.IsNullOrEmpty( prop.ParameterComment ) )
+                        if( !String.IsNullOrEmpty( prop.CtorParameterComment ) )
                         {
-                            docBuilder.Append( "@param " ).Append( prop.ParameterName ).Append( " " );
-                            docBuilder.AppendText( prop.ParameterComment, trimFirstLine: true, trimLastLines: true, startNewLine: false, endWithNewline: true );
+                            docBuilder.Append( "@param " ).Append( prop.CtorParameterName ).Append( " " );
+                            docBuilder.AppendText( prop.CtorParameterComment, trimFirstLine: true, trimLastLines: true, startNewLine: false, endWithNewline: true );
                         }
                         if( atLeastOne )
                         {
-                            implPart.NewLine();
+                            ctorBody.NewLine();
                             createSignaturePart.Append( "," );
                             if( !paramsOnOneLine ) createSignaturePart.NewLine();
                         }
                         else atLeastOne = true;
-                        createSignaturePart.Append( prop.ParameterName ).Append( "?: " ).Append( prop.Property.Type );
+                        createSignaturePart.Append( prop.CtorParameterName ).Append( "?: " ).Append( prop.Property.Type );
 
-                        implPart.Append( "this." ).Append( prop.Property.Name ).Append( " = typeof " ).Append( prop.ParameterName ).Append( " === \"undefined\" ? " )
+                        ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = typeof " ).Append( prop.CtorParameterName ).Append( " === \"undefined\" ? " )
                                 .Append( prop.Property.DefaultValue )
-                                .Append( " : " ).Append( prop.ParameterName ).Append( ";" );
+                                .Append( " : " ).Append( prop.CtorParameterName ).Append( ";" ).NewLine();
                     }
-
                     docPart.Append( docBuilder.GetFinalText() );
                     implSignaturePart.Append( createSignaturePart.ToString() );
                 }
-
-                pocoClass.AppendCreateMethod( b );
+                ctorBody.Append( "this[SymbolPoco] = null;" ).NewLine();
+                foreach( var prop in propList.Skip( requiredParameterCount )
+                                  .Take( propList.Count - requiredParameterCount - readOnlyPropertyCount )
+                                  .Where( prop => prop.Property.HasDefaultValue ) )
+                {
+                    ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.Property.DefaultValue ).Append( ";" );
+                }
+                pocoClass.AppendCreateMethod( monitor, b );
             }
             return tsTypedFile;
         }
@@ -428,10 +445,10 @@ namespace CK.StObj.TypeScript.Engine
             return success;
         }
 
-        static string? GetPropertyTypeScriptType( IActivityMonitor monitor, TypeScriptContext g, TypeScriptFile file, IPocoPropertyInfo p )
+        static string? GetPropertyTypeScriptType( IActivityMonitor monitor, TSTypeFile file, IPocoPropertyInfo p )
         {
-            var b = file.CreateDetachedPart();
-            return AppendPocoPropertyTypeQualifier( monitor, g, b, p )
+            var b = file.File.CreateDetachedPart();
+            return AppendPocoPropertyTypeQualifier( monitor, file.Context, b, p )
                     ? b.ToString()
                     : null;
         }

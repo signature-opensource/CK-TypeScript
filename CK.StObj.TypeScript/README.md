@@ -14,14 +14,20 @@ Note that this package depends on the CK.Poco.Json: generating TypesScript requi
 Generators dedicated to specific type (or to a type family) must always be written
 so that a `.ts` file eventually contains the TypeScript projection of the C# Type.
 
-Exceptions to this rule exist for very simple types that somehow already exist:
-no need of any `.ts` file for them.
- - Basic types that have direct counterparts in TypeScript: `int`, `float`, `double`, `bool` and `string`.
+Exceptions to this rule exist for very simple types that follows the ECMAScriptStandard serialization
+mode (see [CK.Poco.Json](https://github.com/signature-opensource/CK-StObj/tree/master/CK.Poco.Json/README.md)).
+
+There is no need of any `.ts` file for them.
+ - Basic types that have direct counterparts in TypeScript: 
+   - `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `float`, `double` are mapped to [number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number).
+   - `long`, `ulong`, `decimal`, `BigInteger` are mapped to [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
+   - `bool` is mapped to `boolean`.
+   - `string` is mapped to `string`.
  - C# `object` are mapped to `unknown`. This is cleaner and safer than `any` (see [here](https://stackoverflow.com/a/51439876/190380)).
    (Note that `{}` or `Object` could have been chosen, but not `object` - see [here](https://stackoverflow.com/a/28795689/190380).)
- - `IDictionary<,>` and `Dictionary<,>` can be mapped to `Map`.
- - `ISet<>` and HashSet<> can be mapped to `Set`.
- - C# arrays, `IList<>` and `List<>` can be mapped to js array.
+ - `IDictionary<,>` and `Dictionary<,>` can be mapped to [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
+ - `ISet<>` and HashSet<> can be mapped to [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set).
+ - C# arrays, `IList<>` and `List<>` can be mapped to [js array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array).
  - Value tuples can use [Tuples](https://www.typescriptlang.org/docs/handbook/variable-declarations.html#tuple-destructuring).
 
 Any other type requires an explicit generation and a final `.ts` file that will contain

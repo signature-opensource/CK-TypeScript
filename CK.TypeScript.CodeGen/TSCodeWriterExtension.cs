@@ -289,10 +289,8 @@ namespace CK.TypeScript.CodeGen
         static public T AppendIdentifier<T>( this T @this, string name ) where T : ITSCodeWriter => Append( @this, @this.File.Folder.Root.ToIdentifier( name ) );
 
         /// <summary>
-        /// Appends the code source for an untyped object.
-        /// Only types that are implemented through one of the existing Append, AppendArray (all IEnumerable are
-        /// handled) and enum values.
-        /// extension methods are supported: an <see cref="ArgumentException"/> is thrown for unsupported type.
+        /// Calls <see cref="TryAppend{T}(T, object?)"/> and throws an <see cref="ArgumentException"/> if
+        /// the object's type is not handled.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -300,18 +298,38 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T Append<T>( this T @this, object? o ) where T : ITSCodeWriter
         {
-            if( o == DBNull.Value ) return @this.Append( "null" );
-            switch( o )
+            if( !TryAppend( @this, o ) ) throw new ArgumentException( "Unknown type: " + o!.GetType().AssemblyQualifiedName );
+            return @this;
+        }
+
+        /// <summary>
+        /// Tries to appends the code source for an untyped object.
+        /// Only types that are implemented through one of the existing Append, AppendArray (IEnumerable is
+        /// handled).
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="o">The object. Can be null.</param>
+        /// <returns>True on success, false on error.</returns>
+        static public bool TryAppend<T>( this T @this, object? o ) where T : ITSCodeWriter
+        {
+            if( o == DBNull.Value ) @this.Append( "null" );
+            else
             {
-                case null: return @this.Append( "null" );
-                case bool x: return Append( @this, x );
-                case int x: return Append( @this, x );
-                case char x: return AppendSourceChar( @this, x );
-                case double x: return Append( @this, x );
-                case float x: return Append( @this, x );
-                case IEnumerable x: return AppendArray( @this, x );
+                switch( o )
+                {
+                    case null: @this.Append( "null" ); break;
+                    case string x: AppendSourceString( @this, x ); break;
+                    case bool x: Append( @this, x ); break;
+                    case int x: Append( @this, x ); break;
+                    case char x: AppendSourceChar( @this, x ); break;
+                    case double x: Append( @this, x ); break;
+                    case float x: Append( @this, x ); break;
+                    case IEnumerable x: AppendArray( @this, x ); break;
+                    default: return false;
+                }
             }
-            throw new ArgumentException( "Unknown type: " + o.GetType().AssemblyQualifiedName );
+            return true;
         }
 
         /// <summary>
