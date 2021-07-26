@@ -17,7 +17,7 @@ namespace CK.StObj.TypeScript.Engine
     /// or by a call to <see cref="TypeScriptContext.GetTSTypeFile(IActivityMonitor, Type)"/> or <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, IEnumerable{Type})"/>
     /// (typically from a global <see cref="ITSCodeGenerator"/>).
     /// Once created, there must be a way to generate the corresponding code into the <see cref="File"/>: at least one participant
-    /// must call <see cref="EnsureFile()"/> otherwise an error is raised.
+    /// must call <see cref="EnsureTypePart"/> otherwise an error is raised.
     /// </summary>
     public class TSTypeFile : ITSTypeFileBuilder
     {

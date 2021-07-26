@@ -44,7 +44,12 @@ namespace CK.Setup
                 TypeScriptRoot? tsContext = CreateGenerationContext( monitor, genBinPath );
                 if( tsContext != null )
                 {
-                    var g = new TypeScriptContext( tsContext, genBinPath );
+                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>( throwOnNull: false );
+                    if( jsonCodeGen == null )
+                    {
+                        monitor.Info( $"No Json serialization available in this context." );
+                    }
+                    var g = new TypeScriptContext( tsContext, genBinPath, jsonCodeGen );
                     _generators[idx++] = g;
                     if( !g.Run( monitor ) )
                     {

@@ -11,13 +11,22 @@ namespace CK.TypeScript.CodeGen
     public interface ITSFileImportSection : ITSCodeWriter
     {
         /// <summary>
-        /// Ensures that an import of one or more type names from the corresponding file exists.
+        /// Ensures that an import of one or more type names from the corresponding <see cref="TypeScriptFile"/> exists.
         /// </summary>
         /// <param name="file">The referenced file.</param>
-        /// <param name="typeName">The first type name to import.</param>
-        /// <param name="typeNames">More types to import.</param>
+        /// <param name="typeName">The first required type name to import.</param>
+        /// <param name="typeNames">More types to import (optionals).</param>
         /// <returns>This section to enable fluent syntax.</returns>
         ITSFileImportSection EnsureImport( TypeScriptFile file, string typeName, params string[] typeNames );
+
+        /// <summary>
+        /// Ensures that an import of one or more type names from an external library exists.
+        /// </summary>
+        /// <param name="libraryName">The library name.</param>
+        /// <param name="typeName">The first required type name to import.</param>
+        /// <param name="typeNames">More types to import  (optionals).</param>
+        /// <returns>This section to enable fluent syntax.</returns>
+        ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames );
 
         /// <summary>
         /// Gets the number of different <see cref="EnsureImport(TypeScriptFile, string, string[])"/>

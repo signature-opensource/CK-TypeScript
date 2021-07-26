@@ -35,9 +35,9 @@ namespace CK.StObj.TypeScript.Engine
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
     /// it is not initiated by an attribute like other code generators (typically thanks to a <see cref="ContextBoundDelegationAttribute"/>).
     /// </remarks>
-    public partial class TSIPocoCodeGenerator : ITSCodeGenerator
+    public partial class PocoCodeGenerator : ITSCodeGenerator
     {
-        internal TSIPocoCodeGenerator( IPocoSupportResult poco )
+        internal PocoCodeGenerator( IPocoSupportResult poco )
         {
             PocoSupport = poco;
         }

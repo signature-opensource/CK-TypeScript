@@ -5,6 +5,13 @@ using System.Collections.Generic;
 
 namespace CK.StObj.TypeScript.Engine
 {
+    /// <summary>
+    /// TypeScript builder for a type. See <see cref="TSTypeFile"/> that implements its.
+    /// <para>
+    /// Note that the actual <see cref="CK.TypeScript.CodeGen.TypeScriptFile"/> that will define this type may contain
+    /// other types.
+    /// </para>
+    /// </summary>
     public interface ITSTypeFileBuilder
     {
         /// <summary>

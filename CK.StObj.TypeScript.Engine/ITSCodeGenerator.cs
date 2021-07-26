@@ -26,7 +26,7 @@ namespace CK.Setup
         /// Optional extension point (default implementation returns true) called once
         /// all the <see cref="TypeScriptContext.GlobalGenerators"/> have been discovered.
         /// Typically used to subscribe to events that may be raised by other global
-        /// generators (like <see cref="TSIPocoCodeGenerator.PocoGenerating"/>).
+        /// generators (like <see cref="PocoCodeGenerator.PocoGenerating"/>).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The generation context.</param>

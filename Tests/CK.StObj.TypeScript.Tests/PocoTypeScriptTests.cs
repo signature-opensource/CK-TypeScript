@@ -90,8 +90,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible ),
                                                          typeof( IWithReadOnly ),
-                                                         typeof( IWithUnions ),
-                                                         typeof( PocoJsonSerializer ) );
+                                                         typeof( IWithUnions ) );
         }
     }
 }

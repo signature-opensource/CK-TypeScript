@@ -8,6 +8,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -36,7 +37,7 @@ namespace CK.StObj.TypeScript.Tests
 
             public MonoCollectorResolver( params Type[] types )
             {
-                _types = types;
+                _types = types.Append( typeof( PocoJsonSerializer ) ).ToArray();
             }
 
             public StObjCollectorResult GetUnifiedResult( BinPathConfiguration unified )
@@ -108,7 +109,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             byte[] bin1;
             string bin1Text;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
             using( var m = new MemoryStream() )
             {
                 try

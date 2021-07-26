@@ -33,10 +33,11 @@ namespace CK.Setup
         IReadOnlyList<ITSCodeGenerator> _globals;
         bool _success;
 
-        internal TypeScriptContext( TypeScriptRoot root, ICodeGenerationContext codeCtx, JsonSerializationCodeGen jsonGenerator  )
+        internal TypeScriptContext( TypeScriptRoot root, ICodeGenerationContext codeCtx, JsonSerializationCodeGen? jsonGenerator )
         {
             Root = root;
             CodeContext = codeCtx;
+            JsonGenerator = jsonGenerator;
             _typeMappings = new Dictionary<Type, TSTypeFile?>();
             _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
             _typeFiles = new List<TSTypeFile>();
@@ -54,6 +55,11 @@ namespace CK.Setup
         public ICodeGenerationContext CodeContext { get; }
 
         /// <summary>
+        /// Gets the <see cref="JsonSerializationCodeGen"/> it is available.
+        /// </summary>
+        public JsonSerializationCodeGen? JsonGenerator { get; }
+
+        /// <summary>
         /// Gets all the global generators.
         /// </summary>
         public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
@@ -61,12 +67,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Poco code generator (the first <see cref="GlobalGenerators"/>).
         /// </summary>
-        public TSJsonCodeGenerator JsonCodeGenerator => (TSJsonCodeGenerator)_globals[0];
-
-        /// <summary>
-        /// Gets the Poco code generator (the second <see cref="GlobalGenerators"/>).
-        /// </summary>
-        public TSIPocoCodeGenerator PocoCodeGenerator => (TSIPocoCodeGenerator)_globals[1];
+        public PocoCodeGenerator PocoCodeGenerator => (PocoCodeGenerator)_globals[0];
 
         /// <summary>
         /// Gets a <see cref="TSTypeFile"/> for a type if it has been declared so far and is not
@@ -83,9 +84,7 @@ namespace CK.Setup
         /// All declared types that requires a file should eventually be generated.
         /// </summary>
         /// <remarks>
-        /// "Intrinsic types" are boolean, int, string, float double, object but also array, list, set, dictionary and value tuple.
-        /// They can be written directly in TypeScript and don't require a dedicated file (but note that they may reference one or
-        /// more other types).
+        /// "Intrinsic types" can be written directly in TypeScript and don't require a dedicated file. See <see cref="IntrinsicTypeName(Type)"/>.
         /// </remarks>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The type that should be available in TypeScript.</param>
@@ -101,6 +100,36 @@ namespace CK.Setup
                 monitor.Error( $"Unable to obtain a TypeScript mapping for type '{t}'." );
             }
             return f;
+        }
+
+        /// <summary>
+        /// Tries to get the TypeScript type name for basic types. This follows the ECMAScriptStandard
+        /// mapping rules (short numerics up to <see cref="UInt32"/> and double are "number",
+        /// long, ulong, decimal and <see cref="System.Numerics.BigInteger"/> are "bigInteger".
+        /// Object is mapped to "unknown" and void, boolean and string are "void", "boolean" and "string".
+        /// </summary>
+        /// <param name="t">The type.</param>
+        /// <returns>The TypeScript name if it's a basic type, null if it requires a definition file.</returns>
+        public static string? IntrinsicTypeName( Type t )
+        {
+            if( t == null ) throw new ArgumentNullException( nameof( t ) );
+            if( t == typeof( void ) ) return "void";
+            else if( t == typeof( bool ) ) return "boolean";
+            else if( t == typeof( string ) ) return "string";
+            else if( t == typeof( int )
+                     || t == typeof( uint )
+                     || t == typeof( short )
+                     || t == typeof( ushort )
+                     || t == typeof( byte )
+                     || t == typeof( sbyte )
+                     || t == typeof( float )
+                     || t == typeof( double ) ) return "number";
+            else if( t == typeof( long )
+                     || t == typeof( ulong )
+                     || t == typeof( decimal )
+                     || t == typeof( System.Numerics.BigInteger ) ) return "BigInteger";
+            else if( t == typeof( object ) ) return "unknown";
+            return null;
         }
 
         /// <summary>
@@ -174,12 +203,7 @@ namespace CK.Setup
                         f = CreateNoCacheAttributeTSFile( monitor, tDef, ref cycleDetector );
                     }
                 }
-                else if( t != typeof( int )
-                         && t != typeof( float )
-                         && t != typeof( double )
-                         && t != typeof( bool )
-                         && t != typeof( string )
-                         && t != typeof( object ) )
+                else if( IntrinsicTypeName( t ) == null )
                 {
                     f = CreateNoCacheAttributeTSFile( monitor, t, ref cycleDetector );
                 }
@@ -193,6 +217,7 @@ namespace CK.Setup
             }
             return f;
         }
+
         TSTypeFile EnsureInitialized( IActivityMonitor monitor, TSTypeFile f, ref HashSet<Type>? cycleDetector )
         {
             Debug.Assert( !f.IsInitialized );
@@ -278,17 +303,20 @@ namespace CK.Setup
 
         internal bool Run( IActivityMonitor monitor )
         {
-            return BuildTSTypeFilesFromAttributesAndDiscoverGenerators( monitor )
+            using( monitor.OpenInfo( "Running TypeScript code generation." ) )
+            {
+                return BuildTSTypeFilesFromAttributesAndDiscoverGenerators( monitor )
                    && CallCodeGenerators( monitor, initialize: true )
                    && CallCodeGenerators( monitor, false )
                    && EnsureTypesGeneration( monitor );
+            }
         }
 
         bool BuildTSTypeFilesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor )
         {
             var globals = new List<ITSCodeGenerator>();
-            globals.Add( new TSJsonCodeGenerator() );
-            globals.Add( new TSIPocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
+            globals.Add( new PocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
+            globals.Add( new SystemTypesCodeGenerator() );
 
             // These variables are reused per type.
             TypeScriptAttributeImpl? impl = null;

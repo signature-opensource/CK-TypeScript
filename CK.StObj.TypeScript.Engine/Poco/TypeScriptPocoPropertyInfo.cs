@@ -61,7 +61,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets or sets the parameter of the create method.
         /// This is initially never null: each property has necessarily a parameter in the create method, but this
-        /// can be typically set to null by <see cref="TSIPocoCodeGenerator.PocoGenerating"/> handlers to
+        /// can be typically set to null by <see cref="PocoCodeGenerator.PocoGenerating"/> handlers to
         /// remove the parameter.
         /// </summary>
         public TypeScriptVarType? CreateMethodParameter { get; set; }

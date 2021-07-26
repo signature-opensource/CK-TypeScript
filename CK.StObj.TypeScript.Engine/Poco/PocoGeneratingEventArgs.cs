@@ -8,11 +8,11 @@ namespace CK.StObj.TypeScript.Engine
 {
 
     /// <summary>
-    /// Raised by <see cref="TSIPocoCodeGenerator.PocoGenerating"/>.
+    /// Raised by <see cref="PocoCodeGenerator.PocoGenerating"/>.
     /// </summary>
     public class PocoGeneratingEventArgs : EventMonitoredArgs
     {
-        readonly TSIPocoCodeGenerator _pocoCodeGenerator;
+        readonly PocoCodeGenerator _pocoCodeGenerator;
 
         /// <summary>
         /// Initializes a new <see cref="PocoGeneratingEventArgs"/>.
@@ -25,7 +25,7 @@ namespace CK.StObj.TypeScript.Engine
         public PocoGeneratingEventArgs( IActivityMonitor monitor,
                                         TSTypeFile tsTypedFile,
                                         TypeScriptPocoClass pocoClass,
-                                        TSIPocoCodeGenerator pocoCodeGenerator )
+                                        PocoCodeGenerator pocoCodeGenerator )
             : base( monitor )
         {
             TypeFile = tsTypedFile;

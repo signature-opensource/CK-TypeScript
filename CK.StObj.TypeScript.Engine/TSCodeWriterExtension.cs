@@ -148,7 +148,27 @@ namespace CK.TypeScript.CodeGen
             var t = type.Type;
             IPocoInterfaceInfo? iPoco = null;
 
-            if( t.IsArray )
+            var intrinsicName = TypeScriptContext.IntrinsicTypeName( t );
+            if( intrinsicName != null )
+            {
+                part.Append( intrinsicName );
+            }
+            else if( t == typeof(DateTime) )
+            {
+                part.File.Imports.EnsureImportFromLibrary( "luxon", "DateTime" );
+                part.Append( "DateTime" );
+            }
+            else if( t == typeof( DateTimeOffset ) )
+            {
+                part.File.Imports.EnsureImportFromLibrary( "luxon", "DateTime" );
+                part.Append( "DateTime" );
+            }
+            else if( t == typeof( TimeSpan ) )
+            {
+                part.File.Imports.EnsureImportFromLibrary( "luxon", "Duration" );
+                part.Append( "Duration" );
+            }
+            else if( t.IsArray )
             {
                 part.Append( "Array<" );
                 if( !AppendComplexTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
@@ -204,23 +224,7 @@ namespace CK.TypeScript.CodeGen
                 part.File.Imports.EnsureImport( c.File, c.TypeName );
                 part.Append( c.TypeName );
             }
-            else if( t == typeof( void ) ) part.Append( "void" );
-            else if( t == typeof( bool ) ) part.Append( "boolean" );
-            else if( t == typeof( string ) ) part.Append( "string" );
-            else if( t == typeof( int )
-                     || t == typeof( uint )
-                     || t == typeof( short )
-                     || t == typeof( ushort )
-                     || t == typeof( byte )
-                     || t == typeof( sbyte )
-                     || t == typeof( float )
-                     || t == typeof( double ) ) part.Append( "number" );
-            else if( t == typeof( long )
-                     || t == typeof( ulong )
-                     || t == typeof( decimal )
-                     || t == typeof( BigInteger ) ) part.Append( "BigInteger" );
-            else if( t == typeof( object ) ) part.Append( "unknown" );
-            else
+            else 
             {
                 if( !DeclareAndImportAndAppendTypeName( part, monitor, g, t ) ) return false;
             }
