@@ -48,7 +48,7 @@ namespace CK.StObj.TypeScript.Engine
         public IPocoSupportResult PocoSupport { get; }
 
         /// <summary>
-        /// Raised when a poco is about to be generated.
+        /// Raised when the TypeScript of a poco is about to be generated.
         /// This enables extensions to inject codes in the <see cref="PocoGeneratingEventArgs.TypeFile"/>.
         /// </summary>
         public event EventHandler<PocoGeneratingEventArgs>? PocoGenerating;

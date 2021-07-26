@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
+using CK.Setup.Json;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
 using CK.Text;
@@ -32,7 +33,7 @@ namespace CK.Setup
         IReadOnlyList<ITSCodeGenerator> _globals;
         bool _success;
 
-        internal TypeScriptContext( TypeScriptRoot root, ICodeGenerationContext codeCtx )
+        internal TypeScriptContext( TypeScriptRoot root, ICodeGenerationContext codeCtx, JsonSerializationCodeGen jsonGenerator  )
         {
             Root = root;
             CodeContext = codeCtx;

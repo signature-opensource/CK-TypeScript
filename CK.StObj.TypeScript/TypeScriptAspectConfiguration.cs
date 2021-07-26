@@ -35,7 +35,7 @@ namespace CK.Setup
         /// <summary>
         /// Initializes a new configuration from a Xml element.
         /// </summary>
-        /// <param name="e"></param>
+        /// <param name="e">The configuration element.</param>
         public TypeScriptAspectConfiguration( XElement e )
         {
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
