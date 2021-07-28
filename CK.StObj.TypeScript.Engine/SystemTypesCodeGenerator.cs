@@ -39,6 +39,10 @@ export class Guid {
     get [Symbol.toStringTag]() {
         return this._guid;
       }
+
+    public toJSON() : string {
+        return this._guid;
+    }
 }" );
             }
             return true;

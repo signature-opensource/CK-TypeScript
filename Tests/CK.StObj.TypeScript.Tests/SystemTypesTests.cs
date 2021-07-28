@@ -24,7 +24,6 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = LocalTestHelper.GenerateTSCode( nameof( with_date_and_guid ),
                                                          typeof( IWithDateAndGuid ) );
-
         }
 
 

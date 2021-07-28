@@ -20,11 +20,16 @@ namespace CK.StObj.TypeScript.Tests
 {
     static class LocalTestHelper
     {
-        public static readonly NormalizedPath OutputFolder = TestHelper.TestProjectFolder.AppendPart( "TypeScriptOutput" );
+        public static readonly NormalizedPath OutputFolder = TestHelper.TestProjectFolder.Combine( "../TypeScriptTests/Output" );
 
         public static NormalizedPath GetOutputFolder( [CallerMemberName]string? testName = null )
         {
             return TestHelper.CleanupFolder( OutputFolder.AppendPart( testName ), false );
+        }
+
+        public static NormalizedPath GetOutputFolder( NormalizedPath subPath, [CallerMemberName]string? testName = null )
+        {
+            return TestHelper.CleanupFolder( OutputFolder.Combine( subPath ).AppendPart( testName ).ResolveDots(), false );
         }
 
         /// <summary>
@@ -56,18 +61,29 @@ namespace CK.StObj.TypeScript.Tests
             return GenerateTSCode( testName, new MonoCollectorResolver( types ) );
         }
 
-        public static NormalizedPath GenerateTSCode( string testName, IStObjCollectorResultResolver collectorResults )
+        public static NormalizedPath GenerateTSCode( NormalizedPath subPath, string testName, params Type[] types )
         {
-            return GenerateTSCode( testName, new TypeScriptAspectConfiguration(), collectorResults );
+            return GenerateTSCode( testName, new MonoCollectorResolver( types ), subPath );
         }
 
-        public static NormalizedPath GenerateTSCode( string testName, TypeScriptAspectConfiguration tsConfig, IStObjCollectorResultResolver collectorResults )
+        public static NormalizedPath GenerateTSCode( string testName, IStObjCollectorResultResolver collectorResults, NormalizedPath subPath = default )
         {
-            NormalizedPath output = GetOutputFolder( testName );
+            return GenerateTSCode( testName, new TypeScriptAspectConfiguration(), collectorResults, subPath );
+        }
+
+        public static NormalizedPath GenerateTSCode( string testName,
+                                                     TypeScriptAspectConfiguration tsConfig,
+                                                     IStObjCollectorResultResolver collectorResults,
+                                                     NormalizedPath subPath = default )
+        {
+            NormalizedPath output = GetOutputFolder( subPath, testName );
             var config = new StObjEngineConfiguration();
             config.Aspects.Add( tsConfig );
             var b = new BinPathConfiguration();
-            b.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output ) ) );
+            b.AspectConfigurations.Add( new XElement( "TypeScript",
+                                            new XElement( "OutputPath", output ),
+                                            new XElement( "Barrels",
+                                                new XElement( "Barrel", new XAttribute("Path", "") ) ) ) );
             config.BinPaths.Add( b );
 
             var engine = new StObjEngine( TestHelper.Monitor, config );

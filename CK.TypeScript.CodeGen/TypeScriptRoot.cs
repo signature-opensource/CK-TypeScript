@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -14,7 +15,7 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public class TypeScriptRoot
     {
-        readonly HashSet<NormalizedPath> _paths;
+        readonly IReadOnlyCollection<(NormalizedPath Path, XElement Config)> _pathsAndConfig;
         readonly bool _pascalCase;
         readonly bool _generateDocumentation;
         Dictionary<object, object?>? _memory;
@@ -22,13 +23,13 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Initializes a new <see cref="TypeScriptRoot"/>.
         /// </summary>
-        /// <param name="outputPaths">Set of output paths. May be empty.</param>
+        /// <param name="pathsAndConfig">Set of output paths with their config element. May be empty.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
-        public TypeScriptRoot( IEnumerable<NormalizedPath> outputPaths, bool pascalCase, bool generateDocumentation )
+        public TypeScriptRoot( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig, bool pascalCase, bool generateDocumentation )
         {
-            if( outputPaths == null ) throw new ArgumentNullException( nameof( outputPaths ) );
-            _paths = new HashSet<NormalizedPath>( outputPaths );
+            if( pathsAndConfig == null ) throw new ArgumentNullException( nameof( pathsAndConfig ) );
+            _pathsAndConfig = pathsAndConfig;
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
             Root = new TypeScriptFolder( this );
@@ -52,9 +53,9 @@ namespace CK.TypeScript.CodeGen
         public IXmlDocumentationCodeRefHandler? DocumentationCodeRefHandler { get; set; }
 
         /// <summary>
-        /// Gets the output paths. Never empty.
+        /// Gets the output paths and their configuration element. Never empty.
         /// </summary>
-        public IReadOnlyCollection<NormalizedPath> OutputPaths => _paths;
+        public IReadOnlyCollection<(NormalizedPath Path, XElement Config)> OutputPaths => _pathsAndConfig;
 
         /// <summary>
         /// Gets the root folder into which type script files must be generated.
@@ -78,7 +79,13 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor ) => Root.Save( monitor, _paths );
+        public bool Save( IActivityMonitor monitor )
+        {
+            var barrelPaths = _pathsAndConfig.SelectMany( c => c.Config.Elements( "Barrels" ).Elements( "Barrel" )
+                                                     .Select( b => c.Path.Combine( b.Attribute("Path")?.Value ) ) );
+            var barrels = new HashSet<NormalizedPath>( barrelPaths );
+            return Root.Save( monitor, _pathsAndConfig.Select( p => p.Path ), p => barrels.Contains( p ) );
+        }
 
         /// <summary>
         /// Ensures that an identifier follows the <see cref="PascalCase"/> configuration.

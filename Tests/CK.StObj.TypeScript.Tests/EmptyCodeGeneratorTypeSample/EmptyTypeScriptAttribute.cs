@@ -2,7 +2,7 @@ using System;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace CK.StObj.TypeScript.Tests
+namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
 {
     /// <summary>
     /// This specializes the base <see cref="TypeScriptAttribute"/> to generate an empty TS type.
@@ -14,7 +14,7 @@ namespace CK.StObj.TypeScript.Tests
     public class EmptyTypeScriptAttribute : TypeScriptAttribute
     {
         public EmptyTypeScriptAttribute()
-            : base( "CK.StObj.TypeScript.Tests.EmptyTypeScriptAttributeImpl, CK.StObj.TypeScript.Tests" )
+            : base( "CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample.EmptyTypeScriptAttributeImpl, CK.StObj.TypeScript.Tests" )
         {
         }
     }

@@ -61,7 +61,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public void Save( IActivityMonitor monitor, IReadOnlyCollection<NormalizedPath> outputPaths )
+        public void Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths )
         {
             monitor.Trace( $"Saving '{Name}'." );
             var imports = Imports.ToString();

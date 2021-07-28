@@ -40,7 +40,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets this folder's name.
         /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
-        /// it necessarily not ends with '.ts'.
+        /// it necessarily not empty without '.ts' extension.
         /// </summary>
         public string Name { get; }
 
@@ -58,6 +58,14 @@ namespace CK.TypeScript.CodeGen
         /// Gets the root TypeScript context.
         /// </summary>
         public TypeScriptRoot Root => _g;
+
+        /// <summary>
+        /// Gets or sets whether a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel) must be
+        /// generated in this folder.
+        /// When null (the default), this is decided by the strategy of the <see cref="Save"/> method.
+        /// When set, the strategy is not used and this property takes precedence.
+        /// </summary>
+        public bool? CreateBarrelOnSave { get; set; }
 
         /// <summary>
         /// Finds or creates a folder.
@@ -261,11 +269,13 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>
+        /// <param name="createBarrel">Optional strategy to create barrels in folders. See <see cref="CreateBarrelOnSave"/>.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, IReadOnlyCollection<NormalizedPath> outputPaths )
+        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath,bool>? createBarrel = null )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
             {
+                if( createBarrel == null ) createBarrel = _ => false;
                 try
                 {
                     var newOnes = IsRoot ? outputPaths : outputPaths.Select( p => p.AppendPart( Name ) ).ToArray();
@@ -282,8 +292,25 @@ namespace CK.TypeScript.CodeGen
                     var folder = _firstChild;
                     while( folder != null )
                     {
-                        if( !folder.Save( monitor, newOnes ) ) return false;
+                        if( !folder.Save( monitor, newOnes, createBarrel ) ) return false;
                         folder = folder._next;
+                    }
+                    if( CreateBarrelOnSave != false )
+                    {
+                        string? barrel = null;
+                        foreach( var p in newOnes )
+                        {
+                            if( CreateBarrelOnSave ?? createBarrel( p ) )
+                            {
+                                if( barrel == null )
+                                {
+                                    var b = new StringBuilder();
+                                    AddExportsToBarrel( p, default, b, createBarrel );
+                                    barrel = b.ToString();
+                                }
+                                File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
+                            }
+                        }
                     }
                     return true;
                 }
@@ -292,6 +319,42 @@ namespace CK.TypeScript.CodeGen
                     monitor.Error( ex );
                     return false;
                 }
+            }
+        }
+
+        void AddExportsToBarrel( NormalizedPath parentPath, NormalizedPath subPath, StringBuilder b, Func<NormalizedPath, bool> createBarrel )
+        {
+            if( !subPath.IsEmptyPath
+                && (CreateBarrelOnSave ?? createBarrel( parentPath.Combine( subPath ) )) )
+            {
+                AddExportFolder( subPath, b );
+            }
+            else
+            {
+                var file = _firstFile;
+                while( file != null )
+                {
+                    AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
+                    file = file._next;
+                }
+                var folder = _firstChild;
+                while( folder != null )
+                {
+                    folder.AddExportsToBarrel( parentPath, subPath.AppendPart( folder.Name ), b, createBarrel );
+                    folder = folder._next;
+                }
+            }
+
+            static void AddExportFile( NormalizedPath subPath, StringBuilder b, ReadOnlySpan<char> fileName )
+            {
+                b.Append( "export * from './" ).Append( subPath );
+                if( !subPath.IsEmptyPath ) b.Append( '/' );
+                b.Append( fileName ).AppendLine( "';" );
+            }
+
+            static void AddExportFolder( NormalizedPath subPath, StringBuilder b )
+            {
+                b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
             }
         }
 

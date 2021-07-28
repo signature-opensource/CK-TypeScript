@@ -74,14 +74,18 @@ namespace CK.Setup
             }
             TypeScriptRoot? g;
             var binPath = genBinPath.CurrentRun;
-            var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
+            var pathsAndConfig = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
-                            .SelectMany( c => c!.Elements( "OutputPath" ) )
-                            .Select( e => e.Value )
-                            .Where( p => !String.IsNullOrWhiteSpace( p ) )
-                            .Select( p => MakeAbsolute( _basePath, p ) )
-                            .Where( p => !p.IsEmptyPath );
-            if( !paths.Any() )
+                            .Select( c => (Config: c!, Paths: c!.Elements( "OutputPath" ).Select( p => p?.Value )
+                                                                .Where( p => !String.IsNullOrWhiteSpace( p ) )
+                                                                .Select( p => MakeAbsolute( _basePath, p ) )
+                                                                .Where( p => !p.IsEmptyPath )
+                                                                .Distinct()) )
+                            .Where( p => p.Paths.Any() )
+                            // Reverts the tuple: path => its config (potentially shared with other paths).
+                            .SelectMany( p => p.Paths.Select( onePath => (Path: onePath, p.Config) ) )
+                            .ToArray();
+            if( pathsAndConfig.Length == 0 )
             {
                 if( binPath.BinPathConfigurations.Count != 0 )
                 {
@@ -91,7 +95,7 @@ namespace CK.Setup
             }
             else
             {
-                g = new TypeScriptRoot( paths, _config.PascalCase, _config.GenerateDocumentation );
+                g = new TypeScriptRoot( pathsAndConfig, _config.PascalCase, _config.GenerateDocumentation );
             }
 
             return g;
@@ -108,7 +112,7 @@ namespace CK.Setup
                     {
                         if( g != null )
                         {
-                            success &= g.Root.Root.Save( monitor, g.Root.OutputPaths );
+                            success &= g.Root.Save( monitor );
                         }
                     }
                 }
