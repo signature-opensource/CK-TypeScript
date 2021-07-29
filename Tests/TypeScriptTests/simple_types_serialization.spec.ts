@@ -1,7 +1,9 @@
-﻿import { IWillBeEmpty } from './Output/Json/simple_types_serialization/IWillBeEmpty'
+﻿import { Simple, SimpleEnum } from './Output/Json/simple_types_serialization'
 
-test('interface IWillBeEmpty is empty.', () => {
-  const b = {a:null};
-  const a : IWillBeEmpty = b;
-  Object.keys(a).length === 0;
-  });
+test('SimpleEnum serializarion.', () => {
+    const a = new Simple();
+    a.name = 'n';
+    a.power = 7897;
+    a.value = SimpleEnum.Three;
+    var s = JSON.stringify( a );
+});

@@ -80,6 +80,7 @@ namespace CK.StObj.TypeScript.Tests
             var config = new StObjEngineConfiguration();
             config.Aspects.Add( tsConfig );
             var b = new BinPathConfiguration();
+            b.ProjectPath = TestHelper.TestProjectFolder;
             b.AspectConfigurations.Add( new XElement( "TypeScript",
                                             new XElement( "OutputPath", output ),
                                             new XElement( "Barrels",
