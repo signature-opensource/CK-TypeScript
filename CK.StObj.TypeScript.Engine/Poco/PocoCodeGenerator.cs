@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using CK.Setup.Json;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -169,6 +170,8 @@ namespace CK.StObj.TypeScript.Engine
                         .CloseBlock();
                 }
 
+                // Defines the symbol marker and the constructor.
+                // The SymbolType contains the JSON serialization type name.
                 TypeScriptRoot tsRoot = tsTypedFile.Context.Root;
                 // Generates the signature with all its interfaces.
                 b.Append( "export class " ).Append( tsTypedFile.TypeName );
@@ -252,7 +255,13 @@ namespace CK.StObj.TypeScript.Engine
                     }
                 }
                 // Raises the Generating event with the mutable TypeScriptPocoClass payload. 
-                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, propList, requiredParameterCount, readOnlyPropertyCount );
+                IPocoJsonInfo? jsonInfo = root.GetJsonInfo();
+                if( jsonInfo == null )
+                {
+                    monitor.Error( $"Unable to get the IPocoJsonInfo for '{root.Name}' poco." );
+                    return null;
+                }
+                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, jsonInfo, propList, requiredParameterCount, readOnlyPropertyCount );
                 var h = PocoGenerating;
                 if( h != null )
                 {
@@ -268,16 +277,15 @@ namespace CK.StObj.TypeScript.Engine
                 // Writes the properties.
                 pocoClass.AppendProperties( b );
 
-                // Defines the symbol marker and the constructor(s).
                 tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolType" );
                 b.NewLine()
-                 .Append( "[SymbolType]: " ).AppendSourceString( tsTypedFile.TypeName ).Append( ";" ).NewLine();
+                 .Append( "[SymbolType]: " ).AppendSourceString( root.Name ).Append( ";" ).NewLine();
 
                 // Currently the constructor is private: this is because of readonly properties that
                 // have no [DefaulValue] attributes: it's not easy to generate the assignation required 
                 // by the strict mode to the "default(propertyType)": for the moment we use "undefined!".
                 // As soon as a decent default(propertyType) can be computed for any type (0 for numbers,
-                // '' for string, ... but for enums? and for other types?), the constructor can be made public.
+                // '' for string, ... but for enums? and for other types?), the constructor may be exposed.
                 ITSCodePart ctorBody;
                 if( readOnlyPropertyCount == 0 )
                 {
@@ -294,7 +302,7 @@ namespace CK.StObj.TypeScript.Engine
                     //
                     // The constructor accepts the optional parameters for each readonly
                     // properties: when undefined, an instance is created (readonly properties can only be
-                    // a IPoco, set, list and map and we jnow how to create them).
+                    // a IPoco, set, list and map and we know how to create them).
                     // 
                     b.CreatePart( out var docPart )
                      .Append( "private constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()

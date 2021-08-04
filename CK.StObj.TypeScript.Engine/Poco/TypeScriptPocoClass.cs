@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Setup.Json;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace CK.StObj.TypeScript.Engine
         internal TypeScriptPocoClass( string className,
                                       ITSCodePart p,
                                       IPocoRootInfo info,
+                                      IPocoJsonInfo jsonInfo,
                                       List<TypeScriptPocoPropertyInfo> props,
                                       int requiredParameterCount,
                                       int readOnlyPropertyCount )
@@ -22,6 +24,7 @@ namespace CK.StObj.TypeScript.Engine
             TypeName = className;
             Part = p;
             PocoRootInfo = info;
+            JsonInfo = jsonInfo;
             Properties = props;
             CreateMethodDocumentation = new DocumentationBuilder();
             ReadOnlyPropertyCount = readOnlyPropertyCount;
@@ -58,6 +61,11 @@ namespace CK.StObj.TypeScript.Engine
         /// Gets the poco information.
         /// </summary>
         public IPocoRootInfo PocoRootInfo { get; }
+
+        /// <summary>
+        /// Gets the Json poco information.
+        /// </summary>
+        public IPocoJsonInfo JsonInfo { get; }
 
         /// <summary>
         /// Gets a list of the properties that will be generated with their <see cref="TypeScriptPocoPropertyInfo.CreateMethodParameter"/>.
