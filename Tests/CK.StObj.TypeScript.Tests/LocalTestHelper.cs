@@ -61,6 +61,11 @@ namespace CK.StObj.TypeScript.Tests
             return GenerateTSCode( testName, new MonoCollectorResolver( types ) );
         }
 
+        public static NormalizedPath GenerateTSCode( string testName, TypeScriptAspectConfiguration configuration, params Type[] types )
+        {
+            return GenerateTSCode( testName, configuration, new MonoCollectorResolver( types ) );
+        }
+
         public static NormalizedPath GenerateTSCode( NormalizedPath subPath, string testName, params Type[] types )
         {
             return GenerateTSCode( testName, new MonoCollectorResolver( types ), subPath );

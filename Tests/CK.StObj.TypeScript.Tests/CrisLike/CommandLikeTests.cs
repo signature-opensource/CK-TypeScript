@@ -110,9 +110,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         }
 
         [Test]
-        public void command_like_sample()
+        public void command_like_sample_with_interfaces()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( command_like_sample ),
+            var output = LocalTestHelper.GenerateTSCode( nameof( command_like_sample_with_interfaces ),
+                                                         new TypeScriptAspectConfiguration() { GeneratePocoInterfaces = true },
                                                          typeof( ICommandOne ),
                                                          typeof( ICommandTwo ),
                                                          typeof( ICommandThree ),

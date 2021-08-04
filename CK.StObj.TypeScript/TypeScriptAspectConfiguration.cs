@@ -11,6 +11,11 @@ namespace CK.Setup
     /// contain a &lt;TypeScript&gt; element with one or more &lt;OutputPath&gt; children elements.
     /// These OutputPaths can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
     /// final paths will be resolved.
+    /// <para>
+    /// The &lt;TypeScript&gt; element can contain a &lt;Barrels&gt; element with &lt;Barrel Path="sub/folder"/&gt; elements:
+    /// that will generate index.ts files in the specified folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
+    /// Use &lt;Barrel Path=""/&gt; to create a barrel at the root level.
+    /// </para>
     /// </summary>
     public class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
     {
@@ -23,6 +28,11 @@ namespace CK.Setup
         /// The <see cref="GenerateDocumentation"/> attribute name.
         /// </summary>
         public static readonly XName xGenerateDocumentation = XNamespace.None + "GenerateDocumentation";
+
+        /// <summary>
+        /// The <see cref="GeneratePocoInterfaces"/> attribute name.
+        /// </summary>
+        public static readonly XName xGeneratePocoInterfaces = XNamespace.None + "GeneratePocoInterfaces";
 
         /// <summary>
         /// Initializes a new default configuration.
@@ -52,7 +62,10 @@ namespace CK.Setup
             e.Add( new XAttribute( StObjEngineConfiguration.xVersion, "1" ),
                         new XElement( xPascalCase, PascalCase ),
                         GenerateDocumentation == false
-                            ? new XAttribute( xGenerateDocumentation, GenerateDocumentation )
+                            ? new XAttribute( xGenerateDocumentation, false )
+                            : null,
+                        GeneratePocoInterfaces == true
+                            ? new XAttribute( xGeneratePocoInterfaces, true )
                             : null );
             return e;
         }
@@ -63,7 +76,6 @@ namespace CK.Setup
         /// </summary>
         public bool PascalCase { get; set; }
 
-
         /// <summary>
         /// Gets or sets whether documentation should be generated.
         /// Defaults to true.
@@ -71,8 +83,16 @@ namespace CK.Setup
         public bool GenerateDocumentation { get; set; }
 
         /// <summary>
+        /// Gets or sets whether documentation should be generated.
+        /// Defaults to false: this is an opt-in since TypeScript interfaces are not really useful.
+        /// </summary>
+        public bool GeneratePocoInterfaces { get; set; }
+
+
+        /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
         /// </summary>
         public string AspectType => "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine";
+
     }
 }

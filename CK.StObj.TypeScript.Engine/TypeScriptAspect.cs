@@ -95,7 +95,7 @@ namespace CK.Setup
             }
             else
             {
-                g = new TypeScriptRoot( pathsAndConfig, _config.PascalCase, _config.GenerateDocumentation );
+                g = new TypeScriptRoot( pathsAndConfig, _config.PascalCase, _config.GenerateDocumentation, _config.GeneratePocoInterfaces );
             }
 
             return g;

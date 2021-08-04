@@ -18,20 +18,26 @@ namespace CK.TypeScript.CodeGen
         readonly IReadOnlyCollection<(NormalizedPath Path, XElement Config)> _pathsAndConfig;
         readonly bool _pascalCase;
         readonly bool _generateDocumentation;
+        readonly bool _generatePocoInterfaces;
         Dictionary<object, object?>? _memory;
 
         /// <summary>
         /// Initializes a new <see cref="TypeScriptRoot"/>.
         /// </summary>
-        /// <param name="pathsAndConfig">Set of output paths with their config element. May be empty.</param>
+        /// <param name="pathsAndConfig">Set of output paths with their configuration element. May be empty.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
-        public TypeScriptRoot( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig, bool pascalCase, bool generateDocumentation )
+        /// <param name="generatePocoInterfaces">Whether IPoco interfaces should be generated.</param>
+        public TypeScriptRoot( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig,
+                               bool pascalCase,
+                               bool generateDocumentation,
+                               bool generatePocoInterfaces )
         {
             if( pathsAndConfig == null ) throw new ArgumentNullException( nameof( pathsAndConfig ) );
             _pathsAndConfig = pathsAndConfig;
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
+            _generatePocoInterfaces = generatePocoInterfaces;
             Root = new TypeScriptFolder( this );
         }
 
@@ -45,6 +51,11 @@ namespace CK.TypeScript.CodeGen
         /// Gets whether documentation should be generated.
         /// </summary>
         public bool GenerateDocumentation => _generateDocumentation;
+
+        /// <summary>
+        /// Gets whether IPoco interfaces should be generated.
+        /// </summary>
+        public bool GeneratePocoInterfaces => _generatePocoInterfaces;
 
         /// <summary>
         /// Gets or sets the <see cref="IXmlDocumentationCodeRefHandler"/> to use.

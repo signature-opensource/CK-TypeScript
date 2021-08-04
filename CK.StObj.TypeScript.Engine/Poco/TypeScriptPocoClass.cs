@@ -212,7 +212,6 @@ namespace CK.StObj.TypeScript.Engine
                         if( prop.CreateMethodParameter != null && !prop.PocoProperty.IsReadOnly )
                         {
                             if( atLeastOne ) b.NewLine();
-                            else atLeastOne = true;
                             // If the create parameter has a default value, use it over the potential
                             // default value of the property set in the constructor.
                             if( prop.CreateMethodParameter.HasDefaultValue && prop.CreateMethodParameter.DefaultValue != prop.Property.DefaultValue )
@@ -237,9 +236,13 @@ namespace CK.StObj.TypeScript.Engine
                                 }
                                 else
                                 {
-                                    b.Append( "c." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.CreateMethodParameter.Name ).Append( ";" );
+                                    // When setting from the parameter, we use the bang operator to avoid an error in strict mode since in
+                                    // the final overload, all parameters except the first one is actually optional.
+                                    // We use atLeastOne for that.
+                                    b.Append( "c." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.CreateMethodParameter.Name ).Append( atLeastOne ? "!;" : ";" );
                                 }
                             }
+                            atLeastOne = true;
                         }
                     }
                 }

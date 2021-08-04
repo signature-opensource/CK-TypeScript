@@ -14,7 +14,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         /// Gets the <see cref="ICommandModel"/> that describes this command.
         /// This property is automatically implemented. 
         /// </summary>
-        [AutoImplementationClaim]
-        ICommandModel CommandModel { get; }
+        ///
+
+        // This is disabled since we do not generate the C# code that implements the
+        // CommandModel. Removing this enables a valid C# code.
+        //[AutoImplementationClaim]
+        //ICommandModel CommandModel { get; }
     }
 }

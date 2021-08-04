@@ -163,22 +163,26 @@ namespace CK.StObj.TypeScript.Engine
                 if( iPocoFile.TypePart == null )
                 {
                     iPocoFile.EnsureTypePart( closer: String.Empty )
-                        .Append( "export const SymbolPoco = Symbol();" ).NewLine()
+                        .Append( "export const SymbolType = Symbol();" ).NewLine()
                         .Append( "export interface IPoco" ).OpenBlock()
-                        .Append( "[SymbolPoco]: unknown;" )
+                        .Append( "[SymbolType]: string;" )
                         .CloseBlock();
                 }
 
+                TypeScriptRoot tsRoot = tsTypedFile.Context.Root;
                 // Generates the signature with all its interfaces.
                 b.Append( "export class " ).Append( tsTypedFile.TypeName );
-                List<TSTypeFile> interfaces = new();
-                foreach( IPocoInterfaceInfo i in root.Interfaces )
+                if( tsRoot.GeneratePocoInterfaces )
                 {
-                    var itf = EnsurePocoInterface( monitor, tsTypedFile.Context, i );
-                    if( itf == null ) return null;
-                    b.Append( interfaces.Count == 0 ? " implements " : ", " );
-                    interfaces.Add( itf );
-                    b.AppendImportedTypeName( itf );
+                    List<TSTypeFile> interfaces = new();
+                    foreach( IPocoInterfaceInfo i in root.Interfaces )
+                    {
+                        var itf = EnsurePocoInterface( monitor, tsTypedFile.Context, i );
+                        if( itf == null ) return null;
+                        b.Append( interfaces.Count == 0 ? " implements " : ", " );
+                        interfaces.Add( itf );
+                        b.AppendImportedTypeName( itf );
+                    }
                 }
                 b.OpenBlock();
 
@@ -188,7 +192,7 @@ namespace CK.StObj.TypeScript.Engine
                 int requiredParameterCount = 0;
                 foreach( var p in root.PropertyList )
                 {
-                    var propName = tsTypedFile.Context.Root.ToIdentifier( p.PropertyName );
+                    var propName = tsRoot.ToIdentifier( p.PropertyName );
                     var propType = GetPropertyTypeScriptType( monitor, tsTypedFile, p );
                     if( propType == null ) return null;
                     var paramName = TypeScriptRoot.ToIdentifier( propName, false );
@@ -265,14 +269,19 @@ namespace CK.StObj.TypeScript.Engine
                 pocoClass.AppendProperties( b );
 
                 // Defines the symbol marker and the constructor(s).
-                tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolPoco" );
+                tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolType" );
                 b.NewLine()
-                 .Append( "[SymbolPoco]: unknown;" ).NewLine();
+                 .Append( "[SymbolType]: " ).AppendSourceString( tsTypedFile.TypeName ).Append( ";" ).NewLine();
 
+                // Currently the constructor is private: this is because of readonly properties that
+                // have no [DefaulValue] attributes: it's not easy to generate the assignation required 
+                // by the strict mode to the "default(propertyType)": for the moment we use "undefined!".
+                // As soon as a decent default(propertyType) can be computed for any type (0 for numbers,
+                // '' for string, ... but for enums? and for other types?), the constructor can be made public.
                 ITSCodePart ctorBody;
                 if( readOnlyPropertyCount == 0 )
                 {
-                    b.Append( "constructor()" ).OpenBlock()
+                    b.Append( "private constructor()" ).OpenBlock()
                      .CreatePart( out ctorBody )
                      .CloseBlock();
                 }
@@ -283,10 +292,12 @@ namespace CK.StObj.TypeScript.Engine
                     //   - and generate the code in one pass.
                     //   - and reuse the createSignaturePart as the implSignaturePart.
                     //
-                    // The first constructor overload is the one with the (all optional) parameters.
-                    // Then comes the empty one.
+                    // The constructor accepts the optional parameters for each readonly
+                    // properties: when undefined, an instance is created (readonly properties can only be
+                    // a IPoco, set, list and map and we jnow how to create them).
+                    // 
                     b.CreatePart( out var docPart )
-                     .Append( "constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()
+                     .Append( "private constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()
                      .AppendDocumentation( $"Initializes a new empty {pocoClass.TypeName}." )
                      .Append( "constructor()" ).NewLine()
                      .Append( "// Implementation." ).NewLine()
@@ -304,6 +315,7 @@ namespace CK.StObj.TypeScript.Engine
                         createSignaturePart.NewLine();
                     }
                     bool atLeastOne = false;
+                    // Handles the readonly properties.
                     foreach( var prop in propList.Skip( propList.Count - readOnlyPropertyCount ) )
                     {
                         // Adds the @param to the doc if any.
@@ -328,12 +340,21 @@ namespace CK.StObj.TypeScript.Engine
                     docPart.Append( docBuilder.GetFinalText() );
                     implSignaturePart.Append( createSignaturePart.ToString() );
                 }
-                ctorBody.Append( "this[SymbolPoco] = null;" ).NewLine();
-                foreach( var prop in propList.Skip( requiredParameterCount )
-                                  .Take( propList.Count - requiredParameterCount - readOnlyPropertyCount )
-                                  .Where( prop => prop.Property.HasDefaultValue ) )
+                // To allow strict mode, all non readonly properties must be initialized even
+                // if they have no default value defined: we generate an assignation to "undefined!": the create method MUST be used.
+                // (And this is why the constructors are private.)
+                foreach( var prop in propList.Take( propList.Count - readOnlyPropertyCount ) )
                 {
-                    ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = " ).Append( prop.Property.DefaultValue ).Append( ";" );
+                    string defaultValue;
+                    if( prop.Property.HasDefaultValue )
+                    {
+                        defaultValue = prop.Property.DefaultValue!;
+                    }
+                    else
+                    {
+                        defaultValue = "undefined!";
+                    }
+                    ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = " ).Append( defaultValue ).Append( ";" ).NewLine();
                 }
                 pocoClass.AppendCreateMethod( monitor, b );
             }
@@ -369,7 +390,7 @@ namespace CK.StObj.TypeScript.Engine
                     return null;
                 }
                 // Double check here since EnsurePocoClass may have called us already.
-                if( tsTypedFile.TypePart == null )
+                if( tsTypedFile.TypePart == null && tsTypedFile.Context.Root.GeneratePocoInterfaces )
                 {
                     var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
                     Debug.Assert( iPocoFile != null, "EnsurePocoClass did the job." );
