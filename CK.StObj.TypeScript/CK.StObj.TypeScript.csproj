@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CK.Poco.Json" />
     <PackageReference Include="CK.StObj.Model" />
   </ItemGroup>
 

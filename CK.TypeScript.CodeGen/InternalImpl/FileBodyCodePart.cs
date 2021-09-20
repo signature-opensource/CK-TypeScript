@@ -7,11 +7,8 @@ namespace CK.TypeScript.CodeGen
     class FileBodyCodePart : RawCodePart, ITSFileBodySection
     {
         public FileBodyCodePart( TypeScriptFile f )
-            : base( String.Empty )
+            : base( f, String.Empty )
         {
-            File = f;
         }
-
-        public TypeScriptFile File { get; }
     }
 }

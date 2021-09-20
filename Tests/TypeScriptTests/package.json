@@ -1,0 +1,20 @@
+{
+  "name": "type-script-tests",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.24",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.4",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@types/luxon": "^1.27.1",
+    "luxon": "^2.0.1"
+  }
+}

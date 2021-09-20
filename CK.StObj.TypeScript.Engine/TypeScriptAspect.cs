@@ -11,13 +11,13 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Aspect that drives TypeScript code generation. Implements <see cref="TypeScriptAspectConfiguration"/>.
+    /// Aspect that drives TypeScript code generation. Handles (and initialized by one) <see cref="TypeScriptAspectConfiguration"/>.
     /// </summary>
     public class TypeScriptAspect : IStObjEngineAspect
     {
         readonly TypeScriptAspectConfiguration _config;
         NormalizedPath _basePath;
-        TypeScriptGenerator?[] _generators;
+        TypeScriptContext?[] _generators;
 
         /// <summary>
         /// Initializes a new aspect from its configuration.
@@ -36,17 +36,22 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
         {
-            _generators = new TypeScriptGenerator?[context.AllBinPaths.Count];
+            _generators = new TypeScriptContext?[context.AllBinPaths.Count];
 
             int idx = 0;
             foreach( var genBinPath in context.AllBinPaths )
             {
-                TypeScriptCodeGenerationContext? tsContext = CreateGenerationContext( monitor, genBinPath );
+                TypeScriptRoot? tsContext = CreateGenerationContext( monitor, genBinPath );
                 if( tsContext != null )
                 {
-                    var g = new TypeScriptGenerator( tsContext, genBinPath );
+                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>( throwOnNull: false );
+                    if( jsonCodeGen == null )
+                    {
+                        monitor.Info( $"No Json serialization available in this context." );
+                    }
+                    var g = new TypeScriptContext( tsContext, genBinPath, jsonCodeGen );
                     _generators[idx++] = g;
-                    if( !g.BuildTSTypeFilesFromAttributes( monitor ) || !g.CallCodeGenerators( monitor ) )
+                    if( !g.Run( monitor ) )
                     {
                         return false;
                     }
@@ -55,7 +60,7 @@ namespace CK.Setup
             return true;
         }
 
-        TypeScriptCodeGenerationContext? CreateGenerationContext( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
+        TypeScriptRoot? CreateGenerationContext( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
         {
             static NormalizedPath MakeAbsolute( NormalizedPath basePath, NormalizedPath p )
             {
@@ -67,16 +72,20 @@ namespace CK.Setup
                 }
                 return p.ResolveDots();
             }
-            TypeScriptCodeGenerationContext? g;
+            TypeScriptRoot? g;
             var binPath = genBinPath.CurrentRun;
-            var paths = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
+            var pathsAndConfig = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
-                            .SelectMany( c => c!.Elements( "OutputPath" ) )
-                            .Select( e => e.Value )
-                            .Where( p => !String.IsNullOrWhiteSpace( p ) )
-                            .Select( p => MakeAbsolute( _basePath, p ) )
-                            .Where( p => !p.IsEmptyPath );
-            if( !paths.Any() )
+                            .Select( c => (Config: c!, Paths: c!.Elements( "OutputPath" ).Select( p => p?.Value )
+                                                                .Where( p => !String.IsNullOrWhiteSpace( p ) )
+                                                                .Select( p => MakeAbsolute( _basePath, p ) )
+                                                                .Where( p => !p.IsEmptyPath )
+                                                                .Distinct()) )
+                            .Where( p => p.Paths.Any() )
+                            // Reverts the tuple: path => its config (potentially shared with other paths).
+                            .SelectMany( p => p.Paths.Select( onePath => (Path: onePath, p.Config) ) )
+                            .ToArray();
+            if( pathsAndConfig.Length == 0 )
             {
                 if( binPath.BinPathConfigurations.Count != 0 )
                 {
@@ -86,7 +95,7 @@ namespace CK.Setup
             }
             else
             {
-                g = new TypeScriptCodeGenerationContext( paths, _config.PascalCase );
+                g = new TypeScriptRoot( pathsAndConfig, _config.PascalCase, _config.GenerateDocumentation, _config.GeneratePocoInterfaces );
             }
 
             return g;
@@ -103,7 +112,7 @@ namespace CK.Setup
                     {
                         if( g != null )
                         {
-                            success &= g.Context.Root.Save( monitor, g.Context.OutputPaths );
+                            success &= g.Root.Save( monitor );
                         }
                     }
                 }

@@ -9,7 +9,8 @@ namespace CK.TypeScript.CodeGen
 
 {
     /// <summary>
-    /// TypeScript file in a <see cref="TypeScriptFolder"/>.
+    /// A TypeScript file resides in a definitive <see cref="TypeScriptFolder"/>
+    /// and exposes a <see cref="Imports"/> and a <see cref="Body"/> sections.
     /// </summary>
     public class TypeScriptFile
     {
@@ -47,12 +48,20 @@ namespace CK.TypeScript.CodeGen
         public ITSFileBodySection Body { get; }
 
         /// <summary>
+        /// Creates a part that is bound to this file but whose content
+        /// is not in this <see cref="Body"/>.
+        /// </summary>
+        /// <returns></returns>
+        public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
+
+        /// <summary>
         /// Saves this file into one or more actual paths on the file system.
+        /// The <see cref="Body"/> can be null (only <see cref="Imports"/> if any will be generated).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public void Save( IActivityMonitor monitor, IReadOnlyCollection<NormalizedPath> outputPaths )
+        public void Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths )
         {
             monitor.Trace( $"Saving '{Name}'." );
             var imports = Imports.ToString();

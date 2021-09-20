@@ -11,18 +11,18 @@ using System.Text.Json;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Folder in a <see cref="TypeScriptCodeGenerationContext.Root"/>.
+    /// Folder in a <see cref="TypeScriptRoot.Root"/>.
     /// </summary>
     public class TypeScriptFolder
     {
-        readonly TypeScriptCodeGenerationContext _g;
+        readonly TypeScriptRoot _g;
         TypeScriptFolder? _firstChild;
         TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
 
         static readonly char[] _invalidFileNameChars = Path.GetInvalidFileNameChars();
 
-        internal TypeScriptFolder( TypeScriptCodeGenerationContext g )
+        internal TypeScriptFolder( TypeScriptRoot g )
         {
             _g = g;
             Name = String.Empty;
@@ -39,8 +39,8 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets this folder's name.
-        /// This string is empty when this is the <see cref="TypeScriptCodeGenerationContext.Root"/>, otherwise
-        /// it necessarily not ends with '.ts'.
+        /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
+        /// it necessarily not empty without '.ts' extension.
         /// </summary>
         public string Name { get; }
 
@@ -50,9 +50,22 @@ namespace CK.TypeScript.CodeGen
         public bool IsRoot => Name.Length == 0;
 
         /// <summary>
-        /// Gets the parent folder. Null when this is the <see cref="TypeScriptCodeGenerationContext.Root"/>.
+        /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
         /// </summary>
         public TypeScriptFolder? Parent { get; }
+
+        /// <summary>
+        /// Gets the root TypeScript context.
+        /// </summary>
+        public TypeScriptRoot Root => _g;
+
+        /// <summary>
+        /// Gets or sets whether a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel) must be
+        /// generated in this folder.
+        /// When null (the default), this is decided by the strategy of the <see cref="Save"/> method.
+        /// When set, the strategy is not used and this property takes precedence.
+        /// </summary>
+        public bool? CreateBarrelOnSave { get; set; }
 
         /// <summary>
         /// Finds or creates a folder.
@@ -77,7 +90,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Finds an exisitng folder or returns null.
+        /// Finds an existing folder or returns null.
         /// </summary>
         /// <param name="name">The folder's name. Must not be empty nor ends with '.ts'.</param>
         /// <returns>The existing folder or null.</returns>
@@ -117,6 +130,24 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? new TypeScriptFile( this, name );
 
         /// <summary>
+        /// Finds or creates a file in this folder.
+        /// </summary>
+        /// <param name="name">The file's name to find or create. Must not be empty and must end with '.ts'.</param>
+        /// <param name="created">True if the file has been created, false if it already existed.</param>
+        /// <returns>The file.</returns>
+        public TypeScriptFile FindOrCreateFile( string name, out bool created )
+        {
+            created = false;
+            TypeScriptFile? f = FindFile( name );
+            if( f == null )
+            {
+                f = new TypeScriptFile( this, name );
+                created = true;
+            }
+            return f;
+        }
+
+        /// <summary>
         /// Finds or creates a file in this folder or a subordinated folder.
         /// </summary>
         /// <param name="filePath">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
@@ -127,7 +158,18 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Finds an exisitng file in this folder or returns null.
+        /// Finds or creates a file in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="filePath">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
+        /// <param name="created">True if the file has been created, false if it already existed.</param>
+        /// <returns>The file.</returns>
+        public TypeScriptFile FindOrCreateFile( NormalizedPath filePath, out bool created )
+        {
+            return FindOrCreateFolder( filePath.RemoveLastPart() ).FindOrCreateFile( filePath.LastPart, out created );
+        }
+
+        /// <summary>
+        /// Finds an existing file in this folder or returns null.
         /// </summary>
         /// <param name="name">The file's name. Must not be empty and must end with '.ts'.</param>
         /// <returns>The existing file or null.</returns>
@@ -181,37 +223,45 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets a relative path from this folder to another one.
-        /// This folder and the other one must belong to the same <see cref="TypeScriptCodeGenerationContext"/>
+        /// This folder and the other one must belong to the same <see cref="TypeScriptRoot"/>
         /// otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="f">The folder to target.</param>
         /// <returns>The relative path from this one to the other one.</returns>
         public NormalizedPath GetRelativePathTo( TypeScriptFolder f )
         {
+            bool firstLook = true;
             var source = this;
-            NormalizedPath result = new NormalizedPath();
+            NormalizedPath result = new NormalizedPath( "." );
             do
             {
                 int below = source.FindBelow( f );
                 if( below >= 0 )
                 {
-                    if( below == 0 ) return result;
-                    if( below == 1 ) return result.AppendPart( f.Name );
-                    var path = new string[below];
-                    var idx = path.Length;
-                    do
-                    {
-                        path[--idx] = f.Name;
-                        f = f.Parent!;
-                    }
-                    while( idx > 0 );
-                    foreach( var p in path ) result = result.AppendPart( p );
-                    return result;
+                    var p = BuildPath( f, result, below );
+                    return p;
                 }
-                result = result.AppendPart( ".." );
+                result = firstLook ? new NormalizedPath( ".." ) : result.AppendPart( ".." );
+                firstLook = false;
             }
             while( (source = source.Parent!) != null );
-            throw new InvalidOperationException( "TypeScriptFolder must belong to the same TypeScriptCodeGenerationContext." );
+            throw new InvalidOperationException( "TypeScriptFolder must belong to the same TypeScriptRoot." );
+
+            static NormalizedPath BuildPath( TypeScriptFolder f, NormalizedPath result, int below )
+            {
+                if( below == 0 ) return result;
+                if( below == 1 ) return result.AppendPart( f.Name );
+                var path = new string[below];
+                var idx = path.Length;
+                do
+                {
+                    path[--idx] = f.Name;
+                    f = f.Parent!;
+                }
+                while( idx > 0 );
+                foreach( var p in path ) result = result.AppendPart( p );
+                return result;
+            }
         }
 
         /// <summary>
@@ -219,11 +269,13 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>
+        /// <param name="createBarrel">Optional strategy to create barrels in folders. See <see cref="CreateBarrelOnSave"/>.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, IReadOnlyCollection<NormalizedPath> outputPaths )
+        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath,bool>? createBarrel = null )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
             {
+                if( createBarrel == null ) createBarrel = _ => false;
                 try
                 {
                     var newOnes = IsRoot ? outputPaths : outputPaths.Select( p => p.AppendPart( Name ) ).ToArray();
@@ -240,8 +292,25 @@ namespace CK.TypeScript.CodeGen
                     var folder = _firstChild;
                     while( folder != null )
                     {
-                        if( !folder.Save( monitor, newOnes ) ) return false;
+                        if( !folder.Save( monitor, newOnes, createBarrel ) ) return false;
                         folder = folder._next;
+                    }
+                    if( CreateBarrelOnSave != false )
+                    {
+                        string? barrel = null;
+                        foreach( var p in newOnes )
+                        {
+                            if( CreateBarrelOnSave ?? createBarrel( p ) )
+                            {
+                                if( barrel == null )
+                                {
+                                    var b = new StringBuilder();
+                                    AddExportsToBarrel( p, default, b, createBarrel );
+                                    barrel = b.ToString();
+                                }
+                                File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
+                            }
+                        }
                     }
                     return true;
                 }
@@ -250,6 +319,42 @@ namespace CK.TypeScript.CodeGen
                     monitor.Error( ex );
                     return false;
                 }
+            }
+        }
+
+        void AddExportsToBarrel( NormalizedPath parentPath, NormalizedPath subPath, StringBuilder b, Func<NormalizedPath, bool> createBarrel )
+        {
+            if( !subPath.IsEmptyPath
+                && (CreateBarrelOnSave ?? createBarrel( parentPath.Combine( subPath ) )) )
+            {
+                AddExportFolder( subPath, b );
+            }
+            else
+            {
+                var file = _firstFile;
+                while( file != null )
+                {
+                    AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
+                    file = file._next;
+                }
+                var folder = _firstChild;
+                while( folder != null )
+                {
+                    folder.AddExportsToBarrel( parentPath, subPath.AppendPart( folder.Name ), b, createBarrel );
+                    folder = folder._next;
+                }
+            }
+
+            static void AddExportFile( NormalizedPath subPath, StringBuilder b, ReadOnlySpan<char> fileName )
+            {
+                b.Append( "export * from './" ).Append( subPath );
+                if( !subPath.IsEmptyPath ) b.Append( '/' );
+                b.Append( fileName ).AppendLine( "';" );
+            }
+
+            static void AddExportFolder( NormalizedPath subPath, StringBuilder b )
+            {
+                b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
             }
         }
 

@@ -66,12 +66,11 @@ namespace CodeCake
                 {
                     globalInfo.PushArtifacts();
                     StandardPushCKSetupComponents( globalInfo );
-               } );
+                } );
 
             // The Default task for this script can be set here.
             Task( "Default" )
                 .IsDependentOn( "Push-Artifacts" );
-
         }
 
     }

@@ -5,7 +5,9 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Extends <see cref="ITSCodeWriter"/> to support multiple parts, an optional <see cref="Closer"/> suffix and a <see cref="Memory"/>.
+    /// Extends <see cref="ITSCodeWriter"/> to support multiple parts, optionals <see cref="Closer"/> suffix and a <see cref="Memory"/>.
+    /// Such parts can be created from a parent part (typically from a <see cref="TypeScriptFile.Body"/>), or as detached, independent
+    /// parts thanks to <see cref="TypeScriptFile.CreateDetachedPart()"/>.
     /// </summary>
     public interface ITSCodePart : ITSCodeWriter
     {
@@ -21,6 +23,11 @@ namespace CK.TypeScript.CodeGen
         IDictionary<object, object?> Memory { get; }
 
         /// <summary>
+        /// Gets the created parts (keyed or not).
+        /// </summary>
+        public IEnumerable<ITSCodePart> Parts { get; }
+
+        /// <summary>
         /// Creates a segment of code inside this code.
         /// </summary>
         /// <param name="closer">Optional <see cref="Closer"/> of the subordinate part.</param>
@@ -32,58 +39,56 @@ namespace CK.TypeScript.CodeGen
         ITSCodePart CreatePart( string closer = "", bool top = false );
 
         /// <summary>
-        /// Creates a named segment of code inside this code.
-        /// This throws an <see cref="InvalidOperationException"/> if a part with the same name already exists.
+        /// Creates a new identifiable segment of code inside this code.
+        /// This throws an <see cref="InvalidOperationException"/> if a part with the same key already exists.
         /// </summary>
-        /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
+        /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="closer"><see cref="Closer"/> of the subordinate part.</param>
         /// <param name="top">
         /// Optionally creates the new part at the start of the code instead of at the
         /// current writing position in the code.
         /// </param>
         /// <returns>The code part to use.</returns>
-        ITSNamedCodePart CreateNamedPart( string name, string closer = "", bool top = false );
+        ITSKeyedCodePart CreateKeyedPart( object key, string closer = "", bool top = false );
 
         /// <summary>
-        /// Finds or creates a named segment of code inside this code.
+        /// Finds or creates an identifiable segment of code inside this code.
         /// </summary>
-        /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
+        /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="closer">
         /// <see cref="Closer"/> of the subordinate part.
-        /// When not null, it must be the same as the Closer of the existing part if it has been already crated.
-        /// When let to null, it lets the exisiting Closer as-is if the part exists or defaults to the empty string if
+        /// When not null, it must be the same as the Closer of the existing part if it has been already created.
+        /// When let to null, it lets the existing Closer as-is if the part exists or defaults to the empty string if
         /// the part must be created.
         /// </param>
         /// <param name="top">
         /// Optionally creates the new part at the start of the code instead of at the
         /// current writing position in the code.
         /// </param>
-        /// <returns>The code part to use.</returns>
-        ITSNamedCodePart FindOrCreateNamedPart( string name, string? closer = null, bool top = false );
+        /// <returns>The code part with the key.</returns>
+        ITSKeyedCodePart FindOrCreateKeyedPart( object key, string? closer = null, bool top = false );
 
         /// <summary>
-        /// Finds an existing named segment of code inside this code.
+        /// Finds an existing segment of code inside this code.
         /// </summary>
-        /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
-        /// <returns>The named code part or null.</returns>
-        ITSNamedCodePart? FindNamedPart( string name );
+        /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
+        /// <returns>The keyed code part or null.</returns>
+        ITSKeyedCodePart? FindKeyedPart( object key );
 
         /// <summary>
-        /// Collects the whole code into a string collector, optionnaly closing the
-        /// scope with the <see cref="Closer"/> or leaving it opened.
-        /// </summary>
-        /// <param name="collector">The string collector to write to.</param>
-        /// <param name="closeScope">True to close the scope.</param>
-        void Build( Action<string> collector, bool closeScope );
-
-        /// <summary>
-        /// Collects the whole code into a <see cref="StringBuilder"/>, optionnaly closing the
+        /// Collects the whole code into a <see cref="StringBuilder"/>, optionally closing the
         /// scope with the <see cref="Closer"/> or leaving it opened.
         /// </summary>
         /// <param name="b">The string builder to write to.</param>
         /// <param name="closeScope">True to close the scope before returning the builder.</param>
         /// <returns>The string builder.</returns>
         StringBuilder Build( StringBuilder b, bool closeScope );
+
+        /// <summary>
+        /// Gets the current text.
+        /// </summary>
+        /// <returns>The current text (with the <see cref="Closer"/>). Can be empty.</returns>
+        string ToString();
 
     }
 

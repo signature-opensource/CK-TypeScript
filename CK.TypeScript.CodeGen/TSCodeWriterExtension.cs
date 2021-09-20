@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
+using System.Xml.Linq;
+using CK.Core;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -18,7 +20,7 @@ namespace CK.TypeScript.CodeGen
         /// avoid adding it twice.
         /// </summary>
         /// <typeparam name="T">Must be a <see cref="ITSCodePart"/>.</typeparam>
-        /// <param name="this">This named scope and code writer.</param>
+        /// <param name="this">This code part.</param>
         /// <param name="code">Raw code to append. Must not be null, empty or white space.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T AppendOnce<T>( this T @this, string code ) where T : ITSCodePart
@@ -41,7 +43,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="this">This code writer.</param>
         /// <param name="code">Raw code to append.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T Append<T>( this T @this, string code ) where T : ITSCodeWriter
+        static public T Append<T>( this T @this, string? code ) where T : ITSCodeWriter
         {
             @this.DoAdd( code );
             return @this;
@@ -82,15 +84,16 @@ namespace CK.TypeScript.CodeGen
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T OpenBlock<T>( this T @this ) where T : ITSCodeWriter => @this.Append( Environment.NewLine ).Append( '{' ).NewLine();
+        static public T OpenBlock<T>( this T @this ) where T : ITSCodeWriter => @this.Append( " {" ).NewLine();
 
         /// <summary>
         /// Appends a "}" on a new independent line.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
+        /// <param name="withSemiColon">True to add a ";" after the bracket.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T CloseBlock<T>( this T @this ) where T : ITSCodeWriter => @this.Append( Environment.NewLine ).Append( '}' ).NewLine();
+        static public T CloseBlock<T>( this T @this, bool withSemiColon = false ) where T : ITSCodeWriter => @this.NewLine().Append( withSemiColon ? "};" : "}" ).NewLine();
 
         /// <summary>
         /// Appends either "true" or "false".
@@ -277,10 +280,17 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends the code source for an untyped object.
-        /// Only types that are implemented through one of the existing Append, AppendArray (all IEnumerable are
-        /// handled) and enum values.
-        /// extension methods are supported: an <see cref="ArgumentException"/> is thrown for unsupported type.
+        /// Appends an identifier (simple call to <see cref="TypeScriptRoot.ToIdentifier(string)"/>).
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="name">.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        static public T AppendIdentifier<T>( this T @this, string name ) where T : ITSCodeWriter => Append( @this, @this.File.Folder.Root.ToIdentifier( name ) );
+
+        /// <summary>
+        /// Calls <see cref="TryAppend{T}(T, object?)"/> and throws an <see cref="ArgumentException"/> if
+        /// the object's type is not handled.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -288,18 +298,38 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T Append<T>( this T @this, object? o ) where T : ITSCodeWriter
         {
-            if( o == DBNull.Value ) return @this.Append( "null" );
-            switch( o )
+            if( !TryAppend( @this, o ) ) throw new ArgumentException( "Unknown type: " + o!.GetType().AssemblyQualifiedName );
+            return @this;
+        }
+
+        /// <summary>
+        /// Tries to appends the code source for an untyped object.
+        /// Only types that are implemented through one of the existing Append, AppendArray (IEnumerable is
+        /// handled).
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="o">The object. Can be null.</param>
+        /// <returns>True on success, false on error.</returns>
+        static public bool TryAppend<T>( this T @this, object? o ) where T : ITSCodeWriter
+        {
+            if( o == DBNull.Value ) @this.Append( "null" );
+            else
             {
-                case null: return @this.Append( "null" );
-                case bool x: return Append( @this, x );
-                case int x: return Append( @this, x );
-                case char x: return AppendSourceChar( @this, x );
-                case double x: return Append( @this, x );
-                case float x: return Append( @this, x );
-                case IEnumerable x: return AppendArray( @this, x );
+                switch( o )
+                {
+                    case null: @this.Append( "null" ); break;
+                    case string x: AppendSourceString( @this, x ); break;
+                    case bool x: Append( @this, x ); break;
+                    case int x: Append( @this, x ); break;
+                    case char x: AppendSourceChar( @this, x ); break;
+                    case double x: Append( @this, x ); break;
+                    case float x: Append( @this, x ); break;
+                    case IEnumerable x: AppendArray( @this, x ); break;
+                    default: return false;
+                }
             }
-            throw new ArgumentException( "Unknown type: " + o.GetType().AssemblyQualifiedName );
+            return true;
         }
 
         /// <summary>
@@ -319,19 +349,19 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Creates a named part of code inside this part.
+        /// Creates a keyed part of code inside this part.
         /// This signature allows a fluent code to "emit" one or more insertion points.
         /// </summary>
         /// <typeparam name="T">The code part type.</typeparam>
         /// <param name="this">This code part.</param>
-        /// <param name="part">The named part to use to inject code at this location (or at the top).</param>
-        /// <param name="name">The <see cref="ITSNamedCodePart.Name"/>.</param>
+        /// <param name="part">Outputs the keyed part to use to inject code at this location (or at the <paramref name="top"/>).</param>
+        /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This code part to enable fluent syntax.</returns>
-        public static T CreateNamedPart<T>( this T @this, out ITSNamedCodePart part, string name, string closer = "", bool top = false ) where T : ITSCodePart
+        public static T CreateKeyedPart<T>( this T @this, out ITSKeyedCodePart part, object key, string closer = "", bool top = false ) where T : ITSCodePart
         {
-            part = @this.CreateNamedPart( name, closer, top );
+            part = @this.CreateKeyedPart( key, closer, top );
             return @this;
         }
 
@@ -356,6 +386,31 @@ namespace CK.TypeScript.CodeGen
             f( @this );
             return @this;
         }
+
+        /// <summary>
+        /// Appends a <see cref="TypeScriptVarType"/>.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="decl">The declaration.</param>
+        /// <param name="prefixName">Optional prefix to inject before the name.</param>
+        /// <param name="withComment">False to skip the initial <see cref="TypeScriptVarType.Comment"/> if any.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        public static T Append<T>( this T @this, TypeScriptVarType decl, string? prefixName = null, bool withComment = true ) where T : ITSCodeWriter
+        {
+            if( withComment && !String.IsNullOrWhiteSpace( decl.Comment ) ) @this.AppendDocumentation( decl.Comment );
+            @this.Append( prefixName )
+                 .Append( decl.Name )
+                 .Append( decl.Optional ? "?: " : ": " )
+                 .Append( decl.Type );
+            if( !String.IsNullOrWhiteSpace( decl.DefaultValue ) )
+            {
+                @this.Append( " = " ).Append( decl.DefaultValue );
+            }
+            return @this;
+        }
+
+
 
     }
 }

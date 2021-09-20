@@ -5,10 +5,15 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Most basic interface: a simple string fragment collector.
+    /// Most basic interface: a simple string fragment collector that belongs to a TypeScript <see cref="File"/>.
     /// </summary>
     public interface ITSCodeWriter
     {
+        /// <summary>
+        /// Gets the file to which this writer belongs.
+        /// </summary>
+        TypeScriptFile File { get; }
+
         /// <summary>
         /// Adds a raw string to this writer.
         /// </summary>

@@ -1,56 +1,68 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using CK.Text;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
     class RawCodePart : BaseCodeWriter, ITSCodePart
     {
-        Dictionary<string, NamedCodePart>? _namedParts;
+        Dictionary<object, KeyedCodePart>? _keyedParts;
 
-        internal RawCodePart( string closer )
+        internal RawCodePart( TypeScriptFile f, string closer )
+            : base( f )
         {
-            Closer = closer;
+            Closer = closer.NormalizeEOL();
         }
 
         public string Closer { get; }
 
-        public ITSNamedCodePart CreateNamedPart( string name, string closer, bool top = false ) => DoCreate( name, closer, top );
+        public IEnumerable<ITSCodePart> Parts => Content.OfType<ITSCodePart>();
+
+        public ITSKeyedCodePart CreateKeyedPart( object key, string closer, bool top = false ) => DoCreate( key, closer, top );
 
         public ITSCodePart CreatePart( string closer = "", bool top = false )
         {
-            var p = new RawCodePart( closer );
-            if( top ) Parts.Insert( 0, p );
-            else Parts.Add( p );
+            var p = new RawCodePart( File, closer );
+            if( top ) Content.Insert( 0, p );
+            else Content.Add( p );
             return p;
         }
 
-        public ITSNamedCodePart? FindNamedPart( string name ) => _namedParts?.GetValueOrDefault( name );
+        public ITSKeyedCodePart? FindKeyedPart( object key ) => _keyedParts?.GetValueOrDefault( key );
 
-        public ITSNamedCodePart FindOrCreateNamedPart( string name, string? closer = null, bool top = false )
+        public ITSKeyedCodePart FindOrCreateKeyedPart( object key, string? closer = null, bool top = false )
         {
-            if( _namedParts != null && _namedParts.TryGetValue( name, out var p ) )
+            if( _keyedParts != null && _keyedParts.TryGetValue( key, out var p ) )
             {
-                if( closer != null && p.Closer != closer )
+                if( closer != null && p.Closer != closer.NormalizeEOL() )
                 {
-                    throw new ArgumentException( $"Existing named part Closer is '{p.Closer}' whereas closer parameter is '{closer}'.", nameof(closer) );
+                    throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof(closer) );
                 }
                 return p;
             }
-            return DoCreate( name, closer ?? String.Empty, top );
+            return DoCreate( key, closer ?? String.Empty, top );
         }
 
-        ITSNamedCodePart DoCreate( string name, string closer, bool top )
+        ITSKeyedCodePart DoCreate( object key, string closer, bool top )
         {
-            if( _namedParts == null ) _namedParts = new Dictionary<string, NamedCodePart>();
-            var p = new NamedCodePart( name, closer );
-            _namedParts.Add( name, p );
+            if( _keyedParts == null ) _keyedParts = new Dictionary<object, KeyedCodePart>();
+            var p = new KeyedCodePart( File, key, closer );
+            _keyedParts.Add( key, p );
+            if( top ) Content.Insert( 0, p );
+            else Content.Add( p );
             return p;
         }
 
-        public void Build( Action<string> collector, bool closeScope )
+        internal override SmarterStringBuilder Build( SmarterStringBuilder b )
         {
-            var b = new SmarterStringBuilder( collector );
+            Build( b, true );
+            return b;
+        }
+
+        public void Build( SmarterStringBuilder b, bool closeScope )
+        {
             base.Build( b );
             if( closeScope && Closer.Length != 0 ) b.AppendLine().Append( Closer );
         }
