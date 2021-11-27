@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <Import Project="..\Common\Shared.props" />
-
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="CK.StObj.Runtime" />
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
   </ItemGroup>
-
 </Project>
