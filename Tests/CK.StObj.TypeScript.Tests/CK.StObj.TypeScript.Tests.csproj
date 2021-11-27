@@ -1,28 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <Import Project="..\..\Common\Shared.props" />
-
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" />
     <PackageReference Include="nunit" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <Folder Include="Logs\" />
   </ItemGroup>
-
 </Project>
