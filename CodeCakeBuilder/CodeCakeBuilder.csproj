@@ -6,7 +6,6 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Text" Version="9.0.2" />
     <PackageReference Include="CKSetup.Cake" Version="14.1.0" />
     <PackageReference Include="NuGet.Credentials" Version="6.0.0" />
   </ItemGroup>
