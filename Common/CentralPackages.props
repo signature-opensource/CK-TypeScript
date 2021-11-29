@@ -1,10 +1,10 @@
 <Project>
   <ItemGroup>
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="0.0.0--03lvnn5-local+v15.0.0-a01" />
-    <PackageReference Update="CK.StObj.Model" Version="0.0.0--03ltbpw-local" />
-    <PackageReference Update="CK.Poco.Json" Version="0.0.0--03ltbpw-local" />
-    <PackageReference Update="CK.StObj.Runtime" Version="0.0.0--03lvs3s-local" />
-    <PackageReference Update="CK.Testing.StObjEngine" Version="0.0.0--03lvs3s-local" />
+    <PackageReference Update="CK.StObj.Model" Version="0.0.0--03lvwyw-local" />
+    <PackageReference Update="CK.Poco.Json" Version="0.0.0--03lvwyw-local" />
+    <PackageReference Update="CK.StObj.Runtime" Version="0.0.0--03lvwyw-local" />
+    <PackageReference Update="CK.Testing.StObjEngine" Version="0.0.0--03lvwyw-local" />
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.0.0" />
     <PackageReference Update="Microsoft.VisualStudio.Threading.Analyzers" Version="17.0.64" />
   </ItemGroup>

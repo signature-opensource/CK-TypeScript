@@ -1,7 +1,6 @@
 using CK.Core;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
-using CK.Text;
 using CK.TypeScript.CodeGen;
 using System;
 

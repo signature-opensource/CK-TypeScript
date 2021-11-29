@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CK.Text;
+using CK.Core;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen
