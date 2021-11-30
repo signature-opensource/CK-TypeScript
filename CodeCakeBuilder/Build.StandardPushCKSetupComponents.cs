@@ -17,7 +17,7 @@ namespace CodeCake
         {
             return new CKSetupComponent[]{
 
-new CKSetupComponent( "CK.StObj.TypeScript", "netstandard2.1" ),
+new CKSetupComponent( "CK.StObj.TypeScript", "net6.0" ),
 new CKSetupComponent( "CK.StObj.TypeScript.Engine", "net6.0" )
 };
         }

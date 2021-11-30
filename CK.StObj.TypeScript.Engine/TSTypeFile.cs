@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Setup;
-using CK.Text;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;

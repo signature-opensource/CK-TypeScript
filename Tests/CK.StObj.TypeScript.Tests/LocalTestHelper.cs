@@ -1,7 +1,6 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using CK.Text;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System;

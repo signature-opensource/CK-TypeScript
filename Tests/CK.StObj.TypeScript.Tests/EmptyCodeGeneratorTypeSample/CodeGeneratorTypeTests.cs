@@ -1,4 +1,3 @@
-using CK.Text;
 using CK.TypeScript.CodeGen;
 using FluentAssertions;
 using NUnit.Framework;
