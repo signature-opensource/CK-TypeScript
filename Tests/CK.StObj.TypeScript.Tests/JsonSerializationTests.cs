@@ -9,7 +9,7 @@ using System.Text;
 namespace CK.StObj.TypeScript.Tests
 {
     [TestFixture]
-    public class JsonSerializartionTests
+    public class JsonSerializationTests
     {
 
         [ExternalName("SimpleEnum")]
