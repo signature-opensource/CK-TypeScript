@@ -13,7 +13,7 @@ namespace CK.TypeScript.CodeGen
         internal RawCodePart( TypeScriptFile f, string closer )
             : base( f )
         {
-            Closer = closer.NormalizeEOL();
+            Closer = closer.ReplaceLineEndings();
         }
 
         public string Closer { get; }
@@ -36,7 +36,7 @@ namespace CK.TypeScript.CodeGen
         {
             if( _keyedParts != null && _keyedParts.TryGetValue( key, out var p ) )
             {
-                if( closer != null && p.Closer != closer.NormalizeEOL() )
+                if( closer != null && p.Closer != closer.ReplaceLineEndings() )
                 {
                     throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof(closer) );
                 }
