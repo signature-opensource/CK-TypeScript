@@ -48,6 +48,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         public interface ICommandThree : ICommand
         {
             int NumberThree { get; set; }
+
+            DateTime StartDate { get; set; }
         }
 
         public interface ICommandFour : ICommand

@@ -289,7 +289,8 @@ namespace CK.StObj.TypeScript.Engine
                 ITSCodePart ctorBody;
                 if( readOnlyPropertyCount == 0 )
                 {
-                    b.Append( "private constructor()" ).OpenBlock()
+                    b.Append( "// This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
+                     .Append( "/*private*/ constructor()" ).OpenBlock()
                      .CreatePart( out ctorBody )
                      .CloseBlock();
                 }
@@ -305,7 +306,8 @@ namespace CK.StObj.TypeScript.Engine
                     // a IPoco, set, list and map and we know how to create them).
                     // 
                     b.CreatePart( out var docPart )
-                     .Append( "private constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()
+                     .Append( "// This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
+                     .Append( "/*private*/ constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()
                      .AppendDocumentation( $"Initializes a new empty {pocoClass.TypeName}." )
                      .Append( "constructor()" ).NewLine()
                      .Append( "// Implementation." ).NewLine()
