@@ -131,6 +131,30 @@ namespace CK.Setup
             return null;
         }
 
+
+        public static string? IntrinsicIOTSTypeName( Type t )
+        {
+            if( t == null ) throw new ArgumentNullException( nameof( t ) );
+            if( t == typeof( void ) ) return "t.void";
+            else if( t == typeof( bool ) ) return "t.boolean";
+            else if( t == typeof( string ) ) return "t.string";
+            else if( t == typeof( int )
+                     || t == typeof( uint )
+                     || t == typeof( short )
+                     || t == typeof( ushort )
+                     || t == typeof( byte )
+                     || t == typeof( sbyte )
+                     || t == typeof( float )
+                     || t == typeof( double ) ) return "t.number";
+            else if( t == typeof( long )
+                     || t == typeof( ulong )
+                     || t == typeof( decimal )
+                     || t == typeof( System.Numerics.BigInteger ) ) return "t.Int";
+            else if( t == typeof( object ) ) return "t.unknown";
+            return null;
+        }
+
+
         /// <summary>
         /// Declares the required support of any number of types.
         /// This may create any number of <see cref="TSTypeFile"/> that should eventually be generated.

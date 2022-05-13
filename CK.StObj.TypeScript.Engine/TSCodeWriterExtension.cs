@@ -232,6 +232,118 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
+
+        public static bool AppendComplexIOTSTypeName( this ITSCodeWriter part,
+                                          IActivityMonitor monitor,
+                                          TypeScriptContext g,
+                                          NullableTypeTree type,
+                                          bool withUndefined = true,
+                                          bool alwaysUsePocoClass = true )
+        {
+            var t = type.Type;
+            IPocoInterfaceInfo? iPoco = null;
+
+            if( withUndefined && type.Kind.IsNullable() )
+            {
+                part.Append( "t.union([" );
+            }
+
+            var intrinsicName = TypeScriptContext.IntrinsicIOTSTypeName( t );
+            if( intrinsicName != null )
+            {
+                part.Append( intrinsicName );
+            }
+            else if( t == typeof( DateTime ) )
+            {
+                part.File.Imports.EnsureImportFromLibrary( "luxon", "DateTime" );
+                part.Append( "DateTime" );
+            }
+            else if( t == typeof( DateTimeOffset ) )
+            {
+                part.File.Imports.EnsureImportFromLibrary( "luxon", "DateTime" );
+                part.Append( "DateTime" );
+            }
+            else if( t == typeof( TimeSpan ) )
+            {
+                part.File.Imports.EnsureImportFromLibrary( "luxon", "Duration" );
+                part.Append( "Duration" );
+            }
+            else if( t.IsArray )
+            {
+                part.Append( "t.array(" );
+                if( !AppendComplexIOTSTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
+                part.Append( ")" );
+            }
+            else if( type.Kind.IsTupleType() )
+            {
+                part.Append( "t.tuple([" );
+                bool atLeastOne = false;
+                foreach( var s in type.SubTypes )
+                {
+                    if( atLeastOne ) part.Append( ", " );
+                    atLeastOne = true;
+                    if( !AppendComplexIOTSTypeName( part, monitor, g, s ) ) return false;
+                }
+                part.Append( "])" );
+            }
+            else if( t.IsGenericType )
+            {
+                var tDef = t.GetGenericTypeDefinition();
+                if( type.RawSubTypes.Count == 2 && (tDef == typeof( IDictionary<,> ) || tDef == typeof( Dictionary<,> )) )
+                {
+                    part.Append( "t.record(" );
+                    if( !AppendComplexIOTSTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
+                    part.Append( "," );
+                    if( !AppendComplexIOTSTypeName( part, monitor, g, type.RawSubTypes[1] ) ) return false;
+                    part.Append( ")" );
+                }
+                else if( type.RawSubTypes.Count == 1 )
+                {
+                    if( tDef == typeof( ISet<> ) || tDef == typeof( HashSet<> ) )
+                    {
+                        part.Append( "t.array(" );
+                        if( !AppendComplexIOTSTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
+                        part.Append( ")" );
+                    }
+                    else if( tDef == typeof( IList<> ) || tDef == typeof( List<> ) )
+                    {
+                        part.Append( "t.array(" );
+                        if( !AppendComplexIOTSTypeName( part, monitor, g, type.RawSubTypes[0] ) ) return false;
+                        part.Append( ")" );
+                    }
+                    //else if( tDef == typeof( IPoco ) )
+                    //{
+                    //    var c = g.DeclareTSType( monitor, iPoco.Root.PocoClass, requiresFile: true );
+                    //    part.File.Imports.EnsureImport()
+                    //    part.Append( "t.IOTSCodecIPoco" )
+                    //}
+                }
+                else
+                {
+                    if( !DeclareAndImportAndAppendIOTSTypeName( part, monitor, g, t ) ) return false;
+                }
+            }
+            else if( alwaysUsePocoClass && (iPoco = g.PocoCodeGenerator.PocoSupport.Find( t )) != null )
+            {
+                var c = g.DeclareTSType( monitor, iPoco.Root.PocoClass, requiresFile: true );
+                if( c == null ) return false;
+                part.File.Imports.EnsureImport( c.File, c.TypeName );
+                part.Append( c.TypeName );
+            }
+            else
+            {
+                if( !DeclareAndImportAndAppendIOTSTypeName( part, monitor, g, t ) ) return false;
+            }
+            if( withUndefined && type.Kind.IsNullable() ) {
+                part.Append( ",t.undefined" );
+
+                // End of unions
+                part.Append( "])" );
+            }
+            return true;
+        }
+
+
         static bool DeclareAndImportAndAppendTypeName( ITSCodeWriter b, IActivityMonitor monitor, TypeScriptContext g, Type t )
         {
             var other = g.DeclareTSType( monitor, t, requiresFile: true );
@@ -240,6 +352,15 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
+        static bool DeclareAndImportAndAppendIOTSTypeName( ITSCodeWriter b, IActivityMonitor monitor, TypeScriptContext g, Type t )
+        {
+            var other = g.DeclareTSType( monitor, t, requiresFile: true );
+            if( other == null ) return false;
+            string iotsTypeName = $"IOTSCodec{other.TypeName}";
+            b.File.Imports.EnsureImport( other.File, iotsTypeName );
+            b.Append( iotsTypeName );
+            return true;
+        }
 
     }
 }
