@@ -10,6 +10,7 @@ namespace CK.TypeScript.CodeGen
     {
         List<(TypeScriptFile File, List<string> Types)>? _importFiles;
         List<(string LibraryName, List<string> Types)>? _importLibs;
+        Dictionary<string, bool>? _importEntireLibs;
         int _importCount;
 
         public FileImportCodePart( TypeScriptFile f )
@@ -17,10 +18,13 @@ namespace CK.TypeScript.CodeGen
         {
         }
 
-        public ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames )
+        public ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName,bool entireLibrary = false, params string[] typeNames )
         {
             if( string.IsNullOrWhiteSpace( libraryName ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( libraryName ) );
             AddTypeNames( ref _importLibs, libraryName, typeName, typeNames );
+
+            if(_importEntireLibs == null) _importEntireLibs = new Dictionary<string, bool>();
+            if( !_importEntireLibs.ContainsKey( libraryName ) ) _importEntireLibs.Add( libraryName, entireLibrary );
             return this;
         }
 
@@ -83,8 +87,24 @@ namespace CK.TypeScript.CodeGen
                 {
                     foreach( var e in _importLibs )
                     {
-                        import.Append( "import { " ).Append( e.Types ).Append( " } from " )
-                              .AppendSourceString( e.LibraryName ).Append( ";" ).NewLine();
+                        var importAllLibrary = false;
+
+                        if( _importEntireLibs != null )
+                        {
+                            _importEntireLibs.TryGetValue( e.LibraryName, out importAllLibrary );
+                        }
+
+                        if( importAllLibrary )
+                        {
+                            import.Append( "import * as " ).Append( e.Types ).Append( " from " )
+                            .AppendSourceString( e.LibraryName ).Append( ";" ).NewLine();
+                        }
+                        else
+                        {
+                            import.Append( "import { " ).Append( e.Types ).Append( " } from " )
+                             .AppendSourceString( e.LibraryName ).Append( ";" ).NewLine();
+                        }
+                       
                     }
                 }
                 if( _importFiles != null )

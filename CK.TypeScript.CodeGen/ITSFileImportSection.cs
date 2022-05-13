@@ -24,9 +24,10 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="libraryName">The library name.</param>
         /// <param name="typeName">The first required type name to import.</param>
+        /// <param name="entireLibrary">import all library with "* as" instead of specific element</param>
         /// <param name="typeNames">More types to import  (optionals).</param>
         /// <returns>This section to enable fluent syntax.</returns>
-        ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames );
+        ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, bool entireLibrary = false, params string[] typeNames );
 
         /// <summary>
         /// Gets the number of different <see cref="EnsureImport(TypeScriptFile, string, string[])"/>
