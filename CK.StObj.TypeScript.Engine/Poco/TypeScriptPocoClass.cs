@@ -96,6 +96,90 @@ namespace CK.StObj.TypeScript.Engine
             }
         }
 
+        internal void AppendToPocoJsonMethod( IActivityMonitor monitor, ITSCodePart b, TypeScriptContext typeScriptContext )
+        {
+            string iotsConstName = $"{TypeName}IOTS";
+
+            b.Append( "public toPocoJson() {" ).NewLine().Append( $"const {iotsConstName} = t.strict(" ).Append( "{" );
+
+            foreach( var prop in Properties )
+            {
+                var p = prop.CreateMethodParameter;
+                if( p == null ) continue;
+
+                b.Append( p.Name )
+                 .Append( ":" );
+                GetTypeIoTs( monitor, prop.PocoProperty, b, typeScriptContext );
+                b.Append( "," )
+                .NewLine();
+
+            }
+            b.Append( "})" ).NewLine();
+
+            b.Append( $"const decode = {iotsConstName}.decode(this);" ).NewLine();
+
+            b.Append( "if(isLeft(decode)){" )
+             .NewLine()
+             .Append( "throw new Error(PathReporter.report(decode)[0])" )
+             .NewLine()
+             .Append( "}" )
+             .NewLine();
+
+
+            b.Append( $"const arr = [{TypeName},decode.right]" ).NewLine();
+
+            b.Append( "JSON.stringify(arr)" ).NewLine();
+            b.Append( "}" );
+
+        }
+
+
+        internal static void GetTypeIoTs( IActivityMonitor monitor, IPocoPropertyInfo p, ITSCodePart b, TypeScriptContext typeScriptContext )
+        {
+            if( p.IsReadOnly )
+            {
+                b.Append( "t.readonly(" );
+            }
+
+            if( p.IsUnionType )
+            {
+                b.Append( "t.union([" );
+                foreach( var unionProperties in p.PropertyUnionTypes )
+                {
+                    b.AppendComplexIOTSTypeName( monitor, typeScriptContext, unionProperties );
+                    if( p.PropertyUnionTypes.Last() != unionProperties ) b.Append( ',' );
+                }
+
+                if( p.IsNullable ) b.Append( ",t.undefined" );
+                b.Append( "])" );
+
+            }
+            else
+            {
+                b.AppendComplexIOTSTypeName( monitor, typeScriptContext, p.PropertyNullableTypeTree );
+            }
+
+            //End of readonly
+            if( p.IsReadOnly ) b.Append( ")" );
+        }
+
+        static bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )
+        {
+            bool success = true;
+            bool hasUnions = false;
+            foreach( var t in p.PropertyUnionTypes )
+            {
+                if( hasUnions ) b.Append( "|" );
+                hasUnions = true;
+                success &= b.AppendComplexTypeName( monitor, g, t );
+            }
+            if( !hasUnions )
+            {
+                success &= b.AppendComplexTypeName( monitor, g, p.PropertyNullableTypeTree, withUndefined: false );
+            }
+            return success;
+        }
+
         internal void AppendCreateMethod( IActivityMonitor monitor, ITSCodePart b )
         {
             static void AppendCreateWithConfigSignature( ITSCodePart b, string typeName, bool withUndefined )
@@ -145,7 +229,7 @@ namespace CK.StObj.TypeScript.Engine
             {
                 var p = prop.CreateMethodParameter;
                 if( p == null ) continue;
-                
+
                 if( atLeastOne )
                 {
                     b.Append( "," );
