@@ -168,6 +168,13 @@ namespace CK.StObj.TypeScript.Engine
                         .Append( "export interface IPoco" ).OpenBlock()
                         .Append( "[SymbolType]: string;" )
                         .CloseBlock();
+                    iPocoFile.File.Imports.EnsureImportFromLibrary( "io-ts", "t", true );
+
+                    iPocoFile.EnsureTypePart( closer: String.Empty )
+                             .Append( "export cont IOTSCodecIPoco = t.type(" ).OpenBlock()
+                             .Append( "[SymbolType]: t.string" )
+                             .CloseBlock()
+                             .Append( ")" );
                 }
 
                 // Defines the symbol marker and the constructor.
@@ -367,6 +374,12 @@ namespace CK.StObj.TypeScript.Engine
                     ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = " ).Append( defaultValue ).Append( ";" ).NewLine();
                 }
                 pocoClass.AppendCreateMethod( monitor, b );
+
+                tsTypedFile.File.Imports.EnsureImportFromLibrary( "io-ts", "t",true);
+                tsTypedFile.File.Imports.EnsureImportFromLibrary( "fp-ts/lib/Either", "isLeft");
+                tsTypedFile.File.Imports.EnsureImportFromLibrary( "io-ts/PathReporter", "PathReporter" );
+                pocoClass.AppendToPocoJsonMethod(monitor, b, tsTypedFile.Context );
+
             }
             return tsTypedFile;
         }

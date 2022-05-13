@@ -44,6 +44,10 @@ export class Guid {
         return this._guid;
     }
 }" );
+
+                part.File.Imports.EnsureImportFromLibrary( "io-ts-types'", "UUID" );
+                part.Append( @"export const IOTSCodecGuid = UUID;
+" );
             }
             return true;
         }
