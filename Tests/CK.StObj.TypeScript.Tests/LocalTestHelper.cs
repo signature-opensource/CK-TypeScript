@@ -70,6 +70,14 @@ namespace CK.StObj.TypeScript.Tests
             return GenerateTSCode( testName, types, configuration, default );
         }
 
+        /// <summary>
+        /// Only generates the TS code.
+        /// </summary>
+        /// <param name="testName">The test name (the name of the target folder).</param>
+        /// <param name="types">The set of types to setup (the <see cref="PocoJsonSerializer"/> is automatically added).</param>
+        /// <param name="tsConfig">Optional TS aspect configuration.</param>
+        /// <param name="subPath">Optional folder above the <paramref name="testName"/> folder.</param>
+        /// <returns>The target type script folder.</returns>
         public static NormalizedPath GenerateTSCode( string testName,
                                                      Type[] types,
                                                      TypeScriptAspectConfiguration? tsConfig,
@@ -80,19 +88,21 @@ namespace CK.StObj.TypeScript.Tests
 
             var collectorResults = new MonoCollectorResolver( types );
             engine.Run( collectorResults ).Should().BeTrue( "StObjEngine.Run worked." );
-
             Directory.Exists( output ).Should().BeTrue();
             return output;
         }
 
-        static (NormalizedPath TypeScriptOutput, StObjEngineConfiguration Config) CreateTSAwareConfig( string testName,
-                                                                                                       TypeScriptAspectConfiguration? tsConfig = null,
-                                                                                                       NormalizedPath subPath = default )
+
+
+        public static (NormalizedPath TypeScriptOutput, StObjEngineConfiguration Config) CreateTSAwareConfig( string testName,
+                                                                                                              TypeScriptAspectConfiguration? tsConfig = null,
+                                                                                                              NormalizedPath subPath = default )
         {
             var output = GetOutputFolder( subPath, testName );
             var config = new StObjEngineConfiguration();
             config.Aspects.Add( tsConfig ?? new TypeScriptAspectConfiguration() );
             var b = new BinPathConfiguration();
+            b.CompileOption = CompileOption.Compile;
             b.ProjectPath = TestHelper.TestProjectFolder;
             b.AspectConfigurations.Add( new XElement( "TypeScript",
                                             new XElement( "OutputPath", output ),

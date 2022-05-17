@@ -40,7 +40,6 @@ namespace CK.StObj.TypeScript.Tests
             var output = LocalTestHelper.GenerateTSCode( "Json", nameof( simple_types_serialization ),
                                                          typeof( SimpleEnum ),
                                                          typeof( ISimple ) );
-
         }
     }
 }

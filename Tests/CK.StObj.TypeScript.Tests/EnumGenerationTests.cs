@@ -76,7 +76,7 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void simple_enum_generation()
+        public void simple_enum_generation_in_multiple_BinPath()
         {
             var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "simple_enum_generation", typeof( Simple ) );
 
