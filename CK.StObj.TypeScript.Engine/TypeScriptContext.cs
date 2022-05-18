@@ -104,7 +104,7 @@ namespace CK.Setup
         /// <summary>
         /// Tries to get the TypeScript type name for basic types. This follows the ECMAScriptStandard
         /// mapping rules (short numerics up to <see cref="UInt32"/> and double are "number",
-        /// long, ulong, decimal and <see cref="System.Numerics.BigInteger"/> are "bigInteger".
+        /// long, ulong, decimal and <see cref="System.Numerics.BigInteger"/> are "BigInt".
         /// Object is mapped to "unknown" and void, boolean and string are "void", "boolean" and "string".
         /// </summary>
         /// <param name="t">The type.</param>
@@ -126,34 +126,10 @@ namespace CK.Setup
             else if( t == typeof( long )
                      || t == typeof( ulong )
                      || t == typeof( decimal )
-                     || t == typeof( System.Numerics.BigInteger ) ) return "BigInteger";
+                     || t == typeof( System.Numerics.BigInteger ) ) return "bigint";
             else if( t == typeof( object ) ) return "unknown";
             return null;
         }
-
-
-        public static string? IntrinsicIOTSTypeName( Type t )
-        {
-            if( t == null ) throw new ArgumentNullException( nameof( t ) );
-            if( t == typeof( void ) ) return "t.void";
-            else if( t == typeof( bool ) ) return "t.boolean";
-            else if( t == typeof( string ) ) return "t.string";
-            else if( t == typeof( int )
-                     || t == typeof( uint )
-                     || t == typeof( short )
-                     || t == typeof( ushort )
-                     || t == typeof( byte )
-                     || t == typeof( sbyte )
-                     || t == typeof( float )
-                     || t == typeof( double ) ) return "t.number";
-            else if( t == typeof( long )
-                     || t == typeof( ulong )
-                     || t == typeof( decimal )
-                     || t == typeof( System.Numerics.BigInteger ) ) return "t.Int";
-            else if( t == typeof( object ) ) return "t.unknown";
-            return null;
-        }
-
 
         /// <summary>
         /// Declares the required support of any number of types.

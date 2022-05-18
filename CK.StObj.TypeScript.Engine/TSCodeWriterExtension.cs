@@ -120,7 +120,7 @@ namespace CK.TypeScript.CodeGen
         /// multiple <see cref="TypeScriptFile.Imports"/>.
         /// <para>
         /// <c>typeof(void)</c> is mapped to <c>void</c>, <c>object</c> is mapped to <c>unknown</c>, "small" numerics are mapped to <c>number</c>,
-        /// <c>long</c>, <c>ulong</c>, <c>decimal</c> and <c>BigInteger</c> are mapped to <c>BigInteger</c>, <c>bool</c> is mapped to <c>boolean</c>
+        /// <c>long</c>, <c>ulong</c>, <c>decimal</c> and <c>BigInteger</c> are mapped to <c>BigInt</c>, <c>bool</c> is mapped to <c>boolean</c>
         /// and <c>string</c> is mapped to <c>string</c>.
         /// Value tuple are mapped as array, list, set and dictionary are mapped to Array, Set or Map.
         /// </para>
@@ -234,11 +234,11 @@ namespace CK.TypeScript.CodeGen
 
 
         public static bool AppendComplexIOTSTypeName( this ITSCodeWriter part,
-                                          IActivityMonitor monitor,
-                                          TypeScriptContext g,
-                                          NullableTypeTree type,
-                                          bool withUndefined = true,
-                                          bool alwaysUsePocoClass = true )
+                                                      IActivityMonitor monitor,
+                                                      TypeScriptContext g,
+                                                      NullableTypeTree type,
+                                                      bool withUndefined = true,
+                                                      bool alwaysUsePocoClass = true )
         {
             var t = type.Type;
             IPocoInterfaceInfo? iPoco = null;
@@ -248,7 +248,7 @@ namespace CK.TypeScript.CodeGen
                 part.Append( "t.union([" );
             }
 
-            var intrinsicName = TypeScriptContext.IntrinsicIOTSTypeName( t );
+            var intrinsicName = "t." + TypeScriptContext.IntrinsicTypeName( t );
             if( intrinsicName != null )
             {
                 part.Append( intrinsicName );
