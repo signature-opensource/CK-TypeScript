@@ -11,7 +11,7 @@ namespace CK.StObj.TypeScript.Engine
     /// <summary>
     /// Mutable description of the Poco class part.
     /// </summary>
-    public class TypeScriptPocoClass
+    public partial class TypeScriptPocoClass
     {
         internal TypeScriptPocoClass( string className,
                                       ITSCodePart p,
@@ -94,73 +94,6 @@ namespace CK.StObj.TypeScript.Engine
                  .Append( p.Property.Type )
                  .Append( ";" ).NewLine();
             }
-        }
-
-        internal void AppendToPocoJsonMethod( IActivityMonitor monitor, ITSCodePart b, TypeScriptContext typeScriptContext )
-        {
-            string iotsConstName = $"{TypeName}IOTS";
-
-            b.Append( "public toPocoJson() {" ).NewLine().Append( $"const {iotsConstName} = t.strict(" ).Append( "{" );
-
-            foreach( var prop in Properties )
-            {
-                var p = prop.CreateMethodParameter;
-                if( p == null ) continue;
-
-                b.Append( p.Name )
-                 .Append( ":" );
-                GetTypeIoTs( monitor, prop.PocoProperty, b, typeScriptContext );
-                b.Append( "," )
-                .NewLine();
-
-            }
-            b.Append( "})" ).NewLine();
-
-            b.Append( $"const decode = {iotsConstName}.decode(this);" ).NewLine();
-
-            b.Append( "if(isLeft(decode)){" )
-             .NewLine()
-             .Append( "throw new Error(PathReporter.report(decode)[0])" )
-             .NewLine()
-             .Append( "}" )
-             .NewLine();
-
-
-            b.Append( $"const arr = [{TypeName},decode.right]" ).NewLine();
-
-            b.Append( "JSON.stringify(arr)" ).NewLine();
-            b.Append( "}" );
-
-        }
-
-
-        internal static void GetTypeIoTs( IActivityMonitor monitor, IPocoPropertyInfo p, ITSCodePart b, TypeScriptContext typeScriptContext )
-        {
-            if( p.IsReadOnly )
-            {
-                b.Append( "t.readonly(" );
-            }
-
-            if( p.IsUnionType )
-            {
-                b.Append( "t.union([" );
-                foreach( var unionProperties in p.PropertyUnionTypes )
-                {
-                    b.AppendComplexIOTSTypeName( monitor, typeScriptContext, unionProperties );
-                    if( p.PropertyUnionTypes.Last() != unionProperties ) b.Append( ',' );
-                }
-
-                if( p.IsNullable ) b.Append( ",t.undefined" );
-                b.Append( "])" );
-
-            }
-            else
-            {
-                b.AppendComplexIOTSTypeName( monitor, typeScriptContext, p.PropertyNullableTypeTree );
-            }
-
-            //End of readonly
-            if( p.IsReadOnly ) b.Append( ")" );
         }
 
         static bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )

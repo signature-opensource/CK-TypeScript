@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -10,7 +11,7 @@ namespace CK.TypeScript.CodeGen
     {
         List<(TypeScriptFile File, List<string> Types)>? _importFiles;
         List<(string LibraryName, List<string> Types)>? _importLibs;
-        Dictionary<string, bool>? _importEntireLibs;
+        List<(string LibraryName, string Alias)>? _importStarLibs;
         int _importCount;
 
         public FileImportCodePart( TypeScriptFile f )
@@ -18,13 +19,23 @@ namespace CK.TypeScript.CodeGen
         {
         }
 
-        public ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName,bool entireLibrary = false, params string[] typeNames )
+        public ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames )
         {
-            if( string.IsNullOrWhiteSpace( libraryName ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( libraryName ) );
+            Throw.CheckNotNullOrWhiteSpaceArgument( libraryName );
             AddTypeNames( ref _importLibs, libraryName, typeName, typeNames );
+            return this;
+        }
 
-            if(_importEntireLibs == null) _importEntireLibs = new Dictionary<string, bool>();
-            if( !_importEntireLibs.ContainsKey( libraryName ) ) _importEntireLibs.Add( libraryName, entireLibrary );
+        public ITSFileImportSection EnsureImportAllFromLibrary( string libraryName, string aliasName )
+        {
+            Throw.CheckNotNullOrWhiteSpaceArgument( libraryName );
+            Throw.CheckNotNullOrWhiteSpaceArgument( aliasName );
+            var entry = (libraryName, aliasName);
+            if( _importStarLibs == null ) _importStarLibs = new List<(string LibraryName, string Alias)>() { entry };
+            else
+            {
+                if( !_importStarLibs.Contains( entry ) ) _importStarLibs.Add( entry );
+            }
             return this;
         }
 
@@ -83,28 +94,20 @@ namespace CK.TypeScript.CodeGen
             if( _importFiles != null || _importLibs != null )
             {
                 var import = new BaseCodeWriter( File );
+                if( _importStarLibs != null )
+                {
+                    foreach( var lib in _importStarLibs )
+                    {
+                        import.Append( "import * as " ).Append( lib.Alias ).Append( " from " )
+                            .AppendSourceString( lib.LibraryName ).Append( ";" ).NewLine();
+                    }
+                }
                 if( _importLibs != null )
                 {
                     foreach( var e in _importLibs )
-                    {
-                        var importAllLibrary = false;
-
-                        if( _importEntireLibs != null )
-                        {
-                            _importEntireLibs.TryGetValue( e.LibraryName, out importAllLibrary );
-                        }
-
-                        if( importAllLibrary )
-                        {
-                            import.Append( "import * as " ).Append( e.Types ).Append( " from " )
-                            .AppendSourceString( e.LibraryName ).Append( ";" ).NewLine();
-                        }
-                        else
-                        {
-                            import.Append( "import { " ).Append( e.Types ).Append( " } from " )
-                             .AppendSourceString( e.LibraryName ).Append( ";" ).NewLine();
-                        }
-                       
+                    { 
+                        import.Append( "import { " ).Append( e.Types ).Append( " } from " )
+                            .AppendSourceString( e.LibraryName ).Append( ";" ).NewLine();                       
                     }
                 }
                 if( _importFiles != null )

@@ -168,7 +168,7 @@ namespace CK.StObj.TypeScript.Engine
                         .Append( "export interface IPoco" ).OpenBlock()
                         .Append( "[SymbolType]: string;" )
                         .CloseBlock();
-                    iPocoFile.File.Imports.EnsureImportFromLibrary( "io-ts", "t", true );
+                    iPocoFile.File.Imports.EnsureImportAllFromLibrary( "io-ts", "t" );
 
                     iPocoFile.EnsureTypePart( closer: String.Empty )
                              .Append( "export cont IOTSCodecIPoco = t.type(" ).OpenBlock()
@@ -375,10 +375,8 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 pocoClass.AppendCreateMethod( monitor, b );
 
-                tsTypedFile.File.Imports.EnsureImportFromLibrary( "io-ts", "t",true);
-                tsTypedFile.File.Imports.EnsureImportFromLibrary( "fp-ts/lib/Either", "isLeft");
-                tsTypedFile.File.Imports.EnsureImportFromLibrary( "io-ts/PathReporter", "PathReporter" );
-                pocoClass.AppendToPocoJsonMethod(monitor, b, tsTypedFile.Context );
+                pocoClass.AppendPocoJsonSupport( monitor, tsTypedFile, b );
+
 
             }
             return tsTypedFile;
