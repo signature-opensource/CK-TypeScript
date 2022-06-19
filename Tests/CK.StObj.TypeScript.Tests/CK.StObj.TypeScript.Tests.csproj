@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -7,11 +6,11 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.StObjEngine" />
-    <PackageReference Include="nunit" />
-    <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Playwright.NUnit" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="19.0.0-r09" />
+    <PackageReference Include="nunit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" Version="4.2.1" />
+    <PackageReference Include="Microsoft.Playwright.NUnit" Version="1.21.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />

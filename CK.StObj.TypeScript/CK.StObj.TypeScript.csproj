@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description></Description>
@@ -7,7 +6,7 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Json" />
-    <PackageReference Include="CK.StObj.Model" />
+    <PackageReference Include="CK.Poco.Json" Version="19.0.0-r09" />
+    <PackageReference Include="CK.StObj.Model" Version="19.0.0-r09" />
   </ItemGroup>
 </Project>
