@@ -6,6 +6,6 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.0-r08" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.0-r08-00-0012-develop" />
   </ItemGroup>
 </Project>
