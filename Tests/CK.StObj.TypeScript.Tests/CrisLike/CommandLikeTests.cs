@@ -1,19 +1,12 @@
 using CK.Core;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
-using CK.Testing;
-using CK.Text;
-using CK.TypeScript.CodeGen;
 using FluentAssertions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Xml.Linq;
-using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -55,6 +48,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         public interface ICommandThree : ICommand
         {
             int NumberThree { get; set; }
+
+            DateTime StartDate { get; set; }
         }
 
         public interface ICommandFour : ICommand

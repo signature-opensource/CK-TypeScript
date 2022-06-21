@@ -97,9 +97,18 @@ This *optionality* has many advantages:
 
 ## Samples of implementations
    
-An example of a global code generator is the `IPoco` generator [TSIPocoCodeGenerator](../CK.StObj.TypeScript.Engine/Poco/TSIPocoCodeGenerator.cs) that
+An example of a global code generator is the `IPoco` generator [PocoCodeGenerator](../CK.StObj.TypeScript.Engine/Poco/PocoCodeGenerator.cs) that
 is available by default.
+It is not simple and rely on the IPoco discovery mechanism that captures the Poco model (their multiple interfaces with their properties).
 
-An example of a type bound code generator is [here (in tests)](../Tests/CK.StObj.TypeScript.Tests/CodeGeneratorTypeSample/).
+An example of a type bound code generator is planned to be exposed [here (in tests)](../Tests/CK.StObj.TypeScript.Tests/CodeGeneratorTypeSample/)
+but it's important to note that a generator in real life runs in the "engine space", it's ".Engine" assembly is dynamically resolved
+by the CKSetup process and run by the StObjEngine. It would be tedious to setup a repository with its required CKSetup store support
+to handle one (or a few) types.
+
+As stated in the introduction, providing a generic code generator for any kind of types (any class) is pure utopia. The answer to
+this issue will be in the "Poco Like" family that is under development in the StObjEngine: a standard `PocoLikeCodeGenerator` will
+then be able to generate TS for these beasts since their "shape" will be controlled to be simple enough.
+
 
 

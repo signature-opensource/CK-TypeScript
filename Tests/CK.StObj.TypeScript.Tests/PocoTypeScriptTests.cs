@@ -29,7 +29,7 @@ namespace CK.StObj.TypeScript.Tests
             /// Gets or sets a complex algebraic type.
             /// </summary>
             [UnionType]
-            object NonNullableListOrArrayOrDouble { get; set; }
+            object NonNullableListOrDictionaryOrDouble { get; set; }
 
             [DefaultValue(3712)]
             int WithDefaultValue { get; set; }
@@ -37,7 +37,7 @@ namespace CK.StObj.TypeScript.Tests
             struct UnionTypes
             {
                 public (int,string)? NullableIntOrString { get; }
-                public (IList<string?>,IDictionary<IPoco,ISet<int?>>[],double) NonNullableListOrArrayOrDouble { get; }
+                public (List<string?>,Dictionary<IPoco,ISet<int?>>[],double) NonNullableListOrDictionaryOrDouble { get; }
             }
         }
 
@@ -67,17 +67,17 @@ namespace CK.StObj.TypeScript.Tests
             /// <summary>
             /// Gets the mutable list of string values.
             /// </summary>
-            IList<string> List { get; }
+            List<string> List { get; }
 
             /// <summary>
             /// Gets the mutable map from name to numeric values.
             /// </summary>
-            IDictionary<string, double?> Map { get; }
+            Dictionary<string, double?> Map { get; }
 
             /// <summary>
             /// Gets the mutable set of unique string.
             /// </summary>
-            ISet<string> Set { get; }
+            HashSet<string> Set { get; }
 
             /// <summary>
             /// Gets the algebraic types demonstrations.

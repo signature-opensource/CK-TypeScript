@@ -4,7 +4,6 @@ using CK.Setup;
 using CK.Setup.Json;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
-using CK.Text;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;

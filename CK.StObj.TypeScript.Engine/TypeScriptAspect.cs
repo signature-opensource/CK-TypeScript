@@ -1,10 +1,7 @@
 using CK.Core;
-using CK.Text;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 

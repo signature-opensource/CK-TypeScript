@@ -9,7 +9,7 @@ using System.Text;
 namespace CK.StObj.TypeScript.Tests
 {
     [TestFixture]
-    public class JsonSerializartionTests
+    public class JsonSerializationTests
     {
 
         [ExternalName("SimpleEnum")]
@@ -40,7 +40,6 @@ namespace CK.StObj.TypeScript.Tests
             var output = LocalTestHelper.GenerateTSCode( "Json", nameof( simple_types_serialization ),
                                                          typeof( SimpleEnum ),
                                                          typeof( ISimple ) );
-
         }
     }
 }

@@ -1,9 +1,9 @@
 using CK.Core;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
-using CK.Text;
 using CK.TypeScript.CodeGen;
 using System;
+using System.Diagnostics;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -21,6 +21,7 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
 
         public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, ITSTypeFileBuilder builder, TypeScriptAttribute a )
         {
+            Debug.Assert( builder.Generators.Contains( this ), "Here it's the only one." );
             return true;
         }
 
