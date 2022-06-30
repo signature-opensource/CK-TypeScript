@@ -27,7 +27,7 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
         {
-            _basePath = context.StObjEngineConfiguration.BasePath;
+            _basePath = context.StObjEngineConfiguration.Configuration.BasePath;
             return true;
         }
 
@@ -71,7 +71,7 @@ namespace CK.Setup
             }
             TypeScriptRoot? g;
             var binPath = genBinPath.CurrentRun;
-            var pathsAndConfig = binPath.BinPathConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
+            var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
                             .Select( c => (Config: c!, Paths: c!.Elements( "OutputPath" ).Select( p => p?.Value )
                                                                 .Where( p => !String.IsNullOrWhiteSpace( p ) )
@@ -84,9 +84,9 @@ namespace CK.Setup
                             .ToArray();
             if( pathsAndConfig.Length == 0 )
             {
-                if( binPath.BinPathConfigurations.Count != 0 )
+                if( binPath.ConfigurationGroup.SimilarConfigurations.Count != 0 )
                 {
-                    monitor.Warn( $"Skipped TypeScript generation for BinPathConfiguration {binPath.Names}: <TypeScript><OutputPath>...</OutputPath></TypeScript> element not found or empty." );
+                    monitor.Warn( $"Skipped TypeScript generation for BinPathConfiguration {binPath.ConfigurationGroup.Names}: <TypeScript><OutputPath>...</OutputPath></TypeScript> element not found or empty." );
                 }
                 g = null;
             }

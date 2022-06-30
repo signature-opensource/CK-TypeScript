@@ -33,7 +33,7 @@ namespace CK.StObj.TypeScript.Tests
 
         /// <summary>
         /// Simple, mono bin path, implementation that uses the TestHelper to collect the StObj
-        /// based on an explicit list of types.
+        /// based on an explicit list of types into which typeof( PocoJsonSerializer ) is added.
         /// </summary>
         public class MonoCollectorResolver : IStObjCollectorResultResolver
         {
@@ -44,14 +44,9 @@ namespace CK.StObj.TypeScript.Tests
                 _types = types.Append( typeof( PocoJsonSerializer ) ).ToArray();
             }
 
-            public StObjCollectorResult GetUnifiedResult( BinPathConfiguration unified )
+            public StObjCollectorResult? GetResult( RunningBinPathGroup g )
             {
                 return TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( _types ) );
-            }
-
-            public StObjCollectorResult GetSecondaryResult( BinPathConfiguration head, IEnumerable<BinPathConfiguration> all )
-            {
-                throw new NotImplementedException( "There is only one BinPath: only the unified one is required." );
             }
         }
 
@@ -88,10 +83,10 @@ namespace CK.StObj.TypeScript.Tests
 
             var collectorResults = new MonoCollectorResolver( types );
             engine.Run( collectorResults ).Should().BeTrue( "StObjEngine.Run worked." );
+
             Directory.Exists( output ).Should().BeTrue();
             return output;
         }
-
 
 
         public static (NormalizedPath TypeScriptOutput, StObjEngineConfiguration Config) CreateTSAwareConfig( string testName,

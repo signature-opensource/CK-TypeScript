@@ -7,15 +7,18 @@ namespace CK.Setup
 {
     /// <summary>
     /// Configures TypeScript generation.
+    /// <para>
     /// Each <see cref="BinPathConfiguration"/> that requires TypeScript code to be generated must
     /// contain a &lt;TypeScript&gt; element with one or more &lt;OutputPath&gt; children elements.
     /// These OutputPaths can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
     /// final paths will be resolved.
+    /// </para>
     /// <para>
     /// The &lt;TypeScript&gt; element can contain a &lt;Barrels&gt; element with &lt;Barrel Path="sub/folder"/&gt; elements:
     /// that will generate index.ts files in the specified folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
     /// Use &lt;Barrel Path=""/&gt; to create a barrel at the root level.
     /// </para>
+    /// See <see cref="TypeScriptAspectBinPathConfiguration"/> that models this required BinPathConfiguration.
     /// </summary>
     public class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
     {
@@ -33,6 +36,26 @@ namespace CK.Setup
         /// The <see cref="GeneratePocoInterfaces"/> attribute name.
         /// </summary>
         public static readonly XName xGeneratePocoInterfaces = XNamespace.None + "GeneratePocoInterfaces";
+
+        /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration"/> element name.
+        /// </summary>
+        public static readonly XName xTypeScript = XNamespace.None + "TypeScript";
+
+        /// <summary>
+        /// The element name of each <see cref="TypeScriptAspectBinPathConfiguration.OutputPaths"/>.
+        /// </summary>
+        public static readonly XName xOutputPath = XNamespace.None + "OutputPath";
+
+        /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/> element name.
+        /// </summary>
+        public static readonly XName xBarrels = XNamespace.None + "Barrels";
+
+        /// <summary>
+        /// The child element name of <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/>.
+        /// </summary>
+        public static readonly XName xBarrel = XNamespace.None + "Barrel";
 
         /// <summary>
         /// Initializes a new default configuration.
@@ -87,7 +110,6 @@ namespace CK.Setup
         /// Defaults to false: this is an opt-in since TypeScript interfaces are not really useful.
         /// </summary>
         public bool GeneratePocoInterfaces { get; set; }
-
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
