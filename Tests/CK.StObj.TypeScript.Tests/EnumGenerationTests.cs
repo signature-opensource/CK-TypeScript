@@ -47,7 +47,7 @@ namespace CK.StObj.TypeScript.Tests
             config.BinPaths.Add( b3 );
 
             var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( types ) );
-            StObjEngine.Run( TestHelper.Monitor, r, config ).Should().BeTrue();
+            StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
 
             Directory.Exists( output1 ).Should().BeTrue();
             Directory.Exists( output2 ).Should().BeTrue();
@@ -83,7 +83,7 @@ namespace CK.StObj.TypeScript.Tests
             config.BinPaths.Add( b );
 
             var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( typeof( Simple ) ) );
-            StObjEngine.Run( TestHelper.Monitor, r, config ).Should().BeTrue();
+            StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
 
             Directory.Exists( output1 ).Should().BeTrue();
             Directory.Exists( output2 ).Should().BeTrue();

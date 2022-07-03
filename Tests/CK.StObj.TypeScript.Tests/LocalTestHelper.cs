@@ -82,7 +82,7 @@ namespace CK.StObj.TypeScript.Tests
             var engine = new StObjEngine( TestHelper.Monitor, config );
 
             var collectorResults = new MonoCollectorResolver( types );
-            engine.Run( collectorResults ).Should().BeTrue( "StObjEngine.Run worked." );
+            engine.Run( collectorResults ).Success.Should().BeTrue( "StObjEngine.Run worked." );
 
             Directory.Exists( output ).Should().BeTrue();
             return output;
