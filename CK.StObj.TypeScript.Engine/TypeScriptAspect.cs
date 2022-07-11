@@ -31,6 +31,11 @@ namespace CK.Setup
             return true;
         }
 
+        bool IStObjEngineAspect.RunPreCode( IActivityMonitor monitor, IStObjEngineRunContext context )
+        {
+            return true;
+        }
+
         bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
         {
             _generators = new TypeScriptContext?[context.AllBinPaths.Count];

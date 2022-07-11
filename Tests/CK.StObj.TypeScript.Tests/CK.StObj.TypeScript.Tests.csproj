@@ -16,7 +16,6 @@
     <ProjectReference Include="..\..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="%24StObjGen\" />
     <Folder Include="Logs\" />
     <Folder Include="CodeGeneratorTypeSample\" />
   </ItemGroup>
