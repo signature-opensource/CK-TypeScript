@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.TypeScript.CodeGen;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 
@@ -31,6 +32,11 @@ namespace CK.Setup
             return true;
         }
 
+        public bool OnSkippedRun( IActivityMonitor monitor )
+        {
+            return true;
+        }
+
         bool IStObjEngineAspect.RunPreCode( IActivityMonitor monitor, IStObjEngineRunContext context )
         {
             return true;
@@ -46,7 +52,7 @@ namespace CK.Setup
                 TypeScriptRoot? tsContext = CreateGenerationContext( monitor, genBinPath );
                 if( tsContext != null )
                 {
-                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>( throwOnNull: false );
+                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>();
                     if( jsonCodeGen == null )
                     {
                         monitor.Info( $"No Json serialization available in this context." );
@@ -121,7 +127,6 @@ namespace CK.Setup
             }
             return success;
         }
-
 
     }
 }
