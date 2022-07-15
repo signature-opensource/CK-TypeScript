@@ -19,8 +19,10 @@ namespace CK.Setup
         public TypeScriptAspectBinPathConfiguration()
         {
             OutputPaths = new HashSet<NormalizedPath>();
-            Barrels = new HashSet<NormalizedPath>();
-            Barrels.Add( new NormalizedPath() );
+            Barrels = new HashSet<NormalizedPath>
+            {
+                new NormalizedPath()
+            };
         }
 
         /// <summary>
@@ -57,7 +59,6 @@ namespace CK.Setup
         /// <summary>
         /// Creates an Xml element with this configuration values that can be added to a <see cref="BinPathConfiguration.ToXml()"/> element.
         /// </summary>
-        /// <param name="e">The element to fill.</param>
         /// <returns>The element.</returns>
         public XElement ToXml()
         {

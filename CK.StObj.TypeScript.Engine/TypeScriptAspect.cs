@@ -32,7 +32,7 @@ namespace CK.Setup
             return true;
         }
 
-        public bool OnSkippedRun( IActivityMonitor monitor )
+        bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor )
         {
             return true;
         }

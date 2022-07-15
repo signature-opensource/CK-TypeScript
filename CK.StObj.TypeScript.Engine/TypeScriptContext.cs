@@ -91,7 +91,7 @@ namespace CK.Setup
         /// <returns>The mapped file or null if <paramref name="t"/> doesn't need a file or cannot be mapped.</returns>
         public TSTypeFile? DeclareTSType( IActivityMonitor monitor, Type t, bool requiresFile = false )
         {
-            if( t == null ) throw new ArgumentNullException( nameof( t ) );
+            Throw.CheckNotNullArgument( t );
             HashSet<Type>? _ = null;
             var f = DeclareTSType( monitor, t, ref _ );
             if( f == null && requiresFile )
@@ -111,7 +111,7 @@ namespace CK.Setup
         /// <returns>The TypeScript name if it's a basic type, null if it requires a definition file.</returns>
         public static string? IntrinsicTypeName( Type t )
         {
-            if( t == null ) throw new ArgumentNullException( nameof( t ) );
+            Throw.CheckNotNullArgument( t );
             if( t == typeof( void ) ) return "void";
             else if( t == typeof( bool ) ) return "boolean";
             else if( t == typeof( string ) ) return "string";
@@ -313,12 +313,14 @@ namespace CK.Setup
 
         bool BuildTSTypeFilesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor )
         {
-            var globals = new List<ITSCodeGenerator>();
-            globals.Add( new PocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ) );
-            globals.Add( new SystemTypesCodeGenerator() );
+            var globals = new List<ITSCodeGenerator>
+            {
+                new PocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ),
+                new SystemTypesCodeGenerator()
+            };
 
             // These variables are reused per type.
-            TypeScriptAttributeImpl? impl = null;
+            TypeScriptAttributeImpl? impl;
             List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
 
             foreach( ITypeAttributesCache attributeCache in _attributeCache.Values )

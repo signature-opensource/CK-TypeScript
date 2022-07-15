@@ -86,7 +86,7 @@ namespace CK.TypeScript.CodeGen
 
 
         /// <summary>
-        /// Calls <see cref="AppendComplexTypeName(ITSCodeWriter, IActivityMonitor, TypeScriptContext, NullableTypeTree, bool)"/> and
+        /// Calls <see cref="AppendComplexTypeName(ITSCodeWriter, IActivityMonitor, TypeScriptContext, NullableTypeTree, bool, bool)"/> and
         /// returns the computed type name on success.
         /// Since one or more types may required to be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)">declared</see>,
         /// this may fail: this returns the (null on error) type name (instead of the "fluent" standard code writer).
@@ -146,7 +146,7 @@ namespace CK.TypeScript.CodeGen
                                                   bool alwaysUsePocoClass = true )
         {
             var t = type.Type;
-            IPocoInterfaceInfo? iPoco = null;
+            IPocoInterfaceInfo? iPoco;
 
             var intrinsicName = TypeScriptContext.IntrinsicTypeName( t );
             if( intrinsicName != null )

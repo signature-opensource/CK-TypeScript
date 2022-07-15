@@ -76,7 +76,7 @@ namespace CK.StObj.TypeScript.Engine
 
         /// <summary>
         /// Gets the create method documentation.
-        /// @param documentations from <see cref="CreateParameters"/> will be appended to it.
+        /// @param documentations from properties with a <see cref="TypeScriptPocoPropertyInfo.CtorParameterComment"/> will be appended to it.
         /// </summary>
         public DocumentationBuilder CreateMethodDocumentation { get; }
 

@@ -23,8 +23,8 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The Xml documentation if found.</returns>
         public static XDocument? GetXmlDocumentation( IActivityMonitor monitor, Assembly a, IDictionary<object, object?>? cache = null )
         {
-            if( monitor is null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( a is null ) throw new ArgumentNullException( nameof( a ) );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( a );
 
             XDocument? xDoc = null;
             var keyCache = "XDoc:" + a.FullName;
@@ -89,7 +89,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The element if found.</returns>
         public static XElement? GetDocumentationElement( XDocument xDoc, string nameAttribute )
         {
-            return xDoc.Root.Elements( "members" ).Elements( "member" ).FirstOrDefault( e => e.Attribute( "name" )?.Value == nameAttribute );
+            return xDoc.Root?.Elements( "members" ).Elements( "member" ).FirstOrDefault( e => e.Attribute( "name" )?.Value == nameAttribute );
         }
 
         /// <summary>

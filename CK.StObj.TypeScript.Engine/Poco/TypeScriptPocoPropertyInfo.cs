@@ -48,7 +48,7 @@ namespace CK.StObj.TypeScript.Engine
 
         /// <summary>
         /// Gets the constructor parameter name for this property.
-        /// This is the <see cref="IPocoPropertyInfo.PropertyName"/> in camel case.
+        /// This is the <see cref="IPocoBasePropertyInfo.PropertyName"/> in camel case.
         /// </summary>
         public string CtorParameterName { get; }
 
@@ -72,7 +72,7 @@ namespace CK.StObj.TypeScript.Engine
         /// The newly created command is the variable <c>c</c>.
         /// <para>
         /// When null (the default), "c.propertyName = parameterName;" is used if this <see cref="CtorParameterName"/> can be found
-        /// in the <see cref="TypeScriptPocoClass.CreateParameters"/> list.
+        /// in the <see cref="TypeScriptPocoClass.Properties"/> list.
         /// This enables more complex expressions (multiple parameters or derivations from other parameters) to be generated.
         /// </para>
         /// </summary>

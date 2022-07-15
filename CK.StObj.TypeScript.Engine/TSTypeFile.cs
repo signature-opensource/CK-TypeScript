@@ -13,7 +13,7 @@ namespace CK.StObj.TypeScript.Engine
     /// <summary>
     /// Centralizes code generation information for a <see cref="Type"/>.
     /// Instances are automatically created because the type has a [<see cref="TypeScriptAttribute"/>] (or other attribute that are implemented by a <see cref="ITSCodeGeneratorType"/>)
-    /// or by a call to <see cref="TypeScriptContext.GetTSTypeFile(IActivityMonitor, Type)"/> or <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, IEnumerable{Type})"/>
+    /// or by a call to <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, IEnumerable{Type})"/>
     /// (typically from a global <see cref="ITSCodeGenerator"/>).
     /// Once created, there must be a way to generate the corresponding code into the <see cref="File"/>: at least one participant
     /// must call <see cref="EnsureTypePart"/> otherwise an error is raised.
@@ -53,6 +53,10 @@ namespace CK.StObj.TypeScript.Engine
 
         internal bool IsInitialized => FileName != null;
 
+        /// <summary>
+        /// Overridden to return the type and (once initialized) the target file.
+        /// </summary>
+        /// <returns>The type and target file.</returns>
         public override string ToString() => _toString;
 
         /// <summary>
