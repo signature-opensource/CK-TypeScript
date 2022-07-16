@@ -41,6 +41,10 @@ namespace CK.StObj.TypeScript.Engine
         /// </summary>
         public IReadOnlyList<TSTypeFile> Imports { get; }
 
+        /// <summary>
+        /// Overridden to return this <see cref="TypeName"/>.
+        /// </summary>
+        /// <returns>The type name.</returns>
         public override string ToString() => TypeName;
     }
 }

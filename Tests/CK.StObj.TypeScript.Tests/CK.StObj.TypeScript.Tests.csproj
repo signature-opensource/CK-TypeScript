@@ -6,17 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.StObjEngine" Version="19.0.0" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="20.0.0" />
     <PackageReference Include="nunit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" Version="4.2.1" />
-    <PackageReference Include="Microsoft.Playwright.NUnit" Version="1.22.0" />
+    <PackageReference Include="Microsoft.Playwright.NUnit" Version="1.23.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="%24StObjGen\" />
     <Folder Include="Logs\" />
     <Folder Include="CodeGeneratorTypeSample\" />
   </ItemGroup>

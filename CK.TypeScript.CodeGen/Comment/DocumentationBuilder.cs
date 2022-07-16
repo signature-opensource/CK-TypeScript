@@ -89,8 +89,9 @@ namespace CK.TypeScript.CodeGen
                 AppendEmptyLine();
                 AppendLinesFromXElement( source, rem, true, true );
             }
-            foreach( var typeParam in xDoc.Elements( "typeparam" ).GroupBy( eP => eP.Attribute( "name" ).Value ) )
+            foreach( var typeParam in xDoc.Elements( "typeparam" ).GroupBy( eP => eP.Attribute( "name" )?.Value ) )
             {
+                if( typeParam.Key == null ) continue;
                 Append( $"@typeParam {typeParam.Key} ", true );
                 bool isNext = false;
                 foreach( var e in DistinctByValue( typeParam ) )
@@ -99,8 +100,9 @@ namespace CK.TypeScript.CodeGen
                     isNext = true;
                 }
             }
-            foreach( var param in xDoc.Elements( "param" ).GroupBy( eP => eP.Attribute( "name" ).Value ) )
+            foreach( var param in xDoc.Elements( "param" ).GroupBy( eP => eP.Attribute( "name" )?.Value ) )
             {
+                if( param.Key == null ) continue;
                 Append( $"@param {param.Key} ", true );
                 bool isNext = false;
                 foreach( var e in DistinctByValue( param ) )

@@ -22,33 +22,12 @@ namespace CK.StObj.TypeScript.Tests
             One,
         }
 
-        class MonoCollectorResolver : IStObjCollectorResultResolver
-        {
-            readonly Type[] _types;
-
-            public MonoCollectorResolver( params Type[] types )
-            {
-                _types = types;
-            }
-
-            public StObjCollectorResult GetUnifiedResult( BinPathConfiguration unified )
-            {
-                return TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( _types ) );
-            }
-
-            public StObjCollectorResult GetSecondaryResult( BinPathConfiguration head, IEnumerable<BinPathConfiguration> all )
-            {
-                throw new NotImplementedException( "All bin paths are the same: only the unified one is required." );
-            }
-
-        }
-
         static (NormalizedPath BinTSPath1, NormalizedPath BinTSPath2) GenerateTSCodeInB1AndB2Outputs( string testName, params Type[] types )
         {
             var output1 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b1" ), false );
             var output2 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b2" ), false );
 
-            var config = new StObjEngineConfiguration();
+            var config = new StObjEngineConfiguration() { ForceRun = true };
             config.Aspects.Add( new TypeScriptAspectConfiguration() );
 
             var b1 = new BinPathConfiguration();
@@ -67,8 +46,9 @@ namespace CK.StObj.TypeScript.Tests
             config.BinPaths.Add( b2 );
             config.BinPaths.Add( b3 );
 
-            var engine = new StObjEngine( TestHelper.Monitor, config );
-            engine.Run( new MonoCollectorResolver( types ) ).Should().BeTrue( "StObjEngine.Run worked." );
+            var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( types ) );
+            StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
+
             Directory.Exists( output1 ).Should().BeTrue();
             Directory.Exists( output2 ).Should().BeTrue();
 
@@ -96,14 +76,15 @@ namespace CK.StObj.TypeScript.Tests
             var output1 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( nameof( each_BinPath_can_have_multiple_OutputPath ) ).AppendPart( "o1" ), false );
             var output2 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( nameof( each_BinPath_can_have_multiple_OutputPath ) ).AppendPart( "o2" ), false );
 
-            var config = new StObjEngineConfiguration();
+            var config = new StObjEngineConfiguration() { ForceRun = true };
             config.Aspects.Add( new TypeScriptAspectConfiguration() );
             var b = new BinPathConfiguration();
             b.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output1 ), new XElement( "OutputPath", output2 ) ) );
             config.BinPaths.Add( b );
 
-            var engine = new StObjEngine( TestHelper.Monitor, config );
-            engine.Run( new MonoCollectorResolver( typeof( Simple ) ) ).Should().BeTrue( "StObjEngine.Run worked." );
+            var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( typeof( Simple ) ) );
+            StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
+
             Directory.Exists( output1 ).Should().BeTrue();
             Directory.Exists( output2 ).Should().BeTrue();
 

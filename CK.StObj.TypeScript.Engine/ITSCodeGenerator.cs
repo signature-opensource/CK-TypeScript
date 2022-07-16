@@ -39,8 +39,8 @@ namespace CK.Setup
         /// <para>
         /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because of
         /// the <see cref="TypeScriptAttribute.SameFolderAs"/> that may be resolved by the handling of another type
-        /// (note that in this case, there is necessarily no TypeScript attribute on the type (<paramref name="attr"/> is a brand new one)
-        /// and <paramref name="generatorTypes"/> is empty).
+        /// (note that in this case, there is necessarily no TypeScript attribute on the type (<paramref name="a"/> is a brand new one)
+        /// and <see cref="ITSTypeFileBuilder.Generators"/> is empty).
         /// </para>
         /// <para>
         /// In practice this should not be an issue and if is, it up to this global code generator to correctly handle

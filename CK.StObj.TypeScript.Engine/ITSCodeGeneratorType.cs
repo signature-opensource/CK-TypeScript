@@ -44,7 +44,7 @@ namespace CK.Setup
         /// Generates the TypeScript code. The <paramref name="file"/> exposes the <see cref="TSTypeFile.Context"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="file">The file that must be generated (<see cref="TSTypeFile.EnsureFile"/> may be called).</param>
+        /// <param name="file">The file that must be generated (<see cref="TSTypeFile.EnsureTypePart(string, bool)"/> may be called).</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
         bool GenerateCode( IActivityMonitor monitor, TSTypeFile file );
 

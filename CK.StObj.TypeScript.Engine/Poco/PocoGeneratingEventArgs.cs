@@ -19,8 +19,7 @@ namespace CK.StObj.TypeScript.Engine
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="tsTypedFile">The generated Poco file.</param>
-        /// <param name="pocoClassPart">The code part of the poco class.</param>
-        /// <param name="pocoInfo">The poco information.</param>
+        /// <param name="pocoClass">The poco information.</param>
         /// <param name="pocoCodeGenerator">The code generator.</param>
         public PocoGeneratingEventArgs( IActivityMonitor monitor,
                                         TSTypeFile tsTypedFile,
