@@ -36,15 +36,23 @@ namespace CK.TypeScript.CodeGen
             else
             {
                 var path = System.IO.Path.ChangeExtension( a.Location, ".xml" );
-                try
+                if( !System.IO.File.Exists( path ) )
                 {
-                    xDoc = XDocument.Load( path );
-                    cache?.Add( keyCache, xDoc );
-                }
-                catch( Exception ex )
-                {
-                    monitor.Warn( $"Unable to load Xml documentation file '{path}' for assembly '{a.FullName}'.", ex );
+                    monitor.Warn( $"Missing Xml documentation file '{path}' for assembly '{a.FullName}'." );
                     cache?.Add( keyCache, null );
+                }
+                else
+                {
+                    try
+                    {
+                        xDoc = XDocument.Load( path );
+                        cache?.Add( keyCache, xDoc );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Warn( $"Unable to load Xml documentation file '{path}' for assembly '{a.FullName}'.", ex );
+                        cache?.Add( keyCache, null );
+                    }
                 }
             }
             return xDoc;

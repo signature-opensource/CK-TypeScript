@@ -72,8 +72,8 @@ namespace CK.Setup
         {
             static NormalizedPath MakeAbsolute( NormalizedPath basePath, NormalizedPath p )
             {
-                if( basePath.IsEmptyPath ) throw new InvalidOperationException( "Configuration BasePath is empty." );
-                if( !basePath.IsRooted ) throw new InvalidOperationException( $"Configuration BasePath '{basePath}' is not rooted." );
+                Throw.CheckArgument( "Configuration BasePath must not be empty.", !basePath.IsEmptyPath );
+                if( !basePath.IsRooted ) Throw.InvalidOperationException( $"Configuration BasePath '{basePath}' must be rooted." );
                 if( !p.IsRooted )
                 {
                     p = basePath.Combine( p );
