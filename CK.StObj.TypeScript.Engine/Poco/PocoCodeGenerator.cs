@@ -289,7 +289,9 @@ namespace CK.StObj.TypeScript.Engine
                 ITSCodePart ctorBody;
                 if( readOnlyPropertyCount == 0 )
                 {
-                    b.Append( "// This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
+                    b.Append( "/***" ).NewLine()
+                     .Append( " * This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
+                     .Append( " */" ).NewLine()
                      .Append( "/*private*/ constructor()" ).OpenBlock()
                      .CreatePart( out ctorBody )
                      .CloseBlock();
