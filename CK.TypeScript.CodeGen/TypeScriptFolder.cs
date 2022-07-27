@@ -359,14 +359,14 @@ namespace CK.TypeScript.CodeGen
 
         static void CheckName( string name, bool isFolder )
         {
-            if( String.IsNullOrWhiteSpace( name ) || name.IndexOfAny( _invalidFileNameChars ) >= 0 ) throw new ArgumentException( $"Empty name or invalid characters in: '{name}'.", nameof( name ) );
+            if( String.IsNullOrWhiteSpace( name ) || name.IndexOfAny( _invalidFileNameChars ) >= 0 ) Throw.ArgumentException( $"Empty name or invalid characters in: '{name}'.", nameof( name ) );
             if( name.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase ) )
             {
-                if( isFolder ) throw new ArgumentException( $"Folder name must not end with '.ts': '{name}'.", nameof( name ) );
+                if( isFolder ) Throw.ArgumentException( $"Folder name must not end with '.ts': '{name}'.", nameof( name ) );
             }
             else
             {
-                if( !isFolder ) throw new ArgumentException( $"File name must end with '.ts': '{name}'.", nameof( name ) );
+                if( !isFolder ) Throw.ArgumentException( $"File name must end with '.ts': '{name}'.", nameof( name ) );
             }
         }
     }

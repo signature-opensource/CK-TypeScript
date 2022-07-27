@@ -173,7 +173,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Basic documentation name builder that applies to <see cref="PropertyInfo"/>, <see cref="FieldInfo"/>
-        /// and <see cref="EventInfo"/> and helps for enumeration values.
+        /// and <see cref="EventInfo"/> but also <see cref="Type"/> but not for <see cref="ConstructorInfo"/>.
         /// </summary>
         /// <param name="linkType">Prefix of the name.</param>
         /// <param name="member">The member for which a documentation name must be obtained.</param>
@@ -181,9 +181,20 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The attribute value to use.</returns>
         public static string GetNameAttributeValueFor( string linkType, MemberInfo member, string? memberName = null )
         {
-            var b = WriteTypeName( new StringBuilder( linkType ), member.DeclaringType!, false )
+            Throw.CheckNotNullArgument( member );
+            Throw.CheckArgument( member is not ConstructorInfo );
+            StringBuilder b;
+            if( member is Type t )
+            {
+                b = WriteTypeName( new StringBuilder( linkType ), t, false );
+            }
+            else
+            {
+                Debug.Assert( member is PropertyInfo || member is FieldInfo || member is EventInfo );
+                b = WriteTypeName( new StringBuilder( linkType ), member.DeclaringType!, false )
                         .Append( '.' )
                         .Append( member.Name );
+            }
             if( memberName != null )
             {
                 b.Append( '.' )

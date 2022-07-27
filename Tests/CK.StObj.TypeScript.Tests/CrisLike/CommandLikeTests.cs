@@ -18,8 +18,19 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         [TypeScript( SameFolderAs = typeof(ICommandOne) )]
         public enum Power
         {
+            /// <summary>
+            /// No Power.
+            /// </summary>
             None,
+
+            /// <summary>
+            /// Intermediate power.
+            /// </summary>
             Medium,
+
+            /// <summary>
+            /// Full power.
+            /// </summary>
             Strong
         }
 
@@ -71,6 +82,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 // Their FileName will be without the "I" and prefixed by "CMD".
                 // The real CommandDirectoryImpl does nothing here: ICommand are IPoco and
                 // their folder/file organization is fine.
+
                 if( typeof(ICommand).IsAssignableFrom( builder.Type ) )
                 {
                     if( attr.SameFolderAs == null )
@@ -93,6 +105,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // ICommandResult and any types that are exposed from the ICommand are exported by the IPoco TS engine.
             public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
             {
+                g.DeclareTSType( monitor, typeof( ICommandResult ) );
                 g.DeclareTSType( monitor, typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof( ICommandFour ) );
                 return true;
             }
@@ -113,6 +126,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( ICommandTwo ),
                                                          typeof( ICommandThree ),
                                                          typeof( ICommandFour ),
+                                                         typeof( ICommandResult ),
                                                          typeof( FakeCommandDirectoryWithFolders ) );
 
             var fPower = output.Combine( "TheFolder/Power.ts" );

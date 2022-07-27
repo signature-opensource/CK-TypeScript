@@ -298,7 +298,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T Append<T>( this T @this, object? o ) where T : ITSCodeWriter
         {
-            if( !TryAppend( @this, o ) ) throw new ArgumentException( "Unknown type: " + o!.GetType().AssemblyQualifiedName );
+            if( !TryAppend( @this, o ) ) Throw.ArgumentException( "Unknown type: " + o!.GetType().AssemblyQualifiedName );
             return @this;
         }
 

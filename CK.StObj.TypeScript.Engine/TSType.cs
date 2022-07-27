@@ -1,4 +1,5 @@
 using CK.CodeGen;
+using CK.Core;
 using System;
 using System.Collections.Generic;
 
@@ -19,7 +20,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <param name="imports">Required imports if any.</param>
         public TSType( NullableTypeTree t, string typeName, IReadOnlyList<TSTypeFile> imports )
         {
-            if( !t.IsNormalNull ) throw new ArgumentException( "NullableTypeTree must be IsNormalNull.", nameof( t ) ); 
+            Throw.CheckArgument( "NullableTypeTree must be IsNormalNull.", t.IsNormalNull ); 
             Type = t;
             TypeName = typeName;
             Imports = imports;

@@ -97,7 +97,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendDocumentation<T>( this T @this, XDocument xmlDoc, MemberInfo member ) where T : ITSCodeWriter
         {
-            if( xmlDoc == null ) throw new ArgumentNullException( nameof( xmlDoc ) );
+            Throw.CheckNotNullArgument( xmlDoc );
             var xDoc = XmlDocumentationReader.GetDocumentationElement( xmlDoc, XmlDocumentationReader.GetNameAttributeValueFor( member ) );
             return xDoc != null ? AppendDocumentation<T>( @this, xDoc ) : @this;
         }

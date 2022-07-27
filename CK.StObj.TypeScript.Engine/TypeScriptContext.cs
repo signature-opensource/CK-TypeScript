@@ -242,7 +242,7 @@ namespace CK.Setup
             if( refTarget != null )
             {
                 if( cycleDetector == null ) cycleDetector = new HashSet<Type>();
-                if( !cycleDetector.Add( t ) ) throw new InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {cycleDetector.Select( c => c.Name ).Concatenate( " => " )}." );
+                if( !cycleDetector.Add( t ) ) Throw.InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {cycleDetector.Select( c => c.Name ).Concatenate( " => " )}." );
 
                 var target = DeclareTSType( monitor, refTarget, ref cycleDetector );
                 if( target == null )
