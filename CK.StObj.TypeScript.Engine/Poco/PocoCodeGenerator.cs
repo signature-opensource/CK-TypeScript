@@ -292,7 +292,7 @@ namespace CK.StObj.TypeScript.Engine
                     b.Append( "/***" ).NewLine()
                      .Append( " * This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
                      .Append( " */" ).NewLine()
-                     .Append( "/*private*/ constructor()" ).OpenBlock()
+                     .Append( "constructor()" ).OpenBlock()
                      .CreatePart( out ctorBody )
                      .CloseBlock();
                 }
