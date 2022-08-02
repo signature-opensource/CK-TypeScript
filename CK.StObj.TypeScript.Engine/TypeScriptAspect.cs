@@ -82,16 +82,13 @@ namespace CK.Setup
             }
             TypeScriptRoot? g;
             var binPath = genBinPath.CurrentRun;
-            var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
+            var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations
+                            .Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
-                            .Select( c => (Config: c!, Paths: c!.Elements( "OutputPath" ).Select( p => p?.Value )
-                                                                .Where( p => !String.IsNullOrWhiteSpace( p ) )
-                                                                .Select( p => MakeAbsolute( _basePath, p ) )
-                                                                .Where( p => !p.IsEmptyPath )
-                                                                .Distinct()) )
-                            .Where( p => p.Paths.Any() )
-                            // Reverts the tuple: path => its config (potentially shared with other paths).
-                            .SelectMany( p => p.Paths.Select( onePath => (Path: onePath, p.Config) ) )
+                            .Select( c => (Path: c!.Attribute( "PackagePath" )?.Value, Config: c!) )
+                            .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
+                            .Select( c => (Path: MakeAbsolute( _basePath, c.Path ), c.Config) )
+                            .Where( c => !c.Path.IsEmptyPath )
                             .ToArray();
             if( pathsAndConfig.Length == 0 )
             {

@@ -45,16 +45,16 @@ namespace CK.StObj.TypeScript.Tests.E2E
         {
             var collector = TestHelper.CreateStObjCollector( types );
             collector.RegisterType( typeof( PocoJsonSerializer ) );
-            var output = LocalTestHelper.GetOutputFolder( subPath, testName );
+            var packagePath = LocalTestHelper.GetOutputFolder( subPath, testName );
             var services = TestHelper.CreateAutomaticServices( collector,
-                                                               engineConfiguration => ApplyTSAwareConfig( engineConfiguration, output, tsConfig, tsBinPathConfig ),
+                                                               engineConfiguration => ApplyTSAwareConfig( engineConfiguration, packagePath, tsConfig, tsBinPathConfig ),
                                                                startupServices: null,
                                                                configureServices ).Services;
-            return new E2ETestContext( testName, output, services );
+            return new E2ETestContext( testName, packagePath, services );
         }
 
         public static StObjEngineConfiguration ApplyTSAwareConfig( StObjEngineConfiguration c,
-                                                                   NormalizedPath outputPath,
+                                                                   NormalizedPath packagePath,
                                                                    TypeScriptAspectConfiguration? tsConfig = null,
                                                                    TypeScriptAspectBinPathConfiguration? tsBinPathConfig = null )
         {
@@ -64,8 +64,10 @@ namespace CK.StObj.TypeScript.Tests.E2E
             }
             if( tsBinPathConfig == null )
             {
-                tsBinPathConfig = new TypeScriptAspectBinPathConfiguration();
-                tsBinPathConfig.OutputPaths.Add( outputPath );
+                tsBinPathConfig = new TypeScriptAspectBinPathConfiguration
+                {
+                    PackagePath = packagePath
+                };
             }
             c.Aspects.Add( tsConfig );
             c.BinPaths[0].AspectConfigurations.Add( tsBinPathConfig.ToXml() );

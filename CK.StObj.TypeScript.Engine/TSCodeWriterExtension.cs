@@ -147,6 +147,7 @@ namespace CK.TypeScript.CodeGen
         {
             var t = type.Type;
             IPocoInterfaceInfo? iPoco;
+            var luxonLib = new LibraryImport( "luxon", "^3.0.1", DependencyKind.Dependency );
 
             var intrinsicName = TypeScriptContext.IntrinsicTypeName( t );
             if( intrinsicName != null )
@@ -155,17 +156,17 @@ namespace CK.TypeScript.CodeGen
             }
             else if( t == typeof(DateTime) )
             {
-                part.File.Imports.EnsureImportFromLibrary( "luxon", "DateTime" );
+                part.File.Imports.EnsureImportFromLibrary( luxonLib, "DateTime" );
                 part.Append( "DateTime" );
             }
             else if( t == typeof( DateTimeOffset ) )
             {
-                part.File.Imports.EnsureImportFromLibrary( "luxon", "DateTime" );
+                part.File.Imports.EnsureImportFromLibrary( luxonLib, "DateTime" );
                 part.Append( "DateTime" );
             }
             else if( t == typeof( TimeSpan ) )
             {
-                part.File.Imports.EnsureImportFromLibrary( "luxon", "Duration" );
+                part.File.Imports.EnsureImportFromLibrary( luxonLib, "Duration" );
                 part.Append( "Duration" );
             }
             else if( t.IsArray )

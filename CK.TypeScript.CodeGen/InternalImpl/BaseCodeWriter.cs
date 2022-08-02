@@ -55,7 +55,7 @@ namespace CK.TypeScript.CodeGen
 
         public StringBuilder Build( StringBuilder b, bool closeScope ) => Build( new SmarterStringBuilder( b ) ).Builder!;
 
-        public IDictionary<object, object?> Memory => _memory ?? (_memory = new Dictionary<object, object?>());
+        public IDictionary<object, object?> Memory => _memory ??= new Dictionary<object, object?>();
 
         public override string ToString() => Build( new SmarterStringBuilder( new StringBuilder() ) ).ToString();
     }

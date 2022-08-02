@@ -31,14 +31,14 @@ namespace CK.StObj.TypeScript.Tests
             config.Aspects.Add( new TypeScriptAspectConfiguration() );
 
             var b1 = new BinPathConfiguration();
-            b1.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output1 ) ) );
+            b1.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "PackagePath", output1 ) ) );
             var b2 = new BinPathConfiguration();
-            b2.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output2 ) ) );
+            b2.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "PackagePath", output2 ) ) );
             // b3 has no TypeScript aspect or no OutputPath or an empty OutputPath: nothing must be generated and this is just a warning.
             var b3 = new BinPathConfiguration();
             switch( Environment.TickCount % 3 )
             {
-                case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", " " ) ) ); break;
+                case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "PackagePath", " " ) ) ); break;
                 case 1: b3.AspectConfigurations.Add( new XElement( "TypeScript" ) ); break;
             }
 
@@ -67,34 +67,6 @@ namespace CK.StObj.TypeScript.Tests
 
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum Simple" );
-            s.Should().Be( File.ReadAllText( f2 ) );
-        }
-
-        [Test]
-        public void each_BinPath_can_have_multiple_OutputPath()
-        {
-            var output1 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( nameof( each_BinPath_can_have_multiple_OutputPath ) ).AppendPart( "o1" ), false );
-            var output2 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( nameof( each_BinPath_can_have_multiple_OutputPath ) ).AppendPart( "o2" ), false );
-
-            var config = new StObjEngineConfiguration() { ForceRun = true };
-            config.Aspects.Add( new TypeScriptAspectConfiguration() );
-            var b = new BinPathConfiguration();
-            b.AspectConfigurations.Add( new XElement( "TypeScript", new XElement( "OutputPath", output1 ), new XElement( "OutputPath", output2 ) ) );
-            config.BinPaths.Add( b );
-
-            var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( typeof( Simple ) ) );
-            StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
-
-            Directory.Exists( output1 ).Should().BeTrue();
-            Directory.Exists( output2 ).Should().BeTrue();
-
-            var f1 = output1.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
-            var f2 = output2.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
-            File.Exists( f1 ).Should().BeTrue();
-            File.Exists( f2 ).Should().BeTrue();
-
-            var s = File.ReadAllText( f1 );
-            s.Should().StartWith( "export enum Simple" );
             s.Should().Be( File.ReadAllText( f2 ) );
         }
 

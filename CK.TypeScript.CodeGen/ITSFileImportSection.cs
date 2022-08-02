@@ -11,6 +11,11 @@ namespace CK.TypeScript.CodeGen
     public interface ITSFileImportSection : ITSCodeWriter
     {
         /// <summary>
+        /// Imported external library used by the generated code.
+        /// </summary>
+        IReadOnlyDictionary<string, LibraryImport> LibraryImports { get; }
+
+        /// <summary>
         /// Ensures that an import of one or more type names from the corresponding <see cref="TypeScriptFile"/> exists.
         /// </summary>
         /// <param name="file">The referenced file.</param>
@@ -22,11 +27,11 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Ensures that an import of one or more type names from an external library exists.
         /// </summary>
-        /// <param name="libraryName">The library name.</param>
+        /// <param name="libraryImport">The library infos.</param>
         /// <param name="typeName">The first required type name to import.</param>
         /// <param name="typeNames">More types to import  (optionals).</param>
         /// <returns>This section to enable fluent syntax.</returns>
-        ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames );
+        ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames );
 
         /// <summary>
         /// Gets the number of different <see cref="EnsureImport(TypeScriptFile, string, string[])"/>

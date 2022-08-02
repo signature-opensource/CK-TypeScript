@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -122,6 +123,24 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Gets all the files that this folder contains.
+        /// </summary>
+        public IEnumerable<TypeScriptFile> Files
+        {
+            get
+            {
+                var c = _firstFile;
+                while( c != null )
+                {
+                    yield return c;
+                    c = c._next;
+                }
+            }
+        }
+
+        IEnumerable<TypeScriptFile> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
+
+        /// <summary>
         /// Finds or creates a file in this folder.
         /// </summary>
         /// <param name="name">The file's name to find or create. Must not be empty and must end with '.ts'.</param>
@@ -182,22 +201,6 @@ namespace CK.TypeScript.CodeGen
                 c = c._next;
             }
             return null;
-        }
-
-        /// <summary>
-        /// Gets all the files that this folder contains.
-        /// </summary>
-        public IEnumerable<TypeScriptFile> Files
-        {
-            get
-            {
-                var c = _firstFile;
-                while( c != null )
-                {
-                    yield return c;
-                    c = c._next;
-                }
-            }
         }
 
         /// <summary>
@@ -270,7 +273,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="outputPaths">Any number of target directories.</param>
         /// <param name="createBarrel">Optional strategy to create barrels in folders. See <see cref="CreateBarrelOnSave"/>.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath,bool>? createBarrel = null )
+        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath, bool>? createBarrel = null )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
             {
@@ -278,14 +281,41 @@ namespace CK.TypeScript.CodeGen
                 try
                 {
                     var newOnes = IsRoot ? outputPaths : outputPaths.Select( p => p.AppendPart( Name ) ).ToArray();
+                    var dependencies = new Dictionary<string, LibraryImport>();
+                    bool isOk = true;
+                    if( IsRoot ) // We want to generate a package.json only for the root folder.
+                    {
+                        foreach( var file in AllFilesRecursive )
+                        {
+                            foreach( var item in file.Imports.LibraryImports.Values )
+                            {
+                                if( !dependencies.TryGetValue( item.Name, out var prevImport ) )
+                                {
+                                    dependencies.Add( item.Name, item );
+                                }
+                                else
+                                {
+                                    if( item.Version != prevImport.Version )
+                                    {
+                                        monitor.Error( $"File {file.Name} require {item.Name} at version {item.Version}, but another file require it at version {item.Version}." );
+                                        isOk = false;
+                                    }
+                                    if( item.DependencyKind > prevImport.DependencyKind )
+                                    {
+                                        dependencies[item.Name] = item;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if( !isOk ) return false;
+
                     if( _firstFile != null )
                     {
                         foreach( var p in newOnes ) Directory.CreateDirectory( p );
-                        var file = _firstFile;
-                        while( file != null )
+                        foreach( var file in Files )
                         {
                             file.Save( monitor, newOnes );
-                            file = file._next;
                         }
                     }
                     var folder = _firstChild;
@@ -309,6 +339,39 @@ namespace CK.TypeScript.CodeGen
                                 }
                                 File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
                             }
+                        }
+                    }
+                    // create package.json.
+                    var sb = new StringBuilder();
+                    if( IsRoot )
+                    {
+
+                        foreach( var path in outputPaths )
+                        {
+                            sb.Clear();
+                            var packageJsonPath = Path.Combine( path, "package.json" );
+                            var depsList = dependencies
+                                .GroupBy( s => s.Value.DependencyKind, s => $@"    ""{s.Value.Name}"":""{s.Value.Version}""" )
+                                .Select( s => (s.Key switch
+                                {
+                                    DependencyKind.Dependency => "dependencies",
+                                    DependencyKind.DevDependency => "devDependencies",
+                                    DependencyKind.PeerDependency => "peerDependencies",
+                                    _ => throw new InvalidOperationException()
+                                }, string.Join( ",\n", s )) );
+                            sb.Append( $@"{{
+  ""name"": ""@signature/generated"",
+" );
+                            foreach( var deps in depsList )
+                            {
+                                sb.AppendLine( $@"  ""{deps.Item1}"":{{" );
+                                sb.Append( deps.Item2 );
+                                sb.AppendLine( "\n  }," );
+                            }
+                            sb.Append( "  \"private\": true\n}" );
+                            File.WriteAllText( packageJsonPath,
+                                sb.ToString()
+                            );
                         }
                     }
                     return true;

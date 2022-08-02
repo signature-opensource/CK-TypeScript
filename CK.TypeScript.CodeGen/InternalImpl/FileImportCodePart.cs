@@ -11,6 +11,7 @@ namespace CK.TypeScript.CodeGen
     {
         List<(TypeScriptFile File, List<string> Types)>? _importFiles;
         List<(string LibraryName, List<string> Types)>? _importLibs;
+        readonly Dictionary<string, LibraryImport> _libraries = new();
         int _importCount;
 
         public FileImportCodePart( TypeScriptFile f )
@@ -18,10 +19,29 @@ namespace CK.TypeScript.CodeGen
         {
         }
 
-        public ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames )
+        public IReadOnlyDictionary<string, LibraryImport> LibraryImports => _libraries;
+
+
+        public ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames )
         {
-            Throw.CheckNotNullOrWhiteSpaceArgument( libraryName );
-            AddTypeNames( ref _importLibs, libraryName, typeName, typeNames );
+            Throw.CheckNotNullOrWhiteSpaceArgument( libraryImport.Name );
+            Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
+            if( !_libraries.TryGetValue( libraryImport.Name, out var lib ) )
+            {
+                _libraries[libraryImport.Name] = libraryImport;
+            }
+            else
+            {
+                if( lib.Version != libraryImport.Version )
+                {
+                    Throw.InvalidOperationException( $"Previously imported this library at version {lib.Version}, but currently importing it with version {libraryImport.Version}" );
+                }
+                if( lib.DependencyKind < libraryImport.DependencyKind )
+                {
+                    _libraries[libraryImport.Name] = libraryImport;
+                }
+            }
+            AddTypeNames( ref _importLibs, libraryImport.Name, typeName, typeNames );
             return this;
         }
 
@@ -33,10 +53,9 @@ namespace CK.TypeScript.CodeGen
                 AddTypeNames( ref _importFiles, file, typeName, typeNames );
             }
             return this;
-
         }
 
-        List<string> AddTypeNames<TKey>( [AllowNull]ref List<(TKey,List<string>)> imports, TKey key, string typeName, params string[] typeNames ) where TKey : class
+        List<string> AddTypeNames<TKey>( [AllowNull] ref List<(TKey, List<string>)> imports, TKey key, string typeName, params string[] typeNames ) where TKey : class
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             if( imports == null ) imports = new List<(TKey, List<string>)>();
