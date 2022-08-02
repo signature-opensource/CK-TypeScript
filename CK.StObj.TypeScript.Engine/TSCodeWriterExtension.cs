@@ -147,7 +147,7 @@ namespace CK.TypeScript.CodeGen
         {
             var t = type.Type;
             IPocoInterfaceInfo? iPoco;
-            var luxonLib = new LibraryImport( "luxon", "^3.0.1", DependencyKind.Dependency );
+            var luxonLib = new LibraryImport( "luxon", "^3.0.1", DependencyKind.PeerDependency );
 
             var intrinsicName = TypeScriptContext.IntrinsicTypeName( t );
             if( intrinsicName != null )
