@@ -45,16 +45,16 @@ namespace CK.StObj.TypeScript.Tests.E2E
         {
             var collector = TestHelper.CreateStObjCollector( types );
             collector.RegisterType( typeof( PocoJsonSerializer ) );
-            var packagePath = LocalTestHelper.GetOutputFolder( subPath, testName );
+            var outputPath = LocalTestHelper.GetOutputFolder( subPath, testName );
             var services = TestHelper.CreateAutomaticServices( collector,
-                                                               engineConfiguration => ApplyTSAwareConfig( engineConfiguration, packagePath, tsConfig, tsBinPathConfig ),
+                                                               engineConfiguration => ApplyTSAwareConfig( engineConfiguration, outputPath, tsConfig, tsBinPathConfig ),
                                                                startupServices: null,
                                                                configureServices ).Services;
-            return new E2ETestContext( testName, packagePath, services );
+            return new E2ETestContext( testName, outputPath, services );
         }
 
         public static StObjEngineConfiguration ApplyTSAwareConfig( StObjEngineConfiguration c,
-                                                                   NormalizedPath packagePath,
+                                                                   NormalizedPath outputPath,
                                                                    TypeScriptAspectConfiguration? tsConfig = null,
                                                                    TypeScriptAspectBinPathConfiguration? tsBinPathConfig = null )
         {
@@ -66,7 +66,7 @@ namespace CK.StObj.TypeScript.Tests.E2E
             {
                 tsBinPathConfig = new TypeScriptAspectBinPathConfiguration
                 {
-                    PackagePath = packagePath
+                    OutputPath = outputPath
                 };
             }
             c.Aspects.Add( tsConfig );

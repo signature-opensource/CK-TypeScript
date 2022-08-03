@@ -14,7 +14,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Initializes a new configuration with a default root <see cref="Barrels"/>.
-        /// The <see cref="PackagePath"/> must be specified.
+        /// The <see cref="OutputPath"/> must be specified.
         /// </summary>
         public TypeScriptAspectBinPathConfiguration()
         {
@@ -30,10 +30,10 @@ namespace CK.Setup
         /// final path will be resolved by <see cref="StObjEngineConfiguration.BasePath"/>, <see cref="BinPathConfiguration.OutputPath"/>
         /// or <see cref="BinPathConfiguration.ProjectPath"/>.
         /// </summary>
-        public NormalizedPath PackagePath { get; set; }
+        public NormalizedPath OutputPath { get; set; }
 
         /// <summary>
-        /// Gets a list of optional barrel paths that are relative to the <see cref="PackagePath"/>.
+        /// Gets a list of optional barrel paths that are relative to the <see cref="OutputPath"/>.
         /// An index.ts file will be generated in each of these folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
         /// <para>
         /// By default, an empty <see cref="NormalizedPath"/> creates a barrel at the root level.
@@ -48,7 +48,7 @@ namespace CK.Setup
         /// <param name="e">The configuration element.</param>
         public TypeScriptAspectBinPathConfiguration( XElement e )
         {
-            PackagePath = e.Attribute( TypeScriptAspectConfiguration.xPackagePath )?.Value;
+            OutputPath = e.Attribute( TypeScriptAspectConfiguration.xOutputPath )?.Value;
             Barrels = new HashSet<NormalizedPath>( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( StObjEngineConfiguration.xPath ) ?? c.Value ) ) );
@@ -61,7 +61,7 @@ namespace CK.Setup
         public XElement ToXml()
         {
             return new XElement( TypeScriptAspectConfiguration.xTypeScript,
-                                 new XAttribute( TypeScriptAspectConfiguration.xPackagePath, PackagePath ),
+                                 new XAttribute( TypeScriptAspectConfiguration.xOutputPath, OutputPath ),
                                  new XElement( TypeScriptAspectConfiguration.xBarrels,
                                                Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ) );
         }

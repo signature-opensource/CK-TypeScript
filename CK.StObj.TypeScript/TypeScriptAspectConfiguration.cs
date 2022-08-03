@@ -9,7 +9,7 @@ namespace CK.Setup
     /// Configures TypeScript generation.
     /// <para>
     /// Each <see cref="BinPathConfiguration"/> that requires TypeScript code to be generated must
-    /// contain a &lt;TypeScript&gt; with the attribute &lt;PackagePath&gt;.
+    /// contain a &lt;TypeScript&gt; with the attribute &lt;OutputPath&gt;.
     /// These OutputPaths can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
     /// final paths will be resolved.
     /// </para>
@@ -43,9 +43,9 @@ namespace CK.Setup
         public static readonly XName xTypeScript = XNamespace.None + "TypeScript";
 
         /// <summary>
-        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.PackagePath"/>.
+        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.OutputPath"/>.
         /// </summary>
-        public static readonly XName xPackagePath = XNamespace.None + "PackagePath";
+        public static readonly XName xOutputPath = XNamespace.None + "OutputPath";
 
         /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/> element name.

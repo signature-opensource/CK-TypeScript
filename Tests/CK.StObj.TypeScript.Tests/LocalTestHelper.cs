@@ -100,7 +100,7 @@ namespace CK.StObj.TypeScript.Tests
             b.CompileOption = CompileOption.Compile;
             b.ProjectPath = TestHelper.TestProjectFolder;
             b.AspectConfigurations.Add( new XElement( "TypeScript",
-                                            new XAttribute( "PackagePath", output ),
+                                            new XAttribute( "OutputPath", output ),
                                             new XElement( "Barrels",
                                                 new XElement( "Barrel", new XAttribute( "Path", "" ) ) ) ) );
             config.BinPaths.Add( b );

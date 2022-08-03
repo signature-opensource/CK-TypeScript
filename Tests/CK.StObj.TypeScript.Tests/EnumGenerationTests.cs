@@ -31,14 +31,14 @@ namespace CK.StObj.TypeScript.Tests
             config.Aspects.Add( new TypeScriptAspectConfiguration() );
 
             var b1 = new BinPathConfiguration();
-            b1.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "PackagePath", output1 ) ) );
+            b1.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", output1 ) ) );
             var b2 = new BinPathConfiguration();
-            b2.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "PackagePath", output2 ) ) );
+            b2.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", output2 ) ) );
             // b3 has no TypeScript aspect or no OutputPath or an empty OutputPath: nothing must be generated and this is just a warning.
             var b3 = new BinPathConfiguration();
             switch( Environment.TickCount % 3 )
             {
-                case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "PackagePath", " " ) ) ); break;
+                case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", " " ) ) ); break;
                 case 1: b3.AspectConfigurations.Add( new XElement( "TypeScript" ) ); break;
             }
 

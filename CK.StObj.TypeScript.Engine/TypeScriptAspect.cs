@@ -85,7 +85,7 @@ namespace CK.Setup
             var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations
                             .Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
-                            .Select( c => (Path: c!.Attribute( "PackagePath" )?.Value, Config: c!) )
+                            .Select( c => (Path: c!.Attribute( "OutputPath" )?.Value ?? c.Element("OutputPath")?.Value, Config: c!) )
                             .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
                             .Select( c => (Path: MakeAbsolute( _basePath, c.Path ), c.Config) )
                             .Where( c => !c.Path.IsEmptyPath )
