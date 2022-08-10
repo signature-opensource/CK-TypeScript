@@ -203,7 +203,7 @@ namespace CK.TypeScript.CodeGen
   },
 }
 " );
-
+                File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
 
                 var yarnFilePath = "yarn-3.2.2.cjs";
                 var yarnBinDir = Path.Combine( path, ".yarn", "releases" );
@@ -225,7 +225,7 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
-        static void ProcessRunner( IActivityMonitor monitor, string fileName, string arguments, string workingDirectory)
+        static void ProcessRunner( IActivityMonitor monitor, string fileName, string arguments, string workingDirectory )
         {
             var process = new Process
             {
