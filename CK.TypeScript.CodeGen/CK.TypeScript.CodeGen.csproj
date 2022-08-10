@@ -6,6 +6,11 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="yarn-3.2.2.cjs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.1.0" />
   </ItemGroup>
 </Project>

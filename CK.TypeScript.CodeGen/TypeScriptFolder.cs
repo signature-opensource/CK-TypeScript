@@ -138,7 +138,7 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        IEnumerable<TypeScriptFile> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
+        internal IEnumerable<TypeScriptFile> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
 
         /// <summary>
         /// Finds or creates a file in this folder.
@@ -281,34 +281,6 @@ namespace CK.TypeScript.CodeGen
                 try
                 {
                     var newOnes = IsRoot ? outputPaths : outputPaths.Select( p => p.AppendPart( Name ) ).ToArray();
-                    var dependencies = new Dictionary<string, LibraryImport>();
-                    bool isOk = true;
-                    if( IsRoot ) // We want to generate a package.json only for the root folder.
-                    {
-                        foreach( var file in AllFilesRecursive )
-                        {
-                            foreach( var item in file.Imports.LibraryImports.Values )
-                            {
-                                if( !dependencies.TryGetValue( item.Name, out var prevImport ) )
-                                {
-                                    dependencies.Add( item.Name, item );
-                                }
-                                else
-                                {
-                                    if( item.Version != prevImport.Version )
-                                    {
-                                        monitor.Error( $"File {file.Name} require {item.Name} at version {item.Version}, but another file require it at version {item.Version}." );
-                                        isOk = false;
-                                    }
-                                    if( item.DependencyKind > prevImport.DependencyKind )
-                                    {
-                                        dependencies[item.Name] = item;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if( !isOk ) return false;
 
                     if( _firstFile != null )
                     {
@@ -339,39 +311,6 @@ namespace CK.TypeScript.CodeGen
                                 }
                                 File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
                             }
-                        }
-                    }
-                    // create package.json.
-                    var sb = new StringBuilder();
-                    if( IsRoot )
-                    {
-
-                        foreach( var path in outputPaths )
-                        {
-                            sb.Clear();
-                            var packageJsonPath = Path.Combine( path, "package.json" );
-                            var depsList = dependencies
-                                .GroupBy( s => s.Value.DependencyKind, s => $@"    ""{s.Value.Name}"":""{s.Value.Version}""" )
-                                .Select( s => (s.Key switch
-                                {
-                                    DependencyKind.Dependency => "dependencies",
-                                    DependencyKind.DevDependency => "devDependencies",
-                                    DependencyKind.PeerDependency => "peerDependencies",
-                                    _ => throw new InvalidOperationException()
-                                }, string.Join( ",\n", s )) );
-                            sb.Append( $@"{{
-  ""name"": ""@signature/generated"",
-" );
-                            foreach( var deps in depsList )
-                            {
-                                sb.AppendLine( $@"  ""{deps.Item1}"":{{" );
-                                sb.Append( deps.Item2 );
-                                sb.AppendLine( "\n  }," );
-                            }
-                            sb.Append( "  \"private\": true\n}" );
-                            File.WriteAllText( packageJsonPath,
-                                sb.ToString()
-                            );
                         }
                     }
                     return true;
