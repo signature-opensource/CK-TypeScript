@@ -224,7 +224,9 @@ namespace CK.TypeScript.CodeGen
   },
 }
 " );
-                File.WriteAllText( Path.Combine(path, ".yarnrc.yml" ), @"yarnPath: .yarn/releases/yarn-3.2.2.cjs" );
+                File.WriteAllText( Path.Combine(path, ".yarnrc.yml" ),
+@"yarnPath: .yarn/releases/yarn-3.2.2.cjs
+enableImmutableInstalls: false" );
 
                 var yarnBinDir = Path.Combine( path, ".yarn", "releases" );
                 File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
