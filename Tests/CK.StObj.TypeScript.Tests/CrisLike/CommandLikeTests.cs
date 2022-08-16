@@ -134,8 +134,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var fOne = output.SourcePath.Combine( "TheFolder/CommandOne.ts" );
             var tOne = File.ReadAllText( fOne );
-            tOne.Should().Contain( "import { Power } from './Power';" )
-                     .And.Contain( "import { CommandTwo } from '../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo';" );
+            tOne.Should().Contain( "import { Power } from \"./Power\";" )
+                     .And.Contain( "import { CommandTwo } from \"../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo\";" );
 
             tOne.Should().Contain( "export interface ICommandOne" )
                      .And.Contain( "friend: CommandTwo;" );
@@ -143,7 +143,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var fTwo = output.SourcePath.Combine( "Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo.ts" );
             var tTwo = File.ReadAllText( fTwo );
-            tTwo.Should().Contain( "import { CommandOne, CommandThree } from '../../../../../TheFolder/CommandOne';" );
+            tTwo.Should().Contain( "import { CommandOne, CommandThree } from \"../../../../../TheFolder/CommandOne\";" );
         }
 
         public class FakeCommandDirectoryImpl : ITSCodeGenerator
