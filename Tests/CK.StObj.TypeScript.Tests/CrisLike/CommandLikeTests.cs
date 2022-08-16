@@ -129,10 +129,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( ICommandResult ),
                                                          typeof( FakeCommandDirectoryWithFolders ) );
 
-            var fPower = output.Combine( "TheFolder/Power.ts" );
+            var fPower = output.SourcePath.Combine( "TheFolder/Power.ts" );
             File.ReadAllText( fPower ).Should().StartWith( "export enum Power" );
 
-            var fOne = output.Combine( "TheFolder/CommandOne.ts" );
+            var fOne = output.SourcePath.Combine( "TheFolder/CommandOne.ts" );
             var tOne = File.ReadAllText( fOne );
             tOne.Should().Contain( "import { Power } from './Power';" )
                      .And.Contain( "import { CommandTwo } from '../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo';" );
@@ -141,7 +141,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( "friend: CommandTwo;" );
 
 
-            var fTwo = output.Combine( "Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo.ts" );
+            var fTwo = output.SourcePath.Combine( "Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo.ts" );
             var tTwo = File.ReadAllText( fTwo );
             tTwo.Should().Contain( "import { CommandOne, CommandThree } from '../../../../../TheFolder/CommandOne';" );
         }

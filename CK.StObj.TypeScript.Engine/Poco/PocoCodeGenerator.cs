@@ -279,7 +279,7 @@ namespace CK.StObj.TypeScript.Engine
 
                 tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolType" );
                 b.NewLine()
-                 .Append( "[SymbolType]: " ).AppendSourceString( root.Name ).Append( ";" ).NewLine();
+                 .Append( "[SymbolType] = " ).AppendSourceString( root.Name ).Append( ";" ).NewLine();
 
                 // Currently the constructor is private: this is because of readonly properties that
                 // have no [DefaulValue] attributes: it's not easy to generate the assignation required 

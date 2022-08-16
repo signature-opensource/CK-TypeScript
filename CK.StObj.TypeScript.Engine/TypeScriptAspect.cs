@@ -85,7 +85,7 @@ namespace CK.Setup
             var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations
                             .Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
-                            .Select( c => (Path: c!.Attribute( "OutputPath" )?.Value ?? c.Element("OutputPath")?.Value, Config: c!) )
+                            .Select( c => (Path: c!.Attribute( "OutputPath" )?.Value ?? c.Element( "OutputPath" )?.Value, Config: c!) )
                             .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
                             .Select( c => (Path: MakeAbsolute( _basePath, c.Path ), c.Config) )
                             .Where( c => !c.Path.IsEmptyPath )
@@ -111,13 +111,38 @@ namespace CK.Setup
             bool success = true;
             if( context.EngineStatus.Success )
             {
-                using( monitor.OpenInfo( $"Saving TypeScript files." ) )
+                using( monitor.OpenInfo( $"Saving TypeScript files..." ) )
                 {
                     foreach( var g in _generators )
                     {
                         if( g != null )
                         {
-                            success &= g.Root.Save( monitor );
+                            success &= g.Root.SaveTS( monitor );
+                        }
+                    }
+                }
+
+                if( !success ) return false;
+
+                using( monitor.OpenInfo( $"Saving TypeScript build config files..." ) )
+                {
+                    foreach( var g in _generators )
+                    {
+                        if( g != null )
+                        {
+                            success &= g.Root.SaveBuildConfig( monitor );
+                        }
+                    }
+                }
+                if( !success ) return false;
+
+                using( monitor.OpenInfo( $"Building TypeScript projects..." ) )
+                {
+                    foreach( var g in _generators )
+                    {
+                        if( g != null )
+                        {
+                            success &= g.Root.RunNodeBuild( monitor );
                         }
                     }
                 }

@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -95,15 +97,25 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor )
+        public bool SaveTS( IActivityMonitor monitor )
         {
             var barrelPaths = _pathsAndConfig.SelectMany( c => c.Config.Elements( "Barrels" ).Elements( "Barrel" )
                                                      .Select( b => c.Path.Combine( b.Attribute( "Path" )?.Value ) ) );
             var barrels = new HashSet<NormalizedPath>( barrelPaths );
-            bool isOk = Root.Save( monitor, _pathsAndConfig.Select( p => p.Path ), barrels.Contains );
-            if( !isOk ) return false;
-            var dependencies = new Dictionary<string, LibraryImport>();
+            return Root.Save( monitor, _pathsAndConfig.Select(
+                p => new NormalizedPath( Path.Combine( p.Path, "ts", "src" )
+            ) ), barrels.Contains );
+        }
+
+        public bool SaveBuildConfig( IActivityMonitor monitor )
+        {
+            var dependencies = new Dictionary<string, LibraryImport>
+            {
+                { "typescript", new LibraryImport( "typescript", "4.7.4", DependencyKind.DevDependency ) }
+            };
+
             // listing dependencies.
+            bool isOk = true;
             foreach( var file in Root.AllFilesRecursive )
             {
                 foreach( var item in file.Imports.LibraryImports.Values )
@@ -121,6 +133,7 @@ namespace CK.TypeScript.CodeGen
                         }
                         if( item.DependencyKind > prevImport.DependencyKind )
                         {
+                            monitor.Info( $"Dependency {item.Name} had dependency kind {prevImport.DependencyKind}, {file.Name} is upgrading it to {item.DependencyKind}" );
                             dependencies[item.Name] = item;
                         }
                     }
@@ -133,6 +146,14 @@ namespace CK.TypeScript.CodeGen
                 var path = item.Path;
                 var packageJsonPath = Path.Combine( path, "package.json" );
                 var depsList = dependencies
+                    .Concat(
+                        dependencies
+                            .Where( s => s.Value.DependencyKind == DependencyKind.PeerDependency )
+                            .Select(
+                            s => new KeyValuePair<string, LibraryImport>(
+                                s.Key, new LibraryImport( s.Value.Name, s.Value.Version, DependencyKind.DevDependency )
+                            ) )
+                    )
                     .GroupBy( s => s.Value.DependencyKind, s => $@"    ""{s.Value.Name}"":""{s.Value.Version}""" )
                     .Select( s => (s.Key switch
                     {
@@ -150,7 +171,7 @@ namespace CK.TypeScript.CodeGen
                     sb.Append( deps.Item2 );
                     sb.AppendLine( "\n  }," );
                 }
-                sb.Append( @"  ""private"": true
+                sb.Append( @"  ""private"": true,
   ""files"": [
     ""dist/""
   ],
@@ -195,7 +216,7 @@ namespace CK.TypeScript.CodeGen
 " );
                 File.WriteAllText(
                     Path.Combine( path, "tsconfig-cjs.json" ),
-@"{
+    @"{
   ""extends"": ""./tsconfig.json"",
   ""compilerOptions"": {
     ""module"": ""CommonJS"",
@@ -203,29 +224,53 @@ namespace CK.TypeScript.CodeGen
   },
 }
 " );
-                File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
+                File.WriteAllText( Path.Combine(path, ".yarnrc.yml" ), @"yarnPath: .yarn/releases/yarn-3.2.2.cjs" );
 
-                var yarnFilePath = "yarn-3.2.2.cjs";
                 var yarnBinDir = Path.Combine( path, ".yarn", "releases" );
+                File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
                 Directory.CreateDirectory( yarnBinDir );
-                File.Copy( Path.Combine( CurrentAssemblyDirectory, yarnFilePath ), Path.Combine( yarnBinDir, yarnFilePath ), true );
-
-
-
-                using( monitor.OpenInfo( $"Running yarn restore..." ) )
+                var currAssembly = Assembly.GetExecutingAssembly();
+                using( var yarnBinStream = currAssembly.GetManifestResourceStream( currAssembly.GetName().Name + "." + _yarnFileName )! )
+                using( var fileStream = File.OpenWrite( Path.Combine( yarnBinDir, _yarnFileName ) ) )
                 {
-                    ProcessRunner( monitor, "node", yarnFilePath, path );
-                }
-
-                using( monitor.OpenInfo( $"Running typescript compiler..." ) )
-                {
-                    ProcessRunner( monitor, "node", $"{yarnFilePath} run build", path );
+                    yarnBinStream.CopyTo( fileStream );
                 }
             }
             return true;
         }
 
-        static void ProcessRunner( IActivityMonitor monitor, string fileName, string arguments, string workingDirectory )
+        static readonly string _yarnFileName = "yarn-3.2.2.cjs";
+
+        public bool RunNodeBuild( IActivityMonitor monitor )
+        {
+            foreach( var item in _pathsAndConfig )
+            {
+                var yarnBinDir = Path.Combine( item.Path, ".yarn", "releases" );
+                var yarnBinJS = Path.Combine( yarnBinDir, _yarnFileName );
+                using( monitor.OpenInfo( $"Running yarn restore..." ) )
+                {
+                    int code = ProcessRunner( monitor, "node", yarnBinJS, item.Path );
+                    if( code != 0 )
+                    {
+                        monitor.Error( "Exit code is not 0." );
+                        return false;
+                    }
+                }
+
+                using( monitor.OpenInfo( $"Running typescript compiler..." ) )
+                {
+                    int code = ProcessRunner( monitor, "node", $"{yarnBinJS} run build", item.Path );
+                    if( code != 0 )
+                    {
+                        monitor.Error( "Exit code is not 0." );
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        static int ProcessRunner( IActivityMonitor monitor, string fileName, string arguments, string workingDirectory )
         {
             var process = new Process
             {
@@ -236,11 +281,16 @@ namespace CK.TypeScript.CodeGen
                     RedirectStandardError = true
                 }
             };
-            var processLogs = new ChannelReaderMerger<string, string, (string, bool)>(
-                new ChannelTextReader( process.StandardOutput ), ( s ) => (s, false),
-                new ChannelTextReader( process.StandardOutput ), ( s ) => (s, true)
-            );
             process.Start();
+            var left = new ChannelTextReader( process.StandardOutput );
+            var right = new ChannelTextReader( process.StandardError );
+            left.Start();
+            right.Start();
+            var processLogs = new ChannelReaderMerger<string, string, (string, bool)>(
+                left, ( s ) => (s, false),
+                right, ( s ) => (s, true)
+            );
+            processLogs.Start();
             void FlushLogs()
             {
                 while( processLogs.TryRead( out var log ) )
@@ -248,15 +298,18 @@ namespace CK.TypeScript.CodeGen
                     monitor.Log( log.Item2 ? LogLevel.Error : LogLevel.Trace, log.Item1 );
                 }
             }
-            while( !processLogs.Completion.IsCompleted )
+
+            bool firstLoop = true;
+            while( !processLogs.Completion.IsCompleted || !process.HasExited )
             {
                 FlushLogs();
-                process.WaitForExit( 20 ); // avoid closed loop when waiting for log.
+                if( !firstLoop ) process.WaitForExit( 20 ); // avoid closed loop when waiting for log.
+                firstLoop = false;
             }
+            FlushLogs();
             Debug.Assert( process.HasExited );
+            return process.ExitCode;
         }
-
-        static string CurrentAssemblyDirectory = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
 
         /// <summary>
         /// Ensures that an identifier follows the <see cref="PascalCase"/> configuration.
@@ -289,20 +342,25 @@ namespace CK.TypeScript.CodeGen
         }
     }
 
-    public abstract class ChannReaderWrapper<T> : ChannelReader<T>
+    public abstract class ChannelReaderWrapper<T> : ChannelReader<T>
     {
         readonly Channel<T> _channel;
+        private Task _completion;
 
-        protected ChannReaderWrapper( Channel<T> channel )
+        protected ChannelReaderWrapper( Channel<T> channel )
         {
-            Completion = BackgroundTaskAsync();
             _channel = channel;
+        }
+
+        public void Start()
+        {
+            _completion = BackgroundTaskAsync();
         }
 
         protected ChannelWriter<T> Writer => _channel.Writer;
 
         /// <inheritdoc/>
-        public override Task Completion { get; }
+        public override Task Completion => _completion;
 
         /// <inheritdoc/>
         public override bool TryRead( [MaybeNullWhen( false )] out T item ) => _channel.Reader.TryRead( out item );
@@ -321,12 +379,13 @@ namespace CK.TypeScript.CodeGen
         protected abstract Task BackgroundTaskAsync();
     }
 
-    public class ChannelTextReader : ChannReaderWrapper<string>
+    public class ChannelTextReader : ChannelReaderWrapper<string>
     {
         readonly TextReader _textReader;
 
         public ChannelTextReader( TextReader textReader ) : base( Channel.CreateUnbounded<string>() )
         {
+            Throw.CheckNotNullArgument( textReader );
             _textReader = textReader;
         }
 
@@ -342,7 +401,7 @@ namespace CK.TypeScript.CodeGen
         }
     }
 
-    public class ChannelReaderMerger<TLeft, TRight, TOut> : ChannReaderWrapper<TOut>
+    public class ChannelReaderMerger<TLeft, TRight, TOut> : ChannelReaderWrapper<TOut>
     {
         readonly ChannelReader<TLeft> _left;
         readonly Func<TLeft, TOut> _leftTransformer;
@@ -362,8 +421,11 @@ namespace CK.TypeScript.CodeGen
             _rightTransformer = rightTransformer;
         }
 
-        protected override Task BackgroundTaskAsync()
-            => Task.WhenAll( ChannelLoopAsync( _left, _leftTransformer ), ChannelLoopAsync( _right, _rightTransformer ) );
+        protected override async Task BackgroundTaskAsync()
+        {
+            await Task.WhenAll( ChannelLoopAsync( _left, _leftTransformer ), ChannelLoopAsync( _right, _rightTransformer ) );
+            Writer.Complete();
+        }
 
         async Task ChannelLoopAsync<T>( ChannelReader<T> reader, Func<T, TOut> transformer )
         {

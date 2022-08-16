@@ -22,7 +22,7 @@ namespace CK.StObj.TypeScript.Tests
             One,
         }
 
-        static (NormalizedPath BinTSPath1, NormalizedPath BinTSPath2) GenerateTSCodeInB1AndB2Outputs( string testName, params Type[] types )
+        static (NormalizedPath BinTSPath1, NormalizedPath SourceTSPath1, NormalizedPath BinTSPath2, NormalizedPath SourceTSPath2) GenerateTSCodeInB1AndB2Outputs( string testName, params Type[] types )
         {
             var output1 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b1" ), false );
             var output2 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b2" ), false );
@@ -52,16 +52,16 @@ namespace CK.StObj.TypeScript.Tests
             Directory.Exists( output1 ).Should().BeTrue();
             Directory.Exists( output2 ).Should().BeTrue();
 
-            return (output1, output2);
+            return (output1, output1.AppendPart( "ts" ).AppendPart( "src" ), output2, output2.AppendPart( "ts" ).AppendPart( "src" ));
         }
 
         [Test]
         public void simple_enum_generation_in_multiple_BinPath()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "simple_enum_generation", typeof( Simple ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "simple_enum_generation", typeof( Simple ) );
 
-            var f1 = output1.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
-            var f2 = output2.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
             File.Exists( f1 ).Should().BeTrue();
             File.Exists( f2 ).Should().BeTrue();
 
@@ -90,10 +90,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void explicit_Folder_configured()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "explicit_Folder_configured", typeof( InAnotherFolder ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "explicit_Folder_configured", typeof( InAnotherFolder ) );
 
-            var f1 = output1.Combine( "TheFolder/InAnotherFolder.ts" );
-            var f2 = output2.Combine( "TheFolder/InAnotherFolder.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "TheFolder/InAnotherFolder.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "TheFolder/InAnotherFolder.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum InAnotherFolder" );
             s.Should().Be( File.ReadAllText( f2 ) );
@@ -119,10 +119,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void empty_Folder_generates_code_at_the_Root()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "empty_Folder_generates_code_at_the_Root", typeof( AtTheRootFolder ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "empty_Folder_generates_code_at_the_Root", typeof( AtTheRootFolder ) );
 
-            var f1 = output1.Combine( "AtTheRootFolder.ts" );
-            var f2 = output2.Combine( "AtTheRootFolder.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "AtTheRootFolder.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "AtTheRootFolder.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum AtTheRootFolder" );
             s.Should().Be( File.ReadAllText( f2 ) );
@@ -148,10 +148,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void explicit_FileName_configured()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "explicit_FileName_configured", typeof( InASpecificFile ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "explicit_FileName_configured", typeof( InASpecificFile ) );
 
-            var f1 = output1.Combine( "Folder/EnumFile.ts" );
-            var f2 = output2.Combine( "Folder/EnumFile.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "Folder/EnumFile.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "Folder/EnumFile.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum InASpecificFile" );
             s.Should().Be( File.ReadAllText( f2 ) );
@@ -162,7 +162,7 @@ namespace CK.StObj.TypeScript.Tests
         /// filename is explicitly "Folder/EnumFile.ts".
         /// </summary>
         [TypeScript( Folder = "Folder", FileName = "EnumFile.ts" )]
-        [ExternalName("Toto")]
+        [ExternalName( "Toto" )]
         public enum InASpecificFileWithAnExternalName : sbyte
         {
             /// <summary>
@@ -179,10 +179,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void ExternalName_attribute_overrides_the_Type_name()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "ExternalName_attribute_overrides_the_Type_name", typeof( InASpecificFileWithAnExternalName ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "ExternalName_attribute_overrides_the_Type_name", typeof( InASpecificFileWithAnExternalName ) );
 
-            var f1 = output1.Combine( "Folder/EnumFile.ts" );
-            var f2 = output2.Combine( "Folder/EnumFile.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "Folder/EnumFile.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "Folder/EnumFile.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum Toto" );
             s.Should().Be( File.ReadAllText( f2 ) );
@@ -219,10 +219,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void ExternalName_attribute_overrides_the_Type_name_and_the_FileName()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "ExternalName_attribute_overrides_the_Type_name_and_the_FileName", typeof( WithAnExternalName ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "ExternalName_attribute_overrides_the_Type_name_and_the_FileName", typeof( WithAnExternalName ) );
 
-            var f1 = output1.Combine( "Folder/Toto.ts" );
-            var f2 = output2.Combine( "Folder/Toto.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "Folder/Toto.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "Folder/Toto.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum Toto" );
             s.Should().Be( File.ReadAllText( f2 ) );
@@ -230,7 +230,7 @@ namespace CK.StObj.TypeScript.Tests
 
 
         [TypeScript( Folder = "", FileName = "EnumFile.ts", TypeName = "EnumType" )]
-        [ExternalName("ThisIsIgnoredSinceTypeNameIsDefined")]
+        [ExternalName( "ThisIsIgnoredSinceTypeNameIsDefined" )]
         public enum AtTheRootAndWithAnotherExplicitTypeName : sbyte
         {
             A = -2,
@@ -242,10 +242,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void explicit_TypeName_and_FileName_override_the_ExternalName()
         {
-            var (output1, output2) = GenerateTSCodeInB1AndB2Outputs( "explicit_TypeName_and_FileName_override_the_ExternalName", typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
+            var paths = GenerateTSCodeInB1AndB2Outputs( "explicit_TypeName_and_FileName_override_the_ExternalName", typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
 
-            var f1 = output1.Combine( "EnumFile.ts" );
-            var f2 = output2.Combine( "EnumFile.ts" );
+            var f1 = paths.SourceTSPath1.Combine( "EnumFile.ts" );
+            var f2 = paths.SourceTSPath2.Combine( "EnumFile.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum EnumType" );
             s.Should().Be( File.ReadAllText( f2 ) );

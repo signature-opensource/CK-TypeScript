@@ -34,6 +34,13 @@ namespace CK.TypeScript.CodeGen
         ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames );
 
         /// <summary>
+        /// Ensures that an external library will be present in the project.
+        /// </summary>
+        /// <param name="libraryImport">The library infos.</param>
+        /// <returns>This section to enable fluent syntax.</returns>
+        ITSFileImportSection EnsureLibrary( LibraryImport libraryImport );
+
+        /// <summary>
         /// Gets the number of different <see cref="EnsureImport(TypeScriptFile, string, string[])"/>
         /// that have been done.
         /// </summary>

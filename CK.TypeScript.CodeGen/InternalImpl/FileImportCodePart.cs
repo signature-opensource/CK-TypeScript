@@ -21,11 +21,9 @@ namespace CK.TypeScript.CodeGen
 
         public IReadOnlyDictionary<string, LibraryImport> LibraryImports => _libraries;
 
-
-        public ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames )
+        public ITSFileImportSection EnsureLibrary(LibraryImport libraryImport)
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( libraryImport.Name );
-            Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             if( !_libraries.TryGetValue( libraryImport.Name, out var lib ) )
             {
                 _libraries[libraryImport.Name] = libraryImport;
@@ -41,6 +39,13 @@ namespace CK.TypeScript.CodeGen
                     _libraries[libraryImport.Name] = libraryImport;
                 }
             }
+            return this;
+        }
+
+        public ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames )
+        {
+            Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
+            EnsureLibrary( libraryImport );
             AddTypeNames( ref _importLibs, libraryImport.Name, typeName, typeNames );
             return this;
         }

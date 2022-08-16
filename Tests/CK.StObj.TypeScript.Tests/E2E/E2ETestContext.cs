@@ -47,10 +47,10 @@ namespace CK.StObj.TypeScript.Tests.E2E
             collector.RegisterType( typeof( PocoJsonSerializer ) );
             var outputPath = LocalTestHelper.GetOutputFolder( subPath, testName );
             var services = TestHelper.CreateAutomaticServices( collector,
-                                                               engineConfiguration => ApplyTSAwareConfig( engineConfiguration, outputPath, tsConfig, tsBinPathConfig ),
+                                                               engineConfiguration => ApplyTSAwareConfig( engineConfiguration, outputPath.ProjectPath, tsConfig, tsBinPathConfig ),
                                                                startupServices: null,
                                                                configureServices ).Services;
-            return new E2ETestContext( testName, outputPath, services );
+            return new E2ETestContext( testName, outputPath.ProjectPath, services );
         }
 
         public static StObjEngineConfiguration ApplyTSAwareConfig( StObjEngineConfiguration c,

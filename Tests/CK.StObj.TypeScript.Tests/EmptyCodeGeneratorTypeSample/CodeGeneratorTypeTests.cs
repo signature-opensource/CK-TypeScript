@@ -50,10 +50,10 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
                                                             typeof( WillBeEmptyClass ),
                                                             typeof( WillBeEmptyStruct ) );
 
-            var e = File.ReadAllText( output.AppendPart( "EnumThatWillBeEmpty.ts" ) );
-            var i = File.ReadAllText( output.AppendPart( "IWillBeEmpty.ts" ) );
-            var c = File.ReadAllText( output.AppendPart( "WillBeEmptyClass.ts" ) );
-            var s = File.ReadAllText( output.AppendPart( "WillBeEmptyStruct.ts" ) );
+            var e = File.ReadAllText( output.SourcePath.AppendPart( "EnumThatWillBeEmpty.ts" ) );
+            var i = File.ReadAllText( output.SourcePath.AppendPart( "IWillBeEmpty.ts" ) );
+            var c = File.ReadAllText( output.SourcePath.AppendPart( "WillBeEmptyClass.ts" ) );
+            var s = File.ReadAllText( output.SourcePath.AppendPart( "WillBeEmptyStruct.ts" ) );
 
             e.Should().Be( "export enum EnumThatWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
             i.Should().Be( "export interface IWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
