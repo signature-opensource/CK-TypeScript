@@ -171,7 +171,8 @@ namespace CK.TypeScript.CodeGen
                     sb.Append( deps.Item2 );
                     sb.AppendLine( "\n  }," );
                 }
-                sb.Append( @"  ""private"": true,
+                sb.Append(
+@"  ""private"": true,
   ""files"": [
     ""dist/""
   ],
@@ -185,6 +186,10 @@ namespace CK.TypeScript.CodeGen
                     sb.ToString()
                 );
                 sb.Clear();
+
+                File.WriteAllText( Path.Combine( path, "index.ts" ),
+                    "export * from './src';"
+                );
 
                 File.WriteAllText(
                     Path.Combine( path, "tsconfig.json" ),
@@ -216,7 +221,7 @@ namespace CK.TypeScript.CodeGen
 " );
                 File.WriteAllText(
                     Path.Combine( path, "tsconfig-cjs.json" ),
-    @"{
+@"{
   ""extends"": ""./tsconfig.json"",
   ""compilerOptions"": {
     ""module"": ""CommonJS"",
