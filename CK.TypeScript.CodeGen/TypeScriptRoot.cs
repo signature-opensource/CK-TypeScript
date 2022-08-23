@@ -101,10 +101,11 @@ namespace CK.TypeScript.CodeGen
         {
             var barrelPaths = _pathsAndConfig.SelectMany( c => c.Config.Elements( "Barrels" ).Elements( "Barrel" )
                                                      .Select( b => c.Path.Combine( b.Attribute( "Path" )?.Value ) ) );
-            var barrels = new HashSet<NormalizedPath>( barrelPaths );
-            return Root.Save( monitor, _pathsAndConfig.Select(
+            var roots = _pathsAndConfig.Select(
                 p => new NormalizedPath( Path.Combine( p.Path, "ts", "src" )
-            ) ), barrels.Contains );
+            ) ).ToArray();
+            var barrels = new HashSet<NormalizedPath>( roots.Concat( barrelPaths ) );// We need a root barrel for the generated module.
+            return Root.Save( monitor, roots, barrels.Contains );
         }
 
         public bool SaveBuildConfig( IActivityMonitor monitor )
@@ -187,10 +188,6 @@ namespace CK.TypeScript.CodeGen
                 );
                 sb.Clear();
 
-                File.WriteAllText( Path.Combine( path, "index.ts" ),
-                    "export * from './src';"
-                );
-
                 File.WriteAllText(
                     Path.Combine( path, "tsconfig.json" ),
                     @"{
@@ -229,7 +226,7 @@ namespace CK.TypeScript.CodeGen
   },
 }
 " );
-                File.WriteAllText( Path.Combine(path, ".yarnrc.yml" ),
+                File.WriteAllText( Path.Combine( path, ".yarnrc.yml" ),
 @"yarnPath: .yarn/releases/yarn-3.2.2.cjs
 enableImmutableInstalls: false" );
 

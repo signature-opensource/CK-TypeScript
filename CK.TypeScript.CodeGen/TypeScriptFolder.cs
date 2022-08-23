@@ -60,14 +60,6 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptRoot Root => _g;
 
         /// <summary>
-        /// Gets or sets whether a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel) must be
-        /// generated in this folder.
-        /// When null (the default), this is decided by the strategy of the <see cref="Save"/> method.
-        /// When set, the strategy is not used and this property takes precedence.
-        /// </summary>
-        public bool? CreateBarrelOnSave { get; set; }
-
-        /// <summary>
         /// Finds or creates a folder.
         /// </summary>
         /// <param name="name">The folder's name to find or create. Must not be empty nor ends with '.ts'.</param>
@@ -273,7 +265,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="outputPaths">Any number of target directories.</param>
         /// <param name="createBarrel">Optional strategy to create barrels in folders. See <see cref="CreateBarrelOnSave"/>.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath, bool>? createBarrel = null )
+        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath, bool> createBarrel )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
             {
@@ -296,21 +288,18 @@ namespace CK.TypeScript.CodeGen
                         if( !folder.Save( monitor, newOnes, createBarrel ) ) return false;
                         folder = folder._next;
                     }
-                    if( CreateBarrelOnSave != false )
+                    string? barrel = null;
+                    foreach( var p in newOnes )
                     {
-                        string? barrel = null;
-                        foreach( var p in newOnes )
+                        if( createBarrel( p ) )
                         {
-                            if( CreateBarrelOnSave ?? createBarrel( p ) )
+                            if( barrel == null )
                             {
-                                if( barrel == null )
-                                {
-                                    var b = new StringBuilder();
-                                    AddExportsToBarrel( p, default, b, createBarrel );
-                                    barrel = b.ToString();
-                                }
-                                File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
+                                var b = new StringBuilder();
+                                AddExportsToBarrel( p, default, b, createBarrel );
+                                barrel = b.ToString();
                             }
+                            File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
                         }
                     }
                     return true;
@@ -326,7 +315,7 @@ namespace CK.TypeScript.CodeGen
         void AddExportsToBarrel( NormalizedPath parentPath, NormalizedPath subPath, StringBuilder b, Func<NormalizedPath, bool> createBarrel )
         {
             if( !subPath.IsEmptyPath
-                && (CreateBarrelOnSave ?? createBarrel( parentPath.Combine( subPath ) )) )
+                && (createBarrel( parentPath.Combine( subPath ) )) )
             {
                 AddExportFolder( subPath, b );
             }
