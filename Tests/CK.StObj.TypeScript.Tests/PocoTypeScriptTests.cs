@@ -1,4 +1,5 @@
 using CK.Core;
+using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -92,5 +93,23 @@ namespace CK.StObj.TypeScript.Tests
                                                          typeof( IWithReadOnly ),
                                                          typeof( IWithUnions ) );
         }
+
+        [TypeScript]
+        public interface IBasicGeneric<T> : IPoco
+        {
+            T Value { get; set; }
+        }
+
+        [Test]
+        public void open_generics_are_not_supported()
+        {
+            FluentActions.Invoking( () =>
+            {
+                var output = LocalTestHelper.GenerateTSCode( nameof( open_generics_are_not_supported ),
+                                                             typeof( IBasicGeneric<> ) );
+            } ).Should().Throw<ArgumentException>();
+        }
+
     }
+
 }

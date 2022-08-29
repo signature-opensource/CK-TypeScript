@@ -105,7 +105,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // ICommandResult and any types that are exposed from the ICommand are exported by the IPoco TS engine.
             public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
             {
-                g.DeclareTSType( monitor, typeof( ICommandResult ) );
+                g.DeclareTSType( monitor, typeof( ICrisResult ) );
                 g.DeclareTSType( monitor, typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof( ICommandFour ) );
                 return true;
             }
@@ -126,7 +126,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( ICommandTwo ),
                                                          typeof( ICommandThree ),
                                                          typeof( ICommandFour ),
-                                                         typeof( ICommandResult ),
+                                                         typeof( ICrisResult ),
                                                          typeof( FakeCommandDirectoryWithFolders ) );
 
             var fPower = output.Combine( "TheFolder/Power.ts" );
