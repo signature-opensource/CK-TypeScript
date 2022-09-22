@@ -1,7 +1,7 @@
 using CK.Core;
 using System;
 
-namespace CK.StObj.TypeScript.Tests.CrisLike
+namespace CK.CrisLike
 {
     /// <summary>
     /// The base command interface marker is a simple <see cref="IPoco"/>.

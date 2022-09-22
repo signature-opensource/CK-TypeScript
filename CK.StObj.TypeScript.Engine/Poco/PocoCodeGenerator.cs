@@ -206,7 +206,7 @@ namespace CK.StObj.TypeScript.Engine
                     var propComment = new DocumentationBuilder( withStars: false ).AppendDocumentation( b.File, docElements ).GetFinalText();
                     var paramComment = RemoveGetsOrSetsPrefix( propComment );
 
-                    // When p.IsReadOnly, the DefaultValue is "new propType()". This works perfectly for (I)List (=> Array), (I)Set (=> Set) and (I)Dictionary (=> Map)
+                    // When p.IsReadOnly, the DefaultValue is "new propType()". This works perfectly for List (=> Array), Set (=> Set) and Dictionary (=> Map)
                     // and for Poco since the interface's name is mapped to its implementation class' name.
                     var prop = new TypeScriptPocoPropertyInfo( p, propType, propName, paramName, propComment, paramComment );
                     Debug.Assert( prop.CreateMethodParameter != null, "Never null on initialization." );
@@ -354,7 +354,7 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 // To allow strict mode, all non readonly properties must be initialized even
                 // if they have no default value defined: we generate an assignation to "undefined!": the create method MUST be used.
-                // (And this is why the constructors are private.)
+                // (And this is why the implementation constructor should be private.)
                 foreach( var prop in propList.Take( propList.Count - readOnlyPropertyCount ) )
                 {
                     string defaultValue;
