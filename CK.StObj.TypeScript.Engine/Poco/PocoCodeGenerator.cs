@@ -202,7 +202,7 @@ namespace CK.StObj.TypeScript.Engine
 
                     // Unifies the documentations from possibly more than one property declarations
                     // into a documentation text (without the stars).
-                    var docElements = XmlDocumentationReader.GetDocumentationFor( monitor, p.DeclaredProperties );
+                    var docElements = XmlDocumentationReader.GetDocumentationFor( monitor, p.DeclaredProperties, tsRoot.Memory );
                     var propComment = new DocumentationBuilder( withStars: false ).AppendDocumentation( b.File, docElements ).GetFinalText();
                     var paramComment = RemoveGetsOrSetsPrefix( propComment );
 
