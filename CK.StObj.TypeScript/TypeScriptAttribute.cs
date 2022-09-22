@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Setup;
 using System;
 using System.Reflection;
@@ -61,10 +62,10 @@ namespace CK.StObj.TypeScript
                     value = value.Trim();
                     if( value.Length > 0 && (value[0] == '/' || value[0] == '\\') )
                     {
-                        throw new ArgumentException( "Folder must not be rooted: " + value );
+                        Throw.ArgumentException( "value", "Folder must not be rooted: " + value );
                     }
-                    if( _sameFolderAs != null ) throw new InvalidOperationException( "Folder cannot be set when SameFolderAs is not null." );
-                    if( _sameFileAs != null ) throw new InvalidOperationException( "Folder cannot be set when SameFileAs is not null." );
+                    if( _sameFolderAs != null ) Throw.InvalidOperationException( "Folder cannot be set when SameFolderAs is not null." );
+                    if( _sameFileAs != null ) Throw.InvalidOperationException( "Folder cannot be set when SameFileAs is not null." );
                 }
                 _folder = value;
             }
@@ -84,9 +85,9 @@ namespace CK.StObj.TypeScript
                     value = value.Trim();
                     if( value.Length <= 3 || !value.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase ) )
                     {
-                        throw new ArgumentException( "FileName must end with '.ts': " + value );
+                        Throw.ArgumentException( "FileName must end with '.ts': " + value );
                     }
-                    if( _sameFileAs != null ) throw new InvalidOperationException( "FileName cannot be set when SameFileAs is not null." );
+                    if( _sameFileAs != null ) Throw.InvalidOperationException( "FileName cannot be set when SameFileAs is not null." );
                 }
                 _fileName = value;
             }
@@ -94,7 +95,7 @@ namespace CK.StObj.TypeScript
 
         /// <summary>
         /// Gets or sets the type name to use for this type.
-        /// This takes precedence over the <see cref="CK.Core.ExternalNameAttribute"/> that itself
+        /// This takes precedence over the <see cref="ExternalNameAttribute"/> that itself
         /// takes precedence over the <see cref="MemberInfo.Name"/> of the type.
         /// </summary>
         public string? TypeName { get; set; }
@@ -114,8 +115,8 @@ namespace CK.StObj.TypeScript
             {
                 if( value != null )
                 {
-                    if( _folder != null ) throw new InvalidOperationException( "SameFolderAs cannot be set when Folder is not null." );
-                    if( _sameFileAs != null && _sameFileAs != value ) throw new InvalidOperationException( "SameFolderAs cannot be set when SameFileAs is not null (except to the same type)." );
+                    if( _folder != null ) Throw.InvalidOperationException( "SameFolderAs cannot be set when Folder is not null." );
+                    if( _sameFileAs != null && _sameFileAs != value ) Throw.InvalidOperationException( "SameFolderAs cannot be set when SameFileAs is not null (except to the same type)." );
                 }
                 _sameFolderAs = value;
             }
@@ -133,9 +134,9 @@ namespace CK.StObj.TypeScript
             {
                 if( value != null )
                 {
-                    if( _folder != null ) throw new InvalidOperationException( "SameFileAs cannot be set when Folder is not null." );
-                    if( _fileName != null ) throw new InvalidOperationException( "SameFileAs cannot be set when FileName is not null." );
-                    if( _sameFolderAs != null && _sameFolderAs != value ) throw new InvalidOperationException( "SameFileAs cannot be set when SameFolderAs is not null (except to the same type)." );
+                    if( _folder != null ) Throw.InvalidOperationException( "SameFileAs cannot be set when Folder is not null." );
+                    if( _fileName != null ) Throw.InvalidOperationException( "SameFileAs cannot be set when FileName is not null." );
+                    if( _sameFolderAs != null && _sameFolderAs != value ) Throw.InvalidOperationException( "SameFileAs cannot be set when SameFolderAs is not null (except to the same type)." );
                 }
                 _sameFileAs = value;
             }

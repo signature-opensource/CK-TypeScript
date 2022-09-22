@@ -30,7 +30,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T AppendEnumDefinition<T>( this T @this, IActivityMonitor monitor, Type enumType, string typeName, bool export ) where T : ITSCodeWriter
         {
-            if( !enumType.IsEnum ) throw new ArgumentException( $"Must be an enum: {enumType.Name}.", nameof( enumType ) );
+            Throw.CheckArgument( enumType.IsEnum );
             var uT = enumType.GetEnumUnderlyingType();
             if( uT == typeof(UInt32) || uT == typeof(Int64) || uT == typeof(UInt64) )
             {

@@ -12,7 +12,8 @@ namespace CK.StObj.TypeScript.Tests.E2E
     public class PlaywrightTests
     {
         [Test]
-        public async Task simple_playwright_test_Async()
+        [Explicit]
+        public async Task playwright_automatic_setup_test_Async()
         {
             try
             {

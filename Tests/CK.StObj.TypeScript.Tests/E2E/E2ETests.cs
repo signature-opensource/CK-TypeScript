@@ -8,6 +8,7 @@ using Microsoft.Playwright.NUnit;
 using CK.StObj.TypeScript.Tests.CrisLike;
 using CK.Core;
 using System.ComponentModel;
+using CK.CrisLike;
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace CK.StObj.TypeScript.Tests.E2E

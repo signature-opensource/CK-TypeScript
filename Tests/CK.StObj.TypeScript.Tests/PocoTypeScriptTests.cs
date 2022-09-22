@@ -1,4 +1,5 @@
 using CK.Core;
+using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -92,5 +93,7 @@ namespace CK.StObj.TypeScript.Tests
                                                          typeof( IWithReadOnly ),
                                                          typeof( IWithUnions ) );
         }
+
     }
+
 }

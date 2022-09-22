@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CK.StObj.TypeScript.Tests.CrisLike
+namespace CK.CrisLike
 {
     /// <summary>
     /// Defines the possible command handling response types.

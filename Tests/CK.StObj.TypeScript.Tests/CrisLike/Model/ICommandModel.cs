@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace CK.StObj.TypeScript.Tests.CrisLike
+namespace CK.CrisLike
 {
     /// <summary>
     /// Describes command properties and its unique and zero-based index in a context.

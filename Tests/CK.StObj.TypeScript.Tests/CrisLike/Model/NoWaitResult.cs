@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CK.StObj.TypeScript.Tests.CrisLike
+namespace CK.CrisLike
 {
     /// <summary>
     /// Type marker for result of a fire &amp; forget command.

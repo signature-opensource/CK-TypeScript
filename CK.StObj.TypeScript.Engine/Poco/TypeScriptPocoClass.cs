@@ -194,11 +194,17 @@ namespace CK.StObj.TypeScript.Engine
                         atLeastOne = true;
                     }
                 }
-                b.Append( " )" ).OpenBlock()
-                 .Append( "const c = new " ).Append( TypeName ).Append( "(" ).CreatePart( out var ctorParamsPart ).Append( ");" ).NewLine()
-                 .Append( "if( typeof " ).Append( firstParameterName ).Append( " === 'function' ) " ).Append( firstParameterName ).Append( "(c);" ).NewLine()
-                 .Append( "else" ).OpenBlock();
-
+                b.Append( " )" );
+                // Calling the configurator function.
+                b.OpenBlock()
+                 .Append( "if( typeof " ).Append( firstParameterName ).Append( " === 'function' )" )
+                    .OpenBlock()
+                    .Append( "const c = new " ).Append( TypeName ).Append( "();" ).NewLine()
+                    .Append( firstParameterName ).Append( "(c);" ).NewLine()
+                    .Append( "return c;" )
+                 .CloseBlock();
+                // Else setting the properties.
+                b.Append( "const c = new " ).Append( TypeName ).Append( "(" ).CreatePart( out var ctorParamsPart ).Append( ");" ).NewLine();
                 bool atLeastOneReadOnly = false;
                 atLeastOne = false;
                 foreach( var prop in Properties )
@@ -254,8 +260,7 @@ namespace CK.StObj.TypeScript.Engine
                         }
                     }
                 }
-                b.CloseBlock()
-                 .Append( "return c;" )
+                b.NewLine().Append( "return c;" )
                  .CloseBlock();
             }
             else

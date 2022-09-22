@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -19,14 +20,14 @@ namespace CK.TypeScript.CodeGen
 
         public ITSFileImportSection EnsureImportFromLibrary( string libraryName, string typeName, params string[] typeNames )
         {
-            if( string.IsNullOrWhiteSpace( libraryName ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( libraryName ) );
+            Throw.CheckNotNullOrWhiteSpaceArgument( libraryName );
             AddTypeNames( ref _importLibs, libraryName, typeName, typeNames );
             return this;
         }
 
         public ITSFileImportSection EnsureImport( TypeScriptFile file, string typeName, params string[] typeNames )
         {
-            if( file == null ) throw new ArgumentNullException( nameof( file ) );
+            Throw.CheckNotNullArgument( file );
             if( file != File )
             {
                 AddTypeNames( ref _importFiles, file, typeName, typeNames );
@@ -37,7 +38,7 @@ namespace CK.TypeScript.CodeGen
 
         List<string> AddTypeNames<TKey>( [AllowNull]ref List<(TKey,List<string>)> imports, TKey key, string typeName, params string[] typeNames ) where TKey : class
         {
-            if( string.IsNullOrWhiteSpace( typeName ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( typeName ) );
+            Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             if( imports == null ) imports = new List<(TKey, List<string>)>();
             List<string>? types = null;
             foreach( var e in imports )

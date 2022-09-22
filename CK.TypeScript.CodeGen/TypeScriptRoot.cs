@@ -32,7 +32,7 @@ namespace CK.TypeScript.CodeGen
                                bool generateDocumentation,
                                bool generatePocoInterfaces )
         {
-            if( pathsAndConfig == null ) throw new ArgumentNullException( nameof( pathsAndConfig ) );
+            Throw.CheckNotNullArgument( pathsAndConfig );
             _pathsAndConfig = pathsAndConfig;
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;

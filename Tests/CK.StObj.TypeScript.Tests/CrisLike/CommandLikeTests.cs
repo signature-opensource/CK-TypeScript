@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.CrisLike;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
 using FluentAssertions;
@@ -18,8 +19,19 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         [TypeScript( SameFolderAs = typeof(ICommandOne) )]
         public enum Power
         {
+            /// <summary>
+            /// No Power.
+            /// </summary>
             None,
+
+            /// <summary>
+            /// Intermediate power.
+            /// </summary>
             Medium,
+
+            /// <summary>
+            /// Full power.
+            /// </summary>
             Strong
         }
 
@@ -71,16 +83,17 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 // Their FileName will be without the "I" and prefixed by "CMD".
                 // The real CommandDirectoryImpl does nothing here: ICommand are IPoco and
                 // their folder/file organization is fine.
+
                 if( typeof(ICommand).IsAssignableFrom( builder.Type ) )
                 {
                     if( attr.SameFolderAs == null )
                     {
                         attr.Folder ??= builder.Type.Namespace!.Replace( '.', '/' );
 
-                        const string autoMapping = "CK/StObj/";
+                        const string autoMapping = "CK/StObj/TypeScript/Tests";
                         if( attr.Folder.StartsWith( autoMapping ) )
                         {
-                            attr.Folder = "Cris/Commands/" + attr.Folder.Substring( autoMapping.Length );
+                            attr.Folder = "Commands/" + attr.Folder.Substring( autoMapping.Length );
                         }
                     }
                     if( attr.FileName == null && attr.SameFileAs == null ) attr.FileName = "CMD" + builder.Type.Name.Substring( 1 ) + ".ts";
@@ -93,6 +106,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // ICommandResult and any types that are exposed from the ICommand are exported by the IPoco TS engine.
             public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
             {
+                g.DeclareTSType( monitor, typeof( ICrisResult ) );
+                g.DeclareTSType( monitor, typeof( ICrisResultError ) );
                 g.DeclareTSType( monitor, typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof( ICommandFour ) );
                 return true;
             }
@@ -113,6 +128,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( ICommandTwo ),
                                                          typeof( ICommandThree ),
                                                          typeof( ICommandFour ),
+                                                         typeof( ICrisResult ),
+                                                         typeof( ICrisResultError ),
                                                          typeof( FakeCommandDirectoryWithFolders ) );
 
             var fPower = output.Combine( "TheFolder/Power.ts" );
@@ -121,15 +138,15 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var fOne = output.Combine( "TheFolder/CommandOne.ts" );
             var tOne = File.ReadAllText( fOne );
             tOne.Should().Contain( "import { Power } from './Power';" )
-                     .And.Contain( "import { CommandTwo } from '../Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo';" );
+                     .And.Contain( "import { CommandTwo } from '../Commands/CrisLike/CommandTwo';" );
 
             tOne.Should().Contain( "export interface ICommandOne" )
                      .And.Contain( "friend: CommandTwo;" );
 
 
-            var fTwo = output.Combine( "Cris/Commands/TypeScript/Tests/CrisLike/CommandTwo.ts" );
+            var fTwo = output.Combine( "Commands/CrisLike/CommandTwo.ts" );
             var tTwo = File.ReadAllText( fTwo );
-            tTwo.Should().Contain( "import { CommandOne, CommandThree } from '../../../../../TheFolder/CommandOne';" );
+            tTwo.Should().Contain( "import { CommandOne, CommandThree } from '../../TheFolder/CommandOne';" );
         }
 
         public class FakeCommandDirectoryImpl : ITSCodeGenerator
