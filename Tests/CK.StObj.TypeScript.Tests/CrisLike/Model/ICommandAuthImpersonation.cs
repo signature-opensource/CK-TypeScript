@@ -5,7 +5,7 @@ using System.Text;
 
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 
-namespace CK.StObj.TypeScript.Tests.CrisLike
+namespace CK.CrisLike
 {
     /// <summary>
     /// Extends the basic <see cref="ICommandAuthUnsafe"/> to add the <see cref="ActualActorId"/> field.

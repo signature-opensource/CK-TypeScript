@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.CrisLike;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
 using FluentAssertions;
@@ -89,10 +90,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     {
                         attr.Folder ??= builder.Type.Namespace!.Replace( '.', '/' );
 
-                        const string autoMapping = "CK/StObj/";
+                        const string autoMapping = "CK/StObj/TypeScript/Tests";
                         if( attr.Folder.StartsWith( autoMapping ) )
                         {
-                            attr.Folder = "Cris/Commands/" + attr.Folder.Substring( autoMapping.Length );
+                            attr.Folder = "Commands/" + attr.Folder.Substring( autoMapping.Length );
                         }
                     }
                     if( attr.FileName == null && attr.SameFileAs == null ) attr.FileName = "CMD" + builder.Type.Name.Substring( 1 ) + ".ts";
@@ -105,7 +106,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // ICommandResult and any types that are exposed from the ICommand are exported by the IPoco TS engine.
             public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
             {
-                g.DeclareTSType( monitor, typeof( ICommandResult ) );
+                g.DeclareTSType( monitor, typeof( ICrisResult ) );
+                g.DeclareTSType( monitor, typeof( ICrisResultError ) );
                 g.DeclareTSType( monitor, typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof( ICommandFour ) );
                 return true;
             }
@@ -126,7 +128,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( ICommandTwo ),
                                                          typeof( ICommandThree ),
                                                          typeof( ICommandFour ),
-                                                         typeof( ICommandResult ),
+                                                         typeof( ICrisResult ),
+                                                         typeof( ICrisResultError ),
                                                          typeof( FakeCommandDirectoryWithFolders ) );
 
             var fPower = output.SourcePath.Combine( "TheFolder/Power.ts" );

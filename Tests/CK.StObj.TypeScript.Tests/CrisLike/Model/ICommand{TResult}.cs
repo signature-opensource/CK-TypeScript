@@ -1,7 +1,7 @@
 using CK.Core;
 using System;
 
-namespace CK.StObj.TypeScript.Tests.CrisLike
+namespace CK.CrisLike
 {
     /// <summary>
     /// Describes a type of command that expects a result.
