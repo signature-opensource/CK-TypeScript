@@ -21,8 +21,10 @@ namespace CK.Setup
     {
         static readonly string _yarnFileName = "yarn-3.2.2.cjs";
 
-        internal static bool SaveBuildConfig( TypeScriptRoot root, IActivityMonitor monitor )
+        internal static bool SaveBuildConfig( IActivityMonitor monitor, TypeScriptRoot root )
         {
+            using var gLog = monitor.OpenInfo($"Saving TypeScript and Yarn build configuration files...");
+
             var dependencies = new Dictionary<string, LibraryImport>
             {
                 { "typescript", new LibraryImport( "typescript", "4.7.4", DependencyKind.DevDependency ) }
@@ -97,12 +99,14 @@ namespace CK.Setup
     ""build"": ""tsc -p tsconfig.json && tsc -p tsconfig-cjs.json""
   }
 }" );
+                monitor.Trace( $"Creating '{packageJsonPath}'." );
                 File.WriteAllText( packageJsonPath, sb.ToString() );
                 sb.Clear();
 
-                File.WriteAllText(
-                    Path.Combine( path, "tsconfig.json" ),
-                    @"{
+                var tsConfigFile = Path.Combine(path, "tsconfig.json");
+                monitor.Trace( $"Creating '{tsConfigFile}'." );
+                File.WriteAllText( tsConfigFile,
+     @"{
     ""compilerOptions"": {
         ""strict"": true,
         ""target"": ""es5"",
@@ -128,8 +132,9 @@ namespace CK.Setup
     ]
 }
 " );
-                File.WriteAllText(
-                    Path.Combine( path, "tsconfig-cjs.json" ),
+                var tsConfigCJSFile = Path.Combine( path, "tsconfig-cjs.json" );
+                monitor.Trace( $"Creating '{tsConfigCJSFile}'." );
+                File.WriteAllText( tsConfigCJSFile,
 @"{
   ""extends"": ""./tsconfig.json"",
   ""compilerOptions"": {
@@ -138,12 +143,15 @@ namespace CK.Setup
   },
 }
 " );
-                File.WriteAllText( Path.Combine( path, ".yarnrc.yml" ),
+                var yarnrcFile = Path.Combine( path, ".yarnrc.yml" );
+                monitor.Trace($"Creating '{yarnrcFile}'.");
+                File.WriteAllText( yarnrcFile,
 @"yarnPath: .yarn/releases/yarn-3.2.2.cjs
 enableImmutableInstalls: false" );
 
                 var yarnBinDir = Path.Combine( path, ".yarn", "releases" );
                 File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
+                monitor.Trace( $"Extracting '{_yarnFileName}' to '{yarnBinDir}'." );
                 Directory.CreateDirectory( yarnBinDir );
                 var currAssembly = Assembly.GetExecutingAssembly();
                 using( var yarnBinStream = currAssembly.GetManifestResourceStream( currAssembly.GetName().Name + "." + _yarnFileName )! )
@@ -155,13 +163,15 @@ enableImmutableInstalls: false" );
             return true;
         }
 
-        internal static bool RunNodeBuild( TypeScriptRoot root, IActivityMonitor monitor )
+        internal static bool RunNodeBuild( IActivityMonitor monitor, TypeScriptRoot root )
         {
-            foreach( var item in root.OutputPaths )
+            using var gLog = monitor.OpenInfo($"Building TypeScript projects...");
+
+            foreach ( var item in root.OutputPaths )
             {
                 var yarnBinDir = Path.Combine( item.Path, ".yarn", "releases" );
                 var yarnBinJS = Path.Combine( yarnBinDir, _yarnFileName );
-                using( monitor.OpenInfo( $"Running yarn restore..." ) )
+                using( monitor.OpenInfo( $"Running yarn restore in {item.Path}." ) )
                 {
                     int code = ProcessRunner( monitor, "node", yarnBinJS, item.Path );
                     if( code != 0 )
@@ -171,7 +181,7 @@ enableImmutableInstalls: false" );
                     }
                 }
 
-                using( monitor.OpenInfo( $"Running typescript compiler..." ) )
+                using( monitor.OpenInfo( $"Running typescript compiler on {item.Path}" ) )
                 {
                     int code = ProcessRunner( monitor, "node", $"{yarnBinJS} run build", item.Path );
                     if( code != 0 )

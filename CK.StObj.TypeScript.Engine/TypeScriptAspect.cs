@@ -121,25 +121,21 @@ namespace CK.Setup
 
                 if( !success ) return false;
 
-                using( monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." ) )
+                if (_config.SkipTypeScriptBuild )
                 {
-                    foreach( var g in _generators )
-                    {
-                        if( g != null )
-                        {
-                            success &= YarnPackageGenerator.SaveBuildConfig( g.Root, monitor );
-                        }
-                    }
+                    monitor.Info("Skipping TypeScript build.");
                 }
-                if( !success ) return false;
-
-                using( monitor.OpenInfo( $"Building TypeScript projects..." ) )
+                else
                 {
-                    foreach( var g in _generators )
+                    using (monitor.OpenInfo($"Starting TypeScript build..."))
                     {
-                        if( g != null )
+                        foreach (var g in _generators)
                         {
-                            success &= YarnPackageGenerator.RunNodeBuild( g.Root, monitor );
+                            if (g != null)
+                            {
+                                success &= YarnPackageGenerator.SaveBuildConfig(monitor, g.Root)
+                                            & YarnPackageGenerator.RunNodeBuild(monitor, g.Root);
+                            }
                         }
                     }
                 }
