@@ -2,7 +2,9 @@ using CK.Core;
 using CK.TypeScript.CodeGen;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
@@ -49,15 +51,15 @@ namespace CK.Setup
             int idx = 0;
             foreach( var genBinPath in context.AllBinPaths )
             {
-                TypeScriptRoot? tsContext = CreateGenerationContext( monitor, genBinPath );
-                if( tsContext != null )
+                var outputPaths = GetOutputPaths( monitor, genBinPath );
+                if( outputPaths != null )
                 {
                     var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>();
                     if( jsonCodeGen == null )
                     {
                         monitor.Info( $"No Json serialization available in this context." );
                     }
-                    var g = new TypeScriptContext( tsContext, genBinPath, jsonCodeGen );
+                    var g = new TypeScriptContext( outputPaths, genBinPath, _config, jsonCodeGen );
                     _generators[idx++] = g;
                     if( !g.Run( monitor ) )
                     {
@@ -68,7 +70,7 @@ namespace CK.Setup
             return true;
         }
 
-        TypeScriptRoot? CreateGenerationContext( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
+        IReadOnlyCollection<(NormalizedPath Path, XElement Config)>? GetOutputPaths( IActivityMonitor monitor, ICodeGenerationContext genBinPath )
         {
             static NormalizedPath MakeAbsolute( NormalizedPath basePath, NormalizedPath p )
             {
@@ -99,14 +101,9 @@ namespace CK.Setup
                 {
                     monitor.Warn( $"Skipped TypeScript generation for BinPathConfiguration {binPath.ConfigurationGroup.Names}: <TypeScript><OutputPath>...</OutputPath></TypeScript> element not found or empty." );
                 }
-                g = null;
+                return null;
             }
-            else
-            {
-                g = new TypeScriptRoot( pathsAndConfig, _config.PascalCase, _config.GenerateDocumentation, _config.GeneratePocoInterfaces );
-            }
-
-            return g;
+            return pathsAndConfig;
         }
 
         bool IStObjEngineAspect.Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context )

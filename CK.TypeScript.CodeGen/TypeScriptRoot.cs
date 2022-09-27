@@ -11,6 +11,9 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// Central TypeScript context with options and a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
     /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="TypeScriptFolder.Save"/>d.
+    /// <para>
+    /// This class can be specialized in order to offer a more powerful API.
+    /// </para>
     /// </summary>
     public class TypeScriptRoot
     {
@@ -37,7 +40,9 @@ namespace CK.TypeScript.CodeGen
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
             _generatePocoInterfaces = generatePocoInterfaces;
-            Root = new TypeScriptFolder( this );
+            var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
+            Root = (TypeScriptFolder)rootType.GetMethod( "Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static )!
+                                             .Invoke( null, new object[] { this } )!;
         }
 
         /// <summary>
