@@ -21,7 +21,7 @@ namespace CK.StObj.TypeScript.Engine
     public class TSTypeFile : ITSTypeFileBuilder
     {
         string _toString;
-        TypeScriptFile? _file;
+        TypeScriptFile<TypeScriptContextRoot>? _file;
 
         /// <summary>
         /// Discovery constructor. Also memorizes the attribute if it exists (or a new one).
@@ -115,7 +115,7 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets the associated file.
         /// </summary>
-        public TypeScriptFile File
+        public TypeScriptFile<TypeScriptContextRoot> File
         {
             get
             {

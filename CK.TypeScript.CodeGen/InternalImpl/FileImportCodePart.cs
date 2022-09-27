@@ -98,7 +98,6 @@ namespace CK.TypeScript.CodeGen
 
         public int ImportCount => _importCount;
 
-
         internal override SmarterStringBuilder Build( SmarterStringBuilder b )
         {
             if( _importFiles != null || _importLibs != null )

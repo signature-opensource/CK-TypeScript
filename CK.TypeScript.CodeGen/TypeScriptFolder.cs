@@ -12,25 +12,28 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Folder in a <see cref="TypeScriptRoot.Root"/>.
+    /// <para>
+    /// This is the base class and non generic version of <see cref="TypeScriptFolder{TRoot}"/>.
+    /// </para>
     /// </summary>
     public class TypeScriptFolder
     {
-        readonly TypeScriptRoot _g;
+        readonly TypeScriptRoot _root;
         TypeScriptFolder? _firstChild;
         TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
 
         static readonly char[] _invalidFileNameChars = Path.GetInvalidFileNameChars();
 
-        internal TypeScriptFolder( TypeScriptRoot g )
+        internal TypeScriptFolder( TypeScriptRoot root )
         {
-            _g = g;
+            _root = root;
             Name = String.Empty;
         }
 
         internal TypeScriptFolder( TypeScriptFolder parent, string name )
         {
-            _g = parent._g;
+            _root = parent._root;
             Parent = parent;
             Name = name;
             _next = parent._firstChild;
@@ -57,14 +60,16 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the root TypeScript context.
         /// </summary>
-        public TypeScriptRoot Root => _g;
+        public TypeScriptRoot Root => _root;
 
         /// <summary>
         /// Finds or creates a folder.
         /// </summary>
         /// <param name="name">The folder's name to find or create. Must not be empty nor ends with '.ts'.</param>
         /// <returns>The folder.</returns>
-        public TypeScriptFolder FindOrCreateFolder( string name ) => FindFolder( name ) ?? new TypeScriptFolder( this, name );
+        public TypeScriptFolder FindOrCreateFolder( string name ) => FindFolder( name ) ?? CreateFolder( name );
+
+        private protected virtual TypeScriptFolder CreateFolder( string name ) => new TypeScriptFolder( this, name );
 
         /// <summary>
         /// Finds or creates a subordinated folder by its path.
@@ -137,7 +142,9 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="name">The file's name to find or create. Must not be empty and must end with '.ts'.</param>
         /// <returns>The file.</returns>
-        public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? new TypeScriptFile( this, name );
+        public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? CreateFile( name );
+
+        private protected virtual TypeScriptFile CreateFile( string name ) => new TypeScriptFile( this, name );
 
         /// <summary>
         /// Finds or creates a file in this folder.
@@ -151,7 +158,7 @@ namespace CK.TypeScript.CodeGen
             TypeScriptFile? f = FindFile( name );
             if( f == null )
             {
-                f = new TypeScriptFile( this, name );
+                f = CreateFile( name );
                 created = true;
             }
             return f;
