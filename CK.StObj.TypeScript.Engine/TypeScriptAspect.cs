@@ -84,16 +84,13 @@ namespace CK.Setup
             }
             TypeScriptRoot? g;
             var binPath = genBinPath.CurrentRun;
-            var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations.Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
+            var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations
+                            .Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
                             .Where( c => c != null )
-                            .Select( c => (Config: c!, Paths: c!.Elements( "OutputPath" ).Select( p => p?.Value )
-                                                                .Where( p => !String.IsNullOrWhiteSpace( p ) )
-                                                                .Select( p => MakeAbsolute( _basePath, p ) )
-                                                                .Where( p => !p.IsEmptyPath )
-                                                                .Distinct()) )
-                            .Where( p => p.Paths.Any() )
-                            // Reverts the tuple: path => its config (potentially shared with other paths).
-                            .SelectMany( p => p.Paths.Select( onePath => (Path: onePath, p.Config) ) )
+                            .Select( c => (Path: c!.Attribute( "OutputPath" )?.Value ?? c.Element( "OutputPath" )?.Value, Config: c!) )
+                            .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
+                            .Select( c => (Path: MakeAbsolute( _basePath, c.Path ), c.Config) )
+                            .Where( c => !c.Path.IsEmptyPath )
                             .ToArray();
             if( pathsAndConfig.Length == 0 )
             {
@@ -111,13 +108,34 @@ namespace CK.Setup
             bool success = true;
             if( context.EngineStatus.Success )
             {
-                using( monitor.OpenInfo( $"Saving TypeScript files." ) )
+                using( monitor.OpenInfo( $"Saving generated TypeScript files..." ) )
                 {
                     foreach( var g in _generators )
                     {
                         if( g != null )
                         {
-                            success &= g.Root.Save( monitor );
+                            success &= g.Root.SaveTS( monitor );
+                        }
+                    }
+                }
+
+                if( !success ) return false;
+
+                if (_config.SkipTypeScriptBuild )
+                {
+                    monitor.Info("Skipping TypeScript build.");
+                }
+                else
+                {
+                    using (monitor.OpenInfo($"Starting TypeScript build..."))
+                    {
+                        foreach (var g in _generators)
+                        {
+                            if (g != null)
+                            {
+                                success &= YarnPackageGenerator.SaveBuildConfig(monitor, g.Root)
+                                            & YarnPackageGenerator.RunNodeBuild(monitor, g.Root);
+                            }
                         }
                     }
                 }

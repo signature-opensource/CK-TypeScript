@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Xml.Linq;
 using CK.Core;
+using System.Text.Json;
+using System.Text.Encodings.Web;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -183,49 +185,10 @@ namespace CK.TypeScript.CodeGen
             if( s == null ) @this.Append( "null" );
             else
             {
-                @this.Append( "'" );
-                int last = 0, count = 0;
-                foreach( var c in s )
-                {
-                    var enc = Encoded( c );
-                    if( enc != null )
-                    {
-                        if( count > 0 ) @this.Append( s.Substring( last, count ) );
-                        @this.Append( enc );
-                        count = -1;
-                    }
-                    ++count;
-                }
-                if( count > 0 ) @this.Append( s.Substring( last, count ) );
-                @this.Append( "'" );
+                // Nico: Sorry @Spi, your encoder was bugged, and I trust this one.
+                @this.Append( JsonSerializer.Serialize( s ) );
             }
             return @this;
-
-            static string? Encoded( char c )
-            {
-                switch( c )
-                {
-                    case '\\': return @"\\";
-                    case '\'': return @"\'";
-                    case '"': return @"\""";
-                    case '\r': return @"\r";
-                    case '\n': return @"\n'";
-                    case '\t': return @"\t";
-                    case '\0': return @"\0";
-                    case '\b': return @"\b";
-                    case '\v': return @"\x0B";
-                    case '\f': return @"\f";
-                }
-                int vC = c;
-                if( vC < 32
-                    || (vC >= 127 && vC <= 160)
-                    || vC >= 888 )
-                {
-                    return "\\u" + vC.ToString( "X4" );
-                }
-                return null;
-            }
-
         }
 
         /// <summary>

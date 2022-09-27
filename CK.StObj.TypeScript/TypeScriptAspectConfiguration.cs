@@ -9,7 +9,7 @@ namespace CK.Setup
     /// Configures TypeScript generation.
     /// <para>
     /// Each <see cref="BinPathConfiguration"/> that requires TypeScript code to be generated must
-    /// contain a &lt;TypeScript&gt; element with one or more &lt;OutputPath&gt; children elements.
+    /// contain a &lt;TypeScript&gt; with the attribute &lt;OutputPath&gt;.
     /// These OutputPaths can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} prefix: the
     /// final paths will be resolved.
     /// </para>
@@ -38,12 +38,17 @@ namespace CK.Setup
         public static readonly XName xGeneratePocoInterfaces = XNamespace.None + "GeneratePocoInterfaces";
 
         /// <summary>
+        /// The <see cref="SkipTypeScriptBuild"/> attribute name.
+        /// </summary>
+        public static readonly XName xSkipTypeScriptBuild = XNamespace.None + "SkipTypeScriptBuild";
+
+        /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration"/> element name.
         /// </summary>
         public static readonly XName xTypeScript = XNamespace.None + "TypeScript";
 
         /// <summary>
-        /// The element name of each <see cref="TypeScriptAspectBinPathConfiguration.OutputPaths"/>.
+        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.OutputPath"/>.
         /// </summary>
         public static readonly XName xOutputPath = XNamespace.None + "OutputPath";
 
@@ -73,6 +78,7 @@ namespace CK.Setup
         {
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Element( xGenerateDocumentation ) ?? true;
+            SkipTypeScriptBuild = (bool?)e.Element( xSkipTypeScriptBuild ) ?? false;
         }
 
         /// <summary>
@@ -89,6 +95,9 @@ namespace CK.Setup
                             : null,
                         GeneratePocoInterfaces == true
                             ? new XAttribute( xGeneratePocoInterfaces, true )
+                            : null,
+                        SkipTypeScriptBuild
+                            ? new XAttribute( xSkipTypeScriptBuild, true )
                             : null );
             return e;
         }
@@ -110,6 +119,12 @@ namespace CK.Setup
         /// Defaults to false: this is an opt-in since TypeScript interfaces are not really useful.
         /// </summary>
         public bool GeneratePocoInterfaces { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether TypeScriptBuild should be skipped.
+        /// Defaults to false.
+        /// </summary>
+        public bool SkipTypeScriptBuild { get; set; }
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
