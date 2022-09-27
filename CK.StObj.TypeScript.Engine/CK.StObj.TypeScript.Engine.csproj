@@ -1,16 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
-		<Nullable>enable</Nullable>
-	</PropertyGroup>
-	
-	<ItemGroup>
-		<EmbeddedResource Include="yarn-3.2.2.cjs" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="CK.StObj.Runtime" Version="21.0.0" />
-		<ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
-		<ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
-	</ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="yarn-3.2.2.cjs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.StObj.Runtime" Version="21.0.1--0001-develop" />
+    <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
+    <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
+  </ItemGroup>
 </Project>
