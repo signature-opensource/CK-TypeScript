@@ -120,7 +120,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Gets all the files that this folder contains.
+        /// Gets the files that this folder contains.
         /// </summary>
         public IEnumerable<TypeScriptFile> Files
         {
@@ -135,7 +135,10 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        internal IEnumerable<TypeScriptFile> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
+        /// <summary>
+        /// Gets all the files that this folder and its sub folders contain.
+        /// </summary>
+        public IEnumerable<TypeScriptFile> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
 
         /// <summary>
         /// Finds or creates a file in this folder.

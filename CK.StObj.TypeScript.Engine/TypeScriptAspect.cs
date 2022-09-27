@@ -108,7 +108,7 @@ namespace CK.Setup
             bool success = true;
             if( context.EngineStatus.Success )
             {
-                using( monitor.OpenInfo( $"Saving TypeScript files..." ) )
+                using( monitor.OpenInfo( $"Saving generated TypeScript files..." ) )
                 {
                     foreach( var g in _generators )
                     {
@@ -121,13 +121,13 @@ namespace CK.Setup
 
                 if( !success ) return false;
 
-                using( monitor.OpenInfo( $"Saving TypeScript build config files..." ) )
+                using( monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." ) )
                 {
                     foreach( var g in _generators )
                     {
                         if( g != null )
                         {
-                            success &= g.Root.SaveBuildConfig( monitor );
+                            success &= YarnPackageGenerator.SaveBuildConfig( g.Root, monitor );
                         }
                     }
                 }
@@ -139,7 +139,7 @@ namespace CK.Setup
                     {
                         if( g != null )
                         {
-                            success &= g.Root.RunNodeBuild( monitor );
+                            success &= YarnPackageGenerator.RunNodeBuild( g.Root, monitor );
                         }
                     }
                 }

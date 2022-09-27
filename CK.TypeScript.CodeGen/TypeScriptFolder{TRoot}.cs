@@ -1,6 +1,7 @@
 
 using CK.Core;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
@@ -58,6 +59,10 @@ namespace CK.TypeScript.CodeGen
 
         /// <inheritdoc cref="TypeScriptFolder.Files" />
         public new IEnumerable<TypeScriptFile<TRoot>> Files => (IEnumerable<TypeScriptFile<TRoot>>)base.Files;
+
+        /// <inheritdoc cref="TypeScriptFolder.AllFilesRecursive" />
+        public new IEnumerable<TypeScriptFile<TRoot>> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
+
     }
 
 }
