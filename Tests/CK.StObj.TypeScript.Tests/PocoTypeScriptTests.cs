@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -45,7 +46,9 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void with_union_types()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( with_union_types ), typeof( IWithUnions ) );
+            var output = LocalTestHelper.GenerateTSCode( nameof( with_union_types ),
+                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
+                                                         typeof( IWithUnions ) );
         }
 
         /// <summary>
@@ -90,6 +93,7 @@ namespace CK.StObj.TypeScript.Tests
         public void array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible()
         {
             var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible ),
+                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
                                                          typeof( IWithReadOnly ),
                                                          typeof( IWithUnions ) );
         }

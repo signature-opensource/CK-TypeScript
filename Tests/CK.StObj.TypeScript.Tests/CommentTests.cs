@@ -1,3 +1,4 @@
+using CK.Setup;
 using CK.TypeScript.CodeGen;
 using FluentAssertions;
 using NUnit.Framework;
@@ -73,7 +74,9 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void comments_on_enum_values_are_supported()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( comments_on_enum_values_are_supported ), typeof( CommentedEnum ) );
+            var output = LocalTestHelper.GenerateTSCode( nameof( comments_on_enum_values_are_supported ),
+                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
+                                                         typeof( CommentedEnum ) );
             var s = File.ReadAllText( output.SourcePath.AppendPart( "CommentedEnum.ts" ) );
 
             s.Should().Contain( "Commented enumeration." );

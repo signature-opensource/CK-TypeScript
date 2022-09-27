@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using NUnit.Framework;
 using System;
 using System.Buffers;
@@ -40,7 +41,9 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void simple_types_serialization()
         {
-            var output = LocalTestHelper.GenerateTSCode( "Json", nameof( simple_types_serialization ),
+            var output = LocalTestHelper.GenerateTSCode( "Json",
+                                                         nameof( simple_types_serialization ),
+                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
                                                          typeof( SimpleEnum ),
                                                          typeof( ISimple ) );
         }

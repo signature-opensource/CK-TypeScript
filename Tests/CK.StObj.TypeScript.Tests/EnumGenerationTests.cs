@@ -28,7 +28,7 @@ namespace CK.StObj.TypeScript.Tests
             var output2 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b2" ), false );
 
             var config = new StObjEngineConfiguration() { ForceRun = true };
-            config.Aspects.Add( new TypeScriptAspectConfiguration() );
+            config.Aspects.Add( new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true } );
 
             var b1 = new BinPathConfiguration();
             b1.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", output1 ) ) );

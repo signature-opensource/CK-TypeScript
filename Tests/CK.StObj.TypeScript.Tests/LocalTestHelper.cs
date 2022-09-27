@@ -54,27 +54,27 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( string testName, params Type[] types )
-            => GenerateTSCode( testName, types, null, default );
+            => GenerateTSCode( testName, default, null, types );
 
         public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( NormalizedPath subPath, string testName, params Type[] types )
-            => GenerateTSCode( testName, types, null, subPath );
+            => GenerateTSCode( testName, subPath, null, types );
 
 
         public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( string testName, TypeScriptAspectConfiguration configuration, params Type[] types )
-            => GenerateTSCode( testName, types, configuration, default );
+            => GenerateTSCode( testName, default, configuration, types );
 
         /// <summary>
         /// Only generates the TS code.
         /// </summary>
         /// <param name="testName">The test name (the name of the target folder).</param>
-        /// <param name="types">The set of types to setup (the <see cref="PocoJsonSerializer"/> is automatically added).</param>
-        /// <param name="tsConfig">Optional TS aspect configuration.</param>
         /// <param name="subPath">Optional folder above the <paramref name="testName"/> folder.</param>
+        /// <param name="tsConfig">Optional TS aspect configuration.</param>
+        /// <param name="types">The set of types to setup (the <see cref="PocoJsonSerializer"/> is automatically added).</param>
         /// <returns>The target type script folder.</returns>
         public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( string testName,
-                                                     Type[] types,
-                                                     TypeScriptAspectConfiguration? tsConfig,
-                                                     NormalizedPath subPath )
+                                                                                              NormalizedPath subPath,
+                                                                                              TypeScriptAspectConfiguration? tsConfig,
+                                                                                              params Type[] types )
         {
             var (projectPath, sourcePath, config) = CreateTSAwareConfig( testName, tsConfig, subPath );
             var engine = new StObjEngine( TestHelper.Monitor, config );
