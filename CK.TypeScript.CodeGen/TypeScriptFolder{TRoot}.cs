@@ -29,7 +29,7 @@ namespace CK.TypeScript.CodeGen
         public new TRoot Root => (TRoot)base.Root;
 
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFolder(NormalizedPath)" />
-        public new TypeScriptFolder<TRoot>? FindOrCreateFolder( NormalizedPath path ) => (TypeScriptFolder<TRoot>?)base.FindOrCreateFolder( path );
+        public new TypeScriptFolder<TRoot> FindOrCreateFolder( NormalizedPath path ) => (TypeScriptFolder<TRoot>)base.FindOrCreateFolder( path );
 
         private protected override TypeScriptFolder CreateFolder( string name ) => new TypeScriptFolder<TRoot>( this, name );
 
