@@ -10,6 +10,9 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// A TypeScript file resides in a definitive <see cref="TypeScriptFolder"/>
     /// and exposes a <see cref="Imports"/> and a <see cref="Body"/> sections.
+    /// <para>
+    /// This is the base class and non generic version of <see cref="TypeScriptFile{TRoot}"/>.
+    /// </para>
     /// </summary>
     public class TypeScriptFile
     {

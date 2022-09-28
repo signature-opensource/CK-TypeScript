@@ -1,9 +1,17 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
@@ -11,8 +19,11 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// Central TypeScript context with options and a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
     /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="TypeScriptFolder.Save"/>d.
+    /// <para>
+    /// This class can be specialized in order to offer a more powerful API.
+    /// </para>
     /// </summary>
-    public class TypeScriptRoot
+    public partial class TypeScriptRoot
     {
         readonly IReadOnlyCollection<(NormalizedPath Path, XElement Config)> _pathsAndConfig;
         readonly bool _pascalCase;
@@ -37,7 +48,9 @@ namespace CK.TypeScript.CodeGen
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
             _generatePocoInterfaces = generatePocoInterfaces;
-            Root = new TypeScriptFolder( this );
+            var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
+            Root = (TypeScriptFolder)rootType.GetMethod( "Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static )!
+                                             .Invoke( null, new object[] { this } )!;
         }
 
         /// <summary>
@@ -89,12 +102,15 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor )
+        public bool SaveTS( IActivityMonitor monitor )
         {
             var barrelPaths = _pathsAndConfig.SelectMany( c => c.Config.Elements( "Barrels" ).Elements( "Barrel" )
-                                                     .Select( b => c.Path.Combine( b.Attribute("Path")?.Value ) ) );
-            var barrels = new HashSet<NormalizedPath>( barrelPaths );
-            return Root.Save( monitor, _pathsAndConfig.Select( p => p.Path ), p => barrels.Contains( p ) );
+                                                     .Select( b => c.Path.Combine( b.Attribute( "Path" )?.Value ) ) );
+            var roots = _pathsAndConfig.Select(
+                p => new NormalizedPath( Path.Combine( p.Path, "ts", "src" )
+            ) ).ToArray();
+            var barrels = new HashSet<NormalizedPath>( roots.Concat( barrelPaths ) );// We need a root barrel for the generated module.
+            return Root.Save( monitor, roots, barrels.Contains );
         }
 
         /// <summary>
@@ -127,4 +143,5 @@ namespace CK.TypeScript.CodeGen
             return name;
         }
     }
+
 }

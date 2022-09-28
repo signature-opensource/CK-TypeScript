@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml.Linq;
 
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
@@ -24,7 +25,7 @@ namespace CK.Setup
     /// only if the configuration actually allows the TypeScript generation for this <see cref="CodeContext"/>.
     /// </para>
     /// </summary>
-    public class TypeScriptContext
+    public sealed class TypeScriptContext
     {
         readonly Dictionary<Type, TSTypeFile?> _typeMappings;
         readonly IReadOnlyDictionary<Type, ITypeAttributesCache> _attributeCache;
@@ -32,9 +33,12 @@ namespace CK.Setup
         IReadOnlyList<ITSCodeGenerator> _globals;
         bool _success;
 
-        internal TypeScriptContext( TypeScriptRoot root, ICodeGenerationContext codeCtx, JsonSerializationCodeGen? jsonGenerator )
+        internal TypeScriptContext( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> outputPaths,
+                                    ICodeGenerationContext codeCtx,
+                                    TypeScriptAspectConfiguration config,
+                                    JsonSerializationCodeGen? jsonGenerator )
         {
-            Root = root;
+            Root = new TypeScriptContextRoot( this, outputPaths, config );
             CodeContext = codeCtx;
             JsonGenerator = jsonGenerator;
             _typeMappings = new Dictionary<Type, TSTypeFile?>();
@@ -44,9 +48,9 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the TypeScript code generation context.
+        /// Gets the TypeScript code generation root.
         /// </summary>
-        public TypeScriptRoot Root { get; }
+        public TypeScriptContextRoot Root { get; }
 
         /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
@@ -96,7 +100,7 @@ namespace CK.Setup
             var f = DeclareTSType( monitor, t, ref _ );
             if( f == null && requiresFile )
             {
-                monitor.Error( $"Unable to obtain a TypeScript mapping for type '{t}'." );
+                monitor.Error( $"Unable to obtain a TypeScript file mapping for type '{t}'." );
             }
             return f;
         }
@@ -154,7 +158,7 @@ namespace CK.Setup
 
         TSTypeFile? DeclareTSType( IActivityMonitor monitor, Type t, ref HashSet<Type>? cycleDetector )
         {
-            TSTypeFile CreateNoCacheAttributeTSFile( IActivityMonitor monitor, Type t, ref HashSet<Type>? cycleDetector )
+            TSTypeFile CreateNoCacheAttributeTSFile( Type t )
             {
                 var attribs = t.GetCustomAttributes( typeof( TypeScriptAttribute ), false );
                 var attr = attribs.Length == 1 ? (TypeScriptAttribute)attribs[0] : null;
@@ -199,12 +203,12 @@ namespace CK.Setup
                         && tDef != typeof( IList<> )
                         && tDef != typeof( List<> ) )
                     {
-                        f = CreateNoCacheAttributeTSFile( monitor, tDef, ref cycleDetector );
+                        f = CreateNoCacheAttributeTSFile( tDef );
                     }
                 }
                 else if( IntrinsicTypeName( t ) == null )
                 {
-                    f = CreateNoCacheAttributeTSFile( monitor, t, ref cycleDetector );
+                    f = CreateNoCacheAttributeTSFile( t );
                 }
             }
 

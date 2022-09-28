@@ -14,11 +14,10 @@ namespace CK.Setup
     {
         /// <summary>
         /// Initializes a new configuration with a default root <see cref="Barrels"/>.
-        /// At least one <see cref="OutputPaths"/> should be added.
+        /// The <see cref="OutputPath"/> must be specified.
         /// </summary>
         public TypeScriptAspectBinPathConfiguration()
         {
-            OutputPaths = new HashSet<NormalizedPath>();
             Barrels = new HashSet<NormalizedPath>
             {
                 new NormalizedPath()
@@ -26,15 +25,15 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the list of output paths. At least one path should be specified.
-        /// These OutputPaths can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} first part: the
-        /// final paths will be resolved by <see cref="StObjEngineConfiguration.BasePath"/>, <see cref="BinPathConfiguration.OutputPath"/>
+        /// Gets the package output path.
+        /// This path can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} first part: the
+        /// final path will be resolved by <see cref="StObjEngineConfiguration.BasePath"/>, <see cref="BinPathConfiguration.OutputPath"/>
         /// or <see cref="BinPathConfiguration.ProjectPath"/>.
         /// </summary>
-        public HashSet<NormalizedPath> OutputPaths { get; }
+        public NormalizedPath OutputPath { get; set; }
 
         /// <summary>
-        /// Gets a list of optional barrel paths that are relative to each <see cref="OutputPaths"/>.
+        /// Gets a list of optional barrel paths that are relative to the <see cref="OutputPath"/>.
         /// An index.ts file will be generated in each of these folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
         /// <para>
         /// By default, an empty <see cref="NormalizedPath"/> creates a barrel at the root level.
@@ -49,8 +48,7 @@ namespace CK.Setup
         /// <param name="e">The configuration element.</param>
         public TypeScriptAspectBinPathConfiguration( XElement e )
         {
-            OutputPaths = new HashSet<NormalizedPath>( e.Elements( TypeScriptAspectConfiguration.xOutputPath )
-                                                        .Select( c => new NormalizedPath( (string?)c.Attribute( StObjEngineConfiguration.xPath ) ?? c.Value ) ) );
+            OutputPath = e.Attribute( TypeScriptAspectConfiguration.xOutputPath )?.Value;
             Barrels = new HashSet<NormalizedPath>( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( StObjEngineConfiguration.xPath ) ?? c.Value ) ) );
@@ -63,10 +61,9 @@ namespace CK.Setup
         public XElement ToXml()
         {
             return new XElement( TypeScriptAspectConfiguration.xTypeScript,
-                                 OutputPaths.Select( p => new XElement( TypeScriptAspectConfiguration.xOutputPath, p ) ),
+                                 new XAttribute( TypeScriptAspectConfiguration.xOutputPath, OutputPath ),
                                  new XElement( TypeScriptAspectConfiguration.xBarrels,
                                                Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ) );
         }
-
     }
 }

@@ -2,8 +2,10 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <LangVersion>preview</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="yarn-3.2.2.cjs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.StObj.Runtime" Version="21.0.0" />
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />

@@ -1,3 +1,4 @@
+using CK.Setup;
 using CK.TypeScript.CodeGen;
 using FluentAssertions;
 using NUnit.Framework;
@@ -73,8 +74,10 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void comments_on_enum_values_are_supported()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( comments_on_enum_values_are_supported ), typeof( CommentedEnum ) );
-            var s = File.ReadAllText( output.AppendPart( "CommentedEnum.ts" ) );
+            var output = LocalTestHelper.GenerateTSCode( nameof( comments_on_enum_values_are_supported ),
+                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
+                                                         typeof( CommentedEnum ) );
+            var s = File.ReadAllText( output.SourcePath.AppendPart( "CommentedEnum.ts" ) );
 
             s.Should().Contain( "Commented enumeration." );
 
@@ -125,14 +128,14 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = LocalTestHelper.GetOutputFolder();
 
-            var ctx = new TypeScriptRoot( new[] { (output, new XElement( "TypeScript" )) }, false, true, true );
+            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, false, true, true );
 
             var f = ctx.Root.FindOrCreateFile( "ICommented.ts" );
             GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
-            ctx.Save( TestHelper.Monitor );
+            ctx.SaveTS( TestHelper.Monitor );
 
             var s = f.Body.ToString();
-            File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+            File.ReadAllText( output.SourcePath.AppendPart( f.Name ) ).Should().Be( s );
 
             s.Should().Contain( "An interface with comment." );
 
@@ -178,14 +181,14 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_with_Type_or_Method_generic_parameters_are_handled()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output, new XElement( "TypeScript" )) }, false, true, true );
+            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, false, true, true );
 
             var f = ctx.Root.FindOrCreateFile( "IGeneric.ts" );
             GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
-            ctx.Save( TestHelper.Monitor );
+            ctx.SaveTS( TestHelper.Monitor );
 
             var s = f.Body.ToString();
-            File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+            File.ReadAllText( output.SourcePath.AppendPart( f.Name ) ).Should().Be( s );
 
             s.Should().Contain( "Generic interface." )
                       .And.Contain( "@typeParam T1 The FIRST generic type!" )
@@ -243,14 +246,14 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_for_constructors_properties_fields_events_and_methods_are_handled()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output, new XElement( "TypeScript" )) }, false, true, true );
+            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, false, true, true );
 
             var f = ctx.Root.FindOrCreateFile( "FullClass.ts" );
             GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
-            ctx.Save( TestHelper.Monitor );
+            ctx.SaveTS( TestHelper.Monitor );
 
             var s = f.Body.ToString();
-            File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+            File.ReadAllText( output.SourcePath.AppendPart( f.Name ) ).Should().Be( s );
 
             s.Should().Contain( "Class doc." )
                       .And.Contain( "Constructor doc." )
@@ -307,14 +310,14 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_textual_code_references_by_DocumentationCodeRef_TextOnly()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output, new XElement( "TypeScript" )) }, false, true, true );
+            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, false, true, true );
 
             var f = ctx.Root.FindOrCreateFile( "WithCodeReference.ts" );
             GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
-            ctx.Save( TestHelper.Monitor );
+            ctx.SaveTS( TestHelper.Monitor );
 
             var s = f.Body.ToString();
-            File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+            File.ReadAllText( output.SourcePath.AppendPart( f.Name ) ).Should().Be( s );
 
             s.Should().Contain( "WithCodeReference doc." )
                       .And.Contain( "Initializes a new WithCodeReference instance (seealso is treated like see)." )
@@ -340,14 +343,14 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_code_reference_error_displays_a_Strikethrough_buggy_ref()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output, new XElement( "TypeScript" )) }, false, true, true );
+            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, false, true, true );
 
             var f = ctx.Root.FindOrCreateFile( "BuggyReference.ts" );
             GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );
-            ctx.Save( TestHelper.Monitor );
+            ctx.SaveTS( TestHelper.Monitor );
 
             var s = f.Body.ToString();
-            File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+            File.ReadAllText( output.SourcePath.AppendPart( f.Name ) ).Should().Be( s );
 
             s.Should().Contain( "A buggy reference: ~~!:TypeNotFound~~." );
         }

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -21,14 +22,16 @@ namespace CK.StObj.TypeScript.Tests
     {
         public static readonly NormalizedPath OutputFolder = TestHelper.TestProjectFolder.Combine( "../TypeScriptTests/Output" );
 
-        public static NormalizedPath GetOutputFolder( [CallerMemberName]string? testName = null )
+        public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GetOutputFolder( [CallerMemberName] string? testName = null )
         {
-            return TestHelper.CleanupFolder( OutputFolder.AppendPart( testName ), false );
+            var path = TestHelper.CleanupFolder( OutputFolder.AppendPart( testName ), false );
+            return (path, path.AppendPart( "ts" ).AppendPart( "src" ));
         }
 
-        public static NormalizedPath GetOutputFolder( NormalizedPath subPath, [CallerMemberName]string? testName = null )
+        public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GetOutputFolder( NormalizedPath subPath, [CallerMemberName] string? testName = null )
         {
-            return TestHelper.CleanupFolder( OutputFolder.Combine( subPath ).AppendPart( testName ).ResolveDots(), false );
+            var path = TestHelper.CleanupFolder( OutputFolder.Combine( subPath ).AppendPart( testName ).ResolveDots(), false );
+            return (path, path.AppendPart( "ts" ).AppendPart( "src" ));
         }
 
         /// <summary>
@@ -50,46 +53,41 @@ namespace CK.StObj.TypeScript.Tests
             }
         }
 
-        public static NormalizedPath GenerateTSCode( string testName, params Type[] types )
-        {
-            return GenerateTSCode( testName, types, null, default );
-        }
+        public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( string testName, params Type[] types )
+            => GenerateTSCode( testName, default, null, types );
 
-        public static NormalizedPath GenerateTSCode( NormalizedPath subPath, string testName, params Type[] types )
-        {
-            return GenerateTSCode( testName, types, null, subPath );
-        }
+        public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( NormalizedPath subPath, string testName, params Type[] types )
+            => GenerateTSCode( testName, subPath, null, types );
 
-        public static NormalizedPath GenerateTSCode( string testName, TypeScriptAspectConfiguration configuration, params Type[] types )
-        {
-            return GenerateTSCode( testName, types, configuration, default );
-        }
+
+        public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( string testName, TypeScriptAspectConfiguration configuration, params Type[] types )
+            => GenerateTSCode( testName, default, configuration, types );
 
         /// <summary>
         /// Only generates the TS code.
         /// </summary>
         /// <param name="testName">The test name (the name of the target folder).</param>
-        /// <param name="types">The set of types to setup (the <see cref="PocoJsonSerializer"/> is automatically added).</param>
-        /// <param name="tsConfig">Optional TS aspect configuration.</param>
         /// <param name="subPath">Optional folder above the <paramref name="testName"/> folder.</param>
+        /// <param name="tsConfig">Optional TS aspect configuration.</param>
+        /// <param name="types">The set of types to setup (the <see cref="PocoJsonSerializer"/> is automatically added).</param>
         /// <returns>The target type script folder.</returns>
-        public static NormalizedPath GenerateTSCode( string testName,
-                                                     Type[] types,
-                                                     TypeScriptAspectConfiguration? tsConfig,
-                                                     NormalizedPath subPath )
+        public static (NormalizedPath ProjectPath, NormalizedPath SourcePath) GenerateTSCode( string testName,
+                                                                                              NormalizedPath subPath,
+                                                                                              TypeScriptAspectConfiguration? tsConfig,
+                                                                                              params Type[] types )
         {
-            var (output, config) = CreateTSAwareConfig( testName, tsConfig, subPath );
+            var (projectPath, sourcePath, config) = CreateTSAwareConfig( testName, tsConfig, subPath );
             var engine = new StObjEngine( TestHelper.Monitor, config );
 
             var collectorResults = new MonoCollectorResolver( types );
             engine.Run( collectorResults ).Success.Should().BeTrue( "StObjEngine.Run worked." );
 
-            Directory.Exists( output ).Should().BeTrue();
-            return output;
+            Directory.Exists( sourcePath ).Should().BeTrue();
+
+            return (projectPath, sourcePath);
         }
 
-
-        public static (NormalizedPath TypeScriptOutput, StObjEngineConfiguration Config) CreateTSAwareConfig( string testName,
+        public static (NormalizedPath ProjectPathOutput, NormalizedPath TypeScriptOutput, StObjEngineConfiguration Config) CreateTSAwareConfig( string testName,
                                                                                                               TypeScriptAspectConfiguration? tsConfig = null,
                                                                                                               NormalizedPath subPath = default )
         {
@@ -100,11 +98,11 @@ namespace CK.StObj.TypeScript.Tests
             b.CompileOption = CompileOption.Compile;
             b.ProjectPath = TestHelper.TestProjectFolder;
             b.AspectConfigurations.Add( new XElement( "TypeScript",
-                                            new XElement( "OutputPath", output ),
+                                            new XAttribute( "OutputPath", output.ProjectPath ),
                                             new XElement( "Barrels",
                                                 new XElement( "Barrel", new XAttribute( "Path", "" ) ) ) ) );
             config.BinPaths.Add( b );
-            return (output, config);
+            return (output.ProjectPath, output.SourcePath, config);
         }
 
         /// <summary>
