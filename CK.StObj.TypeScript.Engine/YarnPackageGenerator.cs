@@ -119,7 +119,6 @@ namespace CK.Setup
         ""declaration"": true,
         ""esModuleInterop"": true,
         ""resolveJsonModule"": true,
-        ""removeComments"": true,
         ""rootDir"": ""ts/src""
     },
     ""include"": [
