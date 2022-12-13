@@ -1,13 +1,13 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
+using CK.Setup.PocoJson;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CK.Setup.Json;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -38,7 +38,7 @@ namespace CK.StObj.TypeScript.Engine
     /// </remarks>
     public partial class PocoCodeGenerator : ITSCodeGenerator
     {
-        internal PocoCodeGenerator( IPocoSupportResult poco )
+        internal PocoCodeGenerator( IPocoJsonGeneratorService poco )
         {
             PocoSupport = poco;
         }
@@ -144,13 +144,13 @@ namespace CK.StObj.TypeScript.Engine
         /// <returns>Always true.</returns>
         public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
-        internal TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoRootInfo root )
+        internal TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoFamilyInfo family )
         {
-            var t = g.DeclareTSType( monitor, root.PocoClass, requiresFile: true );
-            return t != null ? EnsurePocoClass( monitor, t, root ) : null;
+            var t = g.DeclareTSType( monitor, family.PocoClass, requiresFile: true );
+            return t != null ? EnsurePocoClass( monitor, t, family ) : null;
         }
 
-        TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TSTypeFile tsTypedFile, IPocoRootInfo root )
+        TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TSTypeFile tsTypedFile, IPocoFamilyInfo family )
         {
             if( tsTypedFile.TypePart == null )
             {
@@ -178,7 +178,7 @@ namespace CK.StObj.TypeScript.Engine
                 if( tsRoot.GeneratePocoInterfaces )
                 {
                     List<TSTypeFile> interfaces = new();
-                    foreach( IPocoInterfaceInfo i in root.Interfaces )
+                    foreach( IPocoInterfaceInfo i in family.Interfaces )
                     {
                         var itf = EnsurePocoInterface( monitor, tsTypedFile.Context, i );
                         if( itf == null ) return null;
@@ -190,10 +190,10 @@ namespace CK.StObj.TypeScript.Engine
                 b.OpenBlock();
 
                 // Creates the mutable lists of properties and create method parameters.
-                var propList = new List<TypeScriptPocoPropertyInfo>( root.PropertyList.Count );
+                var propList = new List<TypeScriptPocoPropertyInfo>( family.PropertyList.Count );
                 int readOnlyPropertyCount = 0;
                 int requiredParameterCount = 0;
-                foreach( var p in root.PropertyList )
+                foreach( var p in family.PropertyList )
                 {
                     var propName = tsRoot.ToIdentifier( p.PropertyName );
                     var propType = GetPropertyTypeScriptType( monitor, tsTypedFile, p );
@@ -255,13 +255,13 @@ namespace CK.StObj.TypeScript.Engine
                     }
                 }
                 // Raises the Generating event with the mutable TypeScriptPocoClass payload. 
-                IPocoJsonInfo? jsonInfo = root.GetJsonInfo();
+                IPocoJsonInfo? jsonInfo = family.GetJsonInfo();
                 if( jsonInfo == null )
                 {
-                    monitor.Error( $"Unable to get the IPocoJsonInfo for '{root.Name}' poco." );
+                    monitor.Error( $"Unable to get the IPocoJsonInfo for '{family.Name}' poco." );
                     return null;
                 }
-                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, jsonInfo, propList, requiredParameterCount, readOnlyPropertyCount );
+                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, family, jsonInfo, propList, requiredParameterCount, readOnlyPropertyCount );
                 var h = PocoGenerating;
                 if( h != null )
                 {
@@ -279,7 +279,7 @@ namespace CK.StObj.TypeScript.Engine
 
                 tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolType" );
                 b.NewLine()
-                 .Append( "[SymbolType] = " ).AppendSourceString( root.Name ).Append( ";" ).NewLine();
+                 .Append( "[SymbolType] = " ).AppendSourceString( family.Name ).Append( ";" ).NewLine();
 
                 // Currently the constructor is private: this is because of readonly properties that
                 // have no [DefaulValue] attributes: it's not easy to generate the assignation required 
