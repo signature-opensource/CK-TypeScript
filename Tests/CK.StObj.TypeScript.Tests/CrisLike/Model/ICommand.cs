@@ -11,13 +11,13 @@ namespace CK.CrisLike
     public interface ICommand : IPoco
     {
         // This is disabled since we do not generate the C# code that implements the
-        // CommandModel. Removing this enables a valid C# code.
+        // CommandModel.
+        // Removing this enables a valid C# code.
 
         ///// <summary>
         ///// Gets the<see cref= "ICommandModel" /> that describes this command.
         ///// This property is automatically implemented. 
         ///// </summary>
-        /////
         //[AutoImplementationClaim]
         //ICommandModel CommandModel { get; }
     }

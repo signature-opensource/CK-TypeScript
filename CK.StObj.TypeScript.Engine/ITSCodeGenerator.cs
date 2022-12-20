@@ -34,7 +34,7 @@ namespace CK.Setup
         bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
         /// <summary>
-        /// Configures the <see cref="TypeScriptAttribute"/> that will be used by <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/>
+        /// Configures the <see cref="TypeScriptAttribute"/> that will be used by <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type)"/>
         /// to create the Type - File association and allows implementations to freely interact with the <paramref name="builder"/>.
         /// <para>
         /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because of
@@ -43,7 +43,7 @@ namespace CK.Setup
         /// and <see cref="ITSTypeFileBuilder.Generators"/> is empty).
         /// </para>
         /// <para>
-        /// In practice this should not be an issue and if is, it up to this global code generator to correctly handle
+        /// In practice this should not be an issue and if it is, it is up to this global code generator to correctly handle
         /// these "after my GenerateCode call" new incoming types.
         /// </para>
         /// </summary>
@@ -65,6 +65,10 @@ namespace CK.Setup
         /// Generates any TypeScript in the provided context.
         /// This is called once and only once before any type bound methods <see cref="ITSCodeGeneratorType.GenerateCode"/>
         /// are called.
+        /// <para>
+        /// This method can be a no-op if this generator choose to use the <see cref="ITSTypeFileBuilder.AddFinalizer(Func{IActivityMonitor, TSTypeFile, bool}, bool)"/>
+        /// during <see cref="ConfigureTypeScriptAttribute(IActivityMonitor, ITSTypeFileBuilder, TypeScriptAttribute)"/> for types it can handle. 
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The generation context.</param>

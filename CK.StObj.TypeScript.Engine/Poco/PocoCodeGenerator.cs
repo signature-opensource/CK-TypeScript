@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -38,24 +39,21 @@ namespace CK.StObj.TypeScript.Engine
     /// </remarks>
     public partial class PocoCodeGenerator : ITSCodeGenerator
     {
-        internal PocoCodeGenerator( IPocoJsonGeneratorService poco )
+        readonly TSPocoTypeMap _pocoTypeMap;
+
+        internal PocoCodeGenerator( IPocoTypeSystem pocoTypeSystem, TSPocoTypeMap pocoTypeMap )
         {
-            PocoSupport = poco;
+            PocoTypeSystem = pocoTypeSystem;
+            _pocoTypeMap = pocoTypeMap;
         }
 
         /// <summary>
-        /// Gets the descriptor of all the existing Pocos.
+        /// Gets the type system.
         /// </summary>
-        public IPocoSupportResult PocoSupport { get; }
+        public IPocoTypeSystem PocoTypeSystem { get; }
 
         /// <summary>
-        /// Raised when the TypeScript of a poco is about to be generated.
-        /// This enables extensions to inject codes in the <see cref="PocoGeneratingEventArgs.TypeFile"/>.
-        /// </summary>
-        public event EventHandler<PocoGeneratingEventArgs>? PocoGenerating;
-
-        /// <summary>
-        /// If the type is a <see cref="IPoco"/>, the <see cref="IPocoRootInfo.PrimaryInterface"/> sets the type name
+        /// If the type is a <see cref="IPoco"/>, the <see cref="INamedPocoType."/> sets the type name
         /// and the folder and file for all other IPoco interfaces and the class.
         /// <para>
         /// Interfaces that are not IPoco (the ones in <see cref="IPocoRootInfo.OtherInterfaces"/>) are ignored by default.
@@ -72,64 +70,60 @@ namespace CK.StObj.TypeScript.Engine
         /// The attribute to configure. It is empty or the attribute on the type (this generator
         /// is the first one in the <see cref="TypeScriptContext.GlobalGenerators"/>: it is the first to be solicited).
         /// </param>
-        /// <returns>True on success, false on error (errors must be logged).</returns>
-        /// <returns>Always true.</returns>
+        /// <returns>True on success, false on error (errors must be logged): always true here.</returns>
         public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                                   ITSTypeFileBuilder builder,
                                                   TypeScriptAttribute attr )
         {
-            var type = builder.Type;
-            bool isPoco = typeof( IPoco ).IsAssignableFrom( type );
-            if( isPoco )
+            var t = PocoTypeSystem.FindObliviousType( builder.Type );
+            if( t != null )
             {
-                if( type.IsClass )
+                // Even if we didn't call DeclareTSType because a type is not exchangeable, when a TypeScriptAttribute has been declared
+                // on a IPoco, we have a type to handle: we use the CancelGeneration to definitely condemn this type.
+                if( !t.IsExchangeable )
                 {
-                    var pocoClass = PocoSupport.Roots.FirstOrDefault( root => root.PocoClass == type );
-                    if( pocoClass != null )
-                    {
-                        attr.TypeName = TypeScriptContext.GetPocoClassNameFromPrimaryInterface( pocoClass );
-                        attr.SameFileAs = pocoClass.PrimaryInterface;
-                        builder.Finalizer = ( m, f ) => EnsurePocoClass( m, f, pocoClass ) != null;
-                    }
-                    else
-                    {
-                        monitor.Warn( $"Type {type} is a class that implements at least one IPoco but is not a registered PocoClass. It is ignored." );
-                    }
+                    builder.CancelGeneration = false;
                 }
                 else
                 {
-                    if( PocoSupport.AllInterfaces.TryGetValue( type, out IPocoInterfaceInfo? itf ) )
+                    // We are interested only in named records, abstract and concrete IPoco and the Guid
+                    // for which a small wrapper is generated.
+                    if( builder.Type == typeof( Guid ) )
                     {
-                        if( itf.Root.PrimaryInterface != itf.PocoInterface )
-                        {
-                            if( attr.SameFileAs != null
-                                || attr.SameFolderAs != null
-                                || attr.Folder != null
-                                || attr.FileName != null )
-                            {
-                                monitor.Warn( $"IPoco '{type.Name}' must not specify a SameFileAs, SameFolderAs, Folder or FileName since it will use the same file as the primary interface." );
-                                attr.SameFolderAs = null;
-                                attr.Folder = null;
-                                attr.FileName = null;
-                            }
-                            attr.SameFileAs = itf.Root.PrimaryInterface;
-                        }
-                        else
-                        {
-                            if( attr.SameFileAs == null && attr.FileName == null )
-                            {
-                                string typeName = TypeScriptContext.GetPocoClassNameFromPrimaryInterface( itf.Root );
-                                attr.FileName = TypeScriptContext.SafeFileChars( typeName ) + ".ts";
-                            }
-                        }
-                        builder.Finalizer = ( m, f ) => EnsurePocoInterface( m, f, itf ) != null;
+                        builder.Finalizer = GenerateGuid;
                     }
-                    else
+                    else if( t.Kind == PocoTypeKind.Record || t.Kind == PocoTypeKind.IPoco || t.Kind == PocoTypeKind.AbstractIPoco )
                     {
-                        if( type != typeof( IPoco ) && type != typeof( IClosedPoco ) )
+                        // For IPoco, if the TypeName is not set (which should almost never be set),
+                        // we remove the 'I' if this is the interface name.
+                        if( t.Kind == PocoTypeKind.IPoco )
                         {
-                            monitor.Warn( $"Interface '{type}' is a IPoco but cannot be found in the registered interfaces. It is ignored." );
+                            if( attr.TypeName == null )
+                            {
+                                var p = (INamedPocoType)t;
+                                var typeName = p.ExternalOrCSharpName;
+                                var iDot = typeName.LastIndexOf( '.' );
+                                if( iDot >= 0 )
+                                {
+                                    ++iDot;
+                                    if( p.ExternalName == null
+                                        && iDot < typeName.Length
+                                        && typeName[iDot] == 'I' )
+                                    {
+                                        ++iDot;
+                                    }
+                                    typeName = typeName.Substring( iDot );
+                                }
+                                attr.TypeName = TypeScriptContext.SafeNameChars( typeName );
+                            }
                         }
+                        builder.Finalizer = t switch
+                        {
+                            IRecordPocoType r => ( monitor, file ) => GenerateRecord( monitor, file, r ),
+                            IPrimaryPocoType p => ( monitor, file ) => GeneratePrimaryPoco( monitor, file, p ),
+                            IAbstractPocoType a => ( monitor, file ) => GenerateAbstractPoco( monitor, file, a ),
+                            _ => Throw.NotSupportedException<Func<IActivityMonitor, TSTypeFile, bool>>()
+                        };
                     }
                 }
             }
@@ -144,347 +138,205 @@ namespace CK.StObj.TypeScript.Engine
         /// <returns>Always true.</returns>
         public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
-        internal TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoFamilyInfo family )
+        bool GenerateRecord( IActivityMonitor monitor, TSTypeFile file, IRecordPocoType r )
         {
-            var t = g.DeclareTSType( monitor, family.PocoClass, requiresFile: true );
-            return t != null ? EnsurePocoClass( monitor, t, family ) : null;
+            var part = CreateTypePart( monitor, file );
+            if( part == null ) return false;
+            part.Append( "export class " ).Append( file.TypeName )
+                .OpenBlock();
+            return true;
         }
 
-        TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TSTypeFile tsTypedFile, IPocoFamilyInfo family )
+        bool GeneratePrimaryPoco( IActivityMonitor monitor, TSTypeFile file, IPrimaryPocoType p )
         {
-            if( tsTypedFile.TypePart == null )
+            var part = CreateTypePart( monitor, file );
+            if( part == null ) return false;
+            part.Append( "export class " ).Append( file.TypeName )
+                .CreatePart( out var interfaces )
+                .OpenBlock()
+                .CreatePart( out var fields )
+                .CreatePart( out var properties )
+                .Append( "public constructor()" ).OpenBlock()
+                .CreatePart( out var defaultCtor )
+                .CloseBlock()
+                .CreatePart( out var body );
+            bool atLeastOne = false;
+            foreach( var a in p.AbstractTypes )
             {
-                // Creates a part at the top of the file for the implementation class: this
-                // handles any possible reentrancy here.
-                var b = tsTypedFile.EnsureTypePart();
-
-                // Ensures that the CK/Core/IPoco.ts is here.
-                var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
-                if( iPocoFile == null ) return null;
-                if( iPocoFile.TypePart == null )
+                if( atLeastOne ) interfaces.Append( ", " );
+                else
                 {
-                    iPocoFile.EnsureTypePart( closer: String.Empty )
-                        .Append( "export const SymbolType = Symbol();" ).NewLine()
-                        .Append( "export interface IPoco" ).OpenBlock()
-                        .Append( "[SymbolType]: string;" )
-                        .CloseBlock();
+                    interfaces.Append( " implements " );
+                    atLeastOne = true;
                 }
+                interfaces.Append( _pocoTypeMap.GetTSPocoType( monitor, a ) );
+            }
+            foreach( var f in p.Fields )
+            {
+                // Skips any non exchangeable fields.
+                if( !p.IsExchangeable ) continue;
 
-                // Defines the symbol marker and the constructor.
-                // The SymbolType contains the JSON serialization type name.
-                TypeScriptRoot tsRoot = tsTypedFile.Context.Root;
-                // Generates the signature with all its interfaces.
-                b.Append( "export class " ).Append( tsTypedFile.TypeName );
-                if( tsRoot.GeneratePocoInterfaces )
+                Debug.Assert( f.FieldAccess != PocoFieldAccessKind.ReadOnly, "Readonly fields are non exchangeable." );
+
+                var tsFieldType = _pocoTypeMap.GetTSPocoType( monitor, f.Type );
+                // Creates the backing field.
+                fields.Append( "private " );
+                if( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.IsByRef )
                 {
-                    List<TSTypeFile> interfaces = new();
-                    foreach( IPocoInterfaceInfo i in family.Interfaces )
-                    {
-                        var itf = EnsurePocoInterface( monitor, tsTypedFile.Context, i );
-                        if( itf == null ) return null;
-                        b.Append( interfaces.Count == 0 ? " implements " : ", " );
-                        interfaces.Add( itf );
-                        b.AppendImportedTypeName( itf );
-                    }
+                    // If it can be readonly, it should be.
+                    fields.Append( "readonly " );
                 }
-                b.OpenBlock();
+                fields.Append( f.PrivateFieldName ).Space().Append( tsFieldType ).Append( ";" ).NewLine();
 
-                // Creates the mutable lists of properties and create method parameters.
-                var propList = new List<TypeScriptPocoPropertyInfo>( family.PropertyList.Count );
-                int readOnlyPropertyCount = 0;
-                int requiredParameterCount = 0;
-                foreach( var p in family.PropertyList )
+                defaultCtor.Append( "this." ).Append( f.PrivateFieldName ).Append( " = " );
+                // If the field has a default value, use it. 
+                if( f.HasOwnDefaultValue )
                 {
-                    var propName = tsRoot.ToIdentifier( p.PropertyName );
-                    var propType = GetPropertyTypeScriptType( monitor, tsTypedFile, p );
-                    if( propType == null ) return null;
-                    var paramName = TypeScriptRoot.ToIdentifier( propName, false );
-
-                    // Unifies the documentations from possibly more than one property declarations
-                    // into a documentation text (without the stars).
-                    var docElements = XmlDocumentationReader.GetDocumentationFor( monitor, p.DeclaredProperties, tsRoot.Memory );
-                    var propComment = new DocumentationBuilder( withStars: false ).AppendDocumentation( b.File, docElements ).GetFinalText();
-                    var paramComment = RemoveGetsOrSetsPrefix( propComment );
-
-                    // When p.IsReadOnly, the DefaultValue is "new propType()". This works perfectly for List (=> Array), Set (=> Set) and Dictionary (=> Map)
-                    // and for Poco since the interface's name is mapped to its implementation class' name.
-                    var prop = new TypeScriptPocoPropertyInfo( p, propType, propName, paramName, propComment, paramComment );
-                    Debug.Assert( prop.CreateMethodParameter != null, "Never null on initialization." );
-                    // If a DefaultValue attribute exists on the property, tries to get its TypeScript representation.
-                    if( p.HasDefaultValue )
-                    {
-                        Debug.Assert( !p.IsReadOnly );
-                        var temp = tsTypedFile.File.CreateDetachedPart();
-                        if( temp.TryAppend( p.DefaultValue ) )
-                        {
-                            // This default value will be set in the Poco constructor: the create
-                            // parameter becomes optional.
-                            prop.Property.DefaultValue = temp.ToString();
-                            prop.CreateMethodParameter.Optional = true;
-                        }
-                        else
-                        {
-                            monitor.Warn( $"Unable to generate TypeScript code for DefaultValue attribute on {p}." );
-                        }
-                    }
-
-                    // The lists is ordered:
-                    //  - The required parameters first.
-                    //  - Then comes the optional parameters:
-                    //    - first the simple nullable properties or the ones with a default value,
-                    //    - and then the read only properties.
-                    if( p.IsNullable || p.IsReadOnly || prop.Property.HasDefaultValue )
-                    {
-                        if( p.IsReadOnly )
-                        {
-                            // Inserts at the end.
-                            propList.Add( prop );
-                            readOnlyPropertyCount++;
-                        }
-                        else
-                        {
-                            // Inserts before the last readOnlyPropertyCount.
-                            propList.Insert( propList.Count - readOnlyPropertyCount, prop );
-                        }
-                    }
-                    else
-                    {
-                        // p is not nullable, not readonly and has no default value: it is required.
-                        // Inserts at the required parameter index (and increments the index).
-                        propList.Insert( requiredParameterCount++, prop );
-                    }
-                }
-                // Raises the Generating event with the mutable TypeScriptPocoClass payload. 
-                IPocoJsonInfo? jsonInfo = family.GetJsonInfo();
-                if( jsonInfo == null )
-                {
-                    monitor.Error( $"Unable to get the IPocoJsonInfo for '{family.Name}' poco." );
-                    return null;
-                }
-                var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, family, jsonInfo, propList, requiredParameterCount, readOnlyPropertyCount );
-                var h = PocoGenerating;
-                if( h != null )
-                {
-                    var ev = new PocoGeneratingEventArgs( monitor, tsTypedFile, pocoClass, this );
-                    h.Invoke( this, ev );
-                    if( ev.HasError )
-                    {
-                        monitor.Error( "Error occurred while raising PocoGenerating event." );
-                        return null;
-                    }
-                }
-
-                // Writes the properties.
-                pocoClass.AppendProperties( b );
-
-                tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "SymbolType" );
-                b.NewLine()
-                 .Append( "[SymbolType] = " ).AppendSourceString( family.Name ).Append( ";" ).NewLine();
-
-                // Currently the constructor is private: this is because of readonly properties that
-                // have no [DefaulValue] attributes: it's not easy to generate the assignation required 
-                // by the strict mode to the "default(propertyType)": for the moment we use "undefined!".
-                // As soon as a decent default(propertyType) can be computed for any type (0 for numbers,
-                // '' for string, ... but for enums? and for other types?), the constructor may be exposed.
-                ITSCodePart ctorBody;
-                if( readOnlyPropertyCount == 0 )
-                {
-                    b.Append( "/**" ).NewLine()
-                     .Append( " * This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
-                     .Append( " **/" ).NewLine()
-                     .Append( "constructor()" ).OpenBlock()
-                     .CreatePart( out ctorBody )
-                     .CloseBlock();
+                    Debug.Assert( f.DefaultValueInfo.DefaultValue != null );
+                    defaultCtor.Append( f.DefaultValueInfo.DefaultValue.SimpleValue );
                 }
                 else
                 {
-                    // Using parts to:
-                    //   - better see the structure.
-                    //   - and generate the code in one pass.
-                    //   - and reuse the createSignaturePart as the implSignaturePart.
-                    //
-                    // The constructor accepts the optional parameters for each readonly
-                    // properties: when undefined, an instance is created (readonly properties can only be
-                    // a IPoco, set, list and map and we know how to create them).
-                    // 
-                    b.CreatePart( out var docPart )
-                     .Append( "// This SHOULD NOT be called! It's unfortunately public (waiting for the Default Values issue to be solved)." ).NewLine()
-                     .Append( "/*private*/ constructor( " ).CreatePart( out var createSignaturePart ).Append( ")" ).NewLine()
-                     .AppendDocumentation( $"Initializes a new empty {pocoClass.TypeName}." )
-                     .Append( "constructor()" ).NewLine()
-                     .Append( "// Implementation." ).NewLine()
-                     .Append( "constructor( " ).CreatePart( out var implSignaturePart ).Append( ") " ).OpenBlock()
-                        .CreatePart( out ctorBody )
-                     .CloseBlock();
-
-                    var docBuilder = new DocumentationBuilder();
-                    docBuilder.Append( $"Initializes a new {pocoClass.TypeName} with initial values for the readonly properties.", endWithNewline: true )
-                              .Append( "Use one of the create methods to set all properties.", endWithNewline: true );
-
-                    bool paramsOnOneLine = readOnlyPropertyCount <= 2;
-                    if( !paramsOnOneLine )
-                    {
-                        createSignaturePart.NewLine();
-                    }
-                    bool atLeastOne = false;
-                    // Handles the readonly properties.
-                    foreach( var prop in propList.Skip( propList.Count - readOnlyPropertyCount ) )
-                    {
-                        // Adds the @param to the doc if any.
-                        if( !String.IsNullOrEmpty( prop.CtorParameterComment ) )
-                        {
-                            docBuilder.Append( "@param " ).Append( prop.CtorParameterName ).Append( " " );
-                            docBuilder.AppendText( prop.CtorParameterComment, trimFirstLine: true, trimLastLines: true, startNewLine: false, endWithNewline: true );
-                        }
-                        if( atLeastOne )
-                        {
-                            ctorBody.NewLine();
-                            createSignaturePart.Append( "," );
-                            if( !paramsOnOneLine ) createSignaturePart.NewLine();
-                        }
-                        else atLeastOne = true;
-                        createSignaturePart.Append( prop.CtorParameterName ).Append( "?: " ).Append( prop.Property.Type );
-
-                        ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = typeof " ).Append( prop.CtorParameterName ).Append( " === \"undefined\" ? " )
-                                .Append( prop.Property.DefaultValue )
-                                .Append( " : " ).Append( prop.CtorParameterName ).Append( ";" ).NewLine();
-                    }
-                    docPart.Append( docBuilder.GetFinalText() );
-                    implSignaturePart.Append( createSignaturePart.ToString() );
+                    defaultCtor.Append( tsFieldType.DefaultValueSource );
                 }
-                // To allow strict mode, all non readonly properties must be initialized even
-                // if they have no default value defined: we generate an assignation to "undefined!": the create method MUST be used.
-                // (And this is why the implementation constructor should be private.)
-                foreach( var prop in propList.Take( propList.Count - readOnlyPropertyCount ) )
+
+                // Creates the property.
+                if( f.FieldAccess == PocoFieldAccessKind.IsByRef )
                 {
-                    string defaultValue;
-                    if( prop.Property.HasDefaultValue )
+                    // A ref property is only the return of the ref backing field.
+                    tB.Append( "public ref " ).Append( f.Type.CSharpName ).Space().Append( f.Name )
+                      .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+                }
+                else
+                {
+                    // The getter is always the same.
+                    tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
+                    if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
                     {
-                        defaultValue = prop.Property.DefaultValue!;
+                        Debug.Assert( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.ReadOnly );
+                        // Readonly and MutableCollection doesn't require the "get".
+                        // This expose a public (read only) property that is required for MutableCollection but
+                        // a little bit useless for pure ReadOnly. However we need an implementation of the property
+                        // declared on the interface (we could have generated explicit implementations here but it
+                        // would be overcomplicated).
+                        tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                     }
                     else
                     {
-                        defaultValue = "undefined!";
+                        // For writable properties we need the get/set. 
+                        tB.OpenBlock()
+                          .Append( "get => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+
+                        tB.Append( "set" )
+                            .OpenBlock();
+                        // Always generate the null check.
+                        if( !f.Type.IsNullable && !f.Type.Type.IsValueType )
+                        {
+                            tB.Append( "Throw.CheckNotNullArgument( value );" ).NewLine();
+                        }
+                        // UnionType: check against the allowed types.
+                        if( f.Type is IUnionPocoType uT )
+                        {
+                            Debug.Assert( f.Type.Kind == PocoTypeKind.UnionType );
+                            // Generates the "static Type[] _vXXXAllowed" array.
+                            fieldPart.Append( "static readonly Type[] " ).Append( f.PrivateFieldName ).Append( "Allowed = " )
+                                     .AppendArray( uT.AllowedTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
+
+                            if( f.Type.IsNullable ) tB.Append( "if( value != null )" ).OpenBlock();
+
+                            // Generates the check.
+                            tB.Append( "Type tV = value.GetType();" ).NewLine()
+                              .Append( "if( !" ).Append( f.PrivateFieldName ).Append( "Allowed" )
+                              .Append( ".Any( t => t.IsAssignableFrom( tV ) ) )" )
+                                .OpenBlock()
+                                .Append( "Throw.ArgumentException( $\"Unexpected Type '{tV.ToCSharpName()}' in UnionType. Allowed types are: '" )
+                                .Append( uT.AllowedTypes.Select( tU => tU.CSharpName ).Concatenate( "', '" ) )
+                                .Append( "'.\");" )
+                                .CloseBlock();
+
+                            if( f.Type.IsNullable ) tB.CloseBlock();
+                        }
+                        tB.Append( f.PrivateFieldName ).Append( " = value;" )
+                            .CloseBlock()
+                          .CloseBlock();
                     }
-                    ctorBody.Append( "this." ).Append( prop.Property.Name ).Append( " = " ).Append( defaultValue ).Append( ";" ).NewLine();
                 }
-                pocoClass.AppendCreateMethod( monitor, b );
-            }
-            return tsTypedFile;
-        }
-
-        static readonly Regex _rGetSet = new Regex( @"^\s*Gets?(\s+(or\s+)?sets?)?\s+", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
-
-        static string RemoveGetsOrSetsPrefix( string text )
-        {
-            var m = _rGetSet.Match( text );
-            if( m.Success )
-            {
-                text = text.Substring( m.Length );
-                text = TypeScriptRoot.ToIdentifier( text, true );
-            }
-            return text;
-        }
-
-        TSTypeFile? EnsurePocoInterface( IActivityMonitor monitor, TypeScriptContext g, IPocoInterfaceInfo i )
-        {
-            var t = g.DeclareTSType( monitor, i.PocoInterface, requiresFile: true );
-            return t != null ? EnsurePocoInterface( monitor, t, i ) : null;
-        }
-
-        TSTypeFile? EnsurePocoInterface( IActivityMonitor monitor, TSTypeFile tsTypedFile, IPocoInterfaceInfo i )
-        {
-            if( tsTypedFile.TypePart == null )
-            {
-                // First, we ensure the class so that it appears at the beginning of the file.
-                if( EnsurePocoClass( monitor, tsTypedFile.Context, i.Root ) == null )
+                // Finally, provide an explicit implementations of all the declared properties
+                // that are not satisfied by the final property type.
+                foreach( IExtPropertyInfo prop in family.PropertyList[f.Index].DeclaredProperties )
                 {
-                    return null;
-                }
-                // Double check here since EnsurePocoClass may have called us already.
-                if( tsTypedFile.TypePart == null && tsTypedFile.Context.Root.GeneratePocoInterfaces )
-                {
-                    var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
-                    Debug.Assert( iPocoFile != null, "EnsurePocoClass did the job." );
-                    tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "IPoco" );
+                    if( prop.Type != f.Type.Type )
+                    {
+                        if( prop.Type.IsByRef )
+                        {
+                            tB.Append( "ref " ).Append( prop.TypeCSharpName ).Space()
+                                .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
+                                .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+                        }
+                        else if( prop.Type != f.Type.Type )
+                        {
+                            tB.Append( prop.TypeCSharpName ).Space()
+                              .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
+                              .Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
 
-                    var b = tsTypedFile.EnsureTypePart();
-                    b.AppendDocumentation( monitor, i.PocoInterface );
-                    b.Append( "export interface " ).Append( tsTypedFile.TypeName ).Append( " extends IPoco" );
-                    foreach( Type baseInterface in i.PocoInterface.GetInterfaces() )
-                    {
-                        // If the base interface is a "normal" IPoco interface, then we ensure that it is
-                        // generated.
-                        // If the base interface is "another interface", we'll consider it only if it has been
-                        // declared.
-                        var baseItf = i.Root.Interfaces.FirstOrDefault( p => p.PocoInterface == baseInterface );
-                        if( baseItf != null )
-                        {
-                            var fInterface = EnsurePocoInterface( monitor, tsTypedFile.Context, baseItf );
-                            if( fInterface == null ) return null;
-                            b.Append( ", " ).AppendImportedTypeName( fInterface );
-                        }
-                        else
-                        {
-                            // If the base interface does not belong to the OtherInterfaces: we skip them (it should be
-                            // the IPoco or IClosedPoco).
-                            if( i.Root.OtherInterfaces.Contains( baseInterface ) )
-                            {
-                                // We handle the already declared base interfaces only.
-                                var declared = tsTypedFile.Context.FindDeclaredTSType( baseInterface );
-                                if( declared != null )
-                                {
-                                    b.Append( ", " ).AppendImportedTypeName( declared );
-                                }
-                            }
-                        }
-                    }
-                    b.OpenBlock();
-                    bool success = true;
-                    foreach( var iP in i.PocoInterface.GetProperties() )
-                    {
-                        // Is this interface property implemented at the class level?
-                        // If not (ExternallyImplemented property) we currently ignore it.
-                        IPocoPropertyInfo? p = i.Root.Properties.GetValueOrDefault( iP.Name );
-                        if( p != null )
-                        {
-                            b.AppendDocumentation( monitor, iP )
-                             .Append( p.IsReadOnly ? "readonly " : "" )
-                             .AppendIdentifier( p.PropertyName )
-                             .Append( p.IsNullable ? "?: " : ": " );
-                            success &= AppendPocoPropertyTypeQualifier( monitor, tsTypedFile.Context, b, p );
-                            b.Append( ";" ).NewLine();
                         }
                     }
                 }
             }
-            return tsTypedFile;
+
+            return true;
         }
 
-        static bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )
+        bool GenerateAbstractPoco( IActivityMonitor monitor, TSTypeFile file, IAbstractPocoType a )
         {
-            bool success = true;
-            bool hasUnions = false;
-            foreach( var t in p.PropertyUnionTypes )
-            {
-                if( hasUnions ) b.Append( "|" );
-                hasUnions = true;
-                success &= b.AppendComplexTypeName( monitor, g, t );
-            }
-            if( !hasUnions )
-            {
-                success &= b.AppendComplexTypeName( monitor, g, p.PropertyNullableTypeTree, withUndefined: false );
-            }
-            return success;
+            var part = CreateTypePart( monitor, file );
+            if( part == null ) return false;
+            part.Append( "export interface " ).Append( file.TypeName )
+                .OpenBlock()
+                .CreatePart( out var body );
+            return true;
         }
 
-        static string? GetPropertyTypeScriptType( IActivityMonitor monitor, TSTypeFile file, IPocoPropertyInfo p )
+        ITSKeyedCodePart? CreateTypePart( IActivityMonitor monitor, TSTypeFile file )
         {
-            var b = file.File.CreateDetachedPart();
-            return AppendPocoPropertyTypeQualifier( monitor, file.Context, b, p )
-                    ? b.ToString()
-                    : null;
+            if( file.TypePart != null )
+            {
+                monitor.Error( $"Type part for '{file.Type:C}' has been initialized by another generator." );
+                return null;
+            }
+            return file.EnsureTypePart();
         }
 
+        bool GenerateGuid( IActivityMonitor monitor, TSTypeFile file )
+        {
+            if( file.TypePart == null )
+            {
+                // Let the part open (use the "}\n" default closer so that this can be extended.
+                file.EnsureTypePart().Append( @"
+/**
+* Simple immutable encapsulation of a string. No check is currently done on the 
+* value format but it should be in the '00000000-0000-0000-0000-000000000000' form.
+*/
+export class Guid {
+
+    /**
+    * The empty Guid is '00000000-0000-0000-0000-000000000000'.
+    */
+    public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
+    
+    constructor(public readonly value: string) {     
+    }
+
+    get [Symbol.toStringTag]() {
+        return this.value;
+        }
+
+    public toJSON() : string {
+        return this.value;
+    }
+" );
+            }
+            return true;
+        }
     }
 }

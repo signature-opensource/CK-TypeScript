@@ -21,23 +21,26 @@ namespace CK.TypeScript.CodeGen
 
         public IReadOnlyDictionary<string, LibraryImport> LibraryImports => _libraries;
 
-        public ITSFileImportSection EnsureLibrary(LibraryImport libraryImport)
+        public ITSFileImportSection EnsureLibrary( LibraryImport libraryImport )
         {
-            Throw.CheckNotNullOrWhiteSpaceArgument( libraryImport.Name );
-            if( !_libraries.TryGetValue( libraryImport.Name, out var lib ) )
+            if( !_libraries.TryGetValue( libraryImport.Name, out var existing ) )
             {
                 _libraries[libraryImport.Name] = libraryImport;
             }
             else
             {
-                if( lib.Version != libraryImport.Version )
+                if( existing.Version != libraryImport.Version )
                 {
-                    Throw.InvalidOperationException( $"Previously imported this library at version {lib.Version}, but currently importing it with version {libraryImport.Version}" );
+                    Throw.InvalidOperationException( $"Previously imported this library at version {existing.Version}, but currently importing it with version {libraryImport.Version}" );
                 }
-                if( lib.DependencyKind < libraryImport.DependencyKind )
+                if( existing.DependencyKind < libraryImport.DependencyKind )
                 {
                     _libraries[libraryImport.Name] = libraryImport;
                 }
+            }
+            foreach( var d in libraryImport.ImpliedDependencies )
+            {
+                EnsureLibrary( d );
             }
             return this;
         }

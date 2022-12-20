@@ -3,17 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using CK.Core;
 using System.Text;
+using System.Security.AccessControl;
 
 namespace CK.TypeScript.CodeGen
 {
     class RawCodePart : BaseCodeWriter, ITSCodePart
     {
+        static readonly string _defaultCloser = "}\n".ReplaceLineEndings();
+
         Dictionary<object, KeyedCodePart>? _keyedParts;
 
         internal RawCodePart( TypeScriptFile f, string closer )
             : base( f )
         {
-            Closer = closer.ReplaceLineEndings();
+            Closer = NormalizeCloser( closer );
+        }
+
+        internal string NormalizeCloser( string closer )
+        {
+            if( closer == "}\n" ) return _defaultCloser;
+            return closer.ReplaceLineEndings();
         }
 
         public string Closer { get; }
@@ -36,9 +45,10 @@ namespace CK.TypeScript.CodeGen
         {
             if( _keyedParts != null && _keyedParts.TryGetValue( key, out var p ) )
             {
-                if( closer != null && p.Closer != closer.ReplaceLineEndings() )
+                if( closer != null )
                 {
-                    throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof(closer) );
+                    var nC = NormalizeCloser( closer );
+                    Throw.ArgumentException( nameof( closer ), $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{nC}' (key is '{key}')." );
                 }
                 return p;
             }

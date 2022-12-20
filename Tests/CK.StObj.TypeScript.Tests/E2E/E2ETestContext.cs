@@ -44,7 +44,7 @@ namespace CK.StObj.TypeScript.Tests.E2E
                                              params Type[] types )
         {
             var collector = TestHelper.CreateStObjCollector( types );
-            collector.RegisterType( typeof( PocoJsonSerializer ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( CommonPocoJsonSupport ) );
             var outputPath = LocalTestHelper.GetOutputFolder( subPath, testName );
             var services = TestHelper.CreateAutomaticServices( collector,
                                                                engineConfiguration => ApplyTSAwareConfig( engineConfiguration, outputPath.ProjectPath, tsConfig, tsBinPathConfig ),

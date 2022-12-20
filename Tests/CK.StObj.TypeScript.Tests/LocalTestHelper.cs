@@ -36,7 +36,7 @@ namespace CK.StObj.TypeScript.Tests
 
         /// <summary>
         /// Simple, mono bin path, implementation that uses the TestHelper to collect the StObj
-        /// based on an explicit list of types into which typeof( PocoJsonSerializer ) is added.
+        /// based on an explicit list of types into which typeof( CommonPocoJsonSupport ) is added.
         /// </summary>
         public class MonoCollectorResolver : IStObjCollectorResultResolver
         {
@@ -44,7 +44,7 @@ namespace CK.StObj.TypeScript.Tests
 
             public MonoCollectorResolver( params Type[] types )
             {
-                _types = types.Append( typeof( PocoJsonSerializer ) ).ToArray();
+                _types = types.Append( typeof( CommonPocoJsonSupport ) ).ToArray();
             }
 
             public StObjCollectorResult? GetResult( RunningBinPathGroup g )
@@ -105,28 +105,9 @@ namespace CK.StObj.TypeScript.Tests
             return (output.ProjectPath, output.SourcePath, config);
         }
 
-        /// <summary>
-        /// Serializes the Poco in UTF-8 Json.
-        /// </summary>
-        /// <param name="o">The poco.</param>
-        /// <param name="withType">True to emit types.</param>
-        /// <returns>The bytes.</returns>
-        public static ReadOnlyMemory<byte> JsonSerialize( IPoco o, bool withType )
-        {
-            var m = new ArrayBufferWriter<byte>();
-            using( var w = new Utf8JsonWriter( m ) )
-            {
-                o.Write( w, withType );
-                w.Flush();
-            }
-            return m.WrittenMemory;
-        }
-
         public static T? JsonDeserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b ) where T : class, IPoco
         {
-            var r = new Utf8JsonReader( b );
-            var f = services.GetRequiredService<IPocoFactory<T>>();
-            return f.Read( ref r );
+            return services.GetRequiredService<IPocoFactory<T>>().JsonDeserialize( b );
         }
 
         public static T? JsonDeserialize<T>( IServiceProvider services, string s ) where T : class, IPoco
@@ -143,11 +124,7 @@ namespace CK.StObj.TypeScript.Tests
             {
                 try
                 {
-                    using( var w = new Utf8JsonWriter( m ) )
-                    {
-                        o.Write( w, true );
-                        w.Flush();
-                    }
+                    o.JsonSerialize( m, true );
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
                 }
@@ -159,14 +136,10 @@ namespace CK.StObj.TypeScript.Tests
 
                 var r1 = new Utf8JsonReader( bin1 );
 
-                var o2 = directory.Read( ref r1, new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard } );
+                var o2 = directory.JsonDeserialize( bin1 );
 
                 m.Position = 0;
-                using( var w2 = new Utf8JsonWriter( m ) )
-                {
-                    o2.Write( w2, true );
-                    w2.Flush();
-                }
+                o2.JsonSerialize( m, true );
                 var bin2 = m.ToArray();
 
                 bin1.Should().BeEquivalentTo( bin2 );
@@ -179,9 +152,7 @@ namespace CK.StObj.TypeScript.Tests
                 var f = services.GetService<IPocoFactory<T>>();
                 if( f != null )
                 {
-                    var r2 = new Utf8JsonReader( bin2 );
-                    var o3 = f.Read( ref r2 );
-                    return o3;
+                    return f.JsonDeserialize( bin2 );
                 }
                 return (T?)o2;
             }

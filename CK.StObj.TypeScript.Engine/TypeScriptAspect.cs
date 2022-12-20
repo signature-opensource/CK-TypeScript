@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup.PocoJson;
 using CK.TypeScript.CodeGen;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -54,12 +55,13 @@ namespace CK.Setup
                 var outputPaths = GetOutputPaths( monitor, genBinPath );
                 if( outputPaths != null )
                 {
-                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>();
-                    if( jsonCodeGen == null )
+                    var pocoTypeSystem = genBinPath.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
+                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<IPocoJsonGeneratorService>();
+                    if( jsonCodeGen?.JsonNames == null )
                     {
                         monitor.Info( $"No Json serialization available in this context." );
                     }
-                    var g = new TypeScriptContext( outputPaths, genBinPath, _config, jsonCodeGen );
+                    var g = new TypeScriptContext( outputPaths, genBinPath, _config, pocoTypeSystem, jsonCodeGen?.JsonNames );
                     _generators[idx++] = g;
                     if( !g.Run( monitor ) )
                     {
@@ -121,20 +123,20 @@ namespace CK.Setup
 
                 if( !success ) return false;
 
-                if (_config.SkipTypeScriptBuild )
+                if( _config.SkipTypeScriptBuild )
                 {
-                    monitor.Info("Skipping TypeScript build.");
+                    monitor.Info( "Skipping TypeScript build." );
                 }
                 else
                 {
-                    using (monitor.OpenInfo($"Starting TypeScript build..."))
+                    using( monitor.OpenInfo( $"Starting TypeScript build..." ) )
                     {
-                        foreach (var g in _generators)
+                        foreach( var g in _generators )
                         {
-                            if (g != null)
+                            if( g != null )
                             {
-                                success &= YarnPackageGenerator.SaveBuildConfig(monitor, g.Root)
-                                            & YarnPackageGenerator.RunNodeBuild(monitor, g.Root);
+                                success &= YarnPackageGenerator.SaveBuildConfig( monitor, g.Root )
+                                            & YarnPackageGenerator.RunNodeBuild( monitor, g.Root );
                             }
                         }
                     }

@@ -1,4 +1,3 @@
-using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,12 +6,12 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
-namespace CK.TypeScript.CodeGen
+namespace CK.Core
 {
     /// <summary>
     /// Encapsulates helpers that reads Xml documentation.
     /// </summary>
-    public class XmlDocumentationReader
+    public static class XmlDocumentationReader
     {
         /// <summary>
         /// Loads the Xml file documentation for an assembly.
@@ -82,7 +81,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The set of available elements.</returns>
         public static IEnumerable<XElement> GetDocumentationFor( IActivityMonitor monitor, IEnumerable<MemberInfo> members, IDictionary<object, object?>? cache = null )
         {
-            return members.Select( m => (XDoc: GetXmlDocumentation( monitor, m.Module.Assembly, cache ), M: m ) )
+            return members.Select( m => (XDoc: GetXmlDocumentation( monitor, m.Module.Assembly, cache ), M: m) )
                           .Where( m => m.XDoc != null )
                           .Select( m => GetDocumentationElement( m.XDoc!, GetNameAttributeValueFor( m.M ) ) )
                           .Where( e => e != null )
@@ -112,7 +111,7 @@ namespace CK.TypeScript.CodeGen
             PropertyInfo p => GetNameAttributeValueFor( p ),
             FieldInfo f => GetNameAttributeValueFor( f ),
             EventInfo e => GetNameAttributeValueFor( e ),
-            _ => throw new NotSupportedException()
+            _ => Throw.NotSupportedException<string>()
         };
 
 

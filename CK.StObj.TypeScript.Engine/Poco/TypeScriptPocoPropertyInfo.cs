@@ -1,6 +1,7 @@
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
+using System.Diagnostics;
 using System.Linq;
 
 namespace CK.StObj.TypeScript.Engine
@@ -11,26 +12,21 @@ namespace CK.StObj.TypeScript.Engine
     /// </summary>
     public class TypeScriptPocoPropertyInfo
     {
-        internal TypeScriptPocoPropertyInfo( IPocoPropertyInfo p,
-                                             string propType,
-                                             string propName,
-                                             string paramName,
+        internal TypeScriptPocoPropertyInfo( TypeScriptContext c,
+                                             IPrimaryPocoField field,
+                                             ITSType fieldType,
                                              string? propComment,
                                              string? paramComment )
         {
-            PocoProperty = p;
-            Property = new TypeScriptVarType( propName, propType );
+            Debug.Assert( field.IsExchangeable );
+            Field = field;
+
+            Property = new TypeScriptVarType( c.Root.ToIdentifier( field.Name ), fieldType );
             Property.Comment = propComment;
-            Property.Optional = p.IsNullable;
-            if( p.IsReadOnly )
-            {
-                Property.DefaultValue = "new " + propType + "()";
-            }
-            CtorParameterName = paramName;
+            CtorParameterName = TypeScriptRoot.ToIdentifier( field.Name, false );
             CtorParameterComment = paramComment;
-            CreateMethodParameter = new TypeScriptVarType( paramName, propType )
+            CreateMethodParameter = new TypeScriptVarType( CtorParameterName, fieldType )
             {
-                Optional = p.IsNullable || p.IsReadOnly,
                 Comment = paramComment
             };
         }
@@ -38,11 +34,11 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets the poco property info.
         /// </summary>
-        public IPocoPropertyInfo PocoProperty { get; }
+        public IPrimaryPocoField Field { get; }
 
         /// <summary>
         /// Gets the property description.
-        /// Its <see cref="TypeScriptVarType.DefaultValue"/> is handled by the Poco constructor.
+        /// Its <see cref="TypeScriptVarType.DefaultValueSource"/> is handled by the Poco constructor.
         /// </summary>
         public TypeScriptVarType Property { get; }
 

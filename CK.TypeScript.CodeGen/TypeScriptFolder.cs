@@ -28,29 +28,33 @@ namespace CK.TypeScript.CodeGen
         internal TypeScriptFolder( TypeScriptRoot root )
         {
             _root = root;
-            Name = String.Empty;
         }
 
         internal TypeScriptFolder( TypeScriptFolder parent, string name )
         {
             _root = parent._root;
             Parent = parent;
-            Name = name;
             _next = parent._firstChild;
             parent._firstChild = this;
+            FullPath = parent.FullPath.AppendPart( name );
         }
 
         /// <summary>
         /// Gets this folder's name.
         /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
-        /// it necessarily not empty without '.ts' extension.
+        /// it necessarily not empty and without '.ts' extension.
         /// </summary>
-        public string Name { get; }
+        public string Name => FullPath.LastPart;
+
+        /// <summary>
+        /// Gets this folder's full path.
+        /// </summary>
+        public NormalizedPath FullPath { get; }
 
         /// <summary>
         /// Gets whether this folder is the root one.
         /// </summary>
-        public bool IsRoot => Name.Length == 0;
+        public bool IsRoot => FullPath.IsEmptyPath;
 
         /// <summary>
         /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
@@ -273,7 +277,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPaths">Any number of target directories.</param>
-        /// <param name="createBarrel">Optional strategy to create barrels in folders. See <see cref="CreateBarrelOnSave"/>.</param>
+        /// <param name="createBarrel">Optional strategy to create barrels in folders.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
         public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath, bool> createBarrel )
         {

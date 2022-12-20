@@ -21,6 +21,9 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc />
         public new TypeScriptFolder<TRoot> Folder => (TypeScriptFolder<TRoot>)base.Folder;
 
+        /// <inheritdoc />
+        public new TRoot Root => Folder.Root;
+
     }
 
 }

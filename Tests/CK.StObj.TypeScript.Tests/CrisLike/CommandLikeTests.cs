@@ -1,13 +1,16 @@
+using CK.CodeGen;
 using CK.Core;
 using CK.CrisLike;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
 using FluentAssertions;
 using NUnit.Framework;
+using OneOf.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -71,9 +74,62 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             Guid? UniqueId { get; set; }
         }
 
-        // Hard coded Cris-like CommandDirectoryImpl.
+        // Hard coded fake CommandDirectoryImpl: registers the TResult of ICommand
+        // but doesn't generate the code of the FakeCommandDirectoryImpl that is
+        // a static class here.
+        public class FakeCommandDirectoryImpl : ICSCodeGenerator
+        {
+            public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
+            {
+                bool success = true;
+                var pocoTypeSystem = codeGenContext.Assembly.GetPocoTypeSystem();
+                var allCommands = pocoTypeSystem.FindObliviousType<IAbstractPocoType>( typeof( ICommand ) )?.PrimaryPocoTypes;
+                if( allCommands == null || !allCommands.Any() )
+                {
+                    monitor.Warn( $"No ICommand found." );
+                }
+                else
+                {
+                    foreach( var c in allCommands )
+                    {
+                        if( c.IsExchangeable )
+                        {
+                            var resultTypes = c.AbstractTypes.Select( i => i.Type )
+                                                             .Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( ICommand<> ) )
+                                                             .Select( i => (i,i.GetProperty( "R", BindingFlags.Static | BindingFlags.NonPublic )!) )
+                                                             .ToList();
+                            // Here we simply registers the command result types. Actual code resolves the set to a most
+                            // concrete type.
+                            foreach( var (cmdType,resultTypeInfo) in resultTypes )
+                            {
+                                if( pocoTypeSystem.Register( monitor, resultTypeInfo ) == null )
+                                {
+                                    monitor.Error( $"Unable to register Command Result Type for {cmdType:C}." );
+                                    success = false;
+                                }
+                            }
+                        }
+                    }
+                }
+                return success ? CSCodeGenerationResult.Success : CSCodeGenerationResult.Failed;
+            }
+        }
+
+        /// <summary>
+        /// Triggers the <see cref="FakeCommandDirectoryImpl"/>.
+        /// In actual code this is a ISingletonAutoService that exposes all the ICommandModel.
+        /// </summary>
+        [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeCommandDirectoryImpl, CK.StObj.TypeScript.Tests" )]
+        public static class FakeCommandDirectory
+        {
+        }
+
+
+
+        // Hard coded Cris-like TypeScriptCrisCommandGeneratorImpl.
         // This one changes the folders.
-        public class FakeCommandDirectoryImplWithFolders : ITSCodeGenerator
+        // The real one listens to PocoGenerating events and injects code into the Poco TypeSript implementation.
+        public class FakeTypeScriptCrisCommandGeneratorImplWithFolders : ITSCodeGenerator
         {
             public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
                                                       ITSTypeFileBuilder builder,
@@ -83,7 +139,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 // Their FileName will be without the "I" and prefixed by "CMD".
                 // The real CommandDirectoryImpl does nothing here: ICommand are IPoco and
                 // their folder/file organization is fine.
-
                 if( typeof(ICommand).IsAssignableFrom( builder.Type ) )
                 {
                     if( attr.SameFolderAs == null )
@@ -101,21 +156,16 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 return true;
             }
 
-            // The Cris command directory generator declares all the ICommand (by filtering the declared poco). This one
-            // declares them explicitly.
-            // ICommandResult and any types that are exposed from the ICommand are exported by the IPoco TS engine.
             public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
             {
-                g.DeclareTSType( monitor, typeof( ICrisResult ) );
-                g.DeclareTSType( monitor, typeof( ICrisResultError ) );
-                g.DeclareTSType( monitor, typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ), typeof( ICommandFour ) );
                 return true;
             }
         }
 
-        // This static class is only here to trigger the global TypeScriptCommandSupportImpl ITSCodeGenerator.
-        [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeCommandDirectoryImplWithFolders, CK.StObj.TypeScript.Tests" )]
-        public static class FakeCommandDirectoryWithFolders
+        // This static class is only here to trigger the global FakeTypeScriptCrisCommandGeneratorImplWithFolders ITSCodeGenerator.
+        // This is the same as the static class TypeScriptCrisCommandGenerator in CK.Cris.TypeScript package.
+        [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeTypeScriptCrisCommandGeneratorImplWithFolders, CK.StObj.TypeScript.Tests" )]
+        public static class FakeTypeScriptCrisCommandGeneratorWithFolders
         {
         }
 
@@ -130,7 +180,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                          typeof( ICommandFour ),
                                                          typeof( ICrisResult ),
                                                          typeof( ICrisResultError ),
-                                                         typeof( FakeCommandDirectoryWithFolders ) );
+                                                         typeof( FakeCommandDirectory ),
+                                                         typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
 
             var fPower = output.SourcePath.Combine( "TheFolder/Power.ts" );
             File.ReadAllText( fPower ).Should().StartWith( "export enum Power" );
@@ -147,63 +198,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var fTwo = output.SourcePath.Combine( "Commands/CrisLike/CommandTwo.ts" );
             var tTwo = File.ReadAllText( fTwo );
             tTwo.Should().Contain( "import { CommandOne, CommandThree } from \"../../TheFolder/CommandOne\";" );
-        }
-
-        public class FakeCommandDirectoryImpl : ITSCodeGenerator
-        {
-            public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
-                                                      ITSTypeFileBuilder builder,
-                                                      TypeScriptAttribute attr )
-            {
-                if( attr.SameFolderAs == null && attr.Folder == null )
-                {
-                    if( typeof( ICommand ).IsAssignableFrom( builder.Type ) )
-                    {
-                        attr.Folder = "Cris/Commands";
-                    }
-                    else
-                    {
-                        attr.Folder = "Other";
-                    }
-                }
-                return true;
-            }
-
-            // The Cris command directory generator declares all the ICommand.
-            public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
-            {
-                var poco = g.CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true );
-                if( poco.OtherInterfaces.TryGetValue( typeof(ICommand), out var roots ) )
-                {
-                    foreach( var rootInfo in roots )
-                    {
-                        g.DeclareTSType( monitor, rootInfo.Interfaces.Select( itf => itf.PocoInterface ) );
-                        var resultTypes = rootInfo.OtherInterfaces.Select( i => ExtractTResult( i ) )
-                                                                  .Where( r => r != null )
-                                                                  .Select( t => t! )
-                                                                  .ToList();
-                        g.DeclareTSType( monitor, resultTypes );
-                    }
-
-                    static Type? ExtractTResult( Type i )
-                    {
-                        if( !i.IsGenericType ) return null;
-                        Type tG = i.GetGenericTypeDefinition();
-                        if( tG != typeof( ICommand<> ) ) return null;
-                        return i.GetGenericArguments()[0];
-                    }
-
-                }
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Triggers the <see cref="FakeCommandDirectoryImpl"/>.
-        /// </summary>
-        [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeCommandDirectoryImpl, CK.StObj.TypeScript.Tests" )]
-        public static class FakeCommandDirectory
-        {
         }
 
         public interface IValueTupleCommand : ICommandAuthUnsafe, ICommand<int>

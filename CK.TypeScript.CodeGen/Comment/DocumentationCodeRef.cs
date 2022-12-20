@@ -5,7 +5,7 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Default implementation of <see cref="IXmlDocumentationCodeRefHandler"/>.
+    /// Default implementations of <see cref="IXmlDocumentationCodeRefHandler"/>.
     /// </summary>
     public class DocumentationCodeRef
     {

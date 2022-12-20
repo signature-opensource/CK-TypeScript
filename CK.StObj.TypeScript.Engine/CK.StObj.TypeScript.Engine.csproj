@@ -7,8 +7,8 @@
     <EmbeddedResource Include="yarn-3.2.2.cjs" />
   </ItemGroup>
   <ItemGroup>
-      <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="0.0.0--045d8b3-explo+v21.0.0" />
-      <PackageReference Include="CK.StObj.Runtime" Version="0.0.0--045d8b3-explo+v21.0.0" />
+      <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="0.0.0--045lwmo-explo+v21.0.0" />
+      <PackageReference Include="CK.StObj.Runtime" Version="0.0.0--045lwmo-explo+v21.0.0" />
       <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
   </ItemGroup>

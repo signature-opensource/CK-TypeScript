@@ -50,6 +50,11 @@ namespace CK.TypeScript.CodeGen
         public ITSFileBodySection Body { get; }
 
         /// <summary>
+        /// Gets the type script root.
+        /// </summary>
+        public TypeScriptRoot Root => Folder.Root;
+
+        /// <summary>
         /// Creates a part that is bound to this file but whose content
         /// is not in this <see cref="Body"/>.
         /// </summary>
@@ -76,9 +81,9 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Overridden to return this file name.
+        /// Overridden to return the full path of this file.
         /// </summary>
-        /// <returns>The <see cref="Name"/>.</returns>
-        public override string ToString() => Name;
+        /// <returns>This full path.</returns>
+        public override string ToString() => $"{Folder.FullPath.Path}/{Name}";
     }
 }

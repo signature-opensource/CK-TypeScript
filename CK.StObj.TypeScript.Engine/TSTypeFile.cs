@@ -11,9 +11,9 @@ namespace CK.StObj.TypeScript.Engine
 {
 
     /// <summary>
-    /// Centralizes code generation information for a <see cref="Type"/>.
-    /// Instances are automatically created because the type has a [<see cref="TypeScriptAttribute"/>] (or other attribute that are implemented by a <see cref="ITSCodeGeneratorType"/>)
-    /// or by a call to <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, IEnumerable{Type})"/>
+    /// Centralizes code generation information for a C# <see cref="Type"/>.
+    /// TSTypeFile instances are automatically created because the type has a [<see cref="TypeScriptAttribute"/>] (or other attribute that are
+    /// implemented by a <see cref="ITSCodeGeneratorType"/>) or by a call to <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, IEnumerable{Type})"/>
     /// (typically from a global <see cref="ITSCodeGenerator"/>).
     /// Once created, there must be a way to generate the corresponding code into the <see cref="File"/>: at least one participant
     /// must call <see cref="EnsureTypePart"/> otherwise an error is raised.
@@ -22,6 +22,7 @@ namespace CK.StObj.TypeScript.Engine
     {
         string _toString;
         TypeScriptFile<TypeScriptContextRoot>? _file;
+        bool _canceled;
 
         /// <summary>
         /// Discovery constructor. Also memorizes the attribute if it exists (or a new one).
@@ -34,7 +35,7 @@ namespace CK.StObj.TypeScript.Engine
             Type = t;
             Generators = generators;
             Attribute = attr ?? new TypeScriptAttribute();
-            _toString = $"TypeScript for '{Type}'";
+            _toString = $"TypeScript for '{Type.ToCSharpName()}'";
         }
 
         internal TypeScriptAttribute Attribute;
@@ -67,6 +68,19 @@ namespace CK.StObj.TypeScript.Engine
         /// <inheritdoc />
         public Type Type { get; }
 
+        bool ITSTypeFileBuilder.CancelGeneration
+        {
+            get => _canceled;
+            set
+            {
+                if( value != _canceled )
+                {
+                    Throw.CheckState( $"CancelGeneration cannot be set back to true for '{_toString}'.", _canceled && value is false );
+                    _canceled = value;
+                }
+            }
+        }
+
         /// <inheritdoc />
         public IList<ITSCodeGeneratorType> Generators { get; }
 
@@ -76,19 +90,17 @@ namespace CK.StObj.TypeScript.Engine
         /// <inheritdoc />
         public void AddFinalizer( Func<IActivityMonitor, TSTypeFile, bool> newFinalizer, bool prepend = false )
         {
-            if( newFinalizer != null )
+            Throw.CheckNotNullArgument( newFinalizer );
+            if( Finalizer != null )
             {
-                if( Finalizer != null )
-                {
-                    var captured = Finalizer;
-                    Finalizer = ( m, f ) => prepend
-                                                ? newFinalizer( m, f ) && captured( m, f )
-                                                : captured( m, f ) && newFinalizer( m, f );
-                }
-                else
-                {
-                    Finalizer = newFinalizer;
-                }
+                var captured = Finalizer;
+                Finalizer = ( m, f ) => prepend
+                                            ? newFinalizer( m, f ) && captured( m, f )
+                                            : captured( m, f ) && newFinalizer( m, f );
+            }
+            else
+            {
+                Finalizer = newFinalizer;
             }
         }
 

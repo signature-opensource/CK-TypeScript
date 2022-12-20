@@ -8,6 +8,10 @@ namespace CK.StObj.TypeScript.Engine
     /// <summary>
     /// TypeScript builder for a type. See <see cref="TSTypeFile"/> that implements its.
     /// <para>
+    /// This is provided to the ConfigureTypeScriptAttribute method of all global <see cref="ITSCodeGenerator"/>
+    /// and to the <see cref="ITSCodeGeneratorType"/> bound to the type for any type that must be generated.
+    /// </para>
+    /// <para>
     /// Note that the actual <see cref="CK.TypeScript.CodeGen.TypeScriptFile"/> that will define this type may contain
     /// other types.
     /// </para>
@@ -23,6 +27,15 @@ namespace CK.StObj.TypeScript.Engine
         /// Gets the <see cref="Type"/> for which a TypeScript file must be generated.
         /// </summary>
         Type Type { get; }
+
+        /// <summary>
+        /// Gets whether this type should not be generated.
+        /// This is false by default and can only transition to true.
+        /// Setting CancelGeneration to true is a strong action: the type can no more have an associated <see cref="TSTypeFile"/>
+        /// and <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type)"/> will throw when called with the type that
+        /// has been canceled.
+        /// </summary>
+        bool CancelGeneration { get; set; }
 
         /// <summary>
         /// Gets a mutable list of the generators bound to this <see cref="Type"/>.
