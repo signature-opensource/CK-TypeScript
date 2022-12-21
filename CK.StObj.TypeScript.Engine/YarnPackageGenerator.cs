@@ -23,7 +23,7 @@ namespace CK.Setup
 
         internal static bool SaveBuildConfig( IActivityMonitor monitor, TypeScriptRoot root )
         {
-            using var gLog = monitor.OpenInfo($"Saving TypeScript and Yarn build configuration files...");
+            using var gLog = monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." );
 
             var dependencies = new Dictionary<string, LibraryImport>
             {
@@ -103,7 +103,7 @@ namespace CK.Setup
                 File.WriteAllText( packageJsonPath, sb.ToString() );
                 sb.Clear();
 
-                var tsConfigFile = Path.Combine(path, "tsconfig.json");
+                var tsConfigFile = Path.Combine( path, "tsconfig.json" );
                 monitor.Trace( $"Creating '{tsConfigFile}'." );
                 File.WriteAllText( tsConfigFile,
      @"{
@@ -119,7 +119,6 @@ namespace CK.Setup
         ""declaration"": true,
         ""esModuleInterop"": true,
         ""resolveJsonModule"": true,
-        ""removeComments"": true,
         ""rootDir"": ""ts/src""
     },
     ""include"": [
@@ -143,34 +142,50 @@ namespace CK.Setup
   },
 }
 " );
-                var yarnrcFile = Path.Combine( path, ".yarnrc.yml" );
-                monitor.Trace($"Creating '{yarnrcFile}'.");
-                File.WriteAllText( yarnrcFile,
-@"yarnPath: .yarn/releases/yarn-3.2.2.cjs
-enableImmutableInstalls: false" );
-
-                var yarnBinDir = Path.Combine( path, ".yarn", "releases" );
-                File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
-                monitor.Trace( $"Extracting '{_yarnFileName}' to '{yarnBinDir}'." );
-                Directory.CreateDirectory( yarnBinDir );
-                var currAssembly = Assembly.GetExecutingAssembly();
-                using( var yarnBinStream = currAssembly.GetManifestResourceStream( currAssembly.GetName().Name + "." + _yarnFileName )! )
-                using( var fileStream = File.OpenWrite( Path.Combine( yarnBinDir, _yarnFileName ) ) )
-                {
-                    yarnBinStream.CopyTo( fileStream );
-                }
+                CreateYarnInstall( monitor, path );
             }
             return true;
         }
 
+        private static void CreateYarnInstall( IActivityMonitor monitor, NormalizedPath path )
+        {
+            var yarnPath = YarnHelper.TryFindYarn( path.RemoveLastPart() );
+            if( yarnPath.HasValue )
+            {
+                monitor.Info( $"Yarn install found at {yarnPath}, skipping adding yarn." );
+                return;
+            }
+            monitor.Info( "No yarn install found, we will add our own." );
+            var yarnrcFile = Path.Combine( path, ".yarnrc.yml" );
+            monitor.Trace( $"Creating '{yarnrcFile}'." );
+            File.WriteAllText( yarnrcFile,
+@"yarnPath: .yarn/releases/yarn-3.2.2.cjs
+enableImmutableInstalls: false" );
+
+            var yarnBinDir = Path.Combine( path, ".yarn", "releases" );
+            File.WriteAllText( Path.Combine( path, ".gitignore" ), "*" );
+            monitor.Trace( $"Extracting '{_yarnFileName}' to '{yarnBinDir}'." );
+            Directory.CreateDirectory( yarnBinDir );
+            var currAssembly = Assembly.GetExecutingAssembly();
+            using( var yarnBinStream = currAssembly.GetManifestResourceStream( currAssembly.GetName().Name + "." + _yarnFileName )! )
+            using( var fileStream = File.OpenWrite( Path.Combine( yarnBinDir, _yarnFileName ) ) )
+            {
+                yarnBinStream.CopyTo( fileStream );
+            }
+        }
+
         internal static bool RunNodeBuild( IActivityMonitor monitor, TypeScriptRoot root )
         {
-            using var gLog = monitor.OpenInfo($"Building TypeScript projects...");
-
-            foreach ( var item in root.OutputPaths )
+            using var gLog = monitor.OpenInfo( $"Building TypeScript projects..." );
+            
+            foreach( var item in root.OutputPaths )
             {
-                var yarnBinDir = Path.Combine( item.Path, ".yarn", "releases" );
-                var yarnBinJS = Path.Combine( yarnBinDir, _yarnFileName );
+                var yarnBinJS = YarnHelper.TryFindYarn( item.Path );
+                if( !yarnBinJS.HasValue )
+                {
+                    monitor.Error( "Could not find yarn binaries." );
+                    return false;
+                }
                 using( monitor.OpenInfo( $"Running yarn restore in {item.Path}." ) )
                 {
                     int code = ProcessRunner( monitor, "node", yarnBinJS, item.Path );

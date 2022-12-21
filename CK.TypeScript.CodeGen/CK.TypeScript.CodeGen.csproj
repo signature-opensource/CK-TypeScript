@@ -2,9 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.0" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="17.0.0" />
   </ItemGroup>
 </Project>
