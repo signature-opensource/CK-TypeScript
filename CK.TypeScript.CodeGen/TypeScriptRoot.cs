@@ -97,7 +97,6 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public TSTypeManager TSTypes { get; }
 
-
         /// <summary>
         /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling
         /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> on all <see cref="ITSGeneratedType"/>.

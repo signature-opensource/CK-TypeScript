@@ -24,6 +24,9 @@ namespace CK.TypeScript.CodeGen
         readonly Dictionary<string, LibraryImport> _libraries;
         readonly TypeScriptRoot _root;
         readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
+        // New TSGeneratedType are appended to this list: GenerateCode
+        // loops until no new type appears in this list.
+        readonly List<TSGeneratedType> _processList;
 
         internal TSTypeManager( TypeScriptRoot root, IReadOnlyDictionary<string, string>? libraryVersionConfiguration )
         {
@@ -34,6 +37,7 @@ namespace CK.TypeScript.CodeGen
             {
                 { typeof( object ), new TSType( "unknown", null, null ) }
             };
+            _processList = new List<TSGeneratedType>();
         }
 
         /// <summary>
@@ -183,6 +187,7 @@ namespace CK.TypeScript.CodeGen
 
         TSGeneratedType? ResolveTSType( IActivityMonitor monitor, Type type, bool internalCall, ref HashSet<Type>? cycleDetector )
         {
+
             if( !IsValidGeneratedType( type ) )
             {
                 if( internalCall ) return null;
@@ -223,7 +228,13 @@ namespace CK.TypeScript.CodeGen
                 file = folder.FindOrCreateFile( d.FileName ?? typeName.Replace( '<', '{' ).Replace( '>', '}' ) + ".ts" );
             }
             monitor.Trace( $"Type '{type:C}' will be generated in '{file}'.");
-            return new TSGeneratedType( type, typeName, file, d.DefaultValueSource, d.TryWriteValueImplementation, d.Implementor );
+            if( type.IsEnum )
+            {
+                d.DefaultValueSource ??= SelectEnumTypeDefaultValue( monitor, d );
+            }
+            var newOne = new TSGeneratedType( type, typeName, file, d.DefaultValueSource, d.TryWriteValueImplementation, d.Implementor );
+            _processList.Add( newOne );
+            return newOne;
 
             static string GetSafeName( Type t )
             {
@@ -237,6 +248,36 @@ namespace CK.TypeScript.CodeGen
                 return n;
             }
 
+        }
+
+        string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TSGeneratedTypeBuilder d )
+        {
+            Debug.Assert( d.Type.IsEnum && d.DefaultValueSource == null );
+            // [Doc] The elements of the array are sorted by the binary values (that is, the unsigned values)
+            //       of the enumeration constants.
+            // 
+            // => This is perfect for us: if 0 is defined (that is the "normal" default), then it will be
+            //    the first value even if negative exist.
+            Array values = d.Type.GetEnumValues();
+            if( values.Length == 0 )
+            {
+                monitor.Warn( $"Enum '{d.TypeName}' is empty. A default value cannot be synthesized." );
+            }
+            else
+            {
+                object? value = values.GetValue( 0 );
+                string? defaultValueName;
+                if( value == null || (defaultValueName = d.Type.GetEnumName( value )) == null )
+                {
+                    monitor.Warn( $"Enum '{d.TypeName}' has a null first value or name for the first value. A default value cannot be synthesized." );
+                }
+                else
+                {
+                    monitor.Info( $"Enum '{d.TypeName}', default value selected is '{defaultValueName} = {value:D}'." );
+                    return $"{d.TypeName}.{defaultValueName}";
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -281,14 +322,25 @@ namespace CK.TypeScript.CodeGen
         internal List<ITSGeneratedType>? GenerateCode( IActivityMonitor monitor )
         {
             List<ITSGeneratedType>? required = null;
-            foreach( var type in _types.Values.OfType<TSGeneratedType>() )
+            int current = 0;
+            while( current < _processList.Count )
             {
+                var type = _processList[current++];
                 var g = type._codeGenerator;
                 if( g == null )
                 {
-                    monitor.Warn( $"The type '{type.Type:C}' has no TypeScript implementor function." );
-                    required ??= new List<ITSGeneratedType>();
-                    required.Add( type );
+                    if( type.Type.IsEnum )
+                    {
+                        monitor.Info( $"Enum '{type.Type:C}' has no TypeScript implementor function. Using the default enum generator." );
+                        type.EnsureTypePart( closer: "" )
+                            .AppendEnumDefinition( monitor, type.Type, type.TypeName, true );
+                    }
+                    else
+                    {
+                        monitor.Warn( $"The type '{type.Type:C}' has no TypeScript implementor function." );
+                        required ??= new List<ITSGeneratedType>();
+                        required.Add( type );
+                    }
                 }
                 else if( !g( monitor, type ) )
                 {

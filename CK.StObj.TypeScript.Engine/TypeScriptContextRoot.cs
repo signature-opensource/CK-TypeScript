@@ -15,7 +15,7 @@ namespace CK.Setup
         internal TypeScriptContextRoot( TypeScriptContext context,
                                         IReadOnlyCollection<(NormalizedPath Path, XElement Config)> outputPaths,
                                         TypeScriptAspectConfiguration config )
-            : base( outputPaths, config.PascalCase, config.GenerateDocumentation, config.GeneratePocoInterfaces )
+            : base( outputPaths, config.LibraryVersions, config.PascalCase, config.GenerateDocumentation )
         {
             Context = context;
         }

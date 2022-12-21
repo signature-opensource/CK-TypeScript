@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 
@@ -38,6 +39,16 @@ namespace CK.Setup
         public static readonly XName xGeneratePocoInterfaces = XNamespace.None + "GeneratePocoInterfaces";
 
         /// <summary>
+        /// The element name of <see cref="TypeScriptAspectConfiguration.LibraryVersions"/>.
+        /// </summary>
+        public static readonly XName xLibraryVersions = XNamespace.None + "LibraryVersions";
+
+        /// <summary>
+        /// The element name of <see cref="TypeScriptAspectConfiguration.LibraryVersions"/> child elements.
+        /// </summary>
+        public static readonly XName xLibrary = XNamespace.None + "Library";
+
+        /// <summary>
         /// The <see cref="SkipTypeScriptBuild"/> attribute name.
         /// </summary>
         public static readonly XName xSkipTypeScriptBuild = XNamespace.None + "SkipTypeScriptBuild";
@@ -68,6 +79,7 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
+            LibraryVersions = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -79,6 +91,13 @@ namespace CK.Setup
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Element( xGenerateDocumentation ) ?? true;
             SkipTypeScriptBuild = (bool?)e.Element( xSkipTypeScriptBuild ) ?? false;
+            LibraryVersions = e.Element( xLibraryVersions )?
+                                .Elements( xLibrary )
+                                .Select( e => (e.Attribute( StObjEngineConfiguration.xName )?.Value, e.Attribute( StObjEngineConfiguration.xVersion )?.Value) )
+                                .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
+                                .GroupBy( e => e.Item1 )
+                                .ToDictionary( g => g.Key!, g => g.Last().Item2! )
+                              ?? new Dictionary<string, string>(); 
         }
 
         /// <summary>
@@ -93,11 +112,14 @@ namespace CK.Setup
                         GenerateDocumentation == false
                             ? new XAttribute( xGenerateDocumentation, false )
                             : null,
-                        GeneratePocoInterfaces == true
-                            ? new XAttribute( xGeneratePocoInterfaces, true )
-                            : null,
                         SkipTypeScriptBuild
                             ? new XAttribute( xSkipTypeScriptBuild, true )
+                            : null,
+                        LibraryVersions.Count > 0
+                            ? new XElement( xLibraryVersions,
+                                            LibraryVersions.Select( kv => new XElement( xLibrary,
+                                                new XAttribute( StObjEngineConfiguration.xName, kv.Key ),
+                                                new XAttribute( StObjEngineConfiguration.xVersion, kv.Value ) ) ) )
                             : null );
             return e;
         }
@@ -115,16 +137,29 @@ namespace CK.Setup
         public bool GenerateDocumentation { get; set; }
 
         /// <summary>
-        /// Gets or sets whether documentation should be generated.
-        /// Defaults to false: this is an opt-in since TypeScript interfaces are not really useful.
-        /// </summary>
-        public bool GeneratePocoInterfaces { get; set; }
-
-        /// <summary>
         /// Gets or sets whether TypeScriptBuild should be skipped.
         /// Defaults to false.
         /// </summary>
         public bool SkipTypeScriptBuild { get; set; }
+
+        /// <summary>
+        /// Gets a dictionary that defines the version to use for an external package.
+        /// The versions specified here override the ones specified in code while
+        /// declaring an import.
+        /// <para>
+        /// Example:
+        /// <code>
+        ///     &lt;LibraryVersions&gt;
+        ///        &lt;Library Name="axios" Version="^1.2.1" /&gt;
+        ///        &lt;Library Name="luxon" Version="3.1.1" /&gt;
+        ///     &lt;/LibraryVersions&gt;
+        /// </code>
+        /// </para>
+        /// <para>
+        /// It is empty by default.
+        /// </para>
+        /// </summary>
+        public Dictionary<string,string> LibraryVersions { get; }
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.

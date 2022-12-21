@@ -20,6 +20,7 @@ namespace CK.TypeScript.CodeGen
         Type? _sameFolderAs;
         Type? _sameFileAs;
         string? _typeName;
+        private string? _defaultValueSource;
 
         /// <summary>
         /// Initializes a new descriptor for a C# type.
@@ -39,8 +40,23 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets or sets the type script code source that initializes
         /// a default value of this type.
+        /// <para>
+        /// When let to null, there is no default value for the type.
+        /// When set to a not null string, it must not be empty or whitespace.
+        /// </para>
         /// </summary>
-        public string? DefaultValueSource { get; set; }
+        public string? DefaultValueSource
+        {
+            get => _defaultValueSource;
+            set
+            {
+                if( _defaultValueSource != value )
+                {
+                    Throw.CheckArgument( value == null || !string.IsNullOrWhiteSpace( value ) );
+                    _defaultValueSource = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets a function that can implement <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/>

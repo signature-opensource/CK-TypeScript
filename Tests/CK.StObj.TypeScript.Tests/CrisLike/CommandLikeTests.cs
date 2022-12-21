@@ -3,6 +3,7 @@ using CK.Core;
 using CK.CrisLike;
 using CK.Setup;
 using CK.StObj.TypeScript.Engine;
+using CK.TypeScript.CodeGen;
 using FluentAssertions;
 using NUnit.Framework;
 using OneOf.Types;
@@ -131,9 +132,14 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         // The real one listens to PocoGenerating events and injects code into the Poco TypeSript implementation.
         public class FakeTypeScriptCrisCommandGeneratorImplWithFolders : ITSCodeGenerator
         {
-            public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
-                                                      ITSTypeFileBuilder builder,
-                                                      TypeScriptAttribute attr )
+            public bool Initialize( IActivityMonitor monitor, TypeScriptContext context )
+            {
+                return true;
+            }
+
+            public bool ConfigureBuilder( IActivityMonitor monitor,
+                                          TypeScriptContext context,
+                                          TSGeneratedTypeBuilder builder )
             {
                 // All ICommand here (without specified TypeScript Folder) will be in Cris/Commands.
                 // Their FileName will be without the "I" and prefixed by "CMD".
@@ -141,17 +147,20 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 // their folder/file organization is fine.
                 if( typeof(ICommand).IsAssignableFrom( builder.Type ) )
                 {
-                    if( attr.SameFolderAs == null )
+                    if( builder.SameFolderAs == null )
                     {
-                        attr.Folder ??= builder.Type.Namespace!.Replace( '.', '/' );
+                        builder.Folder ??= builder.Type.Namespace!.Replace( '.', '/' );
 
                         const string autoMapping = "CK/StObj/TypeScript/Tests";
-                        if( attr.Folder.StartsWith( autoMapping ) )
+                        if( builder.Folder.StartsWith( autoMapping ) )
                         {
-                            attr.Folder = "Commands/" + attr.Folder.Substring( autoMapping.Length );
+                            builder.Folder = "Commands/" + builder.Folder.Substring( autoMapping.Length );
                         }
                     }
-                    if( attr.FileName == null && attr.SameFileAs == null ) attr.FileName = "CMD" + builder.Type.Name.Substring( 1 ) + ".ts";
+                    if( builder.FileName == null && builder.SameFileAs == null )
+                    {
+                        builder.FileName = "CMD" + builder.Type.Name.Substring( 1 ) + ".ts";
+                    }
                 }
                 return true;
             }
@@ -173,7 +182,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         public void command_like_sample_with_interfaces()
         {
             var output = LocalTestHelper.GenerateTSCode( nameof( command_like_sample_with_interfaces ),
-                                                         new TypeScriptAspectConfiguration() { GeneratePocoInterfaces = true },
+                                                         new TypeScriptAspectConfiguration(),
                                                          typeof( ICommandOne ),
                                                          typeof( ICommandTwo ),
                                                          typeof( ICommandThree ),
