@@ -80,7 +80,7 @@ namespace CK.Setup
                         _ => throw new InvalidOperationException()
                     }, string.Join( ",\n", s )) );
                 sb.Append( @"{
-  ""name"": ""@signature/generated"",
+  ""name"": ""@local/ck-gen"",
 " );
                 foreach( var deps in depsList )
                 {
@@ -177,7 +177,7 @@ enableImmutableInstalls: false" );
         internal static bool RunNodeBuild( IActivityMonitor monitor, TypeScriptRoot root )
         {
             using var gLog = monitor.OpenInfo( $"Building TypeScript projects..." );
-            
+
             foreach( var item in root.OutputPaths )
             {
                 var yarnBinJS = YarnHelper.TryFindYarn( item.Path );
