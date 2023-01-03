@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen
     /// Enables documentation generation based on Xml documentation file
     /// to handle code references.
     /// <para>
-    /// This is exposed by the <see cref="TypeScriptRoot.DocumentationCodeRefHandler"/> mutable property
+    /// This is exposed by the <see cref="TypeScriptGenerator.DocumentationCodeRefHandler"/> mutable property
     /// </para>
     /// </summary>
     /// <remarks>

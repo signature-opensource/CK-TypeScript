@@ -36,7 +36,7 @@ namespace CK.TypeScript.CodeGen
     /// This class can be specialized in order to offer a more powerful API.
     /// </para>
     /// </summary>
-    public partial class TypeScriptRoot
+    public partial class TypeScriptGenerator
     {
         readonly IReadOnlyCollection<(NormalizedPath Path, XElement Config)> _pathsAndConfig;
         readonly bool _pascalCase;
@@ -44,25 +44,32 @@ namespace CK.TypeScript.CodeGen
         Dictionary<object, object?>? _memory;
 
         /// <summary>
-        /// Initializes a new <see cref="TypeScriptRoot"/>.
+        /// Initializes a new <see cref="TypeScriptGenerator"/>.
         /// </summary>
         /// <param name="pathsAndConfig">Set of output paths with their configuration element. May be empty.</param>
         /// <param name="libraryVersionConfiguration">The external library name to version mapping to use.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
-        public TypeScriptRoot( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig,
-                               IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
-                               bool pascalCase,
-                               bool generateDocumentation )
+        public TypeScriptGenerator( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig,
+                                    IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
+                                    bool pascalCase,
+                                    bool generateDocumentation )
         {
             Throw.CheckNotNullArgument( pathsAndConfig );
             _pathsAndConfig = pathsAndConfig;
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
             TSTypes = new TSTypeManager( this, libraryVersionConfiguration );
-            var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
-            Root = (TypeScriptFolder)rootType.GetMethod( "Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static )!
-                                             .Invoke( null, new object[] { this } )!;
+            if( GetType() == typeof( TypeScriptGenerator ) )
+            {
+                Root = new TypeScriptFolder( this );
+            }
+            else
+            {
+                var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
+                Root = (TypeScriptFolder)rootType.GetMethod( "Create", BindingFlags.NonPublic | BindingFlags.Static )!
+                                                 .Invoke( null, new object[] { this } )!;
+            }
         }
 
         /// <summary>

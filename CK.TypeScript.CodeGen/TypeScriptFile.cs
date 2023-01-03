@@ -52,7 +52,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the type script root.
         /// </summary>
-        public TypeScriptRoot Root => Folder.Root;
+        public TypeScriptGenerator Root => Folder.Generator;
 
         /// <summary>
         /// Creates a part that is bound to this file but whose content

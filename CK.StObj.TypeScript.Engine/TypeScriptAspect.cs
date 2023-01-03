@@ -84,7 +84,7 @@ namespace CK.Setup
                 }
                 return p.ResolveDots();
             }
-            TypeScriptRoot? g;
+            TypeScriptGenerator? g;
             var binPath = genBinPath.CurrentRun;
             var pathsAndConfig = binPath.ConfigurationGroup.SimilarConfigurations
                             .Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )

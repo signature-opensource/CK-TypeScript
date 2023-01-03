@@ -18,7 +18,7 @@ using System.Xml.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Central class that handles TypeScript generation in a <see cref="TypeScriptRoot"/> (the <see cref="Root"/>)
+    /// Central class that handles TypeScript generation in a <see cref="TypeScriptGenerator"/> (the <see cref="Root"/>)
     /// and <see cref="ICodeGenerationContext"/> (the <see cref="CodeContext"/>).
     /// <para>
     /// This is instantiated and made available to the participants (<see cref="ITSCodeGenerator"/> and <see cref="ITSCodeGeneratorType"/>)
@@ -31,6 +31,7 @@ namespace CK.Setup
         readonly IReadOnlyDictionary<Type, ITypeAttributesCache> _attributeCache;
         readonly IPocoTypeSystem _pocoTypeSystem;
         readonly List<ITSCodeGenerator> _globals;
+        private readonly TypeScriptGenerator _generator;
         bool _success;
 
         internal TypeScriptContext( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> outputPaths,
@@ -39,7 +40,13 @@ namespace CK.Setup
                                     IPocoTypeSystem pocoTypeSystem,
                                     ExchangeableTypeNameMap? jsonNames )
         {
-            Root = new TypeScriptContextRoot( this, outputPaths, config );
+            _generator = new TypeScriptGenerator( outputPaths,
+                                                  config.LibraryVersions,
+                                                  config.PascalCase,
+                                                  config.GenerateDocumentation );
+            _generator.BeforeCodeGeneration += OnBeforeCodeGeneration;
+            _generator.TSTypes.BuilderRequired += OnTSGeneratedTypeBuilderRequired;
+            _generator.AfterCodeGeneration += OnAfterCodeGeneration;
             CodeContext = codeCtx;
             _pocoTypeSystem = pocoTypeSystem;
             JsonNames = jsonNames;
@@ -49,10 +56,25 @@ namespace CK.Setup
             _success = true;
         }
 
+        private void OnBeforeCodeGeneration( object? sender, EventMonitoredArgs e )
+        {
+            throw new NotImplementedException();
+        }
+
+        private void OnTSGeneratedTypeBuilderRequired( object? sender, TSTypeManager.BuilderRequiredEventArgs e )
+        {
+            throw new NotImplementedException();
+        }
+
+        private void OnAfterCodeGeneration( object? sender, TypeScriptGenerator.AfterCodeGenerationEventArgs e )
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets the TypeScript code generation root.
         /// </summary>
-        public TypeScriptContextRoot Root { get; }
+        public TypeScriptGenerator Root => _generator;
 
         /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
@@ -73,18 +95,29 @@ namespace CK.Setup
         {
             using( monitor.OpenInfo( "Running TypeScript code generation." ) )
             {
-                return DiscoverGeneratorsAndTypeScriptAttributes( monitor )
-                       && InitializeGlobalGenerators( monitor )
+                if( !DiscoverGeneratorsAndTypeScriptAttributes( monitor ) || CallGlobalCodeGenerators( monitor, initialize: true ) )
+                {
+                    return false;
+                }
+                       && _generator.GenerateCode( monitor )
+
+                return
+                       // Discovering the generators and TypeScript attributes thanks to ITSCodeGeneratorAutoDiscovery.
+                       // Registers the globals and Type bound generators.
+                       DiscoverGeneratorsAndTypeScriptAttributes( monitor )
+                       // Initializing the global ITSCodeGenerators.
+                       && CallGlobalCodeGenerators( monitor, initialize: true )
+                       // Ensures that all the exchangeable PocoTypes have a corresponding ITSType.
+                       // During this step, the global PocoCodeGenerator checks the TypeScriptAttribute
+                       // that may decorate the IPoco and named record types and associates the appropriate
+                       // implementor (for IPoco, IAbstractPoco and named records).
                        && RegisterAllExchangeablePocoType( monitor )
-                       && CallCodeGenerators( monitor, initialize: true )
-                       && CallCodeGenerators( monitor, false );
+                       // Calls the ITSCodeGenerators.
+                       && _generator.GenerateCode( monitor )
+                       && CallGlobalCodeGenerators( monitor, false );
             }
         }
 
-        /// <summary>
-        /// Step 1: Discovering the generators and TypeScript attributes thanks to ITSCodeGeneratorAutoDiscovery.
-        ///         Registers the globals and Type bound generators.
-        /// </summary>
         bool DiscoverGeneratorsAndTypeScriptAttributes( IActivityMonitor monitor )
         {
             _globals.Add( new PocoCodeGenerator( _pocoTypeSystem ) );
@@ -127,50 +160,18 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Step 2: Initializes all global generators.
-        /// </summary>
-        bool InitializeGlobalGenerators( IActivityMonitor monitor )
-        {
-            bool success = true;
-            foreach( var g in _globals )
-            {
-                success &= g.Initialize( monitor, this );
-            }
-            return success;
-        }
-
-        /// <summary>
-        /// Step 1: Initializes the TSPocoTypeMap. All the exchangeable PocoTypes
-        ///         have a corresponding TSPocoType.
-        ///         During this step, the global PocoCodeGenerator checks the TypeScriptAttribute
-        ///         that may decorate the IPoco and named record types and associates the appropriate
-        ///         finalizer (for IPoco, IAbstractPoco and named records).
-        /// </summary>
-        bool RegisterAllExchangeablePocoType( IActivityMonitor monitor )
-        {
-            //foreach( var t in _pocoTypeSystem.AllNonNullableTypes )
-            //{
-            //    if( t.IsExchangeable )
-            //    {
-            //        _pocoTypeMap.Resol( monitor, t );
-            //    }
-            //}
-            return true;
-        }
-
-        /// <summary>
-        /// Step 2 and 3: The global ITSCodeGenerators are <see cref="ITSCodeGenerator.Initialize(IActivityMonitor, TypeScriptContext)"/>
+        /// Step 2 and 5: The global ITSCodeGenerators are <see cref="ITSCodeGenerator.Initialize(IActivityMonitor, TypeScriptContext)"/>
         ///               and then <see cref="ITSCodeGenerator.GenerateCode(IActivityMonitor, TypeScriptContext)"/> is called.
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="initialize">True for the first call, false for the second one.</param>
         /// <returns>True on success, false on error.</returns>
-        bool CallCodeGenerators( IActivityMonitor monitor, bool initialize )
+        bool CallGlobalCodeGenerators( IActivityMonitor monitor, bool initialize )
         {
             string action = initialize ? "Initializing" : "Executing";
             Debug.Assert( _success );
             // Executes all the globals.
-            using( monitor.OpenInfo( $"{action} the {_globals.Count} global {nameof(ITSCodeGenerator)} TypeScript generators." ) )
+            using( monitor.OpenInfo( $"{action} the {_globals.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
             {
                 foreach( var global in _globals )
                 {
@@ -197,6 +198,21 @@ namespace CK.Setup
             }
             return _success;
         }
+
+        /// <summary>
+        /// </summary>
+        bool RegisterAllExchangeablePocoType( IActivityMonitor monitor )
+        {
+            foreach( var t in _pocoTypeSystem.AllNonNullableTypes )
+            {
+                if( t.IsExchangeable )
+                {
+                    _generator.TSTypes.ResolveTSType( monitor, t.Type );
+                }
+            }
+            return true;
+        }
+
 
     }
 }

@@ -69,7 +69,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends the documentation of a type, method, property, event or constructor if <see cref="TypeScriptRoot.GenerateDocumentation"/> is true.
+        /// Appends the documentation of a type, method, property, event or constructor if <see cref="TypeScriptGenerator.GenerateDocumentation"/> is true.
         /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
@@ -79,8 +79,8 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendDocumentation<T>( this T @this, IActivityMonitor monitor, MemberInfo member ) where T : ITSCodeWriter
         {
-            var xDoc = @this.File.Folder.Root.GenerateDocumentation
-                            ? XmlDocumentationReader.GetXmlDocumentation( monitor, member.Module.Assembly, @this.File.Folder.Root.Memory )
+            var xDoc = @this.File.Folder.Generator.GenerateDocumentation
+                            ? XmlDocumentationReader.GetXmlDocumentation( monitor, member.Module.Assembly, @this.File.Folder.Generator.Memory )
                             : null;
             if( xDoc == null ) return @this;
             return AppendDocumentation( @this, xDoc, member );

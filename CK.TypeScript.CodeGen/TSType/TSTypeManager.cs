@@ -14,7 +14,7 @@ namespace CK.TypeScript.CodeGen
     /// Handles a map from C# types to <see cref="ITSType"/> and external <see cref="LibraryImport"/>.
     /// <para>
     /// The <see cref="object"/> type is mapped to "unknown", with no default values, no imports and no capacity to
-    /// write any values by itself. To register other basic types, <see cref="RegisterStandardTypes(IActivityMonitor, TypeScriptRoot, bool, bool, bool, bool)"/>
+    /// write any values by itself. To register other basic types, <see cref="RegisterStandardTypes(IActivityMonitor, TypeScriptGenerator, bool, bool, bool, bool)"/>
     /// must be called.
     /// </para>
     /// </summary>
@@ -22,13 +22,13 @@ namespace CK.TypeScript.CodeGen
     {
         readonly Dictionary<Type, ITSType> _types;
         readonly Dictionary<string, LibraryImport> _libraries;
-        readonly TypeScriptRoot _root;
+        readonly TypeScriptGenerator _root;
         readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
         // New TSGeneratedType are appended to this list: GenerateCode
         // loops until no new type appears in this list.
         readonly List<TSGeneratedType> _processList;
 
-        internal TSTypeManager( TypeScriptRoot root, IReadOnlyDictionary<string, string>? libraryVersionConfiguration )
+        internal TSTypeManager( TypeScriptGenerator root, IReadOnlyDictionary<string, string>? libraryVersionConfiguration )
         {
             _root = root;
             _libVersionsConfig = libraryVersionConfiguration;

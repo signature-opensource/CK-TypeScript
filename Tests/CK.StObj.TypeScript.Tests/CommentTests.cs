@@ -128,7 +128,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = LocalTestHelper.GetOutputFolder();
 
-            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
+            var ctx = new TypeScriptGenerator( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "ICommented.ts" );
             GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
@@ -181,7 +181,7 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_with_Type_or_Method_generic_parameters_are_handled()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
+            var ctx = new TypeScriptGenerator( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "IGeneric.ts" );
             GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
@@ -246,7 +246,7 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_for_constructors_properties_fields_events_and_methods_are_handled()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
+            var ctx = new TypeScriptGenerator( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "FullClass.ts" );
             GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
@@ -310,7 +310,7 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_textual_code_references_by_DocumentationCodeRef_TextOnly()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
+            var ctx = new TypeScriptGenerator( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "WithCodeReference.ts" );
             GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
@@ -343,7 +343,7 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_code_reference_error_displays_a_Strikethrough_buggy_ref()
         {
             var output = LocalTestHelper.GetOutputFolder();
-            var ctx = new TypeScriptRoot( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
+            var ctx = new TypeScriptGenerator( new[] { (output.ProjectPath, new XElement( "TypeScript" )) }, null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "BuggyReference.ts" );
             GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );

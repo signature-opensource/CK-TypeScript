@@ -227,7 +227,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends an identifier (simple call to <see cref="TypeScriptRoot.ToIdentifier(string)"/>).
+        /// Appends an identifier (simple call to <see cref="TypeScriptGenerator.ToIdentifier(string)"/>).
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -380,8 +380,8 @@ namespace CK.TypeScript.CodeGen
                 return @this;
             }
             string? docValuePrefix = null;
-            var xDoc = @this.File.Folder.Root.GenerateDocumentation
-                        ? XmlDocumentationReader.GetXmlDocumentation( monitor, enumType.Assembly, @this.File.Folder.Root.Memory )
+            var xDoc = @this.File.Folder.Generator.GenerateDocumentation
+                        ? XmlDocumentationReader.GetXmlDocumentation( monitor, enumType.Assembly, @this.File.Folder.Generator.Memory )
                         : null;
             if( xDoc != null )
             {
