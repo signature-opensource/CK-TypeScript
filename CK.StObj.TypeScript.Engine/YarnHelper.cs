@@ -20,10 +20,11 @@ namespace CK.Setup
                 if( Directory.Exists( releases ) )
                 {
                     var yarn = Directory.GetFiles( releases )
-                        .Select(s=> Path.GetFileName(s))
-                        .Where( s => s.StartsWith( "yarn" ) )
-                        .Where( s => s.EndsWith( "js" ) ) // There is no dot on purpose, a js file can be js/mjs/cjs/whatever they invent next
-                        .FirstOrDefault();
+                                        .Select( s => Path.GetFileName( s ) )
+                                        .Where( s => s.StartsWith( "yarn" ) )
+                                        // There is no dot on purpose, a js file can be js/mjs/cjs/whatever they invent next.
+                                        .Where( s => s.EndsWith( "js" ) ) 
+                                        .FirstOrDefault();
                     if( yarn != null ) return releases.AppendPart( yarn );
                 }
                 currentDirectory = currentDirectory.RemoveLastPart();
