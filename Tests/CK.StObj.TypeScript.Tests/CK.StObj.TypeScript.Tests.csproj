@@ -6,7 +6,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.StObjEngine" Version="22.1.1--0007-develop" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="22.1.1--0008-develop" />
     <PackageReference Include="nunit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" Version="4.2.1" />
     <PackageReference Include="Microsoft.Playwright.NUnit" Version="1.23.0" />
