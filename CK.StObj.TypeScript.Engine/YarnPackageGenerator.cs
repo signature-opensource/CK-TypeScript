@@ -91,6 +91,7 @@ namespace CK.Setup
                 sb.Append(
 @"  ""private"": true,
   ""files"": [
+    ""src/"",
     ""dist/""
   ],
   ""main"": ""./dist/cjs/index.js"",
