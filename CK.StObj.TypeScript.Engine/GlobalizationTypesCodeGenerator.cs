@@ -39,10 +39,10 @@ namespace CK.StObj.TypeScript.Engine
                 part.Append( @"
 export class SimpleUserMessage {
     
-    constructor(public readonly level: UserMessageLevel, public readonly text: string, public readonly depth: number) {}
+    constructor(public readonly level: UserMessageLevel, public readonly message: string, public readonly depth: number) {}
 
     toString() {
-        return '['+UserMessageLevel[this.level]+'] ' + this.text;
+        return '['+UserMessageLevel[this.level]+'] ' + this.message;
       }
 }" );
             }
