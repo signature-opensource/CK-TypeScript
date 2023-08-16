@@ -13,7 +13,7 @@ namespace CK.StObj.TypeScript.Engine
     /// <remarks>
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/>.
     /// </remarks>
-    class SystemTypesCodeGenerator : ITSCodeGenerator
+    sealed class SystemTypesCodeGenerator : ITSCodeGenerator
     {
         public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, ITSTypeFileBuilder builder, TypeScriptAttribute a )
         {
@@ -30,19 +30,21 @@ namespace CK.StObj.TypeScript.Engine
                 var part = file.EnsureTypePart( closer: "" );
                 part.Append( @"
 export class Guid {
-    private readonly _guid: string;  
     
-    constructor (public guid: string) {
-        this._guid = guid;
+    constructor( public readonly guid: string ) {
     }
 
-    get [Symbol.toStringTag]() {
-        return this._guid;
+    get value() {
+        return this.guid;
       }
 
-    public toJSON() : string {
-        return this._guid;
-    }
+    toString() {
+        return this.guid;
+      }
+
+    toJSON() {
+        return this.guid;
+      }
 }" );
             }
             return true;

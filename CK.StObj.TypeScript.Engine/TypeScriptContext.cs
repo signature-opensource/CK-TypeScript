@@ -320,7 +320,8 @@ namespace CK.Setup
             var globals = new List<ITSCodeGenerator>
             {
                 new PocoCodeGenerator( CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true ) ),
-                new SystemTypesCodeGenerator()
+                new SystemTypesCodeGenerator(),
+                new GlobalizationTypesCodeGenerator()
             };
 
             // These variables are reused per type.

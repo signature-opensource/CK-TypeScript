@@ -35,7 +35,12 @@ namespace CK.StObj.TypeScript.Tests
             string Name { get; set; }
 
             SimpleEnum Value { get; set; }
-            
+
+            SimpleUserMessage SimpleUserMessage { get; set; }
+
+            NormalizedCultureInfo NormalizedCultureInfo { get; set; }
+
+            ExtendedCultureInfo ExtendedCultureInfo { get; set; }
         }
 
         [Test]
