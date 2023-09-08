@@ -284,9 +284,12 @@ namespace CK.TypeScript.CodeGen
                 {
                     var newOnes = IsRoot ? outputPaths : outputPaths.Select( p => p.AppendPart( Name ) ).ToArray();
 
+                    bool createdDirectory = false;
                     if( _firstFile != null )
                     {
                         foreach( var p in newOnes ) Directory.CreateDirectory( p );
+                        createdDirectory = true;
+
                         foreach( var file in Files )
                         {
                             file.Save( monitor, newOnes );
@@ -303,6 +306,7 @@ namespace CK.TypeScript.CodeGen
                     {
                         if( createBarrel( p ) )
                         {
+                            if( !createdDirectory ) Directory.CreateDirectory( p );
                             if( barrel == null )
                             {
                                 var b = new StringBuilder();

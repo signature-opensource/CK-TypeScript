@@ -40,6 +40,7 @@ namespace CK.Setup
         {
             Root = new TypeScriptContextRoot( this, outputPaths, config );
             CodeContext = codeCtx;
+            Configuration = config;
             JsonGenerator = jsonGenerator;
             _typeMappings = new Dictionary<Type, TSTypeFile?>();
             _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
@@ -56,6 +57,11 @@ namespace CK.Setup
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
         /// </summary>
         public ICodeGenerationContext CodeContext { get; }
+
+        /// <summary>
+        /// Gets the <see cref="TypeScriptAspectConfiguration"/>.
+        /// </summary>
+        public TypeScriptAspectConfiguration Configuration { get; }
 
         /// <summary>
         /// Gets the <see cref="JsonSerializationCodeGen"/> it is available.

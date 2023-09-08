@@ -1,5 +1,8 @@
+using CK.Core;
+using CK.StObj.TypeScript;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 
@@ -68,6 +71,7 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
+            Types = new List<string>();
         }
 
         /// <summary>
@@ -79,6 +83,8 @@ namespace CK.Setup
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Element( xGenerateDocumentation ) ?? true;
             SkipTypeScriptBuild = (bool?)e.Element( xSkipTypeScriptBuild ) ?? false;
+            Types = e.Element( StObjEngineConfiguration.xTypes )?.Elements( StObjEngineConfiguration.xType ).Select( e => e.Value ).ToList()
+                    ?? new List<string>();
         }
 
         /// <summary>
@@ -98,7 +104,9 @@ namespace CK.Setup
                             : null,
                         SkipTypeScriptBuild
                             ? new XAttribute( xSkipTypeScriptBuild, true )
-                            : null );
+                            : null,
+                        new XElement( StObjEngineConfiguration.xTypes,
+                                Types.Select( t => new XElement( StObjEngineConfiguration.xType, t ) ) ) );
             return e;
         }
 
@@ -125,6 +133,12 @@ namespace CK.Setup
         /// Defaults to false.
         /// </summary>
         public bool SkipTypeScriptBuild { get; set; }
+
+        /// <summary>
+        /// Gets the list of Poco type names (primary interface full name or <see cref="ExternalNameAttribute"/>)
+        /// that will be generated in addition to types marked with <see cref="TypeScriptAttribute"/>.
+        /// </summary>
+        public List<string> Types { get; }
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.

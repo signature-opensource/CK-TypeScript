@@ -16,7 +16,6 @@ namespace CK.StObj.TypeScript.Engine
     /// </remarks>
     sealed class GlobalizationTypesCodeGenerator : ITSCodeGenerator
     {
-
         public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, ITSTypeFileBuilder builder, TypeScriptAttribute a )
         {
             if( builder.Type == typeof( SimpleUserMessage ) ) builder.Finalizer = GenerateSimpleUserMessage;
@@ -48,7 +47,6 @@ export class SimpleUserMessage {
             }
             return true;
         }
-
 
         bool GenerateExtendedCultureInfo( IActivityMonitor monitor, TSTypeFile file )
         {

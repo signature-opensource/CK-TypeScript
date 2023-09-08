@@ -5,6 +5,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -33,13 +34,13 @@ namespace CK.StObj.TypeScript.Tests
             [UnionType]
             object NonNullableListOrDictionaryOrDouble { get; set; }
 
-            [DefaultValue(3712)]
+            [DefaultValue( 3712 )]
             int WithDefaultValue { get; set; }
 
             struct UnionTypes
             {
-                public (int,string)? NullableIntOrString { get; }
-                public (List<string?>,Dictionary<IPoco,ISet<int?>>[],double) NonNullableListOrDictionaryOrDouble { get; }
+                public (int, string)? NullableIntOrString { get; }
+                public (List<string?>, Dictionary<IPoco, ISet<int?>>[], double) NonNullableListOrDictionaryOrDouble { get; }
             }
         }
 
@@ -98,6 +99,35 @@ namespace CK.StObj.TypeScript.Tests
                                                          typeof( IWithUnions ) );
         }
 
-    }
+        [ExternalName( "NotGeneratedByDefault" )]
+        public interface INotGeneratedByDefault : IPoco
+        {
+        }
 
+        [TypeScript]
+        public interface IGeneratedByDefault : IPoco
+        {
+            INotGeneratedByDefault Some { get; set; }
+        }
+
+        [Test]
+        public void no_TypeScript_attribute_provide_no_generation_unless_Type_appears_in_Aspect()
+        {
+            var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_Type_appears_in_Aspect ),
+                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
+                                                         typeof( INotGeneratedByDefault ) );
+            File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
+
+            output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_Type_appears_in_Aspect ),
+                                                             new TypeScriptAspectConfiguration()
+                                                             {
+                                                                 SkipTypeScriptBuild = true,
+                                                                 Types = { "NotGeneratedByDefault" }
+                                                             },
+                                                             typeof( INotGeneratedByDefault ) );
+
+            File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+        }
+
+    }
 }
