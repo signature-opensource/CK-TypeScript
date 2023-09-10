@@ -54,34 +54,6 @@ namespace CK.StObj.TypeScript.Engine
         /// </summary>
         public event EventHandler<PocoGeneratingEventArgs>? PocoGenerating;
 
-        public bool Initialize( IActivityMonitor monitor, TypeScriptContext context )
-        {
-            List<string>? notFound = null;
-            foreach( var tName in context.Configuration.Types )
-            {
-                var t = SimpleTypeFinder.WeakResolver( tName, false );
-                if( t == null )
-                {
-                    if( !PocoSupport.NamedRoots.TryGetValue( tName, out var rootInfo ) )
-                    {
-                        notFound ??= new List<string>();
-                        notFound.Add( tName );
-                    }
-                    else
-                    {
-                        t = rootInfo.PrimaryInterface;
-                    }
-                }
-                if( t != null ) context.DeclareTSType( monitor, t );
-            }
-            if( notFound != null )
-            {
-                monitor.Warn( $"TypeScript configuration Types not found: {notFound.Concatenate()}" );
-            }
-            return true;
-        }
-
-
         /// <summary>
         /// If the type is a <see cref="IPoco"/>, the <see cref="IPocoRootInfo.PrimaryInterface"/> sets the type name
         /// and the folder and file for all other IPoco interfaces and the class.

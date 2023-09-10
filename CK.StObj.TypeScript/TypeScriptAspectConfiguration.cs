@@ -56,6 +56,31 @@ namespace CK.Setup
         public static readonly XName xOutputPath = XNamespace.None + "OutputPath";
 
         /// <summary>
+        /// The attribute name of <see cref="TypeScriptTypeConfiguration.TypeName"/>.
+        /// </summary>
+        public static readonly XName xTypeName = XNamespace.None + "TypeName";
+
+        /// <summary>
+        /// The attribute name of <see cref="TypeScriptTypeConfiguration.Folder"/>.
+        /// </summary>
+        public static readonly XName xFolder = XNamespace.None + "Folder";
+
+        /// <summary>
+        /// The attribute name of <see cref="TypeScriptTypeConfiguration.FileName"/>.
+        /// </summary>
+        public static readonly XName xFileName = XNamespace.None + "FileName";
+
+        /// <summary>
+        /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFileAs"/>.
+        /// </summary>
+        public static readonly XName xSameFileAs = XNamespace.None + "SameFileAs";
+
+        /// <summary>
+        /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFolderAs"/>.
+        /// </summary>
+        public static readonly XName xSameFolderAs = XNamespace.None + "SameFolderAs";
+
+        /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/> element name.
         /// </summary>
         public static readonly XName xBarrels = XNamespace.None + "Barrels";
@@ -71,7 +96,7 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
-            Types = new List<string>();
+            Types = new List<TypeScriptTypeConfiguration>();
         }
 
         /// <summary>
@@ -83,8 +108,11 @@ namespace CK.Setup
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Element( xGenerateDocumentation ) ?? true;
             SkipTypeScriptBuild = (bool?)e.Element( xSkipTypeScriptBuild ) ?? false;
-            Types = e.Element( StObjEngineConfiguration.xTypes )?.Elements( StObjEngineConfiguration.xType ).Select( e => e.Value ).ToList()
-                    ?? new List<string>();
+            Types = e.Element( StObjEngineConfiguration.xTypes )?
+                         .Elements( StObjEngineConfiguration.xType )
+                         .Where( e => !string.IsNullOrWhiteSpace( e.Value ) )
+                         .Select( e => new TypeScriptTypeConfiguration( e ) ).ToList()
+                    ?? new List<TypeScriptTypeConfiguration>();
         }
 
         /// <summary>
@@ -106,7 +134,7 @@ namespace CK.Setup
                             ? new XAttribute( xSkipTypeScriptBuild, true )
                             : null,
                         new XElement( StObjEngineConfiguration.xTypes,
-                                Types.Select( t => new XElement( StObjEngineConfiguration.xType, t ) ) ) );
+                                Types.Select( t => t.ToXml() ) ) );
             return e;
         }
 
@@ -135,10 +163,9 @@ namespace CK.Setup
         public bool SkipTypeScriptBuild { get; set; }
 
         /// <summary>
-        /// Gets the list of Poco type names (primary interface full name or <see cref="ExternalNameAttribute"/>)
-        /// that will be generated in addition to types marked with <see cref="TypeScriptAttribute"/>.
+        /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
         /// </summary>
-        public List<string> Types { get; }
+        public List<TypeScriptTypeConfiguration> Types { get; }
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
@@ -146,4 +173,5 @@ namespace CK.Setup
         public string AspectType => "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine";
 
     }
+
 }

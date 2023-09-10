@@ -111,22 +111,36 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void no_TypeScript_attribute_provide_no_generation_unless_Type_appears_in_Aspect()
+        public void no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_Type_appears_in_Aspect ),
-                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
-                                                         typeof( INotGeneratedByDefault ) );
-            File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
+            // NotGeneratedByDefault is not generated.
+            {
+                var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect ),
+                                                             new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
+                                                             typeof( INotGeneratedByDefault ) );
+                File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
 
-            output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_Type_appears_in_Aspect ),
+            }
+            // NotGeneratedByDefault is generated because it is referenced by IGeneratedByDefault.
+            {
+                var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect ),
+                                                             new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
+                                                             typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
+
+                File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+            }
+            // NotGeneratedByDefault is generated because it is configured.
+            {
+                var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect ),
                                                              new TypeScriptAspectConfiguration()
                                                              {
                                                                  SkipTypeScriptBuild = true,
-                                                                 Types = { "NotGeneratedByDefault" }
+                                                                 Types = { new TypeScriptTypeConfiguration( "NotGeneratedByDefault" ) }
                                                              },
                                                              typeof( INotGeneratedByDefault ) );
 
-            File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+                File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+            }
         }
 
     }
