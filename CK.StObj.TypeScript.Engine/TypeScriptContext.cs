@@ -95,12 +95,6 @@ namespace CK.Setup
         {
             using( monitor.OpenInfo( "Running TypeScript code generation." ) )
             {
-                if( !DiscoverGeneratorsAndTypeScriptAttributes( monitor ) || CallGlobalCodeGenerators( monitor, initialize: true ) )
-                {
-                    return false;
-                }
-                       && _generator.GenerateCode( monitor )
-
                 return
                        // Discovering the generators and TypeScript attributes thanks to ITSCodeGeneratorAutoDiscovery.
                        // Registers the globals and Type bound generators.
