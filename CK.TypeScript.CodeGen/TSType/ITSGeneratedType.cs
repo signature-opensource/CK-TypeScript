@@ -48,10 +48,10 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The part for this type.</returns>
         ITSKeyedCodePart EnsureTypePart( string closer = "}\n", bool top = false );
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ITSType.Nullable" />
         new ITSGeneratedType Nullable { get; }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ITSType.NonNullable"/>
         new ITSGeneratedType NonNullable { get; }
     }
 
