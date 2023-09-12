@@ -45,6 +45,44 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Initializes a new <see cref="TypeScriptTypeConfiguration"/> with types instead of type names.
+        /// </summary>
+        /// <param name="type">See <see cref="Type"/>.</param>
+        /// <param name="typeName">See <see cref="TypeName"/>.</param>
+        /// <param name="folder">See <see cref="Folder"/>.</param>
+        /// <param name="fileName">See <see cref="FileName"/>.</param>
+        /// <param name="sameFolderAs">See <see cref="SameFolderAs"/>.</param>
+        /// <param name="sameFileAs">See <see cref="SameFileAs"/>.</param>
+        public TypeScriptTypeConfiguration( Type type,
+                                            string? typeName = null,
+                                            string? folder = null,
+                                            string? fileName = null,
+                                            Type? sameFolderAs = null,
+                                            Type? sameFileAs = null )
+        {
+            Throw.CheckNotNullArgument( type );
+            Throw.CheckArgument( typeName == null || !string.IsNullOrWhiteSpace( typeName ) );
+            Throw.CheckArgument( folder == null || !string.IsNullOrWhiteSpace( folder ) );
+
+            Type = GetWeakTypeName( type, nameof(type) );
+            TypeName = typeName;
+            Folder = folder;
+            FileName = fileName;
+            SameFolderAs = sameFolderAs != null ? GetWeakTypeName( sameFolderAs, nameof(sameFolderAs) ) : null;
+            SameFileAs = sameFileAs != null ? GetWeakTypeName( sameFileAs, nameof( sameFileAs ) ) : null;
+
+            static string GetWeakTypeName( Type type, string argumenName )
+            {
+                string? t = null;
+                if( type.AssemblyQualifiedName == null || !SimpleTypeFinder.WeakenAssemblyQualifiedName( type.AssemblyQualifiedName, out t ) )
+                {
+                    Throw.ArgumentException( argumenName, $"Unable to obtain assembly qualified name for type '{type}'." );
+                }
+                return t;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new configuration value from its xml representation.
         /// </summary>
         /// <param name="e">The xml element.</param>

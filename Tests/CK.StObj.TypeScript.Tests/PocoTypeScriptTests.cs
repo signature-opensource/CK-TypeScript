@@ -135,7 +135,7 @@ namespace CK.StObj.TypeScript.Tests
                                                              new TypeScriptAspectConfiguration()
                                                              {
                                                                  SkipTypeScriptBuild = true,
-                                                                 Types = { new TypeScriptTypeConfiguration( "NotGeneratedByDefault" ) }
+                                                                 Types = { new TypeScriptTypeConfiguration( typeof( INotGeneratedByDefault ) ) }
                                                              },
                                                              typeof( INotGeneratedByDefault ) );
 
