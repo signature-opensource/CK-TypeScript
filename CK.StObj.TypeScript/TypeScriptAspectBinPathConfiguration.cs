@@ -13,30 +13,98 @@ namespace CK.Setup
     public sealed class TypeScriptAspectBinPathConfiguration
     {
         /// <summary>
-        /// Initializes a new configuration with a default root <see cref="Barrels"/>.
-        /// The <see cref="OutputPath"/> must be specified.
+        /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
+        /// and can be automatically installed. See <see cref="AutoInstallYarnPath"/>.
+        /// </summary>
+        public const string AutomaticYarnVersion = "3.6.3";
+
+        /// <summary>
+        /// Initializes a new empty configuration.
         /// </summary>
         public TypeScriptAspectBinPathConfiguration()
         {
-            Barrels = new HashSet<NormalizedPath>
-            {
-                new NormalizedPath()
-            };
+            Barrels = new HashSet<NormalizedPath>();
+            Types = new List<TypeScriptTypeConfiguration>();
         }
 
         /// <summary>
-        /// Gets the package output path.
-        /// This path can be absolute or start with a {BasePath}, {OutputPath} or {ProjectPath} first part: the
-        /// final path will be resolved by <see cref="StObjEngineConfiguration.BasePath"/>, <see cref="BinPathConfiguration.OutputPath"/>
-        /// or <see cref="BinPathConfiguration.ProjectPath"/>.
+        /// Gets or sets the TypeScript target project path that contains the "ck-gen" folder.
+        /// This path can be absolute or relative to <see cref="StObjEngineConfiguration.BasePath"/>.
+        /// <list type="bullet">
+        ///   <item>
+        ///   This target project folder is created if it doesn't exist.
+        ///   </item>
+        ///   <item>
+        ///   The "/ck-gen" sub folder is created or cleared if it exists before generating files and folders.
+        ///   </item> 
+        /// </list>
         /// </summary>
-        public NormalizedPath OutputPath { get; set; }
+        public NormalizedPath TargetProjectPath { get; set; }
+
+        /// <summary>
+        /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
+        /// </summary>
+        public List<TypeScriptTypeConfiguration> Types { get; }
+
+        /// <summary>
+        /// Gets or sets whether yarn build of "<see cref="TargetProjectPath"/>/ck-gen" should be skipped.
+        /// <para>
+        /// Defaults to false.
+        /// </para>
+        /// <para>
+        /// When set to true, <see cref="AutoInstallYarn"/>, <see cref="AutoInstallVSCodeSupport"/> and <see cref="EnsureTestSupport"/>
+        /// are ignored.
+        /// </para>
+        /// </summary>
+        public bool SkipTypeScriptBuild { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether yarn will be automatically installed (in version <see cref="AutomaticYarnVersion"/>)
+        /// if not found in <see cref="TargetProjectPath"/> or above.
+        /// <para>
+        /// if no yarn can be found in <see cref="TargetProjectPath"/> or above, no TypeScript build will be done (see <see cref="SkipTypeScriptBuild"/>).
+        /// </para>
+        /// <para>
+        /// Defaults to false.
+        /// </para>
+        /// </summary>
+        public bool AutoInstallYarn { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether VSCode support must be initialized in <see cref="TargetProjectPath"/>.
+        /// <para>
+        /// If "<see cref="TargetProjectPath"/>/.vscode" folder or "<see cref="TargetProjectPath"/>/.yarn/sdks" is missing,
+        /// the command "yarn dlx @yarnpkg/sdks vscode" is executed.
+        /// </para>
+        /// <para>
+        /// Defaults to false.
+        /// </para>
+        /// </summary>
+        public bool AutoInstallVSCodeSupport { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether a test command (<c>"scripts": { "test": "..." }</c>) must be available in <see cref="TargetProjectPath"/>'s
+        /// package.json. When no test is available, this installs jest, ts-jest and @types/jest.
+        /// <para>
+        /// Defaults to false.
+        /// </para>
+        /// </summary>
+        /// <remarks>
+        /// When set to true, <see cref="AutoInstallVSCodeSupport"/> is also considered true.
+        /// </remarks>
+        public bool EnsureTestSupport { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether a "/ck-gen/.gitignore" file wih "*" must be created.
+        /// Defaults to false.
+        /// </summary>
+        public bool GitIgnoreCKGenFolder { get; set; }
 
         /// <summary>
         /// Gets a list of optional barrel paths that are relative to the <see cref="OutputPath"/>.
         /// An index.ts file will be generated in each of these folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
         /// <para>
-        /// By default, an empty <see cref="NormalizedPath"/> creates a barrel at the root level.
+        /// A barrel is systematically generated at the root OutputPath level. This allows sub folders to also have barrels.
         /// </para>
         /// </summary>
         public HashSet<NormalizedPath> Barrels { get; }
@@ -48,10 +116,20 @@ namespace CK.Setup
         /// <param name="e">The configuration element.</param>
         public TypeScriptAspectBinPathConfiguration( XElement e )
         {
-            OutputPath = e.Attribute( TypeScriptAspectConfiguration.xOutputPath )?.Value;
+            TargetProjectPath = e.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value;
             Barrels = new HashSet<NormalizedPath>( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( StObjEngineConfiguration.xPath ) ?? c.Value ) ) );
+            AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
+            AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
+            GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
+            SkipTypeScriptBuild = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptBuild ) ?? false;
+            EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
+            Types = e.Element( StObjEngineConfiguration.xTypes )?
+                       .Elements( StObjEngineConfiguration.xType )
+                       .Where( e => !string.IsNullOrWhiteSpace( e.Value ) )
+                       .Select( e => new TypeScriptTypeConfiguration( e ) ).ToList()
+                  ?? new List<TypeScriptTypeConfiguration>();
         }
 
         /// <summary>
@@ -61,9 +139,26 @@ namespace CK.Setup
         public XElement ToXml()
         {
             return new XElement( TypeScriptAspectConfiguration.xTypeScript,
-                                 new XAttribute( TypeScriptAspectConfiguration.xOutputPath, OutputPath ),
+                                 new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                                  new XElement( TypeScriptAspectConfiguration.xBarrels,
-                                               Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ) );
+                                               Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ),
+                                 SkipTypeScriptBuild
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xSkipTypeScriptBuild, true )
+                                    : null,
+                                 EnsureTestSupport
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xEnsureTestSupport, true )
+                                    : null,
+                                 AutoInstallYarn
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallYarn, true )
+                                    : null,
+                                 GitIgnoreCKGenFolder
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder, true )
+                                    : null,
+                                 AutoInstallVSCodeSupport
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport, true )
+                                    : null,
+                                 new XElement( StObjEngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
+                               );
         }
     }
 }

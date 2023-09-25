@@ -23,7 +23,7 @@ namespace CK.Setup
     /// </para>
     /// See <see cref="TypeScriptAspectBinPathConfiguration"/> that models this required BinPathConfiguration.
     /// </summary>
-    public class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
+    public sealed class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
     {
         /// <summary>
         /// The <see cref="PascalCase"/> attribute name.
@@ -36,14 +36,29 @@ namespace CK.Setup
         public static readonly XName xGenerateDocumentation = XNamespace.None + "GenerateDocumentation";
 
         /// <summary>
-        /// The <see cref="GeneratePocoInterfaces"/> attribute name.
-        /// </summary>
-        public static readonly XName xGeneratePocoInterfaces = XNamespace.None + "GeneratePocoInterfaces";
-
-        /// <summary>
-        /// The <see cref="SkipTypeScriptBuild"/> attribute name.
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.SkipTypeScriptBuild"/> attribute name.
         /// </summary>
         public static readonly XName xSkipTypeScriptBuild = XNamespace.None + "SkipTypeScriptBuild";
+
+        /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.EnsureTestSupport"/> attribute name.
+        /// </summary>
+        public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
+
+        /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallYarn"/> attribute name.
+        /// </summary>
+        public static readonly XName xAutoInstallYarn = XNamespace.None + "AutoInstallYarn";
+
+        /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.GitIgnoreCKGenFolder"/> attribute name.
+        /// </summary>
+        public static readonly XName xGitIgnoreCKGenFolder = XNamespace.None + "GitIgnoreCKGenFolder";
+
+        /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallVSCodeSupport"/> attribute name.
+        /// </summary>
+        public static readonly XName xAutoInstallVSCodeSupport = XNamespace.None + "AutoInstallVSCodeSupport";
 
         /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration"/> element name.
@@ -51,9 +66,9 @@ namespace CK.Setup
         public static readonly XName xTypeScript = XNamespace.None + "TypeScript";
 
         /// <summary>
-        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.OutputPath"/>.
+        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.TargetProjectPath"/>.
         /// </summary>
-        public static readonly XName xOutputPath = XNamespace.None + "OutputPath";
+        public static readonly XName xTargetProjectPath = XNamespace.None + "TargetProjectPath";
 
         /// <summary>
         /// The attribute name of <see cref="TypeScriptTypeConfiguration.TypeName"/>.
@@ -96,7 +111,6 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
-            Types = new List<TypeScriptTypeConfiguration>();
         }
 
         /// <summary>
@@ -106,13 +120,7 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration( XElement e )
         {
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
-            GenerateDocumentation = (bool?)e.Element( xGenerateDocumentation ) ?? true;
-            SkipTypeScriptBuild = (bool?)e.Element( xSkipTypeScriptBuild ) ?? false;
-            Types = e.Element( StObjEngineConfiguration.xTypes )?
-                         .Elements( StObjEngineConfiguration.xType )
-                         .Where( e => !string.IsNullOrWhiteSpace( e.Value ) )
-                         .Select( e => new TypeScriptTypeConfiguration( e ) ).ToList()
-                    ?? new List<TypeScriptTypeConfiguration>();
+            GenerateDocumentation = (bool?)e.Attribute( xGenerateDocumentation ) ?? true;
         }
 
         /// <summary>
@@ -123,18 +131,13 @@ namespace CK.Setup
         public XElement SerializeXml( XElement e )
         {
             e.Add( new XAttribute( StObjEngineConfiguration.xVersion, "1" ),
-                        new XElement( xPascalCase, PascalCase ),
+                        PascalCase == false
+                            ? new XAttribute( xPascalCase, false )
+                            : null,
                         GenerateDocumentation == false
                             ? new XAttribute( xGenerateDocumentation, false )
-                            : null,
-                        GeneratePocoInterfaces == true
-                            ? new XAttribute( xGeneratePocoInterfaces, true )
-                            : null,
-                        SkipTypeScriptBuild
-                            ? new XAttribute( xSkipTypeScriptBuild, true )
-                            : null,
-                        new XElement( StObjEngineConfiguration.xTypes,
-                                Types.Select( t => t.ToXml() ) ) );
+                            : null
+                 );
             return e;
         }
 
@@ -149,23 +152,6 @@ namespace CK.Setup
         /// Defaults to true.
         /// </summary>
         public bool GenerateDocumentation { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether documentation should be generated.
-        /// Defaults to false: this is an opt-in since TypeScript interfaces are not really useful.
-        /// </summary>
-        public bool GeneratePocoInterfaces { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether TypeScriptBuild should be skipped.
-        /// Defaults to false.
-        /// </summary>
-        public bool SkipTypeScriptBuild { get; set; }
-
-        /// <summary>
-        /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
-        /// </summary>
-        public List<TypeScriptTypeConfiguration> Types { get; }
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
