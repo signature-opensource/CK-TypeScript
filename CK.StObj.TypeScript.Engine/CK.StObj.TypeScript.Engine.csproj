@@ -2,9 +2,10 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="yarn-3.2.2.cjs" />
+    <EmbeddedResource Include="yarn-3.6.3.cjs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.StObj.Runtime" Version="23.0.1--0149-develop" />
