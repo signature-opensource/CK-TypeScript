@@ -22,21 +22,21 @@ namespace CK.TypeScript.CodeGen
         TypeScriptFolder? _firstChild;
         TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
+        NormalizedPath _path;
         bool _hasBarrel;
 
-        static readonly char[] _invalidFileNameChars = Path.GetInvalidFileNameChars();
+        static readonly char[] _invalidFileNameChars = System.IO.Path.GetInvalidFileNameChars();
 
         internal TypeScriptFolder( TypeScriptRoot root )
         {
             _root = root;
-            Name = String.Empty;
         }
 
         internal TypeScriptFolder( TypeScriptFolder parent, string name )
         {
             _root = parent._root;
             Parent = parent;
-            Name = name;
+            _path = parent._path.AppendPart( name );
             _next = parent._firstChild;
             parent._firstChild = this;
         }
@@ -46,12 +46,17 @@ namespace CK.TypeScript.CodeGen
         /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
         /// it necessarily not empty without '.ts' extension.
         /// </summary>
-        public string Name { get; }
+        public string Name => _path.LastPart;
+
+        /// <summary>
+        /// Gets this folder's path from <see cref="Root"/>.
+        /// </summary>
+        public NormalizedPath Path => _path;
 
         /// <summary>
         /// Gets whether this folder is the root one.
         /// </summary>
-        public bool IsRoot => Name.Length == 0;
+        public bool IsRoot => _path.IsEmptyPath;
 
         /// <summary>
         /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
@@ -80,7 +85,13 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The folder.</returns>
         public TypeScriptFolder FindOrCreateFolder( string name ) => FindFolder( name ) ?? CreateFolder( name );
 
-        private protected virtual TypeScriptFolder CreateFolder( string name ) => new TypeScriptFolder( this, name );
+        private protected virtual TypeScriptFolder CreateFolder( string name )
+        {
+            // No need to CheckName here: FindFolder did the job.
+            var f = new TypeScriptFolder( this, name );
+            _root.OnFolderCreated( f );
+            return f;
+        }
 
         /// <summary>
         /// Finds or creates a subordinated folder by its path.
@@ -174,7 +185,12 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The file.</returns>
         public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? CreateFile( name );
 
-        private protected virtual TypeScriptFile CreateFile( string name ) => new TypeScriptFile( this, name );
+        private protected virtual TypeScriptFile CreateFile( string name )
+        {
+            var f = new TypeScriptFile( this, name );
+            _root.OnFileCreated( f );
+            return f;
+        }
 
         /// <summary>
         /// Finds or creates a file in this folder.

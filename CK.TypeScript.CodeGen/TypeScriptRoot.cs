@@ -67,6 +67,24 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptFolder Root { get; }
 
         /// <summary>
+        /// Optional extension point called whenever a new folder appears.
+        /// Does nothing by default.
+        /// </summary>
+        /// <param name="f">The newly created folder.</param>
+        internal protected virtual void OnFolderCreated( TypeScriptFolder f )
+        {
+        }
+
+        /// <summary>
+        /// Optional extension point called whenever a new file appears.
+        /// Does nothing by default.
+        /// </summary>
+        /// <param name="f">The newly created file.</param>
+        internal protected virtual void OnFileCreated( TypeScriptFile f )
+        {
+        }
+
+        /// <summary>
         /// Gets a shared memory for this root that all <see cref="TypeScriptFolder"/>
         /// and <see cref="TypeScriptFile"/> can use.
         /// </summary>
@@ -121,6 +139,7 @@ namespace CK.TypeScript.CodeGen
             }
             return name;
         }
+
     }
 
 }

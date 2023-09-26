@@ -33,7 +33,12 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFolder(NormalizedPath)" />
         public new TypeScriptFolder<TRoot> FindOrCreateFolder( NormalizedPath path ) => Unsafe.As<TypeScriptFolder<TRoot>>( base.FindOrCreateFolder( path ) );
 
-        private protected override TypeScriptFolder CreateFolder( string name ) => new TypeScriptFolder<TRoot>( this, name );
+        private protected override TypeScriptFolder CreateFolder( string name )
+        {
+            var f = new TypeScriptFolder<TRoot>( this, name );
+            Root.OnFolderCreated( f );
+            return f;
+        }
 
         /// <inheritdoc cref="TypeScriptFolder.FindFolder(string)" />
         public new TypeScriptFolder<TRoot>? FindFolder( string name ) => Unsafe.As<TypeScriptFolder<TRoot>?>( base.FindFolder( name ) );
@@ -47,7 +52,12 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFile(string)" />
         public new TypeScriptFile<TRoot> FindOrCreateFile( string name ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( name ) );
 
-        private protected override TypeScriptFile CreateFile( string name ) => new TypeScriptFile<TRoot>( this, name );
+        private protected override TypeScriptFile CreateFile( string name )
+        {
+            var f = new TypeScriptFile<TRoot>( this, name );
+            Root.OnFileCreated( f );
+            return f;
+        }
 
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFile(string, out bool)" />
         public new TypeScriptFile<TRoot> FindOrCreateFile( string name, out bool created ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( name, out created ) );
