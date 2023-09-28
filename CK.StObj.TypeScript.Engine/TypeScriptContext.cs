@@ -7,11 +7,11 @@ using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Xml.Linq;
+using System.Text.Json.Nodes;
 
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
@@ -25,7 +25,7 @@ namespace CK.Setup
     /// only if the configuration actually allows the TypeScript generation for this <see cref="CodeContext"/>.
     /// </para>
     /// </summary>
-    public sealed class TypeScriptContext
+    public sealed class TypeScriptContext : TypeScriptRoot
     {
         readonly Dictionary<Type, TypeScriptAttribute> _fromConfiguration;
         readonly Dictionary<Type, TSTypeFile?> _typeMappings;
@@ -37,26 +37,36 @@ namespace CK.Setup
         IReadOnlyList<ITSCodeGenerator> _globals;
         bool _success;
 
-        internal TypeScriptContext( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> outputPaths,
-                                    ICodeGenerationContext codeCtx,
-                                    TypeScriptAspectConfiguration config,
+        internal TypeScriptContext( ICodeGenerationContext codeCtx,
+                                    TypeScriptAspectConfiguration tsConfig,
+                                    TypeScriptAspectBinPathConfiguration tsBinPathConfig,
                                     JsonSerializationCodeGen? jsonGenerator )
+               : base( tsConfig.PascalCase, tsConfig.GenerateDocumentation )
         {
-            Root = new TypeScriptContextRoot( this, outputPaths, config );
             CodeContext = codeCtx;
-            Configuration = config;
+            Configuration = tsConfig;
+            BinPathConfiguration = tsBinPathConfig;
             JsonGenerator = jsonGenerator;
             _fromConfiguration = new Dictionary<Type, TypeScriptAttribute>();
             _typeMappings = new Dictionary<Type, TSTypeFile?>();
             _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
             _typeFiles = new List<TSTypeFile>();
             _success = true;
+            Root.EnsureBarrel();
+        }
+
+        protected override void OnFolderCreated( TypeScriptFolder f )
+        {
+            if( BinPathConfiguration.Barrels.Contains( f.Path ) )
+            {
+                f.EnsureBarrel();
+            }
         }
 
         /// <summary>
-        /// Gets the TypeScript code generation root.
+        /// Gets the typed folder root.
         /// </summary>
-        public TypeScriptContextRoot Root { get; }
+        public new TypeScriptFolder<TypeScriptContext> Root => (TypeScriptFolder<TypeScriptContext>)base.Root;
 
         /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
@@ -67,6 +77,11 @@ namespace CK.Setup
         /// Gets the <see cref="TypeScriptAspectConfiguration"/>.
         /// </summary>
         public TypeScriptAspectConfiguration Configuration { get; }
+
+        /// <summary>
+        /// Gets the <see cref="TypeScriptAspectBinPathConfiguration"/>.
+        /// </summary>
+        public TypeScriptAspectBinPathConfiguration BinPathConfiguration { get; }
 
         /// <summary>
         /// Gets the <see cref="JsonSerializationCodeGen"/> it is available.
@@ -283,9 +298,8 @@ namespace CK.Setup
             {
                 folder = attr.Folder ?? t.Namespace!.Replace( '.', '/' );
             }
-            var defName = SafeNameChars( t.GetExternalName() ?? GetSafeName( t ) );
-            fileName ??= attr.FileName ?? (SafeFileChars( defName ) + ".ts");
-            string typeName = attr.TypeName ?? defName;
+            string typeName = attr.TypeName ?? SafeNameChars( t.GetExternalName() ?? GetSafeName( t ) );
+            fileName ??= attr.FileName ?? (SafeFileChars( typeName ) + ".ts");
             f.Initialize( folder, fileName, typeName );
             monitor.Trace( f.ToString() );
             return f;
@@ -293,9 +307,13 @@ namespace CK.Setup
 
         internal static string GetPocoClassNameFromPrimaryInterface( IPocoRootInfo itf )
         {
-            var typeName = itf.PrimaryInterface.GetExternalName() ?? TypeScriptContext.GetSafeName( itf.PrimaryInterface );
+            var typeName = itf.PrimaryInterface.GetExternalName();
+            if( typeName == null )
+            {
+                typeName = TypeScriptContext.GetSafeName( itf.PrimaryInterface );
+                if( typeName.StartsWith( "I" ) ) typeName = typeName.Remove( 0, 1 );
+            }
             typeName = TypeScriptContext.SafeNameChars( typeName );
-            if( typeName.StartsWith( "I" ) ) typeName = typeName.Remove( 0, 1 );
             return typeName;
         }
 
@@ -322,7 +340,7 @@ namespace CK.Setup
         internal bool Run( IActivityMonitor monitor )
         {
             IPocoSupportResult pocoTypeSystem = CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true );
-            using( monitor.OpenInfo( "Running TypeScript code generation." ) )
+            using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
             {
                 return BuildAttributesFromConfiguration( monitor, pocoTypeSystem )
                         && BuildTSTypeFilesFromAttributesAndDiscoverGenerators( monitor, pocoTypeSystem )
@@ -336,10 +354,10 @@ namespace CK.Setup
 
         bool BuildAttributesFromConfiguration( IActivityMonitor monitor, IPocoSupportResult pocoTypeSystem )
         {
-            using( monitor.OpenInfo( $"Building TypeScriptAttribute for {Configuration.Types.Count} Type configurations." ) )
+            using( monitor.OpenInfo( $"Building TypeScriptAttribute for {BinPathConfiguration.Types.Count} Type configurations." ) )
             {
                 bool success = true;
-                foreach( var c in Configuration.Types )
+                foreach( var c in BinPathConfiguration.Types )
                 {
                     Type? t = ResolveType( pocoTypeSystem, c.Type );
                     if( t == null )
@@ -518,5 +536,178 @@ namespace CK.Setup
             return _success;
         }
 
+        internal bool Save( IActivityMonitor monitor )
+        {
+            bool success = true;
+            using( monitor.OpenInfo( $"Saving generated TypeScript for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
+            {
+                var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
+                if( Directory.Exists( ckGenFolder ) )
+                {
+                    monitor.Trace( $"Deleting existing '{ckGenFolder}'." );
+                    Directory.Delete( ckGenFolder, true );
+                }
+                if( Root.Save( monitor, ckGenFolder.AppendPart( "src" ) ) )
+                {
+                    if( !Directory.Exists( ckGenFolder ) )
+                    {
+                        monitor.Warn( $"No files or folders have been generated in '{ckGenFolder}'. Skipping TypeScript generation." );
+                    }
+                    else
+                    {
+                        if( BinPathConfiguration.GitIgnoreCKGenFolder )
+                        {
+                            File.WriteAllText( Path.Combine( ckGenFolder, ".gitignore" ), "*" );
+                        }
+                        // Preload the target package.json if it exists to extract the typescriptVersion if it exists.
+                        // Even if the target package is on error or has no typescript installed, we CAN build the generated
+                        // typescript by using the latest typescript.
+                        var targetProjectPath = BinPathConfiguration.TargetProjectPath;
+                        var projectJsonPath = targetProjectPath.AppendPart( "package.json" );
+                        var targetPackageJson = YarnHelper.LoadPackageJson( monitor, projectJsonPath, out bool invalidPackageJson );
+                        var targetTypescriptVersion = targetPackageJson?["devDependencies"]?["typescript"]?.ToString();
+                        if( targetTypescriptVersion != null )
+                        {
+                            monitor.Info( $"Found typescript in version '{targetTypescriptVersion}' in target '{projectJsonPath}'." );
+                        }
+                        else 
+                        {
+                            if( !invalidPackageJson )
+                            {
+                                if( targetPackageJson == null )
+                                {
+                                    monitor.Info( "No target package.json found, we'll install typescript current version in '@local/ck-gen'." );
+                                }
+                                else
+                                {
+                                    monitor.Warn( $"Typescript is not installed in target '{projectJsonPath}', we'll install typescript current version in '@local/ck-gen'." );
+                                }
+                            }
+                        }
+                        // Generates "/ck-gen" files "package.json", "tsconfig.json" and "tsconfig-cjs.json".
+                        // This may fail if there's an error in the dependencies declared by the code
+                        // generator (in LibraryImport).
+                        if( YarnHelper.SaveCKGenBuildConfig( monitor, ckGenFolder, targetTypescriptVersion, this ) )
+                        {
+                            if( BinPathConfiguration.SkipTypeScriptTooling )
+                            {
+                                monitor.Info( "Skipping any TypeScript project setup since SkipTypeScriptTooling is true." );
+                            }
+                            else
+                            {
+                                var yarnPath = YarnHelper.GetYarnInstallPath( monitor,
+                                                                              targetProjectPath,
+                                                                              BinPathConfiguration.AutoInstallYarn );
+                                if( yarnPath.HasValue )
+                                {
+                                    // We have a yarn, we can build "@local/ck-gen".
+                                    using( monitor.OpenInfo( $"Building '@local/ck-gen' package..." ) )
+                                    {
+                                        if( targetTypescriptVersion == null )
+                                        {
+                                            success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "add --dev typescript", yarnPath.Value );
+                                        }
+                                        success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "run build", yarnPath.Value );
+                                        monitor.CloseGroup( success ? "Success." : "Failed." );
+                                    }
+
+                                    // If the lookup made previously to the target package.json is not on error, we handle
+                                    // AutoInstallVSCodeSupport and EnsureTestSupport.
+                                    // We do this even on compilation failure (if asked to do so) to be able to work in the
+                                    // target project.
+
+                                    // We always ensure that the workspaces:["ck-gen"] and "@local/ck-gen" dependency are here.
+                                    if( !invalidPackageJson
+                                        && YarnHelper.SetupTargetProjectPackageJson( monitor, projectJsonPath,
+                                                                                     targetPackageJson,
+                                                                                     out var testScriptCommand,
+                                                                                     out var jestVersion,
+                                                                                     out var tsJestVersion,
+                                                                                     out var typesJestVersion ) )
+                                    {
+                                        // Before installing VSCode support, we must ensure that typescript is installed in the target
+                                        // project, otherwise the TypeScript support won't be installed by the yarn sdks.
+                                        if( BinPathConfiguration.AutoInstallVSCodeSupport
+                                            && !YarnHelper.HasVSCodeSupport( monitor, targetProjectPath ) )
+                                        {
+                                            if( targetTypescriptVersion == null )
+                                            {
+                                                if( YarnHelper.DoRunYarn( monitor, targetProjectPath, "add --dev typescript", yarnPath.Value ) )
+                                                {
+                                                    // So the EnsureTestSupport won't reinstall it.
+                                                    targetTypescriptVersion = "latest";
+                                                }
+                                            }
+                                            YarnHelper.InstallVSCodeSupport( monitor, targetProjectPath, yarnPath.Value );
+                                        }
+
+                                        // If we must ensure test support, we consider that as soon as a "test" script is available
+                                        // we are done: the goal is to support "yarn test", Jest is our default test framework but is
+                                        // not required.
+                                        if( BinPathConfiguration.EnsureTestSupport )
+                                        {
+                                            if( testScriptCommand != null )
+                                            {
+                                                monitor.Info( $"TypeScript test script command '{testScriptCommand}' already exists. Skipping EnsureTestSupport." );
+                                            }
+                                            else
+                                            {
+                                                using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )
+                                                {
+                                                    string a = string.Empty, i = string.Empty;
+                                                    Add( ref a, ref i, "typescript", targetTypescriptVersion );
+                                                    Add( ref a, ref i, "jest", jestVersion );
+                                                    Add( ref a, ref i, "ts-jest", tsJestVersion );
+                                                    Add( ref a, ref i, "@types/jest", typesJestVersion );
+                                                    static void Add( ref string a, ref string i, string name, string? version )
+                                                    {
+                                                        if( version == null )
+                                                        {
+                                                            if( i.Length == 0 ) i = name;
+                                                            else i += ' ' + name;
+                                                        }
+                                                        else
+                                                        {
+                                                            a = $"{a}{(a.Length == 0 ? "" : ", ")}{name} ({version})";
+                                                        }
+                                                    }
+
+                                                    if( a.Length > 0 ) monitor.Info( $"Already installed: {a}." );
+                                                    if( i.Length > 0 )
+                                                    {
+                                                        success &= YarnHelper.DoRunYarn( monitor, targetProjectPath, $"add --dev {i}", yarnPath.Value );
+                                                    }
+                                                    if( success )
+                                                    {
+                                                        YarnHelper.EnsureSampleJestTestInSrcFolder( monitor, targetProjectPath );
+                                                        YarnHelper.SetupJestConfigFile( monitor, targetProjectPath );
+
+                                                        var packageJsonObject = YarnHelper.LoadPackageJson( monitor, projectJsonPath, out invalidPackageJson );
+                                                        // There is absolutely no reason here to not be able to read back the package.json.
+                                                        // Defensive programming here.
+                                                        if( !invalidPackageJson &&  packageJsonObject != null )
+                                                        {
+                                                            bool modified = false;
+                                                            var scripts = YarnHelper.EnsureJsonObject( monitor, packageJsonObject, "scripts", ref modified );
+                                                            Throw.DebugAssert( scripts != null );
+                                                            scripts.Add( "test", "jest" );
+                                                            success &= YarnHelper.SavePackageJsonFile( monitor, projectJsonPath, packageJsonObject );
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+                        else success = false;
+                    }
+                }
+                else success = false;
+            }
+            return success;
+        }
     }
 }

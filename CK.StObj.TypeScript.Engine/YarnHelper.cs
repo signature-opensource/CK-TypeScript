@@ -8,10 +8,12 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -19,7 +21,10 @@ using System.Xml.Linq;
 
 namespace CK.Setup
 {
-    static class YarnHelper
+    /// <summary>
+    /// Provides helper for Yarn.
+    /// </summary>
+    public static class YarnHelper
     {
         const string _yarnFileName = $"yarn-{TypeScriptAspectBinPathConfiguration.AutomaticYarnVersion}.cjs";
         const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
@@ -33,7 +38,7 @@ namespace CK.Setup
         /// <returns>True on success, false if yarn cannot be found or the process failed.</returns>
         public static bool RunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command )
         {
-            var yarnPath = TryFindYarn( workingDirectory );
+            var yarnPath = TryFindYarn( workingDirectory, out var _ );
             if( yarnPath.HasValue )
             {
                 return DoRunYarn( monitor, workingDirectory, command, yarnPath.Value );
@@ -45,26 +50,27 @@ namespace CK.Setup
         /// <summary>
         /// Generates "package.json", "tsconfig.json" and "tsconfig-cjs.json".
         /// </summary>
-        internal static bool SaveBuildConfig( IActivityMonitor monitor, NormalizedPath outputPath, TypeScriptContext g )
+        internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor, NormalizedPath outputPath, string? targetTypescriptVersion, TypeScriptContext g )
         {
             using var gLog = monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." );
 
             var reusable = new StringBuilder();
-            return GeneratePackageJson( monitor, outputPath, g, reusable )
+            return GeneratePackageJson( monitor, outputPath, targetTypescriptVersion, g, reusable )
                    && GenerateTSConfigJson( monitor, outputPath, g, reusable )
                    && GenerateTSConfigCJSJson( monitor, outputPath, g, reusable );
 
-            static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath outputPath, TypeScriptContext g, StringBuilder sb )
+            static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath outputPath, string? targetTypescriptVersion, TypeScriptContext g, StringBuilder sb )
             {
                 sb.Clear();
                 var packageJsonPath = Path.Combine( outputPath, "package.json" );
                 using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
                 {
                     bool success = true;
-                    var dependencies = new Dictionary<string, LibraryImport>
-                                        {
-                                            { "typescript", new LibraryImport( "typescript", "4.7.4", DependencyKind.DevDependency ) }
-                                        };
+                    var dependencies = new Dictionary<string, LibraryImport>();
+                    if( targetTypescriptVersion != null )
+                    {
+                        dependencies.Add( "typescript", new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
+                    }
                     foreach( var file in g.Root.AllFilesRecursive )
                     {
                         foreach( var item in file.Imports.LibraryImports.Values )
@@ -107,8 +113,8 @@ namespace CK.Setup
                             DependencyKind.DevDependency => "devDependencies",
                             DependencyKind.PeerDependency => "peerDependencies",
                             _ => Throw.InvalidOperationException<string>()
-                        },
-                                       string.Join( ",\n", s )) );
+                        }, string.Join( ",\n", s )) );
+
                     foreach( var deps in depsList )
                     {
                         sb.Append( "  \"" ).Append( deps.Item1 ).Append( "\":{" ).Append( deps.Item2 ).AppendLine().Append( "}," );
@@ -150,10 +156,10 @@ namespace CK.Setup
                                                             "declaration": true,
                                                             "esModuleInterop": true,
                                                             "resolveJsonModule": true,
-                                                            "rootDir": "ts/src"
+                                                            "rootDir": "src"
                                                         },
                                                         "include": [
-                                                            "ts/src/**/*"
+                                                            "src/**/*"
                                                         ]
                                                      }
                                                      """ );
@@ -182,51 +188,100 @@ namespace CK.Setup
 
         internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, bool autoInstall )
         {
-            var yarnPath = TryFindYarn( targetProjectPath );
+            var yarnPath = TryFindYarn( targetProjectPath, out var aboveCount );
             if( yarnPath.HasValue )
             {
                 monitor.Info( $"Yarn found at '{yarnPath}'." );
-                return yarnPath.Value;
             }
-            if( autoInstall )
+            else if( autoInstall )
             {
-                monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{targetProjectPath}'." );
-                var yarnrcFile = Path.Combine( targetProjectPath, ".yarnrc.yml" );
-                monitor.Trace( $"Creating '{yarnrcFile}'." );
-                File.WriteAllText( yarnrcFile, $"""
-                                            yarnPath: {_autoYarnPath}
-                                            enableImmutableInstalls: false
-                                            """ );
+                var gitRoot = targetProjectPath.PathsToFirstPart( null, new[] { ".git" } ).FirstOrDefault( p => Directory.Exists( p ) );
+                if( gitRoot.IsEmptyPath )
+                {
+                    monitor.Info( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
+                    yarnPath = AutoInstall( monitor, targetProjectPath, 0 );
+                }
+                else
+                {
+                    Throw.DebugAssert( gitRoot.LastPart == ".git" );
+                    monitor.Info( $"Git root found: '{gitRoot}'. Setting up a shared .yarn cache." );
+                    aboveCount = targetProjectPath.Parts.Count - gitRoot.Parts.Count + 1;
+                    yarnPath = AutoInstall( monitor, targetProjectPath, aboveCount );
+                }
+            }
+            if( !yarnPath.HasValue )
+            {
+                monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and AutoInstallYarn is false." );
+            }
+            else
+            {
+                EnsureYarnRcFileAtYarnLevel( monitor, yarnPath.Value );
+            }
+            return yarnPath;
 
-                var yarnBinDir = Path.Combine( targetProjectPath, ".yarn", "releases" );
-                File.WriteAllText( Path.Combine( targetProjectPath, ".gitignore" ), "*" );
+            static NormalizedPath? AutoInstall( IActivityMonitor monitor, NormalizedPath targetProjectPath, int aboveCount )
+            {
+                NormalizedPath? yarnPath;
+                var yarnRootPath = targetProjectPath.RemoveLastPart( aboveCount );
+                monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{yarnRootPath}'." );
+                var yarnBinDir = yarnRootPath.Combine( ".yarn/releases" );
                 monitor.Trace( $"Extracting '{_yarnFileName}' to '{yarnBinDir}'." );
                 Directory.CreateDirectory( yarnBinDir );
+                yarnPath = yarnBinDir.AppendPart( _yarnFileName );
                 var a = Assembly.GetExecutingAssembly();
                 Throw.DebugAssert( a.GetName().Name == "CK.StObj.TypeScript.Engine" );
                 using( var yarnBinStream = a.GetManifestResourceStream( $"CK.StObj.TypeScript.Engine.{_yarnFileName}" ) )
-                using( var fileStream = File.OpenWrite( Path.Combine( yarnBinDir, _yarnFileName ) ) )
+                using( var fileStream = File.OpenWrite( yarnPath ) )
                 {
                     yarnBinStream!.CopyTo( fileStream );
                 }
-                return targetProjectPath.Combine( _autoYarnPath );
+                return yarnPath;
             }
-            monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and AutoInstallYarn is false." );
-            return null;
+        }
+
+        static void EnsureYarnRcFileAtYarnLevel( IActivityMonitor monitor, NormalizedPath yarnPath )
+        {
+            Throw.DebugAssert( yarnPath.Parts.Count > 3 && yarnPath.Parts[^3] == ".yarn" && yarnPath.Parts[^2] == "releases" );
+            var yarnrcFile = yarnPath.RemoveLastPart( 3 ).AppendPart( ".yarnrc.yml" );
+            if( File.Exists( yarnrcFile ) )
+            {
+                var content = File.ReadAllText( yarnrcFile );
+                monitor.Trace( $"File '{yarnrcFile}' exists, leaving it unchanged:{Environment.NewLine}{content}" );
+            }
+            else
+            {
+                var content = $"""
+                              yarnPath: "./{yarnPath.RemoveFirstPart(yarnPath.Parts.Count - 3)}"
+                              enableGlobalCache: false
+                              cacheFolder: "./.yarn/cache"
+                              """;
+                monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{content}" );
+                File.WriteAllText( yarnrcFile, content );
+            }
+        }
+
+        internal static bool HasVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+        {
+            return Directory.Exists( targetProjectPath.AppendPart( ".vscode" ) )
+                   && Directory.Exists( targetProjectPath.Combine( ".yarn/sdks" ) );
         }
 
         internal static void InstallVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath, NormalizedPath yarnPath )
         {
-            bool isHere = Directory.Exists( targetProjectPath.AppendPart( ".vscode" ) )
-                          && Directory.Exists( targetProjectPath.Combine( ".yarn/sdks" ) );
-            if( !isHere )
-            {
-                DoRunYarn( monitor, targetProjectPath, "dlx @yarnpkg/sdks vscode", yarnPath );
-            }
+            DoRunYarn( monitor, targetProjectPath, "add --dev @yarnpkg/sdks", yarnPath );
+            DoRunYarn( monitor, targetProjectPath, "sdks vscode", yarnPath );
         }
 
-        static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory )
+        static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
         {
+            // Here we should find a .yarnrc.yml:
+            //  - consider its yarnPath: "..." property.
+            //  - return a YarnInfo that is a (YarnRCPath,YarnPath) tuple.
+            //
+            // var yarnRc = currentDirectory.PathsToFirstPart( null, new[] { ".yarnrc.yml" } ).FirstOrDefault( p => Directory.Exists( p ) );
+            //
+            // For the moment, we only handle .yarn/release/*js file.
+            aboveCount = 0;
             while( currentDirectory.HasParts )
             {
                 NormalizedPath releases = currentDirectory.Combine( ".yarn/releases" );
@@ -240,78 +295,162 @@ namespace CK.Setup
                     if( yarn != null ) return releases.AppendPart( yarn );
                 }
                 currentDirectory = currentDirectory.RemoveLastPart();
+                aboveCount++;
             }
             return default;
         }
 
-        internal static bool EnsurePackageJsonWithCKGenWorkspace( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+        internal static bool SetupTargetProjectPackageJson( IActivityMonitor monitor,
+                                                            NormalizedPath projectJsonPath,
+                                                            JsonObject? packageJson,
+                                                            out string? testScriptCommand,
+                                                            out string? jestVersion,
+                                                            out string? tsJestVersion,
+                                                            out string? typesJestVersion )
         {
-            var projectJsonPath = targetProjectPath.AppendPart( "package.json" );
-            if( !File.Exists( projectJsonPath ) )
+            Throw.DebugAssert( projectJsonPath.LastPart == "package.json" );
+            testScriptCommand = null;
+            jestVersion = null;
+            tsJestVersion = null;
+            typesJestVersion = null;
+
+            if( packageJson == null )
             {
-                monitor.Info( $"Creating a minimal '{projectJsonPath}'." );
-                WriteMinimalPackageJson( targetProjectPath, projectJsonPath );
+                monitor.Info( $"Creating a minimal '{projectJsonPath}' without typescript development dependency." );
+                WriteMinimalPackageJson( projectJsonPath, projectJsonPath );
                 return true;
             }
-            JsonNode? doc;
-            try
+            bool modified = false;
+            if( !EnsureCKGenWorkspace( monitor, packageJson, ref modified )
+                || !EnsureCKGenPackage( monitor, packageJson, ref modified ) )
             {
-                using var f = File.OpenRead( projectJsonPath );
-                doc = JsonNode.Parse( f,
-                                        nodeOptions: null,
-                                        new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Allow } );
-            }
-            catch ( Exception ex )
-            {
-                monitor.Warn( $"Unable to read file '{projectJsonPath}'. Skipping ck-gen workspace configuration.", ex );
+                monitor.Error( $"Error in '{projectJsonPath}'. Skipping ck-gen workspace and package configuration." );
                 return false;
             }
-            if( doc is not JsonObject o )
+            testScriptCommand = packageJson["scripts"]?["test"]?.ToString();
+            JsonObject? devDependencies = packageJson["devDependencies"] as JsonObject;
+            if( devDependencies != null )
             {
-                monitor.Warn( $"File '{projectJsonPath}' doesn't contain a Json object. Skipping ck-gen workspace configuration." );
-                return false;
+                jestVersion = devDependencies["jest"]?.ToString();
+                tsJestVersion = devDependencies["ts-jest"]?.ToString();
+                typesJestVersion = devDependencies["@types/jest"]?.ToString();
             }
-            var workspaces = o["workspaces"];
-            if( workspaces == null ) o.Add("workspaces", new JsonArray( "ck-gen" ) );
-            else 
+            return !modified || SavePackageJsonFile( monitor, projectJsonPath, packageJson );
+
+            static void WriteMinimalPackageJson( NormalizedPath targetProjectPath, NormalizedPath projectJsonPath )
             {
-                if( workspaces is not JsonArray a )
+                File.WriteAllText( projectJsonPath,
+                   $$"""
+                    {
+                        "name": "{{targetProjectPath.Parts[^2].ToLowerInvariant()}}",
+                        "private": true,
+                        "workspaces":["ck-gen"],
+                        "dependencies": {
+                            "@local/ck-gen": "workspace:*"
+                        }
+                    }
+                    """ );
+            }
+
+            static bool EnsureCKGenWorkspace( IActivityMonitor monitor, JsonObject o, ref bool modified )
+            {
+                var workspaces = o["workspaces"] as JsonArray;
+                if( workspaces == null )
                 {
-                    monitor.Error( $"Error in '{projectJsonPath}': workspaces property is not an array. Skipping ck-gen workspace configuration." );
-                    return false;
+                    if( o["workspaces"] != null )
+                    {
+                        monitor.Error( $"\"workspaces\" property is not an array." );
+                        return false;
+                    }
+                    o.Add( "workspaces", new JsonArray( "ck-gen" ) );
                 }
-                if( a.Any( x => x is JsonValue v && v.TryGetValue<string>( out var s ) && s == "ck-gen" ) )
+                else
+                {
+                    if( workspaces.Any( x => x is JsonValue v && v.TryGetValue<string>( out var s ) && s == "ck-gen" ) )
+                    {
+                        return true;
+                    }
+                    workspaces.Add( "ck-gen" );
+                }
+                modified = true;
+                return true;
+            }
+
+            static bool EnsureCKGenPackage( IActivityMonitor monitor, JsonObject o, ref bool modified )
+            {
+                var dependencies = EnsureJsonObject( monitor, o, "dependencies", ref modified );
+                if( dependencies == null ) return false;
+                if( dependencies["@local/ck-gen"] is JsonValue v && v.TryGetValue<string>( out var d ) && d == "workspace:*" )
                 {
                     return true;
                 }
-                a.Add( "ck-gen" );
+                modified = true;
+                dependencies["@local/ck-gen"] = JsonValue.Create( "workspace:*" );
+                return true;
             }
-            using( monitor.OpenInfo( $"Rewriting '{projectJsonPath}' with ck-gen workspace." ) )
+        }
+
+        internal static JsonObject? EnsureJsonObject( IActivityMonitor monitor, JsonObject parent, string name, ref bool modified )
+        {
+            var sN = parent[name];
+            var sub = sN as JsonObject;
+            if( sub == null )
+            {
+                if( sN != null )
+                {
+                    monitor.Error( $"\"{name}\" property is not an object." );
+                    return null;
+                }
+                modified = true;
+                parent.Add( name, sub = new JsonObject() );
+            }
+            return sub;
+        }
+
+        internal static JsonObject? LoadPackageJson( IActivityMonitor monitor, NormalizedPath projectJsonPath, out bool invalidPackageJson )
+        {
+            invalidPackageJson = false;
+            try
+            {
+                if( !File.Exists( projectJsonPath ) ) return null;
+                using var f = File.OpenRead( projectJsonPath );
+                var doc = JsonNode.Parse( f,
+                                          nodeOptions: null,
+                                          new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip } );
+
+                var o = doc as JsonObject;
+                if( o == null )
+                {
+                    invalidPackageJson = true;
+                    monitor.Error( $"File 'package.json' doesn't contain a Json object." );
+                }
+                return o;
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"Unable to read file '{projectJsonPath}' file.", ex );
+                invalidPackageJson = true;
+                return null;
+            }
+        }
+
+        internal static bool SavePackageJsonFile( IActivityMonitor monitor, NormalizedPath projectJsonPath, JsonObject o )
+        {
+            using( monitor.OpenInfo( $"Updating '{projectJsonPath}'." ) )
             {
                 try
                 {
-                    using var fOut = File.OpenRead( projectJsonPath );
+                    // File.Create must be used to Truncate the file!
+                    using var fOut = File.Create( projectJsonPath );
                     using var wOut = new Utf8JsonWriter( fOut, new JsonWriterOptions { Indented = true } );
-                    doc.WriteTo( wOut );
+                    o.WriteTo( wOut );
+                    return true;
                 }
                 catch( Exception ex )
                 {
                     monitor.Error( $"While writing '{projectJsonPath}'.", ex );
                     return false;
                 }
-            }
-            return true;
-
-            static void WriteMinimalPackageJson( NormalizedPath targetProjectPath, NormalizedPath projectJsonPath )
-            {
-                File.WriteAllText( projectJsonPath,
-                   $$"""
-                     {
-                       "name": "{{targetProjectPath.LastPart.ToLowerInvariant()}}",
-                       "private": true,
-                       "workspaces":["ck-gen"]
-                     }
-                    """ );
             }
         }
 
@@ -329,18 +468,70 @@ namespace CK.Setup
             return true;
         }
 
+        internal static void SetupJestConfigFile( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+        {
+            var jestConfigPath = targetProjectPath.AppendPart( "jest.config.js" );
+            if( File.Exists( jestConfigPath ) )
+            {
+                monitor.Info( $"The 'jest.config.js' file exists: leaving it unchanged." );
+            }
+            else
+            {
+                monitor.Info( $"Creating the 'jest.config.js' file." );
+                File.WriteAllText( jestConfigPath, """
+                                                    module.exports = {
+                                                        moduleFileExtensions: ['js', 'json', 'ts'],
+                                                        rootDir: 'src',
+                                                        testRegex: '.*\\.spec\\.ts$',
+                                                        transform: {
+                                                        '^.+\\.(t|j)s$': 'ts-jest',
+                                                        },
+                                                        testEnvironment: 'node',
+                                                    };
+                                                    """ );
+            }
+        }
+
+        internal static void EnsureSampleJestTestInSrcFolder( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+        {
+            var srcFolder = targetProjectPath.AppendPart( "src" );
+            Directory.CreateDirectory( srcFolder );
+            var existingTestFile = Directory.EnumerateFiles( srcFolder, "*.spec.ts", SearchOption.AllDirectories ).FirstOrDefault();
+            if( existingTestFile != null )
+            {
+                monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation ({existingTestFile})." );
+                return;
+            }
+            else
+            {
+                var sampleTestPath = srcFolder.AppendPart( "sample.spec.ts" );
+                monitor.Info( $"Creating 'src/sample.spec.ts' test file." );
+                Directory.CreateDirectory( srcFolder );
+                File.WriteAllText( sampleTestPath,
+                    """
+                    // Sample test.
+                    describe('Sample test', () => {
+                        it('should be true', () => {
+                          expect(true).toBeTruthy();
+                        });
+                      });
+                    """ );
+            }
+        }
+
         #region ProcessRunner for NodeBuild
 
         static int RunProcess( IActivityMonitor monitor, string fileName, string arguments, string workingDirectory )
         {
             monitor.Trace( $"RunProcess: '{fileName} {arguments}'." );
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo( fileName, arguments )
                 {
                     WorkingDirectory = workingDirectory,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8
                 }
             };
             process.Start();

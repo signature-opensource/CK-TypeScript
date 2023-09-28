@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.StObjEngine" Version="23.0.1--0149-develop" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
+  </ItemGroup>
+
+</Project>

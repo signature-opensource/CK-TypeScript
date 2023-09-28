@@ -36,9 +36,9 @@ namespace CK.Setup
         public static readonly XName xGenerateDocumentation = XNamespace.None + "GenerateDocumentation";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.SkipTypeScriptBuild"/> attribute name.
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.SkipTypeScriptTooling"/> attribute name.
         /// </summary>
-        public static readonly XName xSkipTypeScriptBuild = XNamespace.None + "SkipTypeScriptBuild";
+        public static readonly XName xSkipTypeScriptTooling = XNamespace.None + "SkipTypeScriptTooling";
 
         /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration.EnsureTestSupport"/> attribute name.

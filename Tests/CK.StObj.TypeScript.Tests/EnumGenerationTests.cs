@@ -5,7 +5,9 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml.Linq;
+using static CK.StObj.TypeScript.Tests.CommentTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -22,52 +24,69 @@ namespace CK.StObj.TypeScript.Tests
             One,
         }
 
-        static (NormalizedPath BinTSPath1, NormalizedPath SourceTSPath1, NormalizedPath BinTSPath2, NormalizedPath SourceTSPath2) GenerateTSCodeInB1AndB2Outputs( string testName, params Type[] types )
-        {
-            var output1 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b1" ), false );
-            var output2 = TestHelper.CleanupFolder( LocalTestHelper.OutputFolder.AppendPart( testName ).AppendPart( "b2" ), false );
-
-            var config = new StObjEngineConfiguration() { ForceRun = true };
-            config.Aspects.Add( new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true } );
-
-            var b1 = new BinPathConfiguration();
-            b1.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", output1 ) ) );
-            var b2 = new BinPathConfiguration();
-            b2.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", output2 ) ) );
-            // b3 has no TypeScript aspect or no OutputPath or an empty OutputPath: nothing must be generated and this is just a warning.
-            var b3 = new BinPathConfiguration();
-            switch( Environment.TickCount % 3 )
-            {
-                case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "OutputPath", " " ) ) ); break;
-                case 1: b3.AspectConfigurations.Add( new XElement( "TypeScript" ) ); break;
-            }
-
-            config.BinPaths.Add( b1 );
-            config.BinPaths.Add( b2 );
-            config.BinPaths.Add( b3 );
-
-            var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( types ) );
-            StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
-
-            Directory.Exists( output1 ).Should().BeTrue();
-            Directory.Exists( output2 ).Should().BeTrue();
-
-            return (output1, output1.AppendPart( "ts" ).AppendPart( "src" ), output2, output2.AppendPart( "ts" ).AppendPart( "src" ));
-        }
-
         [Test]
         public void simple_enum_generation_in_multiple_BinPath()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "simple_enum_generation", typeof( Simple ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            GenerateTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f1 = targetProjectPath.Combine( "b1/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f2 = targetProjectPath.Combine( "b2/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f3 = targetProjectPath.Combine( "b3/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
             File.Exists( f1 ).Should().BeTrue();
             File.Exists( f2 ).Should().BeTrue();
+            File.Exists( f3 ).Should().BeFalse();
 
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum Simple" );
             s.Should().Be( File.ReadAllText( f2 ) );
+
+            static void GenerateTSCodeInB1AndB2Outputs( NormalizedPath targetProjectPath, params Type[] types )
+            {
+                var output1 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b1" ), false );
+                var output2 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b2" ), false );
+
+                var config = new StObjEngineConfiguration();
+                config.Aspects.Add( new TypeScriptAspectConfiguration() );
+
+                var b1 = new BinPathConfiguration();
+                var tsB1 = new TypeScriptAspectBinPathConfiguration
+                {
+                    TargetProjectPath = output1,
+                    SkipTypeScriptTooling = true
+                };
+                tsB1.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+                b1.AspectConfigurations.Add( tsB1.ToXml() );
+
+                var b2 = new BinPathConfiguration();
+                var tsB2 = new TypeScriptAspectBinPathConfiguration
+                {
+                    TargetProjectPath = output2,
+                    SkipTypeScriptTooling = true
+                };
+                tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+                b2.AspectConfigurations.Add( tsB2.ToXml() );
+
+                // b3 has no TypeScript aspect or no TargetProjectPath or an empty TargetProjectPath:
+                // nothing must be generated and this is just a warning.
+                var b3 = new BinPathConfiguration();
+                switch( Environment.TickCount % 3 )
+                {
+                    case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "TargetProjectPath", " " ) ) ); break;
+                    case 1: b3.AspectConfigurations.Add( new XElement( "TypeScript" ) ); break;
+                }
+
+                config.BinPaths.Add( b1 );
+                config.BinPaths.Add( b2 );
+                config.BinPaths.Add( b3 );
+
+                var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( types ) );
+                StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
+
+                Directory.Exists( output1 ).Should().BeTrue();
+                Directory.Exists( output2 ).Should().BeTrue();
+            }
+
         }
 
         /// <summary>
@@ -90,13 +109,12 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void explicit_Folder_configured()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "explicit_Folder_configured", typeof( InAnotherFolder ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( InAnotherFolder ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "TheFolder/InAnotherFolder.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "TheFolder/InAnotherFolder.ts" );
-            var s = File.ReadAllText( f1 );
+            var f = targetProjectPath.Combine( "ck-gen/src/TheFolder/InAnotherFolder.ts" );
+            var s = File.ReadAllText( f );
             s.Should().Contain( "export enum InAnotherFolder" );
-            s.Should().Be( File.ReadAllText( f2 ) );
         }
 
         /// <summary>
@@ -119,13 +137,12 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void empty_Folder_generates_code_at_the_Root()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "empty_Folder_generates_code_at_the_Root", typeof( AtTheRootFolder ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( AtTheRootFolder ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "AtTheRootFolder.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "AtTheRootFolder.ts" );
+            var f1 = targetProjectPath.Combine( "ck-gen/src/AtTheRootFolder.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum AtTheRootFolder" );
-            s.Should().Be( File.ReadAllText( f2 ) );
         }
 
         /// <summary>
@@ -145,16 +162,21 @@ namespace CK.StObj.TypeScript.Tests
             Beta
         }
 
+        [TypeScript( Folder = "Folder", FileName = "EnumFile.ts", TypeName = "AInFile" )]
+        public enum AnotherInASpecificFile : sbyte
+        {
+            Nop
+        }
+
         [Test]
         public void explicit_FileName_configured()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "explicit_FileName_configured", typeof( InASpecificFile ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "Folder/EnumFile.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "Folder/EnumFile.ts" );
+            var f1 = targetProjectPath.Combine( "ck-gen/src/Folder/EnumFile.ts" );
             var s = File.ReadAllText( f1 );
-            s.Should().Contain( "export enum InASpecificFile" );
-            s.Should().Be( File.ReadAllText( f2 ) );
+            s.Should().Contain( "export enum InASpecificFile" ).And.Contain( "export enum AInFile" );
         }
 
         /// <summary>
@@ -179,13 +201,12 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void ExternalName_attribute_overrides_the_Type_name()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "ExternalName_attribute_overrides_the_Type_name", typeof( InASpecificFileWithAnExternalName ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( InASpecificFileWithAnExternalName ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "Folder/EnumFile.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "Folder/EnumFile.ts" );
-            var s = File.ReadAllText( f1 );
+            var f = targetProjectPath.Combine("ck-gen/src/Folder/EnumFile.ts");
+            var s = File.ReadAllText( f );
             s.Should().Contain( "export enum Toto" );
-            s.Should().Be( File.ReadAllText( f2 ) );
         }
 
         /// <summary>
@@ -217,17 +238,15 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void ExternalName_attribute_overrides_the_Type_name_and_the_FileName()
+        public void ExternalName_attribute_overrides_the_TypeName_and_the_FileName()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "ExternalName_attribute_overrides_the_Type_name_and_the_FileName", typeof( WithAnExternalName ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( WithAnExternalName ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "Folder/Toto.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "Folder/Toto.ts" );
-            var s = File.ReadAllText( f1 );
+            var f = targetProjectPath.Combine( "ck-gen/src/Folder/Toto.ts" );
+            var s = File.ReadAllText( f );
             s.Should().Contain( "export enum Toto" );
-            s.Should().Be( File.ReadAllText( f2 ) );
         }
-
 
         [TypeScript( Folder = "", FileName = "EnumFile.ts", TypeName = "EnumType" )]
         [ExternalName( "ThisIsIgnoredSinceTypeNameIsDefined" )]
@@ -242,13 +261,12 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void explicit_TypeName_and_FileName_override_the_ExternalName()
         {
-            var paths = GenerateTSCodeInB1AndB2Outputs( "explicit_TypeName_and_FileName_override_the_ExternalName", typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
 
-            var f1 = paths.SourceTSPath1.Combine( "EnumFile.ts" );
-            var f2 = paths.SourceTSPath2.Combine( "EnumFile.ts" );
-            var s = File.ReadAllText( f1 );
+            var f = targetProjectPath.Combine( "ck-gen/src/EnumFile.ts" );
+            var s = File.ReadAllText( f );
             s.Should().Contain( "export enum EnumType" );
-            s.Should().Be( File.ReadAllText( f2 ) );
         }
 
     }

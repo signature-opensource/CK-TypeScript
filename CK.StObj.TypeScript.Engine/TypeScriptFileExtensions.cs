@@ -12,13 +12,6 @@ namespace CK.TypeScript.CodeGen
     public static class TypeScriptFileExtensions
     {
         /// <summary>
-        /// Gets the <see cref="TypeScriptContext"/> of a type script file.
-        /// </summary>
-        /// <param name="this">This file.</param>
-        /// <returns>The <see cref="TypeScriptContext"/>.</returns>
-        public static TypeScriptContext GetContext( this TypeScriptFile<TypeScriptContextRoot> @this ) => @this.Folder.Root.Context;
-
-        /// <summary>
         /// Ensures that an import of one or more types exists in this file.
         /// <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/> is called for each type.
         /// </summary>
@@ -28,7 +21,7 @@ namespace CK.TypeScript.CodeGen
         /// </param>
         /// <param name="type">The type to import.</param>
         /// <param name="types">Optional types to import.</param>
-        public static void EnsureImport( this TypeScriptFile<TypeScriptContextRoot> @this, IActivityMonitor monitor, Type type, params Type[] types )
+        public static void EnsureImport( this TypeScriptFile<TypeScriptContext> @this, IActivityMonitor monitor, Type type, params Type[] types )
         {
             Throw.CheckArgument( @this != null && monitor != null && types != null );
             ImportType( @this, monitor, type );
@@ -47,7 +40,7 @@ namespace CK.TypeScript.CodeGen
         /// Required monitor since <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/> is called.
         /// </param>
         /// <param name="types">Types to import.</param>
-        public static void EnsureImport( this TypeScriptFile<TypeScriptContextRoot> @this, IActivityMonitor monitor, IEnumerable<Type> types )
+        public static void EnsureImport( this TypeScriptFile<TypeScriptContext> @this, IActivityMonitor monitor, IEnumerable<Type> types )
         {
             Throw.CheckArgument( @this != null && monitor != null && types != null );
             foreach( var t in types )
@@ -56,10 +49,10 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        static void ImportType( TypeScriptFile<TypeScriptContextRoot> file, IActivityMonitor monitor, Type type )
+        static void ImportType( TypeScriptFile<TypeScriptContext> file, IActivityMonitor monitor, Type type )
         {
             Throw.CheckNotNullArgument( type );
-            var tsType = file.GetContext().DeclareTSType( monitor, type );
+            var tsType = file.Root.DeclareTSType( monitor, type );
             if( tsType != null ) file.Imports.EnsureImport( tsType.File, tsType.TypeName );
         }
 
@@ -69,7 +62,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="this">This file.</param>
         /// <param name="type">Type to import.</param>
         /// <param name="types">Other types to import.</param>
-        public static void EnsureImport( this TypeScriptFile<TypeScriptContextRoot> @this, TSTypeFile type, params TSTypeFile[] types )
+        public static void EnsureImport( this TypeScriptFile<TypeScriptContext> @this, TSTypeFile type, params TSTypeFile[] types )
         {
             Throw.CheckArgument( @this != null && type != null && types != null );
             @this.Imports.EnsureImport( type.File, type.TypeName );

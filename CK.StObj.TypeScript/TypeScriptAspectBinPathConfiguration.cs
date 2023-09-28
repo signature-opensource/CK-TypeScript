@@ -47,22 +47,24 @@ namespace CK.Setup
         public List<TypeScriptTypeConfiguration> Types { get; }
 
         /// <summary>
-        /// Gets or sets whether yarn build of "<see cref="TargetProjectPath"/>/ck-gen" should be skipped.
+        /// Gets or sets whether yarn build of "<see cref="TargetProjectPath"/>/ck-gen" should be skipped
+        /// as well as any other TypeScript tooling:
+        /// when set to true, <see cref="AutoInstallYarn"/>, <see cref="AutoInstallVSCodeSupport"/> and <see cref="EnsureTestSupport"/>
+        /// are ignored.
         /// <para>
         /// Defaults to false.
         /// </para>
         /// <para>
-        /// When set to true, <see cref="AutoInstallYarn"/>, <see cref="AutoInstallVSCodeSupport"/> and <see cref="EnsureTestSupport"/>
-        /// are ignored.
         /// </para>
         /// </summary>
-        public bool SkipTypeScriptBuild { get; set; }
+        public bool SkipTypeScriptTooling { get; set; }
 
         /// <summary>
         /// Gets or sets whether yarn will be automatically installed (in version <see cref="AutomaticYarnVersion"/>)
         /// if not found in <see cref="TargetProjectPath"/> or above.
         /// <para>
-        /// if no yarn can be found in <see cref="TargetProjectPath"/> or above, no TypeScript build will be done (see <see cref="SkipTypeScriptBuild"/>).
+        /// if no yarn can be found in <see cref="TargetProjectPath"/> or above and this is set to false, no TypeScript build will
+        /// be done (as if <see cref="SkipTypeScriptTooling"/> was set to true).
         /// </para>
         /// <para>
         /// Defaults to false.
@@ -123,7 +125,7 @@ namespace CK.Setup
             AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
-            SkipTypeScriptBuild = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptBuild ) ?? false;
+            SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
             Types = e.Element( StObjEngineConfiguration.xTypes )?
                        .Elements( StObjEngineConfiguration.xType )
@@ -142,8 +144,8 @@ namespace CK.Setup
                                  new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                                  new XElement( TypeScriptAspectConfiguration.xBarrels,
                                                Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ),
-                                 SkipTypeScriptBuild
-                                    ? new XAttribute( TypeScriptAspectConfiguration.xSkipTypeScriptBuild, true )
+                                 SkipTypeScriptTooling
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling, true )
                                     : null,
                                  EnsureTestSupport
                                     ? new XAttribute( TypeScriptAspectConfiguration.xEnsureTestSupport, true )

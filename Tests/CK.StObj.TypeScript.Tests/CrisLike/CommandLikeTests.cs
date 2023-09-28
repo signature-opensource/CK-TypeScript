@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -119,36 +120,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         {
         }
 
-        [Test]
-        public void command_like_sample_with_interfaces()
-        {
-            var output = LocalTestHelper.GenerateTSCode( nameof( command_like_sample_with_interfaces ),
-                                                         new TypeScriptAspectConfiguration() { GeneratePocoInterfaces = true },
-                                                         typeof( ICommandOne ),
-                                                         typeof( ICommandTwo ),
-                                                         typeof( ICommandThree ),
-                                                         typeof( ICommandFour ),
-                                                         typeof( ICrisResult ),
-                                                         typeof( ICrisResultError ),
-                                                         typeof( FakeCommandDirectoryWithFolders ) );
-
-            var fPower = output.SourcePath.Combine( "TheFolder/Power.ts" );
-            File.ReadAllText( fPower ).Should().StartWith( "export enum Power" );
-
-            var fOne = output.SourcePath.Combine( "TheFolder/CommandOne.ts" );
-            var tOne = File.ReadAllText( fOne );
-            tOne.Should().Contain( "import { Power } from \"./Power\";" )
-                     .And.Contain( "import { CommandTwo } from \"../Commands/CrisLike/CommandTwo\";" );
-
-            tOne.Should().Contain( "export interface ICommandOne" )
-                     .And.Contain( "friend: CommandTwo;" );
-
-
-            var fTwo = output.SourcePath.Combine( "Commands/CrisLike/CommandTwo.ts" );
-            var tTwo = File.ReadAllText( fTwo );
-            tTwo.Should().Contain( "import { CommandOne, CommandThree } from \"../../TheFolder/CommandOne\";" );
-        }
-
         public class FakeCommandDirectoryImpl : ITSCodeGenerator
         {
             public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
@@ -214,9 +185,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         [Test]
         public void command_with_ValueTuple()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( command_with_ValueTuple ),
-                                                         typeof( IValueTupleCommand ),
-                                                         typeof( FakeCommandDirectory ) );
+            var targetOutputPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetOutputPath,
+                                           new[] { typeof( IValueTupleCommand ), typeof( FakeCommandDirectory ) },
+                                           new[] { typeof( IValueTupleCommand ) } );
         }
 
         /// <summary>
@@ -248,12 +220,13 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         [Test]
         public void command_with_simple_results_specialized()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( command_with_simple_results_specialized ),
-                                                         typeof( IValueTupleCommand ),
-                                                         typeof( IWithObjectCommand ),
-                                                         typeof( IWithObjectSpecializedAsStringCommand ),
-                                                         typeof( FakeCommandDirectory ) );
-
+            var targetOutputPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            var pocos = new[] { typeof( IValueTupleCommand ),
+                                typeof( IWithObjectCommand ),
+                                typeof( IWithObjectSpecializedAsStringCommand ) };
+            TestHelper.GenerateTypeScript( targetOutputPath,
+                                           pocos.Append( typeof( FakeCommandDirectory ) ),
+                                           pocos );
         }
 
         public interface IResult : IPoco
@@ -278,14 +251,16 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         [Test]
         public void command_with_poco_results_specialized_and_parts()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( command_with_poco_results_specialized_and_parts ),
-                                         typeof( IWithObjectCommand ),
-                                         typeof( IWithObjectSpecializedAsPocoCommand ),
-                                         typeof( IResult ),
-                                         typeof( IWithObjectSpecializedAsSuperPocoCommand ),
-                                         typeof( ISuperResult ),
-                                         typeof( FakeCommandDirectory ) );
-
+            var targetOutputPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            var pocos = new[] { typeof( IWithObjectCommand ),
+                                typeof( IWithObjectSpecializedAsPocoCommand ),
+                                typeof( IResult ),
+                                typeof( IWithObjectSpecializedAsSuperPocoCommand ),
+                                typeof( ISuperResult )
+                              };
+            TestHelper.GenerateTypeScript( targetOutputPath,
+                                           pocos.Append( typeof( FakeCommandDirectory ) ),
+                                           pocos );
         }
 
     }

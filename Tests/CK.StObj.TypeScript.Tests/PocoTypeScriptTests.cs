@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -37,19 +38,11 @@ namespace CK.StObj.TypeScript.Tests
             [DefaultValue( 3712 )]
             int WithDefaultValue { get; set; }
 
-            struct UnionTypes
+            readonly struct UnionTypes
             {
                 public (int, string)? NullableIntOrString { get; }
                 public (List<string?>, Dictionary<IPoco, ISet<int?>>[], double) NonNullableListOrDictionaryOrDouble { get; }
             }
-        }
-
-        [Test]
-        public void with_union_types()
-        {
-            var output = LocalTestHelper.GenerateTSCode( nameof( with_union_types ),
-                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
-                                                         typeof( IWithUnions ) );
         }
 
         /// <summary>
@@ -91,12 +84,11 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible()
+        public void new_poco_has_default_and_readonly_properties_set()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( array_set_maps_and_IPoco_can_be_readonly_and_default_values_are_applied_when_possible ),
-                                                         new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
-                                                         typeof( IWithReadOnly ),
-                                                         typeof( IWithUnions ) );
+            var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            TestHelper.RunTypeScriptTest( targetProjectPath ).Should().BeTrue();
         }
 
         [ExternalName( "NotGeneratedByDefault" )]
@@ -111,37 +103,30 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         [Test]
-        public void no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect()
+        public void no_TypeScript_attribute_provide_no_generation()
         {
             // NotGeneratedByDefault is not generated.
-            {
-                var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect ),
-                                                             new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
-                                                             typeof( INotGeneratedByDefault ) );
-                File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
-
-            }
-            // NotGeneratedByDefault is generated because it is referenced by IGeneratedByDefault.
-            {
-                var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect ),
-                                                             new TypeScriptAspectConfiguration() { SkipTypeScriptBuild = true },
-                                                             typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
-
-                File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
-            }
-            // NotGeneratedByDefault is generated because it is configured.
-            {
-                var output = LocalTestHelper.GenerateTSCode( nameof( no_TypeScript_attribute_provide_no_generation_unless_it_is_referenced_or_Type_appears_in_Aspect ),
-                                                             new TypeScriptAspectConfiguration()
-                                                             {
-                                                                 SkipTypeScriptBuild = true,
-                                                                 Types = { new TypeScriptTypeConfiguration( typeof( INotGeneratedByDefault ) ) }
-                                                             },
-                                                             typeof( INotGeneratedByDefault ) );
-
-                File.Exists( output.SourcePath.Combine( "CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
-            }
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( INotGeneratedByDefault ) }, Type.EmptyTypes );
+            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
         }
 
+        [Test]
+        public void no_TypeScript_attribute_is_generated_when_referenced()
+        {
+            // NotGeneratedByDefault is generated because it is referenced by IGeneratedByDefault.
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) }, Type.EmptyTypes );
+            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+        }
+
+        [Test]
+        public void no_TypeScript_attribute_is_generated_when_Type_appears_in_Aspect()
+        {
+            // NotGeneratedByDefault is generated because it is configured.
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( INotGeneratedByDefault ) }, new[] { typeof( INotGeneratedByDefault ) } );
+            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+        }
     }
 }

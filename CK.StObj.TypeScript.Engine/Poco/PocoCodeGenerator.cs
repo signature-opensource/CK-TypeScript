@@ -57,11 +57,6 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// If the type is a <see cref="IPoco"/>, the <see cref="IPocoRootInfo.PrimaryInterface"/> sets the type name
         /// and the folder and file for all other IPoco interfaces and the class.
-        /// <para>
-        /// Interfaces that are not IPoco (the ones in <see cref="IPocoRootInfo.OtherInterfaces"/>) are ignored by default.
-        /// If another such interface is declared (<see cref="TypeScriptContext.FindDeclaredTSType"/> returned the type file),
-        /// then it is imported and appears in the "extends" base interfaces.
-        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="builder">
@@ -78,59 +73,65 @@ namespace CK.StObj.TypeScript.Engine
                                                   ITSTypeFileBuilder builder,
                                                   TypeScriptAttribute attr )
         {
+            // We don't handle OtherInterface (parts) for the moment: using these in TypeScript requires
+            // the polymorphism to ba corectly handled (brand types and serializer/deserializer with polymorphism).
             var type = builder.Type;
             bool isPoco = typeof( IPoco ).IsAssignableFrom( type );
-            if( isPoco )
+            if( isPoco && type != typeof( IPoco ) && type != typeof( IClosedPoco ) )
             {
-                if( type.IsClass )
+                var familyInfo = PocoSupport.Find( type )?.Root;
+                if( familyInfo != null )
                 {
-                    var pocoClass = PocoSupport.Roots.FirstOrDefault( root => root.PocoClass == type );
-                    if( pocoClass != null )
+                    // We may miss an indirection here when the type is not the primary interface,
+                    // we could handle an explicit "ImplementedBy" relay to the primary interface or
+                    // handle the registration differently.
+                    // This projection is important (it should apply to other constructs than IPoco).
+                    bool isPrimary = type == familyInfo.PrimaryInterface;
+                    if( !isPrimary )
                     {
-                        attr.TypeName = TypeScriptContext.GetPocoClassNameFromPrimaryInterface( pocoClass );
-                        attr.SameFileAs = pocoClass.PrimaryInterface;
-                        builder.Finalizer = ( m, f ) => EnsurePocoClass( m, f, pocoClass ) != null;
+                        var tsPrimary = builder.Context.DeclareTSType( monitor, familyInfo.PrimaryInterface );
+                        if( tsPrimary == null ) return false;
+                        if( !string.IsNullOrWhiteSpace( attr.TypeName ) && attr.TypeName != tsPrimary.TypeName )
+                        {
+                            monitor.Error( $"Type '{type:C}' cannot use TypeScript TypeName '{attr.TypeName}' because it differs " +
+                                           $"from the primary interface '{tsPrimary.Type:C}' TypeName that is '{tsPrimary.TypeName}'." );
+                            return false;
+                        }
+                        // To limit the configuration mess, we forbid non primary IPoco to use explicit SameFileAs, FileName, SameFolderAs and Folder features...
+                        if( attr.SameFileAs != null
+                            || attr.SameFolderAs != null
+                            || !string.IsNullOrEmpty( attr.FileName )
+                            || !string.IsNullOrEmpty( attr.Folder ) )
+                        {
+                            monitor.Error( $"Type '{type:C}' cannot configure TypeScript SameFileAs, FileName, SameFolderAs or Folder: " +
+                                           $"only the primary interface '{tsPrimary.Type:C}' can define these configurations." );
+                            return false;
+                        }
+                        attr.TypeName = tsPrimary.TypeName;
+                        attr.FileName = tsPrimary.FileName;
+                        attr.Folder = tsPrimary.Folder;
+                        attr.SameFileAs = tsPrimary.Attribute.SameFileAs;
+                        attr.SameFolderAs = tsPrimary.Attribute.SameFolderAs;
+                        builder.Finalizer = ( m, f ) => true;
+                        return true;
                     }
-                    else
+                    string typeName;
+                    if( string.IsNullOrWhiteSpace( attr.TypeName ) )
                     {
-                        monitor.Warn( $"Type {type} is a class that implements at least one IPoco but is not a registered PocoClass. It is ignored." );
+                        typeName = TypeScriptContext.GetPocoClassNameFromPrimaryInterface( familyInfo );
+                        attr.TypeName = typeName;
                     }
+                    else typeName = attr.TypeName;
+
+                    if( attr.SameFileAs == null && attr.FileName == null )
+                    {
+                        attr.FileName = TypeScriptContext.SafeFileChars( typeName ) + ".ts";
+                    }
+                    builder.Finalizer = ( m, f ) => EnsurePocoClass( m, f, familyInfo ) != null;
                 }
                 else
                 {
-                    if( PocoSupport.AllInterfaces.TryGetValue( type, out IPocoInterfaceInfo? itf ) )
-                    {
-                        if( itf.Root.PrimaryInterface != itf.PocoInterface )
-                        {
-                            if( attr.SameFileAs != null
-                                || attr.SameFolderAs != null
-                                || attr.Folder != null
-                                || attr.FileName != null )
-                            {
-                                monitor.Warn( $"IPoco '{type.Name}' must not specify a SameFileAs, SameFolderAs, Folder or FileName since it will use the same file as the primary interface." );
-                                attr.SameFolderAs = null;
-                                attr.Folder = null;
-                                attr.FileName = null;
-                            }
-                            attr.SameFileAs = itf.Root.PrimaryInterface;
-                        }
-                        else
-                        {
-                            if( attr.SameFileAs == null && attr.FileName == null )
-                            {
-                                string typeName = TypeScriptContext.GetPocoClassNameFromPrimaryInterface( itf.Root );
-                                attr.FileName = TypeScriptContext.SafeFileChars( typeName ) + ".ts";
-                            }
-                        }
-                        builder.Finalizer = ( m, f ) => EnsurePocoInterface( m, f, itf ) != null;
-                    }
-                    else
-                    {
-                        if( type != typeof( IPoco ) && type != typeof( IClosedPoco ) )
-                        {
-                            monitor.Warn( $"Interface '{type}' is a IPoco but cannot be found in the registered interfaces. It is ignored." );
-                        }
-                    }
+                    monitor.Warn( $"Type {type:C} is a IPoco but is not a registered PocoClass. It is ignored." );
                 }
             }
             return true;
@@ -172,21 +173,9 @@ namespace CK.StObj.TypeScript.Engine
 
                 // Defines the symbol marker and the constructor.
                 // The SymbolType contains the JSON serialization type name.
-                TypeScriptRoot tsRoot = tsTypedFile.Context.Root;
+                TypeScriptRoot tsRoot = tsTypedFile.Context;
                 // Generates the signature with all its interfaces.
                 b.Append( "export class " ).Append( tsTypedFile.TypeName );
-                if( tsRoot.GeneratePocoInterfaces )
-                {
-                    List<TSTypeFile> interfaces = new();
-                    foreach( IPocoInterfaceInfo i in root.Interfaces )
-                    {
-                        var itf = EnsurePocoInterface( monitor, tsTypedFile.Context, i );
-                        if( itf == null ) return null;
-                        b.Append( interfaces.Count == 0 ? " implements " : ", " );
-                        interfaces.Add( itf );
-                        b.AppendImportedTypeName( itf );
-                    }
-                }
                 b.OpenBlock();
 
                 // Creates the mutable lists of properties and create method parameters.
@@ -256,11 +245,6 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 // Raises the Generating event with the mutable TypeScriptPocoClass payload. 
                 IPocoJsonInfo? jsonInfo = root.GetJsonInfo();
-                if( jsonInfo == null )
-                {
-                    monitor.Error( $"Unable to get the IPocoJsonInfo for '{root.Name}' poco." );
-                    return null;
-                }
                 var pocoClass = new TypeScriptPocoClass( tsTypedFile.TypeName, b, root, jsonInfo, propList, requiredParameterCount, readOnlyPropertyCount );
                 var h = PocoGenerating;
                 if( h != null )
@@ -384,81 +368,6 @@ namespace CK.StObj.TypeScript.Engine
                 text = TypeScriptRoot.ToIdentifier( text, true );
             }
             return text;
-        }
-
-        TSTypeFile? EnsurePocoInterface( IActivityMonitor monitor, TypeScriptContext g, IPocoInterfaceInfo i )
-        {
-            var t = g.DeclareTSType( monitor, i.PocoInterface, requiresFile: true );
-            return t != null ? EnsurePocoInterface( monitor, t, i ) : null;
-        }
-
-        TSTypeFile? EnsurePocoInterface( IActivityMonitor monitor, TSTypeFile tsTypedFile, IPocoInterfaceInfo i )
-        {
-            if( tsTypedFile.TypePart == null )
-            {
-                // First, we ensure the class so that it appears at the beginning of the file.
-                if( EnsurePocoClass( monitor, tsTypedFile.Context, i.Root ) == null )
-                {
-                    return null;
-                }
-                // Double check here since EnsurePocoClass may have called us already.
-                if( tsTypedFile.TypePart == null && tsTypedFile.Context.Root.GeneratePocoInterfaces )
-                {
-                    var iPocoFile = tsTypedFile.Context.DeclareTSType( monitor, typeof( IPoco ), requiresFile: true );
-                    Debug.Assert( iPocoFile != null, "EnsurePocoClass did the job." );
-                    tsTypedFile.File.Imports.EnsureImport( iPocoFile.File, "IPoco" );
-
-                    var b = tsTypedFile.EnsureTypePart();
-                    b.AppendDocumentation( monitor, i.PocoInterface );
-                    b.Append( "export interface " ).Append( tsTypedFile.TypeName ).Append( " extends IPoco" );
-                    foreach( Type baseInterface in i.PocoInterface.GetInterfaces() )
-                    {
-                        // If the base interface is a "normal" IPoco interface, then we ensure that it is
-                        // generated.
-                        // If the base interface is "another interface", we'll consider it only if it has been
-                        // declared.
-                        var baseItf = i.Root.Interfaces.FirstOrDefault( p => p.PocoInterface == baseInterface );
-                        if( baseItf != null )
-                        {
-                            var fInterface = EnsurePocoInterface( monitor, tsTypedFile.Context, baseItf );
-                            if( fInterface == null ) return null;
-                            b.Append( ", " ).AppendImportedTypeName( fInterface );
-                        }
-                        else
-                        {
-                            // If the base interface does not belong to the OtherInterfaces: we skip them (it should be
-                            // the IPoco or IClosedPoco).
-                            if( i.Root.OtherInterfaces.Contains( baseInterface ) )
-                            {
-                                // We handle the already declared base interfaces only.
-                                var declared = tsTypedFile.Context.FindDeclaredTSType( baseInterface );
-                                if( declared != null )
-                                {
-                                    b.Append( ", " ).AppendImportedTypeName( declared );
-                                }
-                            }
-                        }
-                    }
-                    b.OpenBlock();
-                    bool success = true;
-                    foreach( var iP in i.PocoInterface.GetProperties() )
-                    {
-                        // Is this interface property implemented at the class level?
-                        // If not (ExternallyImplemented property) we currently ignore it.
-                        IPocoPropertyInfo? p = i.Root.Properties.GetValueOrDefault( iP.Name );
-                        if( p != null )
-                        {
-                            b.AppendDocumentation( monitor, iP )
-                             .Append( p.IsReadOnly ? "readonly " : "" )
-                             .AppendIdentifier( p.PropertyName )
-                             .Append( p.IsNullable ? "?: " : ": " );
-                            success &= AppendPocoPropertyTypeQualifier( monitor, tsTypedFile.Context, b, p );
-                            b.Append( ";" ).NewLine();
-                        }
-                    }
-                }
-            }
-            return tsTypedFile;
         }
 
         static bool AppendPocoPropertyTypeQualifier( IActivityMonitor monitor, TypeScriptContext g, ITSCodePart b, IPocoPropertyInfo p )

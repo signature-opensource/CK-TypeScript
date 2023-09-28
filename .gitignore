@@ -256,18 +256,14 @@ Tests/**/CKSetup-WorkingDir/
 CodeCakeBuilder/MemoryKey.*.txt
 CodeCakeBuilder/UnitTestsDone.*.txt
 $StObjGen/
-/Tests/CK.StObj.TypeScript.Tests/TypeScriptOutput/
 
 CodeCakeBuilder/[Rr]elease/
 CodeCakeBuilder/[Rr]eleases/
 
 /**/.yarn/*
+!/**/.yarn/cache
 !/**/.yarn/patches
-!/**/.yarn/releases
 !/**/.yarn/plugins
 !/**/.yarn/sdks
+!/**/.yarn/releases
 !/**/.yarn/versions
-/**/.pnp.*
-
-/Tests/TypeScriptTests/no-dist/
-/Tests/TypeScriptTests/Output/
