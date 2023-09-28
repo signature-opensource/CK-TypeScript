@@ -76,10 +76,12 @@ namespace CK.StObj.TypeScript.Engine
             // We don't handle OtherInterface (parts) for the moment: using these in TypeScript requires
             // the polymorphism to ba corectly handled (brand types and serializer/deserializer with polymorphism).
             var type = builder.Type;
-            bool isPoco = typeof( IPoco ).IsAssignableFrom( type );
+            // Filter out an implementation class.
+            bool isPoco = type.IsInterface && typeof( IPoco ).IsAssignableFrom( type );
             if( isPoco && type != typeof( IPoco ) && type != typeof( IClosedPoco ) )
             {
                 var familyInfo = PocoSupport.Find( type )?.Root;
+                // If the interface is definer (an AbstractIPoco) we skip it.
                 if( familyInfo != null )
                 {
                     // We may miss an indirection here when the type is not the primary interface,
@@ -129,10 +131,6 @@ namespace CK.StObj.TypeScript.Engine
                     }
                     builder.Finalizer = ( m, f ) => EnsurePocoClass( m, f, familyInfo ) != null;
                 }
-                else
-                {
-                    monitor.Warn( $"Type {type:C} is a IPoco but is not a registered PocoClass. It is ignored." );
-                }
             }
             return true;
         }
@@ -147,7 +145,7 @@ namespace CK.StObj.TypeScript.Engine
 
         internal TSTypeFile? EnsurePocoClass( IActivityMonitor monitor, TypeScriptContext g, IPocoRootInfo root )
         {
-            var t = g.DeclareTSType( monitor, root.PocoClass, requiresFile: true );
+            var t = g.DeclareTSType( monitor, root.PrimaryInterface, requiresFile: true );
             return t != null ? EnsurePocoClass( monitor, t, root ) : null;
         }
 
