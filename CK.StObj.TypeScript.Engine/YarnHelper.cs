@@ -2,6 +2,7 @@ using CK.Core;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -35,13 +36,14 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="workingDirectory">The working directory.</param>
         /// <param name="command">The command to run.</param>
+        /// <param name="environmentVariables">Optional environment variables to set.</param>
         /// <returns>True on success, false if yarn cannot be found or the process failed.</returns>
-        public static bool RunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command )
+        public static bool RunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command, Dictionary<string, string>? environmentVariables )
         {
             var yarnPath = TryFindYarn( workingDirectory, out var _ );
             if( yarnPath.HasValue )
             {
-                return DoRunYarn( monitor, workingDirectory, command, yarnPath.Value );
+                return DoRunYarn( monitor, workingDirectory, command, yarnPath.Value, environmentVariables );
             }
             monitor.Error( $"Unable to find yarn in '{workingDirectory}' or above." );
             return false;
@@ -454,11 +456,17 @@ namespace CK.Setup
             }
         }
 
-        internal static bool DoRunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command, NormalizedPath yarnPath )
+        internal static bool DoRunYarn( IActivityMonitor monitor,
+                                        NormalizedPath workingDirectory,
+                                        string command,
+                                        NormalizedPath yarnPath,
+                                        Dictionary<string, string>? environmentVariables = null )
         {
-            using( monitor.OpenInfo( $"Running 'yarn {command}' in '{workingDirectory}'." ) )
+            using( monitor.OpenInfo( $"Running 'yarn {command}' in '{workingDirectory}'{(environmentVariables == null || environmentVariables.Count == 0
+                                                                                            ? ""
+                                                                                            : $"with {environmentVariables.Select( kv => $"'{kv.Key}': '{kv.Value}'" ).Concatenate()}.")}." ) )
             {
-                int code = RunProcess( monitor, "node", $"{yarnPath} {command}", workingDirectory );
+                int code = RunProcess( monitor, "node", $"{yarnPath} {command}", workingDirectory, environmentVariables );
                 if( code != 0 )
                 {
                     monitor.Error( $"'yarn {command}' failed with code {code}." );
@@ -521,19 +529,25 @@ namespace CK.Setup
 
         #region ProcessRunner for NodeBuild
 
-        static int RunProcess( IActivityMonitor monitor, string fileName, string arguments, string workingDirectory )
+        static int RunProcess( IActivityMonitor monitor,
+                               string fileName,
+                               string arguments,
+                               string workingDirectory,
+                               Dictionary<string,string>? environmentVariables )
         {
-            monitor.Trace( $"RunProcess: '{fileName} {arguments}'." );
-            using var process = new Process
+            var info = new ProcessStartInfo( fileName, arguments )
             {
-                StartInfo = new ProcessStartInfo( fileName, arguments )
-                {
-                    WorkingDirectory = workingDirectory,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8
-                }
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8
             };
+            if( environmentVariables != null && environmentVariables.Count > 0 )
+            {
+                foreach( var kv in environmentVariables ) info.EnvironmentVariables.Add( kv.Key, kv.Value );
+            }
+
+            using var process = new Process { StartInfo = info };
             process.Start();
             var left = new ChannelTextReader( process.StandardOutput );
             var right = new ChannelTextReader( process.StandardError );

@@ -41,19 +41,6 @@ namespace CK
         }
 
         /// <summary>
-        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
-        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup and scripts "test" command is
-        /// available: <see cref="RunTypeScriptTest(Testing.IStObjEngineTestHelper, NormalizedPath)"/> can be called.
-        /// </summary>
-        /// <param name="this">This helper.</param>
-        /// <param name="testName">The current test name.</param>
-        /// <returns>The TSTests test path.</returns>
-        public static NormalizedPath GetTypeScriptWithTestsSupportTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
-        {
-            return @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( testName );
-        }
-
-        /// <summary>
         /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
         /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built. No VSCode support nor TypeScript test
         /// tooling is installed.
@@ -64,6 +51,31 @@ namespace CK
         public static NormalizedPath GetTypeScriptWithBuildTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
             return @this.TestProjectFolder.AppendPart( "TSBuildOnly" ).AppendPart( testName );
+        }
+
+        /// <summary>
+        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSBuildWithVSCode/<paramref name="testName"/>" path
+        /// for tests that must be compiled. Yarn is installed, "/ck-gen" is built and VSCode support is installed.
+        /// </summary>
+        /// <param name="this">This helper.</param>
+        /// <param name="testName">The current test name.</param>
+        /// <returns>The TSBuildOnly test path.</returns>
+        public static NormalizedPath GetTypeScriptWithBuildAndVSCodeTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        {
+            return @this.TestProjectFolder.AppendPart( "TSBuildWithVSCode" ).AppendPart( testName );
+        }
+
+        /// <summary>
+        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
+        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup and scripts "test" command is
+        /// available: <see cref="RunTypeScriptTest(Testing.IStObjEngineTestHelper, NormalizedPath)"/> can be called.
+        /// </summary>
+        /// <param name="this">This helper.</param>
+        /// <param name="testName">The current test name.</param>
+        /// <returns>The TSTests test path.</returns>
+        public static NormalizedPath GetTypeScriptWithTestsSupportTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        {
+            return @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( testName );
         }
 
         enum GenerateMode
@@ -93,8 +105,12 @@ namespace CK
             {
                 "TSGeneratedOnly" => GenerateMode.SkipTypeScriptTooling,
                 "TSBuildOnly" => GenerateMode.BuildCKGen,
+                "TSBuildWithVSCode" => GenerateMode.BuildCKGenAndVSCodeSupport,
                 "TSTests" => GenerateMode.WithTestSupport,
-                _ => Throw.ArgumentException<GenerateMode>( $"Unsupported target project path: {targetProjectPath}." )
+                _ => Throw.ArgumentException<GenerateMode>( $"Unsupported target project path: '{targetProjectPath}'.{Environment.NewLine}" +
+                                                            $"The target path must be obtained with TestHelper methods GetTypeScriptGeneratedOnlyTargetProjectPath()," +
+                                                            $"GetTypeScriptWithBuildTargetProjectPath(), GetTypeScriptWithBuildAndVSCodeTargetProjectPath() or " +
+                                                            $"GetTypeScriptWithTestsSupportTargetProjectPath()." )
             };
 
             configuration ??= new StObjEngineConfiguration();
@@ -190,10 +206,13 @@ namespace CK
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="targetProjectPath">The target test path.</param>
+        /// <param name="environmentVariables">Optional environment variables to set.</param>
         /// <returns>True on success, false on error.</returns>
-        public static bool RunTypeScriptTest( this Testing.IStObjEngineTestHelper @this, NormalizedPath targetProjectPath )
+        public static bool RunTypeScriptTest( this Testing.IStObjEngineTestHelper @this,
+                                              NormalizedPath targetProjectPath,
+                                              Dictionary<string,string>? environmentVariables = null )
         {
-            return YarnHelper.RunYarn( @this.Monitor, targetProjectPath, "test" );
+            return YarnHelper.RunYarn( @this.Monitor, targetProjectPath, "test", environmentVariables );
         }
 
     }
