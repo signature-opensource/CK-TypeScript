@@ -266,10 +266,10 @@ namespace CK.Setup
                    && Directory.Exists( targetProjectPath.Combine( ".yarn/sdks" ) );
         }
 
-        internal static void InstallVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath, NormalizedPath yarnPath )
+        internal static bool InstallVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath, NormalizedPath yarnPath )
         {
-            DoRunYarn( monitor, targetProjectPath, "add --dev @yarnpkg/sdks", yarnPath );
-            DoRunYarn( monitor, targetProjectPath, "sdks vscode", yarnPath );
+            return DoRunYarn( monitor, targetProjectPath, "add --dev @yarnpkg/sdks", yarnPath )
+                   && DoRunYarn( monitor, targetProjectPath, "sdks vscode", yarnPath );
         }
 
         static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
@@ -461,7 +461,7 @@ namespace CK.Setup
                 int code = RunProcess( monitor, "node", $"{yarnPath} {command}", workingDirectory );
                 if( code != 0 )
                 {
-                    monitor.CloseGroup( $"Exit code {code}." );
+                    monitor.Error( $"'yarn {command}' failed with code {code}." );
                     return false;
                 }
             }

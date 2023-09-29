@@ -652,49 +652,14 @@ namespace CK.Setup
                                             }
                                             else
                                             {
-                                                using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )
-                                                {
-                                                    string a = string.Empty, i = string.Empty;
-                                                    Add( ref a, ref i, "typescript", targetTypescriptVersion );
-                                                    Add( ref a, ref i, "jest", jestVersion );
-                                                    Add( ref a, ref i, "ts-jest", tsJestVersion );
-                                                    Add( ref a, ref i, "@types/jest", typesJestVersion );
-                                                    static void Add( ref string a, ref string i, string name, string? version )
-                                                    {
-                                                        if( version == null )
-                                                        {
-                                                            if( i.Length == 0 ) i = name;
-                                                            else i += ' ' + name;
-                                                        }
-                                                        else
-                                                        {
-                                                            a = $"{a}{(a.Length == 0 ? "" : ", ")}{name} ({version})";
-                                                        }
-                                                    }
-
-                                                    if( a.Length > 0 ) monitor.Info( $"Already installed: {a}." );
-                                                    if( i.Length > 0 )
-                                                    {
-                                                        success &= YarnHelper.DoRunYarn( monitor, targetProjectPath, $"add --dev {i}", yarnPath.Value );
-                                                    }
-                                                    if( success )
-                                                    {
-                                                        YarnHelper.EnsureSampleJestTestInSrcFolder( monitor, targetProjectPath );
-                                                        YarnHelper.SetupJestConfigFile( monitor, targetProjectPath );
-
-                                                        var packageJsonObject = YarnHelper.LoadPackageJson( monitor, projectJsonPath, out invalidPackageJson );
-                                                        // There is absolutely no reason here to not be able to read back the package.json.
-                                                        // Defensive programming here.
-                                                        if( !invalidPackageJson &&  packageJsonObject != null )
-                                                        {
-                                                            bool modified = false;
-                                                            var scripts = YarnHelper.EnsureJsonObject( monitor, packageJsonObject, "scripts", ref modified );
-                                                            Throw.DebugAssert( scripts != null );
-                                                            scripts.Add( "test", "jest" );
-                                                            success &= YarnHelper.SavePackageJsonFile( monitor, projectJsonPath, packageJsonObject );
-                                                        }
-                                                    }
-                                                }
+                                                success &= EnsureJestTestSupport( monitor,
+                                                                                  targetProjectPath,
+                                                                                  projectJsonPath,
+                                                                                  targetTypescriptVersion,
+                                                                                  yarnPath.Value,
+                                                                                  jestVersion,
+                                                                                  tsJestVersion,
+                                                                                  typesJestVersion );
                                             }
                                         }
 
@@ -707,6 +672,61 @@ namespace CK.Setup
                 }
                 else success = false;
             }
+            return success;
+        }
+
+        private static bool EnsureJestTestSupport( IActivityMonitor monitor,
+                                                   NormalizedPath targetProjectPath,
+                                                   NormalizedPath projectJsonPath,
+                                                   string? targetTypescriptVersion,
+                                                   NormalizedPath yarnPath,
+                                                   string? jestVersion,
+                                                   string? tsJestVersion,
+                                                   string? typesJestVersion )
+        {
+            bool success = true;
+            using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )
+            {
+                string a = string.Empty, i = string.Empty;
+                Add( ref a, ref i, "typescript", targetTypescriptVersion );
+                Add( ref a, ref i, "jest", jestVersion );
+                Add( ref a, ref i, "ts-jest", tsJestVersion );
+                Add( ref a, ref i, "@types/jest", typesJestVersion );
+                static void Add( ref string a, ref string i, string name, string? version )
+                {
+                    if( version == null )
+                    {
+                        if( i.Length == 0 ) i = name;
+                        else i += ' ' + name;
+                    }
+                    else
+                    {
+                        a = $"{a}{(a.Length == 0 ? "" : ", ")}{name} ({version})";
+                    }
+                }
+
+                if( a.Length > 0 ) monitor.Info( $"Already installed: {a}." );
+                if( i.Length > 0 )
+                {
+                    success &= YarnHelper.DoRunYarn( monitor, targetProjectPath, $"add --dev {i}", yarnPath );
+                }
+                // Always setup jest even on error.
+                YarnHelper.EnsureSampleJestTestInSrcFolder( monitor, targetProjectPath );
+                YarnHelper.SetupJestConfigFile( monitor, targetProjectPath );
+
+                var packageJsonObject = YarnHelper.LoadPackageJson( monitor, projectJsonPath, out var invalidPackageJson );
+                // There is absolutely no reason here to not be able to read back the package.json.
+                // Defensive programming here.
+                if( !invalidPackageJson && packageJsonObject != null )
+                {
+                    bool modified = false;
+                    var scripts = YarnHelper.EnsureJsonObject( monitor, packageJsonObject, "scripts", ref modified );
+                    Throw.DebugAssert( scripts != null );
+                    scripts.Add( "test", "jest" );
+                    success &= YarnHelper.SavePackageJsonFile( monitor, projectJsonPath, packageJsonObject );
+                }
+            }
+
             return success;
         }
     }
