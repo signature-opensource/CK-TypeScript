@@ -1,22 +1,18 @@
 using CK.Core;
 using CK.Setup;
 using FluentAssertions;
-using FluentAssertions.Equivalency;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Xml.Linq;
 
 namespace CK
 {
     /// <summary>
     /// Extends <see cref="Testing.IStObjEngineTestHelper"/> for TypeScript support.
     /// </summary>
-    public static class StObjEngineTestHelperExtensions
+    public static class StObjEngineTestHelperTypeScriptExtensions
     {
         /// <summary>
         /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSGeneratedOnly/<paramref name="testName"/>" path
