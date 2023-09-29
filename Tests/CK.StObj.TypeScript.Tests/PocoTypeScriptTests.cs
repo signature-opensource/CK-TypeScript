@@ -88,7 +88,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
             TestHelper.GenerateTypeScript( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) );
-            TestHelper.RunTypeScriptTest( targetProjectPath ).Should().BeTrue();
+            TestHelper.RunTypeScriptTest( targetProjectPath );
         }
 
         [ExternalName( "NotGeneratedByDefault" )]

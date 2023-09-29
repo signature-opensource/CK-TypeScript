@@ -198,17 +198,16 @@ namespace CK
         }
 
         /// <summary>
-        /// Runs the "test" script in the package.json.
+        /// Runs the "test" script in the package.json and fails on error.
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="targetProjectPath">The target test path.</param>
         /// <param name="environmentVariables">Optional environment variables to set.</param>
-        /// <returns>True on success, false on error.</returns>
-        public static bool RunTypeScriptTest( this Testing.IStObjEngineTestHelper @this,
+        public static void RunTypeScriptTest( this Testing.IStObjEngineTestHelper @this,
                                               NormalizedPath targetProjectPath,
                                               Dictionary<string,string>? environmentVariables = null )
         {
-            return YarnHelper.RunYarn( @this.Monitor, targetProjectPath, "test", environmentVariables );
+            YarnHelper.RunYarn( @this.Monitor, targetProjectPath, "test", environmentVariables ).Should().BeTrue( "TypeScript tests should be sucessfull." );
         }
 
     }
