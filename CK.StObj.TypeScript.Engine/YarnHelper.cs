@@ -2,23 +2,17 @@ using CK.Core;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace CK.Setup
 {
@@ -27,6 +21,12 @@ namespace CK.Setup
     /// </summary>
     public static class YarnHelper
     {
+        /// <summary>
+        /// The Jest's setupFile name.
+        /// </summary>
+        public const string JestSetupFileName = "jest.StObjTypeScriptEngine.js";
+
+        const string _testRunningKey = "STOBJ_TYPESCRIPT_ENGINE";
         const string _yarnFileName = $"yarn-{TypeScriptAspectBinPathConfiguration.AutomaticYarnVersion}.cjs";
         const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
 
@@ -47,6 +47,24 @@ namespace CK.Setup
             }
             monitor.Error( $"Unable to find yarn in '{workingDirectory}' or above." );
             return false;
+        }
+
+        public static bool PrepareRun( IActivityMonitor monitor,
+                                       NormalizedPath targetProjectPath,
+                                       Dictionary<string, string>? environmentVariables,
+                                       out Action? afterRun )
+        {
+            afterRun = null;
+            var o = LoadPackageJson( monitor, targetProjectPath.AppendPart( "package.json" ), out var invalidPackageJson );
+            if( o == null || invalidPackageJson ) return false;
+            var jestSetupFilePath = targetProjectPath.AppendPart( JestSetupFileName );
+            if( File.Exists( jestSetupFilePath ) || o["scripts"]?["test"]?.ToString() == "jest" )
+            {
+                environmentVariables ??= new Dictionary<string, string> { { _testRunningKey, "true" } };
+                WriteJestSetupFile( jestSetupFilePath, environmentVariables );
+                afterRun = () => WriteJestSetupFile( jestSetupFilePath, null );
+            }
+            return true;
         }
 
         /// <summary>
@@ -409,13 +427,13 @@ namespace CK.Setup
             return sub;
         }
 
-        internal static JsonObject? LoadPackageJson( IActivityMonitor monitor, NormalizedPath projectJsonPath, out bool invalidPackageJson )
+        internal static JsonObject? LoadPackageJson( IActivityMonitor monitor, NormalizedPath packageJsonPath, out bool invalidPackageJson )
         {
             invalidPackageJson = false;
             try
             {
-                if( !File.Exists( projectJsonPath ) ) return null;
-                using var f = File.OpenRead( projectJsonPath );
+                if( !File.Exists( packageJsonPath ) ) return null;
+                using var f = File.OpenRead( packageJsonPath );
                 var doc = JsonNode.Parse( f,
                                           nodeOptions: null,
                                           new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip } );
@@ -430,7 +448,7 @@ namespace CK.Setup
             }
             catch( Exception ex )
             {
-                monitor.Error( $"Unable to read file '{projectJsonPath}' file.", ex );
+                monitor.Error( $"Unable to read file '{packageJsonPath}' file.", ex );
                 invalidPackageJson = true;
                 return null;
             }
@@ -486,7 +504,7 @@ namespace CK.Setup
             else
             {
                 monitor.Info( $"Creating the 'jest.config.js' file." );
-                File.WriteAllText( jestConfigPath, """
+                File.WriteAllText( jestConfigPath, $$$"""
                                                     module.exports = {
                                                         moduleFileExtensions: ['js', 'json', 'ts'],
                                                         rootDir: 'src',
@@ -496,8 +514,51 @@ namespace CK.Setup
                                                             '^.+\\.ts$': ['ts-jest', {diagnostics: {ignoreCodes: ['TS151001']}}],
                                                         },
                                                         testEnvironment: 'node',
+                                                        setupFiles: ["../{{{JestSetupFileName}}}"]
                                                     };
                                                     """ );
+                WriteJestSetupFile( targetProjectPath.AppendPart( JestSetupFileName ), null );
+            }
+        }
+
+        static void WriteJestSetupFile( NormalizedPath jestSetupFilePath, Dictionary<string,string>? environmentVariables )
+        {
+            Throw.DebugAssert( jestSetupFilePath.LastPart == JestSetupFileName );
+            const string header = """
+                                  // This will run once before each test file and before the testing framework is installed.
+                                  // This is used by TestHelper.CreateTypeScriptTestRunner to duplicate environment variables settings
+                                  // in a "persistent" way: these environment variables will be available until the TypeScriptRunner
+                                  // returned by CreateTypeScriptTestRunner is disposed.
+                                  """;
+            if( environmentVariables == null )
+            {
+                File.WriteAllText( jestSetupFilePath, header );
+            }
+            else
+            {
+                using var f = File.Create( jestSetupFilePath );
+                using var text = new StreamWriter( f );
+                text.WriteLine( header );
+                text.Write( "Object.assign( process.env, " );
+                text.Flush();
+                using( var w = new Utf8JsonWriter( f ) )
+                {
+                    w.WriteStartObject();
+                    bool hasTestKey = false;
+                    foreach( var kv in environmentVariables )
+                    {
+                        hasTestKey |= kv.Key == _testRunningKey;
+                        w.WriteString( kv.Key, kv.Value );
+                    }
+                    if( !hasTestKey )
+                    {
+                        w.WriteString( _testRunningKey, "true" );
+                    }
+                    w.WriteEndObject();
+                    w.Flush();
+                }
+                text.WriteLine( ");" );
+                text.Flush();
             }
         }
 

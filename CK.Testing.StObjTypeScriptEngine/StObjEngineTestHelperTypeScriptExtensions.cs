@@ -3,17 +3,82 @@ using CK.Setup;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CK
 {
     /// <summary>
     /// Extends <see cref="Testing.IStObjEngineTestHelper"/> for TypeScript support.
     /// </summary>
-    public static class StObjEngineTestHelperTypeScriptExtensions
+    public static partial class StObjEngineTestHelperTypeScriptExtensions
     {
+
+        sealed class Resumer
+        {
+            internal readonly TaskCompletionSource _tcs;
+            readonly Timer _timer;
+            readonly Func<bool, bool> _resume;
+            bool _reentrant;
+
+            internal Resumer( Func<bool, bool> resumeF )
+            {
+                _timer = new Timer( OnTimer, null, 1000, 1000 );
+                _tcs = new TaskCompletionSource( TaskCreationOptions.RunContinuationsAsynchronously );
+                _resume = resumeF;
+            }
+
+            void OnTimer( object? _ )
+            {
+                if( _reentrant ) return;
+                _reentrant = true;
+                if( _resume( false ) )
+                {
+                    _tcs.SetResult();
+                    _timer.Dispose();
+                }
+                _reentrant = false;
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously blocks until true is returned from the callback (the callback is called every second).
+        /// This can be used only when <see cref="Debugger.IsAttached"/> is true: this is ignored otherwise. 
+        /// <para>
+        /// This is intended to let context alive for an undetermined delay, this can be seen as an interruptible
+        /// <c>await Task.Delay( Timeout.Infinite );</c>.
+        /// </para>
+        /// <para>
+        /// Usage: Sets a breakpoint in the callback and set the resume variable to true (typically via the watch window).
+        /// <code>
+        /// await TestHelper.SuspendAsync( resume => resume );
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="resume">callback always called with false that completes the returned task when true is returned.</param>
+        /// <returns>The task to await.</returns>
+        public static Task SuspendAsync( this Testing.IMonitorTestHelper @this,
+                                         Func<bool, bool> resume,
+                                         [CallerMemberName] string? testName = null,
+                                         [CallerLineNumber] int lineNumber = 0,
+                                         [CallerFilePath] string? fileName = null )
+        {
+            Throw.CheckNotNullArgument( resume );
+            if( !Debugger.IsAttached )
+            {
+                @this.Monitor.Warn( $"TestHelper.SuspendAsync called from '{testName}' method while no debugger is attached. Ignoring it.", lineNumber, fileName );
+                return Task.CompletedTask;
+            }
+            @this.Monitor.Info( $"TestHelper.SuspendAsync called from '{testName}' method.", lineNumber, fileName );
+            return new Resumer( resume )._tcs.Task;
+        }
+
         /// <summary>
         /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSGeneratedOnly/<paramref name="testName"/>" path
         /// for tests that only need to generate the "/ck-gen" folder without building it (no TypeScript tooling).
@@ -198,16 +263,119 @@ namespace CK
         }
 
         /// <summary>
-        /// Runs the "test" script in the package.json and fails on error.
+        /// Disposable running test created by <see cref="CreateTypeScriptRunner(Testing.IStObjEngineTestHelper, NormalizedPath, Dictionary{string, string}?)"/>.
+        /// </summary>
+        public class TypeScriptRunner : IAsyncDisposable
+        {
+            readonly Testing.IStObjEngineTestHelper _helper;
+            readonly NormalizedPath _targetProjectPath;
+            readonly Dictionary<string, string>? _environmentVariables;
+            readonly string _yarnCommand;
+            bool _isDisposed;
+            List<object>? _onDisposeList;
+            Action? _jestDispose;
+
+            internal TypeScriptRunner( Testing.IStObjEngineTestHelper helper,
+                                       NormalizedPath targetProjectPath,
+                                       Dictionary<string, string>? environmentVariables,
+                                       string yarnCommand,
+                                       Action? jestDispose )
+            {
+                _helper = helper;
+                _targetProjectPath = targetProjectPath;
+                _jestDispose = jestDispose;
+                _environmentVariables = environmentVariables;
+                _yarnCommand = yarnCommand;
+            }
+
+            /// <summary>
+            /// Runs the yarn command and fails on error.
+            /// </summary>
+            public void Run()
+            {
+                YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, _yarnCommand, _environmentVariables )
+                    .Should().BeTrue( $"'yarn {_yarnCommand}' should be sucessfull." );
+            }
+
+            /// <summary>
+            /// Adds cleanup function that will be called by <see cref="DisposeAsync"/>.
+            /// </summary>
+            /// <param name="onDispose">An asynchronous cleanup function.</param>
+            public void OnDispose( Func<Task> onDispose )
+            {
+                Throw.CheckNotNullArgument( onDispose );
+                _onDisposeList ??= new List<object>();
+                _onDisposeList.Add( onDispose );
+            }
+
+            /// <summary>
+            /// Adds cleanup function that will be called by <see cref="DisposeAsync"/>.
+            /// </summary>
+            /// <param name="onDispose">An asynchronous cleanup function.</param>
+            public void OnDispose( Func<ValueTask> onDispose )
+            {
+                Throw.CheckNotNullArgument( onDispose );
+                _onDisposeList ??= new List<object>();
+                _onDisposeList.Add( onDispose );
+            }
+
+            /// <summary>
+            /// Adds cleanup function that will be called by <see cref="DisposeAsync"/>.
+            /// </summary>
+            /// <param name="onDispose">A synchronous cleanup function.</param>
+            public void OnDispose( Action onDispose )
+            {
+                Throw.CheckNotNullArgument( onDispose );
+                _onDisposeList ??= new List<object>();
+                _onDisposeList.Add( onDispose );
+            }
+
+            /// <summary>
+            /// Must be called (using should be used) to revert any test setup side-effects that
+            /// may have been done on the environment.
+            /// </summary>
+            public async ValueTask DisposeAsync()
+            {
+                if( !_isDisposed )
+                {
+                    _isDisposed = true;
+                    _jestDispose?.Invoke();
+                    if( _onDisposeList != null )
+                    {
+                        foreach( var o in _onDisposeList )
+                        {
+                            if( o is Func<Task> aT ) await aT();
+                            if( o is Func<ValueTask> aV ) await aV();
+                            else ((Action)o).Invoke();
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates a <see cref="TypeScriptRunner"/> that MUST be disposed once <see cref="TypeScriptRunner.Run()"/> has been called:
+        /// <code>
+        /// await using var runner = TestHelper.CreateTypeScriptTestRunner( targetProjectPath );
+        /// // await CK.Testing.SuspendAsync();
+        /// runner.Run();
+        /// </code>
+        /// <para>
+        /// This 2-steps pattern enables to temporarily inserts a <see cref="CK.Testing.Suspendable.SuspendAsync(string)"/>
+        /// before calling the <see cref="TypeScriptRunner.Run()"/> in order to be able to keep a running context alive while
+        /// working on the TypeScript side (fixing, debugging, analyzing, etc.) TypeScript tests. 
+        /// </para>
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="targetProjectPath">The target test path.</param>
         /// <param name="environmentVariables">Optional environment variables to set.</param>
-        public static void RunTypeScriptTest( this Testing.IStObjEngineTestHelper @this,
-                                              NormalizedPath targetProjectPath,
-                                              Dictionary<string,string>? environmentVariables = null )
+        public static TypeScriptRunner CreateTypeScriptRunner( this Testing.IStObjEngineTestHelper @this,
+                                                               NormalizedPath targetProjectPath,
+                                                               Dictionary<string, string>? environmentVariables = null,
+                                                               string command = "test" )
         {
-            YarnHelper.RunYarn( @this.Monitor, targetProjectPath, "test", environmentVariables ).Should().BeTrue( "TypeScript tests should be sucessfull." );
+            YarnHelper.PrepareRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
+            return new TypeScriptRunner( @this, targetProjectPath, environmentVariables, command, afterRun );
         }
 
     }

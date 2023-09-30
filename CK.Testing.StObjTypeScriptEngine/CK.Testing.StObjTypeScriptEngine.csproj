@@ -11,4 +11,9 @@
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="README.md">
+      <SubType>Component</SubType>
+    </None>
+  </ItemGroup>
 </Project>
