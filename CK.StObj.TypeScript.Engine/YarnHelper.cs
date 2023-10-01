@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace CK.Setup
 {
     /// <summary>
-    /// Provides helper for Yarn.
+    /// Provides helper for Node and Yarn.
     /// </summary>
     public static class YarnHelper
     {
@@ -120,27 +120,28 @@ namespace CK.Setup
                     sb.Clear();
                     sb.Append( """
                                {
-                                  "name": "@local/ck-gen",
+                                 "name": "@local/ck-gen",
+
                                """ );
                     var depsList = dependencies
                         .Concat( dependencies.Where( s => s.Value.DependencyKind == DependencyKind.PeerDependency )
                                              .Select( s => KeyValuePair.Create( s.Key,
                                                                                 new LibraryImport( s.Value.Name, s.Value.Version, DependencyKind.DevDependency ) ) ) )
-                        .GroupBy( s => s.Value.DependencyKind, s => $@"    ""{s.Value.Name}"":""{s.Value.Version}""" )
+                        .GroupBy( s => s.Value.DependencyKind, s => $"    \"{s.Value.Name}\": \"{s.Value.Version}\"" )
                         .Select( s => (s.Key switch
                         {
                             DependencyKind.Dependency => "dependencies",
                             DependencyKind.DevDependency => "devDependencies",
                             DependencyKind.PeerDependency => "peerDependencies",
                             _ => Throw.InvalidOperationException<string>()
-                        }, string.Join( ",\n", s )) );
+                        }, string.Join( "," + Environment.NewLine, s )) );
 
                     foreach( var deps in depsList )
                     {
-                        sb.Append( "  \"" ).Append( deps.Item1 ).Append( "\":{" ).Append( deps.Item2 ).AppendLine().Append( "}," );
+                        sb.Append( "  \"" ).Append( deps.Item1 ).AppendLine( "\": {" ).AppendLine( deps.Item2 ).AppendLine( "  }," );
                     }
                     sb.Append( """
-                                 "private": true,
+                                  "private": true,
                                   "files": [
                                     "dist/"
                                   ],
