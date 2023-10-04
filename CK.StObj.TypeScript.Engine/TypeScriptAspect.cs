@@ -50,6 +50,11 @@ namespace CK.Setup
         {
             foreach( var genBinPath in context.AllBinPaths )
             {
+                // Skip the purely unified BinPath.
+                if( genBinPath.CurrentRun.ConfigurationGroup.IsUnifiedPure ) continue;
+                // Obtains the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
+                // We MAY here decide that ONE BinPath have more than one TypeScriptAspectConfiguration, but
+                // currently, on BinPath can define 0 or 1 TypeScriptAspectConfiguration.
                 var rootedConfigs = GetRootedConfigurations( monitor, genBinPath );
                 if( rootedConfigs != null )
                 {
@@ -67,6 +72,43 @@ namespace CK.Setup
                             return false;
                         }
                     }
+                    // The CK.Setup.TypeScriptCrisCommandGeneratorImpl in CK.Cris.AspNet.Engine
+                    // (triggered by the static CK.Cris.TypeScript.TypeScriptCrisCommandGenerator) needs
+                    // hooks the Poco TypeScript generation to handle Poco that are commands.
+                    // Only CK.Cris.IAbstractCommand thar are declared (by [TypeScript] or by the configuration)
+                    // are generated (this why, this uses a simple hook).
+                    // But CK.Cris.AspNet.CrisAspNetService needs to know tne TypeScriptified commands: they are
+                    // the only ones that must be handled by the /.cris handler. The allow-list of the AspNet endpoint
+                    // IS the same as the "TypeScript enabled commands" (we don't want a second filter to be configured
+                    // by the developer for this).
+                    // TODO:
+                    // - Decide:
+                    //      - If a central modeling of "AllowedEndpoints" can exist on the CrisPocoModel. This may
+                    //        be a simple list of endpoint names that can be used receive the command.
+                    //        This would be a cool feature (discoverability, transparency).
+                    //      - Or the allow-list should be managed by each endpoint, without any central model.
+                    //        This is less tempting... But may be simpler.
+                    // 
+                    //      In the 1) it will be up to the CK.Cris.AspNet.Engine to alter/mutate the PocoCrisModel...
+                    //      AFTER the code generation step :(
+                    // 
+                    //      In the 2) the "default AspNet Cris endpoint" has a special status and can do what it can
+                    //      to impact/configure the CrisAspNetEngine... But here again, this happens after the code
+                    //      generation step.
+                    //
+                    // It seems that we need to move the TypeScriptContext initialization up in the process to have the
+                    // list of declare TSTypes earlier... (its Run() can stay in the PostCode step).
+                    //
+                    //
+                    // This seems doable: if this aspect implements ICSCodeGenerator, its
+                    // Implement(IActivityMonitor, ICSCodeGenerationContext) will be called. It will have to "trampoline"
+                    // once to give the opportunity to the jsonCodeGen to be available in the CurrentRun.ServiceContainer.
+                    // It then can initialize the TypeScriptContexts for the BinPaths.
+                    // BUT the discovery is done in the Run() (as of today): it seems that nearly everything except the very
+                    // last step must be moved to the Implement step.
+                    //
+                    // Once done, the Implement step will be able to generate C# code with the "default aspnet endpoint"
+                    // configuration of the allowed commands (how this will be done is another story...).
                 }
             }
             return true;
