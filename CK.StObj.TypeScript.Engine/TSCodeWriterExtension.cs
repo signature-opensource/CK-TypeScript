@@ -86,7 +86,7 @@ namespace CK.TypeScript.CodeGen
 
 
         /// <summary>
-        /// Calls <see cref="AppendComplexTypeName(ITSCodeWriter, IActivityMonitor, TypeScriptContext, NullableTypeTree, bool, bool)"/> and
+        /// Calls <see cref="AppendComplexTypeName(ITSCodeWriter, IActivityMonitor, TypeScriptContext, NullableTypeTree, bool)"/> and
         /// returns the computed type name on success.
         /// Since one or more types may required to be <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)">declared</see>,
         /// this may fail: this returns the (null on error) type name (instead of the "fluent" standard code writer).
@@ -108,11 +108,10 @@ namespace CK.TypeScript.CodeGen
                                                            IActivityMonitor monitor,
                                                            TypeScriptContext g,
                                                            NullableTypeTree type,
-                                                           bool withUndefined = true,
-                                                           bool alwaysUsePocoClass = true )
+                                                           bool withUndefined = true )
         {
             var p = b.CreatePart();
-            return AppendComplexTypeName( p, monitor, g, type, withUndefined, alwaysUsePocoClass ) ? p.ToString() : null;
+            return AppendComplexTypeName( p, monitor, g, type, withUndefined ) ? p.ToString() : null;
         }
 
         /// <summary>
@@ -133,17 +132,12 @@ namespace CK.TypeScript.CodeGen
         /// False to ignore the nullable informations on the <paramref name="type"/>.
         /// By default, if the type is nullable, the generated type name will be <c>|undefined</c>.
         /// </param>
-        /// <param name="alwaysUsePocoClass">
-        /// False to consider a IPoco interface as the interface: by default, all IPoco interface are mapped to
-        /// their class type name (that is the primary interface name without the I prefix).
-        /// </param>
         /// <returns>True on success, false on error.</returns>
         public static bool AppendComplexTypeName( this ITSCodeWriter part,
                                                   IActivityMonitor monitor,
                                                   TypeScriptContext g,
                                                   NullableTypeTree type,
-                                                  bool withUndefined = true,
-                                                  bool alwaysUsePocoClass = true )
+                                                  bool withUndefined = true )
         {
             var t = type.Type;
             IPocoInterfaceInfo? iPoco;
@@ -221,13 +215,6 @@ namespace CK.TypeScript.CodeGen
                 {
                     if( !DeclareAndImportAndAppendTypeName( part, monitor, g, t ) ) return false;
                 }
-            }
-            else if( alwaysUsePocoClass && (iPoco = g.PocoCodeGenerator.PocoSupport.Find( t )) != null )
-            {
-                var c = g.DeclareTSType( monitor, iPoco.Root.PocoClass, requiresFile: true );
-                if( c == null ) return false;
-                part.File.Imports.EnsureImport( c.File, c.TypeName );
-                part.Append( c.TypeName );
             }
             else 
             {

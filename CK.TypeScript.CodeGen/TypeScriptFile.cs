@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen
-
 {
     /// <summary>
     /// A TypeScript file resides in a definitive <see cref="TypeScriptFolder"/>
@@ -33,6 +32,9 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public TypeScriptFolder Folder { get; }
 
+        /// <inheritdoc cref="TypeScriptFolder.Root" />
+        public TypeScriptRoot Root => Folder.Root;
+
         /// <summary>
         /// Gets this file name.
         /// It necessarily ends with '.ts'.
@@ -57,22 +59,18 @@ namespace CK.TypeScript.CodeGen
         public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
 
         /// <summary>
-        /// Saves this file into one or more actual paths on the file system.
+        /// Saves this file into a folder on the file system.
         /// The <see cref="Body"/> can be null (only <see cref="Imports"/> if any will be generated).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="outputPaths">Any number of target directories.</param>
-        /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public void Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths )
+        /// <param name="outputPath">Target directory.</param>
+        public void Save( IActivityMonitor monitor, NormalizedPath outputPath )
         {
             monitor.Trace( $"Saving '{Name}'." );
             var imports = Imports.ToString();
             if( imports.Length > 0 ) imports += Environment.NewLine;
             var all = imports + Body.ToString();
-            foreach( var p in outputPaths )
-            {
-                File.WriteAllText( p.AppendPart( Name ), all );
-            }
+            File.WriteAllText( outputPath.AppendPart( Name ), all );
         }
 
         /// <summary>

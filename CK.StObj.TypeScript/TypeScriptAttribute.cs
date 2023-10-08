@@ -1,6 +1,8 @@
 using CK.Core;
 using CK.Setup;
 using System;
+using System.Diagnostics;
+using System.Net;
 using System.Reflection;
 
 namespace CK.StObj.TypeScript
@@ -15,6 +17,7 @@ namespace CK.StObj.TypeScript
     [AttributeUsage( AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum )]
     public class TypeScriptAttribute : ContextBoundDelegationAttribute
     {
+        string? _typeName;
         string? _folder;
         string? _fileName;
         Type? _sameFolderAs;
@@ -32,9 +35,6 @@ namespace CK.StObj.TypeScript
         /// Base class constructor for specialized <see cref="TypeScriptAttribute"/> that
         /// can be bound to a specialized implementation that supports type generator
         /// (the ITSCodeGeneratorType from CK.StObj.TypeScript.Engine).
-        /// <para>
-        /// 
-        /// </para>
         /// </summary>
         protected TypeScriptAttribute( string actualAttributeTypeAssemblyQualifiedName )
             : base( actualAttributeTypeAssemblyQualifiedName )
@@ -74,6 +74,9 @@ namespace CK.StObj.TypeScript
         /// <summary>
         /// Gets or sets the file name that will contain the TypeScript generated code.
         /// When not null, this must be a valid file name that ends with a '.ts' extension.
+        /// <para>
+        /// This must be null if <see cref="SameFileAs"/> is not null.
+        /// </para>
         /// </summary>
         public string? FileName
         {
@@ -94,11 +97,19 @@ namespace CK.StObj.TypeScript
         }
 
         /// <summary>
-        /// Gets or sets the type name to use for this type.
+        /// Gets or sets the TypeScript type name to use for this type.
         /// This takes precedence over the <see cref="ExternalNameAttribute"/> that itself
         /// takes precedence over the <see cref="MemberInfo.Name"/> of the type.
         /// </summary>
-        public string? TypeName { get; set; }
+        public string? TypeName
+        {
+            get => _typeName;
+            set
+            {
+                Throw.CheckNotNullOrWhiteSpaceArgument( value );
+                _typeName = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets another type which defines the <see cref="Folder"/>.
@@ -141,5 +152,37 @@ namespace CK.StObj.TypeScript
                 _sameFileAs = value;
             }
         }
+
+        /// <summary>
+        /// Combines this attribute with another one (typically the one from a <see cref="TypeScriptTypeConfiguration.ToAttribute(IActivityMonitor, Func{IActivityMonitor, string, Type?})"/>).
+        /// </summary>
+        /// <param name="other">The other attribute to apply.</param>
+        /// <returns>This attribute.</returns>
+        public TypeScriptAttribute ApplyOverride( TypeScriptAttribute? other )
+        {
+            if( other == null ) return this;
+            if( other.TypeName != null ) _typeName = other.TypeName;
+            if( other.SameFileAs != null )
+            {
+                Debug.Assert( other._fileName == null && other._folder == null && other._sameFolderAs == null );
+                _fileName = null;
+                _folder = null;
+                _sameFolderAs = null;
+                _sameFileAs = other.SameFileAs;
+            }
+            else if( other.SameFolderAs != null )
+            {
+                Debug.Assert( other._folder == null );
+                _folder = null;
+                _sameFolderAs = other.SameFolderAs;
+            }
+            else
+            {
+                if( other.FileName != null ) _fileName = other.FileName;
+                if( other.Folder != null ) _folder = other.Folder;
+            }
+            return this;
+        }
     }
+
 }

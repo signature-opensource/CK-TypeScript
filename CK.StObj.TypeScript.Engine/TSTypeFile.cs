@@ -20,8 +20,12 @@ namespace CK.StObj.TypeScript.Engine
     /// </summary>
     public class TSTypeFile : ITSTypeFileBuilder
     {
+        readonly TypeScriptContext _context;
+        readonly Type _type;
+        readonly IList<ITSCodeGeneratorType> _generators;
         string _toString;
-        TypeScriptFile<TypeScriptContextRoot>? _file;
+        TypeScriptFile<TypeScriptContext>? _file;
+        internal TypeScriptAttribute Attribute;
 
         /// <summary>
         /// Discovery constructor. Also memorizes the attribute if it exists (or a new one).
@@ -30,14 +34,12 @@ namespace CK.StObj.TypeScript.Engine
         /// </summary>
         internal TSTypeFile( TypeScriptContext g, Type t, IList<ITSCodeGeneratorType> generators, TypeScriptAttribute? attr )
         {
-            Context = g;
-            Type = t;
-            Generators = generators;
+            _context = g;
+            _type = t;
+            _generators = generators;
             Attribute = attr ?? new TypeScriptAttribute();
             _toString = $"TypeScript for '{Type}'";
         }
-
-        internal TypeScriptAttribute Attribute;
 
         internal void Initialize( NormalizedPath folder, string fileName, string typeName )
         {
@@ -48,7 +50,7 @@ namespace CK.StObj.TypeScript.Engine
             FullFilePath = folder.AppendPart( fileName );
             TypeName = typeName;
             _toString += $" will be generated in '{FullFilePath}'.";
-            _file = Context.Root.Root.FindOrCreateFile( FullFilePath );
+            _file = Context.Root.FindOrCreateFile( FullFilePath );
         }
 
         internal bool IsInitialized => FileName != null;
@@ -62,13 +64,13 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets the <see cref="TypeScriptContext"/>.
         /// </summary>
-        public TypeScriptContext Context { get; }
+        public TypeScriptContext Context => _context;
 
         /// <inheritdoc />
-        public Type Type { get; }
+        public Type Type => _type;
 
         /// <inheritdoc />
-        public IList<ITSCodeGeneratorType> Generators { get; }
+        public IList<ITSCodeGeneratorType> Generators => _generators;
 
         /// <inheritdoc />
         public Func<IActivityMonitor, TSTypeFile, bool>? Finalizer { get; set; }
@@ -115,11 +117,11 @@ namespace CK.StObj.TypeScript.Engine
         /// <summary>
         /// Gets the associated file.
         /// </summary>
-        public TypeScriptFile<TypeScriptContextRoot> File
+        public TypeScriptFile<TypeScriptContext> File
         {
             get
             {
-                Debug.Assert( _file != null, "Exposed TSTypedFile has necessarily been initialized." );
+                Throw.DebugAssert( "Exposed TSTypedFile has necessarily been initialized.", _file != null );
                 return _file;
             }
         }

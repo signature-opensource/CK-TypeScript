@@ -44,16 +44,16 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
         [Test]
         public void all_types_are_empty()
         {
-            var output = LocalTestHelper.GenerateTSCode( nameof( all_types_are_empty ),
-                                                            typeof( EnumThatWillBeEmpty ),
-                                                            typeof( IWillBeEmpty ),
-                                                            typeof( WillBeEmptyClass ),
-                                                            typeof( WillBeEmptyStruct ) );
+            var targetOutputPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            TestHelper.GenerateTypeScript( targetOutputPath, typeof( EnumThatWillBeEmpty ),
+                                                             typeof( IWillBeEmpty ),
+                                                             typeof( WillBeEmptyClass ),
+                                                             typeof( WillBeEmptyStruct ) );
 
-            var e = File.ReadAllText( output.SourcePath.AppendPart( "EnumThatWillBeEmpty.ts" ) );
-            var i = File.ReadAllText( output.SourcePath.AppendPart( "IWillBeEmpty.ts" ) );
-            var c = File.ReadAllText( output.SourcePath.AppendPart( "WillBeEmptyClass.ts" ) );
-            var s = File.ReadAllText( output.SourcePath.AppendPart( "WillBeEmptyStruct.ts" ) );
+            var e = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/EnumThatWillBeEmpty.ts" ) );
+            var i = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/IWillBeEmpty.ts" ) );
+            var c = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/WillBeEmptyClass.ts" ) );
+            var s = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/WillBeEmptyStruct.ts" ) );
 
             e.Should().Be( "export enum EnumThatWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
             i.Should().Be( "export interface IWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );

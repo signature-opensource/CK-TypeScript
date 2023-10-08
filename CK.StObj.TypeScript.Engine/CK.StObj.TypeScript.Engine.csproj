@@ -2,12 +2,13 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="yarn-3.2.2.cjs" />
+    <EmbeddedResource Include="yarn-3.6.3.cjs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.StObj.Runtime" Version="23.0.0" />
+    <PackageReference Include="CK.StObj.Runtime" Version="24.0.0" />
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
   </ItemGroup>

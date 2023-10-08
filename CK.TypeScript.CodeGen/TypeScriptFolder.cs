@@ -22,20 +22,21 @@ namespace CK.TypeScript.CodeGen
         TypeScriptFolder? _firstChild;
         TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
+        NormalizedPath _path;
+        bool _hasBarrel;
 
-        static readonly char[] _invalidFileNameChars = Path.GetInvalidFileNameChars();
+        static readonly char[] _invalidFileNameChars = System.IO.Path.GetInvalidFileNameChars();
 
         internal TypeScriptFolder( TypeScriptRoot root )
         {
             _root = root;
-            Name = String.Empty;
         }
 
         internal TypeScriptFolder( TypeScriptFolder parent, string name )
         {
             _root = parent._root;
             Parent = parent;
-            Name = name;
+            _path = parent._path.AppendPart( name );
             _next = parent._firstChild;
             parent._firstChild = this;
         }
@@ -45,12 +46,17 @@ namespace CK.TypeScript.CodeGen
         /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
         /// it necessarily not empty without '.ts' extension.
         /// </summary>
-        public string Name { get; }
+        public string Name => _path.LastPart;
+
+        /// <summary>
+        /// Gets this folder's path from <see cref="Root"/>.
+        /// </summary>
+        public NormalizedPath Path => _path;
 
         /// <summary>
         /// Gets whether this folder is the root one.
         /// </summary>
-        public bool IsRoot => Name.Length == 0;
+        public bool IsRoot => _path.IsEmptyPath;
 
         /// <summary>
         /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
@@ -63,13 +69,29 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptRoot Root => _root;
 
         /// <summary>
+        /// Gets whether this folder has a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel).
+        /// </summary>
+        public bool HasBarrel => _hasBarrel;
+
+        /// <summary>
+        /// Definitely sets <see cref="HasBarrel"/> to true.
+        /// </summary>
+        public void EnsureBarrel() => _hasBarrel = true;
+
+        /// <summary>
         /// Finds or creates a folder.
         /// </summary>
         /// <param name="name">The folder's name to find or create. Must not be empty nor ends with '.ts'.</param>
         /// <returns>The folder.</returns>
         public TypeScriptFolder FindOrCreateFolder( string name ) => FindFolder( name ) ?? CreateFolder( name );
 
-        private protected virtual TypeScriptFolder CreateFolder( string name ) => new TypeScriptFolder( this, name );
+        private protected virtual TypeScriptFolder CreateFolder( string name )
+        {
+            // No need to CheckName here: FindFolder did the job.
+            var f = new TypeScriptFolder( this, name );
+            _root.OnFolderCreated( f );
+            return f;
+        }
 
         /// <summary>
         /// Finds or creates a subordinated folder by its path.
@@ -87,7 +109,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Finds an existing folder or returns null.
+        /// Finds an existing folder (direct child) or returns null.
         /// </summary>
         /// <param name="name">The folder's name. Must not be empty nor ends with '.ts'.</param>
         /// <returns>The existing folder or null.</returns>
@@ -101,6 +123,22 @@ namespace CK.TypeScript.CodeGen
                 c = c._next;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Finds an existing folder by its path or returns null.
+        /// </summary>
+        /// <param name="subPath">The path to the subordinated folder to find.</param>
+        /// <returns>The existing folder or null.</returns>
+        public TypeScriptFolder? FindFolder( NormalizedPath subPath )
+        {
+            var f = this;
+            foreach( var name in subPath.Parts )
+            {
+                f = f.FindFolder( name );
+                if( f == null ) return null;
+            }
+            return f;
         }
 
         /// <summary>
@@ -147,7 +185,12 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The file.</returns>
         public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? CreateFile( name );
 
-        private protected virtual TypeScriptFile CreateFile( string name ) => new TypeScriptFile( this, name );
+        private protected virtual TypeScriptFile CreateFile( string name )
+        {
+            var f = new TypeScriptFile( this, name );
+            _root.OnFileCreated( f );
+            return f;
+        }
 
         /// <summary>
         /// Finds or creates a file in this folder.
@@ -269,47 +312,44 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Saves this folder, its files and all its subordinated folders, into one or more actual paths on the file system.
+        /// Saves this folder, its files and all its subordinated folders, into a folder on the file system.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="outputPaths">Any number of target directories.</param>
-        /// <param name="createBarrel">Optional strategy to create barrels in folders. See <see cref="CreateBarrelOnSave"/>.</param>
+        /// <param name="outputPath">Target directory.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, IEnumerable<NormalizedPath> outputPaths, Func<NormalizedPath, bool> createBarrel )
+        public bool Save( IActivityMonitor monitor, NormalizedPath outputPath )
         {
-            using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPaths.Select( o => o.ToString() ).Concatenate()}" : Name)}." ) )
+            using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPath}" : Name)}." ) )
             {
-                if( createBarrel == null ) createBarrel = _ => false;
                 try
                 {
-                    var newOnes = IsRoot ? outputPaths : outputPaths.Select( p => p.AppendPart( Name ) ).ToArray();
+                    var target = IsRoot ? outputPath : outputPath.AppendPart( Name );
 
+                    bool createdDirectory = false;
                     if( _firstFile != null )
                     {
-                        foreach( var p in newOnes ) Directory.CreateDirectory( p );
+                        Directory.CreateDirectory( target );
+                        createdDirectory = true;
+
                         foreach( var file in Files )
                         {
-                            file.Save( monitor, newOnes );
+                            file.Save( monitor, target );
                         }
                     }
                     var folder = _firstChild;
                     while( folder != null )
                     {
-                        if( !folder.Save( monitor, newOnes, createBarrel ) ) return false;
+                        if( !folder.Save( monitor, target ) ) return false;
                         folder = folder._next;
                     }
-                    string? barrel = null;
-                    foreach( var p in newOnes )
+                    if( _hasBarrel )
                     {
-                        if( createBarrel( p ) )
+                        var b = new StringBuilder();
+                        AddExportsToBarrel( default, b );
+                        if( b.Length > 0 )
                         {
-                            if( barrel == null )
-                            {
-                                var b = new StringBuilder();
-                                AddExportsToBarrel( p, default, b, createBarrel );
-                                barrel = b.ToString();
-                            }
-                            File.WriteAllText( p.AppendPart( "index.ts" ), barrel );
+                            if( !createdDirectory ) Directory.CreateDirectory( target );
+                            File.WriteAllText( target.AppendPart( "index.ts" ), b.ToString() );
                         }
                     }
                     return true;
@@ -322,12 +362,11 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        void AddExportsToBarrel( NormalizedPath parentPath, NormalizedPath subPath, StringBuilder b, Func<NormalizedPath, bool> createBarrel )
+        void AddExportsToBarrel( NormalizedPath subPath, StringBuilder b )
         {
-            if( !subPath.IsEmptyPath
-                && (createBarrel( parentPath.Combine( subPath ) )) )
+            if( !subPath.IsEmptyPath && _hasBarrel )
             {
-                AddExportFolder( subPath, b );
+                b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
             }
             else
             {
@@ -340,21 +379,16 @@ namespace CK.TypeScript.CodeGen
                 var folder = _firstChild;
                 while( folder != null )
                 {
-                    folder.AddExportsToBarrel( parentPath, subPath.AppendPart( folder.Name ), b, createBarrel );
+                    folder.AddExportsToBarrel( subPath.AppendPart( folder.Name ), b );
                     folder = folder._next;
                 }
-            }
 
-            static void AddExportFile( NormalizedPath subPath, StringBuilder b, ReadOnlySpan<char> fileName )
-            {
-                b.Append( "export * from './" ).Append( subPath );
-                if( !subPath.IsEmptyPath ) b.Append( '/' );
-                b.Append( fileName ).AppendLine( "';" );
-            }
-
-            static void AddExportFolder( NormalizedPath subPath, StringBuilder b )
-            {
-                b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
+                static void AddExportFile( NormalizedPath subPath, StringBuilder b, ReadOnlySpan<char> fileName )
+                {
+                    b.Append( "export * from './" ).Append( subPath );
+                    if( !subPath.IsEmptyPath ) b.Append( '/' );
+                    b.Append( fileName ).AppendLine( "';" );
+                }
             }
         }
 

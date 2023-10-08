@@ -16,7 +16,7 @@ namespace CK.StObj.TypeScript.Engine
         internal TypeScriptPocoClass( string className,
                                       ITSCodePart p,
                                       IPocoRootInfo info,
-                                      IPocoJsonInfo jsonInfo,
+                                      IPocoJsonInfo? jsonInfo,
                                       List<TypeScriptPocoPropertyInfo> props,
                                       int requiredParameterCount,
                                       int readOnlyPropertyCount )
@@ -63,9 +63,9 @@ namespace CK.StObj.TypeScript.Engine
         public IPocoRootInfo PocoRootInfo { get; }
 
         /// <summary>
-        /// Gets the Json poco information.
+        /// Gets the Json poco information if Json is available.
         /// </summary>
-        public IPocoJsonInfo JsonInfo { get; }
+        public IPocoJsonInfo? JsonInfo { get; }
 
         /// <summary>
         /// Gets a list of the properties that will be generated with their <see cref="TypeScriptPocoPropertyInfo.CreateMethodParameter"/>.

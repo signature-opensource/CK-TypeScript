@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,7 +20,11 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <inheritdoc />
-        public new TypeScriptFolder<TRoot> Folder => (TypeScriptFolder<TRoot>)base.Folder;
+        public new TypeScriptFolder<TRoot> Folder => Unsafe.As<TypeScriptFolder<TRoot>>( base.Folder );
+
+        /// <inheritdoc cref="TypeScriptFolder.Root" />
+        public new TRoot Root => Folder.Root;
+
 
     }
 

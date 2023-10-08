@@ -18,36 +18,27 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Central TypeScript context with options and a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
-    /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="TypeScriptFolder.Save"/>d.
+    /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
     /// <para>
     /// This class can be specialized in order to offer a more powerful API.
     /// </para>
     /// </summary>
-    public partial class TypeScriptRoot
+    public class TypeScriptRoot
     {
-        readonly IReadOnlyCollection<(NormalizedPath Path, XElement Config)> _pathsAndConfig;
         readonly bool _pascalCase;
         readonly bool _generateDocumentation;
-        readonly bool _generatePocoInterfaces;
         Dictionary<object, object?>? _memory;
 
         /// <summary>
         /// Initializes a new <see cref="TypeScriptRoot"/>.
         /// </summary>
-        /// <param name="pathsAndConfig">Set of output paths with their configuration element. May be empty.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
-        /// <param name="generatePocoInterfaces">Whether IPoco interfaces should be generated.</param>
-        public TypeScriptRoot( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig,
-                               bool pascalCase,
-                               bool generateDocumentation,
-                               bool generatePocoInterfaces )
+        public TypeScriptRoot( bool pascalCase,
+                               bool generateDocumentation )
         {
-            Throw.CheckNotNullArgument( pathsAndConfig );
-            _pathsAndConfig = pathsAndConfig;
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
-            _generatePocoInterfaces = generatePocoInterfaces;
             var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
             Root = (TypeScriptFolder)rootType.GetMethod( "Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static )!
                                              .Invoke( null, new object[] { this } )!;
@@ -65,25 +56,33 @@ namespace CK.TypeScript.CodeGen
         public bool GenerateDocumentation => _generateDocumentation;
 
         /// <summary>
-        /// Gets whether IPoco interfaces should be generated.
-        /// </summary>
-        public bool GeneratePocoInterfaces => _generatePocoInterfaces;
-
-        /// <summary>
         /// Gets or sets the <see cref="IXmlDocumentationCodeRefHandler"/> to use.
         /// When null, <see cref="DocumentationCodeRef.TextOnly"/> is used.
         /// </summary>
         public IXmlDocumentationCodeRefHandler? DocumentationCodeRefHandler { get; set; }
 
         /// <summary>
-        /// Gets the output paths and their configuration element. Never empty.
-        /// </summary>
-        public IReadOnlyCollection<(NormalizedPath Path, XElement Config)> OutputPaths => _pathsAndConfig;
-
-        /// <summary>
         /// Gets the root folder into which type script files must be generated.
         /// </summary>
         public TypeScriptFolder Root { get; }
+
+        /// <summary>
+        /// Optional extension point called whenever a new folder appears.
+        /// Does nothing by default.
+        /// </summary>
+        /// <param name="f">The newly created folder.</param>
+        internal protected virtual void OnFolderCreated( TypeScriptFolder f )
+        {
+        }
+
+        /// <summary>
+        /// Optional extension point called whenever a new file appears.
+        /// Does nothing by default.
+        /// </summary>
+        /// <param name="f">The newly created file.</param>
+        internal protected virtual void OnFileCreated( TypeScriptFile f )
+        {
+        }
 
         /// <summary>
         /// Gets a shared memory for this root that all <see cref="TypeScriptFolder"/>
@@ -98,19 +97,17 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Saves this <see cref="Root"/> (all its files and creates the necessary folders)
-        /// into <see cref="OutputPaths"/>.
+        /// into <paramref name="outputPath"/>, ensuring that a barrel will be generated for the <see cref="Root"/>
+        /// folder.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
+        /// <param name="outputPath">The target output folder.</param>
         /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool SaveTS( IActivityMonitor monitor )
+        public bool Save( IActivityMonitor monitor, NormalizedPath outputPath )
         {
-            var barrelPaths = _pathsAndConfig.SelectMany( c => c.Config.Elements( "Barrels" ).Elements( "Barrel" )
-                                                     .Select( b => c.Path.Combine( b.Attribute( "Path" )?.Value ) ) );
-            var roots = _pathsAndConfig.Select(
-                p => new NormalizedPath( Path.Combine( p.Path, "ts", "src" )
-            ) ).ToArray();
-            var barrels = new HashSet<NormalizedPath>( roots.Concat( barrelPaths ) );// We need a root barrel for the generated module.
-            return Root.Save( monitor, roots, barrels.Contains );
+            // We need a root barrel for the generated module.
+            Root.EnsureBarrel();
+            return Root.Save( monitor, outputPath );
         }
 
         /// <summary>
@@ -142,6 +139,7 @@ namespace CK.TypeScript.CodeGen
             }
             return name;
         }
+
     }
 
 }
