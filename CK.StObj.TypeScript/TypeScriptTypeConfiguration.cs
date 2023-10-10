@@ -88,6 +88,7 @@ namespace CK.Setup
         /// <param name="e">The xml element.</param>
         public TypeScriptTypeConfiguration( XElement e )
         {
+            // Allow the type to be the element value.
             Type = (string?)e.Attribute( StObjEngineConfiguration.xType ) ?? e.Value;
             TypeName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeName );
             Folder = (string?)e.Attribute( TypeScriptAspectConfiguration.xFolder );

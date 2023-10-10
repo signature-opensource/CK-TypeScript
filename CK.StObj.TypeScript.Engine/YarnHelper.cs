@@ -387,7 +387,9 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( workspaces.Any( x => x is JsonValue v && v.TryGetValue<string>( out var s ) && s == "ck-gen" ) )
+                    if( workspaces.Any( x => x is JsonValue v
+                                             && v.TryGetValue<string>( out var s )
+                                             && (s == "ck-gen" || s == "*" ) ) )
                     {
                         return true;
                     }
