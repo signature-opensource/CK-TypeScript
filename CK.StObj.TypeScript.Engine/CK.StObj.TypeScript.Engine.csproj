@@ -8,7 +8,7 @@
     <EmbeddedResource Include="yarn-3.6.3.cjs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.StObj.Runtime" Version="24.0.0" />
+    <PackageReference Include="CK.StObj.Runtime" Version="24.0.1--0002-develop" />
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
   </ItemGroup>
