@@ -273,8 +273,9 @@ namespace CK.Setup
             {
                 var content = $"""
                               yarnPath: "./{yarnPath.RemoveFirstPart(yarnPath.Parts.Count - 3)}"
-                              enableGlobalCache: false
                               cacheFolder: "./.yarn/cache"
+                              enableGlobalCache: false
+                              enableMirror: true
                               """;
                 monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{content}" );
                 File.WriteAllText( yarnrcFile, content );
