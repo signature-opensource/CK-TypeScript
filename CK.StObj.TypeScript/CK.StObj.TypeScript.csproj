@@ -6,7 +6,7 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Json" Version="24.0.1--0006-develop" />
-    <PackageReference Include="CK.StObj.Model" Version="24.0.1--0006-develop" />
+    <PackageReference Include="CK.Poco.Json" Version="24.0.1--0007-develop" />
+    <PackageReference Include="CK.StObj.Model" Version="24.0.1--0007-develop" />
   </ItemGroup>
 </Project>
