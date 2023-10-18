@@ -256,7 +256,45 @@ namespace CK.Setup
                 {
                     yarnBinStream!.CopyTo( fileStream );
                 }
+                HandleGitIgnore( monitor, yarnRootPath );
                 return yarnPath;
+
+                static void HandleGitIgnore( IActivityMonitor monitor, NormalizedPath yarnRootPath )
+                {
+                    var gitIgnore = yarnRootPath.AppendPart( ".gitignore" );
+                    const string yarnDefault = """
+                                  # Yarn - Not using Zero-Install (.yarn/cache and .pnp.* are not commited).
+                                  .pnp.*
+                                  .yarn/*
+                                  !.yarn/patches
+                                  !.yarn/plugins
+                                  !.yarn/releases
+                                  !.yarn/sdks
+                                  !.yarn/versions
+
+                                  # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz.
+                                  **/.yarn/install-state.gz
+                                  
+                                  """;
+                    if( File.Exists( gitIgnore ) )
+                    {
+                        var ignore = File.ReadAllText( gitIgnore );
+                        if( !ignore.Contains( ".yarn/*" ) )
+                        {
+                            monitor.Info( $"No '.yarn/*' found in '{gitIgnore}'. Adding default section:{yarnDefault}" );
+                            ignore += yarnDefault;
+                        }
+                        else
+                        {
+                            monitor.Info( $"At least '.yarn/*' found in '{gitIgnore}'. Skipping the injection of the default section:{yarnDefault}" );
+                        }
+                    }
+                    else
+                    {
+                        monitor.Info( $"No '{gitIgnore}' found. Crating one with the default section:{yarnDefault}" );
+                        File.WriteAllText( gitIgnore, yarnDefault );
+                    }
+                }
             }
         }
 
