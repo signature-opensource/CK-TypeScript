@@ -509,6 +509,7 @@ namespace CK.Setup
             {
                 monitor.Info( $"Creating the 'jest.config.js' file." );
                 File.WriteAllText( jestConfigPath, $$$"""
+                                                    // Jest is not ESM compliant. Using CJS here.
                                                     module.exports = {
                                                         moduleFileExtensions: ['js', 'json', 'ts'],
                                                         rootDir: 'src',
