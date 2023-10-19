@@ -607,6 +607,10 @@ namespace CK.Setup
                                         {
                                             success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "add --dev typescript", yarnPath.Value );
                                         }
+                                        else
+                                        {
+                                            success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "install", yarnPath.Value );
+                                        }
                                         success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "run build", yarnPath.Value );
                                         monitor.CloseGroup( success ? "Success." : "Failed." );
                                     }
@@ -627,7 +631,7 @@ namespace CK.Setup
                                     {
                                         // Before installing VSCode support, we must ensure that typescript is installed in the target
                                         // project, otherwise the TypeScript support won't be installed by the yarn sdks.
-                                        // EnsureTestSupport  => AutoInstallVSCodeSupport.
+                                        // EnsureTestSupport => AutoInstallVSCodeSupport.
                                         if( (BinPathConfiguration.AutoInstallVSCodeSupport || BinPathConfiguration.EnsureTestSupport)
                                             && !YarnHelper.HasVSCodeSupport( monitor, targetProjectPath ) )
                                         {
