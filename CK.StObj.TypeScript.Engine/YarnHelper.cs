@@ -256,7 +256,45 @@ namespace CK.Setup
                 {
                     yarnBinStream!.CopyTo( fileStream );
                 }
+                HandleGitIgnore( monitor, yarnRootPath );
                 return yarnPath;
+
+                static void HandleGitIgnore( IActivityMonitor monitor, NormalizedPath yarnRootPath )
+                {
+                    var gitIgnore = yarnRootPath.AppendPart( ".gitignore" );
+                    const string yarnDefault = """
+                                  # Yarn - Not using Zero-Install (.yarn/cache and .pnp.* are not commited).
+                                  .pnp.*
+                                  .yarn/*
+                                  !.yarn/patches
+                                  !.yarn/plugins
+                                  !.yarn/releases
+                                  !.yarn/sdks
+                                  !.yarn/versions
+
+                                  # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz.
+                                  **/.yarn/install-state.gz
+                                  
+                                  """;
+                    if( File.Exists( gitIgnore ) )
+                    {
+                        var ignore = File.ReadAllText( gitIgnore );
+                        if( !ignore.Contains( ".yarn/*" ) )
+                        {
+                            monitor.Info( $"No '.yarn/*' found in '{gitIgnore}'. Adding default section:{yarnDefault}" );
+                            ignore += yarnDefault;
+                        }
+                        else
+                        {
+                            monitor.Info( $"At least '.yarn/*' found in '{gitIgnore}'. Skipping the injection of the default section:{yarnDefault}" );
+                        }
+                    }
+                    else
+                    {
+                        monitor.Info( $"No '{gitIgnore}' found. Crating one with the default section:{yarnDefault}" );
+                        File.WriteAllText( gitIgnore, yarnDefault );
+                    }
+                }
             }
         }
 
@@ -273,8 +311,9 @@ namespace CK.Setup
             {
                 var content = $"""
                               yarnPath: "./{yarnPath.RemoveFirstPart(yarnPath.Parts.Count - 3)}"
-                              enableGlobalCache: false
                               cacheFolder: "./.yarn/cache"
+                              enableGlobalCache: false
+                              enableMirror: true
                               """;
                 monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{content}" );
                 File.WriteAllText( yarnrcFile, content );
@@ -387,7 +426,9 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( workspaces.Any( x => x is JsonValue v && v.TryGetValue<string>( out var s ) && s == "ck-gen" ) )
+                    if( workspaces.Any( x => x is JsonValue v
+                                             && v.TryGetValue<string>( out var s )
+                                             && (s == "ck-gen" || s == "*" ) ) )
                     {
                         return true;
                     }
@@ -506,6 +547,7 @@ namespace CK.Setup
             {
                 monitor.Info( $"Creating the 'jest.config.js' file." );
                 File.WriteAllText( jestConfigPath, $$$"""
+                                                    // Jest is not ESM compliant. Using CJS here.
                                                     module.exports = {
                                                         moduleFileExtensions: ['js', 'json', 'ts'],
                                                         rootDir: 'src',

@@ -607,6 +607,10 @@ namespace CK.Setup
                                         {
                                             success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "add --dev typescript", yarnPath.Value );
                                         }
+                                        else
+                                        {
+                                            success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "install", yarnPath.Value );
+                                        }
                                         success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "run build", yarnPath.Value );
                                         monitor.CloseGroup( success ? "Success." : "Failed." );
                                     }
@@ -627,7 +631,8 @@ namespace CK.Setup
                                     {
                                         // Before installing VSCode support, we must ensure that typescript is installed in the target
                                         // project, otherwise the TypeScript support won't be installed by the yarn sdks.
-                                        if( BinPathConfiguration.AutoInstallVSCodeSupport
+                                        // EnsureTestSupport => AutoInstallVSCodeSupport.
+                                        if( (BinPathConfiguration.AutoInstallVSCodeSupport || BinPathConfiguration.EnsureTestSupport)
                                             && !YarnHelper.HasVSCodeSupport( monitor, targetProjectPath ) )
                                         {
                                             if( targetTypescriptVersion == null )
@@ -648,7 +653,7 @@ namespace CK.Setup
                                         {
                                             if( testScriptCommand != null )
                                             {
-                                                monitor.Info( $"TypeScript test script command '{testScriptCommand}' already exists. Skipping EnsureTestSupport." );
+                                                monitor.Info( $"TypeScript test script command '{testScriptCommand}' already exists. Skipping EnsureJestTestSupport." );
                                             }
                                             else
                                             {

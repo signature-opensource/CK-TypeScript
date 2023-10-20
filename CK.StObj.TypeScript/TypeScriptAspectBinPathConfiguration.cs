@@ -76,7 +76,10 @@ namespace CK.Setup
         /// Gets or sets whether VSCode support must be initialized in <see cref="TargetProjectPath"/>.
         /// <para>
         /// If "<see cref="TargetProjectPath"/>/.vscode" folder or "<see cref="TargetProjectPath"/>/.yarn/sdks" is missing,
-        /// the command "yarn dlx @yarnpkg/sdks vscode" is executed.
+        /// the commands "add --dev @yarnpkg/sdks" and "sdks vscode" are executed.
+        /// <para>
+        /// This installs the package locally instead of "yarn dlx @yarnpkg/sdks vscode" that does a one-shot install from a temporary
+        /// folder: when using zero-install, the vscode support is available directly.
         /// </para>
         /// <para>
         /// Defaults to false.
