@@ -440,14 +440,14 @@ namespace CK.Setup
 
             static bool EnsureCKGenPackage( IActivityMonitor monitor, JsonObject o, ref bool modified )
             {
-                var dependencies = EnsureJsonObject( monitor, o, "dependencies", ref modified );
-                if( dependencies == null ) return false;
-                if( dependencies["@local/ck-gen"] is JsonValue v && v.TryGetValue<string>( out var d ) && d == "workspace:*" )
+                var devDeps = EnsureJsonObject( monitor, o, "devDependencies", ref modified );
+                if( devDeps == null ) return false;
+                if( devDeps["@local/ck-gen"] is JsonValue v && v.TryGetValue<string>( out var d ) && d == "workspace:*" )
                 {
                     return true;
                 }
                 modified = true;
-                dependencies["@local/ck-gen"] = JsonValue.Create( "workspace:*" );
+                devDeps["@local/ck-gen"] = JsonValue.Create( "workspace:*" );
                 return true;
             }
         }
