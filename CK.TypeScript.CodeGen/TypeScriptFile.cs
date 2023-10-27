@@ -64,13 +64,19 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPath">Target directory.</param>
-        public void Save( IActivityMonitor monitor, NormalizedPath outputPath )
+        /// <param name="previousPaths">
+        /// Optional set of file paths from which actually saved paths will be removed:
+        /// what's left will be the actual generated paths.
+        /// </param>
+        public void Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths )
         {
             monitor.Trace( $"Saving '{Name}'." );
             var imports = Imports.ToString();
             if( imports.Length > 0 ) imports += Environment.NewLine;
             var all = imports + Body.ToString();
-            File.WriteAllText( outputPath.AppendPart( Name ), all );
+            var file = outputPath.AppendPart( Name );
+            File.WriteAllText( file, all );
+            previousPaths?.Remove( file );
         }
 
         /// <summary>

@@ -102,12 +102,16 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPath">The target output folder.</param>
-        /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, NormalizedPath outputPath )
+        /// <param name="previousPaths">
+        /// Optional set of file paths from which actually saved paths will be removed:
+        /// what's left will be the actual generated paths.
+        /// </param>
+        /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
+        public int? Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths = null )
         {
             // We need a root barrel for the generated module.
             Root.EnsureBarrel();
-            return Root.Save( monitor, outputPath );
+            return Root.Save( monitor, outputPath, previousPaths );
         }
 
         /// <summary>

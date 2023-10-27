@@ -542,14 +542,25 @@ namespace CK.Setup
             using( monitor.OpenInfo( $"Saving generated TypeScript for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
             {
                 var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
-                if( Directory.Exists( ckGenFolder ) )
+                var ckGenFolderSrc = ckGenFolder.AppendPart( "src" );
+                // To minimize impacts on file watchers, we don't destroy/recreate the ck-gen folder.
+                // Instead we update the existing files in place and then remove any paths that have not
+                // been generated.
+                HashSet<string>? cleanupPaths = null;
+                if( Directory.Exists( ckGenFolderSrc ) )
                 {
-                    monitor.Trace( $"Deleting existing '{ckGenFolder}'." );
-                    Directory.Delete( ckGenFolder, true );
+                    var previous = Directory.EnumerateFiles( ckGenFolderSrc, "*", SearchOption.AllDirectories );
+                    if( Path.DirectorySeparatorChar != NormalizedPath.DirectorySeparatorChar )
+                    {
+                        previous = previous.Select( p => p.Replace( Path.DirectorySeparatorChar, NormalizedPath.DirectorySeparatorChar ) );
+                    }
+                    cleanupPaths = new HashSet<string>( previous );
+                    monitor.Trace( $"Found {cleanupPaths.Count} existing files in '{ckGenFolderSrc}'." );
                 }
-                if( Root.Save( monitor, ckGenFolder.AppendPart( "src" ) ) )
+                int? savedCount = Root.Save( monitor, ckGenFolderSrc, cleanupPaths );
+                if( savedCount.HasValue )
                 {
-                    if( !Directory.Exists( ckGenFolder ) )
+                    if( savedCount.Value == 0 )
                     {
                         monitor.Warn( $"No files or folders have been generated in '{ckGenFolder}'. Skipping TypeScript generation." );
                     }
@@ -673,6 +684,31 @@ namespace CK.Setup
                             }
                         }
                         else success = false;
+                    }
+                    if( cleanupPaths != null )
+                    {
+                        if( cleanupPaths.Count == 0 )
+                        {
+                            monitor.Info( "No previous file exist that have not been regenerated." );
+                        }
+                        else
+                        {
+                            using( monitor.OpenInfo( $"Deleting {cleanupPaths.Count} previous files." ) )
+                            {
+                                foreach( var p in cleanupPaths )
+                                {
+                                    monitor.Debug( $"Deleting '{p.AsSpan(ckGenFolder.Path.Length)}'." );
+                                    try
+                                    {
+                                        if( File.Exists( p ) ) File.Delete( p );
+                                    }
+                                    catch( Exception ex )
+                                    {
+                                        monitor.Error( $"While deleting '{p}'. Ignoring.", ex );
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 else success = false;
