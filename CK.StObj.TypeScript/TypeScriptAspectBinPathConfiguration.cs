@@ -16,7 +16,7 @@ namespace CK.Setup
         /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
         /// and can be automatically installed. See <see cref="AutoInstallYarnPath"/>.
         /// </summary>
-        public const string AutomaticYarnVersion = "3.6.3";
+        public const string AutomaticYarnVersion = "4.0.0";
 
         /// <summary>
         /// Initializes a new empty configuration.
@@ -130,11 +130,10 @@ namespace CK.Setup
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
             SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
-            Types = e.Element( StObjEngineConfiguration.xTypes )?
+            Types = e.Elements( StObjEngineConfiguration.xTypes )
                        .Elements( StObjEngineConfiguration.xType )
-                       .Where( e => !string.IsNullOrWhiteSpace( e.Value ) )
-                       .Select( e => new TypeScriptTypeConfiguration( e ) ).ToList()
-                  ?? new List<TypeScriptTypeConfiguration>();
+                       .Select( e => new TypeScriptTypeConfiguration( e ) )
+                       .ToList();
         }
 
         /// <summary>

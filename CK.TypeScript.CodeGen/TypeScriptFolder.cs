@@ -316,13 +316,18 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="outputPath">Target directory.</param>
-        /// <returns>True on success, false is an error occurred (the error has been logged).</returns>
-        public bool Save( IActivityMonitor monitor, NormalizedPath outputPath )
+        /// <param name="previousPaths">
+        /// Optional set of file paths from which actually saved paths will be removed:
+        /// what's left will be the actual generated paths.
+        /// </param>
+        /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
+        public int? Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths  )
         {
             using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPath}" : Name)}." ) )
             {
                 try
                 {
+                    int result = 0;
                     var target = IsRoot ? outputPath : outputPath.AppendPart( Name );
 
                     bool createdDirectory = false;
@@ -330,16 +335,18 @@ namespace CK.TypeScript.CodeGen
                     {
                         Directory.CreateDirectory( target );
                         createdDirectory = true;
-
                         foreach( var file in Files )
                         {
-                            file.Save( monitor, target );
+                            file.Save( monitor, target, previousPaths );
+                            ++result;
                         }
                     }
                     var folder = _firstChild;
                     while( folder != null )
                     {
-                        if( !folder.Save( monitor, target ) ) return false;
+                        var r = folder.Save( monitor, target, previousPaths );
+                        if( !r.HasValue ) return null;
+                        result += r.Value;
                         folder = folder._next;
                     }
                     if( _hasBarrel )
@@ -349,15 +356,19 @@ namespace CK.TypeScript.CodeGen
                         if( b.Length > 0 )
                         {
                             if( !createdDirectory ) Directory.CreateDirectory( target );
-                            File.WriteAllText( target.AppendPart( "index.ts" ), b.ToString() );
+
+                            var index = target.AppendPart( "index.ts" );
+                            File.WriteAllText( index, b.ToString() );
+                            previousPaths?.Remove( index );
+                            ++result;
                         }
                     }
-                    return true;
+                    return result;
                 }
                 catch( Exception ex )
                 {
                     monitor.Error( ex );
-                    return false;
+                    return null;
                 }
             }
         }
