@@ -212,14 +212,33 @@ namespace CK.Setup
             var yarnPath = TryFindYarn( targetProjectPath, out var aboveCount );
             if( yarnPath.HasValue )
             {
-                monitor.Info( $"Yarn found at '{yarnPath}'." );
+                var current = yarnPath.Value.LastPart;
+                if( current.StartsWith("yarn-")
+                    && current.Length > 5
+                    && Version.TryParse( Path.GetFileNameWithoutExtension( current.AsSpan( 5 ) ), out var version ) )
+                {
+                    if( version.Major < 4 )
+                    {
+                        monitor.Warn( $"Yarn found at '{yarnPath}' but expected version is Yarn 4. " +
+                                      $"Please upgrade to Yarn 4: yarn set version {TypeScriptAspectBinPathConfiguration.AutomaticYarnVersion}." );
+
+                    }
+                    else
+                    {
+                        monitor.Info( $"Yarn {version.ToString(3)} found at '{yarnPath}'." );
+                    }
+                }
+                else
+                {
+                    monitor.Warn( $"Unable to read version from Yarn found at '{yarnPath}'. Expected something like '{_yarnFileName}'." );
+                }
             }
             else if( autoInstall )
             {
                 var gitRoot = targetProjectPath.PathsToFirstPart( null, new[] { ".git" } ).FirstOrDefault( p => Directory.Exists( p ) );
                 if( gitRoot.IsEmptyPath )
                 {
-                    monitor.Info( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
+                    monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
                     yarnPath = AutoInstall( monitor, targetProjectPath, 0 );
                 }
                 else
@@ -291,7 +310,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        monitor.Info( $"No '{gitIgnore}' found. Crating one with the default section:{yarnDefault}" );
+                        monitor.Info( $"No '{gitIgnore}' found. Creating one with the default section:{yarnDefault}" );
                         File.WriteAllText( gitIgnore, yarnDefault );
                     }
                 }
@@ -301,22 +320,35 @@ namespace CK.Setup
         static void EnsureYarnRcFileAtYarnLevel( IActivityMonitor monitor, NormalizedPath yarnPath )
         {
             Throw.DebugAssert( yarnPath.Parts.Count > 3 && yarnPath.Parts[^3] == ".yarn" && yarnPath.Parts[^2] == "releases" );
+            var def = $"""
+                       yarnPath: "./{yarnPath.RemoveFirstPart( yarnPath.Parts.Count - 3 )}"
+
+                       # We don't use Zero Install: compression level defaults to 0 (no compression) in yarn 4
+                       # because 0 (no compression) is slightly better for git. As we don't commit the packages,
+                       # we continue to use the yarn 3 default compression mode.
+                       compressionLevel: mixed
+
+                       # We prevent Yarn to query the remote registries to validate that the lockfile 
+                       # content matches the remote information.
+                       enableHardenedMode: false
+
+                       # cacheFolder: "./.yarn/cache", enableGlobalCache: false and enableMirror: false
+                       # Let each repository have its local cache, independent from any global cache.
+                       cacheFolder: "./.yarn/cache"
+                       enableGlobalCache: false
+                       enableMirror: false
+
+                       """;
             var yarnrcFile = yarnPath.RemoveLastPart( 3 ).AppendPart( ".yarnrc.yml" );
             if( File.Exists( yarnrcFile ) )
             {
-                var content = File.ReadAllText( yarnrcFile );
-                monitor.Trace( $"File '{yarnrcFile}' exists, leaving it unchanged:{Environment.NewLine}{content}" );
+                var current = File.ReadAllText( yarnrcFile );
+                monitor.Info( $"File '{yarnrcFile}' exists, leaving it unchanged:{Environment.NewLine}{current}" );
             }
             else
             {
-                var content = $"""
-                              yarnPath: "./{yarnPath.RemoveFirstPart(yarnPath.Parts.Count - 3)}"
-                              cacheFolder: "./.yarn/cache"
-                              enableGlobalCache: false
-                              enableMirror: true
-                              """;
-                monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{content}" );
-                File.WriteAllText( yarnrcFile, content );
+                monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{def}" );
+                File.WriteAllText( yarnrcFile, def );
             }
         }
 

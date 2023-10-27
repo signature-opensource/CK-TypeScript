@@ -5,7 +5,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="yarn-3.6.3.cjs" />
+	<EmbeddedResource Include="yarn-4.0.0.cjs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.StObj.Runtime" Version="24.1.0" />

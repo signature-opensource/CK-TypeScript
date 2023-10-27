@@ -4,10 +4,8 @@
   "workspaces": [
     "ck-gen"
   ],
-  "dependencies": {
-    "@local/ck-gen": "workspace:*"
-  },
   "devDependencies": {
+    "@local/ck-gen": "workspace:*",
     "@types/jest": "^29.5.5",
     "@types/node": "^20.8.0",
     "@yarnpkg/sdks": "^3.0.0-rc.52",
