@@ -130,11 +130,10 @@ namespace CK.Setup
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
             SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
-            Types = e.Element( StObjEngineConfiguration.xTypes )?
+            Types = e.Elements( StObjEngineConfiguration.xTypes )
                        .Elements( StObjEngineConfiguration.xType )
-                       .Where( e => !string.IsNullOrWhiteSpace( e.Value ) )
-                       .Select( e => new TypeScriptTypeConfiguration( e ) ).ToList()
-                  ?? new List<TypeScriptTypeConfiguration>();
+                       .Select( e => new TypeScriptTypeConfiguration( e ) )
+                       .ToList();
         }
 
         /// <summary>
