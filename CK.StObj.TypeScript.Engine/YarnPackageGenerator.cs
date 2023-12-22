@@ -21,7 +21,7 @@ namespace CK.Setup
     {
         static readonly string _yarnFileName = "yarn-3.2.2.cjs";
 
-        internal static bool SaveBuildConfig( IActivityMonitor monitor, TypeScriptGenerator root )
+        internal static bool SaveBuildConfig( IActivityMonitor monitor, TypeScriptRoot root )
         {
             using var gLog = monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." );
 
@@ -174,7 +174,7 @@ enableImmutableInstalls: false" );
             }
         }
 
-        internal static bool RunNodeBuild( IActivityMonitor monitor, TypeScriptGenerator root )
+        internal static bool RunNodeBuild( IActivityMonitor monitor, TypeScriptRoot root )
         {
             using var gLog = monitor.OpenInfo( $"Building TypeScript projects..." );
 

@@ -12,7 +12,7 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     /// <typeparam name="TGenerator">The actual type of the generator.</typeparam>
     public sealed class TypeScriptFile<TGenerator> : TypeScriptFile
-        where TGenerator : TypeScriptGenerator
+        where TGenerator : TypeScriptRoot
     {
         internal TypeScriptFile( TypeScriptFolder<TGenerator> root, string name )
             : base( root, name )
@@ -23,7 +23,7 @@ namespace CK.TypeScript.CodeGen
         public new TypeScriptFolder<TGenerator> Folder => Unsafe.As<TypeScriptFolder<TGenerator>>( base.Folder );
 
         /// <inheritdoc />
-        public new TGenerator Root => Folder.Generator;
+        public new TGenerator Root => Folder.Root;
 
     }
 

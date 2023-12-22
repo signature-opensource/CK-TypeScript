@@ -142,7 +142,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends lines from an Xml element: &lt;c&gt;, &lt;code&gt; are transformed to ` and ``` markdown
-        /// markers, &lt;para&gt; introduces a blank line, code references are processed by the <see cref="TypeScriptGenerator.DocumentationCodeRefHandler"/>
+        /// markers, &lt;para&gt; introduces a blank line, code references are processed by the <see cref="TypeScriptRoot.DocumentationCodeRefHandler"/>
         /// obtained from the <paramref name="source"/> and name attribute of &lt;paramref&gt;/&lt;typeparamref&gt; are extracted.
         /// Any other elements are handled as "transparent" elements.
         /// Consecutive empty lines are collapsed into a single empty line.
@@ -213,7 +213,7 @@ namespace CK.TypeScript.CodeGen
                                             mName = cref.Substring( idx, iPar - idx );
                                             if( mName == "#ctor" ) mName = "constructor";
                                         }
-                                        var h = source.Folder.Generator.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
+                                        var h = source.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
                                         Append( h.GetTSDocLink( source, kind, tName, mName, c.Value ) );
                                     }
                                     trimFirstLine = startNewLine = false;

@@ -18,7 +18,7 @@ using System.Xml.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Central class that handles TypeScript generation in a <see cref="TypeScriptGenerator"/> (the <see cref="Root"/>)
+    /// Central class that handles TypeScript generation in a <see cref="TypeScriptRoot"/> (the <see cref="Root"/>)
     /// and <see cref="ICodeGenerationContext"/> (the <see cref="CodeContext"/>).
     /// <para>
     /// This is instantiated and made available to the participants (<see cref="ITSCodeGenerator"/> and <see cref="ITSCodeGeneratorType"/>)
@@ -31,7 +31,7 @@ namespace CK.Setup
         readonly IReadOnlyDictionary<Type, ITypeAttributesCache> _attributeCache;
         readonly IPocoTypeSystem _pocoTypeSystem;
         readonly List<ITSCodeGenerator> _globals;
-        private readonly TypeScriptGenerator _generator;
+        private readonly TypeScriptRoot _generator;
         bool _success;
 
         internal TypeScriptContext( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> outputPaths,
@@ -40,7 +40,7 @@ namespace CK.Setup
                                     IPocoTypeSystem pocoTypeSystem,
                                     ExchangeableTypeNameMap? jsonNames )
         {
-            _generator = new TypeScriptGenerator( outputPaths,
+            _generator = new TypeScriptRoot( outputPaths,
                                                   config.LibraryVersions,
                                                   config.PascalCase,
                                                   config.GenerateDocumentation );
@@ -66,7 +66,7 @@ namespace CK.Setup
             throw new NotImplementedException();
         }
 
-        private void OnAfterCodeGeneration( object? sender, TypeScriptGenerator.AfterCodeGenerationEventArgs e )
+        private void OnAfterCodeGeneration( object? sender, TypeScriptRoot.AfterCodeGenerationEventArgs e )
         {
             throw new NotImplementedException();
         }
@@ -74,7 +74,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the TypeScript code generation root.
         /// </summary>
-        public TypeScriptGenerator Root => _generator;
+        public TypeScriptRoot Root => _generator;
 
         /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.

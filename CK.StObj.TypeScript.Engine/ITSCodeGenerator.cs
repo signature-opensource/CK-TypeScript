@@ -26,8 +26,8 @@ namespace CK.Setup
         /// <summary>
         /// Optional extension point called once all the <see cref="TypeScriptContext.GlobalGenerators"/>
         /// have been discovered.
-        /// Typically used to subscribe to <see cref="TSTypeManager.BuilderRequired"/>, <see cref="TypeScriptGenerator.BeforeCodeGeneration"/>
-        /// or <see cref="TypeScriptGenerator.AfterCodeGeneration"/> events.
+        /// Typically used to subscribe to <see cref="TSTypeManager.BuilderRequired"/>, <see cref="TypeScriptRoot.BeforeCodeGeneration"/>
+        /// or <see cref="TypeScriptRoot.AfterCodeGeneration"/> events.
         /// This can also be used to subscribe to other events that may be raised by other global
         /// generators (like <see cref="PocoCodeGenerator.PocoGenerating"/>).
         /// </summary>

@@ -36,7 +36,7 @@ namespace CK.TypeScript.CodeGen
     /// This class can be specialized in order to offer a more powerful API.
     /// </para>
     /// </summary>
-    public partial class TypeScriptGenerator
+    public partial class TypeScriptRoot
     {
         readonly IReadOnlyCollection<(NormalizedPath Path, XElement Config)> _pathsAndConfig;
         readonly bool _pascalCase;
@@ -44,13 +44,13 @@ namespace CK.TypeScript.CodeGen
         Dictionary<object, object?>? _memory;
 
         /// <summary>
-        /// Initializes a new <see cref="TypeScriptGenerator"/>.
+        /// Initializes a new <see cref="TypeScriptRoot"/>.
         /// </summary>
         /// <param name="pathsAndConfig">Set of output paths with their configuration element. May be empty.</param>
         /// <param name="libraryVersionConfiguration">The external library name to version mapping to use.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
-        public TypeScriptGenerator( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig,
+        public TypeScriptRoot( IReadOnlyCollection<(NormalizedPath Path, XElement Config)> pathsAndConfig,
                                     IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
                                     bool pascalCase,
                                     bool generateDocumentation )
@@ -60,7 +60,7 @@ namespace CK.TypeScript.CodeGen
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
             TSTypes = new TSTypeManager( this, libraryVersionConfiguration );
-            if( GetType() == typeof( TypeScriptGenerator ) )
+            if( GetType() == typeof( TypeScriptRoot ) )
             {
                 Root = new TypeScriptFolder( this );
             }

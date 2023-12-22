@@ -11,28 +11,28 @@ using System.Threading;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Folder in a <see cref="TypeScriptGenerator.Root"/>.
+    /// Folder in a <see cref="TypeScriptRoot.Root"/>.
     /// <para>
     /// This is the base class and non generic version of <see cref="TypeScriptFolder{TRoot}"/>.
     /// </para>
     /// </summary>
     public class TypeScriptFolder
     {
-        readonly TypeScriptGenerator _generator;
+        readonly TypeScriptRoot _root;
         TypeScriptFolder? _firstChild;
         TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
 
         static readonly char[] _invalidFileNameChars = Path.GetInvalidFileNameChars();
 
-        internal TypeScriptFolder( TypeScriptGenerator g )
+        internal TypeScriptFolder( TypeScriptRoot g )
         {
-            _generator = g;
+            _root = g;
         }
 
         internal TypeScriptFolder( TypeScriptFolder parent, string name )
         {
-            _generator = parent._generator;
+            _root = parent._root;
             Parent = parent;
             _next = parent._firstChild;
             parent._firstChild = this;
@@ -41,7 +41,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets this folder's name.
-        /// This string is empty when this is the <see cref="TypeScriptGenerator.Root"/>, otherwise
+        /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
         /// it necessarily not empty and without '.ts' extension.
         /// </summary>
         public string Name => FullPath.LastPart;
@@ -57,14 +57,14 @@ namespace CK.TypeScript.CodeGen
         public bool IsRoot => FullPath.IsEmptyPath;
 
         /// <summary>
-        /// Gets the parent folder. Null when this is the <see cref="TypeScriptGenerator.Root"/>.
+        /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
         /// </summary>
         public TypeScriptFolder? Parent { get; }
 
         /// <summary>
         /// Gets the TypeScript generator.
         /// </summary>
-        public TypeScriptGenerator Generator => _generator;
+        public TypeScriptRoot Root => _root;
 
         /// <summary>
         /// Finds or creates a folder.
@@ -231,7 +231,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets a relative path from this folder to another one.
-        /// This folder and the other one must belong to the same <see cref="TypeScriptGenerator"/>
+        /// This folder and the other one must belong to the same <see cref="TypeScriptRoot"/>
         /// otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="f">The folder to target.</param>

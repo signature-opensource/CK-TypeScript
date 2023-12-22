@@ -23,7 +23,7 @@ namespace CK.StObj.TypeScript.Engine
 
             Property = new TypeScriptVarType( c.Root.ToIdentifier( field.Name ), fieldType );
             Property.Comment = propComment;
-            CtorParameterName = TypeScriptGenerator.ToIdentifier( field.Name, false );
+            CtorParameterName = TypeScriptRoot.ToIdentifier( field.Name, false );
             CtorParameterComment = paramComment;
             CreateMethodParameter = new TypeScriptVarType( CtorParameterName, fieldType )
             {

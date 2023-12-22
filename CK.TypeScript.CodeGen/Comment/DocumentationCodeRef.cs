@@ -17,13 +17,13 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Singleton instance to use for basic link (https://typedoc.org/guides/link-resolution/)
         /// where links are simple 'TYPE.MEMBER': type name (the leaf of the full type name) is expected to be available
-        /// as-is in the TypeScript source context and member name follows the <see cref="TypeScriptGenerator.PascalCase"/> option.
+        /// as-is in the TypeScript source context and member name follows the <see cref="TypeScriptRoot.PascalCase"/> option.
         /// </summary>
         public static readonly IXmlDocumentationCodeRefHandler BasicLink = new BasicLinkHandler();
 
         /// <summary>
         /// Helpers that extracts the leaf of the <paramref name="targetType"/> and append
-        /// the <paramref name="targetMember"/>, following <see cref="TypeScriptGenerator.PascalCase"/> convention.
+        /// the <paramref name="targetMember"/>, following <see cref="TypeScriptRoot.PascalCase"/> convention.
         /// </summary>
         /// <param name="source">The source file.</param>
         /// <param name="targetType">The full target type name.</param>
@@ -33,7 +33,7 @@ namespace CK.TypeScript.CodeGen
         {
             return targetType.Substring( targetType.LastIndexOf( '.' ) + 1 )
                         + (!String.IsNullOrEmpty( targetMember )
-                            ? "." + source.Folder.Generator.ToIdentifier( targetMember )
+                            ? "." + source.Folder.Root.ToIdentifier( targetMember )
                             : String.Empty);
         }
 
