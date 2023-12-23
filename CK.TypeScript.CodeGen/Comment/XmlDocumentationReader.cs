@@ -112,7 +112,7 @@ namespace CK.TypeScript.CodeGen
             PropertyInfo p => GetNameAttributeValueFor( p ),
             FieldInfo f => GetNameAttributeValueFor( f ),
             EventInfo e => GetNameAttributeValueFor( e ),
-            _ => throw new NotSupportedException()
+            _ => Throw.NotSupportedException<string>()
         };
 
 

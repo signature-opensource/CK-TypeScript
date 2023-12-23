@@ -39,6 +39,10 @@ namespace CK.TypeScript.CodeGen
                     _libraries[libraryImport.Name] = libraryImport;
                 }
             }
+            foreach( var d in libraryImport.ImpliedDependencies )
+            {
+                EnsureLibrary( d );
+            }
             return this;
         }
 

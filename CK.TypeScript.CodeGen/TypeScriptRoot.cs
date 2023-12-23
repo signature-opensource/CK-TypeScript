@@ -20,6 +20,19 @@ namespace CK.TypeScript.CodeGen
     /// Central TypeScript context with options and a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
     /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
     /// <para>
+    /// The <see cref="TSTypes"/> maps C# types to <see cref="ITSType"/>. Types can be registered directly or
+    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> that raises <see cref="TSTypeManager.BuilderRequired"/>
+    /// event and registers <see cref="ITSGeneratedType"/> that must eventually be generated when <see cref="GenerateCode(IActivityMonitor)"/>
+    /// is called.
+    /// </para>
+    /// <para>
+    /// Actual code generation is done either by the <see cref="TSGeneratedTypeBuilder.Implementor"/> for each <see cref="ITSGeneratedType"/>
+    /// or during <see cref="BeforeCodeGeneration"/> or <see cref="AfterCodeGeneration"/> events.
+    /// </para>
+    /// <para>
+    /// Once code generation succeeds, <see cref="Save"/> can be called.
+    /// </para>
+    /// <para>
     /// This class can be specialized in order to offer a more powerful API.
     /// </para>
     /// </summary>
@@ -27,21 +40,32 @@ namespace CK.TypeScript.CodeGen
     {
         readonly bool _pascalCase;
         readonly bool _generateDocumentation;
+        readonly TSTypeManager _tsTypes;
         Dictionary<object, object?>? _memory;
 
         /// <summary>
         /// Initializes a new <see cref="TypeScriptRoot"/>.
         /// </summary>
+        /// <param name="libraryVersionConfiguration">The external library name to version mapping to use.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
-        public TypeScriptRoot( bool pascalCase,
+        public TypeScriptRoot( IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
+                               bool pascalCase,
                                bool generateDocumentation )
         {
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
-            var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
-            Root = (TypeScriptFolder)rootType.GetMethod( "Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static )!
-                                             .Invoke( null, new object[] { this } )!;
+            _tsTypes = new TSTypeManager( this, libraryVersionConfiguration );
+            if( GetType() == typeof( TypeScriptRoot ) )
+            {
+                Root = new TypeScriptFolder( this );
+            }
+            else
+            {
+                var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
+                Root = (TypeScriptFolder)rootType.GetMethod( "Create", BindingFlags.NonPublic | BindingFlags.Static )!
+                                                 .Invoke( null, new object[] { this } )!;
+            }
         }
 
         /// <summary>
@@ -82,6 +106,82 @@ namespace CK.TypeScript.CodeGen
         /// <param name="f">The newly created file.</param>
         internal protected virtual void OnFileCreated( TypeScriptFile f )
         {
+        }
+
+        /// <summary>
+        /// Gets the TypeScript types manager.
+        /// </summary>
+        public TSTypeManager TSTypes => _tsTypes;
+
+        /// <summary>
+        /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling
+        /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> on all <see cref="ITSGeneratedType"/>.
+        /// </summary>
+        public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
+
+        /// <summary>
+        /// Raised after the <see cref="TSGeneratedTypeBuilder.Implementor"/> have run on all
+        /// types to implement.
+        /// </summary>
+        public event EventHandler<AfterCodeGenerationEventArgs>? AfterCodeGeneration;
+
+        /// <summary>
+        /// Event raised by <see cref="AfterCodeGeneration"/> event.
+        /// </summary>
+        public sealed class AfterCodeGenerationEventArgs : EventMonitoredArgs
+        {
+            internal AfterCodeGenerationEventArgs( IActivityMonitor monitor, IReadOnlyList<ITSGeneratedType>? required )
+                : base( monitor )
+            {
+                RequiredTypes = required ?? Array.Empty<ITSGeneratedType>();
+            }
+
+            /// <summary>
+            /// Gets the <see cref="ITSGeneratedType"/> that has no <see cref="ITSGeneratedType.TypePart"/>
+            /// in their file and must be handled.
+            /// </summary>
+            public IReadOnlyList<ITSGeneratedType> RequiredTypes { get; }
+        }
+
+        /// <summary>
+        /// Raises the <see cref="BeforeCodeGeneration"/> event, generates the code by calling all
+        /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> and if no error has been logged,
+        /// raises the <see cref="AfterCodeGeneration"/> event.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <returns>True on success, false if an error occurred.</returns>
+        public bool GenerateCode( IActivityMonitor monitor )
+        {
+            bool success = true;
+            using( monitor.OnError( () => success = false ) )
+            {
+                try
+                {
+                    BeforeCodeGeneration?.Invoke( this, new EventMonitoredArgs( monitor ) );
+                    if( success )
+                    {
+                        var required = TSTypes.GenerateCode( monitor );
+                        if( success )
+                        {
+                            if( required == null )
+                            {
+                                monitor.Info( "All TypeScript Types have been generated." );
+                            }
+                            else
+                            {
+                                monitor.Warn( $"{required.Count} TypeScript Types have not been generated." );
+                            }
+                            AfterCodeGeneration?.Invoke( this, new AfterCodeGenerationEventArgs( monitor, required ) );
+                        }
+                    }
+                    return true;
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( $"While generating TypeScript code.", ex );
+                    return false;
+                }
+            }
         }
 
         /// <summary>

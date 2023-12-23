@@ -36,6 +36,16 @@ namespace CK.Setup
         public static readonly XName xGenerateDocumentation = XNamespace.None + "GenerateDocumentation";
 
         /// <summary>
+        /// The element name of <see cref="TypeScriptAspectConfiguration.LibraryVersions"/>.
+        /// </summary>
+        public static readonly XName xLibraryVersions = XNamespace.None + "LibraryVersions";
+
+        /// <summary>
+        /// The element name of <see cref="TypeScriptAspectConfiguration.LibraryVersions"/> child elements.
+        /// </summary>
+        public static readonly XName xLibrary = XNamespace.None + "Library";
+
+        /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration.SkipTypeScriptTooling"/> attribute name.
         /// </summary>
         public static readonly XName xSkipTypeScriptTooling = XNamespace.None + "SkipTypeScriptTooling";
@@ -111,6 +121,7 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
+            LibraryVersions = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -121,7 +132,34 @@ namespace CK.Setup
         {
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Attribute( xGenerateDocumentation ) ?? true;
+            LibraryVersions = e.Element( xLibraryVersions )?
+                    .Elements( xLibrary )
+                    .Select( e => (e.Attribute( StObjEngineConfiguration.xName )?.Value, e.Attribute( StObjEngineConfiguration.xVersion )?.Value) )
+                    .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
+                    .GroupBy( e => e.Item1 )
+                    .ToDictionary( g => g.Key!, g => g.Last().Item2! )
+                  ?? new Dictionary<string, string>();
+
         }
+
+        /// <summary>
+        /// Gets a dictionary that defines the version to use for an external package.
+        /// The versions specified here override the ones specified in code while
+        /// declaring an import.
+        /// <para>
+        /// Example:
+        /// <code>
+        ///     &lt;LibraryVersions&gt;
+        ///        &lt;Library Name="axios" Version="^1.2.1" /&gt;
+        ///        &lt;Library Name="luxon" Version="3.1.1" /&gt;
+        ///     &lt;/LibraryVersions&gt;
+        /// </code>
+        /// </para>
+        /// <para>
+        /// It is empty by default.
+        /// </para>
+        /// </summary>
+        public Dictionary<string, string> LibraryVersions { get; }
 
         /// <summary>
         /// Fills the given Xml element with this configuration values.
@@ -136,6 +174,12 @@ namespace CK.Setup
                             : null,
                         GenerateDocumentation == false
                             ? new XAttribute( xGenerateDocumentation, false )
+                            : null,
+                        LibraryVersions.Count > 0
+                            ? new XElement( xLibraryVersions,
+                                            LibraryVersions.Select( kv => new XElement( xLibrary,
+                                                new XAttribute( StObjEngineConfiguration.xName, kv.Key ),
+                                                new XAttribute( StObjEngineConfiguration.xVersion, kv.Value ) ) ) )
                             : null
                  );
             return e;

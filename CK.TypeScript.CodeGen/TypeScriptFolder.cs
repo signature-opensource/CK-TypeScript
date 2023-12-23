@@ -44,7 +44,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets this folder's name.
         /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
-        /// it necessarily not empty without '.ts' extension.
+        /// it necessarily not empty and without '.ts' extension.
         /// </summary>
         public string Name => _path.LastPart;
 

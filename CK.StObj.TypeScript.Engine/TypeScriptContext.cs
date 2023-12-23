@@ -716,14 +716,14 @@ namespace CK.Setup
             return success;
         }
 
-        private static bool EnsureJestTestSupport( IActivityMonitor monitor,
-                                                   NormalizedPath targetProjectPath,
-                                                   NormalizedPath projectJsonPath,
-                                                   string? targetTypescriptVersion,
-                                                   NormalizedPath yarnPath,
-                                                   string? jestVersion,
-                                                   string? tsJestVersion,
-                                                   string? typesJestVersion )
+        static bool EnsureJestTestSupport( IActivityMonitor monitor,
+                                           NormalizedPath targetProjectPath,
+                                           NormalizedPath projectJsonPath,
+                                           string? targetTypescriptVersion,
+                                           NormalizedPath yarnPath,
+                                           string? jestVersion,
+                                           string? tsJestVersion,
+                                           string? typesJestVersion )
         {
             bool success = true;
             using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )

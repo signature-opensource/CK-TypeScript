@@ -8,12 +8,20 @@ namespace CK.TypeScript.CodeGen
 {
     class RawCodePart : BaseCodeWriter, ITSCodePart
     {
+        static readonly string _defaultCloser = "}\n".ReplaceLineEndings();
+
         Dictionary<object, KeyedCodePart>? _keyedParts;
 
         internal RawCodePart( TypeScriptFile f, string closer )
             : base( f )
         {
-            Closer = closer.ReplaceLineEndings();
+            Closer = NormalizeCloser( closer );
+        }
+
+        internal static string NormalizeCloser( string closer )
+        {
+            if( closer == "}\n" ) return _defaultCloser;
+            return closer.ReplaceLineEndings();
         }
 
         public string Closer { get; }

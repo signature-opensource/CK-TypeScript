@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// Describes a mutable method signature.
     /// </summary>
-    public class TypeScriptFunctionSignature
+    public sealed class TypeScriptFunctionSignature
     {
         /// <summary>
         /// Gets or sets the associated optional comment.

@@ -18,7 +18,20 @@ namespace CK.TypeScript.CodeGen
     public static class TSCodeWriterExtensions
     {
         /// <summary>
-        /// Appends raw C# code only once: the code itself is used as a key in <see cref="ITSCodePart.Memory"/> to
+        /// Combines this import with another one.
+        /// </summary>
+        /// <param name="this">This import.</param>
+        /// <param name="other">The other to combine with this.</param>
+        /// <returns>A combined import.</returns>
+        public static Action<ITSFileImportSection>? Combine( this Action<ITSFileImportSection>? @this, Action<ITSFileImportSection>? other )
+        {
+            if( @this == null ) return other;
+            if( other == null ) return @this;
+            return import => { @this.Invoke( import ); other.Invoke( import ); };
+        }
+
+        /// <summary>
+        /// Appends raw TypeScript code only once: the code itself is used as a key in <see cref="ITSCodePart.Memory"/> to
         /// avoid adding it twice.
         /// </summary>
         /// <typeparam name="T">Must be a <see cref="ITSCodePart"/>.</typeparam>
@@ -37,7 +50,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends raw C# code.
+        /// Appends raw TypeScript code.
         /// This is the most basic Append method to use.
         /// Use <see cref="AppendSourceString{T}(T, string)"/> to append the source string representation.
         /// </summary>
@@ -98,48 +111,17 @@ namespace CK.TypeScript.CodeGen
         static public T CloseBlock<T>( this T @this, bool withSemiColon = false ) where T : ITSCodeWriter => @this.NewLine().Append( withSemiColon ? "};" : "}" ).NewLine();
 
         /// <summary>
-        /// Appends either "true" or "false".
+        /// Appends a <see cref="ITSType.TypeName"/> with its <see cref="ITSType.RequiredImports"/>.
         /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <typeparam name="T">The code writer type.</typeparam>
         /// <param name="this">This code writer.</param>
-        /// <param name="b">The boolean value.</param>
+        /// <param name="typeName">The <see cref="ITSType.TypeName"/> to append and import.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T Append<T>( this T @this, bool b ) where T : ITSCodeWriter => @this.Append( b ? "true" : "false" );
-
-        /// <summary>
-        /// Appends the source representation of an integer value.
-        /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
-        /// <param name="this">This code writer.</param>
-        /// <param name="i">The integer.</param>
-        /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T Append<T>( this T @this, int i ) where T : ITSCodeWriter
+        public static T AppendTypeName<T>( this T @this, ITSType typeName ) where T : ITSCodeWriter
         {
-            return @this.Append( i.ToString( CultureInfo.InvariantCulture ) );
-        }
-
-        /// <summary>
-        /// Appends the source representation of a <see cref="Double"/> value.
-        /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
-        /// <param name="this">This code writer.</param>
-        /// <param name="d">The double.</param>
-        /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T Append<T>( this T @this, double d ) where T : ITSCodeWriter
-        {
-            return @this.Append( d.ToString( CultureInfo.InvariantCulture ) );
-        }
-
-        /// <summary>
-        /// Appends the source representation of a <see cref="Single"/> value.
-        /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
-        /// <param name="this">This code writer.</param>
-        /// <param name="f">The float.</param>
-        /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T Append<T>( this T @this, float f ) where T : ITSCodeWriter
-        {
-            return @this.Append( f.ToString( CultureInfo.InvariantCulture ) ).Append( "f" );
+            typeName.RequiredImports?.Invoke( @this.File.Imports );
+            @this.Append( typeName.TypeName );
+            return @this;
         }
 
         /// <summary>
@@ -185,8 +167,8 @@ namespace CK.TypeScript.CodeGen
             if( s == null ) @this.Append( "null" );
             else
             {
-                // Nico: Sorry @Spi, your encoder was bugged, and I trust this one.
-                @this.Append( JsonSerializer.Serialize( s ) );
+                Throw.DebugAssert( System.Web.HttpUtility.JavaScriptStringEncode( s ) == JsonSerializer.Serialize( s ) );
+                @this.Append( System.Web.HttpUtility.JavaScriptStringEncode( s ) );
             }
             return @this;
         }
@@ -222,7 +204,7 @@ namespace CK.TypeScript.CodeGen
         /// Appends the code of a collection of objects of a given type <typeparamref name="T"/>.
         /// The code is either "null", "[]" or an array
         /// with the items appended with <see cref="Append{T}(T, object)"/>: only
-        /// basic types are supported.
+        /// types that are mapped to an associated <see cref="ITSType"/> are supported.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -249,7 +231,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="this">This code writer.</param>
         /// <param name="name">.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T AppendIdentifier<T>( this T @this, string name ) where T : ITSCodeWriter => Append( @this, @this.File.Folder.Root.ToIdentifier( name ) );
+        static public T AppendIdentifier<T>( this T @this, string name ) where T : ITSCodeWriter => Append( @this, @this.File.Root.ToIdentifier( name ) );
 
         /// <summary>
         /// Calls <see cref="TryAppend{T}(T, object?)"/> and throws an <see cref="ArgumentException"/> if
@@ -261,14 +243,23 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T Append<T>( this T @this, object? o ) where T : ITSCodeWriter
         {
-            if( !TryAppend( @this, o ) ) Throw.ArgumentException( "Unknown type: " + o!.GetType().AssemblyQualifiedName );
+            if( !TryAppend( @this, o ) )
+            {
+                Debug.Assert( o != null );
+                var t = o.GetType();
+                var tsType = @this.File.Root.TSTypes.Find( t );
+                if( tsType == null )
+                {
+                    Throw.ArgumentException( $"Unable to write a value of type '{t.ToCSharpName()}'. It is not mapped to any registered TSType." );
+                }
+                Throw.ArgumentException( $"Unable to write a value of type '{t.ToCSharpName()}'. It is mapped to the TSType '{tsType.TypeName}' that is not able to write this type." );
+            }
             return @this;
         }
 
         /// <summary>
         /// Tries to appends the code source for an untyped object.
-        /// Only types that are implemented through one of the existing Append, AppendArray (IEnumerable is
-        /// handled).
+        /// Only types that have an associated <see cref="ITSType"/> are handled.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -276,20 +267,14 @@ namespace CK.TypeScript.CodeGen
         /// <returns>True on success, false on error.</returns>
         static public bool TryAppend<T>( this T @this, object? o ) where T : ITSCodeWriter
         {
-            if( o == DBNull.Value ) @this.Append( "null" );
+            if( o == DBNull.Value || o == null ) @this.Append( "null" );
             else
             {
-                switch( o )
+                var t = o.GetType();
+                var tsType = @this.File.Root.TSTypes.Find( t );
+                if( tsType == null || !tsType.TryWriteValue( @this, o ) )
                 {
-                    case null: @this.Append( "null" ); break;
-                    case string x: AppendSourceString( @this, x ); break;
-                    case bool x: Append( @this, x ); break;
-                    case int x: Append( @this, x ); break;
-                    case char x: AppendSourceChar( @this, x ); break;
-                    case double x: Append( @this, x ); break;
-                    case float x: Append( @this, x ); break;
-                    case IEnumerable x: AppendArray( @this, x ); break;
-                    default: return false;
+                    return false;
                 }
             }
             return true;
@@ -364,15 +349,65 @@ namespace CK.TypeScript.CodeGen
             if( withComment && !String.IsNullOrWhiteSpace( decl.Comment ) ) @this.AppendDocumentation( decl.Comment );
             @this.Append( prefixName )
                  .Append( decl.Name )
-                 .Append( decl.Optional ? "?: " : ": " )
-                 .Append( decl.Type );
-            if( !String.IsNullOrWhiteSpace( decl.DefaultValue ) )
+                 .Append( decl.TSType.IsNullable ? "?: " : ": " )
+                 .AppendTypeName( decl.TSType );
+            if( !String.IsNullOrWhiteSpace( decl.DefaultValueSource ) )
             {
-                @this.Append( " = " ).Append( decl.DefaultValue );
+                @this.Append( " = " ).Append( decl.DefaultValueSource );
             }
             return @this;
         }
 
+        /// <summary>
+        /// Appends an enum definition. The underlying type should be safely convertible into Int32.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="enumType">The enum type.</param>
+        /// <param name="typeName">The TypeScript type name.</param>
+        /// <param name="export">True to prefix with 'export ' the enum definition.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        static public T AppendEnumDefinition<T>( this T @this, IActivityMonitor monitor, Type enumType, string typeName, bool export ) where T : ITSCodeWriter
+        {
+            Throw.CheckArgument( enumType.IsEnum );
+            var uT = enumType.GetEnumUnderlyingType();
+            if( uT == typeof( UInt32 ) || uT == typeof( Int64 ) || uT == typeof( UInt64 ) )
+            {
+                monitor.Error( $"Enum: {enumType.Name} cannot be generated as TypeScript since it is based on {uT.Name} type. Only types that can be safely converted into Int32 should be used." );
+                return @this;
+            }
+            string? docValuePrefix = null;
+            var xDoc = @this.File.Folder.Root.GenerateDocumentation
+                        ? XmlDocumentationReader.GetXmlDocumentation( monitor, enumType.Assembly, @this.File.Folder.Root.Memory )
+                        : null;
+            if( xDoc != null )
+            {
+                @this.AppendDocumentation( xDoc, enumType );
+                docValuePrefix = XmlDocumentationReader.GetNameAttributeValueFor( "F:", enumType );
+            }
+            return @this.Append( export ? "export enum " : "enum " ).Append( typeName )
+                        .OpenBlock()
+                        .Append( b =>
+                        {
+                            string[] names = Enum.GetNames( enumType );
+                            int[] values = Enum.GetValues( enumType ).Cast<object>().Select( x => Convert.ToInt32( x ) ).ToArray();
+
+                            for( int i = 0; i < names.Length; ++i )
+                            {
+                                if( i > 0 ) b.Append( "," ).NewLine();
+
+                                var n = names[i];
+                                if( xDoc != null )
+                                {
+                                    Debug.Assert( docValuePrefix != null );
+                                    b.AppendDocumentation( XmlDocumentationReader.GetDocumentationElement( xDoc, docValuePrefix + '.' + n ) );
+                                }
+                                b.Append( n ).Append( " = " ).Append( values[i] );
+                            }
+                        } )
+                        .CloseBlock();
+        }
 
 
     }
