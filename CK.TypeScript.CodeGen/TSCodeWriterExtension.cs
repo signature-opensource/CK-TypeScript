@@ -206,7 +206,7 @@ namespace CK.TypeScript.CodeGen
         /// Appends the code of a collection of objects of a given type <typeparamref name="T"/>.
         /// The code is either "null", "[]" or an array
         /// with the items appended with <see cref="Append{T}(T, object)"/>: only
-        /// types that are mapped to an associated <see cref="ITSTypeWriter{T}"/> are supported.
+        /// types that are mapped to an associated <see cref="ITSType"/> are supported.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -261,7 +261,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Tries to appends the code source for an untyped object.
-        /// Only types that have an associated <see cref="ITSTypeWriter{T}"/> are handled.
+        /// Only types that have an associated <see cref="ITSType"/> are handled.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>

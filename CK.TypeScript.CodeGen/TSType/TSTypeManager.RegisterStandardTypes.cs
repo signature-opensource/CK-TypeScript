@@ -76,17 +76,22 @@ export class Guid {
     */
     public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
     
-    constructor(public readonly value: string) {     
+    constructor( public readonly guid: string ) {
     }
 
-    get [Symbol.toStringTag]() {
-        return this.value;
-        }
+    get value() {
+        return this.guid;
+      }
 
-    public toJSON() : string {
-        return this.value;
-    }
-"" );" );
+    toString() {
+        return this.guid;
+      }
+
+    toJSON() {
+        return this.guid;
+      }
+}
+" );
                 _types.Add( typeof( Guid ), tGuid );
             }
         }
