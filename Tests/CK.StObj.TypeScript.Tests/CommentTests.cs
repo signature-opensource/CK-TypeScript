@@ -129,7 +129,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.CleanupFolder( output );
-            var ctx = new TypeScriptRoot( false, true );
+            var ctx = new TypeScriptRoot( null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "ICommented.ts" );
             GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
@@ -183,7 +183,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.CleanupFolder( output );
-            var ctx = new TypeScriptRoot( false, true );
+            var ctx = new TypeScriptRoot( null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "IGeneric.ts" );
             GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
@@ -249,7 +249,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.CleanupFolder( output );
-            var ctx = new TypeScriptRoot( false, true );
+            var ctx = new TypeScriptRoot( null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "FullClass.ts" );
             GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
@@ -314,7 +314,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.CleanupFolder( output );
-            var ctx = new TypeScriptRoot( false, true );
+            var ctx = new TypeScriptRoot( null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "WithCodeReference.ts" );
             GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
@@ -348,7 +348,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             var output = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.CleanupFolder( output );
-            var ctx = new TypeScriptRoot( false, true );
+            var ctx = new TypeScriptRoot( null, false, true );
 
             var f = ctx.Root.FindOrCreateFile( "BuggyReference.ts" );
             GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );

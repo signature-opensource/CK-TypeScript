@@ -1,19 +1,15 @@
-using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
-using CK.Setup.Json;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Nodes;
-
-#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+using System.Reflection.Emit;
 
 namespace CK.Setup
 {
@@ -25,68 +21,109 @@ namespace CK.Setup
     /// only if the configuration actually allows the TypeScript generation for this <see cref="CodeContext"/>.
     /// </para>
     /// </summary>
-    public sealed class TypeScriptContext : TypeScriptRoot
+    public sealed class TypeScriptContext
     {
-        readonly Dictionary<Type, TypeScriptAttribute> _fromConfiguration;
-        readonly Dictionary<Type, TSTypeFile?> _typeMappings;
+        readonly ICodeGenerationContext _codeContext;
         readonly IReadOnlyDictionary<Type, ITypeAttributesCache> _attributeCache;
-        readonly List<TSTypeFile> _typeFiles;
-        // Required to store the pure type generator associated to a type when it is
-        // not decorated with a TypeScriptAttribute and not declared in configuration.
-        Dictionary<Type, ITSCodeGeneratorType[]>? _undeclaredGenerators;
-        IReadOnlyList<ITSCodeGenerator> _globals;
+        readonly TypeScriptAspectConfiguration _configuration;
+        readonly TypeScriptAspectBinPathConfiguration _binPathConfiguration;
+        readonly IPocoTypeSystem _pocoTypeSystem;
+        readonly ExchangeableTypeNameMap? _jsonNames;
+        readonly TypeScriptRoot _tsRoot;
+
+        readonly Dictionary<Type, RegType> _typeDecorators;
+        readonly Dictionary<Type, TypeScriptAttribute> _fromConfiguration;
+        readonly List<ITSCodeGenerator> _globals;
         bool _success;
+
+        readonly struct RegType
+        {
+            public RegType( IReadOnlyList<ITSCodeGeneratorType>? generators, TypeScriptAttribute? attr )
+            {
+                Generators = generators;
+                Attribute = attr;
+            }
+
+            public readonly TypeScriptAttribute? Attribute;
+
+            public readonly IReadOnlyList<ITSCodeGeneratorType>? Generators;
+
+            public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TSGeneratedTypeBuilder builder )
+            {
+                if( Attribute != null )
+                {
+                    builder.TypeName = Attribute.TypeName;
+                    builder.SameFolderAs = Attribute.SameFolderAs;
+                    builder.SameFileAs = Attribute.SameFileAs;
+                    builder.Folder = Attribute.Folder;
+                    builder.FileName = Attribute.FileName;
+                }
+                bool success = true;
+                if( Generators != null )
+                {
+                    foreach( var g in Generators )
+                    {
+                        success &= g.ConfigureBuilder( monitor, context, builder );
+                    }
+                }
+                return success;
+            }
+        }
 
         internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                     TypeScriptAspectConfiguration tsConfig,
                                     TypeScriptAspectBinPathConfiguration tsBinPathConfig,
-                                    JsonSerializationCodeGen? jsonGenerator )
-               : base( tsConfig.PascalCase, tsConfig.GenerateDocumentation )
+                                    IPocoTypeSystem pocoTypeSystem,
+                                    ExchangeableTypeNameMap? jsonNames )
         {
-            CodeContext = codeCtx;
-            Configuration = tsConfig;
-            BinPathConfiguration = tsBinPathConfig;
-            JsonGenerator = jsonGenerator;
+            _codeContext = codeCtx;
+            _configuration = tsConfig;
+            _binPathConfiguration = tsBinPathConfig;
+            _pocoTypeSystem = pocoTypeSystem;
+            _jsonNames = jsonNames;
+            _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions, tsConfig.PascalCase, tsConfig.GenerateDocumentation );
+            _tsRoot.FolderCreated += OnFolderCreated;
+
+            _typeDecorators = new Dictionary<Type, RegType>();
             _fromConfiguration = new Dictionary<Type, TypeScriptAttribute>();
-            _typeMappings = new Dictionary<Type, TSTypeFile?>();
             _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
-            _typeFiles = new List<TSTypeFile>();
+            _globals = new List<ITSCodeGenerator>();
             _success = true;
             Root.EnsureBarrel();
         }
 
-        protected override void OnFolderCreated( TypeScriptFolder f )
+        void OnFolderCreated( TypeScriptFolder f )
         {
-            if( BinPathConfiguration.Barrels.Contains( f.Path ) )
+            if( _binPathConfiguration.Barrels.Contains( f.Path ) )
             {
                 f.EnsureBarrel();
             }
         }
 
         /// <summary>
-        /// Gets the typed folder root.
+        /// Gets the folder root.
         /// </summary>
-        public new TypeScriptFolder<TypeScriptContext> Root => (TypeScriptFolder<TypeScriptContext>)base.Root;
+        public TypeScriptFolder Root => _tsRoot.Root;
 
         /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
         /// </summary>
-        public ICodeGenerationContext CodeContext { get; }
+        public ICodeGenerationContext CodeContext => _codeContext;
 
         /// <summary>
         /// Gets the <see cref="TypeScriptAspectConfiguration"/>.
         /// </summary>
-        public TypeScriptAspectConfiguration Configuration { get; }
+        public TypeScriptAspectConfiguration Configuration => _configuration;
 
         /// <summary>
         /// Gets the <see cref="TypeScriptAspectBinPathConfiguration"/>.
         /// </summary>
-        public TypeScriptAspectBinPathConfiguration BinPathConfiguration { get; }
+        public TypeScriptAspectBinPathConfiguration BinPathConfiguration => _binPathConfiguration;
 
         /// <summary>
-        /// Gets the <see cref="JsonSerializationCodeGen"/> it is available.
+        /// Gets the Json <see cref="ExchangeableTypeNameMap"/> if it is available.
         /// </summary>
-        public JsonSerializationCodeGen? JsonGenerator { get; }
+        public ExchangeableTypeNameMap? JsoNames => _jsonNames;
 
         /// <summary>
         /// Gets all the global generators.
@@ -98,268 +135,41 @@ namespace CK.Setup
         /// </summary>
         public PocoCodeGenerator PocoCodeGenerator => (PocoCodeGenerator)_globals[0];
 
-        /// <summary>
-        /// Gets a <see cref="TSTypeFile"/> for a type if it has been declared so far and is not
-        /// an intrinsic types (see remarks of <see cref="DeclareTSType(IActivityMonitor, Type, bool)"/>).
-        /// </summary>
-        /// <param name="t">The type.</param>
-        /// <returns>The Type to File association if is has been declared.</returns>
-        public TSTypeFile? FindDeclaredTSType( Type t ) => _typeMappings.GetValueOrDefault( t );
-
-        /// <summary>
-        /// Declares the required support of a type.
-        /// This may create one <see cref="TSTypeFile"/> for this type (if it is not an intrinsic type, see remarks)
-        /// and others for generic parameters.
-        /// All declared types that requires a file must eventually be generated.
-        /// </summary>
-        /// <remarks>
-        /// "Intrinsic types" can be written directly in TypeScript and don't require a dedicated file. See <see cref="IntrinsicTypeName(Type)"/>.
-        /// </remarks>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="t">The type that should be available in TypeScript.</param>
-        /// <param name="requiresFile">True to emit an error log if the returned file is null.</param>
-        /// <returns>The mapped file or null if <paramref name="t"/> doesn't need a file or cannot be mapped.</returns>
-        public TSTypeFile? DeclareTSType( IActivityMonitor monitor, Type t, bool requiresFile = false )
-        {
-            Throw.CheckNotNullArgument( t );
-            HashSet<Type>? _ = null;
-            var f = DeclareTSType( monitor, t, ref _ );
-            if( f == null && requiresFile )
-            {
-                monitor.Error( $"Unable to obtain a TypeScript file mapping for type '{t}'." );
-            }
-            return f;
-        }
-
-        /// <summary>
-        /// Tries to get the TypeScript type name for basic types. This follows the ECMAScriptStandard
-        /// mapping rules (short numerics up to <see cref="UInt32"/> and double are "number",
-        /// long, ulong, decimal and <see cref="System.Numerics.BigInteger"/> are "bigInteger".
-        /// Object is mapped to "unknown" and void, boolean and string are "void", "boolean" and "string".
-        /// </summary>
-        /// <param name="t">The type.</param>
-        /// <returns>The TypeScript name if it's a basic type, null if it requires a definition file.</returns>
-        public static string? IntrinsicTypeName( Type t )
-        {
-            Throw.CheckNotNullArgument( t );
-            if( t == typeof( void ) ) return "void";
-            else if( t == typeof( bool ) ) return "boolean";
-            else if( t == typeof( string ) ) return "string";
-            else if( t == typeof( int )
-                     || t == typeof( uint )
-                     || t == typeof( short )
-                     || t == typeof( ushort )
-                     || t == typeof( byte )
-                     || t == typeof( sbyte )
-                     || t == typeof( float )
-                     || t == typeof( double ) ) return "number";
-            else if( t == typeof( long )
-                     || t == typeof( ulong )
-                     || t == typeof( decimal )
-                     || t == typeof( System.Numerics.BigInteger ) ) return "BigInteger";
-            else if( t == typeof( object ) ) return "unknown";
-            return null;
-        }
-
-        /// <summary>
-        /// Declares the required support of any number of types.
-        /// This may create any number of <see cref="TSTypeFile"/> that must eventually be generated.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="types">The types that should be available in TypeScript.</param>
-        public void DeclareTSType( IActivityMonitor monitor, IEnumerable<Type> types )
-        {
-            foreach( var t in types )
-                if( t != null )
-                    DeclareTSType( monitor, t );
-        }
-
-        /// <summary>
-        /// Declares the required support of any number of types.
-        /// This may create any number of <see cref="TSTypeFile"/> that must eventually be generated.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="types">The types that should be available in TypeScript.</param>
-        public void DeclareTSType( IActivityMonitor monitor, params Type[] types ) => DeclareTSType( monitor, (IEnumerable<Type>)types );
-
-        TSTypeFile? DeclareTSType( IActivityMonitor monitor, Type t, ref HashSet<Type>? cycleDetector )
-        {
-            TSTypeFile Create( Type t )
-            {
-                var attrFromConfig = _fromConfiguration.GetValueOrDefault( t );
-                var attribs = t.GetCustomAttributes( typeof( TypeScriptAttribute ), false );
-                var attr = attribs.Length == 1
-                            ? ((TypeScriptAttribute)attribs[0]).ApplyOverride( attrFromConfig )
-                            : attrFromConfig;
-                var generators = _undeclaredGenerators?.GetValueOrDefault( t ) ?? Array.Empty<ITSCodeGeneratorType>();
-                var f = new TSTypeFile( this, t, generators, attr );
-                _typeMappings.Add( t, f );
-                _typeFiles.Add( f );
-                return f;
-            }
-
-            if( !_typeMappings.TryGetValue( t, out var f ) )
-            {
-                if( t.IsArray )
-                {
-                    DeclareTSType( monitor, t.GetElementType()! );
-                }
-                else if( t.IsValueTuple() )
-                {
-                    foreach( var s in t.GetGenericArguments() )
-                    {
-                        DeclareTSType( monitor, s );
-                    }
-                }
-                else if( t.IsGenericType )
-                {
-                    Type tDef;
-                    if( t.IsGenericTypeDefinition )
-                    {
-                        tDef = t;
-                    }
-                    else
-                    {
-                        foreach( var a in t.GetGenericArguments() )
-                        {
-                            DeclareTSType( monitor, a );
-                        }
-                        tDef = t.GetGenericTypeDefinition();
-                    }
-                    if( tDef != typeof( IDictionary<,> )
-                        && tDef != typeof( Dictionary<,> )
-                        && tDef != typeof( ISet<> )
-                        && tDef != typeof( HashSet<> )
-                        && tDef != typeof( IList<> )
-                        && tDef != typeof( List<> ) )
-                    {
-                        f = Create( tDef );
-                    }
-                }
-                else if( IntrinsicTypeName( t ) == null )
-                {
-                    f = Create( t );
-                }
-            }
-
-            // We always check the initialization to handle TSTypeFile created by
-            // the attributes.
-            if( f != null && !f.IsInitialized )
-            {
-                EnsureInitialized( monitor, f, ref cycleDetector );
-            }
-            return f;
-        }
-
-        TSTypeFile EnsureInitialized( IActivityMonitor monitor, TSTypeFile f, ref HashSet<Type>? cycleDetector )
-        {
-            Debug.Assert( !f.IsInitialized );
-            TypeScriptAttribute attr = f.Attribute;
-            var generators = f.Generators;
-            var t = f.Type;
-
-            foreach( var g in _globals )
-            {
-                _success &= g.ConfigureTypeScriptAttribute( monitor, f, attr );
-            }
-            if( generators.Count > 0 )
-            {
-                foreach( var g in generators )
-                {
-                    _success &= g.ConfigureTypeScriptAttribute( monitor, f, attr );
-                }
-            }
-
-            NormalizedPath folder;
-            string? fileName = null;
-            Type? refTarget = attr.SameFileAs ?? attr.SameFolderAs;
-            if( refTarget != null )
-            {
-                if( cycleDetector == null ) cycleDetector = new HashSet<Type>();
-                if( !cycleDetector.Add( t ) ) Throw.InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {cycleDetector.Select( c => c.Name ).Concatenate( " => " )}." );
-
-                var target = DeclareTSType( monitor, refTarget, ref cycleDetector );
-                if( target == null )
-                {
-                    monitor.Error( $"Type '{refTarget}' cannot be used in SameFileAs or SameFolderAs attributes." );
-                    _success = false;
-                    folder = default;
-                }
-                else
-                {
-                    folder = target.Folder;
-                    if( attr.SameFileAs != null )
-                    {
-                        fileName = target.FileName;
-                    }
-                }
-            }
-            else
-            {
-                folder = attr.Folder ?? t.Namespace!.Replace( '.', '/' );
-            }
-            string typeName = attr.TypeName ?? SafeNameChars( t.GetExternalName() ?? GetSafeName( t ) );
-            fileName ??= attr.FileName ?? (SafeFileChars( typeName ) + ".ts");
-            f.Initialize( folder, fileName, typeName );
-            monitor.Trace( f.ToString() );
-            return f;
-        }
-
-        internal static string GetPocoClassNameFromPrimaryInterface( IPocoRootInfo itf )
-        {
-            var typeName = itf.PrimaryInterface.GetExternalName();
-            if( typeName == null )
-            {
-                typeName = TypeScriptContext.GetSafeName( itf.PrimaryInterface );
-                if( typeName.StartsWith( "I" ) ) typeName = typeName.Remove( 0, 1 );
-            }
-            typeName = TypeScriptContext.SafeNameChars( typeName );
-            return typeName;
-        }
-
-        internal static string SafeNameChars( string name )
-        {
-            return name.Replace( '+', '_' );
-        }
-        internal static string SafeFileChars( string name )
-        {
-            return name.Replace( '<', '{' ).Replace( '>', '}' );
-        }
-        internal static string GetSafeName( Type t )
-        {
-            var n = t.Name;
-            if( !t.IsGenericType )
-            {
-                return n;
-            }
-            Type tDef = t.IsGenericTypeDefinition ? t : t.GetGenericTypeDefinition();
-            n += '<' + tDef.GetGenericArguments().Select( a => a.Name ).Concatenate() + '>';
-            return n;
-        }
-
         internal bool Run( IActivityMonitor monitor )
         {
-            IPocoSupportResult pocoTypeSystem = CodeContext.CurrentRun.ServiceContainer.GetService<IPocoSupportResult>( true );
+            _tsRoot.TSTypes.RegisterStandardTypes( monitor );
+            var pocoDirectory = CodeContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoDirectory>();
+            var pocoTypeSystem = CodeContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
             using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
             {
-                return BuildAttributesFromConfiguration( monitor, pocoTypeSystem )
-                        && BuildTSTypeFilesFromAttributesAndDiscoverGenerators( monitor, pocoTypeSystem )
-                        && DeclarePurelyConfiguredTypes( monitor )
-                        && CallCodeGenerators( monitor, initialize: true )
-                        && CallCodeGenerators( monitor, false )
-                        && EnsureTypesGeneration( monitor );
+                return // Projects the BinPathConfiguration.Types in RegType.Attribute.
+                        BuildRegTypesFromConfiguration( monitor, pocoDirectory )
+                        // Discovering the globals ITSCodeGenerator, type bound ITSCodeGenerator and TypeScript attributes.
+                        // - Registers the globals,
+                        // - Type bound generators are registered in RegType.Generators,
+                        // - TypeScript atributes are stored in RegType.Attribute (if the type appeared in BinPathConfiguration.Types,
+                        //   the configured values override the code values).
+                        && BuildRegTypesFromAttributesAndDiscoverGenerators( monitor, pocoTypeSystem )
+                        // Initializes the global generators.
+                        && CallGlobalCodeGenerators( monitor, initialize: true )
+                        // Calls Root.TSTypes.ResolveType for each non null RegType.Attribute.
+                        && ResolveRegisteredTypes( monitor )
+                        // Calls the TypeScriptRoot to generate the code for all ITSGeneratedType.
+                        && _tsRoot.GenerateCode( monitor )
+                        // Runs the global generators GenerateCode.
+                        && CallGlobalCodeGenerators( monitor, false );
             }
         }
 
 
-        bool BuildAttributesFromConfiguration( IActivityMonitor monitor, IPocoSupportResult pocoTypeSystem )
+        bool BuildRegTypesFromConfiguration( IActivityMonitor monitor, IPocoDirectory directory )
         {
             using( monitor.OpenInfo( $"Building TypeScriptAttribute for {BinPathConfiguration.Types.Count} Type configurations." ) )
             {
                 bool success = true;
-                foreach( var c in BinPathConfiguration.Types )
+                foreach( TypeScriptTypeConfiguration c in _binPathConfiguration.Types )
                 {
-                    Type? t = ResolveType( pocoTypeSystem, c.Type );
+                    Type? t = FindType( directory, c.Type );
                     if( t == null )
                     {
                         monitor.Error( $"Unable to resolve type '{c.Type}' in TypeScriptAspectConfiguration in:{Environment.NewLine}{c.ToXml()}" );
@@ -367,11 +177,12 @@ namespace CK.Setup
                     }
                     else
                     {
-                        var attr = c.ToAttribute( monitor, ( monitor, typeName ) => ResolveType( pocoTypeSystem, typeName ) );
+                        var attr = c.ToAttribute( monitor, ( monitor, typeName ) => FindType( directory, typeName ) );
                         if( attr == null ) success = false;
                         else
                         {
                             _fromConfiguration.Add( t, attr );
+                            _typeDecorators.Add( t, new RegType( null, attr ) );
                         }
                     }
                 }
@@ -379,14 +190,14 @@ namespace CK.Setup
                 return success;
             }
 
-            static Type? ResolveType( IPocoSupportResult pocoTypeSystem, string typeName )
+            static Type? FindType( IPocoDirectory d, string typeName )
             {
                 var t = SimpleTypeFinder.WeakResolver( typeName, false );
                 if( t == null )
                 {
-                    if( pocoTypeSystem.NamedRoots.TryGetValue( typeName, out var rootInfo ) )
+                    if( d.NamedFamilies.TryGetValue( typeName, out var rootInfo ) )
                     {
-                        t = rootInfo.PrimaryInterface;
+                        t = rootInfo.PrimaryInterface.PocoInterface;
                     }
                 }
                 return t;
@@ -394,16 +205,12 @@ namespace CK.Setup
 
         }
 
-        bool BuildTSTypeFilesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor, IPocoSupportResult pocoTypeSystem )
+        bool BuildRegTypesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem )
         {
-            var globals = new List<ITSCodeGenerator>
-            {
-                new PocoCodeGenerator( pocoTypeSystem ),
-                new SystemTypesCodeGenerator(),
-                new GlobalizationTypesCodeGenerator()
-            };
+            _globals.Add( new PocoCodeGenerator( pocoTypeSystem ) );
+            _globals.Add( new GlobalizationTypesCodeGenerator() );
 
-            using( monitor.OpenInfo( "Analyzing types with TypeScript and/or ITSCodeGeneratorType or ITSCodeGenerator attributes." ) )
+            using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGenerator attributes." ) )
             {
                 // These variables are reused per type.
                 TypeScriptAttributeImpl? impl;
@@ -418,13 +225,13 @@ namespace CK.Setup
                     {
                         if( m is ITSCodeGenerator g )
                         {
-                            globals.Add( g );
+                            _globals.Add( g );
                         }
                         if( m is TypeScriptAttributeImpl a )
                         {
                             if( impl != null )
                             {
-                                monitor.Error( $"Multiple TypeScriptImpl decorates '{attributeCache.Type}'." );
+                                monitor.Error( $"Multiple TypeScriptAttribute decorates '{attributeCache.Type}'." );
                                 _success = false;
                             }
                             impl = a;
@@ -434,58 +241,40 @@ namespace CK.Setup
                             generators.Add( tG );
                         }
                     }
-                    // If the attribute is only a ITSCodeGeneratorType, we don't consider it as an empty TypeScriptArribute,
-                    // we register it if and only if it appears in the configuration.
-                    // And if it is not declared in the configuration we must keep the array of its generators to be able to
+                    // If the attribute is only a ITSCodeGeneratorType, we don't consider it as an empty TypeScriptAttribute,
+                    // we register it if and only if it appears in the configuration (we let the TSDecoratedType.Attribute be null).
+                    // And if it is not declared in the configuration we keep the array of its generators to be able to
                     // use them if the type is referenced by another referenced type.
                     if( impl != null || generators.Count > 0 )
                     {
-                        // Lookups the potential configuration to override the code defined values
-                        // and removes it from the map: after this code attribute process, the remaining
-                        // purely configured types must be declared.
-                        _fromConfiguration.Remove( attributeCache.Type, out var attrFromConfig );
-                        TSTypeFile? f = null;
-                        if( impl != null )
-                        {
-                            f = new TSTypeFile( this, attributeCache.Type, generators.ToArray(), impl.Attribute.ApplyOverride( attrFromConfig ) );
-                        }
-                        else if( attrFromConfig != null )
-                        {
-                            f = new TSTypeFile( this, attributeCache.Type, generators.ToArray(), attrFromConfig );
-                        }
-                        if( f != null )
-                        {
-                            _typeMappings.Add( attributeCache.Type, f );
-                            _typeFiles.Add( f );
-                        }
-                        else
-                        {
-                            _undeclaredGenerators ??= new Dictionary<Type, ITSCodeGeneratorType[]>();
-                            _undeclaredGenerators.Add( attributeCache.Type, generators.ToArray() );
-                        }
+                        // Did this type appear in the configuration?
+                        // If yes, the configuration must override the values from the code.
+                        var configuredAttr = _typeDecorators.GetValueOrDefault( attributeCache.Type ).Attribute;
+                        var a = impl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
+                        _typeDecorators[attributeCache.Type] = new RegType( generators.Count > 0 ? generators.ToArray() : null, a );
                     }
                 }
-                if( _success ) monitor.CloseGroup( $"Found {globals.Count} global generators and {_typeMappings.Count} types to generate." );
-                _globals = globals;
+                if( _success ) monitor.CloseGroup( $"Found {_globals.Count} global generators and {_typeDecorators.Count} types to consider." );
                 return _success;
             }
         }
 
-        bool DeclarePurelyConfiguredTypes( IActivityMonitor monitor )
+        bool ResolveRegisteredTypes( IActivityMonitor monitor )
         {
-            using( monitor.OpenInfo( $"Declaring {_fromConfiguration.Count} purely declared types." ) )
+            using( monitor.OpenInfo( $"Declaring registered types." ) )
             {
-                foreach( var (type, attr) in _fromConfiguration )
+                foreach( var (type, dec) in _typeDecorators )
                 {
-                    var f = new TSTypeFile( this, type, Array.Empty<ITSCodeGeneratorType>(), attr );
-                    _typeMappings.Add( type, f );
-                    _typeFiles.Add( f );
+                    if( dec.Attribute != null )
+                    {
+                        _tsRoot.TSTypes.ResolveTSType( monitor, type );
+                    }
                 }
                 return true;
             }
         }
 
-        bool CallCodeGenerators( IActivityMonitor monitor, bool initialize )
+        bool CallGlobalCodeGenerators( IActivityMonitor monitor, bool initialize )
         {
             string action = initialize ? "Initializing" : "Executing";
             Debug.Assert( _success );
@@ -513,24 +302,6 @@ namespace CK.Setup
                             return false;
                         }
                     }
-                }
-            }
-            return _success;
-        }
-
-        bool EnsureTypesGeneration( IActivityMonitor monitor )
-        {
-            using( monitor.OpenInfo( $"Ensuring that {_typeFiles.Count} types are initialized and implemented." ) )
-            {
-                for( int i = 0; i < _typeFiles.Count; ++i )
-                {
-                    var f = _typeFiles[i];
-                    if( !f.IsInitialized )
-                    {
-                        HashSet<Type>? _ = null;
-                        EnsureInitialized( monitor, f, ref _ );
-                    }
-                    _success &= f.Implement( monitor );
                 }
             }
             return _success;

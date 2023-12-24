@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen
     /// an implementation of <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/> and an
     /// <see cref="Implementor"/> function that can generate the TypeScript code.
     /// <para>
-    /// This is totally mutable and not initialized at first except the C# <see cref="Type"/> that
+    /// This is totally mutable and not initialized at first except the <see cref="Type"/> that
     /// cannot be changed.
     /// </para>
     /// </summary>
@@ -20,12 +20,14 @@ namespace CK.TypeScript.CodeGen
         Type? _sameFolderAs;
         Type? _sameFileAs;
         string? _typeName;
-        private string? _defaultValueSource;
+        string? _defaultValueSource;
+        Func<ITSCodeWriter, object, bool>? _tryWriteValueImplementation;
+        TSCodeGenerator? _implementor;
 
         /// <summary>
         /// Initializes a new descriptor for a C# type.
         /// </summary>
-        /// <param name="type">The key C# type.</param>
+        /// <param name="type">The C# type.</param>
         public TSGeneratedTypeBuilder( Type type )
         {
             Throw.CheckNotNullArgument( type );
@@ -33,7 +35,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Gets the C# type.
+        /// Gets the key type.
         /// </summary>
         public Type Type => _type;
 
@@ -58,11 +60,14 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        /// <summary>
         /// Gets or sets a function that can implement <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/>
         /// if the generated type corresponds to a C# type that can be expressed as a TypeScript construct.
         /// </summary>
-        public Func<ITSCodeWriter, object, bool>? TryWriteValueImplementation { get; set; }
+        public Func<ITSCodeWriter, object, bool>? TryWriteValueImplementation
+        {
+            get => _tryWriteValueImplementation;
+            set => _tryWriteValueImplementation = value;
+        }
 
         /// <summary>
         /// Gets or sets an optional sub folder that will contain the TypeScript generated code.
@@ -181,7 +186,11 @@ namespace CK.TypeScript.CodeGen
         /// Gets or sets a function that will be called to generate the code.
         /// To compose a function with this one, use the <see cref="AddImplementor(TSCodeGenerator, bool)"/> helper.
         /// </summary>
-        public TSCodeGenerator? Implementor { get; set; }
+        public TSCodeGenerator? Implementor
+        {
+            get => _implementor;
+            set => _implementor = value;
+        }
 
         /// <summary>
         /// Combines an implementor function with the current <see cref="Implementor"/>.
@@ -194,21 +203,17 @@ namespace CK.TypeScript.CodeGen
         public void AddImplementor( TSCodeGenerator newOne, bool prepend = false )
         {
             Throw.CheckNotNullArgument( newOne );
-            if( Implementor != null )
+            if( _implementor != null )
             {
-                var captured = Implementor;
-                Implementor = ( m, f ) => prepend
+                var captured = _implementor;
+                _implementor = ( m, f ) => prepend
                                             ? newOne( m, f ) && captured( m, f )
                                             : captured( m, f ) && newOne( m, f );
             }
             else
             {
-                Implementor = newOne;
+                _implementor = newOne;
             }
         }
-
-
     }
-
 }
-

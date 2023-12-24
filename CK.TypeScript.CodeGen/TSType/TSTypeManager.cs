@@ -11,16 +11,22 @@ using System.Threading;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Handles a map from C# types to <see cref="ITSType"/> and external <see cref="LibraryImport"/>.
+    /// Handles a map from "type key" to <see cref="ITSType"/>. The type key can be a C# type but may be another object.
+    /// <para>
+    /// A <see cref="Type"/> key is enough for value types since the non nullable type and the nullable type can be registered, this is
+    /// what <see cref="RegisterStandardTypes(IActivityMonitor, bool, bool, bool, bool)"/> does. To be able to handle reference type nullability,
+    /// the key can be any object.
+    /// </para>
     /// <para>
     /// The <see cref="object"/> type is mapped to "unknown", with no default values, no imports and no capacity to
-    /// write any values by itself. To register other basic types, <see cref="RegisterStandardTypes(IActivityMonitor, TypeScriptRoot, bool, bool, bool, bool)"/>
+    /// write any values by itself. To register other basic types, <see cref="RegisterStandardTypes(IActivityMonitor, bool, bool, bool, bool)"/>
     /// must be called.
     /// </para>
     /// </summary>
     public sealed partial class TSTypeManager
     {
-        readonly Dictionary<Type, ITSType> _types;
+        // Null value is used to detect reentrancy while resolving.
+        readonly Dictionary<object, ITSType?> _types;
         readonly Dictionary<string, LibraryImport> _libraries;
         readonly TypeScriptRoot _root;
         readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
@@ -33,7 +39,7 @@ namespace CK.TypeScript.CodeGen
             _root = root;
             _libVersionsConfig = libraryVersionConfiguration;
             _libraries = new Dictionary<string, LibraryImport>();
-            _types = new Dictionary<Type, ITSType>
+            _types = new Dictionary<object, ITSType?>
             {
                 { typeof( object ), new TSType( "unknown", null, null ) }
             };
@@ -104,114 +110,185 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Gets a registered TS type for a type or null if not found.
-        /// Use the indexer <see cref="this[Type]"/> to throw if the type must be mapped.
+        /// Gets a registered TS type for a type key or null if not found.
+        /// Use the indexer <see cref="this[object]"/> to throw if the type must be mapped.
         /// </summary>
-        /// <param name="t">The C# type for which a TS type should be found.</param>
+        /// <param name="keyType">The key type for which a TS type should be found.</param>
         /// <returns>The TS type or null if not found.</returns>
-        public ITSType? Find( Type t ) => _types.GetValueOrDefault( t );
+        public ITSType? Find( object keyType ) => _types.GetValueOrDefault( keyType );
 
         /// <summary>
         /// Gets a registered TS type for a type o throws an <see cref="KeyNotFoundException"/>.
         /// </summary>
-        /// <param name="t">The C# type for which a TS type should be found.</param>
+        /// <param name="keyType">The key type for which a TS type should be found.</param>
         /// <returns>The TS type.</returns>
-        public ITSType this[Type t] => _types[t];
+        public ITSType this[object keyType] => _types[keyType] ?? throw new KeyNotFoundException( $"Key type '{keyType}' is currently resolving." );
 
         /// <summary>
-        /// Registers a new C# type to <see cref="ITSType"/> mapping.
-        /// This throws a <see cref="ArgumentException"/> if the type is already mapped.
+        /// Registers a new key type to <see cref="ITSType"/> mapping.
+        /// This throws a <see cref="ArgumentException"/> if the key is already mapped.
         /// </summary>
-        /// <param name="type">The C# type.</param>
+        /// <param name="keyType">The key type.</param>
         /// <param name="tsType">The associated TS type.</param>
-        public void Register( Type type, ITSType tsType )
+        public void Register( object keyType, ITSType tsType )
         {
-            _types.Add( type, tsType );
+            _types.Add( keyType, tsType );
         }
 
         /// <summary>
-        /// Gets all the registered <see cref="ITSGeneratedType"/>.
+        /// Registers a value type by its type and its nullable type (to <see cref="ITSType.Nullable"/>).
         /// </summary>
-        public IEnumerable<ITSGeneratedType> AllGeneratedTypes => _types.Values.OfType<ITSGeneratedType>();
+        /// <typeparam name="T">The value type to register.</typeparam>
+        /// <param name="tsType">The associated TypeScript type. Must be the non nullable type.</param>
+        public void RegisterValueType<T>( ITSType tsType ) where T : struct
+        {
+            Throw.CheckNotNullArgument( tsType );
+            Throw.CheckArgument( !tsType.IsNullable );
+            _types.Add( typeof( T ), tsType );
+            _types.Add( typeof( T? ), tsType.Nullable );
+        }
 
         /// <summary>
         /// Event arguments that exposes a <see cref="TSGeneratedTypeBuilder"/> to be configured.
+        /// This is raised when a C# type must be resolved.
         /// </summary>
-        public sealed class BuilderRequiredEventArgs : EventMonitoredArgs
+        public sealed class TypeBuilderRequiredEventArgs : EventMonitoredArgs
         {
             readonly TSGeneratedTypeBuilder _descriptor;
 
-            internal BuilderRequiredEventArgs( IActivityMonitor monitor, TSGeneratedTypeBuilder builder )
+            internal TypeBuilderRequiredEventArgs( IActivityMonitor monitor, TSGeneratedTypeBuilder builder )
                 : base( monitor )
             {
                 _descriptor = builder;
             }
 
             /// <summary>
-            /// Gets the type descriptor that can be configured.
+            /// Gets the type builder that can be configured.
             /// </summary>
             public TSGeneratedTypeBuilder Builder => _descriptor;
         }
 
         /// <summary>
-        /// Raised when a <see cref="ITSGeneratedType"/> must be configured.
+        /// Event arguments that exposes an object for which a <see cref="ITSType"/> must be resolved.
+        /// This is raised when a key type that is not a C# type must be resolved.
         /// </summary>
-        public event EventHandler<BuilderRequiredEventArgs>? BuilderRequired;
+        public sealed class TSTypeRequiredEventArgs : EventMonitoredArgs
+        {
+            readonly object _keyType;
+            ITSType? _resolved;
+
+            internal TSTypeRequiredEventArgs( IActivityMonitor monitor, object keyType )
+                : base( monitor )
+            {
+                _keyType = keyType;
+            }
+
+            /// <summary>
+            /// Gets the key type to resolve.
+            /// </summary>
+            public object KeyType => _keyType;
+
+            /// <summary>
+            /// Gets the TypeScript type to used.
+            /// </summary>
+            public ITSType? Resolved
+            {
+                get => _resolved;
+                set => _resolved = value;
+            }
+        }
 
         /// <summary>
-        /// Resolves the mapping from a C# <see cref="Type"/> to a <see cref="ITSType"/>.
+        /// Raised when a <see cref="ITSGeneratedType"/> must be configured from a C# type.
+        /// </summary>
+        public event EventHandler<TypeBuilderRequiredEventArgs>? TypeBuilderRequired;
+
+        /// <summary>
+        /// Raised when a <see cref="ITSType"/> must be resolved for an object key type
+        /// that is not a C# type.
+        /// </summary>
+        public event EventHandler<TSTypeRequiredEventArgs>? TSTypeRequired;
+
+        /// <summary>
+        /// Resolves the mapping from a key type to a <see cref="ITSType"/> by raising <see cref="TypeBuilderRequired"/> events.
         /// <para>
         /// The Type may already be registered as a basic <see cref="TSType"/> and not as a <see cref="TSGeneratedType"/>:
         /// this is why this method returns the interface.
         /// </para>
         /// <para>
-        /// If mo mapping exits and <see cref="IsValidGeneratedType(Type)"/> returns false, this throws
+        /// If no mapping exits and <see cref="IsValidGeneratedType(Type)"/> returns false, this throws
         /// an <see cref="ArgumentException"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="type">The type that should be available in TypeScript.</param>
+        /// <param name="keyType">The type that should be available in TypeScript.</param>
         /// <returns>The file that defines the type.</returns>
-        public ITSType ResolveTSType( IActivityMonitor monitor, Type type )
+        public ITSType ResolveTSType( IActivityMonitor monitor, object keyType )
         {
-            Throw.CheckNotNullArgument( type );
-            if( !_types.TryGetValue( type, out var mapped ) )
+            Throw.CheckNotNullArgument( keyType );
+            if( !_types.TryGetValue( keyType, out var mapped ) )
             {
-                HashSet<Type>? cycleDetector = null;
-                mapped = ResolveTSType( monitor, type, false, ref cycleDetector );
-                Debug.Assert( mapped != null );
-                _types.Add( type, mapped );
+                if( keyType is Type t )
+                {
+                    HashSet<Type>? cycleSameFolderDetector = null;
+                    mapped = ResolveTSTypeFromType( monitor, t, false, ref cycleSameFolderDetector );
+                }
+                else
+                {
+                    mapped = ResolveTSTypeFromObject( monitor, keyType );
+                }
+                Throw.DebugAssert( mapped != null );
+                _types.Add( keyType, mapped );
+            }
+            if( mapped == null )
+            {
+                // We cannot order the items here but we don't really care.
+                var cycle = _types.Where( kv => kv.Value == null ).Select( kv => kv.Key is Type t ? t.Name : kv.Key.ToString() ).Concatenate( "', '" );
+                Throw.CKException( $"Reentrant TSType resolution detected: '{cycle}'." );
             }
             return mapped;
         }
 
-        TSGeneratedType? ResolveTSType( IActivityMonitor monitor, Type type, bool internalCall, ref HashSet<Type>? cycleDetector )
+        ITSType ResolveTSTypeFromObject( IActivityMonitor monitor, object keyType )
         {
+            var e = new TSTypeRequiredEventArgs( monitor, keyType );
+            TSTypeRequired?.Invoke( this, e );
+            if( e.Resolved == null )
+            {
+                Throw.CKException( $"Unable to resolve TSType from keyType '{keyType}'." );
+            }
+            return e.Resolved;
+        }
 
-            if( !IsValidGeneratedType( type ) )
+        ITSType? ResolveTSTypeFromType( IActivityMonitor monitor, Type t, bool internalCall, ref HashSet<Type>? sameFolderDetector )
+        {
+            if( !IsValidGeneratedType( t ) )
             {
                 if( internalCall ) return null;
-                Throw.ArgumentException( nameof( type ), $"Invalid type for a TSGeneratedType: '{type.ToCSharpName()}'. It must be deconstructed: array, collections, nullable value type and value tuples must be handled by the caller since these are \"inlined\" types in TypeScript." );
+                Throw.ArgumentException( nameof( t ), $"Invalid type for a TSGeneratedType: '{t.ToCSharpName()}'. It must be deconstructed: array, collections, value tuples and nullable value types must be handled by the caller since these are \"inlined\" types in TypeScript." );
             }
-            var d = new TSGeneratedTypeBuilder( type );
-            BuilderRequired?.Invoke( this, new BuilderRequiredEventArgs( monitor, d ) );
+            var d = new TSGeneratedTypeBuilder( t );
+            TypeBuilderRequired?.Invoke( this, new TypeBuilderRequiredEventArgs( monitor, d ) );
 
-            string typeName = d.TypeName ?? GetSafeName( type );
+            string typeName = d.TypeName ?? GetSafeName( t );
 
             TypeScriptFolder? folder = null;
             TypeScriptFile? file = null;
             Type? refTarget = d.SameFileAs ?? d.SameFolderAs;
             if( refTarget != null )
             {
-                if( !_types.TryGetValue( type, out var target ) )
+                if( !_types.TryGetValue( t, out var target ) )
                 {
-                    if( cycleDetector == null ) cycleDetector = new HashSet<Type>();
-                    if( !cycleDetector.Add( type ) ) Throw.InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {cycleDetector.Select( c => c.Name ).Concatenate( " => " )}." );
-                    target = ResolveTSType( monitor, refTarget, true, ref cycleDetector );
+                    sameFolderDetector ??= new HashSet<Type>();
+                    if( !sameFolderDetector.Add( t ) )
+                    {
+                        Throw.InvalidOperationException( $"TypeScript.SameFoldeAs cycle detected: {sameFolderDetector.Select( c => c.Name ).Concatenate( " => " )}." );
+                    }
+                    target = ResolveTSTypeFromType( monitor, refTarget, true, ref sameFolderDetector );
                 }
                 if( target is not ITSGeneratedType gTarget )
                 {
-                    monitor.Warn( $"Type '{refTarget:C}' cannot be used in SameFileAs or SameFolderAs attributes since it is not a type associated to a generated file. Type '{type:N}' will be in a folder/file based on its namespace/name." );
+                    monitor.Warn( $"Type '{refTarget:C}' cannot be used in SameFileAs or SameFolderAs attributes since it is not a type associated to a generated file. Type '{t:N}' will be in a folder/file based on its namespace/name." );
                 }
                 else
                 {
@@ -224,15 +301,15 @@ namespace CK.TypeScript.CodeGen
             }
             if( file == null )
             {
-                folder ??= _root.Root.FindOrCreateFolder( d.Folder ?? type.Namespace!.Replace( '.', '/' ) );
+                folder ??= _root.Root.FindOrCreateFolder( d.Folder ?? t.Namespace!.Replace( '.', '/' ) );
                 file = folder.FindOrCreateFile( d.FileName ?? typeName.Replace( '<', '{' ).Replace( '>', '}' ) + ".ts" );
             }
-            monitor.Trace( $"Type '{type:C}' will be generated in '{file}'." );
-            if( type.IsEnum )
+            monitor.Trace( $"Type '{t:C}' will be generated in '{file}'." );
+            if( t.IsEnum )
             {
                 d.DefaultValueSource ??= SelectEnumTypeDefaultValue( monitor, d );
             }
-            var newOne = new TSGeneratedType( type, typeName, file, d.DefaultValueSource, d.TryWriteValueImplementation, d.Implementor );
+            var newOne = new TSGeneratedType( t, typeName, file, d.DefaultValueSource, d.TryWriteValueImplementation, d.Implementor );
             _processList.Add( newOne );
             return newOne;
 
@@ -247,10 +324,9 @@ namespace CK.TypeScript.CodeGen
                 n += '<' + tDef.GetGenericArguments().Select( a => a.Name ).Concatenate() + '>';
                 return n;
             }
-
         }
 
-        string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TSGeneratedTypeBuilder d )
+        static string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TSGeneratedTypeBuilder d )
         {
             Debug.Assert( d.Type.IsEnum && d.DefaultValueSource == null );
             // [Doc] The elements of the array are sorted by the binary values (that is, the unsigned values)
@@ -281,7 +357,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Gets whether a type can be used to call <see cref="DeclareTSType(IActivityMonitor, Type)"/>.
+        /// Gets whether a type can be used to call <see cref="ResolveTSType(IActivityMonitor, object)"/>.
         /// <see cref="object"/>, <see cref="void"/>, arrays, collections (list, set and dictionary),
         /// nullable value types, value tuples must be handled explicitly since these are "inlined" types in TypeScript
         /// and cannot have an associated <see cref="ITSGeneratedType"/>.

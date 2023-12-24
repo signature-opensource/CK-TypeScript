@@ -26,6 +26,8 @@ namespace CK.TypeScript.CodeGen
         bool _hasBarrel;
 
         static readonly char[] _invalidFileNameChars = System.IO.Path.GetInvalidFileNameChars();
+        static readonly char[] _invalidPathChars = System.IO.Path.GetInvalidPathChars();
+
 
         internal TypeScriptFolder( TypeScriptRoot root )
         {
@@ -405,7 +407,11 @@ namespace CK.TypeScript.CodeGen
 
         static void CheckName( string name, bool isFolder )
         {
-            if( String.IsNullOrWhiteSpace( name ) || name.IndexOfAny( _invalidFileNameChars ) >= 0 ) Throw.ArgumentException( $"Empty name or invalid characters in: '{name}'.", nameof( name ) );
+            Throw.CheckNotNullOrWhiteSpaceArgument( name );
+            if( name.IndexOfAny( isFolder ? _invalidPathChars : _invalidFileNameChars ) >= 0 )
+            {
+                Throw.ArgumentException( $"Empty name or invalid characters in: '{name}'.", nameof( name ) );
+            }
             if( name.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase ) )
             {
                 if( isFolder ) Throw.ArgumentException( $"Folder name must not end with '.ts': '{name}'.", nameof( name ) );

@@ -77,7 +77,7 @@ namespace CK.Setup
             var reusable = new StringBuilder();
             return GeneratePackageJson( monitor, outputPath, targetTypescriptVersion, g, reusable )
                    && GenerateTSConfigJson( monitor, outputPath, g, reusable )
-                   && GenerateTSConfigCJSJson( monitor, outputPath, g, reusable );
+                   && GenerateTSConfigCJSJson( monitor, outputPath );
 
             static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath outputPath, string? targetTypescriptVersion, TypeScriptContext g, StringBuilder sb )
             {
@@ -188,9 +188,8 @@ namespace CK.Setup
                 return true;
             }
 
-            static bool GenerateTSConfigCJSJson( IActivityMonitor monitor, NormalizedPath outputPath, TypeScriptRoot root, StringBuilder sb )
+            static bool GenerateTSConfigCJSJson( IActivityMonitor monitor, NormalizedPath outputPath )
             {
-                sb.Clear();
                 var tsConfigCJSFile = Path.Combine( outputPath, "tsconfig-cjs.json" );
                 monitor.Trace( $"Creating '{tsConfigCJSFile}'." );
                 File.WriteAllText( tsConfigCJSFile, """

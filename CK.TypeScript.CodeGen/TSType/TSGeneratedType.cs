@@ -13,6 +13,8 @@ namespace CK.TypeScript.CodeGen
     {
         readonly Func<ITSCodeWriter, object, bool>? _tryWriteValue;
         internal readonly TSCodeGenerator? _codeGenerator;
+        readonly Type _type;
+        readonly TypeScriptFile _file;
 
         sealed class GeneratedNull : Null, ITSGeneratedType
         {
@@ -23,7 +25,7 @@ namespace CK.TypeScript.CodeGen
 
             new TSGeneratedType NonNullable => Unsafe.As<TSGeneratedType>( base.NonNullable );
 
-            public TypeScriptFile File => NonNullable.File;
+            public new TypeScriptFile File => NonNullable.File;
 
             ITSGeneratedType ITSGeneratedType.Nullable => this;
 
@@ -47,25 +49,30 @@ namespace CK.TypeScript.CodeGen
                                 string? defaultValue,
                                 Func<ITSCodeWriter, object, bool>? tryWriteValue,
                                 TSCodeGenerator? codeGenerator )
-            : base( typeName, i => i.EnsureImport( file, typeName ), defaultValue, t => new GeneratedNull( t ) )
+            : base( typeName, null, defaultValue, t => new GeneratedNull( t ) )
         {
-            Throw.CheckNotNullArgument( t );
-            Throw.CheckNotNullArgument( file );
-            Type = t;
-            File = file;
+            Throw.DebugAssert( t != null );
+            Throw.DebugAssert( file != null );
+            _type = t;
+            _file = file;
             _tryWriteValue = tryWriteValue;
             _codeGenerator = codeGenerator;
         }
 
-        public Type Type { get; }
+        public Type Type => _type;
 
-        public TypeScriptFile File { get; }
+        public override TypeScriptFile File => _file;
 
         public new ITSGeneratedType Nullable => (ITSGeneratedType)base.Nullable;
 
         public new ITSGeneratedType NonNullable => this;
 
         public bool HasCodeGenerator => _codeGenerator != null;
+
+        public override void EnsureRequiredImports( ITSFileImportSection section )
+        {
+            section.EnsureImport( _file, TypeName );
+        }
 
         protected override bool DoTryWriteValue( ITSCodeWriter writer, object value ) => _tryWriteValue?.Invoke( writer, value ) ?? false;
 

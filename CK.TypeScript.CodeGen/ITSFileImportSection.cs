@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -33,7 +34,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="libraryImport">The library infos.</param>
         /// <param name="typeName">The first required type name to import.</param>
-        /// <param name="typeNames">More types to import  (optionals).</param>
+        /// <param name="typeNames">More types to import (optionals).</param>
         /// <returns>This section to enable fluent syntax.</returns>
         ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames );
 
@@ -43,6 +44,29 @@ namespace CK.TypeScript.CodeGen
         /// <param name="libraryImport">The library infos.</param>
         /// <returns>This section to enable fluent syntax.</returns>
         ITSFileImportSection EnsureLibrary( LibraryImport libraryImport );
+
+        /// <summary>
+        /// Ensures that an import of one or more types exists in this file.
+        /// <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> is called for each type.
+        /// </summary>
+        /// <param name="monitor">
+        /// Required monitor since <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> is called.
+        /// </param>
+        /// <param name="type">The type to import.</param>
+        /// <param name="types">Optional types to import.</param>
+        /// <returns>This section to enable fluent syntax.</returns>
+        ITSFileImportSection EnsureImport( IActivityMonitor monitor, Type type, params Type[] types );
+
+        /// <summary>
+        /// Ensures that TypeScript files for types are imported.
+        /// <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> is called for each type.
+        /// </summary>
+        /// <param name="monitor">
+        /// Required monitor since <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> is called.
+        /// </param>
+        /// <param name="types">Types to import.</param>
+        /// <returns>This section to enable fluent syntax.</returns>
+        ITSFileImportSection EnsureImport( IActivityMonitor monitor, IEnumerable<Type> types );
 
         /// <summary>
         /// Gets the number of different <see cref="EnsureImport(TypeScriptFile, string, string[])"/>

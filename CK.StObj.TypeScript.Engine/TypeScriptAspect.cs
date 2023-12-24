@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup.PocoJson;
 using CK.TypeScript.CodeGen;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -6,8 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-
-#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
 namespace CK.Setup
 {
@@ -54,18 +53,19 @@ namespace CK.Setup
                 if( genBinPath.CurrentRun.ConfigurationGroup.IsUnifiedPure ) continue;
                 // Obtains the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
                 // We MAY here decide that ONE BinPath have more than one TypeScriptAspectConfiguration, but
-                // currently, on BinPath can define 0 or 1 TypeScriptAspectConfiguration.
+                // currently, one BinPath can define 0 or 1 TypeScriptAspectConfiguration.
                 var rootedConfigs = GetRootedConfigurations( monitor, genBinPath );
                 if( rootedConfigs != null )
                 {
-                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>();
-                    if( jsonCodeGen == null )
+                    var pocoTypeSystem = genBinPath.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
+                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<IPocoJsonGeneratorService>();
+                    if( jsonCodeGen?.JsonNames == null )
                     {
                         monitor.Info( $"No Json serialization available in this context." );
                     }
                     foreach( var tsBinPathconfig in rootedConfigs )
                     {
-                        var g = new TypeScriptContext( genBinPath, _tsConfig, tsBinPathconfig, jsonCodeGen );
+                        var g = new TypeScriptContext( genBinPath, _tsConfig, tsBinPathconfig, pocoTypeSystem, jsonCodeGen?.JsonNames );
                         _generators.Add( g );
                         if( !g.Run( monitor ) )
                         {

@@ -31,11 +31,13 @@ namespace CK.TypeScript.CodeGen
 
             public string? DefaultValueSource => _nonNullable.DefaultValueSource;
 
-            public Action<ITSFileImportSection>? RequiredImports => _nonNullable.RequiredImports;
+            public void EnsureRequiredImports( ITSFileImportSection section ) => _nonNullable.EnsureRequiredImports( section );
 
             public ITSType Nullable => this;
 
             public ITSType NonNullable => _nonNullable;
+
+            public TypeScriptFile? File => _nonNullable.File;
 
             /// <summary>
             /// Overridden to return the <see cref="TypeName"/>.
@@ -48,6 +50,9 @@ namespace CK.TypeScript.CodeGen
 
         [AllowNull]
         readonly ITSType _null;
+        readonly string _typeName;
+        readonly string? _defaultValueSource;
+        readonly Action<ITSFileImportSection>? _requiredImports;
 
         /// <summary>
         /// Initializes a new <see cref="TSType"/>.
@@ -65,7 +70,7 @@ namespace CK.TypeScript.CodeGen
         /// Protected constructor.
         /// </summary>
         /// <param name="typeName">The type name.</param>
-        /// <param name="imports">The required imports.</param>
+        /// <param name="imports">Optional required imports to use this type.</param>
         /// <param name="defaultValue">The type default value if any.</param>
         /// <param name="nullFactory">The <see cref="Nullable"/> factory.</param>
         protected TSType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValue, Func<TSType, ITSType> nullFactory )
@@ -77,13 +82,13 @@ namespace CK.TypeScript.CodeGen
         TSType( Action<ITSFileImportSection>? imports, string typeName, string? defaultValue )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
-            TypeName = typeName;
-            RequiredImports = imports;
-            DefaultValueSource = defaultValue;
+            _typeName = typeName;
+            _requiredImports = imports;
+            _defaultValueSource = defaultValue;
         }
 
         /// <inheritdoc />
-        public string TypeName { get; }
+        public string TypeName => _typeName;
 
         /// <inheritdoc />
         public bool IsNullable => false;
@@ -92,10 +97,13 @@ namespace CK.TypeScript.CodeGen
         public bool HasDefaultValue => !string.IsNullOrEmpty( DefaultValueSource );
 
         /// <inheritdoc />
-        public string? DefaultValueSource { get; }
+        public string? DefaultValueSource => _defaultValueSource;
 
-        /// <inheritdoc />
-        public Action<ITSFileImportSection>? RequiredImports { get; }
+        /// <summary>
+        /// Gets a null file at this level.
+        /// This is overridden by <see cref="ITSGeneratedType"/> implementations.
+        /// </summary>
+        public virtual TypeScriptFile? File => null;
 
         /// <inheritdoc />
         public ITSType Nullable => _null;
@@ -104,11 +112,18 @@ namespace CK.TypeScript.CodeGen
         public ITSType NonNullable => this;
 
         /// <inheritdoc />
+        public virtual void EnsureRequiredImports( ITSFileImportSection section )
+        {
+            Throw.CheckNotNullArgument( section );
+            _requiredImports?.Invoke( section );
+        }
+
+        /// <inheritdoc />
         public bool TryWriteValue( ITSCodeWriter writer, object value )
         {
             if( DoTryWriteValue( writer, value ) )
             {
-                RequiredImports?.Invoke( writer.File.Imports );
+                _requiredImports?.Invoke( writer.File.Imports );
                 return true;
             }
             return false;
@@ -129,7 +144,7 @@ namespace CK.TypeScript.CodeGen
         /// Overridden to return the <see cref="TypeName"/>.
         /// </summary>
         /// <returns>The <see cref="TypeName"/>.</returns>
-        public override string ToString() => TypeName;
+        public override string ToString() => _typeName;
     }
 
 }

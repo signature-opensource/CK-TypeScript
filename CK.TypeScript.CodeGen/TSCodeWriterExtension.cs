@@ -119,7 +119,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendTypeName<T>( this T @this, ITSType typeName ) where T : ITSCodeWriter
         {
-            typeName.RequiredImports?.Invoke( @this.File.Imports );
+            typeName.EnsureRequiredImports( @this.File.Imports );
             @this.Append( typeName.TypeName );
             return @this;
         }

@@ -19,21 +19,20 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
         {
         }
 
-        public bool ConfigureTypeScriptAttribute( IActivityMonitor monitor, ITSTypeFileBuilder builder, TypeScriptAttribute a )
+        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TSGeneratedTypeBuilder builder )
         {
-            Debug.Assert( builder.Generators.Contains( this ), "Here it's the only one." );
             return true;
         }
 
-        public bool GenerateCode( IActivityMonitor monitor, TSTypeFile file )
+        public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context, ITSGeneratedType tsType )
         {
             // Let the default closer "}" in EnsureTypePart.
-            var code = file.EnsureTypePart();
-            code.Append( "export " ).Append( file.Type.IsEnum
+            var code = tsType.EnsureTypePart();
+            code.Append( "export " ).Append( tsType.Type.IsEnum
                                                 ? "enum "
-                                                : file.Type.IsInterface
+                                                : tsType.Type.IsInterface
                                                     ? "interface "
-                                                    : "class " ).Append( file.TypeName )
+                                                    : "class " ).Append( tsType.TypeName )
                 .OpenBlock();
             // Thanks to the "}" closer, this part stays "opened": the closing } will be
             // appended when generating the final text (via ToString or Build methods).

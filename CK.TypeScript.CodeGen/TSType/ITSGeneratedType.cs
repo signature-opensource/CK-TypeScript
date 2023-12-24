@@ -19,7 +19,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the local file that implements this type.
         /// </summary>
-        TypeScriptFile File { get; }
+        new TypeScriptFile File { get; }
 
         /// <summary>
         /// Gets whether this type has an associated <see cref="TSCodeGenerator"/>.

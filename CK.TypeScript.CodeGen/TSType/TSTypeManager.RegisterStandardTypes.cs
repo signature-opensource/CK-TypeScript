@@ -23,24 +23,24 @@ namespace CK.TypeScript.CodeGen
                                            bool withGeneratedGuid = true )
         {
             _types.Add( typeof( string ), new TSStringType() );
-            _types.Add( typeof( bool ), new TSBooleanType() );
+            RegisterValueType<bool>( new TSBooleanType() );
             if( withNumbers )
             {
                 var number = new TSNumberType();
-                _types.Add( typeof( byte ), number );
-                _types.Add( typeof( sbyte ), number );
-                _types.Add( typeof( short ), number );
-                _types.Add( typeof( ushort ), number );
-                _types.Add( typeof( int ), number );
-                _types.Add( typeof( uint ), number );
+                RegisterValueType<byte>( number );
+                RegisterValueType<sbyte>( number );
+                RegisterValueType<short>( number );
+                RegisterValueType<ushort>( number );
+                RegisterValueType<int>( number );
+                RegisterValueType<uint>( number );
             }
             if( withBigInts )
             {
                 var bigInt = new TSBigIntType();
-                _types.Add( typeof( long ), bigInt );
-                _types.Add( typeof( ulong ), bigInt );
-                _types.Add( typeof( BigInteger ), bigInt );
-                _types.Add( typeof( decimal ), bigInt );
+                RegisterValueType<long>( bigInt );
+                RegisterValueType<ulong>( bigInt );
+                RegisterValueType<BigInteger>( bigInt );
+                RegisterValueType<decimal>( bigInt );
             }
             if( withLuxonTypes )
             {
@@ -48,12 +48,15 @@ namespace CK.TypeScript.CodeGen
                 var luxonLib = RegisterLibrary( monitor, "@types/luxon", DependencyKind.DevDependency, "^3.1.1", luxonTypesLib );
                 var dateTime = new TSLuxonDateTime( luxonLib );
 
-                _types.Add( typeof( DateTime ), dateTime );
-                _types.Add( typeof( DateTimeOffset ), dateTime );
-                _types.Add( typeof( TimeSpan ), new TSLuxonDuration( luxonLib ) );
+                RegisterValueType<DateTime>( dateTime );
+                RegisterValueType<DateTimeOffset>( dateTime );
+                RegisterValueType<TimeSpan>( new TSLuxonDuration( luxonLib ) );
             }
             if( withGeneratedGuid )
             {
+                // Another way to register a type by creating a TSGeneratedType bound to a
+                // TypeScriptFile, a default value source code, a value writer function and
+                // by configuring its TypePart with its implementation.
                 var fGuid = _root.Root.FindOrCreateFile( "System/Guid.ts" );
                 var tGuid = new TSGeneratedType( typeof( Guid ), "Guid", fGuid, "Guid.empty", ( w, o ) =>
                 {
@@ -64,7 +67,7 @@ namespace CK.TypeScript.CodeGen
                     }
                     return false;
                 }, null );
-                var code = tGuid.EnsureTypePart().Append( @"
+                tGuid.EnsureTypePart().Append( @"
 /**
 * Simple immutable encapsulation of a string. No check is currently done on the 
 * value format but it should be in the '00000000-0000-0000-0000-000000000000' form.
@@ -92,10 +95,9 @@ export class Guid {
       }
 }
 " );
-                _types.Add( typeof( Guid ), tGuid );
+                RegisterValueType<Guid>( tGuid );
             }
         }
-
     }
 
 }

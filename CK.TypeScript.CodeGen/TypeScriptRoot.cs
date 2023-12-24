@@ -21,7 +21,7 @@ namespace CK.TypeScript.CodeGen
     /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
     /// <para>
     /// The <see cref="TSTypes"/> maps C# types to <see cref="ITSType"/>. Types can be registered directly or
-    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> that raises <see cref="TSTypeManager.BuilderRequired"/>
+    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> that raises <see cref="TSTypeManager.TypeBuilderRequired"/>
     /// event and registers <see cref="ITSGeneratedType"/> that must eventually be generated when <see cref="GenerateCode(IActivityMonitor)"/>
     /// is called.
     /// </para>
@@ -33,7 +33,7 @@ namespace CK.TypeScript.CodeGen
     /// Once code generation succeeds, <see cref="Save"/> can be called.
     /// </para>
     /// <para>
-    /// This class can be specialized in order to offer a more powerful API.
+    /// This class can be used as-is or can be specialized in order to offer a more powerful API.
     /// </para>
     /// </summary>
     public class TypeScriptRoot
@@ -91,21 +91,33 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptFolder Root { get; }
 
         /// <summary>
+        /// Called by <see cref="OnFolderCreated(TypeScriptFolder)"/>.
+        /// </summary>
+        public event Action<TypeScriptFolder>? FolderCreated;
+
+        /// <summary>
+        /// Called by <see cref="OnFileCreated(TypeScriptFile)"/>.
+        /// </summary>
+        public event Action<TypeScriptFile>? FileCreated;
+
+        /// <summary>
         /// Optional extension point called whenever a new folder appears.
-        /// Does nothing by default.
+        /// Invokes <see cref="FolderCreated"/> by default.
         /// </summary>
         /// <param name="f">The newly created folder.</param>
         internal protected virtual void OnFolderCreated( TypeScriptFolder f )
         {
+            FolderCreated?.Invoke( f );
         }
 
         /// <summary>
         /// Optional extension point called whenever a new file appears.
-        /// Does nothing by default.
+        /// Invokes <see cref="FileCreated"/> by default.
         /// </summary>
         /// <param name="f">The newly created file.</param>
         internal protected virtual void OnFileCreated( TypeScriptFile f )
         {
+            FileCreated?.Invoke( f );
         }
 
         /// <summary>

@@ -10,6 +10,7 @@ namespace CK.CrisLike
     [CKTypeDefiner]
     public interface ICommand<out TResult> : ICommand
     {
+        internal static TResult R => default!;
     }
 
 

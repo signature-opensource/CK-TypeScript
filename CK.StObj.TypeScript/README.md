@@ -5,7 +5,7 @@ and the [TypeScriptAttribute](TypeScriptAttribute.cs).
 
 This is enough to drive the generation: the heavy stuff is in the [CK.StObj.TypeScript.Engine](..\CK.StObj.TypeScript.Engine).
 
-Note that this package depends on the CK.Poco.Json: generating TypesScript requires that the Json serialization is available. 
+Note that this package depends on the CK.Poco.Exc.Json: generating TypesScript requires that the Json serialization is available. 
 
 ## Basic types & Code Generator
 

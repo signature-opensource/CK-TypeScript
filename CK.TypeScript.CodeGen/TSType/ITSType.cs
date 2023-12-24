@@ -32,9 +32,10 @@ namespace CK.TypeScript.CodeGen
         string? DefaultValueSource { get; }
 
         /// <summary>
-        /// Gets the required imports.
+        /// Gets the local file that implements this type or
+        /// null if this is not implemented locally.
         /// </summary>
-        Action<ITSFileImportSection>? RequiredImports { get; }
+        TypeScriptFile? File { get; }
 
         /// <summary>
         /// Gets the nullable associated type.
@@ -45,6 +46,13 @@ namespace CK.TypeScript.CodeGen
         /// Gets the non nullable type.
         /// </summary>
         ITSType NonNullable { get; }
+
+        /// <summary>
+        /// Ensures that all imports required to use this <see cref="ITSType"/> are declared
+        /// in the target section.
+        /// </summary>
+        /// <param name="section">The import section target.</param>
+        void EnsureRequiredImports( ITSFileImportSection section );
 
         /// <summary>
         /// Attempts to write a value.

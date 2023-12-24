@@ -82,22 +82,50 @@ namespace CK.TypeScript.CodeGen
                 types = new List<string>();
                 imports.Add( (key, types) );
             }
-            Add( types, typeName );
+            Add( types, typeName, ref _importCount );
             foreach( var t in typeNames )
             {
-                Add( types, t );
+                Add( types, t, ref _importCount );
             }
 
-            void Add( List<string> types, string typeName )
+            static void Add( List<string> types, string typeName, ref int importCount )
             {
                 if( !types.Contains( typeName ) )
                 {
-                    ++_importCount;
+                    ++importCount;
                     types.Add( typeName );
                 }
             }
 
             return types;
+        }
+
+        public ITSFileImportSection EnsureImport( IActivityMonitor monitor, Type type, params Type[] types )
+        {
+            Throw.CheckArgument( monitor != null && types != null );
+            ImportType( monitor, type );
+            foreach( var t in types )
+            {
+                ImportType( monitor, t );
+            }
+            return this;
+        }
+
+        public ITSFileImportSection EnsureImport( IActivityMonitor monitor, IEnumerable<Type> types )
+        {
+            Throw.CheckArgument( monitor != null && types != null );
+            foreach( var t in types )
+            {
+                ImportType( monitor, t );
+            }
+            return this;
+        }
+
+        void ImportType( IActivityMonitor monitor, Type type )
+        {
+            Throw.CheckNotNullArgument( type );
+            var tsType = File.Root.TSTypes.ResolveTSType( monitor, type );
+            if( tsType.File != null ) EnsureImport( tsType.File, tsType.TypeName );
         }
 
         public int ImportCount => _importCount;
