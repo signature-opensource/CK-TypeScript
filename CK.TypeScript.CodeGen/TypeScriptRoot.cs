@@ -38,6 +38,18 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public class TypeScriptRoot
     {
+        /// <summary>
+        /// "@types/luxon" package version used by default. A configured version (in <see cref="LibraryVersionConfiguration"/>)
+        /// overrides this default.
+        /// </summary>
+        public const string LuxonTypesVersion = "3.3.7";
+
+        /// <summary>
+        /// "luxon" package version used by default. A configured version (in <see cref="LibraryVersionConfiguration"/>)
+        /// overrides this default.
+        /// </summary>
+        public const string LuxonVersion = "3.4.4";
+
         readonly bool _pascalCase;
         readonly bool _generateDocumentation;
         readonly TSTypeManager _tsTypes;
@@ -78,6 +90,13 @@ namespace CK.TypeScript.CodeGen
         /// Gets whether documentation should be generated.
         /// </summary>
         public bool GenerateDocumentation => _generateDocumentation;
+
+        /// <summary>
+        /// Gets the configured versions for npm packages. These configurations take precedence over the
+        /// library version that can be specified by code (through <see cref="LibraryImport"/> when
+        /// calling <see cref="ITSFileImportSection.EnsureLibrary(LibraryImport)"/>).
+        /// </summary>
+        public IReadOnlyDictionary<string, string>? LibraryVersionConfiguration => _tsTypes._libVersionsConfig;
 
         /// <summary>
         /// Gets or sets the <see cref="IXmlDocumentationCodeRefHandler"/> to use.
@@ -165,6 +184,9 @@ namespace CK.TypeScript.CodeGen
         public bool GenerateCode( IActivityMonitor monitor )
         {
             bool success = true;
+            // If BeforeCodeGeneration emits an error, we skip the whole code generation.
+            // If CodeGenerator emits an error, we skip the call to AfterCodeGeneration.
+            // If a TSGeneratedType.HasError is true, CodeGenerator will fail.
             using( monitor.OnError( () => success = false ) )
             {
                 try
@@ -172,7 +194,7 @@ namespace CK.TypeScript.CodeGen
                     BeforeCodeGeneration?.Invoke( this, new EventMonitoredArgs( monitor ) );
                     if( success )
                     {
-                        var required = TSTypes.GenerateCode( monitor );
+                        var required = _tsTypes.GenerateCode( monitor );
                         if( success )
                         {
                             if( required == null )

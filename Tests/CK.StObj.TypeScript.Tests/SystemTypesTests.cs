@@ -18,7 +18,7 @@ namespace CK.StObj.TypeScript.Tests
             DateTime D { get; set; }
             DateTimeOffset DOffset { get; set; }
             TimeSpan Span { get; set; }
-            List<Guid> Identifiers { get; }
+            IList<Guid> Identifiers { get; }
         }
 
         [Test]

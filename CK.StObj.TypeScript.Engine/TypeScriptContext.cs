@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Threading;
 
 namespace CK.Setup
 {
@@ -31,7 +32,7 @@ namespace CK.Setup
         readonly ExchangeableTypeNameMap? _jsonNames;
         readonly TypeScriptRoot _tsRoot;
 
-        readonly Dictionary<Type, RegType> _typeDecorators;
+        readonly Dictionary<Type, RegType> _registeredTypes;
         readonly Dictionary<Type, TypeScriptAttribute> _fromConfiguration;
         readonly List<ITSCodeGenerator> _globals;
         bool _success;
@@ -47,27 +48,6 @@ namespace CK.Setup
             public readonly TypeScriptAttribute? Attribute;
 
             public readonly IReadOnlyList<ITSCodeGeneratorType>? Generators;
-
-            public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TSGeneratedTypeBuilder builder )
-            {
-                if( Attribute != null )
-                {
-                    builder.TypeName = Attribute.TypeName;
-                    builder.SameFolderAs = Attribute.SameFolderAs;
-                    builder.SameFileAs = Attribute.SameFileAs;
-                    builder.Folder = Attribute.Folder;
-                    builder.FileName = Attribute.FileName;
-                }
-                bool success = true;
-                if( Generators != null )
-                {
-                    foreach( var g in Generators )
-                    {
-                        success &= g.ConfigureBuilder( monitor, context, builder );
-                    }
-                }
-                return success;
-            }
         }
 
         internal TypeScriptContext( ICodeGenerationContext codeCtx,
@@ -83,13 +63,14 @@ namespace CK.Setup
             _jsonNames = jsonNames;
             _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions, tsConfig.PascalCase, tsConfig.GenerateDocumentation );
             _tsRoot.FolderCreated += OnFolderCreated;
-
-            _typeDecorators = new Dictionary<Type, RegType>();
+            _tsRoot.TSTypes.TypeBuilderRequired += OnTypeBuilderRequired;
+            _tsRoot.TSTypes.TSTypeRequired += OnTSTypeRequired;
+            _registeredTypes = new Dictionary<Type, RegType>();
             _fromConfiguration = new Dictionary<Type, TypeScriptAttribute>();
             _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
             _globals = new List<ITSCodeGenerator>();
             _success = true;
-            Root.EnsureBarrel();
+            Root.Root.EnsureBarrel();
         }
 
         void OnFolderCreated( TypeScriptFolder f )
@@ -100,10 +81,45 @@ namespace CK.Setup
             }
         }
 
+        void OnTSTypeRequired( object? sender, TSTypeRequiredEventArgs e )
+        {
+            foreach( var g in _globals )
+            {
+                g.OnResolveObjectKey( e.Monitor, this, e );
+            }
+        }
+
+        void OnTypeBuilderRequired( object? sender, TypeBuilderRequiredEventArgs e )
+        {
+            bool success = true;
+            _registeredTypes.TryGetValue( e.Type, out RegType regType );
+            var a = regType.Attribute;
+            if( a != null )
+            {
+                success &= e.TryInitialize( e.Monitor, a.Folder, a.FileName, a.TypeName, a.SameFolderAs, a.SameFileAs );
+            }
+            // Applies global generators.
+            foreach( var g in _globals )
+            {
+                success &= g.ConfigureBuilder( e.Monitor, this, e );
+            }
+            // Applies type generators.
+            var typeGenerators = regType.Generators;
+            if( typeGenerators != null )
+            {
+                foreach( var g in typeGenerators )
+                {
+                    success &= g.ConfigureBuilder( e.Monitor, this, e );
+                }
+            }
+            // Consider any initialization error as an error that condems the type (and eventually the whole process).
+            if( !success ) e.SetError();
+        }
+
         /// <summary>
-        /// Gets the folder root.
+        /// Gets the <see cref="TypeScriptRoot"/>.
         /// </summary>
-        public TypeScriptFolder Root => _tsRoot.Root;
+        public TypeScriptRoot Root => _tsRoot;
 
         /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
@@ -123,7 +139,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Json <see cref="ExchangeableTypeNameMap"/> if it is available.
         /// </summary>
-        public ExchangeableTypeNameMap? JsoNames => _jsonNames;
+        public ExchangeableTypeNameMap? JsonNames => _jsonNames;
 
         /// <summary>
         /// Gets all the global generators.
@@ -182,7 +198,7 @@ namespace CK.Setup
                         else
                         {
                             _fromConfiguration.Add( t, attr );
-                            _typeDecorators.Add( t, new RegType( null, attr ) );
+                            _registeredTypes.Add( t, new RegType( null, attr ) );
                         }
                     }
                 }
@@ -249,12 +265,12 @@ namespace CK.Setup
                     {
                         // Did this type appear in the configuration?
                         // If yes, the configuration must override the values from the code.
-                        var configuredAttr = _typeDecorators.GetValueOrDefault( attributeCache.Type ).Attribute;
+                        var configuredAttr = _registeredTypes.GetValueOrDefault( attributeCache.Type ).Attribute;
                         var a = impl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
-                        _typeDecorators[attributeCache.Type] = new RegType( generators.Count > 0 ? generators.ToArray() : null, a );
+                        _registeredTypes[attributeCache.Type] = new RegType( generators.Count > 0 ? generators.ToArray() : null, a );
                     }
                 }
-                if( _success ) monitor.CloseGroup( $"Found {_globals.Count} global generators and {_typeDecorators.Count} types to consider." );
+                if( _success ) monitor.CloseGroup( $"Found {_globals.Count} global generators and {_registeredTypes.Count} types to consider." );
                 return _success;
             }
         }
@@ -263,7 +279,7 @@ namespace CK.Setup
         {
             using( monitor.OpenInfo( $"Declaring registered types." ) )
             {
-                foreach( var (type, dec) in _typeDecorators )
+                foreach( var (type, dec) in _registeredTypes )
                 {
                     if( dec.Attribute != null )
                     {

@@ -91,7 +91,7 @@ namespace CK.Setup
                     {
                         dependencies.Add( "typescript", new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
                     }
-                    foreach( var file in g.Root.AllFilesRecursive )
+                    foreach( var file in g.Root.Root.AllFilesRecursive )
                     {
                         foreach( var item in file.Imports.LibraryImports.Values )
                         {

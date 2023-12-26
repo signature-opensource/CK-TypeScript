@@ -33,15 +33,12 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFolder(NormalizedPath)" />
         public new TypeScriptFolder<TRoot> FindOrCreateFolder( NormalizedPath path ) => Unsafe.As<TypeScriptFolder<TRoot>>( base.FindOrCreateFolder( path ) );
 
-        private protected override TypeScriptFolder CreateFolder( string name )
+        private protected override TypeScriptFolder CreateLocalFolder( string name )
         {
             var f = new TypeScriptFolder<TRoot>( this, name );
             Root.OnFolderCreated( f );
             return f;
         }
-
-        /// <inheritdoc cref="TypeScriptFolder.FindFolder(string)" />
-        public new TypeScriptFolder<TRoot>? FindFolder( string name ) => Unsafe.As<TypeScriptFolder<TRoot>?>( base.FindFolder( name ) );
 
         /// <inheritdoc cref="TypeScriptFolder.FindFolder(NormalizedPath)" />
         public new TypeScriptFolder<TRoot>? FindFolder( NormalizedPath subPath ) => Unsafe.As<TypeScriptFolder<TRoot>?>( base.FindFolder( subPath ) );
@@ -49,27 +46,21 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc cref="TypeScriptFolder.Folders" />
         public new IEnumerable<TypeScriptFolder<TRoot>> Folders => base.Folders.Cast<TypeScriptFolder<TRoot>>();
 
-        /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFile(string)" />
-        public new TypeScriptFile<TRoot> FindOrCreateFile( string name ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( name ) );
-
-        private protected override TypeScriptFile CreateFile( string name )
+        private protected override TypeScriptFile CreateLocalFile( string name )
         {
             var f = new TypeScriptFile<TRoot>( this, name );
             Root.OnFileCreated( f );
             return f;
         }
 
-        /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFile(string, out bool)" />
-        public new TypeScriptFile<TRoot> FindOrCreateFile( string name, out bool created ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( name, out created ) );
-
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFile(NormalizedPath)" />
-        public new TypeScriptFile<TRoot> FindOrCreateFile( NormalizedPath filePath ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( filePath ) );
+        public new TypeScriptFile<TRoot> FindOrCreateFile( NormalizedPath path ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( path ) );
 
         /// <inheritdoc cref="TypeScriptFolder.FindOrCreateFile(NormalizedPath, out bool)" />
-        public new TypeScriptFile<TRoot> FindOrCreateFile( NormalizedPath filePath, out bool created ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( filePath, out created ) );
+        public new TypeScriptFile<TRoot> FindOrCreateFile( NormalizedPath path, out bool created ) => Unsafe.As<TypeScriptFile<TRoot>>( base.FindOrCreateFile( path, out created ) );
 
-        /// <inheritdoc cref="TypeScriptFolder.FindFile(string)" />
-        public new TypeScriptFile<TRoot>? FindFile( string name ) => Unsafe.As<TypeScriptFile<TRoot>?>( base.FindFile( name ) );
+        /// <inheritdoc cref="TypeScriptFolder.FindFile(NormalizedPath)" />
+        public new TypeScriptFile<TRoot>? FindFile( NormalizedPath path ) => Unsafe.As<TypeScriptFile<TRoot>?>( base.FindFile( path ) );
 
         /// <inheritdoc cref="TypeScriptFolder.Files" />
         public new IEnumerable<TypeScriptFile<TRoot>> Files => base.Files.Cast<TypeScriptFile<TRoot>>();

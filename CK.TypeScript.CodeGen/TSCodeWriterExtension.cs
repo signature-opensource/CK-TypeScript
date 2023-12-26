@@ -167,8 +167,8 @@ namespace CK.TypeScript.CodeGen
             if( s == null ) @this.Append( "null" );
             else
             {
-                Throw.DebugAssert( System.Web.HttpUtility.JavaScriptStringEncode( s ) == JsonSerializer.Serialize( s ) );
-                @this.Append( System.Web.HttpUtility.JavaScriptStringEncode( s ) );
+                Throw.DebugAssert( System.Web.HttpUtility.JavaScriptStringEncode( s, true ) == JsonSerializer.Serialize( s ) );
+                @this.Append( System.Web.HttpUtility.JavaScriptStringEncode( s, true ) );
             }
             return @this;
         }

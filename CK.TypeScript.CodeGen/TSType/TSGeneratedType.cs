@@ -7,7 +7,7 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Implements a locally implemented type (a <see cref="ITSGeneratedType"/>).
-    /// This class is internal.
+    /// This class is internal: only the ITSGeneratedType is exposed.
     /// </summary>
     sealed class TSGeneratedType : TSType, ITSGeneratedType
     {
@@ -15,6 +15,7 @@ namespace CK.TypeScript.CodeGen
         internal readonly TSCodeGenerator? _codeGenerator;
         readonly Type _type;
         readonly TypeScriptFile _file;
+        readonly bool _hasError;
 
         sealed class GeneratedNull : Null, ITSGeneratedType
         {
@@ -37,6 +38,8 @@ namespace CK.TypeScript.CodeGen
 
             public bool HasCodeGenerator => NonNullable.HasCodeGenerator;
 
+            public bool HasError => NonNullable.HasError;
+
             public ITSKeyedCodePart EnsureTypePart( string closer = "}\n", bool top = false )
             {
                 return NonNullable.EnsureTypePart( closer, top );
@@ -48,7 +51,8 @@ namespace CK.TypeScript.CodeGen
                                 TypeScriptFile file,
                                 string? defaultValue,
                                 Func<ITSCodeWriter, object, bool>? tryWriteValue,
-                                TSCodeGenerator? codeGenerator )
+                                TSCodeGenerator? codeGenerator,
+                                bool hasError )
             : base( typeName, null, defaultValue, t => new GeneratedNull( t ) )
         {
             Throw.DebugAssert( t != null );
@@ -57,11 +61,14 @@ namespace CK.TypeScript.CodeGen
             _file = file;
             _tryWriteValue = tryWriteValue;
             _codeGenerator = codeGenerator;
+            _hasError = hasError;
         }
 
         public Type Type => _type;
 
         public override TypeScriptFile File => _file;
+
+        public bool HasError => _hasError;
 
         public new ITSGeneratedType Nullable => (ITSGeneratedType)base.Nullable;
 

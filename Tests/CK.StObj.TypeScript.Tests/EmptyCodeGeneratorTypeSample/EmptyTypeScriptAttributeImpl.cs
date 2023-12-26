@@ -19,7 +19,7 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
         {
         }
 
-        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TSGeneratedTypeBuilder builder )
+        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder )
         {
             return true;
         }

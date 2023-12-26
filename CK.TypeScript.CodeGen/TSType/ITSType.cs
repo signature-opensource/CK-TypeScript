@@ -61,6 +61,6 @@ namespace CK.TypeScript.CodeGen
         /// <param name="writer">The target writer.</param>
         /// <param name="value">The value to write.</param>
         /// <returns>True if this type has been able to write the value, false otherwise.</returns>
-        bool TryWriteValue( ITSCodeWriter writer, object value );
+        bool TryWriteValue( ITSCodeWriter writer, object? value );
     }
 }

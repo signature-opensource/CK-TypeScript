@@ -80,14 +80,24 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public void EnsureBarrel() => _hasBarrel = true;
 
-        /// <summary>
-        /// Finds or creates a folder.
-        /// </summary>
-        /// <param name="name">The folder's name to find or create. Must not be empty nor ends with '.ts'.</param>
-        /// <returns>The folder.</returns>
-        public TypeScriptFolder FindOrCreateFolder( string name ) => FindFolder( name ) ?? CreateFolder( name );
+        TypeScriptFolder FindOrCreateLocalFolder( string name )
+        {
+            return FindLocalFolder( name ) ?? CreateLocalFolder( name );
+        }
 
-        private protected virtual TypeScriptFolder CreateFolder( string name )
+        TypeScriptFolder? FindLocalFolder( string name )
+        {
+            CheckName( name, true );
+            var c = _firstChild;
+            while( c != null )
+            {
+                if( c.Name == name ) return c;
+                c = c._next;
+            }
+            return null;
+        }
+
+        private protected virtual TypeScriptFolder CreateLocalFolder( string name )
         {
             // No need to CheckName here: FindFolder did the job.
             var f = new TypeScriptFolder( this, name );
@@ -103,42 +113,31 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptFolder FindOrCreateFolder( NormalizedPath path )
         {
             var f = this;
-            foreach( var name in path.Parts )
+            if( !path.IsEmptyPath )
             {
-                f = f.FindOrCreateFolder( name );
+                foreach( var name in path.Parts )
+                {
+                    f = f.FindOrCreateLocalFolder( name );
+                }
             }
             return f;
         }
 
         /// <summary>
-        /// Finds an existing folder (direct child) or returns null.
+        /// Finds an existing subordinated folder by its path or returns null.
         /// </summary>
-        /// <param name="name">The folder's name. Must not be empty nor ends with '.ts'.</param>
+        /// <param name="path">The path to the subordinated folder to find.</param>
         /// <returns>The existing folder or null.</returns>
-        public TypeScriptFolder? FindFolder( string name )
-        {
-            CheckName( name, true );
-            var c = _firstChild;
-            while( c != null )
-            {
-                if( c.Name == name ) return c;
-                c = c._next;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Finds an existing folder by its path or returns null.
-        /// </summary>
-        /// <param name="subPath">The path to the subordinated folder to find.</param>
-        /// <returns>The existing folder or null.</returns>
-        public TypeScriptFolder? FindFolder( NormalizedPath subPath )
+        public TypeScriptFolder? FindFolder( NormalizedPath path )
         {
             var f = this;
-            foreach( var name in subPath.Parts )
+            if( !path.IsEmptyPath )
             {
-                f = f.FindFolder( name );
-                if( f == null ) return null;
+                foreach( var name in path.Parts )
+                {
+                    f = f.FindLocalFolder( name );
+                    if( f == null ) return null;
+                }
             }
             return f;
         }
@@ -161,6 +160,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets the files that this folder contains.
+        /// Use <see cref="AllFilesRecursive"/> to get all the subordinated files.
         /// </summary>
         public IEnumerable<TypeScriptFile> Files
         {
@@ -180,65 +180,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public IEnumerable<TypeScriptFile> AllFilesRecursive => Files.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
 
-        /// <summary>
-        /// Finds or creates a file in this folder.
-        /// </summary>
-        /// <param name="name">The file's name to find or create. Must not be empty and must end with '.ts'.</param>
-        /// <returns>The file.</returns>
-        public TypeScriptFile FindOrCreateFile( string name ) => FindFile( name ) ?? CreateFile( name );
-
-        private protected virtual TypeScriptFile CreateFile( string name )
-        {
-            var f = new TypeScriptFile( this, name );
-            _root.OnFileCreated( f );
-            return f;
-        }
-
-        /// <summary>
-        /// Finds or creates a file in this folder.
-        /// </summary>
-        /// <param name="name">The file's name to find or create. Must not be empty and must end with '.ts'.</param>
-        /// <param name="created">True if the file has been created, false if it already existed.</param>
-        /// <returns>The file.</returns>
-        public TypeScriptFile FindOrCreateFile( string name, out bool created )
-        {
-            created = false;
-            TypeScriptFile? f = FindFile( name );
-            if( f == null )
-            {
-                f = CreateFile( name );
-                created = true;
-            }
-            return f;
-        }
-
-        /// <summary>
-        /// Finds or creates a file in this folder or a subordinated folder.
-        /// </summary>
-        /// <param name="filePath">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
-        /// <returns>The file.</returns>
-        public TypeScriptFile FindOrCreateFile( NormalizedPath filePath )
-        {
-            return FindOrCreateFolder( filePath.RemoveLastPart() ).FindOrCreateFile( filePath.LastPart );
-        }
-
-        /// <summary>
-        /// Finds or creates a file in this folder or a subordinated folder.
-        /// </summary>
-        /// <param name="filePath">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
-        /// <param name="created">True if the file has been created, false if it already existed.</param>
-        /// <returns>The file.</returns>
-        public TypeScriptFile FindOrCreateFile( NormalizedPath filePath, out bool created )
-        {
-            return FindOrCreateFolder( filePath.RemoveLastPart() ).FindOrCreateFile( filePath.LastPart, out created );
-        }
-
-        /// <summary>
-        /// Finds an existing file in this folder or returns null.
-        /// </summary>
-        /// <param name="name">The file's name. Must not be empty and must end with '.ts'.</param>
-        /// <returns>The existing file or null.</returns>
-        public TypeScriptFile? FindFile( string name )
+        TypeScriptFile? FindLocalFile( string name )
         {
             CheckName( name, false );
             var c = _firstFile;
@@ -248,6 +190,60 @@ namespace CK.TypeScript.CodeGen
                 c = c._next;
             }
             return null;
+        }
+
+        private protected virtual TypeScriptFile CreateLocalFile( string name )
+        {
+            var f = new TypeScriptFile( this, name );
+            _root.OnFileCreated( f );
+            return f;
+        }
+
+        /// <summary>
+        /// Finds or creates a file in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="path">The file's full path to find or create. The <see cref="NormalizedPath.LastPart"/> must end with '.ts'.</param>
+        /// <returns>The file.</returns>
+        public TypeScriptFile FindOrCreateFile( NormalizedPath path ) => FindOrCreateFile( path, out _ );
+
+        /// <summary>
+        /// Finds or creates a file in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="path">The file's path to find or create. Must not be empty and must end with '.ts'.</param>
+        /// <param name="created">True if the file has been created, false if it already existed.</param>
+        /// <returns>The file.</returns>
+        public TypeScriptFile FindOrCreateFile( NormalizedPath path, out bool created )
+        {
+            Throw.CheckArgument( !path.IsEmptyPath );
+            var f = this;
+            for( int i = 0; i < path.Parts.Count-1; i++ )
+            {
+                f = f.FindOrCreateLocalFolder( path.Parts[i] );
+            }
+            var r = f.FindLocalFile( path.LastPart );
+            if( created = (r == null) )
+            {
+                r = f.CreateLocalFile( path.LastPart );
+            }
+            Throw.DebugAssert( r != null );
+            return r;
+        }
+
+        /// <summary>
+        /// Finds a file in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="path">The file's path to find or create. Must not be empty and must end with '.ts'.</param>
+        /// <returns>The file or null if not found.</returns>
+        public TypeScriptFile? FindFile( NormalizedPath path )
+        {
+            Throw.CheckArgument( !path.IsEmptyPath );
+            var f = this;
+            for( int i = 0; i < path.Parts.Count - 1; i++ )
+            {
+                f = f.FindLocalFolder( path.Parts[i] );
+                if( f == null ) return null;
+            }
+            return f.FindLocalFile( path.LastPart );
         }
 
         /// <summary>
@@ -405,21 +401,35 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        static void CheckName( string name, bool isFolder )
+        static void CheckName( string path, bool isFolder )
         {
-            Throw.CheckNotNullOrWhiteSpaceArgument( name );
-            if( name.IndexOfAny( isFolder ? _invalidPathChars : _invalidFileNameChars ) >= 0 )
+            Throw.CheckNotNullArgument( path );
+            var e = GetPathError( path, isFolder );
+            if( e != null ) Throw.ArgumentException( e, nameof( path ) );
+        }
+
+        internal static string? GetPathError( string path, bool isFolder )
+        {
+            Throw.DebugAssert( path != null );
+            if( string.IsNullOrWhiteSpace( path ) )
             {
-                Throw.ArgumentException( $"Empty name or invalid characters in: '{name}'.", nameof( name ) );
+                return "When not null it must be not empty or whitespace.";
             }
-            if( name.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase ) )
+            int bad = path.IndexOfAny( isFolder ? _invalidPathChars : _invalidFileNameChars );
+            if( bad >= 0 )
             {
-                if( isFolder ) Throw.ArgumentException( $"Folder name must not end with '.ts': '{name}'.", nameof( name ) );
+                return $"Invalid character '{path[bad]}' in '{path}'.";
+            }
+            if( path.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase ) )
+            {
+                if( isFolder ) return $"Folder name must not end with '.ts': '{path}'.";
             }
             else
             {
-                if( !isFolder ) Throw.ArgumentException( $"File name must end with '.ts': '{name}'.", nameof( name ) );
+                if( !isFolder ) return $"File name must end with '.ts': '{path}'.";
             }
+            return null;
         }
+
     }
 }

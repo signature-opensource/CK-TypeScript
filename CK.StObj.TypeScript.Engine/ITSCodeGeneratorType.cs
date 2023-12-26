@@ -17,23 +17,23 @@ namespace CK.Setup
     public interface ITSCodeGeneratorType : ITSCodeGeneratorAutoDiscovery
     {
         /// <summary>
-        /// Configures the <see cref="TSGeneratedTypeBuilder"/>.
+        /// Configures the <see cref="TypeBuilderRequiredEventArgs"/>.
         /// If a <see cref="TypeScriptAttribute"/> decorates the type, its properties have been applied to the builder.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The global TypeScript context.</param>
-        /// <param name="builder">The current builder configuration to configure.</param>
+        /// <param name="builder">The <see cref="ITSGeneratedType"/> builder to configure.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TSGeneratedTypeBuilder builder );
+        bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder );
 
         /// <summary>
-        /// Generates TypeScript code. The <paramref name="tsType"/> gives access to all the context.
-        /// When <see cref="TSGeneratedTypeBuilder.Implementor"/> has been used by <see cref="ConfigureBuilder(IActivityMonitor, TypeScriptContext, TSGeneratedTypeBuilder)"/>
+        /// Generates TypeScript code. The <paramref name="tsType"/> gives access to its file.
+        /// When <see cref="TypeBuilderRequiredEventArgs.Implementor"/> has been used by <see cref="ConfigureBuilder(IActivityMonitor, TypeScriptContext, TypeBuilderRequiredEventArgs)"/>
         /// this can perfectly be a no-op and simply return true.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The global TypeScript context.</param>
-        /// <param name="tsType">The file that must be generated (<see cref="ITSGeneratedType.EnsureTypePart(string, bool)"/> may be called).</param>
+        /// <param name="tsType">The type that must be generated (<see cref="ITSGeneratedType.EnsureTypePart(string, bool)"/> can be called).</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
         bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context, ITSGeneratedType tsType );
 

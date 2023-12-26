@@ -4,17 +4,21 @@ using System;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
+    /// Event arguments that acts as a builder of <see cref="ITSGeneratedType"/>.
+    /// This is raised when a C# type must be resolved.
+    /// <para>
     /// Captures a TypeScript type name, target file and folder, the <see cref="ITSType.DefaultValueSource"/>,
     /// an implementation of <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/> and an
     /// <see cref="Implementor"/> function that can generate the TypeScript code.
+    /// </para>
     /// <para>
     /// This is totally mutable and not initialized at first except the <see cref="Type"/> that
     /// cannot be changed.
     /// </para>
     /// </summary>
-    public sealed class TSGeneratedTypeBuilder
+    public sealed class TypeBuilderRequiredEventArgs : EventMonitoredArgs
     {
-        Type _type;
+        readonly Type _type;
         string? _folder;
         string? _fileName;
         Type? _sameFolderAs;
@@ -23,12 +27,9 @@ namespace CK.TypeScript.CodeGen
         string? _defaultValueSource;
         Func<ITSCodeWriter, object, bool>? _tryWriteValueImplementation;
         TSCodeGenerator? _implementor;
+        bool _hasError;
 
-        /// <summary>
-        /// Initializes a new descriptor for a C# type.
-        /// </summary>
-        /// <param name="type">The C# type.</param>
-        public TSGeneratedTypeBuilder( Type type )
+        public TypeBuilderRequiredEventArgs( IActivityMonitor monitor, Type type )
         {
             Throw.CheckNotNullArgument( type );
             _type = type;
@@ -38,6 +39,93 @@ namespace CK.TypeScript.CodeGen
         /// Gets the key type.
         /// </summary>
         public Type Type => _type;
+
+        /// <summary>
+        /// Tries to initializes all the configurable properties at once whithout throwing: errors are logged
+        /// but <see cref="SetError"/> is not called, it's up to the caller to decide whether an initialization
+        /// error impedes the generated type to be successfully handled.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="folder">See <see cref="Folder"/>.</param>
+        /// <param name="fileName">See <see cref="FileName"/>.</param>
+        /// <param name="typeName">See <see cref="TypeName"/>.</param>
+        /// <param name="sameFolderAs">See <see cref="SameFolderAs"/>.</param>
+        /// <param name="sameFileAs">See <see cref="SameFileAs"/>.</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool TryInitialize( IActivityMonitor monitor,
+                                   string? folder,
+                                   string? fileName,
+                                   string? typeName,
+                                   Type? sameFolderAs,
+                                   Type? sameFileAs )
+        {
+            bool success = true;
+            _folder = folder;
+            if( folder != null )
+            {
+                folder = folder.Trim();
+                if( folder.Length > 0 )
+                {
+                    if( folder[0] == '/' || folder[0] == '\\' )
+                    {
+                        monitor.Error( $"Folder must not be rooted: {folder}" );
+                        success = false;
+                    }
+                    var e = TypeScriptFolder.GetPathError( folder, true );
+                    if( e != null )
+                    {
+                        monitor.Error( $"Invalid Folder. {e}" );
+                        success = false;
+                    }
+                }
+            }
+            _fileName = fileName;
+            if( fileName != null )
+            {
+                var e = TypeScriptFolder.GetPathError( fileName, false );
+                if( e != null )
+                {
+                    monitor.Error( $"Invalid FileName. {e}" );
+                    success = false;
+                }
+            }
+            _typeName = typeName;
+            if( typeName != null && string.IsNullOrWhiteSpace( typeName ) )
+            {
+                monitor.Error( $"If TypeName is not null it must be not empty or whitespace." );
+                success = false;
+            }
+            _sameFolderAs = sameFolderAs;
+            if( sameFolderAs != null )
+            {
+                if( _folder != null )
+                {
+                    monitor.Error( "SameFolderAs cannot be set when Folder is used." );
+                    success = false;
+                }
+            }
+            _sameFileAs = sameFileAs;
+            if( sameFileAs != null )
+            {
+                if( _folder != null )
+                {
+                    monitor.Error( "SameFileAs cannot be set when Folder is used." );
+                    success = false;
+                }
+                if( _fileName != null )
+                {
+                    monitor.Error( "SameFileAs cannot be set when FileName is used." );
+                    success = false;
+                }
+
+                if( _sameFolderAs != null && _sameFolderAs != sameFileAs )
+                {
+                    monitor.Error( "SameFileAs cannot be set when SameFolderAs is not null (except to the same type)." );
+                    success = false;
+                }
+            }
+            return success;
+        }
 
         /// <summary>
         /// Gets or sets the type script code source that initializes
@@ -60,18 +148,19 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        /// Gets or sets a function that can implement <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/>
-        /// if the generated type corresponds to a C# type that can be expressed as a TypeScript construct.
+        /// <summary>
+        /// Gets whether <see cref="SetError"/> has been called.
         /// </summary>
-        public Func<ITSCodeWriter, object, bool>? TryWriteValueImplementation
-        {
-            get => _tryWriteValueImplementation;
-            set => _tryWriteValueImplementation = value;
-        }
+        public bool HasError => _hasError;
+
+        /// <summary>
+        /// States that an error occurred. Further handling of this type should be skipped.
+        /// </summary>
+        public void SetError() => _hasError = true;
 
         /// <summary>
         /// Gets or sets an optional sub folder that will contain the TypeScript generated code.
-        /// There must be no leading '/' or '\': the path is relative to the TypeScript output path of each <see cref="BinPathConfiguration"/>.
+        /// There must be no leading '/' or '\': the path is relative to the root <see cref="TypeScriptRoot"/>.
         /// <para>
         /// This folder cannot be set to a non null path if <see cref="SameFolderAs"/> or <see cref="SameFileAs"/> is set to a non null type.
         /// </para>
@@ -182,6 +271,15 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
+        /// Gets or sets a function that can implement <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/>
+        /// if the generated type corresponds to a C# type that can be expressed as a TypeScript construct.
+        /// </summary>
+        public Func<ITSCodeWriter, object, bool>? TryWriteValueImplementation
+        {
+            get => _tryWriteValueImplementation;
+            set => _tryWriteValueImplementation = value;
+        }
+
         /// <summary>
         /// Gets or sets a function that will be called to generate the code.
         /// To compose a function with this one, use the <see cref="AddImplementor(TSCodeGenerator, bool)"/> helper.
@@ -215,5 +313,8 @@ namespace CK.TypeScript.CodeGen
                 _implementor = newOne;
             }
         }
+
     }
+
 }
+

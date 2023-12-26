@@ -15,6 +15,7 @@ namespace CK.StObj.TypeScript.Tests
         [ExternalName( "NotGeneratedByDefault" )]
         public interface INotGeneratedByDefault : IPoco
         {
+            int Power { get; set; }
         }
 
         /// <summary>
@@ -51,7 +52,8 @@ namespace CK.StObj.TypeScript.Tests
             // NotGeneratedByDefault is generated because it is configured.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( INotGeneratedByDefault ) }, new[] { typeof( INotGeneratedByDefault ) } );
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+            File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
+                .Should().Contain( "export class NotGeneratedByDefault" );
         }
     }
 }

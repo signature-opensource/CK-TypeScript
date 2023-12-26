@@ -18,7 +18,11 @@ namespace CK.StObj.TypeScript.Engine
     {
         public bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
-        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TSGeneratedTypeBuilder builder )
+        public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
+
+        public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e ) => true;
+
+        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder )
         {
             if( builder.Type == typeof( SimpleUserMessage ) )
             {
@@ -37,8 +41,6 @@ namespace CK.StObj.TypeScript.Engine
             }
             return true;
         }
-
-        public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
         bool SimpleUserMessageWrite( ITSCodeWriter w, object o  )
         {
@@ -60,14 +62,15 @@ namespace CK.StObj.TypeScript.Engine
                 t.File.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
                 t.EnsureTypePart( closer: "" ).Append( """
                         /**
-                         * Simple info, warn or error message with an optional indentation.
+                         * Immutable simple info, warn or error message with an optional indentation.
                          **/
                         export class SimpleUserMessage
                         {
                             /**
-                             * @param message Message level (info, warn or error). 
+                             * Initializes a new SimpleUserMessage.
+                             * @param level Message level (info, warn or error). 
                              * @param message Message text. 
-                             * @param message Optional indentation. 
+                             * @param depth Optional indentation. 
                             **/
                             constructor(
                                 public readonly level: UserMessageLevel,

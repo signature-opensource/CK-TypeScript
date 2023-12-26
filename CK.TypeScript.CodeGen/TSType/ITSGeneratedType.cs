@@ -22,6 +22,11 @@ namespace CK.TypeScript.CodeGen
         new TypeScriptFile File { get; }
 
         /// <summary>
+        /// Gets whether this type is on error. 
+        /// </summary>
+        bool HasError { get; }
+
+        /// <summary>
         /// Gets whether this type has an associated <see cref="TSCodeGenerator"/>.
         /// </summary>
         bool HasCodeGenerator { get; }

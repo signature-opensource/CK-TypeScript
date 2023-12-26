@@ -78,7 +78,7 @@ namespace CK.StObj.TypeScript.Tests
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.GenerateTypeScript( targetProjectPath, typeof( CommentedEnum ) );
 
-            var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src" ).AppendPart( "CommentedEnum.ts" ) );
+            var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CommentedEnum.ts" ) );
 
             s.Should().Contain( "Commented enumeration." );
 

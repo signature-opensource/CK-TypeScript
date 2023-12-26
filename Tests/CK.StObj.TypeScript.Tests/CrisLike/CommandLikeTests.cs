@@ -136,9 +136,14 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 return true;
             }
 
+            public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e )
+            {
+                return true;
+            }
+
             public bool ConfigureBuilder( IActivityMonitor monitor,
                                           TypeScriptContext context,
-                                          TSGeneratedTypeBuilder builder )
+                                          TypeBuilderRequiredEventArgs builder )
             {
                 // All ICommand here (without specified TypeScript Folder) will be in Cris/Commands.
                 // Their FileName will be without the "I" and prefixed by "CMD".
@@ -168,6 +173,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             {
                 return true;
             }
+
         }
 
         // This static class is only here to trigger the global FakeTypeScriptCrisCommandGeneratorImplWithFolders ITSCodeGenerator.

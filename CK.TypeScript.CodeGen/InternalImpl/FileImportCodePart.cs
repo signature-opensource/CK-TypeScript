@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -98,6 +99,17 @@ namespace CK.TypeScript.CodeGen
             }
 
             return types;
+        }
+
+        public ITSFileImportSection EnsureImport( ITSType tsType, params ITSType[] tsTypes )
+        {
+            Throw.CheckArgument( tsType != null && tsTypes != null );
+            if( tsType.File != null ) EnsureImport( tsType.File, tsType.TypeName );
+            foreach( var t in tsTypes )
+            {
+                if( t.File != null ) EnsureImport( t.File, t.TypeName );
+            }
+            return this;
         }
 
         public ITSFileImportSection EnsureImport( IActivityMonitor monitor, Type type, params Type[] types )

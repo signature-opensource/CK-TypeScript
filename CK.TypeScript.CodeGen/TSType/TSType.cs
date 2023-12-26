@@ -27,9 +27,9 @@ namespace CK.TypeScript.CodeGen
 
             public bool IsNullable => true;
 
-            public bool HasDefaultValue => _nonNullable.HasDefaultValue;
+            public bool HasDefaultValue => true;
 
-            public string? DefaultValueSource => _nonNullable.DefaultValueSource;
+            public string? DefaultValueSource => "undefined";
 
             public void EnsureRequiredImports( ITSFileImportSection section ) => _nonNullable.EnsureRequiredImports( section );
 
@@ -45,7 +45,15 @@ namespace CK.TypeScript.CodeGen
             /// <returns>The <see cref="TypeName"/>.</returns>
             public override string ToString() => TypeName;
 
-            public bool TryWriteValue( ITSCodeWriter writer, object value ) => _nonNullable.TryWriteValue( writer, value );
+            public bool TryWriteValue( ITSCodeWriter writer, object? value )
+            {
+                if( value == null )
+                {
+                    writer.Append( "undefined" );
+                    return true;
+                }
+                return _nonNullable.TryWriteValue( writer, value );
+            }
         }
 
         [AllowNull]
@@ -119,9 +127,9 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <inheritdoc />
-        public bool TryWriteValue( ITSCodeWriter writer, object value )
+        public bool TryWriteValue( ITSCodeWriter writer, object? value )
         {
-            if( DoTryWriteValue( writer, value ) )
+            if( value != null && DoTryWriteValue( writer, value ) )
             {
                 _requiredImports?.Invoke( writer.File.Imports );
                 return true;
@@ -146,6 +154,5 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The <see cref="TypeName"/>.</returns>
         public override string ToString() => _typeName;
     }
-
 }
 

@@ -181,9 +181,9 @@ namespace CK.StObj.TypeScript.Tests
 
         /// <summary>
         /// The external name of this enumeration is "Toto" and its
-        /// filename is explicitly "Folder/EnumFile.ts".
+        /// filename is explicitly "IAmHere/EnumFile.ts".
         /// </summary>
-        [TypeScript( Folder = "Folder", FileName = "EnumFile.ts" )]
+        [TypeScript( Folder = "IAmHere", FileName = "EnumFile.ts" )]
         [ExternalName( "Toto" )]
         public enum InASpecificFileWithAnExternalName : sbyte
         {
@@ -204,7 +204,7 @@ namespace CK.StObj.TypeScript.Tests
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             TestHelper.GenerateTypeScript( targetProjectPath, typeof( InASpecificFileWithAnExternalName ) );
 
-            var f = targetProjectPath.Combine("ck-gen/src/Folder/EnumFile.ts");
+            var f = targetProjectPath.Combine( "ck-gen/src/IAmHere/EnumFile.ts" );
             var s = File.ReadAllText( f );
             s.Should().Contain( "export enum Toto" );
         }

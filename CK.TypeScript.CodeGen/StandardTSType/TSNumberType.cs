@@ -28,7 +28,7 @@ namespace CK.TypeScript.CodeGen
 
             static void WriteValue( ITSCodeWriter writer, string num )
             {
-                writer.Append( num ).Append( "n" );
+                writer.Append( num );
             }
         }
 

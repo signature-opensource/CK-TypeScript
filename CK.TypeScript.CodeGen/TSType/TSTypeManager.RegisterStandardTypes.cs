@@ -44,8 +44,8 @@ namespace CK.TypeScript.CodeGen
             }
             if( withLuxonTypes )
             {
-                var luxonTypesLib = RegisterLibrary( monitor, "@types/luxon", DependencyKind.DevDependency, "^3.1.0" );
-                var luxonLib = RegisterLibrary( monitor, "@types/luxon", DependencyKind.DevDependency, "^3.1.1", luxonTypesLib );
+                var luxonTypesLib = RegisterLibrary( monitor, "@types/luxon", DependencyKind.DevDependency, TypeScriptRoot.LuxonTypesVersion );
+                var luxonLib = RegisterLibrary( monitor, "@luxon", DependencyKind.DevDependency, TypeScriptRoot.LuxonVersion, luxonTypesLib );
                 var dateTime = new TSLuxonDateTime( luxonLib );
 
                 RegisterValueType<DateTime>( dateTime );
@@ -54,7 +54,7 @@ namespace CK.TypeScript.CodeGen
             }
             if( withGeneratedGuid )
             {
-                // Another way to register a type by creating a TSGeneratedType bound to a
+                // Using the internal TSGeneratedType here. Bound to a
                 // TypeScriptFile, a default value source code, a value writer function and
                 // by configuring its TypePart with its implementation.
                 var fGuid = _root.Root.FindOrCreateFile( "System/Guid.ts" );
@@ -66,16 +66,16 @@ namespace CK.TypeScript.CodeGen
                         return true;
                     }
                     return false;
-                }, null );
-                tGuid.EnsureTypePart().Append( @"
+                }, null, false );
+                tGuid.EnsureTypePart( closer: "" ).Append( @"
 /**
 * Simple immutable encapsulation of a string. No check is currently done on the 
-* value format but it should be in the '00000000-0000-0000-0000-000000000000' form.
+* value format that must be in the '00000000-0000-0000-0000-000000000000' form.
 */
 export class Guid {
 
     /**
-    * The empty Guid is '00000000-0000-0000-0000-000000000000'.
+    * The empty Guid '00000000-0000-0000-0000-000000000000' is the default.
     */
     public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
     
@@ -93,8 +93,7 @@ export class Guid {
     toJSON() {
         return this.guid;
       }
-}
-" );
+}" );
                 RegisterValueType<Guid>( tGuid );
             }
         }

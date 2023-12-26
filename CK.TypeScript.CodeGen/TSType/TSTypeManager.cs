@@ -29,7 +29,7 @@ namespace CK.TypeScript.CodeGen
         readonly Dictionary<object, ITSType?> _types;
         readonly Dictionary<string, LibraryImport> _libraries;
         readonly TypeScriptRoot _root;
-        readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
+        internal readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
         // New TSGeneratedType are appended to this list: GenerateCode
         // loops until no new type appears in this list.
         readonly List<TSGeneratedType> _processList;
@@ -62,7 +62,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="name">The library name. Must not be empty or whitespace.</param>
         /// <param name="dependencyKind">The dependency kind.</param>
-        /// <param name="version">The code specified version.</param>
+        /// <param name="version">The code specified version. Null to require it to be configured.</param>
         /// <param name="impliedDependencies">Optional dependencies that are implied by this one.</param>
         /// <returns></returns>
         public LibraryImport RegisterLibrary( IActivityMonitor monitor, string name, DependencyKind dependencyKind, string? version, params LibraryImport[] impliedDependencies )
@@ -74,20 +74,21 @@ namespace CK.TypeScript.CodeGen
             {
                 if( version != null && version != library.Version )
                 {
-                    monitor.Warn( $"Library '{library.Name}' is already registered in version '{library.Version}'. Specified version '{version}' will be ignored." );
+                    monitor.Warn( $"Library '{library.Name}' is already registered in version '{library.Version}'. The code specified version '{version}' will be ignored." );
                 }
                 return library;
             }
-            if( _libVersionsConfig?.TryGetValue( name, out version ) is true )
+            if( _libVersionsConfig?.TryGetValue( name, out var configuredVersion ) is true )
             {
-                if( version == null || version == library.Version )
+                if( version == null || version == configuredVersion )
                 {
                     monitor.Info( $"Library '{name}' will use the externally configured version '{version}'." );
                 }
                 else
                 {
-                    monitor.Warn( $"Library '{name}' will use the externally configured version '{version}', the code specified version '{version}' will be ignored." );
+                    monitor.Warn( $"Library '{name}' will use the externally configured version '{configuredVersion}', the code specified version '{version}' will be ignored." );
                 }
+                version = configuredVersion;
             }
             if( version == null )
             {
@@ -149,56 +150,6 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Event arguments that exposes a <see cref="TSGeneratedTypeBuilder"/> to be configured.
-        /// This is raised when a C# type must be resolved.
-        /// </summary>
-        public sealed class TypeBuilderRequiredEventArgs : EventMonitoredArgs
-        {
-            readonly TSGeneratedTypeBuilder _descriptor;
-
-            internal TypeBuilderRequiredEventArgs( IActivityMonitor monitor, TSGeneratedTypeBuilder builder )
-                : base( monitor )
-            {
-                _descriptor = builder;
-            }
-
-            /// <summary>
-            /// Gets the type builder that can be configured.
-            /// </summary>
-            public TSGeneratedTypeBuilder Builder => _descriptor;
-        }
-
-        /// <summary>
-        /// Event arguments that exposes an object for which a <see cref="ITSType"/> must be resolved.
-        /// This is raised when a key type that is not a C# type must be resolved.
-        /// </summary>
-        public sealed class TSTypeRequiredEventArgs : EventMonitoredArgs
-        {
-            readonly object _keyType;
-            ITSType? _resolved;
-
-            internal TSTypeRequiredEventArgs( IActivityMonitor monitor, object keyType )
-                : base( monitor )
-            {
-                _keyType = keyType;
-            }
-
-            /// <summary>
-            /// Gets the key type to resolve.
-            /// </summary>
-            public object KeyType => _keyType;
-
-            /// <summary>
-            /// Gets the TypeScript type to used.
-            /// </summary>
-            public ITSType? Resolved
-            {
-                get => _resolved;
-                set => _resolved = value;
-            }
-        }
-
-        /// <summary>
         /// Raised when a <see cref="ITSGeneratedType"/> must be configured from a C# type.
         /// </summary>
         public event EventHandler<TypeBuilderRequiredEventArgs>? TypeBuilderRequired;
@@ -210,14 +161,11 @@ namespace CK.TypeScript.CodeGen
         public event EventHandler<TSTypeRequiredEventArgs>? TSTypeRequired;
 
         /// <summary>
-        /// Resolves the mapping from a key type to a <see cref="ITSType"/> by raising <see cref="TypeBuilderRequired"/> events.
+        /// Resolves the mapping from a key type to a <see cref="ITSType"/> by raising <see cref="TypeBuilderRequired"/>
+        /// or <see cref="TSTypeRequired"/> events.
         /// <para>
-        /// The Type may already be registered as a basic <see cref="TSType"/> and not as a <see cref="TSGeneratedType"/>:
-        /// this is why this method returns the interface.
-        /// </para>
-        /// <para>
-        /// If no mapping exits and <see cref="IsValidGeneratedType(Type)"/> returns false, this throws
-        /// an <see cref="ArgumentException"/>.
+        /// When <paramref name="keyType"/> is a C# type, and no mapping exits and <see cref="IsValidGeneratedType(Type)"/> returns false,
+        /// this throws an <see cref="ArgumentException"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -232,20 +180,20 @@ namespace CK.TypeScript.CodeGen
                 {
                     HashSet<Type>? cycleSameFolderDetector = null;
                     mapped = ResolveTSTypeFromType( monitor, t, false, ref cycleSameFolderDetector );
+                    if( mapped == null )
+                    {
+                        // We cannot order the items here but we don't really care.
+                        var cycle = _types.Where( kv => kv.Value == null ).Select( kv => kv.Key is Type t ? t.Name : kv.Key.ToString() ).Concatenate( "', '" );
+                        Throw.CKException( $"Reentrant TSType resolution detected: '{cycle}'." );
+                    }
                 }
                 else
                 {
                     mapped = ResolveTSTypeFromObject( monitor, keyType );
                 }
-                Throw.DebugAssert( mapped != null );
                 _types.Add( keyType, mapped );
             }
-            if( mapped == null )
-            {
-                // We cannot order the items here but we don't really care.
-                var cycle = _types.Where( kv => kv.Value == null ).Select( kv => kv.Key is Type t ? t.Name : kv.Key.ToString() ).Concatenate( "', '" );
-                Throw.CKException( $"Reentrant TSType resolution detected: '{cycle}'." );
-            }
+            Throw.DebugAssert( mapped != null );
             return mapped;
         }
 
@@ -267,14 +215,16 @@ namespace CK.TypeScript.CodeGen
                 if( internalCall ) return null;
                 Throw.ArgumentException( nameof( t ), $"Invalid type for a TSGeneratedType: '{t.ToCSharpName()}'. It must be deconstructed: array, collections, value tuples and nullable value types must be handled by the caller since these are \"inlined\" types in TypeScript." );
             }
-            var d = new TSGeneratedTypeBuilder( t );
-            TypeBuilderRequired?.Invoke( this, new TypeBuilderRequiredEventArgs( monitor, d ) );
+            // Don't set the TypeName, Folder and other configurable properties upfront:
+            // by setting them to null a builder configurator can decide to use the default values.
+            var e = new TypeBuilderRequiredEventArgs( monitor, t );
+            TypeBuilderRequired?.Invoke( this, e );
 
-            string typeName = d.TypeName ?? GetSafeName( t );
+            e.TypeName ??= GetSafeName( t );
 
             TypeScriptFolder? folder = null;
             TypeScriptFile? file = null;
-            Type? refTarget = d.SameFileAs ?? d.SameFolderAs;
+            Type? refTarget = e.SameFileAs ?? e.SameFolderAs;
             if( refTarget != null )
             {
                 if( !_types.TryGetValue( t, out var target ) )
@@ -293,7 +243,7 @@ namespace CK.TypeScript.CodeGen
                 else
                 {
                     folder = gTarget.File.Folder;
-                    if( d.SameFileAs != null )
+                    if( e.SameFileAs != null )
                     {
                         file = gTarget.File;
                     }
@@ -301,21 +251,33 @@ namespace CK.TypeScript.CodeGen
             }
             if( file == null )
             {
-                folder ??= _root.Root.FindOrCreateFolder( d.Folder ?? t.Namespace!.Replace( '.', '/' ) );
-                file = folder.FindOrCreateFile( d.FileName ?? typeName.Replace( '<', '{' ).Replace( '>', '}' ) + ".ts" );
+                folder ??= _root.Root.FindOrCreateFolder( e.Folder ?? t.Namespace!.Replace( '.', '/' ) );
+                file = folder.FindOrCreateFile( e.FileName ?? e.TypeName.Replace( '<', '{' ).Replace( '>', '}' ) + ".ts" );
             }
-            monitor.Trace( $"Type '{t:C}' will be generated in '{file}'." );
+            if( e.HasError )
+            {
+                monitor.Error( $"Type '{t:C}' is on error." );
+            }
+            else
+            {
+                monitor.Trace( $"Type '{t:C}' will be generated in '{file}'." );
+            }
             if( t.IsEnum )
             {
-                d.DefaultValueSource ??= SelectEnumTypeDefaultValue( monitor, d );
+                e.DefaultValueSource ??= SelectEnumTypeDefaultValue( monitor, e );
             }
-            var newOne = new TSGeneratedType( t, typeName, file, d.DefaultValueSource, d.TryWriteValueImplementation, d.Implementor );
+            var newOne = new TSGeneratedType( t, e.TypeName, file, e.DefaultValueSource, e.TryWriteValueImplementation, e.Implementor, e.HasError );
             _processList.Add( newOne );
             return newOne;
 
             static string GetSafeName( Type t )
             {
-                var n = t.Name;
+                // ExternalName (and more generally type/attribute caching) must be definitely be refactored.
+                var n = (string?)t.GetCustomAttributesData().Where( d => d.AttributeType.Name == "ExternalNameAttribute"
+                                                                         && d.AttributeType.Namespace == "CK.Core" )
+                                                            .FirstOrDefault()?
+                                                            .ConstructorArguments[0]
+                                                            .Value ?? t.Name;
                 if( !t.IsGenericType )
                 {
                     return n;
@@ -326,7 +288,7 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        static string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TSGeneratedTypeBuilder d )
+        static string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TypeBuilderRequiredEventArgs d )
         {
             Debug.Assert( d.Type.IsEnum && d.DefaultValueSource == null );
             // [Doc] The elements of the array are sorted by the binary values (that is, the unsigned values)
@@ -402,6 +364,12 @@ namespace CK.TypeScript.CodeGen
             while( current < _processList.Count )
             {
                 var type = _processList[current++];
+                if( type.HasError )
+                {
+                    // Use Error to trigger the caller GenerateCode failure but continue.
+                    monitor.Error( $"Skipping TS code generation for '{type.TypeName}' that is on error." );
+                    continue;
+                }
                 var g = type._codeGenerator;
                 if( g == null )
                 {
