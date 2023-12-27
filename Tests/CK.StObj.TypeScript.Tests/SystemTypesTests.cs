@@ -29,7 +29,5 @@ namespace CK.StObj.TypeScript.Tests
             File.Exists( targetProjectPath.Combine( "ck-gen/src/WithDateAndGuid.ts" ) ).Should().BeTrue();
         }
 
-
-
     }
 }

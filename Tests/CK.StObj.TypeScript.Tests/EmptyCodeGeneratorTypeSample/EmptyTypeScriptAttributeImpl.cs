@@ -21,10 +21,11 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
 
         public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder )
         {
+            builder.Implementor = GenerateCode;
             return true;
         }
 
-        public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context, ITSGeneratedType tsType )
+        bool GenerateCode( IActivityMonitor monitor, ITSGeneratedType tsType )
         {
             // Let the default closer "}" in EnsureTypePart.
             var code = tsType.EnsureTypePart();

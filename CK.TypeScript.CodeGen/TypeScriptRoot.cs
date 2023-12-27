@@ -50,10 +50,12 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public const string LuxonVersion = "3.4.4";
 
+        Dictionary<object, object?>? _memory;
+        readonly TSTypeManager _tsTypes;
+        readonly LibraryManager _libraryManager;
         readonly bool _pascalCase;
         readonly bool _generateDocumentation;
-        readonly TSTypeManager _tsTypes;
-        Dictionary<object, object?>? _memory;
+        TSTypeBuilder? _firstFreeBuilder;
 
         /// <summary>
         /// Initializes a new <see cref="TypeScriptRoot"/>.
@@ -65,6 +67,7 @@ namespace CK.TypeScript.CodeGen
                                bool pascalCase,
                                bool generateDocumentation )
         {
+            _libraryManager = new LibraryManager();
             _pascalCase = pascalCase;
             _generateDocumentation = generateDocumentation;
             _tsTypes = new TSTypeManager( this, libraryVersionConfiguration );
@@ -145,6 +148,30 @@ namespace CK.TypeScript.CodeGen
         public TSTypeManager TSTypes => _tsTypes;
 
         /// <summary>
+        /// Gets a <see cref="ITSTypeBuilder"/>.
+        /// </summary>
+        /// <returns>A <see cref="TSType"/> builder.</returns>
+        public ITSTypeBuilder GetTSTypeBuilder()
+        {
+            var b = _firstFreeBuilder;
+            if( b != null )
+            {
+                _firstFreeBuilder = b._nextFree;
+                b._nextFree = null;
+                return b;
+            }
+            return new TSTypeBuilder( this );
+        }
+
+        internal bool IsInPool( TSTypeBuilder b ) => _firstFreeBuilder == b || b._nextFree != null;
+
+        internal void Return( TSTypeBuilder b )
+        {
+            b._nextFree = _firstFreeBuilder;
+            _firstFreeBuilder = b;
+        }
+
+        /// <summary>
         /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling
         /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> on all <see cref="ITSGeneratedType"/>.
         /// </summary>
@@ -217,6 +244,11 @@ namespace CK.TypeScript.CodeGen
                 }
             }
         }
+
+        /// <summary>
+        /// Gets the library manager.
+        /// </summary>
+        public LibraryManager LibraryManager => _libraryManager;
 
         /// <summary>
         /// Gets a shared memory for this root that all <see cref="TypeScriptFolder"/>

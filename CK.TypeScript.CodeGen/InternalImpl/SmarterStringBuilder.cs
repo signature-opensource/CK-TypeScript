@@ -4,10 +4,9 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Internal class that handles new lines and unifies the output to a StringBuilder
-    /// or an Action{string}.
+    /// Internal class that removes duplicated new lines on a StringBuilder.
     /// </summary>
-    class SmarterStringBuilder
+    sealed class SmarterStringBuilder
     {
         public readonly StringBuilder Builder;
 
@@ -34,6 +33,12 @@ namespace CK.TypeScript.CodeGen
                 HasNewLine = true;
             }
             return this;
+        }
+
+        public void Reset()
+        {
+            Builder.Clear();
+            HasNewLine = true;
         }
 
         public override string ToString() => Builder.ToString();

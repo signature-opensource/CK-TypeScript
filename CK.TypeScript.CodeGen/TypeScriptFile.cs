@@ -15,22 +15,31 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public class TypeScriptFile
     {
+        internal const string HiddenFileName = ".hidden-file.ts";
+
+        readonly string _name;
+        readonly ITSFileBodySection _body;
+        readonly TypeScriptFolder _folder;
+        internal readonly FileImportCodePart _imports;
         internal TypeScriptFile? _next;
 
         internal TypeScriptFile( TypeScriptFolder folder, string name )
         {
-            Folder = folder;
-            Name = name;
-            _next = folder._firstFile;
-            folder._firstFile = this;
-            Imports = new FileImportCodePart( this );
-            Body = new FileBodyCodePart( this );
+            _folder = folder;
+            _name = name;
+            _imports = new FileImportCodePart( this );
+            _body = new FileBodyCodePart( this );
+            if( name != HiddenFileName )
+            {
+                _next = folder._firstFile;
+                folder._firstFile = this;
+            }
         }
 
         /// <summary>
         /// Gets the folder of this file.
         /// </summary>
-        public TypeScriptFolder Folder { get; }
+        public TypeScriptFolder Folder => _folder;
 
         /// <inheritdoc cref="TypeScriptFolder.Root" />
         public TypeScriptRoot Root => Folder.Root;
@@ -39,23 +48,23 @@ namespace CK.TypeScript.CodeGen
         /// Gets this file name.
         /// It necessarily ends with '.ts'.
         /// </summary>
-        public string Name { get; }
+        public string Name => _name;
 
         /// <summary>
         /// Gets the import section of this file.
         /// </summary>
-        public ITSFileImportSection Imports { get; }
+        public ITSFileImportSection Imports => _imports;
 
         /// <summary>
         /// Gets the code section of this file.
         /// </summary>
-        public ITSFileBodySection Body { get; }
+        public ITSFileBodySection Body => _body;
 
         /// <summary>
         /// Creates a part that is bound to this file but whose content
         /// is not in this <see cref="Body"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A detached part.</returns>
         public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
 
         /// <summary>
@@ -70,13 +79,16 @@ namespace CK.TypeScript.CodeGen
         /// </param>
         public void Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths )
         {
-            monitor.Trace( $"Saving '{Name}'." );
-            var imports = Imports.ToString();
-            if( imports.Length > 0 ) imports += Environment.NewLine;
-            var all = imports + Body.ToString();
-            var file = outputPath.AppendPart( Name );
-            File.WriteAllText( file, all );
-            previousPaths?.Remove( file );
+            if( _name != HiddenFileName )
+            {
+                monitor.Trace( $"Saving '{Name}'." );
+                var imports = Imports.ToString();
+                if( imports.Length > 0 ) imports += Environment.NewLine;
+                var all = imports + Body.ToString();
+                var file = outputPath.AppendPart( Name );
+                File.WriteAllText( file, all );
+                previousPaths?.Remove( file );
+            }
         }
 
         /// <summary>

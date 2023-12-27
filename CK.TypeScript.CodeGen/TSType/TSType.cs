@@ -6,7 +6,15 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Default implementation of <see cref="ITSType"/>.
-    /// This can be specialized.
+    /// <para>
+    /// This concrete class can be be used for TypeScript types that don't have an associated <see cref="File"/>.
+    /// It is not linked to a specific C# type (as opposed to a <see cref="ITSGeneratedType"/> that handles C# type
+    /// in a <see cref="TypeScriptFile"/>).
+    /// </para>
+    /// <para>
+    /// It can be instantiated directly thanks to the public <see cref="TSType(string,Action{ITSFileImportSection},string)"/> constructor
+    /// or a <see cref="ITSTypeBuilder"/> can be used for more complex cases.
+    /// </para>
     /// </summary>
     public class TSType : ITSType
     {

@@ -124,8 +124,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         {
         }
 
-
-
         // Hard coded Cris-like TypeScriptCrisCommandGeneratorImpl.
         // This one changes the folders.
         // The real one listens to PocoGenerating events and injects code into the Poco TypeSript implementation.
@@ -220,7 +218,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
         public interface IValueTupleCommand : ICommandAuthUnsafe, ICommand<int>
         {
-            (int, string, string?, object, List<string?>, object?) Power { get; set; }
+            ref (int, string, string?, object?) Power { get; }
         }
 
         [Test]

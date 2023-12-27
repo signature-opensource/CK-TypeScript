@@ -9,43 +9,31 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Heterogeneous list of BaseCodeWriter and string.
         /// </summary>
-        internal readonly List<object> Content;
+        internal readonly List<object> _content;
         Dictionary<object, object?>? _memory;
 
         public BaseCodeWriter( TypeScriptFile f )
         {
             File = f;
-            Content = new List<object>();
+            _content = new List<object>();
         }
 
         public TypeScriptFile File { get; }
 
         public void DoAdd( string? code )
         {
-            if( !String.IsNullOrEmpty( code ) ) Content.Add( code );
+            if( !String.IsNullOrEmpty( code ) ) _content.Add( code );
         }
 
-        internal bool? StartsWith( string prefix )
+        internal virtual void Clear()
         {
-            foreach( var o in Content )
-            {
-                if( o is string s )
-                {
-                    s = s.TrimStart();
-                    if( s.Length > 0 ) return s.StartsWith( prefix );
-                }
-                else
-                {
-                    bool? r = ((BaseCodeWriter)o).StartsWith( prefix );
-                    if( r.HasValue ) return r;
-                }
-            }
-            return null;
+            _memory?.Clear();
+            _content.Clear();
         }
 
         internal virtual SmarterStringBuilder Build( SmarterStringBuilder b )
         {
-            foreach( var c in Content )
+            foreach( var c in _content )
             {
                 if( c is BaseCodeWriter p ) p.Build( b );
                 else b.Append( (string)c );

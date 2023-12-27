@@ -12,7 +12,6 @@ namespace CK.CrisLike
     /// </summary>
     public interface IAuthAmbientValues : IAmbientValues
     {
-
         /// <summary>
         /// Gets or sets the <see cref="IAuthenticationInfo.User"/> identifier.
         /// </summary>

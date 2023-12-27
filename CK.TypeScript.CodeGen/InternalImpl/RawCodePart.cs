@@ -1,21 +1,20 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CK.Core;
-using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
     class RawCodePart : BaseCodeWriter, ITSCodePart
     {
         static readonly string _defaultCloser = "}\n".ReplaceLineEndings();
-
+        readonly string _closer;
         Dictionary<object, KeyedCodePart>? _keyedParts;
 
         internal RawCodePart( TypeScriptFile f, string closer )
             : base( f )
         {
-            Closer = NormalizeCloser( closer );
+            _closer = NormalizeCloser( closer );
         }
 
         internal static string NormalizeCloser( string closer )
@@ -24,17 +23,23 @@ namespace CK.TypeScript.CodeGen
             return closer.ReplaceLineEndings();
         }
 
-        public string Closer { get; }
+        internal override void Clear()
+        {
+            base.Clear();
+            _keyedParts?.Clear();
+        }
 
-        public IEnumerable<ITSCodePart> Parts => Content.OfType<ITSCodePart>();
+        public string Closer => _closer;
+
+        public IEnumerable<ITSCodePart> Parts => _content.OfType<ITSCodePart>();
 
         public ITSKeyedCodePart CreateKeyedPart( object key, string closer, bool top = false ) => DoCreate( key, closer, top );
 
         public ITSCodePart CreatePart( string closer = "", bool top = false )
         {
             var p = new RawCodePart( File, closer );
-            if( top ) Content.Insert( 0, p );
-            else Content.Add( p );
+            if( top ) _content.Insert( 0, p );
+            else _content.Add( p );
             return p;
         }
 
@@ -58,21 +63,18 @@ namespace CK.TypeScript.CodeGen
             if( _keyedParts == null ) _keyedParts = new Dictionary<object, KeyedCodePart>();
             var p = new KeyedCodePart( File, key, closer );
             _keyedParts.Add( key, p );
-            if( top ) Content.Insert( 0, p );
-            else Content.Add( p );
+            if( top ) _content.Insert( 0, p );
+            else _content.Add( p );
             return p;
         }
 
-        internal override SmarterStringBuilder Build( SmarterStringBuilder b )
-        {
-            Build( b, true );
-            return b;
-        }
+        internal override SmarterStringBuilder Build( SmarterStringBuilder b ) => Build( b, true );
 
-        public void Build( SmarterStringBuilder b, bool closeScope )
+        public SmarterStringBuilder Build( SmarterStringBuilder b, bool closeScope )
         {
             base.Build( b );
             if( closeScope && Closer.Length != 0 ) b.AppendLine().Append( Closer );
+            return b;
         }
 
     }

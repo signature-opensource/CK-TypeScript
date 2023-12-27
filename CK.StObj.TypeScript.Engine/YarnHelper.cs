@@ -85,38 +85,11 @@ namespace CK.Setup
                 var packageJsonPath = Path.Combine( outputPath, "package.json" );
                 using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
                 {
-                    bool success = true;
-                    var dependencies = new Dictionary<string, LibraryImport>();
                     if( targetTypescriptVersion != null )
                     {
-                        dependencies.Add( "typescript", new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
+                        g.Root.LibraryManager.EnsureLibrary( new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
                     }
-                    foreach( var file in g.Root.Root.AllFilesRecursive )
-                    {
-                        foreach( var item in file.Imports.LibraryImports.Values )
-                        {
-                            if( !dependencies.TryGetValue( item.Name, out var prevImport ) )
-                            {
-                                dependencies.Add( item.Name, item );
-                            }
-                            else
-                            {
-                                if( item.Version != prevImport.Version )
-                                {
-                                    monitor.Error( $"File {file.Name} require {item.Name} at version {item.Version}, but another file require it at version {item.Version}." );
-                                    success = false;
-                                }
-                                if( item.DependencyKind > prevImport.DependencyKind )
-                                {
-                                    monitor.Info( $"Dependency {item.Name} had dependency kind {prevImport.DependencyKind}, {file.Name} is upgrading it to {item.DependencyKind}" );
-                                    dependencies[item.Name] = item;
-                                }
-                            }
-                        }
-                    }
-                    if( !success ) return false;
-
-
+                    var dependencies = g.Root.LibraryManager.LibraryImports;
                     sb.Clear();
                     sb.Append( """
                                {

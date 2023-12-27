@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Implements a locally implemented type (a <see cref="ITSGeneratedType"/>).
     /// This class is internal: only the ITSGeneratedType is exposed.
     /// </summary>
     sealed class TSGeneratedType : TSType, ITSGeneratedType
