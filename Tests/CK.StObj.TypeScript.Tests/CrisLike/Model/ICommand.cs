@@ -4,21 +4,19 @@ using System;
 namespace CK.CrisLike
 {
     /// <summary>
-    /// The base command interface marker is a simple <see cref="IPoco"/>.
-    /// Any type that extends this interface defines a new command type.
+    /// We cannot use ICommand and ICommand&lt;Result&gt; in TypeScript, generic name is unique (no cardinality).
+    /// On the TypeScript side it must be ICommand&lt;TResult = void&gt;.
     /// </summary>
-    [CKTypeDefiner]
-    public interface ICommand : IPoco
+    public interface ICommand : IAbstractCommand
     {
-        // This is disabled since we do not generate the C# code that implements the
-        // CommandModel.
-        // Removing this enables a valid C# code.
+    }
 
-        ///// <summary>
-        ///// Gets the<see cref= "ICommandModel" /> that describes this command.
-        ///// This property is automatically implemented. 
-        ///// </summary>
-        //[AutoImplementationClaim]
-        //ICommandModel CommandModel { get; }
+    /// <summary>
+    /// Mapped to the same ICommand&lt;TResult = void&gt; as <see cref="ICommand"/>.
+    /// </summary>
+    public interface ICommand<TResult> : IAbstractCommand
+    {
+        // Trick to retrieve the full nullability info of the TResult.
+        internal static TResult R => default!;
     }
 }

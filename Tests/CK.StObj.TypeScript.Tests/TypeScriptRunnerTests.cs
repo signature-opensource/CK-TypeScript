@@ -28,25 +28,37 @@ namespace CK.StObj.TypeScript.Tests
             object? NullableIntOrString { get; set; }
 
             /// <summary>
-            /// Gets or sets a complex algebraic type.
+            /// Gets or sets a non nullable int or string.
             /// </summary>
             [UnionType]
-            object NonNullableListOrDictionaryOrDouble { get; set; }
+            object IntOrStringNoDefault { get; set; }
 
+            /// <summary>
+            /// Gets or sets a non nullable int or string with default.
+            /// </summary>
             [DefaultValue( 3712 )]
-            int WithDefaultValue { get; set; }
+            [UnionType]
+            object IntOrStringWithDefault { get; set; }
+
+            /// <summary>
+            /// Gets or sets a non nullable int or string with default.
+            /// </summary>
+            [DefaultValue( 42 )]
+            [UnionType]
+            object? NullableIntOrStringWithDefault { get; set; }
 
             readonly struct UnionTypes
             {
-                public (int, string)? NullableIntOrString { get; }
-                public (List<string?>, Dictionary<IPoco, ISet<int?>>[], double) NonNullableListOrDictionaryOrDouble { get; }
+                public (int, string) NullableIntOrString { get; }
+                public (int, string) IntOrStringNoDefault { get; }
+                public (int, string) IntOrStringWithDefault { get; }
+                public (int, string) NullableIntOrStringWithDefault { get; }
             }
         }
 
         /// <summary>
         /// Demonstrates the read only properties support.
         /// </summary>
-        [TypeScript]
         public interface IWithReadOnly : IPoco
         {
             /// <summary>
@@ -63,29 +75,41 @@ namespace CK.StObj.TypeScript.Tests
             /// <summary>
             /// Gets the mutable list of string values.
             /// </summary>
-            List<string> List { get; }
+            IList<string> List { get; }
 
             /// <summary>
             /// Gets the mutable map from name to numeric values.
             /// </summary>
-            Dictionary<string, double?> Map { get; }
+            IDictionary<string, double?> Map { get; }
 
             /// <summary>
             /// Gets the mutable set of unique string.
             /// </summary>
-            HashSet<string> Set { get; }
+            ISet<string> Set { get; }
 
             /// <summary>
-            /// Gets the algebraic types demonstrations.
+            /// Gets the union types poco.
             /// </summary>
             IWithUnions Poco { get; }
+        }
+
+        public record struct RecordData( DateTime Time, List<string> Names );
+
+        public interface IWithTyped : IPoco
+        {
+            IList<RecordData> TypedList { get; }
+            IDictionary<string, IWithUnions> TypedDic1 { get; }
+            IDictionary<IWithReadOnly, string> TypedDic2 { get; }
         }
 
         [Test]
         public async Task TypeScriptRunner_with_environment_variables_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            TestHelper.GenerateTypeScript( targetProjectPath,
+                                           typeof( IWithReadOnly ),
+                                           typeof( IWithUnions ),
+                                           typeof( IWithTyped ) );
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,
                                                                         new Dictionary<string, string>()
                                                                         {

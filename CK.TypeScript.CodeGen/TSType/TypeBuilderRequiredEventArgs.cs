@@ -19,26 +19,35 @@ namespace CK.TypeScript.CodeGen
     public sealed class TypeBuilderRequiredEventArgs : EventMonitoredArgs
     {
         readonly Type _type;
+        readonly string _defaultTypeName;
         string? _folder;
         string? _fileName;
         Type? _sameFolderAs;
         Type? _sameFileAs;
         string? _typeName;
         string? _defaultValueSource;
-        Func<ITSCodeWriter, object, bool>? _tryWriteValueImplementation;
+        DefaultValueSourceProvider? _defaultValueSourceProvider;
+        TSValueWriter? _tryWriteValueImplementation;
         TSCodeGenerator? _implementor;
         bool _hasError;
 
-        public TypeBuilderRequiredEventArgs( IActivityMonitor monitor, Type type )
+        public TypeBuilderRequiredEventArgs( IActivityMonitor monitor, Type type, string defaultTypeName )
+            : base( monitor )
         {
             Throw.CheckNotNullArgument( type );
             _type = type;
+            _defaultTypeName = defaultTypeName;
         }
 
         /// <summary>
         /// Gets the key type.
         /// </summary>
         public Type Type => _type;
+
+        /// <summary>
+        /// Gets the default type name.
+        /// </summary>
+        public string DefaultTypeName => _defaultTypeName;
 
         /// <summary>
         /// Tries to initializes all the configurable properties at once whithout throwing: errors are logged
@@ -134,6 +143,9 @@ namespace CK.TypeScript.CodeGen
         /// When let to null, there is no default value for the type.
         /// When set to a not null string, it must not be empty or whitespace.
         /// </para>
+        /// <para>
+        /// Setting this clears any previously set <see cref="DefaultValueSourceProvider"/>.
+        /// </para>
         /// </summary>
         public string? DefaultValueSource
         {
@@ -145,6 +157,25 @@ namespace CK.TypeScript.CodeGen
                     Throw.CheckArgument( value == null || !string.IsNullOrWhiteSpace( value ) );
                     _defaultValueSource = value;
                 }
+                _defaultValueSourceProvider = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a function that will compute <see cref="DefaultValueSource"/> when needed.
+        /// This is required for composites when their default value are built upon their components
+        /// default values. 
+        /// <para>
+        /// Setting this (even to null) clears any previously set <see cref="DefaultValueSource"/>.
+        /// </para>
+        /// </summary>
+        public DefaultValueSourceProvider? DefaultValueSourceProvider
+        {
+            get => _defaultValueSourceProvider;
+            set
+            {
+                _defaultValueSourceProvider = value;
+                _defaultValueSource = null;
             }
         }
 
@@ -272,9 +303,9 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// Gets or sets a function that can implement <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/>
-        /// if the generated type corresponds to a C# type that can be expressed as a TypeScript construct.
+        /// if a value of the generated type corresponds can be expressed as a TypeScript construct.
         /// </summary>
-        public Func<ITSCodeWriter, object, bool>? TryWriteValueImplementation
+        public TSValueWriter? TryWriteValueImplementation
         {
             get => _tryWriteValueImplementation;
             set => _tryWriteValueImplementation = value;

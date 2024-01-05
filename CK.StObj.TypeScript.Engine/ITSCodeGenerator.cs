@@ -15,7 +15,7 @@ namespace CK.Setup
     /// by an attribute on a Type.
     /// </para>
     /// <para>
-    /// A global code generator like this coexists with other global and other <see cref="ITSCodeGeneratorType"/> on a type.
+    /// A global code generator like this coexists with other global and other type bound <see cref="ITSCodeGeneratorType"/>.
     /// It is up to the implementation to handle the collaboration (or to raise an error).
     /// </para>
     /// </summary>
@@ -47,7 +47,7 @@ namespace CK.Setup
         /// <param name="context">The TypeScript context.</param>
         /// <param name="builder">The builder with the <see cref="TypeBuilderRequiredEventArgs.Type"/> that is handled.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder );
+        bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder );
 
         /// <summary>
         /// Configures the <see cref="TypeBuilderRequiredEventArgs"/> (this is called for each <see cref="TSTypeManager.TypeBuilderRequired"/> event).

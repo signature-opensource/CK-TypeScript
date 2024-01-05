@@ -9,6 +9,7 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.TypeScript.Tests
 {
+
     [TestFixture]
     public class PocoTypeScriptTests
     {

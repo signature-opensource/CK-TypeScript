@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
@@ -11,21 +12,25 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// Helper to build documentation.
     /// </summary>
-    public class DocumentationBuilder
+    public sealed class DocumentationBuilder
     {
         readonly StringBuilder _b;
         readonly bool _withStars;
+        readonly bool _generateDoc;
+        string? _finalResult;
+        int _removeGetOrSetPrefix;
         bool _lastLineIsEmpty;
         bool _waitingForNewline;
-        string? _finalResult;
 
         /// <summary>
         /// Initializes a new documentation builder.
         /// </summary>
         /// <param name="withStars">False to let the text naked. By default, a star comment is generated.</param>
-        public DocumentationBuilder( bool withStars = true )
+        /// <param name="generateDoc">False if no doc should be generated.</param>
+        public DocumentationBuilder( bool withStars = true, bool generateDoc = true )
         {
             _withStars = withStars;
+            _generateDoc = generateDoc;
             if( withStars )
             {
                 _b = new StringBuilder( "/**" );
@@ -38,9 +43,43 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Resets this builder so it can be reused.
+        /// </summary>
+        /// <returns>This builder.</returns>
+        public DocumentationBuilder Reset()
+        {
+            _lastLineIsEmpty = false;
+            _finalResult = null;
+            _b.Clear();
+            if( _withStars )
+            {
+                _b.Append( "/**" );
+                _waitingForNewline = true;
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Gets whether documentation should be generated: this comes from the configuration
+        /// and may be ignored.
+        /// </summary>
+        public bool GenerateDocumentation => _generateDoc;
+
+        /// <summary>
         /// Gets whether at least one character has been added.
         /// </summary>
         public bool IsEmpty => _b.Length == (_withStars ? 3 : 0);
+
+        /// <summary>
+        /// Temporarily removes any "Gets or sets " prefix of text fragments.
+        /// This applies to the basic <see cref="Append(string?, bool, bool)"/> method that is
+        /// called by all the other methods.
+        /// </summary>
+        public IDisposable RemoveGetOrSetPrefix()
+        {
+            ++_removeGetOrSetPrefix;
+            return Util.CreateDisposableAction( () => --_removeGetOrSetPrefix );
+        }
 
         /// <summary>
         /// Gets the final result and closes this builder.
@@ -56,7 +95,7 @@ namespace CK.TypeScript.CodeGen
                 }
                 else
                 {
-                    if( _withStars ) _b.Append( Environment.NewLine ).Append( " **/" ).Append( Environment.NewLine );
+                    if( _withStars ) _b.Append( Environment.NewLine ).Append( " **/" );
                     _finalResult = _b.ToString();
                 }
             }
@@ -149,10 +188,10 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="source">Source code file that is used to locate and use the <see cref="IXmlDocumentationCodeRefHandler"/>.</param>
         /// <param name="e">The documentation element. Ignored when null.</param>
-        /// <param name="trimFirstLine">True to remove all leading white spaces.</param>
+        /// <param name="trimFirstLine">False to keep all leading white spaces.</param>
         /// <param name="startNewLine">False to append the first line to the end of the current last line.</param>
         /// <returns>This builder to enable fluent syntax.</returns>
-        public DocumentationBuilder AppendLinesFromXElement( TypeScriptFile source, XElement? e, bool trimFirstLine, bool startNewLine )
+        public DocumentationBuilder AppendLinesFromXElement( TypeScriptFile source, XElement? e, bool trimFirstLine = true, bool startNewLine = true )
         {
             CheckBuilderClosed();
             if( e != null )
@@ -428,6 +467,10 @@ namespace CK.TypeScript.CodeGen
                     if( _withStars ) _b.Append( " * " );
                     _waitingForNewline = false;
                 }
+                if( _removeGetOrSetPrefix > 0 )
+                {
+                    lineFragment = RemoveGetsOrSetsPrefix( lineFragment );
+                }
                 _b.Append( lineFragment );
                 _lastLineIsEmpty = false;
             }
@@ -438,6 +481,19 @@ namespace CK.TypeScript.CodeGen
         void CheckBuilderClosed()
         {
             if( _finalResult != null ) throw new InvalidOperationException( nameof( GetFinalText ) );
+        }
+
+        static readonly Regex _rGetSet = new Regex( @"^\s*Gets?(\s+(or\s+)?sets?)?\s+", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
+
+        static string RemoveGetsOrSetsPrefix( string text )
+        {
+            var m = _rGetSet.Match( text );
+            if( m.Success )
+            {
+                text = text.Substring( m.Length );
+                text = TypeScriptRoot.ToIdentifier( text, true );
+            }
+            return text;
         }
 
     }

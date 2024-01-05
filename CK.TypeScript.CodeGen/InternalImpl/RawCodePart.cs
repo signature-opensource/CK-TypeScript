@@ -60,7 +60,7 @@ namespace CK.TypeScript.CodeGen
 
         ITSKeyedCodePart DoCreate( object key, string closer, bool top )
         {
-            if( _keyedParts == null ) _keyedParts = new Dictionary<object, KeyedCodePart>();
+            _keyedParts ??= new Dictionary<object, KeyedCodePart>();
             var p = new KeyedCodePart( File, key, closer );
             _keyedParts.Add( key, p );
             if( top ) _content.Insert( 0, p );

@@ -31,10 +31,10 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The formatted reference.</returns>
         public static string GetBasicLink( TypeScriptFile source, string targetType, string? targetMember )
         {
-            return targetType.Substring( targetType.LastIndexOf( '.' ) + 1 )
-                        + (!String.IsNullOrEmpty( targetMember )
-                            ? "." + source.Folder.Root.ToIdentifier( targetMember )
-                            : String.Empty);
+            return string.Concat( targetType.AsSpan( targetType.LastIndexOf( '.' ) + 1 ),
+                                  !String.IsNullOrEmpty( targetMember )
+                                    ? "." + source.Folder.Root.ToIdentifier( targetMember )
+                                    : String.Empty );
         }
 
         class TextOnlyHandler : IXmlDocumentationCodeRefHandler

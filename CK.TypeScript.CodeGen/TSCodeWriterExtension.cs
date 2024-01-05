@@ -9,6 +9,7 @@ using System.Xml.Linq;
 using CK.Core;
 using System.Text.Json;
 using System.Text.Encodings.Web;
+using System.Diagnostics.Metrics;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -111,16 +112,18 @@ namespace CK.TypeScript.CodeGen
         static public T CloseBlock<T>( this T @this, bool withSemiColon = false ) where T : ITSCodeWriter => @this.NewLine().Append( withSemiColon ? "};" : "}" ).NewLine();
 
         /// <summary>
-        /// Appends a <see cref="ITSType.TypeName"/> with its <see cref="ITSType.RequiredImports"/>.
+        /// Appends a <see cref="ITSType.TypeName"/> (or <see cref="ITSType.OptionalTypeName"/>) with
+        /// its <see cref="ITSType.RequiredImports"/>.
         /// </summary>
         /// <typeparam name="T">The code writer type.</typeparam>
         /// <param name="this">This code writer.</param>
         /// <param name="typeName">The <see cref="ITSType.TypeName"/> to append and import.</param>
+        /// <param name="useOptionalTypeName">Whether "typeName?" should be used instead of "typeName|undefined".</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        public static T AppendTypeName<T>( this T @this, ITSType typeName ) where T : ITSCodeWriter
+        public static T AppendTypeName<T>( this T @this, ITSType typeName, bool useOptionalTypeName = false ) where T : ITSCodeWriter
         {
             typeName.EnsureRequiredImports( @this.File.Imports );
-            @this.Append( typeName.TypeName );
+            @this.Append( useOptionalTypeName ? typeName.OptionalTypeName : typeName.TypeName );
             return @this;
         }
 
@@ -167,8 +170,7 @@ namespace CK.TypeScript.CodeGen
             if( s == null ) @this.Append( "null" );
             else
             {
-                Throw.DebugAssert( System.Web.HttpUtility.JavaScriptStringEncode( s, true ) == JsonSerializer.Serialize( s ) );
-                @this.Append( System.Web.HttpUtility.JavaScriptStringEncode( s, true ) );
+                @this.Append( "\"" ).Append( JavaScriptEncoder.Default.Encode( s ) ).Append( "\"" );
             }
             return @this;
         }
@@ -336,29 +338,6 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends a <see cref="TypeScriptVarType"/>.
-        /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
-        /// <param name="this">This code writer.</param>
-        /// <param name="decl">The declaration.</param>
-        /// <param name="prefixName">Optional prefix to inject before the name.</param>
-        /// <param name="withComment">False to skip the initial <see cref="TypeScriptVarType.Comment"/> if any.</param>
-        /// <returns>This code writer to enable fluent syntax.</returns>
-        public static T Append<T>( this T @this, TypeScriptVarType decl, string? prefixName = null, bool withComment = true ) where T : ITSCodeWriter
-        {
-            if( withComment && !String.IsNullOrWhiteSpace( decl.Comment ) ) @this.AppendDocumentation( decl.Comment );
-            @this.Append( prefixName )
-                 .Append( decl.Name )
-                 .Append( decl.TSType.IsNullable ? "?: " : ": " )
-                 .AppendTypeName( decl.TSType );
-            if( !String.IsNullOrWhiteSpace( decl.DefaultValueSource ) )
-            {
-                @this.Append( " = " ).Append( decl.DefaultValueSource );
-            }
-            return @this;
-        }
-
-        /// <summary>
         /// Appends an enum definition. The underlying type should be safely convertible into Int32.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
@@ -368,7 +347,11 @@ namespace CK.TypeScript.CodeGen
         /// <param name="typeName">The TypeScript type name.</param>
         /// <param name="export">True to prefix with 'export ' the enum definition.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        static public T AppendEnumDefinition<T>( this T @this, IActivityMonitor monitor, Type enumType, string typeName, bool export ) where T : ITSCodeWriter
+        static public T AppendEnumDefinition<T>( this T @this,
+                                                 IActivityMonitor monitor,
+                                                 Type enumType,
+                                                 string typeName,
+                                                 bool export ) where T : ITSCodeWriter
         {
             Throw.CheckArgument( enumType.IsEnum );
             var uT = enumType.GetEnumUnderlyingType();
@@ -378,7 +361,7 @@ namespace CK.TypeScript.CodeGen
                 return @this;
             }
             string? docValuePrefix = null;
-            var xDoc = @this.File.Folder.Root.GenerateDocumentation
+            var xDoc = @this.File.Root.DocBuilder.GenerateDocumentation
                         ? XmlDocumentationReader.GetXmlDocumentation( monitor, enumType.Assembly, @this.File.Folder.Root.Memory )
                         : null;
             if( xDoc != null )

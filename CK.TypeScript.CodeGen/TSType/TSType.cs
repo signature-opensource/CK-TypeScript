@@ -24,18 +24,21 @@ namespace CK.TypeScript.CodeGen
         protected class Null : ITSType
         {
             readonly ITSType _nonNullable;
+            readonly string _typeName;
+            readonly string _optionalTypeName;
 
             public Null( ITSType nonNullable )
             {
                 _nonNullable = nonNullable;
-                TypeName = nonNullable.TypeName + "|undefined";
+                _typeName = nonNullable.TypeName + "|undefined";
+                _optionalTypeName = nonNullable.TypeName + "?";
             }
 
-            public string TypeName { get; }
+            public string TypeName => _typeName;
+
+            public string OptionalTypeName => _optionalTypeName;
 
             public bool IsNullable => true;
-
-            public bool HasDefaultValue => true;
 
             public string? DefaultValueSource => "undefined";
 
@@ -67,8 +70,8 @@ namespace CK.TypeScript.CodeGen
         [AllowNull]
         readonly ITSType _null;
         readonly string _typeName;
-        readonly string? _defaultValueSource;
         readonly Action<ITSFileImportSection>? _requiredImports;
+        string? _defaultValueSource;
 
         /// <summary>
         /// Initializes a new <see cref="TSType"/>.
@@ -83,13 +86,13 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Protected constructor.
+        /// Internal: only used by TSGeneratedType.
         /// </summary>
         /// <param name="typeName">The type name.</param>
         /// <param name="imports">Optional required imports to use this type.</param>
-        /// <param name="defaultValue">The type default value if any.</param>
+        /// <param name="defaultValue">The default value as a non empty or whitespace string.</param>
         /// <param name="nullFactory">The <see cref="Nullable"/> factory.</param>
-        protected TSType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValue, Func<TSType, ITSType> nullFactory )
+        internal TSType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValue, Func<TSType, ITSType> nullFactory )
             : this( imports, typeName, defaultValue )
         {
             _null = nullFactory( this );
@@ -98,6 +101,7 @@ namespace CK.TypeScript.CodeGen
         TSType( Action<ITSFileImportSection>? imports, string typeName, string? defaultValue )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
+            Throw.CheckArgument( defaultValue == null || !string.IsNullOrWhiteSpace( defaultValue ) );
             _typeName = typeName;
             _requiredImports = imports;
             _defaultValueSource = defaultValue;
@@ -107,13 +111,18 @@ namespace CK.TypeScript.CodeGen
         public string TypeName => _typeName;
 
         /// <inheritdoc />
+        public string OptionalTypeName => _typeName;
+
+        /// <inheritdoc />
         public bool IsNullable => false;
 
         /// <inheritdoc />
-        public bool HasDefaultValue => !string.IsNullOrEmpty( DefaultValueSource );
-
-        /// <inheritdoc />
-        public string? DefaultValueSource => _defaultValueSource;
+        public string? DefaultValueSource
+        {
+            get => _defaultValueSource;
+            // Only set after type registration for TSGeneratedType from a provider if any.
+            internal set => _defaultValueSource = value;
+        }
 
         /// <summary>
         /// Gets a null file at this level.

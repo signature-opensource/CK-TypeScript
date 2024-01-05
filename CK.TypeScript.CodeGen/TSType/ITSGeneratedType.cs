@@ -27,11 +27,6 @@ namespace CK.TypeScript.CodeGen
         bool HasError { get; }
 
         /// <summary>
-        /// Gets whether this type has an associated <see cref="TSCodeGenerator"/>.
-        /// </summary>
-        bool HasCodeGenerator { get; }
-
-        /// <summary>
         /// Gets the code part with the <see cref="Type"/> key if it has been created, null otherwise.
         /// The code part may have been created by <see cref="EnsureTypePart"/> or directly on
         /// the file's body. 

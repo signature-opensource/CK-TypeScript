@@ -10,7 +10,7 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     sealed class TSGeneratedType : TSType, ITSGeneratedType
     {
-        readonly Func<ITSCodeWriter, object, bool>? _tryWriteValue;
+        readonly TSValueWriter? _tryWriteValue;
         internal readonly TSCodeGenerator? _codeGenerator;
         readonly Type _type;
         readonly TypeScriptFile _file;
@@ -35,8 +35,6 @@ namespace CK.TypeScript.CodeGen
 
             public ITSKeyedCodePart? TypePart => NonNullable.TypePart;
 
-            public bool HasCodeGenerator => NonNullable.HasCodeGenerator;
-
             public bool HasError => NonNullable.HasError;
 
             public ITSKeyedCodePart EnsureTypePart( string closer = "}\n", bool top = false )
@@ -45,13 +43,13 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        public TSGeneratedType( Type t,
-                                string typeName,
-                                TypeScriptFile file,
-                                string? defaultValue,
-                                Func<ITSCodeWriter, object, bool>? tryWriteValue,
-                                TSCodeGenerator? codeGenerator,
-                                bool hasError )
+        internal TSGeneratedType( Type t,
+                                   string typeName,
+                                   TypeScriptFile file,
+                                   string? defaultValue,
+                                   TSValueWriter? tryWriteValue,
+                                   TSCodeGenerator? codeGenerator,
+                                   bool hasError )
             : base( typeName, null, defaultValue, t => new GeneratedNull( t ) )
         {
             Throw.DebugAssert( t != null );
@@ -73,14 +71,12 @@ namespace CK.TypeScript.CodeGen
 
         public new ITSGeneratedType NonNullable => this;
 
-        public bool HasCodeGenerator => _codeGenerator != null;
-
         public override void EnsureRequiredImports( ITSFileImportSection section )
         {
             section.EnsureImport( _file, TypeName );
         }
 
-        protected override bool DoTryWriteValue( ITSCodeWriter writer, object value ) => _tryWriteValue?.Invoke( writer, value ) ?? false;
+        protected override bool DoTryWriteValue( ITSCodeWriter writer, object value ) => _tryWriteValue?.Invoke( writer, this, value ) ?? false;
 
         public ITSKeyedCodePart? TypePart => File.Body.FindKeyedPart( Type );
 

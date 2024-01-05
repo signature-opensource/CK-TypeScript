@@ -191,7 +191,6 @@ namespace CK.TypeScript.CodeGen
                 {
                     mapped = ResolveTSTypeFromObject( monitor, keyType );
                 }
-                _types.Add( keyType, mapped );
             }
             Throw.DebugAssert( mapped != null );
             return mapped;
@@ -205,6 +204,7 @@ namespace CK.TypeScript.CodeGen
             {
                 Throw.CKException( $"Unable to resolve TSType from keyType '{keyType}'." );
             }
+            _types.Add( keyType, e.Resolved );
             return e.Resolved;
         }
 
@@ -217,17 +217,20 @@ namespace CK.TypeScript.CodeGen
             }
             // Don't set the TypeName, Folder and other configurable properties upfront:
             // by setting them to null a builder configurator can decide to use the default values.
-            var e = new TypeBuilderRequiredEventArgs( monitor, t );
+            var e = new TypeBuilderRequiredEventArgs( monitor, t, GetSafeName( t ) );
             TypeBuilderRequired?.Invoke( this, e );
 
-            e.TypeName ??= GetSafeName( t );
-
+            if( string.IsNullOrWhiteSpace( e.TypeName ) )
+            {
+                e.TypeName = e.DefaultTypeName;
+                monitor.Warn( $"TypeName '{t:C}' has been set to null or empty. Using default name '{e.TypeName}'." );
+            }
             TypeScriptFolder? folder = null;
             TypeScriptFile? file = null;
             Type? refTarget = e.SameFileAs ?? e.SameFolderAs;
             if( refTarget != null )
             {
-                if( !_types.TryGetValue( t, out var target ) )
+                if( !_types.TryGetValue( refTarget, out var target ) )
                 {
                     sameFolderDetector ??= new HashSet<Type>();
                     if( !sameFolderDetector.Add( t ) )
@@ -264,10 +267,22 @@ namespace CK.TypeScript.CodeGen
             }
             if( t.IsEnum )
             {
+                // Default enum implementation. Should be okay for 99.99% of the enums.
                 e.DefaultValueSource ??= SelectEnumTypeDefaultValue( monitor, e );
+                e.TryWriteValueImplementation ??= WriteEnumValue;
+                e.Implementor ??= ImplementEnum;
             }
-            var newOne = new TSGeneratedType( t, e.TypeName, file, e.DefaultValueSource, e.TryWriteValueImplementation, e.Implementor, e.HasError );
+            var newOne = new TSGeneratedType( t,
+                                              e.TypeName,
+                                              file,
+                                              e.DefaultValueSource,
+                                              e.TryWriteValueImplementation,
+                                              e.Implementor,
+                                              e.HasError );
             _processList.Add( newOne );
+            _types.Add( t, newOne );
+            // Now that the type has been registered, we can resolve the DefaultValueSource.
+            newOne.DefaultValueSource ??= e.DefaultValueSourceProvider?.Invoke( monitor, newOne );
             return newOne;
 
             static string GetSafeName( Type t )
@@ -286,6 +301,23 @@ namespace CK.TypeScript.CodeGen
                 n += '<' + tDef.GetGenericArguments().Select( a => a.Name ).Concatenate() + '>';
                 return n;
             }
+        }
+
+        static bool ImplementEnum( IActivityMonitor monitor, ITSGeneratedType type )
+        {
+            type.EnsureTypePart( closer: "" )
+                .AppendEnumDefinition( monitor, type.Type, type.TypeName, true );
+            return true;
+        }
+
+        static bool WriteEnumValue( ITSCodeWriter writer, ITSGeneratedType type, object val )
+        {
+            if( val.GetType() == type.Type )
+            {
+                writer.Append( type.TypeName ).Append( "." ).Append( val.ToString() );
+                return true;
+            }
+            return false;
         }
 
         static string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TypeBuilderRequiredEventArgs d )
@@ -373,18 +405,9 @@ namespace CK.TypeScript.CodeGen
                 var g = type._codeGenerator;
                 if( g == null )
                 {
-                    if( type.Type.IsEnum )
-                    {
-                        monitor.Info( $"Enum '{type.Type:C}' has no TypeScript implementor function. Using the default enum generator." );
-                        type.EnsureTypePart( closer: "" )
-                            .AppendEnumDefinition( monitor, type.Type, type.TypeName, true );
-                    }
-                    else
-                    {
-                        monitor.Warn( $"The type '{type.Type:C}' has no TypeScript implementor function." );
-                        required ??= new List<ITSGeneratedType>();
-                        required.Add( type );
-                    }
+                    monitor.Warn( $"The type '{type.Type:C}' has no TypeScript implementor function." );
+                    required ??= new List<ITSGeneratedType>();
+                    required.Add( type );
                 }
                 else if( !g( monitor, type ) )
                 {

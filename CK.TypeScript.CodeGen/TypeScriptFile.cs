@@ -15,7 +15,7 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public class TypeScriptFile
     {
-        internal const string HiddenFileName = ".hidden-file.ts";
+        internal const string _hiddenFileName = ".hidden-file.ts";
 
         readonly string _name;
         readonly ITSFileBodySection _body;
@@ -29,7 +29,7 @@ namespace CK.TypeScript.CodeGen
             _name = name;
             _imports = new FileImportCodePart( this );
             _body = new FileBodyCodePart( this );
-            if( name != HiddenFileName )
+            if( name != _hiddenFileName )
             {
                 _next = folder._firstFile;
                 folder._firstFile = this;
@@ -79,7 +79,7 @@ namespace CK.TypeScript.CodeGen
         /// </param>
         public void Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths )
         {
-            if( _name != HiddenFileName )
+            if( _name != _hiddenFileName )
             {
                 monitor.Trace( $"Saving '{Name}'." );
                 var imports = Imports.ToString();

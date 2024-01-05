@@ -20,9 +20,9 @@ namespace CK.TypeScript.CodeGen
     {
         readonly TypeScriptRoot _root;
         TypeScriptFolder? _firstChild;
-        TypeScriptFolder? _next;
+        readonly TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
-        NormalizedPath _path;
+        readonly NormalizedPath _path;
         bool _hasBarrel;
 
         static readonly char[] _invalidFileNameChars = System.IO.Path.GetInvalidFileNameChars();

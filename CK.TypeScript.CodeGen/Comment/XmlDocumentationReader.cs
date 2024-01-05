@@ -27,7 +27,7 @@ namespace CK.TypeScript.CodeGen
             Throw.CheckNotNullArgument( a );
 
             XDocument? xDoc = null;
-            var keyCache = "XDoc:" + a.FullName;
+            var keyCache = a;
             if( cache != null && cache.TryGetValue( keyCache, out var oDoc ) )
             {
                 if( oDoc == null ) return null;
@@ -85,8 +85,7 @@ namespace CK.TypeScript.CodeGen
             return members.Select( m => (XDoc: GetXmlDocumentation( monitor, m.Module.Assembly, cache ), M: m ) )
                           .Where( m => m.XDoc != null )
                           .Select( m => GetDocumentationElement( m.XDoc!, GetNameAttributeValueFor( m.M ) ) )
-                          .Where( e => e != null )
-                          .Select( e => e! );
+                          .Where( e => e != null )!;
         }
 
         /// <summary>
@@ -244,7 +243,7 @@ namespace CK.TypeScript.CodeGen
                 }
                 else
                 {
-                    Debug.Assert( arg.IsGenericParameter == false, "Generic parameters can only be Type XOR Method." );
+                    Throw.DebugAssert( "Generic parameters can only be Type XOR Method.", arg.IsGenericParameter == false );
                     WriteTypeName( b, arg, true );
                 }
             }

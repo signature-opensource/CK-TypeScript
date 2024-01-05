@@ -22,7 +22,7 @@ namespace CK.StObj.TypeScript.Engine
 
         public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e ) => true;
 
-        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder )
+        public bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder )
         {
             if( builder.Type == typeof( SimpleUserMessage ) )
             {
@@ -31,18 +31,20 @@ namespace CK.StObj.TypeScript.Engine
             }
             else if( builder.Type == typeof( ExtendedCultureInfo ) )
             {
+                builder.DefaultValueSource = "NormalizedCultureInfo.codeDefault";
                 builder.TryWriteValueImplementation = ExtendedCultureInfoWrite;
                 builder.Implementor = ExtendedCultureInfoCode;
             }
             else if( builder.Type == typeof( NormalizedCultureInfo ) )
             {
+                builder.DefaultValueSource = "NormalizedCultureInfo.codeDefault";
                 builder.TryWriteValueImplementation = NormalizedCultureInfoWrite;
                 builder.Implementor = NormalizedCultureInfoCode;
             }
             return true;
         }
 
-        bool SimpleUserMessageWrite( ITSCodeWriter w, object o  )
+        static bool SimpleUserMessageWrite( ITSCodeWriter w, ITSGeneratedType t, object o  )
         {
             if( o is SimpleUserMessage m )
             {
@@ -55,7 +57,7 @@ namespace CK.StObj.TypeScript.Engine
             return false;
         }
 
-        bool SimpleUserMessageCode( IActivityMonitor monitor, ITSGeneratedType t )
+        static bool SimpleUserMessageCode( IActivityMonitor monitor, ITSGeneratedType t )
         {
             if( t.TypePart == null )
             {
@@ -86,7 +88,7 @@ namespace CK.StObj.TypeScript.Engine
             return true;
         }
 
-        bool ExtendedCultureInfoWrite( ITSCodeWriter w, object o )
+        static bool ExtendedCultureInfoWrite( ITSCodeWriter w, ITSGeneratedType t, object o )
         {
             if( o is ExtendedCultureInfo c )
             {
@@ -96,13 +98,18 @@ namespace CK.StObj.TypeScript.Engine
             return false;
         }
 
-        bool ExtendedCultureInfoCode( IActivityMonitor monitor, ITSGeneratedType t )
+        static bool ExtendedCultureInfoCode( IActivityMonitor monitor, ITSGeneratedType t )
         {
             if( t.TypePart == null )
             {
+                t.File.Imports.EnsureImport( monitor, typeof( NormalizedCultureInfo ) );
                 t.EnsureTypePart( closer: "" ).Append( """
+                        /**
+                         * Mere encapsulation of the culture name..
+                         **/
                         export class ExtendedCultureInfo {
-                            constructor(public readonly name: string) {}
+
+                        constructor(public readonly name: string) {}
                             toString() { return this.name; }
                         }
                         """ );
@@ -110,24 +117,41 @@ namespace CK.StObj.TypeScript.Engine
             return true;
         }
 
-        bool NormalizedCultureInfoWrite( ITSCodeWriter w, object o )
+        static bool NormalizedCultureInfoWrite( ITSCodeWriter w, ITSGeneratedType t, object o )
         {
             if( o is NormalizedCultureInfo c )
             {
-                w.Append( "new NormalizedCultureInfo( " ).AppendSourceString( c.Name ).Append( " )" );   
+                if( c == NormalizedCultureInfo.CodeDefault )
+                {
+                    w.Append( "NormalizedCultureInfo.codeDefault" );
+                }
+                else
+                {
+                    w.Append( "new NormalizedCultureInfo( " ).AppendSourceString( c.Name ).Append( " )" );
+                }
                 return true;
             }
             return false;
         }
 
-        bool NormalizedCultureInfoCode( IActivityMonitor monitor, ITSGeneratedType t )
+        static bool NormalizedCultureInfoCode( IActivityMonitor monitor, ITSGeneratedType t )
         {
             if( t.TypePart == null )
             {
                 t.File.Imports.EnsureImport( monitor, typeof( ExtendedCultureInfo ) );
                 t.EnsureTypePart( closer: "" ).Append( """
+                        /**
+                         * Only mirrors the C# side architecture: a normalized culture is an extended
+                         * culture with a single culture name.
+                         **/
                         export class NormalizedCultureInfo extends ExtendedCultureInfo {
-                            constructor(name: string) 
+
+                        /**
+                         * Gets the code default culture ("en").
+                         **/
+                        static codeDefault: NormalizedCultureInfo = new NormalizedCultureInfo("en");
+                        
+                        constructor(name: string) 
                             {
                                 super(name);
                             }

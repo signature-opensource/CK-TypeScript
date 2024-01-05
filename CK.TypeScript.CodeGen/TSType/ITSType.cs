@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 
 namespace CK.TypeScript.CodeGen
@@ -10,26 +11,21 @@ namespace CK.TypeScript.CodeGen
     {
         /// <summary>
         /// Gets the type name.
+        /// For a C# nullable type (<see cref="IsNullable"/> is true), this type name is
+        /// the <see cref="NonNullable"/> one with "|undefined".
         /// </summary>
         string TypeName { get; }
 
         /// <summary>
-        /// Gets whether this type is nullable ("undefinable").
+        /// Gets the optional, question marked, type name.
+        /// If <see cref="IsNullable"/> is true, this is <c>NonNullable.TypeName?</c>.
+        /// </summary>
+        string OptionalTypeName { get; }
+
+        /// <summary>
+        /// Gets whether this type is nullable ("undefinable" in TypeScript).
         /// </summary>
         bool IsNullable { get; }
-
-        /// <summary>
-        /// Gets whether the <see cref="DefaultValueSource"/> is not null.
-        /// Nullable types can have a default value even if "undefined" is always allowed
-        /// and can be used as the ultimate default.
-        /// </summary>
-        bool HasDefaultValue { get; }
-
-        /// <summary>
-        /// Gets the type script code source that initializes
-        /// a default value of this type.
-        /// </summary>
-        string? DefaultValueSource { get; }
 
         /// <summary>
         /// Gets the local file that implements this type or
@@ -46,6 +42,16 @@ namespace CK.TypeScript.CodeGen
         /// Gets the non nullable type.
         /// </summary>
         ITSType NonNullable { get; }
+
+        /// <summary>
+        /// Gets the TypeScript code source that initializes
+        /// a default value of this type.
+        /// <para>
+        /// Null when this type has no default: this should concern only composites
+        /// and means that at least one of its field must be explcitely provided.
+        /// </para>
+        /// </summary>
+        string? DefaultValueSource { get; }
 
         /// <summary>
         /// Ensures that all imports required to use this <see cref="ITSType"/> are declared

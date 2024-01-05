@@ -3,6 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <LangVersion>11</LangVersion>
     <!-- This is required to test the TypeScript doncumentation from C# feature. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
@@ -18,5 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="%24StObjGen\" />
   </ItemGroup>
 </Project>

@@ -53,8 +53,8 @@ namespace CK.TypeScript.CodeGen
         Dictionary<object, object?>? _memory;
         readonly TSTypeManager _tsTypes;
         readonly LibraryManager _libraryManager;
+        readonly DocumentationBuilder _docBuilder;
         readonly bool _pascalCase;
-        readonly bool _generateDocumentation;
         TSTypeBuilder? _firstFreeBuilder;
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace CK.TypeScript.CodeGen
         {
             _libraryManager = new LibraryManager();
             _pascalCase = pascalCase;
-            _generateDocumentation = generateDocumentation;
+            _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
             _tsTypes = new TSTypeManager( this, libraryVersionConfiguration );
             if( GetType() == typeof( TypeScriptRoot ) )
             {
@@ -90,9 +90,9 @@ namespace CK.TypeScript.CodeGen
         public bool PascalCase => _pascalCase;
 
         /// <summary>
-        /// Gets whether documentation should be generated.
+        /// Gets a reusable documentation builder.
         /// </summary>
-        public bool GenerateDocumentation => _generateDocumentation;
+        public DocumentationBuilder DocBuilder => _docBuilder;
 
         /// <summary>
         /// Gets the configured versions for npm packages. These configurations take precedence over the
@@ -259,7 +259,7 @@ namespace CK.TypeScript.CodeGen
         /// like <see cref="TSCodeWriterDocumentationExtensions.AppendDocumentation{T}(T, IActivityMonitor, System.Reflection.MemberInfo)"/> should
         /// be done.
         /// </remarks>
-        public IDictionary<object, object?> Memory => _memory ?? (_memory = new Dictionary<object, object?>());
+        public IDictionary<object, object?> Memory => _memory ??= new Dictionary<object, object?>();
 
         /// <summary>
         /// Saves this <see cref="Root"/> (all its files and creates the necessary folders)

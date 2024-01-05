@@ -3,14 +3,15 @@ using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Text;
 
 namespace CK.StObj.TypeScript.Engine
 {
     /// <summary>
-    /// Handles TypeScript generation of any type that appears in the <see cref="PocoTypeSystem"/>.
+    /// Handles TypeScript generation of any type that appears in the <see cref="_pocoTypeSystem"/>.
     /// </summary>
     /// <remarks>
     /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
@@ -18,12 +19,23 @@ namespace CK.StObj.TypeScript.Engine
     /// </remarks>
     public partial class PocoCodeGenerator : ITSCodeGenerator
     {
+        readonly IPocoTypeSystem _pocoTypeSystem;
+
+        IAbstractPocoType? _closedPocoType;
+        IAbstractPocoType? _pocoType;
+        ITSType? _tsPocoType;
+
+        IAbstractPocoType GetClosedPocoType() => _closedPocoType ??= _pocoTypeSystem.FindByType<IAbstractPocoType>( typeof( IClosedPoco ) )!;
+
+        IAbstractPocoType GetPocoType() => _pocoType ??= _pocoTypeSystem.FindByType<IAbstractPocoType>( typeof( IPoco ) )!;
+
+        ITSType GetTSPocoType( IActivityMonitor monitor, TypeScriptRoot root ) => _tsPocoType ??= root.TSTypes.ResolveTSType( monitor, GetPocoType() );
+
+
         internal PocoCodeGenerator( IPocoTypeSystem pocoTypeSystem )
         {
-            PocoTypeSystem = pocoTypeSystem;
+            _pocoTypeSystem = pocoTypeSystem;
         }
-
-        public IPocoTypeSystem PocoTypeSystem { get; }
 
         public bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
@@ -94,87 +106,42 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 else if( t is IUnionPocoType tU )
                 {
-                    var types = tU.AllowedTypes.Select( t => context.Root.TSTypes.ResolveTSType( monitor, t ) ).ToList();
+                    var types = tU.AllowedTypes.Select( t => context.Root.TSTypes.ResolveTSType( monitor, t ) ).ToArray();
                     var b = new StringBuilder();
                     foreach( var u in types )
                     {
                         if( b.Length > 0 ) b.Append( '|' );
-                        b.Append( u.TypeName );
+                        b.Append( u.NonNullable.TypeName );
                     }
                     var tName = b.ToString();
-                    // Default value is not easy here :(.
-                    // For the moment, consider the unknown... It's possible that we decide that union types
-                    // should always be a nullable field (a always nullable reference type).
-                    ts = new TSType( tName,
-                                     i =>
-                                     {
-                                         foreach( var t in types )
-                                         {
-                                             i.EnsureImport( t );
-                                         }
-                                     },
-                                     defaultValue: "undefined" );
+                    ts = new TSUnionType( tName,
+                                          i =>
+                                          {
+                                                foreach( var t in types )
+                                                {
+                                                    i.EnsureImport( t );
+                                                }
+                                          },
+                                          types );
                 }
                 else
                 {
                     Throw.DebugAssert( t is IRecordPocoType a && a.IsAnonymous );
                     var r = (IRecordPocoType)t;
                     Throw.DebugAssert( r.IsExchangeable == r.Fields.Any( f => f.IsExchangeable ) );
-
-                    var typeBuilder = context.Root.GetTSTypeBuilder();
-                    // We have a default if exchangeable fields have a default.
-                    bool hasDefault = r.Fields.Any( f => f.IsExchangeable && !f.DefaultValueInfo.IsDisallowed );
-                    // We may use the type name as the default if we use an object rather than a tuple.
-                    bool typeNameIsDefaultValueSource = false;
-                    if( r.Fields.All( f => f.IsUnnamed ) )
-                    {
-                        // No name at all: use TypeScript [tuple].
-                        bool atLeastOne = false;
-                        typeBuilder.TypeName.Append( "[" );
-                        if( hasDefault ) typeBuilder.DefaultValue.Append( "[" );
-                        foreach( var f in r.Fields )
-                        {
-                            if( !f.IsExchangeable ) continue;
-                            if( atLeastOne )
-                            {
-                                typeBuilder.TypeName.Append( ", " );
-                                typeBuilder.DefaultValue.Append( ", " );
-                            }
-                            atLeastOne = true;
-                            var fType = context.Root.TSTypes.ResolveTSType( monitor, f.Type );
-                            typeBuilder.TypeName.AppendTypeName( fType );
-                            if( hasDefault ) GenerateDefaultValue( typeBuilder.DefaultValue, f, fType, f.DefaultValueInfo );
-                        }
-                        typeBuilder.TypeName.Append( "]" );
-                        if( hasDefault ) typeBuilder.DefaultValue.Append( "]" );
-                    }
-                    else
-                    {
-                        // Using field names: an {object}.
-                        typeNameIsDefaultValueSource = hasDefault;
-                        typeBuilder.TypeName.Append( "{" );
-                        bool atLeastOne = false;
-                        foreach( var f in r.Fields )
-                        {
-                            if( !f.IsExchangeable ) continue;
-                            if( atLeastOne ) typeBuilder.TypeName.Append( ", " );
-                            atLeastOne = true;
-                            AppendFieldDefinition( monitor, typeBuilder.TypeName, f );
-                        }
-                        typeBuilder.TypeName.Append( "}" );
-                    }
-                    ts = typeBuilder.Build( typeNameIsDefaultValueSource );
+                    var fieldsWriter = FieldsWriter.Create( monitor, r, true, context.Root );
+                    ts = fieldsWriter.CreateAnonymousRecordType( monitor );
                 }
                 e.Resolved = isNullable ? ts.Nullable : ts;
             }
             return true;
         }
 
-        public bool ConfigureBuilder( IActivityMonitor monitor,
-                                      TypeScriptContext context,
-                                      TypeBuilderRequiredEventArgs builder )
+        public bool OnResolveType( IActivityMonitor monitor,
+                                   TypeScriptContext context,
+                                   TypeBuilderRequiredEventArgs builder )
         {
-            var t = PocoTypeSystem.FindByType( builder.Type );
+            var t = _pocoTypeSystem.FindByType( builder.Type );
             if( t != null )
             {
                 if( !CheckExchangeable( monitor, t ) ) return false;
@@ -206,220 +173,153 @@ namespace CK.StObj.TypeScript.Engine
                         }
                         builder.TypeName = typeName;
                     }
-                    builder.DefaultValueSource = $"new {builder.TypeName}()";
-                    builder.Implementor = ( monitor, tsType ) => GeneratePrimaryPoco( monitor, context, tsType, (IPrimaryPocoType)t );
+                    // If someone else set this already (again, this should almost never be set),
+                    // let's preserve its decision.
+                    builder.DefaultValueSource ??= $"new {builder.TypeName}()";
+                    // This one may be more common: implementaion may be subsituted.
+                    builder.Implementor ??= ( monitor, tsType ) => GeneratePrimaryPoco( monitor, tsType, (IPrimaryPocoType)t );
                 }
                 else if( t.Kind == PocoTypeKind.AbstractPoco )
                 {
                     // AbstractPoco are TypeScript interfaces. The default type name (with the leading 'I') is fine.
                     // There is no DefaultValueSource (let to null).
-                    builder.Implementor = ( monitor, tsType ) => GenerateAbstractPoco( monitor, tsType, (IAbstractPocoType)t );
+                    // Here also, if it happens to be set, don't do anything.
+                    builder.Implementor ??= ( monitor, tsType ) => GenerateAbstractPoco( monitor, tsType, (IAbstractPocoType)t );
                 }
                 else if( t.Kind == PocoTypeKind.Record )
                 {
-                    builder.Implementor = ( monitor, tsType ) => GenerateRecord( monitor, tsType, (IRecordPocoType)t );
+                    // We use the standard default type name for record.
+                    // Even if the default value is simply $"new TypeName()", to know IF there is
+                    // a default (i.e. all fields have a defaults), one need to resolve the field types
+                    // and this can lead to an infinite recursion. Field types resolution must be deferred.
+                    bool hasDefaultSet = builder.DefaultValueSource != null || builder.DefaultValueSourceProvider != null;
+                    if( builder.Implementor == null || !hasDefaultSet )
+                    {
+                        var b = new NamedRecordBuilder( (IRecordPocoType)t, context.Root );
+                        builder.Implementor ??= b.GenerateRecord;
+                        if( !hasDefaultSet ) builder.DefaultValueSourceProvider = b.GetDefaultValueSource;
+                    }
                 }
                 // Other PocoTypes are handled by their IPocoType.
-            };
+            }
             return true;
         }
 
         /// <summary>
-        /// Does nothing (it is the <see cref="ConfigureBuilder"/> method that sets a <see cref="TSGeneratedTypeBuilder.Implementor"/>). 
+        /// Does nothing (it is the <see cref="OnResolveType"/> method that sets a <see cref="TSGeneratedTypeBuilder.Implementor"/>). 
         /// </summary>
         /// <param name="monitor">Unused.</param>
         /// <param name="context">Unused.</param>
         /// <returns>Always true.</returns>
         public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
 
-        bool GenerateRecord( IActivityMonitor monitor, ITSGeneratedType tsType, IRecordPocoType r )
+        bool GeneratePrimaryPoco( IActivityMonitor monitor, ITSGeneratedType tsType, IPrimaryPocoType t )
         {
-            Throw.DebugAssert( !r.IsAnonymous );
+            TypeScriptRoot root = tsType.File.Root;
+
             var part = CreateTypePart( monitor, tsType );
             if( part == null ) return false;
-            part.Append( "export class " ).Append( tsType.TypeName )
-                .OpenBlock()
-                .Append( "constructor( " ).NewLine();
-            GenerateCompositeFields( monitor, part, r, "public " );
-            part.Append( " ) {}" )
-                .CloseBlock();
+
+            // Unifies documentation from primary and secondaries definitions.
+            part.AppendDocumentation( monitor, t.SecondaryTypes.Select( s => s.Type ).Prepend( t.Type ) );
+            // Class with a single constructor (using TypeScript "Parameter Properties").
+            part.Append( "export class " ).Append( tsType.TypeName );
+            IEnumerable<IAbstractPocoType> bases = t.AbstractTypes;
+            if( t.FamilyInfo.IsClosedPoco )
+            {
+                bases = bases.Append( GetClosedPocoType() );
+            }
+            WriteInterfaces( monitor, root, part, true, bases );
+            part.OpenBlock()
+                .Append( "public constructor( " ).NewLine();
+            var fieldsWriter = FieldsWriter.Create( monitor, t, false, root );
+            Throw.DebugAssert( fieldsWriter.HasDefault );
+            fieldsWriter.WriteCtorParameters( monitor, tsType.File, part );
+            part.NewLine().Append( ") {}" );
             return true;
         }
 
-        static void GenerateCompositeFields( IActivityMonitor monitor, ITSKeyedCodePart part, ICompositePocoType r, string? fieldPrefix = null )
+
+        void WriteInterfaces( IActivityMonitor monitor,
+                              TypeScriptRoot root,
+                              ITSCodePart interfaces,
+                              bool implements,
+                              IEnumerable<IAbstractPocoType> abstracts )
         {
             bool atLeastOne = false;
-            foreach( var f in r.Fields.Where( f => f.DefaultValueInfo.IsDisallowed ) )
+            var implied = new HashSet<IAbstractPocoType>( abstracts.SelectMany( a => a.Generalizations ) );
+            foreach( var a in abstracts )
             {
-                if( !f.IsExchangeable ) continue;
-                if( atLeastOne ) part.Append( ", " );
-                atLeastOne = true;
-                part.Append( fieldPrefix );
-                AppendFieldDefinition( monitor, part, f );
+                if( implied.Contains( a ) )
+                {
+                    continue;
+                }
+                if( atLeastOne ) interfaces.Append( ", " );
+                else
+                {
+                    interfaces.Append( implements ? " implements " : " extends " );
+                    atLeastOne = true;
+                }
+                interfaces.AppendTypeName( root.TSTypes.ResolveTSType( monitor, a ) );
             }
-            foreach( var f in r.Fields.Where( f => !f.DefaultValueInfo.IsDisallowed ) )
+            if( !atLeastOne )
             {
-                if( !f.IsExchangeable ) continue;
-                if( atLeastOne ) part.Append( ", " );
-                atLeastOne = true;
-                part.Append( fieldPrefix );
-                AppendFieldDefinition( monitor, part, f );
-            }
-        }
-
-        bool GeneratePrimaryPoco( IActivityMonitor monitor, TypeScriptContext context, ITSGeneratedType tsType, IPrimaryPocoType p )
-        {
-            var part = CreateTypePart( monitor, tsType );
-            if( part == null ) return false;
-            part.Append( "export class " ).Append( tsType.TypeName )
-                .CreateKeyedPart( out var interfaces, "interfaces" )
-                .OpenBlock()
-                .Append( "public constructor( " ).NewLine()
-                .CreateKeyedPart( out var ctorParameters, "ctorParameters" )
-                .Append( ") {}" );
-
-            GenerateCompositeFields( monitor, ctorParameters, p, "public " );
-
-            //foreach( var a in p.AbstractTypes )
-            //{
-            //    if( atLeastOne ) interfaces.Append( ", " );
-            //    else
-            //    {
-            //        interfaces.Append( " implements " );
-            //        atLeastOne = true;
-            //    }
-            //    interfaces.AppendTypeName( _pocoTypeMap.GetTSPocoType( monitor, a ) );
-            //}
-            //foreach( var f in p.Fields )
-            //{
-            //    // Skips any non exchangeable fields.
-            //    if( !p.IsExchangeable ) continue;
-
-            //    Debug.Assert( f.FieldAccess != PocoFieldAccessKind.ReadOnly, "Readonly fields are non exchangeable." );
-
-            //    var tsFieldType = _pocoTypeMap.GetTSPocoType( monitor, f.Type );
-            //    // Creates the backing field.
-            //    fields.Append( "private " );
-            //    if( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.IsByRef )
-            //    {
-            //        // If it can be readonly, it should be.
-            //        fields.Append( "readonly " );
-            //    }
-            //    fields.Append( f.PrivateFieldName ).Space().AppendTypeName( tsFieldType ).Append( ";" ).NewLine();
-
-            //    defaultCtor.Append( "this." ).Append( f.PrivateFieldName ).Append( " = " );
-            //    // If the field has a default value, use it. 
-            //    if( f.HasOwnDefaultValue )
-            //    {
-            //        Debug.Assert( f.DefaultValueInfo.DefaultValue != null );
-            //        defaultCtor.Append( f.DefaultValueInfo.DefaultValue.SimpleValue );
-            //    }
-            //    else
-            //    {
-            //        defaultCtor.Append( tsFieldType.DefaultValueSource );
-            //    }
-
-            //    // Creates the property.
-            //    //if( f.FieldAccess == PocoFieldAccessKind.IsByRef )
-            //    //{
-            //    //    // A ref property is only the return of the ref backing field.
-            //    //    tB.Append( "public ref " ).Append( f.Type.CSharpName ).Space().Append( f.Name )
-            //    //      .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
-            //    //}
-            //    //else
-            //    //{
-            //    //    // The getter is always the same.
-            //    //    tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
-            //    //    if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
-            //    //    {
-            //    //        Debug.Assert( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.ReadOnly );
-            //    //        // Readonly and MutableCollection doesn't require the "get".
-            //    //        // This expose a public (read only) property that is required for MutableCollection but
-            //    //        // a little bit useless for pure ReadOnly. However we need an implementation of the property
-            //    //        // declared on the interface (we could have generated explicit implementations here but it
-            //    //        // would be overcomplicated).
-            //    //        tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
-            //    //    }
-            //    //    else
-            //    //    {
-            //    //        // For writable properties we need the get/set. 
-            //    //        tB.OpenBlock()
-            //    //          .Append( "get => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
-
-            //    //        tB.Append( "set" )
-            //    //            .OpenBlock();
-            //    //        // Always generate the null check.
-            //    //        if( !f.Type.IsNullable && !f.Type.Type.IsValueType )
-            //    //        {
-            //    //            tB.Append( "Throw.CheckNotNullArgument( value );" ).NewLine();
-            //    //        }
-            //    //        // UnionType: check against the allowed types.
-            //    //        if( f.Type is IUnionPocoType uT )
-            //    //        {
-            //    //            Debug.Assert( f.Type.Kind == PocoTypeKind.UnionType );
-            //    //            // Generates the "static Type[] _vXXXAllowed" array.
-            //    //            fieldPart.Append( "static readonly Type[] " ).Append( f.PrivateFieldName ).Append( "Allowed = " )
-            //    //                     .AppendArray( uT.AllowedTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
-
-            //    //            if( f.Type.IsNullable ) tB.Append( "if( value != null )" ).OpenBlock();
-
-            //    //            // Generates the check.
-            //    //            tB.Append( "Type tV = value.GetType();" ).NewLine()
-            //    //              .Append( "if( !" ).Append( f.PrivateFieldName ).Append( "Allowed" )
-            //    //              .Append( ".Any( t => t.IsAssignableFrom( tV ) ) )" )
-            //    //                .OpenBlock()
-            //    //                .Append( "Throw.ArgumentException( $\"Unexpected Type '{tV.ToCSharpName()}' in UnionType. Allowed types are: '" )
-            //    //                .Append( uT.AllowedTypes.Select( tU => tU.CSharpName ).Concatenate( "', '" ) )
-            //    //                .Append( "'.\");" )
-            //    //                .CloseBlock();
-
-            //    //            if( f.Type.IsNullable ) tB.CloseBlock();
-            //    //        }
-            //    //        tB.Append( f.PrivateFieldName ).Append( " = value;" )
-            //    //            .CloseBlock()
-            //    //          .CloseBlock();
-            //    //    }
-            //    //}
-            //}
-
-            return true;
-        }
-
-        static void AppendFieldDefinition( IActivityMonitor monitor, ITSCodeWriter w, IPocoField f, ITSType? knownTSType = null )
-        {
-            w.AppendIdentifier( f.Name );
-            if( f.Type.IsNullable ) w.Append( "?" );
-            knownTSType ??= w.File.Root.TSTypes.ResolveTSType( monitor, f.Type );
-            w.Append( ": " ).AppendTypeName( knownTSType );
-            // Note: a PocoField has necessarily an allowed or requires init default value.
-            //       True IsDisallowed (no default value: the value must be provided) is handled here for
-            //       record fields not used as a Poco field.
-            var defInfo = f.DefaultValueInfo;
-            if( !defInfo.IsDisallowed )
-            {
-                w.Append( " = " );
-                GenerateDefaultValue( w, f, knownTSType, defInfo );
+                interfaces.Append( implements ? " implements " : " extends " )
+                          .AppendTypeName( GetTSPocoType( monitor, root ) );
             }
         }
 
-        static void GenerateDefaultValue( ITSCodeWriter w, IPocoField f, ITSType tsType, DefaultValueInfo defInfo )
+        sealed class NamedRecordBuilder
         {
-            if( defInfo.RequiresInit && f.HasOwnDefaultValue )
+            readonly IRecordPocoType _type;
+            readonly TypeScriptRoot _root;
+            FieldsWriter? _fieldsWriter;
+
+            internal NamedRecordBuilder( IRecordPocoType type, TypeScriptRoot root )
             {
-                var defVal = defInfo.DefaultValue.SimpleValue;
-                if( defVal != null ) tsType.WriteValue( w, defVal );
-                else w.Append( "new " ).Append( tsType.TypeName ).Append( "()" );
+                _type = type;
+                _root = root;
             }
-            else w.Append( tsType.DefaultValueSource );
+
+            FieldsWriter GetFieldsWriter( IActivityMonitor monitor ) => _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _root );
+
+            internal bool GenerateRecord( IActivityMonitor monitor, ITSGeneratedType type )
+            {
+                return GetFieldsWriter( monitor ).GenerateRecordType( monitor, type );
+            }
+
+            internal string? GetDefaultValueSource( IActivityMonitor monitor, ITSGeneratedType type )
+            {
+                return GetFieldsWriter( monitor ).HasDefault
+                        ? $"new {type.TypeName}()"
+                        : null;
+            }
         }
 
         bool GenerateAbstractPoco( IActivityMonitor monitor, ITSGeneratedType tsType, IAbstractPocoType a )
         {
             var part = CreateTypePart( monitor, tsType );
             if( part == null ) return false;
-            part.Append( "export interface " ).Append( tsType.TypeName )
-                .OpenBlock()
-                .CreatePart( out var body );
+            part.AppendDocumentation( monitor, tsType.Type );
+
+            part.Append( "export interface " ).Append( tsType.TypeName );
+            var root = tsType.File.Root;
+            if( tsType.Type != typeof( IPoco ) )
+            {
+                WriteInterfaces( monitor, root, part, false, a.Generalizations );
+            }
+            part.OpenBlock();
+            foreach( var f in a.Fields )
+            {
+                if( !f.Type.IsExchangeable ) continue;
+                if( root.DocBuilder.GenerateDocumentation )
+                {
+                    part.AppendDocumentation( monitor, f.Originator );
+                }
+                part.AppendIdentifier( f.Name );
+                if( f.Type.IsNullable ) part.Append( "?" );
+                part.Append( ": " ).AppendTypeName( root.TSTypes.ResolveTSType( monitor, f.Type.NonNullable ) );
+            }
             return true;
         }
 
@@ -442,6 +342,5 @@ namespace CK.StObj.TypeScript.Engine
             }
             return true;
         }
-
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
@@ -22,7 +23,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendDocumentation<T>( this T @this, IEnumerable<string> lines ) where T : ITSCodeWriter
         {
-            return @this.NewLine().Append( new DocumentationBuilder().Append( lines, false, false ).GetFinalText() ).NewLine();
+            return @this.Append( @this.File.Root.DocBuilder.Reset().Append( lines, false, false ).GetFinalText() ).NewLine();
         }
 
         /// <summary>
@@ -38,7 +39,7 @@ namespace CK.TypeScript.CodeGen
         public static T AppendDocumentation<T>( this T @this, string? text, bool trimFirstLine = true, bool trimLastLines = true ) where T : ITSCodeWriter
         {
             if( string.IsNullOrWhiteSpace( text ) ) return @this;
-            return @this.NewLine().Append( new DocumentationBuilder().AppendText( text, trimFirstLine, trimLastLines, false, false ).GetFinalText() );
+            return @this.Append( @this.File.Root.DocBuilder.Reset().AppendText( text, trimFirstLine, trimLastLines, false, false ).GetFinalText() );
         }
 
         /// <summary>
@@ -51,8 +52,7 @@ namespace CK.TypeScript.CodeGen
         public static T AppendDocumentation<T>( this T @this, XElement? xDoc ) where T : ITSCodeWriter
         {
             if( xDoc == null ) return @this;
-            var text = new DocumentationBuilder().AppendDocumentation( @this.File, new[] { xDoc } ).GetFinalText();
-            return text.Length > 0 ? @this.NewLine().Append( text ) : @this;
+            return AppendDocumentation( @this, new[] { xDoc } );
         }
 
         /// <summary>
@@ -64,8 +64,9 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendDocumentation<T>( this T @this, IEnumerable<XElement> xDoc ) where T : ITSCodeWriter
         {
-            var text = new DocumentationBuilder().AppendDocumentation( @this.File, xDoc ).GetFinalText();
-            return text.Length > 0 ? @this.NewLine().Append( text ).NewLine() : @this;
+            var text = @this.File.Root.DocBuilder.Reset().AppendDocumentation( @this.File, xDoc ).GetFinalText();
+            if( text.Length == 0 ) return @this;
+            return @this.Append( text ).NewLine();
         }
 
         /// <summary>
@@ -79,7 +80,8 @@ namespace CK.TypeScript.CodeGen
         /// <returns>This code writer to enable fluent syntax.</returns>
         public static T AppendDocumentation<T>( this T @this, IActivityMonitor monitor, MemberInfo member ) where T : ITSCodeWriter
         {
-            var xDoc = @this.File.Folder.Root.GenerateDocumentation
+            var b = @this.File.Root.DocBuilder;
+            var xDoc = b.GenerateDocumentation
                             ? XmlDocumentationReader.GetXmlDocumentation( monitor, member.Module.Assembly, @this.File.Folder.Root.Memory )
                             : null;
             if( xDoc == null ) return @this;

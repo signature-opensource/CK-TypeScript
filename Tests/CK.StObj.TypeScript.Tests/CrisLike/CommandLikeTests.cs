@@ -3,13 +3,13 @@ using CK.CrisLike;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using static CK.StObj.TypeScript.Tests.PocoTypeScriptTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -19,6 +19,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     [TestFixture]
     public class CommandLikeTests
     {
+        /// <summary>
+        /// Power level.
+        /// </summary>
         [TypeScript( SameFolderAs = typeof(ICommandOne) )]
         public enum Power
         {
@@ -38,13 +41,25 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             Strong
         }
 
+        /// <summary>
+        /// The command n°1 has a <see cref="Friend"/> command.
+        /// </summary>
         [TypeScript( Folder = "TheFolder" )]
         public interface ICommandOne : ICommand
         {
+            /// <summary>
+            /// Gets or sets the name.
+            /// </summary>
             string Name { get; set; }
 
+            /// <summary>
+            /// Gets or sets the power.
+            /// </summary>
             Power Power { get; set; }
 
+            /// <summary>
+            /// Gets the friend.
+            /// </summary>
             ICommandTwo Friend { get; }
         }
 
@@ -54,7 +69,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             Power AnotherPower { get; set; }
 
-            ICommandOne AnotherFriend { get; set; }
+            ICommandOne? AnotherFriend { get; set; }
 
             ICommandThree FriendThree { get; set; }
         }
@@ -67,23 +82,43 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             DateTime StartDate { get; set; }
         }
 
+        /// <summary>
+        /// Simple record data.
+        /// </summary>
+        /// <param name="Index">The data index.</param>
+        /// <param name="SuperName">A great name for the data.</param>
+        public record struct RecordData( int Index, string SuperName );
+
+        /// <summary>
+        /// This one tests the record comments.
+        /// </summary>
         public interface ICommandFour : ICommand
         {
-            int NumberFour { get; set; }
-
+            /// <summary>
+            /// Gets or sets a unique identifier.
+            /// </summary>
             Guid? UniqueId { get; set; }
+
+            /// <summary>
+            /// The record data.
+            /// </summary>
+            ref RecordData Data { get; }
         }
+
+        public record MinimalCommandModel( IPocoType? ResultType );
 
         // Hard coded fake CommandDirectoryImpl: registers the TResult of ICommand
         // but doesn't generate the code of the FakeCommandDirectoryImpl that is
         // a static class here.
         public class FakeCommandDirectoryImpl : ICSCodeGenerator
         {
+            public static readonly Dictionary<IPrimaryPocoType, MinimalCommandModel> _models = new();
             public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
             {
+                _models.Clear();
                 bool success = true;
                 var pocoTypeSystem = codeGenContext.Assembly.GetPocoTypeSystem();
-                var allCommands = pocoTypeSystem.FindByType<IAbstractPocoType>( typeof( ICommand ) )?.PrimaryPocoTypes;
+                var allCommands = pocoTypeSystem.FindByType<IAbstractPocoType>( typeof( IAbstractCommand ) )?.PrimaryPocoTypes;
                 if( allCommands == null || !allCommands.Any() )
                 {
                     monitor.Warn( $"No ICommand found." );
@@ -98,15 +133,37 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                              .Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( ICommand<> ) )
                                                              .Select( i => (i,i.GetProperty( "R", BindingFlags.Static | BindingFlags.NonPublic )!) )
                                                              .ToList();
-                            // Here we simply registers the command result types. Actual code resolves the set to a most
-                            // concrete type.
+                            // Here we simply registers the command result types.
+                            IPocoType? resultType = null;
                             foreach( var (cmdType,resultTypeInfo) in resultTypes )
                             {
-                                if( pocoTypeSystem.Register( monitor, resultTypeInfo ) == null )
+                                var candidate = pocoTypeSystem.Register( monitor, resultTypeInfo );
+                                if( resultType == candidate ) continue;
+                                if( candidate == null )
                                 {
                                     monitor.Error( $"Unable to register Command Result Type for {cmdType:C}." );
                                     success = false;
                                 }
+                                else
+                                {
+                                    if( resultType == null )
+                                    {
+                                        resultType = candidate;
+                                    }
+                                    else if( candidate.IsReadableType( resultType ) )
+                                    {
+                                        resultType = candidate;
+                                    }
+                                    else if( !resultType.IsReadableType( candidate ) )
+                                    {
+                                        monitor.Error( $"Command Result Type conflict for '{cmdType:C}'. Type '{resultType}' and '{candidate}' are incompatible." );
+                                        success = false;
+                                    }
+                                }
+                            }
+                            if( success )
+                            {
+                                _models.Add( c, new MinimalCommandModel( resultType ) );
                             }
                         }
                     }
@@ -122,11 +179,13 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeCommandDirectoryImpl, CK.StObj.TypeScript.Tests" )]
         public static class FakeCommandDirectory
         {
+            // This is pure fake of course...
+            public static IDictionary<IPrimaryPocoType, MinimalCommandModel> Commands => FakeCommandDirectoryImpl._models;
         }
 
         // Hard coded Cris-like TypeScriptCrisCommandGeneratorImpl.
         // This one changes the folders.
-        // The real one listens to PocoGenerating events and injects code into the Poco TypeSript implementation.
+        // The real one doesn't do this and injects code into the Poco TypeSript implementation.
         public class FakeTypeScriptCrisCommandGeneratorImplWithFolders : ITSCodeGenerator
         {
             public bool Initialize( IActivityMonitor monitor, TypeScriptContext context )
@@ -139,7 +198,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 return true;
             }
 
-            public bool ConfigureBuilder( IActivityMonitor monitor,
+            public bool OnResolveType( IActivityMonitor monitor,
                                           TypeScriptContext context,
                                           TypeBuilderRequiredEventArgs builder )
             {
@@ -147,7 +206,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 // Their FileName will be without the "I" and prefixed by "CMD".
                 // The real CommandDirectoryImpl does nothing here: ICommand are IPoco and
                 // their folder/file organization is fine.
-                if( typeof(ICommand).IsAssignableFrom( builder.Type ) )
+                if( typeof(IAbstractCommand).IsAssignableFrom( builder.Type ) )
                 {
                     if( builder.SameFolderAs == null )
                     {
@@ -156,12 +215,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                         const string autoMapping = "CK/StObj/TypeScript/Tests";
                         if( builder.Folder.StartsWith( autoMapping ) )
                         {
-                            builder.Folder = "Commands/" + builder.Folder.Substring( autoMapping.Length );
+                            builder.Folder = string.Concat( "Commands/", builder.Folder.AsSpan( autoMapping.Length ) );
                         }
                     }
                     if( builder.FileName == null && builder.SameFileAs == null )
                     {
-                        builder.FileName = "CMD" + builder.Type.Name.Substring( 1 ) + ".ts";
+                        builder.FileName = string.Concat( "CMD", builder.Type.Name.AsSpan( 1 ), ".ts" );
                     }
                 }
                 return true;
@@ -188,6 +247,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var tsTypes = new[]
             {
+                // We must register the enum otherwise the [TypeScript} is ignored.
+                typeof( Power ),
                 typeof( ICommandOne ),
                 typeof( ICommandTwo ),
                 typeof( ICommandThree ),
@@ -198,37 +259,54 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             TestHelper.GenerateTypeScript( targetProjectPath,
                                            tsTypes.Append( typeof( FakeCommandDirectory ) ).Append( typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) ),
                                            tsTypes );
+            var p = targetProjectPath.Combine( "ck-gen/src" );
+            File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).Should().Contain( "export enum Power" );
 
-            var fPower = targetProjectPath.Combine( "TheFolder/Power.ts" );
-            File.ReadAllText( fPower ).Should().StartWith( "export enum Power" );
+            var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) );
+            tOne.Should().Contain( """import { Power } from "./Power";""" )
+                     .And.Contain( """import { CommandTwo } from "../Commands/CrisLike/CMDCommandTwo";""" );
 
-            var fOne = targetProjectPath.Combine( "TheFolder/CommandOne.ts" );
-            var tOne = File.ReadAllText( fOne );
-            tOne.Should().Contain( "import { Power } from \"./Power\";" )
-                     .And.Contain( "import { CommandTwo } from \"../Commands/CrisLike/CommandTwo\";" );
-
-            tOne.Should().Contain( "export interface ICommandOne" )
-                     .And.Contain( "friend: CommandTwo;" );
+            tOne.Should().Contain( "export class CommandOne implements ICommand {" )
+                     .And.Contain( """public name: String = "",""" )
+                     .And.Contain( """public power: Power = Power.None,""" )
+                     .And.Contain( """public readonly friend: CommandTwo = new CommandTwo()""" );
 
 
-            var fTwo = targetProjectPath.Combine( "Commands/CrisLike/CommandTwo.ts" );
-            var tTwo = File.ReadAllText( fTwo );
-            tTwo.Should().Contain( "import { CommandOne, CommandThree } from \"../../TheFolder/CommandOne\";" );
-        }
+            var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) );
+            tTwo.Should().Contain( """import { Power } from "../../TheFolder/Power";""" )
+                     .And.Contain( """import { CommandThree, CommandOne } from "../../TheFolder/CMDCommandOne";""" )
+                     .And.Contain( """import { ICommand } from "../../CK/CrisLike/CMDCommand";""");
 
-        public interface IValueTupleCommand : ICommandAuthUnsafe, ICommand<int>
-        {
-            ref (int, string, string?, object?) Power { get; }
-        }
+            tTwo.Should().Contain( "export class CommandTwo implements ICommand {" )
+                     .And.Contain( "public age: Number = 0," )
+                     .And.Contain( "public anotherPower: Power = Power.None," )
+                     .And.Contain( "public friendThree: CommandThree = new CommandThree()," )
+                     .And.Contain( "public anotherFriend?: CommandOne");
 
-        [Test]
-        public void command_with_ValueTuple()
-        {
-            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            var tsTypes = new[]{ typeof( IValueTupleCommand ) };
-            TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) ),
-                                           tsTypes );
+            var tFour = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandFour.ts" ) );
+            tFour.Should().Contain( "export class CommandFour implements ICommand {" )
+                     .And.Contain( "public readonly data: RecordData = new RecordData()," )
+                     .And.Contain( "public uniqueId?: Guid" );
+
+            var tRecord = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/RecordData.ts" ) );
+            tRecord.Should().Be( """
+                /**
+                 * Simple record data.
+                 **/
+                export class RecordData {
+                constructor( 
+                /**
+                 * The data index.
+                 **/
+                public index: Number = 0, 
+                /**
+                 * A great name for the data.
+                 **/
+                public superName: String = ""
+                ) {}
+                }
+
+                """ );
         }
 
         /// <summary>
@@ -263,7 +341,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             var tsTypes = new[]
             {
-                typeof( IValueTupleCommand ),
                 typeof( IWithObjectCommand ),
                 typeof( IWithObjectSpecializedAsStringCommand )
             };

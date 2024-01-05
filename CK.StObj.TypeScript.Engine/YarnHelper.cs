@@ -392,8 +392,7 @@ namespace CK.Setup
                 return false;
             }
             testScriptCommand = packageJson["scripts"]?["test"]?.ToString();
-            JsonObject? devDependencies = packageJson["devDependencies"] as JsonObject;
-            if( devDependencies != null )
+            if( packageJson["devDependencies"] is JsonObject devDependencies )
             {
                 jestVersion = devDependencies["jest"]?.ToString();
                 tsJestVersion = devDependencies["ts-jest"]?.ToString();
@@ -418,8 +417,7 @@ namespace CK.Setup
 
             static bool EnsureCKGenWorkspace( IActivityMonitor monitor, JsonObject o, ref bool modified )
             {
-                var workspaces = o["workspaces"] as JsonArray;
-                if( workspaces == null )
+                if( o["workspaces"] is not JsonArray workspaces )
                 {
                     if( o["workspaces"] != null )
                     {
@@ -432,7 +430,7 @@ namespace CK.Setup
                 {
                     if( workspaces.Any( x => x is JsonValue v
                                              && v.TryGetValue<string>( out var s )
-                                             && (s == "ck-gen" || s == "*" ) ) )
+                                             && (s == "ck-gen" || s == "*") ) )
                     {
                         return true;
                     }

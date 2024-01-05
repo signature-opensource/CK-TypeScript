@@ -101,7 +101,7 @@ namespace CK.Setup
             // Applies global generators.
             foreach( var g in _globals )
             {
-                success &= g.ConfigureBuilder( e.Monitor, this, e );
+                success &= g.OnResolveType( e.Monitor, this, e );
             }
             // Applies type generators.
             var typeGenerators = regType.Generators;

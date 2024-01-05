@@ -33,6 +33,9 @@ namespace CK.TypeScript.CodeGen
                 RegisterValueType<ushort>( number );
                 RegisterValueType<int>( number );
                 RegisterValueType<uint>( number );
+                RegisterValueType<float>( number );
+                RegisterValueType<double>( number );
+                RegisterValueType<Half>( number );
             }
             if( withBigInts )
             {
@@ -45,7 +48,7 @@ namespace CK.TypeScript.CodeGen
             if( withLuxonTypes )
             {
                 var luxonTypesLib = RegisterLibrary( monitor, "@types/luxon", DependencyKind.DevDependency, TypeScriptRoot.LuxonTypesVersion );
-                var luxonLib = RegisterLibrary( monitor, "@luxon", DependencyKind.DevDependency, TypeScriptRoot.LuxonVersion, luxonTypesLib );
+                var luxonLib = RegisterLibrary( monitor, "luxon", DependencyKind.Dependency, TypeScriptRoot.LuxonVersion, luxonTypesLib );
                 var dateTime = new TSLuxonDateTime( luxonLib );
 
                 RegisterValueType<DateTime>( dateTime );
@@ -58,7 +61,7 @@ namespace CK.TypeScript.CodeGen
                 // TypeScriptFile, a default value source code, a value writer function and
                 // by configuring its TypePart with its implementation.
                 var fGuid = _root.Root.FindOrCreateFile( "System/Guid.ts" );
-                var tGuid = new TSGeneratedType( typeof( Guid ), "Guid", fGuid, "Guid.empty", ( w, o ) =>
+                var tGuid = new TSGeneratedType( typeof( Guid ), "Guid", fGuid, "Guid.empty", static ( w, t, o ) =>
                 {
                     if( o is Guid g )
                     {

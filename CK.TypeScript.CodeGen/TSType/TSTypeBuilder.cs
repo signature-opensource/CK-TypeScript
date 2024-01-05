@@ -14,7 +14,7 @@ namespace CK.TypeScript.CodeGen
         internal TSTypeBuilder( TypeScriptRoot root )
         {
             _root = root;
-            _virtualFile = _root.Root.FindOrCreateFile( TypeScriptFile.HiddenFileName );
+            _virtualFile = _root.Root.FindOrCreateFile( TypeScriptFile._hiddenFileName );
             _typeName = new RawCodePart( _virtualFile, string.Empty );
             _defaultValue = new RawCodePart( _virtualFile, string.Empty );
         }
@@ -32,6 +32,7 @@ namespace CK.TypeScript.CodeGen
             var tName = _typeName.Build( b, false ).ToString().Trim();
             b.Reset();
             var defaultValueSource = typeNameIsDefaultValueSource ? tName : _defaultValue.Build( b, false ).ToString().Trim();
+            if( defaultValueSource.Length == 0 ) defaultValueSource = null;
             b.Reset();
             var imports = _virtualFile._imports.CreateImportSnapshotAndClear();
             _typeName.Clear();
