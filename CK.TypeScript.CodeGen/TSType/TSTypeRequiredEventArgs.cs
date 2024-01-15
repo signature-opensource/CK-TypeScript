@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -23,9 +23,9 @@ namespace CK.TypeScript.CodeGen
         public object KeyType => _keyType;
 
         /// <summary>
-        /// Gets the TypeScript type to used.
+        /// Gets or sets the TypeScript type to used.
         /// </summary>
-        public ITSType? Resolved
+        public ITSType? ResolvedType
         {
             get => _resolved;
             set => _resolved = value;

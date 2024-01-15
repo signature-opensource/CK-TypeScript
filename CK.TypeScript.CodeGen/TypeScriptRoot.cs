@@ -148,7 +148,8 @@ namespace CK.TypeScript.CodeGen
         public TSTypeManager TSTypes => _tsTypes;
 
         /// <summary>
-        /// Gets a <see cref="ITSTypeBuilder"/>.
+        /// Gets a <see cref="ITSTypeBuilder"/>. <see cref="ITSTypeBuilder.Build(bool)"/> must be called
+        /// once and only once.
         /// </summary>
         /// <returns>A <see cref="TSType"/> builder.</returns>
         public ITSTypeBuilder GetTSTypeBuilder()

@@ -200,12 +200,12 @@ namespace CK.TypeScript.CodeGen
         {
             var e = new TSTypeRequiredEventArgs( monitor, keyType );
             TSTypeRequired?.Invoke( this, e );
-            if( e.Resolved == null )
+            if( e.ResolvedType == null )
             {
                 Throw.CKException( $"Unable to resolve TSType from keyType '{keyType}'." );
             }
-            _types.Add( keyType, e.Resolved );
-            return e.Resolved;
+            _types.Add( keyType, e.ResolvedType );
+            return e.ResolvedType;
         }
 
         ITSType? ResolveTSTypeFromType( IActivityMonitor monitor, Type t, bool internalCall, ref HashSet<Type>? sameFolderDetector )
@@ -219,7 +219,10 @@ namespace CK.TypeScript.CodeGen
             // by setting them to null a builder configurator can decide to use the default values.
             var e = new TypeBuilderRequiredEventArgs( monitor, t, GetSafeName( t ) );
             TypeBuilderRequired?.Invoke( this, e );
-
+            if( e.ResolvedType != null )
+            {
+                return e.ResolvedType;
+            }
             if( string.IsNullOrWhiteSpace( e.TypeName ) )
             {
                 e.TypeName = e.DefaultTypeName;
@@ -287,7 +290,7 @@ namespace CK.TypeScript.CodeGen
 
             static string GetSafeName( Type t )
             {
-                // ExternalName (and more generally type/attribute caching) must be definitely be refactored.
+                // ExternalName (and more generally type/attribute caching) must definitely be refactored.
                 var n = (string?)t.GetCustomAttributesData().Where( d => d.AttributeType.Name == "ExternalNameAttribute"
                                                                          && d.AttributeType.Namespace == "CK.Core" )
                                                             .FirstOrDefault()?
@@ -298,8 +301,8 @@ namespace CK.TypeScript.CodeGen
                     return n;
                 }
                 Type tDef = t.IsGenericTypeDefinition ? t : t.GetGenericTypeDefinition();
-                n += '<' + tDef.GetGenericArguments().Select( a => a.Name ).Concatenate() + '>';
-                return n;
+                int idxBackTick = n.IndexOf( '`' );
+                return idxBackTick > 0 ? n.Substring( 0, idxBackTick ) : n;
             }
         }
 

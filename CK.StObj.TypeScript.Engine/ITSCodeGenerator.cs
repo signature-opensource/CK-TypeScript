@@ -63,7 +63,7 @@ namespace CK.Setup
         /// <param name="context">The TypeScript context.</param>
         /// <param name="e">
         /// The event with the <see cref="TSTypeRequiredEventArgs.KeyType"/> that is handled and
-        /// the <see cref="TSTypeRequiredEventArgs.Resolved"/> to set.
+        /// the <see cref="TSTypeRequiredEventArgs.ResolvedType"/> to set.
         /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
         bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e );

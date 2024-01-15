@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using static CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -107,8 +108,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
         public record MinimalCommandModel( IPocoType? ResultType );
 
-        // Hard coded fake CommandDirectoryImpl: registers the TResult of ICommand
-        // but doesn't generate the code of the FakeCommandDirectoryImpl that is
+        // Hard coded fake CommandDirectoryImpl: resolves the hopefully unique TResult of ICommand<>
+        // but doesn't generate the C# code of the FakeCommandDirectoryImpl that is
         // a static class here.
         public class FakeCommandDirectoryImpl : ICSCodeGenerator
         {
@@ -129,37 +130,19 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     {
                         if( c.IsExchangeable )
                         {
-                            var resultTypes = c.AbstractTypes.Select( i => i.Type )
-                                                             .Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( ICommand<> ) )
-                                                             .Select( i => (i,i.GetProperty( "R", BindingFlags.Static | BindingFlags.NonPublic )!) )
-                                                             .ToList();
-                            // Here we simply registers the command result types.
+                            var resultTypes = c.MinimalAbstractTypes.Where( a => a.GenericTypeDefinition?.Type == typeof( ICommand<> ) )
+                                                                    .Select( a => a.GenericArguments[0].Type )
+                                                                    .ToList();
                             IPocoType? resultType = null;
-                            foreach( var (cmdType,resultTypeInfo) in resultTypes )
+                            if( resultTypes.Count > 0 )
                             {
-                                var candidate = pocoTypeSystem.Register( monitor, resultTypeInfo );
-                                if( resultType == candidate ) continue;
-                                if( candidate == null )
+                                if( resultTypes.Count > 1 )
                                 {
-                                    monitor.Error( $"Unable to register Command Result Type for {cmdType:C}." );
+                                    var conflicts = resultTypes.Select( r => r.ToString() ).Concatenate();
+                                    monitor.Error( $"Command Result Type conflict for '{c}': {conflicts}" );
                                     success = false;
                                 }
-                                else
-                                {
-                                    if( resultType == null )
-                                    {
-                                        resultType = candidate;
-                                    }
-                                    else if( candidate.IsReadableType( resultType ) )
-                                    {
-                                        resultType = candidate;
-                                    }
-                                    else if( !resultType.IsReadableType( candidate ) )
-                                    {
-                                        monitor.Error( $"Command Result Type conflict for '{cmdType:C}'. Type '{resultType}' and '{candidate}' are incompatible." );
-                                        success = false;
-                                    }
-                                }
+                                resultType = resultTypes[0];
                             }
                             if( success )
                             {
@@ -183,25 +166,162 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             public static IDictionary<IPrimaryPocoType, MinimalCommandModel> Commands => FakeCommandDirectoryImpl._models;
         }
 
+
+
         // Hard coded Cris-like TypeScriptCrisCommandGeneratorImpl.
+        public class FakeTypeScriptCrisCommandGeneratorImpl : ITSCodeGenerator
+        {
+            TSType? _command;
+
+            public virtual bool Initialize( IActivityMonitor monitor, TypeScriptContext context )
+            {
+                // This can be called IF multiple contexts must be generated:
+                // we reset the cached instance here.
+                _command = null;
+                return true;
+            }
+
+            public virtual bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e )
+            {
+                // We don't add anything to the default IPocoType handling.
+                return true;
+            }
+
+            public virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
+            {
+                // We don't generate global code.
+                return true;
+            }
+
+            public virtual bool OnResolveType( IActivityMonitor monitor,
+                                               TypeScriptContext context,
+                                               TypeBuilderRequiredEventArgs builder )
+            {
+                var t = builder.Type;
+                if( t.Namespace == "CK.CrisLike" && (t.Name == "ICommand" || (t.IsGenericTypeDefinition && t.Name == "ICommand`1")) )
+                {
+                    builder.ResolvedType = EnsureCrisCommandModel( monitor, context.Root );
+                }
+                return true;
+            }
+
+            TSType EnsureCrisCommandModel( IActivityMonitor monitor, TypeScriptRoot root )
+            {
+                if( _command != null ) return _command;
+
+                var modelFile = root.Root.FindOrCreateFile( "CK/Cris/Model.ts" );
+                GenerateCrisModelFile( monitor, modelFile );
+                //GenerateCrisEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "CrisEndpoint.ts" ) );
+                //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
+                return _command = new TSType( "ICommand", imports => imports.EnsureImport( modelFile, "ICommand" ), null );
+
+                static void GenerateCrisModelFile( IActivityMonitor monitor, TypeScriptFile fModel )
+                {
+                    fModel.Imports.EnsureImport( monitor, typeof( SimpleUserMessage ) );
+                    fModel.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
+
+                    fModel.Body.Append( """
+                                /**
+                                 * Describes a command. 
+                                 **/
+                                export type CommandModel<TResult> = {
+                                    /**
+                                     * Gets the name of the command. 
+                                     **/
+                                    readonly commandName: string;
+                                    /**
+                                     * This supports the CrisEdpoint implementation. This is not to be used directly.
+                                     **/
+                                    readonly applyAmbientValues: (command: any, a: any, o: any ) => void;
+                                }
+
+                                /** 
+                                 * Command abstraction: command with or without a result. 
+                                 * **/
+                                export interface ICommand<TResult = void> { 
+                                    /**
+                                     * Gets the command description. 
+                                     **/
+                                    readonly commandModel: CommandModel<TResult>;
+                                }
+
+                                /** 
+                                 * Captures the result of a command execution.
+                                 **/
+                                export type ExecutedCommand<T> = {
+                                    /** The executed command. **/
+                                    readonly command: ICommand<T>,
+                                    /** The execution result. **/
+                                    readonly result: CrisError | T,
+                                    /** Optional correlation identifier. **/
+                                    readonly correlationId?: string
+                                };
+
+                                /**
+                                 * Captures communication, validation or execution error.
+                                 **/
+                                export class CrisError extends Error {
+                                    /**
+                                     * Get this error type.
+                                     */
+                                    public readonly errorType : "CommunicationError"|"ValidationError"|"ExecutionError";
+                                    /**
+                                     * Gets the messages. At least one message is guranteed to exist.
+                                     */
+                                    public readonly messages: ReadonlyArray<SimpleUserMessage>; 
+                                    /**
+                                     * The Error.cause support is a mess. This replaces it at this level. 
+                                     */
+                                    public readonly innerError?: Error; 
+                                    /**
+                                     * When defined, enables to find the backend log entry.
+                                     */
+                                    public readonly logKey?: string; 
+                                    /**
+                                     * Gets the command that failed.
+                                     */
+                                    public readonly command: ICommand<unknown>;
+
+                                    constructor( command: ICommand<unknown>, 
+                                                 message: string, 
+                                                 isValidationError: boolean,
+                                                 innerError?: Error, 
+                                                 messages?: ReadonlyArray<SimpleUserMessage>,
+                                                 logKey?: string ) 
+                                    {
+                                        super( message );
+                                        this.command = command;   
+                                        this.errorType = isValidationError 
+                                                            ? "ValidationError" 
+                                                            : innerError ? "CommunicationError" : "ExecutionError";
+                                        this.innerError = innerError;
+                                        this.messages = messages && messages.length > 0 
+                                                        ? messages
+                                                        : [new SimpleUserMessage(UserMessageLevel.Error,message,0)];
+                                        this.logKey = logKey;
+                                    }
+                                }
+                                
+                                """ );
+                }
+            }
+        }
+
         // This one changes the folders.
         // The real one doesn't do this and injects code into the Poco TypeSript implementation.
-        public class FakeTypeScriptCrisCommandGeneratorImplWithFolders : ITSCodeGenerator
+        public class FakeTypeScriptCrisCommandGeneratorImplWithFolders : FakeTypeScriptCrisCommandGeneratorImpl
         {
-            public bool Initialize( IActivityMonitor monitor, TypeScriptContext context )
+            public override bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e )
             {
+                if( !base.OnResolveObjectKey( monitor, context, e ) ) return false;
                 return true;
             }
 
-            public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e )
+            public override bool OnResolveType( IActivityMonitor monitor,
+                                                TypeScriptContext context,
+                                                TypeBuilderRequiredEventArgs builder )
             {
-                return true;
-            }
-
-            public bool OnResolveType( IActivityMonitor monitor,
-                                          TypeScriptContext context,
-                                          TypeBuilderRequiredEventArgs builder )
-            {
+                if( !base.OnResolveType( monitor, context, builder ) ) return false;
                 // All ICommand here (without specified TypeScript Folder) will be in Cris/Commands.
                 // Their FileName will be without the "I" and prefixed by "CMD".
                 // The real CommandDirectoryImpl does nothing here: ICommand are IPoco and
@@ -226,17 +346,19 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 return true;
             }
 
-            public bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g )
-            {
-                return true;
-            }
-
         }
 
         // This static class is only here to trigger the global FakeTypeScriptCrisCommandGeneratorImplWithFolders ITSCodeGenerator.
         // This is the same as the static class TypeScriptCrisCommandGenerator in CK.Cris.TypeScript package.
         [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeTypeScriptCrisCommandGeneratorImplWithFolders, CK.StObj.TypeScript.Tests" )]
         public static class FakeTypeScriptCrisCommandGeneratorWithFolders
+        {
+        }
+
+        // This static class is only here to trigger the global FakeTypeScriptCrisCommandGeneratorImpl ITSCodeGenerator.
+        // This is the same as the static class TypeScriptCrisCommandGenerator in CK.Cris.TypeScript package.
+        [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests+FakeTypeScriptCrisCommandGeneratorImpl, CK.StObj.TypeScript.Tests" )]
+        public static class FakeTypeScriptCrisCommandGenerator
         {
         }
 
@@ -345,7 +467,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( IWithObjectSpecializedAsStringCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) ),
+                                           tsTypes.Append( typeof( FakeCommandDirectory ) ).Append( typeof( FakeTypeScriptCrisCommandGenerator ) ),
                                            tsTypes );
         }
 
@@ -381,7 +503,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( ISuperResult )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) ),
+                                           tsTypes.Append( typeof( FakeCommandDirectory ) ).Append( typeof( FakeTypeScriptCrisCommandGenerator ) ),
                                            tsTypes );
         }
 

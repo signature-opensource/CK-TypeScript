@@ -14,9 +14,12 @@ namespace CK.CrisLike
     /// <summary>
     /// Mapped to the same ICommand&lt;TResult = void&gt; as <see cref="ICommand"/>.
     /// </summary>
-    public interface ICommand<TResult> : IAbstractCommand
+    public interface ICommand<out TResult> : IAbstractCommand
     {
-        // Trick to retrieve the full nullability info of the TResult.
-        internal static TResult R => default!;
+        /// <summary>
+        /// Trick to retrieve the nullability information of the generic parameter.
+        /// </summary>
+        [AutoImplementationClaim]
+        public static TResult TResultType => default!;
     }
 }

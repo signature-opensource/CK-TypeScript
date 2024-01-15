@@ -23,8 +23,8 @@ namespace CK.StObj.TypeScript.Engine
             /// we may need to write it when a field has its own default.
             /// We use the TsFieldType.DefaultValueSource to detect if a default value is available
             /// instead of (Field.DefaultValueInfo.IsDisallowed is false): this allows TypeScript
-            /// default to exist even if there is no default for the C#... Because we consider only
-            /// exchangeable fields, this may save some applicable defaults.
+            /// default to exist even if there is no default for the C#... and because we consider 
+            /// only exchangeable fields, this may save some applicable defaults.
             /// </summary>
             readonly record struct TSField
             {

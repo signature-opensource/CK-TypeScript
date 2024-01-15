@@ -29,6 +29,7 @@ namespace CK.TypeScript.CodeGen
         DefaultValueSourceProvider? _defaultValueSourceProvider;
         TSValueWriter? _tryWriteValueImplementation;
         TSCodeGenerator? _implementor;
+        ITSType? _resolved;
         bool _hasError;
 
         public TypeBuilderRequiredEventArgs( IActivityMonitor monitor, Type type, string defaultTypeName )
@@ -45,7 +46,21 @@ namespace CK.TypeScript.CodeGen
         public Type Type => _type;
 
         /// <summary>
+        /// Gets or sets the <see cref="ITSType"/> to use for this C# type. This can be a <see cref="ITSGeneratedType"/>
+        /// (bound to a file) or a <see cref="TSType"/>.
+        /// <para>
+        /// When this type is set, all other properties are ignored.
+        /// </para>
+        /// </summary>
+        public ITSType? ResolvedType
+        {
+            get => _resolved;
+            set => _resolved = value;
+        }
+
+        /// <summary>
         /// Gets the default type name.
+        /// This may not be a valid name (generics for example).
         /// </summary>
         public string DefaultTypeName => _defaultTypeName;
 

@@ -56,7 +56,7 @@ namespace CK.StObj.TypeScript.Engine
                               or PocoTypeKind.Record )
                 {
                     var mapped = context.Root.TSTypes.ResolveTSType( monitor, t.Type );
-                    e.Resolved = isNullable ? mapped.Nullable : mapped;
+                    e.ResolvedType = isNullable ? mapped.Nullable : mapped;
                     return true;
                 }
                 if( !CheckExchangeable( monitor, t ) ) return false;
@@ -132,7 +132,7 @@ namespace CK.StObj.TypeScript.Engine
                     var fieldsWriter = FieldsWriter.Create( monitor, r, true, context.Root );
                     ts = fieldsWriter.CreateAnonymousRecordType( monitor );
                 }
-                e.Resolved = isNullable ? ts.Nullable : ts;
+                e.ResolvedType = isNullable ? ts.Nullable : ts;
             }
             return true;
         }
@@ -148,8 +148,10 @@ namespace CK.StObj.TypeScript.Engine
                 if( t.Kind == PocoTypeKind.SecondaryPoco )
                 {
                     // Secondary interfaces are not visible outside:
-                    // we simply map them to the primary type.
-                    t = ((ISecondaryPocoType)t).PrimaryPocoType;
+                    // we simply map them to the primary type. We resolve the C# type here to avoid
+                    // a useless object => IPocoType.Type intermediate step.
+                    builder.ResolvedType = context.Root.TSTypes.ResolveTSType( monitor, ((ISecondaryPocoType)t).PrimaryPocoType.Type );
+                    return true;
                 }
                 if( t.Kind == PocoTypeKind.PrimaryPoco )
                 {
@@ -181,10 +183,30 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 else if( t.Kind == PocoTypeKind.AbstractPoco )
                 {
-                    // AbstractPoco are TypeScript interfaces. The default type name (with the leading 'I') is fine.
-                    // There is no DefaultValueSource (let to null).
-                    // Here also, if it happens to be set, don't do anything.
-                    builder.Implementor ??= ( monitor, tsType ) => GenerateAbstractPoco( monitor, tsType, (IAbstractPocoType)t );
+                    var tAbstract = (IAbstractPocoType)t;
+                    // AbstractPoco are TypeScript interfaces in their own file... except for generics:
+                    // ICommand<string> or ICommand<List<IMission>> are TSType (without implementation file). 
+                    if( tAbstract.IsGenericType )
+                    {
+                        // There is no default value for abstraction.
+                        // We must only build a name with its required imports.
+                        var b = context.Root.GetTSTypeBuilder();
+                        var genDef = context.Root.TSTypes.ResolveTSType( monitor, tAbstract.GenericTypeDefinition.Type );
+                        b.TypeName.AppendTypeName( genDef ).Append( "<" );
+                        foreach( var arg in tAbstract.GenericArguments )
+                        {
+                            b.TypeName.AppendTypeName( context.Root.TSTypes.ResolveTSType( monitor, arg.Type ) );
+                        }
+                        b.TypeName.Append( ">" );
+                        builder.ResolvedType = b.Build();
+                    }
+                    else
+                    {
+                        // The default type name (with the leading 'I') is fine.
+                        // There is no DefaultValueSource (let to null).
+                        // Here also, if it happens to be set, don't do anything.
+                        builder.Implementor ??= ( monitor, tsType ) => GenerateAbstractPoco( monitor, tsType, tAbstract );
+                    }
                 }
                 else if( t.Kind == PocoTypeKind.Record )
                 {
@@ -224,7 +246,7 @@ namespace CK.StObj.TypeScript.Engine
             part.AppendDocumentation( monitor, t.SecondaryTypes.Select( s => s.Type ).Prepend( t.Type ) );
             // Class with a single constructor (using TypeScript "Parameter Properties").
             part.Append( "export class " ).Append( tsType.TypeName );
-            IEnumerable<IAbstractPocoType> bases = t.AbstractTypes;
+            IEnumerable<IAbstractPocoType> bases = t.MinimalAbstractTypes;
             if( t.FamilyInfo.IsClosedPoco )
             {
                 bases = bases.Append( GetClosedPocoType() );
@@ -306,7 +328,7 @@ namespace CK.StObj.TypeScript.Engine
             var root = tsType.File.Root;
             if( tsType.Type != typeof( IPoco ) )
             {
-                WriteInterfaces( monitor, root, part, false, a.Generalizations );
+                WriteInterfaces( monitor, root, part, false, a.MinimalGeneralizations );
             }
             part.OpenBlock();
             foreach( var f in a.Fields )
@@ -337,7 +359,7 @@ namespace CK.StObj.TypeScript.Engine
         {
             if( !t.IsExchangeable )
             {
-                monitor.Error( $"PocoType '{t}' has been marked as nor exchangeable." );
+                monitor.Error( $"PocoType '{t}' has been marked as not exchangeable." );
                 return false;
             }
             return true;
