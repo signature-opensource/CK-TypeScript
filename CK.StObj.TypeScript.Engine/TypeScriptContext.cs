@@ -122,6 +122,28 @@ namespace CK.Setup
         public TypeScriptRoot Root => _tsRoot;
 
         /// <summary>
+        /// Raised when generating code of a <see cref="IPrimaryPocoType"/>.
+        /// </summary>
+        public event EventHandler<GeneratingPrimaryPocoEventArgs>? PrimaryPocoGenerating;
+
+        internal void RaiseGeneratingPrimaryPoco( GeneratingPrimaryPocoEventArgs e ) => PrimaryPocoGenerating?.Invoke( this, e );
+
+        /// <summary>
+        /// Raised when generating code of a <see cref="IAbstractPocoType"/>.
+        /// </summary>
+        public event EventHandler<GeneratingAbstractPocoEventArgs>? AbstractPocoGenerating;
+
+        internal void RaiseGeneratingAbstractPoco( GeneratingAbstractPocoEventArgs e ) => AbstractPocoGenerating?.Invoke( this, e );
+
+        /// <summary>
+        /// Gets the TypeScript IPoco generated type. The <see cref="ITSGeneratedType.File"/> contains
+        /// the IPoco and its IPocoModel implementations.
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <returns>The IPoco fenerated type.</returns>
+        public ITSGeneratedType GetTypeScriptPocoType( IActivityMonitor monitor ) => ((PocoCodeGenerator)_globals[0]).GetTypeScriptPocoType( monitor );
+
+        /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
         /// </summary>
         public ICodeGenerationContext CodeContext => _codeContext;
@@ -145,11 +167,6 @@ namespace CK.Setup
         /// Gets all the global generators.
         /// </summary>
         public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
-
-        /// <summary>
-        /// Gets the Poco code generator (the first <see cref="GlobalGenerators"/>).
-        /// </summary>
-        public PocoCodeGenerator PocoCodeGenerator => (PocoCodeGenerator)_globals[0];
 
         internal bool Run( IActivityMonitor monitor )
         {
@@ -176,7 +193,6 @@ namespace CK.Setup
                         && CallGlobalCodeGenerators( monitor, false );
             }
         }
-
 
         bool BuildRegTypesFromConfiguration( IActivityMonitor monitor, IPocoDirectory directory )
         {
@@ -223,7 +239,7 @@ namespace CK.Setup
 
         bool BuildRegTypesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem )
         {
-            _globals.Add( new PocoCodeGenerator( pocoTypeSystem ) );
+            _globals.Add( new PocoCodeGenerator( this, pocoTypeSystem ) );
             _globals.Add( new GlobalizationTypesCodeGenerator() );
 
             using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGenerator attributes." ) )

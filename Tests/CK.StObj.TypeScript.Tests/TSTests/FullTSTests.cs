@@ -1,5 +1,7 @@
 using CK.Core;
+using CK.CrisLike;
 using CK.Setup;
+using CK.StObj.TypeScript.Tests.CrisLike;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
@@ -8,8 +10,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -17,7 +21,7 @@ using static CK.Testing.StObjEngineTestHelper;
 namespace CK.StObj.TypeScript.Tests
 {
     [TestFixture]
-    public class TypeScriptRunnerTests
+    public class FullTSTests
     {
         public interface IWithUnions : IPoco
         {
@@ -115,6 +119,34 @@ namespace CK.StObj.TypeScript.Tests
                                                                         {
                                                                             { "SET_BY_THE_UNIT_TEST", "YES!" }
                                                                         } );
+            await TestHelper.SuspendAsync( resume => resume );
+            runner.Run();
+        }
+
+        public interface IBasicCommand : ICommand
+        {
+            string Action { get; set; }
+        }
+
+        [Test]
+        public async Task CrisLike_commands_and_results_Async()
+        {
+            var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
+            var tsTypes = new[]
+            {
+                typeof( ISomeCommand ),
+                typeof( ISomeCommandIsCriticalAndReturnsInt ),
+                typeof( IWithObjectCommand ),
+                typeof( IWithObjectSpecializedAsPocoCommand ),
+                typeof( IResult ),
+                typeof( IWithObjectSpecializedAsSuperPocoCommand ),
+                typeof( ISuperResult )
+            };
+            TestHelper.GenerateTypeScript( targetProjectPath,
+                                           tsTypes.Append( typeof( FakeCommandDirectory ) )
+                                                  .Append( typeof( FakeTypeScriptCrisCommandGenerator ) ),
+                                           tsTypes );
+            await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
             await TestHelper.SuspendAsync( resume => resume );
             runner.Run();
         }

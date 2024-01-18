@@ -1,12 +1,12 @@
 using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
+using Microsoft.VisualBasic.FileIO;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -14,75 +14,11 @@ using System.Xml.Linq;
 
 namespace CK.StObj.TypeScript.Engine
 {
-    public partial class PocoCodeGenerator
+
+    partial class PocoCodeGenerator
     {
         readonly struct FieldsWriter
         {
-            /// <summary>
-            /// Captures field information. One cannot capture the default value here since
-            /// we may need to write it when a field has its own default.
-            /// We use the TsFieldType.DefaultValueSource to detect if a default value is available
-            /// instead of (Field.DefaultValueInfo.IsDisallowed is false): this allows TypeScript
-            /// default to exist even if there is no default for the C#... and because we consider 
-            /// only exchangeable fields, this may save some applicable defaults.
-            /// </summary>
-            readonly record struct TSField
-            {
-                public readonly IPocoField Field;
-                public readonly ITSType TSFieldType;
-                public readonly ImmutableArray<XElement> Docs;
-                public readonly bool HasDefault;
-                public readonly bool HasNonNullDefault;
-
-                TSField( IPocoField field, ITSType tsFieldType, bool hasDefault, bool hasNonNullDefault, ImmutableArray<XElement> doc )
-                {
-                    Field = field;
-                    TSFieldType = tsFieldType;
-                    HasDefault = hasDefault;
-                    HasNonNullDefault = hasNonNullDefault;
-                    Docs = doc;
-                }
-
-                public bool IsNullable => TSFieldType.IsNullable;
-                 
-                public static TSField Create( IActivityMonitor monitor, TypeScriptRoot root, IPocoField field, ITSType tsFieldType )
-                {
-                    var doc = GetDocumentation( monitor, root, field.Originator );
-                    return new TSField( field,
-                                        tsFieldType,
-                                        hasDefault: field.HasOwnDefaultValue || tsFieldType.DefaultValueSource != null,
-                                        hasNonNullDefault: field.HasOwnDefaultValue || !tsFieldType.IsNullable,
-                                        doc );
-                }
-
-                static ImmutableArray<XElement> GetDocumentation( IActivityMonitor monitor, TypeScriptRoot root, object? originator )
-                {
-                    if( !root.DocBuilder.GenerateDocumentation )
-                    {
-                        return ImmutableArray<XElement>.Empty;
-                    }
-                    switch( originator )
-                    {
-                        case null:
-                            return ImmutableArray<XElement>.Empty;
-                        case IPocoPropertyInfo p:
-                                return XmlDocumentationReader.GetDocumentationFor( monitor, p.DeclaredProperties.Select( i => i.PropertyInfo ), root.Memory )
-                                                             .ToImmutableArray();
-                        case MemberInfo m:
-                            var d = XmlDocumentationReader.GetDocumentationFor( monitor, m, root.Memory );
-                            return d != null ? ImmutableArray.Create( d ) : ImmutableArray<XElement>.Empty;
-                        case ParameterInfo p:
-                            var dM = XmlDocumentationReader.GetDocumentationFor( monitor, p.Member, root.Memory );
-                            var dP = dM?.Elements( "param" ).FirstOrDefault( e => p.Name == e.Attribute("name" )?.Value );
-                            if( dP == null ) return ImmutableArray<XElement>.Empty;
-                            var summary = new XElement( "summary", dP.Nodes() );
-                            // The outer name can be anything.
-                            return ImmutableArray.Create( new XElement( summary.Name, summary ) );
-                        default: return Throw.NotSupportedException<ImmutableArray<XElement>>();
-                    }
-                }
-            }
-
             readonly TSField[] _fields;
             readonly ICompositePocoType _type;
             readonly TypeScriptRoot _root;
@@ -181,7 +117,7 @@ namespace CK.StObj.TypeScript.Engine
                         }
                         atLeastOne = true;
                         typeBuilder.TypeName.AppendTypeName( f.TSFieldType, useOptionalTypeName: i > _lastNonNullable );
-                        if( _hasDefault && i <= _lastWithNonNullDefault ) WriteDefaultValue( monitor, typeBuilder.DefaultValue, ref f );
+                        if( _hasDefault && i <= _lastWithNonNullDefault ) f.WriteDefaultValue( typeBuilder.DefaultValue );
                     }
                     typeBuilder.TypeName.Append( "]" );
                     if( _hasDefault ) typeBuilder.DefaultValue.Append( "]" );
@@ -204,7 +140,7 @@ namespace CK.StObj.TypeScript.Engine
                         {
                             if( atLeastOneDefault ) typeBuilder.DefaultValue.Append( ", " );
                             typeBuilder.DefaultValue.AppendIdentifier( f.Field.Name ).Append( ": " );
-                            WriteDefaultValue( monitor, typeBuilder.DefaultValue, ref f );
+                            f.WriteDefaultValue( typeBuilder.DefaultValue );
                             atLeastOneDefault = true;
                         }
                     }
@@ -238,37 +174,45 @@ namespace CK.StObj.TypeScript.Engine
                 part.Append( "export class " ).Append( tsType.TypeName )
                     .OpenBlock()
                     .Append( "constructor( " ).NewLine();
-                WriteCtorParameters( monitor, tsType.File, part );
+                SortCtorParameters();
+                for( int i = 0; i < _fields.Length; i++ )
+                {
+                    if( i > 0 )
+                    {
+                        part.Append( ", " ).NewLine();
+                    }
+                    _fields[i].WriteFieldDefinition( tsType.File, part );
+                }
                 part.NewLine().Append( ") {}" );
                 return true;
             }
 
-            static void WriteDefaultValue( IActivityMonitor monitor, ITSCodeWriter w, ref TSField f )
+            public TSPocoField[] GetPocoFields()
             {
-                Throw.DebugAssert( f.HasDefault );
-                var defInfo = f.Field.DefaultValueInfo;
-                var defVal = defInfo.RequiresInit ? defInfo.DefaultValue.SimpleValue : null;
-                if( defVal != null )
+                SortCtorParameters();
+                var fields = new TSPocoField[_fields.Length];
+                for( int i = 0; i < _fields.Length; i++ )
                 {
-                    f.TSFieldType.WriteValue( w, defVal );
+                    fields[i] = new TSPocoField( _fields[i] );
                 }
-                else
-                {
-                    // Even if RequiresInit is true, the SimpleValue object can be null
-                    // for complex objects: use the type's default value.
-                    w.Append( f.TSFieldType.DefaultValueSource );
-                }
+                return fields;
             }
 
-            public void WriteCtorParameters( IActivityMonitor monitor, TypeScriptFile file, ITSCodeWriter w )
+            /// <summary>
+            /// For records (Pocos have all defaults by design), we may not have a default value
+            /// for each fields: they are required parameters. We move them at the beginning of the array.
+            /// <para>
+            /// We reorder all the fields based on 4 categories:
+            /// <list type="number">
+            ///   <item>Non nullable, no default (the required).</item>
+            ///   <item>Non Nullable with default.</item>
+            ///   <item>Nullable with non null default.</item>
+            ///   <item>Nullable without default (the optionals).</item>
+            /// </list>
+            /// </para>
+            /// </summary>
+            public void SortCtorParameters()
             {
-                // If we don't have a default, it's because one or more fields have no
-                // default value: they are required. We move them at the beginning of the array.
-                // Same for the other "type" of fields... The order is:
-                // - Non nullable, no default (the required).
-                // - Non Nullable with default.
-                // - Nullable with non null default.
-                // - Nullable without default (the optionals).
                 int requiredOffset = 0;
                 int nonNullableWithDefaultOffset = 0;
                 int nullableWithDefaultOffset = 0;
@@ -304,43 +248,13 @@ namespace CK.StObj.TypeScript.Engine
                     }
                 }
 
-                for( int i = 0; i < _fields.Length; i++ )
-                {
-                    if( i > 0 )
-                    {
-                        w.Append( ", " ).NewLine();
-                    }
-                    WriteFieldDefinition( monitor, file, w, ref _fields[i] );
-                }
-
                 static void MoveUp( TSField[] fields, int i, int j )
                 {
                     var f = fields[i];
-                    Array.Copy( fields, j, fields, j+1, i-j );
+                    Array.Copy( fields, j, fields, j + 1, i - j );
                     fields[j] = f;
                 }
-
-                static void WriteFieldDefinition( IActivityMonitor monitor, TypeScriptFile file, ITSCodeWriter w, ref TSField f )
-                {
-                    using( file.Root.DocBuilder.RemoveGetOrSetPrefix() )
-                    {
-                        w.AppendDocumentation( f.Docs );
-                    }
-                    w.Append( "public " );
-                    bool ro = f.Field is IPrimaryPocoField pF && pF.FieldAccess is PocoFieldAccessKind.MutableReference or PocoFieldAccessKind.IsByRef;
-                    if( ro ) w.Append( "readonly " );
-                    w.AppendIdentifier( f.Field.Name );
-                    bool optField = f.IsNullable && !f.HasNonNullDefault;
-                    if( optField ) w.Append( "?" );
-                    w.Append( ": " ).AppendTypeName( optField ? f.TSFieldType.NonNullable : f.TSFieldType );
-                    if( f.HasNonNullDefault )
-                    {
-                        w.Append( " = " );
-                        WriteDefaultValue( monitor, w, ref f );
-                    }
-                }
             }
-
         }
 
     }

@@ -50,8 +50,7 @@ namespace CK.Setup
         bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder );
 
         /// <summary>
-        /// Configures the <see cref="TypeBuilderRequiredEventArgs"/> (this is called for each <see cref="TSTypeManager.TypeBuilderRequired"/> event).
-        /// If a <see cref="TypeScriptAttribute"/> decorates the type, its properties have been applied to the builder.
+        /// Should set the <see cref="TSTypeRequiredEventArgs.ResolvedType"/> (this is called for each <see cref="TSTypeManager.TSTypeRequired"/> event).
         /// <para>
         /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because other generators
         /// can call <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/>.

@@ -1,10 +1,6 @@
 using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -80,8 +76,7 @@ namespace CK.StObj.TypeScript.Engine
                                 public readonly depth: number = 0
                             ) {}
 
-                            toString() {
-                                return '['+UserMessageLevel[this.level]+'] ' + this.message;
+                            toString() { return '['+UserMessageLevel[this.level]+'] ' + this.message; }
                         }
                         """ );
             }

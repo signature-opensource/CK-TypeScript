@@ -195,7 +195,7 @@ namespace CK.StObj.TypeScript.Tests
 
         }
 
-        [TypeScript( SameFolderAs = typeof( IRecordPoco1 ) )]
+        [TypeScript( SameFolderAs = typeof( IRecTryPoco ) )]
         public record struct RecTry( string Name, List<RecTry> Others );
 
         [TypeScript( Folder = "" )]
@@ -214,9 +214,47 @@ namespace CK.StObj.TypeScript.Tests
             };
             var registeredTypes = tsTypes.Append( typeof( RecTry ) );
             TestHelper.GenerateTypeScript( targetProjectPath, registeredTypes, tsTypes );
+            CheckFile( targetProjectPath,
+               "RecTry.ts",
+               """
+               public name: String = "", 
+               public others: RecTry[] = []
+               """ );
+
         }
 
-         static void CheckFile( string targetProjectPath, string name, string expected )
+        // The only way to have a non defaultable field in the Poco world is a reference
+        // ro an abstract type. And the only abstract type is a IAbstractPoco.
+        [TypeScript( SameFolderAs = typeof( IRecWithNonNullDefaultPoco ) )]
+        public record struct RecWithNonNullDefault( double? Nullable, IPoco IMustExist, string Name, int Age = 42 );
+
+        [TypeScript( Folder = "" )]
+        public interface IRecWithNonNullDefaultPoco : IPoco
+        {
+            IList<RecWithNonNullDefault> R1 { get; }
+        }
+
+        [Test]
+        public void record_with_fields_without_default_is_handled()
+        {
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            var tsTypes = new[]
+            {
+                typeof( IRecWithNonNullDefaultPoco )
+            };
+            var registeredTypes = tsTypes.Append( typeof( RecWithNonNullDefault ) );
+            TestHelper.GenerateTypeScript( targetProjectPath, registeredTypes, tsTypes );
+            CheckFile( targetProjectPath,
+              "RecWithNonNullDefault.ts",
+              """
+              public iMustExist: IPoco, 
+              public name: String = "", 
+              public age: Number = 42, 
+              public nullable?: Number
+              """ );
+        }
+
+        static void CheckFile( string targetProjectPath, string name, string expected )
         {
             File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", "src", name ) )
                 .ReplaceLineEndings()

@@ -1,5 +1,5 @@
 {
-  "name": "typescriptrunner_with_environment_variables_async",
+  "name": "crislike_commands_and_results_async",
   "private": true,
   "workspaces": [
     "ck-gen"

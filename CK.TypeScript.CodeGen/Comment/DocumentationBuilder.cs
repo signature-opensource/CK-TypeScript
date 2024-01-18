@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -164,17 +165,27 @@ namespace CK.TypeScript.CodeGen
             return this;
         }
 
+        sealed class TrimAndIgnoreCase : EqualityComparer<ReadOnlyMemory<char>>
+        {
+            public override bool Equals( ReadOnlyMemory<char> x, ReadOnlyMemory<char> y )
+            {
+                return x.Span.Trim().Equals( y.Span.Trim(), StringComparison.OrdinalIgnoreCase );
+            }
+
+            public override int GetHashCode( [DisallowNull] ReadOnlyMemory<char> obj )
+            {
+                return string.GetHashCode( obj.Span, StringComparison.OrdinalIgnoreCase );
+            }
+        }
+
         static IEnumerable<XElement> DistinctByValue( IEnumerable<XElement> elements )
         {
-            var already = new List<string>();
+            var already = new HashSet<ReadOnlyMemory<char>>( TrimAndIgnoreCase.Default );
             foreach( var e in elements )
             {
-                var normalized = e.Value.ToLowerInvariant().Trim();
-                if( !already.Contains( normalized ) )
+                if( already.Add( e.Value.AsMemory() ) )
                 {
-                    already.Add( normalized );
                     yield return e;
-
                 }
             }
         }
