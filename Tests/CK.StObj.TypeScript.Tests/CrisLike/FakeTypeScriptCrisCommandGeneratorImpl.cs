@@ -19,7 +19,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     {
         TSType? _crisPoco;
         TSType? _abstractCommand;
-        TSType? _commandPart;
         TSType? _command;
 
         // We don't add anything to the default IPocoType handling.
@@ -46,12 +45,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             // By filtering out the base interface it doesn't appear in the base interfaces
             // nor in the branded type. 
-
-            // The ICommand<T> branding substitutes the "ICommand":any from the IAbstractCommand
-            // with "ICommand":PocovariantBrand<TResult>" when TResult is not void but restores
-            // "ICommand":any when the TResult is void.
-            // This allows ICommand to be specialized in ICommand<Something> and enables a
-            // ICommand (or IAbstractCommand or ICommandPart) to be assignable from any ICommand<T>.
             bool withoutResult = false;
             bool withResult = false;
             foreach( var i in e.ImplementedInterfaces )
@@ -92,7 +85,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var t = builder.Type;
             // Hooks:
             //   - ICommand and ICommand<TResult>: they are both implemented by ICommand<TResult = void> in Model.ts.
-            //   - IAbstractCommand, ICommandPart (alias on IAbstractCommand) and ICrisPoco.
+            //   - IAbstractCommand and ICrisPoco.
             // 
             // Model.ts also implements ICommandModel, ExecutedCommand<T>, and CrisError.
             //
@@ -102,11 +95,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 {
                     EnsureCrisCommandModel( monitor, context );
                     builder.ResolvedType = _command;
-                }
-                else if( t.Name == "ICommandPart" )
-                {
-                    EnsureCrisCommandModel( monitor, context );
-                    builder.ResolvedType = _commandPart;
                 }
                 else if( t.Name == "IAbstractCommand" )
                 {
@@ -122,12 +110,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             return true;
         }
 
-        [MemberNotNull(nameof(_command), nameof( _abstractCommand ), nameof( _commandPart ), nameof( _crisPoco ) )]
+        [MemberNotNull(nameof(_command), nameof( _abstractCommand ), nameof( _crisPoco ) )]
         void EnsureCrisCommandModel( IActivityMonitor monitor, TypeScriptContext context )
         {
             if( _command != null )
             {
-                Throw.DebugAssert( _abstractCommand != null && _commandPart != null && _crisPoco != null );
+                Throw.DebugAssert( _abstractCommand != null && _crisPoco != null );
                 return;
             }
 
@@ -137,7 +125,6 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
             _crisPoco = new TSType( "ICrisPoco", imports => imports.EnsureImport( modelFile, "ICrisPoco" ), null );
             _abstractCommand = new TSType( "IAbstractCommand", imports => imports.EnsureImport( modelFile, "IAbstractCommand" ), null );
-            _commandPart = new TSType( "ICommandPart", imports => imports.EnsureImport( modelFile, "ICommandPart" ), null );
             _command = new TSType( "ICommand", imports => imports.EnsureImport( modelFile, "ICommand" ), null );
 
             static void GenerateCrisModelFile( IActivityMonitor monitor, TypeScriptContext context, TypeScriptFile fModel )
@@ -147,8 +134,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 var pocoType = context.GetTypeScriptPocoType( monitor );
                 // Imports the IPoco itself...
                 pocoType.EnsureRequiredImports( fModel.Imports );
-                // ...and its IPocoModel and the PocovariantBrand type factory.
-                fModel.Imports.EnsureImport( pocoType.File, "IPocoModel", "PocovariantBrand" );
+                // ...and its IPocoModel.
+                fModel.Imports.EnsureImport( pocoType.File, "IPocoModel" );
 
                 fModel.Body.Append( """
                                 /**
@@ -161,37 +148,44 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                     readonly applyAmbientValues: (command: any, a: any, o: any ) => void;
                                 }
 
+                                /**
+                                 * Extends the Poco model. 
+                                 **/
+                                export interface ICommandModel extends IPocoModel {
+                                    /**
+                                     * This supports the CrisEndpoint implementation. This is not to be used directly.
+                                     **/
+                                    readonly applyAmbientValues: (command: any, a: any, o: any ) => void;
+                                }
+
                                 /** 
                                  * Abstraction of any Cris objects (currently only commands).
                                  **/
                                 export interface ICrisPoco extends IPoco
                                 {
-                                    readonly _brand: IPoco["_brand"] & { "ICrisPoco": any };
+                                    readonly _brand: IPoco["_brand"] & {"ICrisPoco": any};
                                 }
-                                
+
                                 /** 
-                                 * Command abstraction extends the Poco model.
-                                 * The C# ICommand (without result) is the TypeScript ICommand<void>
-                                 * and the ICommandPart is "erased" by being an alias of this IAbstractCommand.
+                                 * Command abstraction extends the associated Poco model to be a ICommandModel.
                                  **/
                                 export interface IAbstractCommand extends ICrisPoco
                                 {
-                                    readonly pocoModel: ICommandModel;
-                                    readonly _brand: ICrisPoco["_brand"] & { "ICommand": any };
+                                    /** 
+                                     * Gets the command model.
+                                     **/
+                                    get pocoModel(): ICommandModel;
+                                    readonly _brand: ICrisPoco["_brand"] & {"ICommand": any};
                                 }
-                                
-                                /** 
-                                 * The ICommandPart type is a pure alias on IAbstractCommand.
-                                 **/
-                                export type ICommandPart = IAbstractCommand;
-                                                                                                
+
                                 /** 
                                  * Command with or without a result.
+                                 * The C# ICommand (without result) is the TypeScript ICommand<void>.
                                  **/
-                                export interface ICommand<TResult = void> extends IAbstractCommand {
-                                    readonly _brand: Omit<IAbstractCommand["_brand"],"ICommand"> & { "ICommand": TResult extends void ? any : PocovariantBrand<TResult> };
+                                export interface ICommand<out TResult = void> extends IAbstractCommand {
+                                    readonly _brand: IAbstractCommand["_brand"] & {"ICommandResult": void extends TResult ? any : TResult};
                                 }
-                                
+                                                                
                                 /** 
                                  * Captures the result of a command execution.
                                  **/

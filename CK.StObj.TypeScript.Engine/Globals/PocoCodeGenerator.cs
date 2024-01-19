@@ -292,7 +292,7 @@ namespace CK.StObj.TypeScript.Engine
                 .OpenBlock()
                 .Append( "public constructor(" ).CreatePart( out var ctorParametersPart ).Append( ")" ).NewLine()
                 .Append( "{" ).CreatePart( out var ctorBodyPart ).Append( "}" ).NewLine()
-                // The pocoModel is a getter that returns a static (shared pocoModel instance).
+                // The get pocoModel() returns a static (shared pocoModel instance).
                 .Append( "get " ).Append( _typeScriptContext.Root.PascalCase ? "P" : "p").Append( "ocoModel() { return " )
                 .Append( tsType.TypeName ).Append( "._m; }" ).NewLine()
                 // The pocoModel is extensible: abstract IPoco can extend it. 
@@ -435,7 +435,7 @@ namespace CK.StObj.TypeScript.Engine
                          **/
                         readonly pocoModel: IPocoModel;
 
-                        readonly _brand: { "o":any, "IPoco": any };
+                        readonly _brand: {"IPoco": any};
                     }
 
                     /**
@@ -446,32 +446,12 @@ namespace CK.StObj.TypeScript.Engine
                          * Gets the name of the Poco. 
                          **/
                         readonly name: string;
+                        /**
+                         * Gets a short name based on its unique index in
+                         * the Poco system. 
+                         **/
+                        readonly idxName: string;
                     }
-
-                    // Target is a {} that will have a "n":any (resp. "d":any) property if T is NOT nullable (resp. NOT undefined).
-                    type ApplyUndefined<T,Target> = undefined extends T ? Target : Target&{"d":any};
-                    type ApplyNullable<T,Target> = null extends T ? Target : Target&{"n":any};
-                    type Apply<T,Target> = ApplyUndefined<T,ApplyNullable<T,Target>>;
-
-                    type MakeBrand<T> = 
-                        T extends { "_brand": any } ? T["_brand"]
-                        : T extends Array<infer Item> ? { "w": true, "a": PocovariantBrand<Item> }
-                        : T extends ReadonlyArray<infer Item> ? { "a": PocovariantBrand<Item> }
-                        : T extends Set<infer Item> ? { "w": true, "s": PocovariantBrand<Item> }
-                        : T extends ReadonlySet<infer Item> ? { "s": PocovariantBrand<Item> }
-                        : T extends Map<infer K, infer V> ? { "w": true, "k": PocovariantBrand<K>, "v": PocovariantBrand<V> }
-                        : T extends ReadonlyMap<infer K, infer V> ? { "k": PocovariantBrand<K>, "v": PocovariantBrand<V> }
-                        : object extends T ? object
-                        : { "t": T };
-
-                    /**
-                     * Gets a type that models type structure, allowing "extended covariance":
-                     * whereas an object[] is not assignable from a number[], the type modeled here allows a 
-                     * PocovariantBrand<object[]> to be assignable from a PocovariantBrand<number[]>.
-                     * This model is additive (thanks to type intersection &)
-                     **/
-                    export type PocovariantBrand<T> = Apply<T,MakeBrand<NonNullable<T>>>;
-
                                         
                     """ );
             return true;
