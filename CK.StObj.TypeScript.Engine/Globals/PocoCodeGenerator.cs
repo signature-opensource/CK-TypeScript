@@ -3,6 +3,7 @@ using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -298,7 +299,7 @@ namespace CK.StObj.TypeScript.Engine
                 .Append( "private static readonly _m = {" ).NewLine()
                 .Append( "name: " ).AppendSourceString( t.ExternalOrCSharpName ).Append( "," ).NewLine()
                 // Let the trailing comma appear even if no one add content to pocoModelPart.
-                .Append( "idxName: " ).AppendSourceString( (t.Index<<1).ToString(CultureInfo.InvariantCulture) ).Append( "," )
+                .Append( "idxName: \"" ).Append( (t.Index>>1).ToString(CultureInfo.InvariantCulture) ).Append( "\"," )
                 .CreatePart( out var pocoModelPart )
                 .Append( "};" ).NewLine();
 
@@ -320,14 +321,15 @@ namespace CK.StObj.TypeScript.Engine
             _typeScriptContext.RaiseGeneratingPrimaryPoco( e );
 
             documentationPart.AppendDocumentation( monitor, e.ClassDocumentation, e.DocumentationExtension );
-            WriteInterfaces( monitor,
-                             root,
-                             interfacesPart,
-                             isPrimaryPoco: true,
-                             implementedInterfaces,
-                             isIPoco: false,
-                             tsType,
-                             part );
+            WriteInterfacesAndBrand( monitor,
+                                     root,
+                                     interfacesPart,
+                                     isPrimaryPoco: true,
+                                     implementedInterfaces,
+                                     isIPoco: false,
+                                     t,
+                                     tsType,
+                                     part );
             for( int i = 0; i < fields.Length; i++ )
             {
                 var f = fields[ i ];
@@ -338,14 +340,15 @@ namespace CK.StObj.TypeScript.Engine
             return true;
         }
 
-        void WriteInterfaces( IActivityMonitor monitor,
-                              TypeScriptRoot root,
-                              ITSCodePart interfaces,
-                              bool isPrimaryPoco,
-                              IEnumerable<IAbstractPocoType> abstracts,
-                              bool isIPoco,
-                              ITSGeneratedType tsType,
-                              ITSCodePart bodyPart )
+        void WriteInterfacesAndBrand( IActivityMonitor monitor,
+                                      TypeScriptRoot root,
+                                      ITSCodePart interfaces,
+                                      bool isPrimaryPoco,
+                                      IEnumerable<IAbstractPocoType> abstracts,
+                                      bool isIPoco,
+                                      IPocoType pocoType,
+                                      ITSGeneratedType tsType,
+                                      ITSCodePart bodyPart )
         {
             bool atLeastOne = false;
             bodyPart.Append( "readonly _brand" ).Append( isPrimaryPoco ? "!: " : ": " ); 
@@ -373,7 +376,7 @@ namespace CK.StObj.TypeScript.Engine
                           .AppendTypeName( iPoco );
                 bodyPart.Append( iPoco.TypeName ).Append( "[\"_brand\"]" );
             }
-            bodyPart.Append( " & {\"" ).Append( tsType.TypeName ).Append( "\":any};" ).NewLine();
+            bodyPart.Append( " & {\"" ).Append( (pocoType.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine();
         }
 
         bool GenerateAbstractPoco( IActivityMonitor monitor, ITSGeneratedType tsType, IAbstractPocoType a )
@@ -405,14 +408,15 @@ namespace CK.StObj.TypeScript.Engine
             _typeScriptContext.RaiseGeneratingAbstractPoco( e );
 
             docPart.AppendDocumentation( monitor, e.TypeDocumentation, e.DocumentationExtension );
-            WriteInterfaces( monitor,
-                             root,
-                             interfacesPart,
-                             isPrimaryPoco: false,
-                             e.ImplementedInterfaces,
-                             isIPoco: tsType.Type == typeof( IPoco ),
-                             tsType,
-                             part );
+            WriteInterfacesAndBrand( monitor,
+                                     root,
+                                     interfacesPart,
+                                     isPrimaryPoco: false,
+                                     e.ImplementedInterfaces,
+                                     isIPoco: tsType.Type == typeof( IPoco ),
+                                     a,
+                                     tsType,
+                                     part );
 
             return true;
         }
@@ -451,14 +455,14 @@ namespace CK.StObj.TypeScript.Engine
 
                     type MakeBrand<T> = 
                         T extends { "_brand": any } ? T["_brand"]
-                        : T extends Array<infer Item> ? { "o":any, "ra": PocovariantBrand<Item>, "a": PocovariantBrand<Item> }
-                        : T extends ReadonlyArray<infer Item> ? { "o":any, "ra": PocovariantBrand<Item> }
-                        : T extends Set<infer Item> ? { "o":any, "s": PocovariantBrand<Item> }
-                        : T extends Map<infer K, infer V> ? { "k": PocovariantBrand<K>, "v": PocovariantBrand<V> }
-                        : T extends string ? {"o":any,"string":any}
-                        : T extends Number ? {"o":any,"number":any}
-                        : T extends boolean ? {"o":any,"boolean":any}
-                        : {"o":any};
+                        : T extends Array<infer Item> ? { "w": true, "a": PocovariantBrand<Item> }
+                        : T extends ReadonlyArray<infer Item> ? { "a": PocovariantBrand<Item> }
+                        : T extends Set<infer Item> ? { "w": true, "s": PocovariantBrand<Item> }
+                        : T extends ReadonlySet<infer Item> ? { "s": PocovariantBrand<Item> }
+                        : T extends Map<infer K, infer V> ? { "w": true, "k": PocovariantBrand<K>, "v": PocovariantBrand<V> }
+                        : T extends ReadonlyMap<infer K, infer V> ? { "k": PocovariantBrand<K>, "v": PocovariantBrand<V> }
+                        : object extends T ? object
+                        : { "t": T };
 
                     /**
                      * Gets a type that models type structure, allowing "extended covariance":

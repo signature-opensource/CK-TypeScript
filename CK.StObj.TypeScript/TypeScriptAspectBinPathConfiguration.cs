@@ -16,7 +16,12 @@ namespace CK.Setup
         /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
         /// and can be automatically installed. See <see cref="AutoInstallYarnPath"/>.
         /// </summary>
-        public const string AutomaticYarnVersion = "4.0.0";
+        public const string AutomaticYarnVersion = "4.0.2";
+
+        /// <summary>
+        /// The default <see cref="AutomaticTypeScriptVersion"/> version to install.
+        /// </summary>
+        public const string DefaultTypeScriptVersion = "5.2.2";
 
         /// <summary>
         /// Initializes a new empty configuration.
@@ -45,6 +50,12 @@ namespace CK.Setup
         /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
         /// </summary>
         public List<TypeScriptTypeConfiguration> Types { get; }
+
+        /// <summary>
+        /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>".
+        /// Defaults to <see cref="DefaultTypeScriptVersion"/>.
+        /// </summary>
+        public string AutomaticTypeScriptVersion { get; set; } = DefaultTypeScriptVersion;
 
         /// <summary>
         /// Gets or sets whether yarn build of "<see cref="TargetProjectPath"/>/ck-gen" should be skipped
@@ -125,6 +136,7 @@ namespace CK.Setup
             Barrels = new HashSet<NormalizedPath>( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( StObjEngineConfiguration.xPath ) ?? c.Value ) ) );
+            AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? DefaultTypeScriptVersion;
             AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
@@ -146,6 +158,7 @@ namespace CK.Setup
                                  new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                                  new XElement( TypeScriptAspectConfiguration.xBarrels,
                                                Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ),
+                                 new XAttribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, AutomaticTypeScriptVersion ),
                                  SkipTypeScriptTooling
                                     ? new XAttribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling, true )
                                     : null,

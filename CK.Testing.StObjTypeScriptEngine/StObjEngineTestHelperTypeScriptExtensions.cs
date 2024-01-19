@@ -314,7 +314,7 @@ namespace CK
                                                                Dictionary<string, string>? environmentVariables = null,
                                                                string command = "test" )
         {
-            YarnHelper.PrepareRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
+            YarnHelper.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
             return new TypeScriptRunner( @this, targetProjectPath, environmentVariables, command, afterRun );
         }
 

@@ -49,10 +49,42 @@ namespace CK.Setup
             return false;
         }
 
-        public static bool PrepareRun( IActivityMonitor monitor,
-                                       NormalizedPath targetProjectPath,
-                                       Dictionary<string, string>? environmentVariables,
-                                       out Action? afterRun )
+        // Reads the typescript version from .yarn/sdks/typescript/package.json or returns null if the
+        // Yarn TypeScript sdk is not installed or the version cannot be read.
+        internal static string? GetYarnSdkTypeScriptVersion( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+        {
+            var sdkTypeScriptPath = targetProjectPath.Combine( ".yarn/sdks/typescript/package.json" );
+            var packageJson = LoadPackageJson( monitor, sdkTypeScriptPath, out var _ );
+            if( packageJson == null ) return null;
+            var version = (string?)packageJson["version"];
+            if( version == null )
+            {
+                monitor.Error( $"Unable to read version from Yarn sdks typescript from '{sdkTypeScriptPath}'." );
+                return null;
+            }
+            if( version.Length <= 4 || !version.EndsWith( "-sdk", StringComparison.OrdinalIgnoreCase ) )
+            {
+                monitor.Error( $"Invalid Yarn sdks typescript version '{version}'. It should end with '-sdk'.{Environment.NewLine}File: '{sdkTypeScriptPath}'." );
+                return null;
+            }
+            return version.Substring( 0, version.Length - 4 );
+        }
+
+
+
+        /// <summary>
+        /// Prepares the project to run Jest by setting the <see cref="JestSetupFileName"/> file with
+        /// the provided <paramref name="environmentVariables"/> and (at least) the "STOBJ_TYPESCRIPT_ENGINE = true".
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="targetProjectPath">The project path.</param>
+        /// <param name="environmentVariables">Optional environment variables.</param>
+        /// <param name="afterRun">A cleanup actio that must be run once the test is over.</param>
+        /// <returns>True on success, false on error.</returns>
+        public static bool PrepareJestRun( IActivityMonitor monitor,
+                                           NormalizedPath targetProjectPath,
+                                           Dictionary<string, string>? environmentVariables,
+                                           out Action? afterRun )
         {
             afterRun = null;
             var o = LoadPackageJson( monitor, targetProjectPath.AppendPart( "package.json" ), out var invalidPackageJson );
@@ -60,7 +92,7 @@ namespace CK.Setup
             var jestSetupFilePath = targetProjectPath.AppendPart( JestSetupFileName );
             if( File.Exists( jestSetupFilePath ) || o["scripts"]?["test"]?.ToString() == "jest" )
             {
-                environmentVariables ??= new Dictionary<string, string> { { _testRunningKey, "true" } };
+                environmentVariables ??= new Dictionary<string, string>() { { _testRunningKey, "true" } };
                 WriteJestSetupFile( jestSetupFilePath, environmentVariables );
                 afterRun = () => WriteJestSetupFile( jestSetupFilePath, null );
             }
@@ -70,7 +102,7 @@ namespace CK.Setup
         /// <summary>
         /// Generates "package.json", "tsconfig.json" and "tsconfig-cjs.json".
         /// </summary>
-        internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor, NormalizedPath outputPath, string? targetTypescriptVersion, TypeScriptContext g )
+        internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor, NormalizedPath outputPath, string targetTypescriptVersion, TypeScriptContext g )
         {
             using var gLog = monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." );
 
@@ -79,16 +111,15 @@ namespace CK.Setup
                    && GenerateTSConfigJson( monitor, outputPath, g, reusable )
                    && GenerateTSConfigCJSJson( monitor, outputPath );
 
-            static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath outputPath, string? targetTypescriptVersion, TypeScriptContext g, StringBuilder sb )
+            static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath outputPath, string targetTypescriptVersion, TypeScriptContext g, StringBuilder sb )
             {
                 sb.Clear();
                 var packageJsonPath = Path.Combine( outputPath, "package.json" );
                 using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
                 {
-                    if( targetTypescriptVersion != null )
-                    {
-                        g.Root.LibraryManager.EnsureLibrary( new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
-                    }
+                    // Uses the libray manager: this checks that no one has registered a typescript version that differs from
+                    // the chosen one.
+                    g.Root.LibraryManager.EnsureLibrary( new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
                     var dependencies = g.Root.LibraryManager.LibraryImports;
                     sb.Clear();
                     sb.Append( """
@@ -326,14 +357,24 @@ namespace CK.Setup
 
         internal static bool HasVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath )
         {
-            return Directory.Exists( targetProjectPath.AppendPart( ".vscode" ) )
-                   && Directory.Exists( targetProjectPath.Combine( ".yarn/sdks" ) );
+            var integrationsFile = targetProjectPath.Combine( ".yarn/sdks/integrations.yml" );
+            if( !File.Exists( integrationsFile ) ) return false;
+            return File.ReadAllText( integrationsFile ).Contains( "- vscode" );
         }
 
-        internal static bool InstallVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath, NormalizedPath yarnPath )
+        /// <summary>
+        /// Executes "yarn add --dev @yarnpkg/sdks".
+        /// TypeScript package MUST already be added for the TypeScript sdk to be installed.
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="targetProjectPath">The project path.</param>
+        /// <param name="yarnPath">The yarn path.</param>
+        /// <param name="installVSCodeSupport">True to install the VSCode support.</param>
+        /// <returns>True on success, false on error.</returns>
+        internal static bool InstallYarnSdkSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath, bool installVSCodeSupport, NormalizedPath yarnPath )
         {
             return DoRunYarn( monitor, targetProjectPath, "add --dev @yarnpkg/sdks", yarnPath )
-                   && DoRunYarn( monitor, targetProjectPath, "sdks vscode", yarnPath );
+                   && DoRunYarn( monitor, targetProjectPath, installVSCodeSupport ? "sdks vscode" : "sdks base", yarnPath );
         }
 
         static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
@@ -368,19 +409,21 @@ namespace CK.Setup
                                                             NormalizedPath projectJsonPath,
                                                             JsonObject? packageJson,
                                                             out string? testScriptCommand,
+                                                            out string? typeScriptVersion,
                                                             out string? jestVersion,
                                                             out string? tsJestVersion,
                                                             out string? typesJestVersion )
         {
             Throw.DebugAssert( projectJsonPath.LastPart == "package.json" );
             testScriptCommand = null;
+            typeScriptVersion = null;
             jestVersion = null;
             tsJestVersion = null;
             typesJestVersion = null;
 
             if( packageJson == null )
             {
-                monitor.Info( $"Creating a minimal '{projectJsonPath}' without typescript development dependency." );
+                monitor.Info( $"Creating a minimal package.json without typescript development dependency." );
                 WriteMinimalPackageJson( projectJsonPath, projectJsonPath );
                 return true;
             }
@@ -394,6 +437,7 @@ namespace CK.Setup
             testScriptCommand = packageJson["scripts"]?["test"]?.ToString();
             if( packageJson["devDependencies"] is JsonObject devDependencies )
             {
+                typeScriptVersion = devDependencies["typescript"]?.ToString();
                 jestVersion = devDependencies["jest"]?.ToString();
                 tsJestVersion = devDependencies["ts-jest"]?.ToString();
                 typesJestVersion = devDependencies["@types/jest"]?.ToString();
@@ -486,7 +530,7 @@ namespace CK.Setup
                 if( o == null )
                 {
                     invalidPackageJson = true;
-                    monitor.Error( $"File 'package.json' doesn't contain a Json object." );
+                    monitor.Error( $"File '{packageJsonPath}' doesn't contain a Json object." );
                 }
                 return o;
             }
@@ -614,7 +658,7 @@ namespace CK.Setup
             var existingTestFile = Directory.EnumerateFiles( srcFolder, "*.spec.ts", SearchOption.AllDirectories ).FirstOrDefault();
             if( existingTestFile != null )
             {
-                monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation ({existingTestFile})." );
+                monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation ('{existingTestFile}')." );
                 return;
             }
             else

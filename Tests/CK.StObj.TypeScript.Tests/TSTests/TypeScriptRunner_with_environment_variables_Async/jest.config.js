@@ -1,3 +1,4 @@
+// Jest is not ESM compliant. Using CJS here.
 module.exports = {
     moduleFileExtensions: ['js', 'json', 'ts'],
     rootDir: 'src',

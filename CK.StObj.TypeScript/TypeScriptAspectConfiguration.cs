@@ -56,6 +56,11 @@ namespace CK.Setup
         public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
 
         /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutomaticTypeScriptVersion"/> attribute name.
+        /// </summary>
+        public static readonly XName xAutomaticTypeScriptVersion = XNamespace.None + "AutomaticTypeScriptVersion";
+
+        /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallYarn"/> attribute name.
         /// </summary>
         public static readonly XName xAutoInstallYarn = XNamespace.None + "AutoInstallYarn";

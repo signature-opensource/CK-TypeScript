@@ -1,4 +1,5 @@
-﻿using CK.Core;
+using CK.Core;
+using System;
 using System.Collections.Generic;
 
 namespace CK.TypeScript.CodeGen
@@ -12,7 +13,7 @@ namespace CK.TypeScript.CodeGen
 
         internal LibraryManager()
         {
-            _libraries = new Dictionary<string, LibraryImport>();
+            _libraries = new Dictionary<string, LibraryImport>( StringComparer.OrdinalIgnoreCase );
         }
 
         /// <summary>
@@ -22,6 +23,8 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Ensures that an external library will be present in the project.
+        /// This throws an <see cref="InvalidOperationException"/> if the library is already
+        /// registered with a different version.
         /// </summary>
         /// <param name="lib">The library infos.</param>
         /// <returns>This section to enable fluent syntax.</returns>
