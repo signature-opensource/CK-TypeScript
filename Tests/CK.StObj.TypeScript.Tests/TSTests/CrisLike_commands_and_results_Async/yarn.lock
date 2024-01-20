@@ -718,6 +718,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
+    "@types/luxon": "npm:3.3.7"
+    luxon: "npm:3.4.4"
     typescript: "npm:5.3.3"
   languageName: unknown
   linkType: soft
@@ -858,6 +860,13 @@ __metadata:
     expect: "npm:^29.0.0"
     pretty-format: "npm:^29.0.0"
   checksum: 798f4c89407d9457bea1256de74c26f2b279f6c789c0e3311cd604cc75cdab333b9a29b00c51b0090d31abdf11cc788b4103282851a653bef6daf72edf97eef2
+  languageName: node
+  linkType: hard
+
+"@types/luxon@npm:3.3.7":
+  version: 3.3.7
+  resolution: "@types/luxon@npm:3.3.7"
+  checksum: 282ac72fd55da0c9d57f376ba9061ce83506cf6239c32259dacde0800964089f6183d2e449ef2ddd89b079fb8bfdffd7e5dbf187eb5c9f106aeaeca2aa60ed09
   languageName: node
   linkType: hard
 
@@ -1341,7 +1350,9 @@ __metadata:
   dependencies:
     "@local/ck-gen": "workspace:*"
     "@types/jest": "npm:^29.5.11"
+    "@types/luxon": "npm:3.3.7"
     jest: "npm:^29.7.0"
+    luxon: "npm:3.4.4"
     ts-jest: "npm:^29.1.1"
     typescript: "npm:5.3.3"
   languageName: unknown
@@ -1411,9 +1422,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.4.601":
-  version: 1.4.638
-  resolution: "electron-to-chromium@npm:1.4.638"
-  checksum: 52e9d99e84756e403efc53d44b2747a6082df6e33d2a035b9bff9d72006ae5f02c2f4c59ef91345626e90c8c6f5ad3d2dda4a7d32a7194427f18861443882d93
+  version: 1.4.639
+  resolution: "electron-to-chromium@npm:1.4.639"
+  checksum: 8522a5706bd72747bb4220a4bf4cd01b057b5e471f06b18c5bb07e23af12a975839d64b8e2dca017e58365fe1df340dbcb6ef4f11464fa6e7556c433498e7c5b
   languageName: node
   linkType: hard
 
@@ -2520,6 +2531,13 @@ __metadata:
   dependencies:
     yallist: "npm:^4.0.0"
   checksum: fc1fe2ee205f7c8855fa0f34c1ab0bcf14b6229e35579ec1fd1079f31d6fc8ef8eb6fd17f2f4d99788d7e339f50e047555551ebd5e434dda503696e7c6591825
+  languageName: node
+  linkType: hard
+
+"luxon@npm:3.4.4":
+  version: 3.4.4
+  resolution: "luxon@npm:3.4.4"
+  checksum: c14164bc338987349075a08e63ea3ff902866735f7f5553a355b27be22667919765ff96fde4d3413d0e9a0edc4ff9e2e74ebcb8f86eae0ce8b14b27330d87d6e
   languageName: node
   linkType: hard
 

@@ -70,7 +70,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         {
             if( e.PrimaryPocoType.AbstractTypes.Any( a => a.Type == typeof(IAbstractCommand) ) )
             {
-                e.PocoModelPart.NewLine()
+                e.PocoTypeModelPart.NewLine()
                  .Append( "applyAmbientValues( command: any, a: any, o: any )" )
                  .OpenBlock()
                     .Append( "/*Apply HERE*/" )
@@ -134,24 +134,14 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 var pocoType = context.GetTypeScriptPocoType( monitor );
                 // Imports the IPoco itself...
                 pocoType.EnsureRequiredImports( fModel.Imports );
-                // ...and its IPocoModel.
-                fModel.Imports.EnsureImport( pocoType.File, "IPocoModel" );
+                // ...and its pure TypeScript IPocoTypeModel.
+                fModel.Imports.EnsureImport( pocoType.File, "IPocoTypeModel" );
 
                 fModel.Body.Append( """
                                 /**
-                                 * Extends the Poco model. 
+                                 * Extends the Poco type model. 
                                  **/
-                                export interface ICommandModel extends IPocoModel {
-                                    /**
-                                     * This supports the CrisEdpoint implementation. This is not to be used directly.
-                                     **/
-                                    readonly applyAmbientValues: (command: any, a: any, o: any ) => void;
-                                }
-
-                                /**
-                                 * Extends the Poco model. 
-                                 **/
-                                export interface ICommandModel extends IPocoModel {
+                                export interface ICommandModel extends IPocoTypeModel {
                                     /**
                                      * This supports the CrisEndpoint implementation. This is not to be used directly.
                                      **/
@@ -174,7 +164,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                     /** 
                                      * Gets the command model.
                                      **/
-                                    get pocoModel(): ICommandModel;
+                                    get pocoTypeModel(): ICommandModel;
                                     readonly _brand: ICrisPoco["_brand"] & {"ICommand": any};
                                 }
 

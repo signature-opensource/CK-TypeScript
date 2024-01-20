@@ -114,7 +114,8 @@ namespace CK.Setup
                     success &= g.ConfigureBuilder( e.Monitor, this, e );
                 }
             }
-            // Consider any initialization error as an error that condems the type (and eventually the whole process).
+            // Consider any initialization error as an error that condems the type (and will eventually
+            // condemn the whole process).
             if( !success ) e.SetError();
         }
 
@@ -164,6 +165,22 @@ namespace CK.Setup
         /// Gets the Json <see cref="ExchangeableTypeNameMap"/> if it is available.
         /// </summary>
         public ExchangeableTypeNameMap? JsonNames => _jsonNames;
+
+        /// <summary>
+        /// Gets whether a <see cref="IPocoType"/> is exchangeable: it is <see cref="IPocoType.IsExchangeable"/>
+        /// and if <see cref="JsonNames"/> exists, then <see cref="ExchangeableTypeNameMap.IsExchangeable(IPocoType)"/>
+        /// is also true.
+        /// </summary>
+        /// <param name="type">The poco type.</param>
+        /// <returns>True if this poco type must be available in TypeScript.</returns>
+        public bool IsExchangeable( IPocoType type )
+        {
+            if( _jsonNames != null )
+            {
+                return _jsonNames.IsExchangeable( type );
+            }
+            return type.IsExchangeable;
+        }
 
         /// <summary>
         /// Gets all the global generators.

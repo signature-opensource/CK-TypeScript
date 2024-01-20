@@ -91,7 +91,7 @@ namespace CK.Setup
 
         internal void WriteFieldDefinition( TypeScriptFile file, ITSCodeWriter w )
         {
-            _f.WriteFieldDefinition( file, w, _docs, _documentationExtension );
+            _f.WriteCtorFieldDefinition( file, w, _docs, _documentationExtension );
         }
 
     }

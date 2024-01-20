@@ -69,7 +69,10 @@ namespace CK.StObj.TypeScript.Engine
                     e.ResolvedType = isNullable ? mapped.Nullable : mapped;
                     return true;
                 }
-                if( !CheckExchangeable( monitor, t ) ) return false;
+                if( !CheckExchangeable( monitor, context, t ) )
+                {
+                    return false;
+                }
                 Throw.DebugAssert( "Handles array, list, set, dictionary, union and anonymous record here.",
                                     t.Kind is PocoTypeKind.Array
                                               or PocoTypeKind.List
@@ -154,7 +157,12 @@ namespace CK.StObj.TypeScript.Engine
             var t = _pocoTypeSystem.FindByType( builder.Type );
             if( t != null )
             {
-                if( !CheckExchangeable( monitor, t ) ) return false;
+                if( !CheckExchangeable( monitor, context, t ) )
+                {
+                    // This is an error: PocoType exchangeability must be resolved
+                    // up front.
+                    return false;
+                }
                 if( t.Kind == PocoTypeKind.SecondaryPoco )
                 {
                     // Secondary interfaces are not visible outside:
@@ -223,11 +231,12 @@ namespace CK.StObj.TypeScript.Engine
                     // We use the standard default type name for record.
                     // Even if the default value is simply $"new TypeName()", to know IF there is
                     // a default (i.e. all fields have a defaults), one need to resolve the field types
-                    // and this can lead to an infinite recursion. Field types resolution must be deferred.
+                    // and this can lead to an infinite recursion.
+                    // Field types resolution must be deferred: NamedRecordBuilder does this.
                     bool hasDefaultSet = builder.DefaultValueSource != null || builder.DefaultValueSourceProvider != null;
                     if( builder.Implementor == null || !hasDefaultSet )
                     {
-                        var b = new NamedRecordBuilder( (IRecordPocoType)t, context.Root );
+                        var b = new NamedRecordBuilder( (IRecordPocoType)t, context );
                         builder.Implementor ??= b.GenerateRecord;
                         if( !hasDefaultSet ) builder.DefaultValueSourceProvider = b.GetDefaultValueSource;
                     }
@@ -248,20 +257,20 @@ namespace CK.StObj.TypeScript.Engine
         sealed class NamedRecordBuilder
         {
             readonly IRecordPocoType _type;
-            readonly TypeScriptRoot _root;
+            readonly TypeScriptContext _typeScriptContext;
             FieldsWriter? _fieldsWriter;
 
-            internal NamedRecordBuilder( IRecordPocoType type, TypeScriptRoot root )
+            internal NamedRecordBuilder( IRecordPocoType type, TypeScriptContext context )
             {
                 _type = type;
-                _root = root;
+                _typeScriptContext = context;
             }
 
-            FieldsWriter GetFieldsWriter( IActivityMonitor monitor ) => _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _root );
+            FieldsWriter GetFieldsWriter( IActivityMonitor monitor ) => _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _typeScriptContext.Root );
 
             internal bool GenerateRecord( IActivityMonitor monitor, ITSGeneratedType type )
             {
-                return GetFieldsWriter( monitor ).GenerateRecordType( monitor, type );
+                return GetFieldsWriter( monitor ).GenerateRecordType( monitor, _typeScriptContext, _type, type );
             }
 
             internal string? GetDefaultValueSource( IActivityMonitor monitor, ITSGeneratedType type )
@@ -292,27 +301,29 @@ namespace CK.StObj.TypeScript.Engine
                 .OpenBlock()
                 .Append( "public constructor(" ).CreatePart( out var ctorParametersPart ).Append( ")" ).NewLine()
                 .Append( "{" ).CreatePart( out var ctorBodyPart ).Append( "}" ).NewLine()
-                // The get pocoModel() returns a static (shared pocoModel instance).
-                .Append( "get " ).Append( _typeScriptContext.Root.PascalCase ? "P" : "p").Append( "ocoModel() { return " )
+                // The get pocoTypeModel() returns a static (shared pocoTypeModel instance).
+                .Append( "get pocoTypeModel() { return " )
                 .Append( tsType.TypeName ).Append( "._m; }" ).NewLine()
-                // The pocoModel is extensible: abstract IPoco can extend it. 
+                // The pocoTypeModel is extensible. 
                 .Append( "private static readonly _m = {" ).NewLine()
-                .Append( "name: " ).AppendSourceString( t.ExternalOrCSharpName ).Append( "," ).NewLine()
-                // Let the trailing comma appear even if no one add content to pocoModelPart.
-                .Append( "idxName: \"" ).Append( (t.Index>>1).ToString(CultureInfo.InvariantCulture) ).Append( "\"," )
-                .CreatePart( out var pocoModelPart )
+                .Append( "isNamedRecord: false," ).NewLine()
+                .CreatePart( out var pocoTypeModelPart )
                 .Append( "};" ).NewLine();
 
             var fieldsWriter = FieldsWriter.Create( monitor, t, false, root );
             Throw.DebugAssert( fieldsWriter.HasDefault );
+            // This sorts the fields and retrieves the TSField list that can be altered (skipping fields
+            // and altering documentation) by other generators.
             var fields = fieldsWriter.GetPocoFields();
-
+            // Extends the pocoTypeModel with names and fields meta data.
+            fieldsWriter.WritePocoTypeModel( monitor, pocoTypeModelPart, t );
+            // Raises the event.
             var e = new GeneratingPrimaryPocoEventArgs( monitor,
                                                         tsType,
                                                         t,
                                                         implementedInterfaces,
                                                         fields,
-                                                        pocoModelPart,
+                                                        pocoTypeModelPart,
                                                         interfacesPart,
                                                         ctorParametersPart,
                                                         ctorBodyPart,
@@ -394,7 +405,7 @@ namespace CK.StObj.TypeScript.Engine
                 .OpenBlock();
             foreach( var f in a.Fields )
             {
-                if( !f.Type.IsExchangeable ) continue;
+                if( !_typeScriptContext.IsExchangeable( f.Type ) ) continue;
                 if( root.DocBuilder.GenerateDocumentation )
                 {
                     part.AppendDocumentation( monitor, f.Originator );
@@ -428,24 +439,46 @@ namespace CK.StObj.TypeScript.Engine
             part.Append( """
                     /**
                      * Base interface for all IPoco types.
+                     * IPocoType can be INamedRecord or IPoco: they have a name and fields.
+                     * Anonymous records (C# value tuples) have no name: they have no model.
                      **/
-                    export interface IPoco {
+                    export interface IPocoType {
                         /**
-                         * Gets the Poco description. 
+                         * Gets the Poco Type description. 
                          **/
-                        readonly pocoModel: IPocoModel;
+                        readonly pocoTypeModel: IPocoTypeModel;
+                    
+                        readonly _brand: {};
+                    }
 
+                    /**
+                     * Base interface for all IPoco types (Abstract that are TypeScript interfaces
+                     * or PrimaryPoco that are TypeScript classes).
+                     **/
+                    export interface IPoco extends IPocoType {
                         readonly _brand: {"IPoco": any};
                     }
 
                     /**
-                     * Describes a IPoco. 
+                     * Base interface for all INamedRecord types (C# struct).
                      **/
-                    export interface IPocoModel {
+                    export interface INamedRecord extends IPocoType {
+                        readonly _brand: {"INamedRecord": any};
+                    }
+
+                    /**
+                     * Describes a IPoco type. 
+                     **/
+                    export interface IPocoTypeModel {
                         /**
+                         * Gets whether this is a INamedRecord or a IPoco. 
+                         **/
+                        readonly isNamedRecord: boolean;
+                                            /**
                          * Gets the name of the Poco. 
                          **/
                         readonly name: string;
+
                         /**
                          * Gets a short name based on its unique index in
                          * the Poco system. 
@@ -467,11 +500,19 @@ namespace CK.StObj.TypeScript.Engine
             return tsType.EnsureTypePart( closer );
         }
 
-        static bool CheckExchangeable( IActivityMonitor monitor, IPocoType t )
+        static bool CheckExchangeable( IActivityMonitor monitor, TypeScriptContext context, IPocoType t )
         {
-            if( !t.IsExchangeable )
+            if( !context.IsExchangeable( t ) )
             {
-                monitor.Error( $"PocoType '{t}' has been marked as not exchangeable." );
+                if( !t.IsExchangeable )
+                {
+                    monitor.Error( $"PocoType '{t}' has been marked as not exchangeable." );
+                }
+                else
+                {
+                    monitor.Error( $"PocoType '{t}' has been marked as not exchangeable in the Json map: " +
+                                   $"a Poco type that is not Json serializable (when Json exchange is available) cannot be exchanged." );
+                }
                 return false;
             }
             return true;

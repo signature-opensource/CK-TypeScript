@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -150,12 +151,12 @@ namespace CK.StObj.TypeScript.Engine
                 return typeBuilder.Build();
             }
 
-            public bool GenerateRecordType( IActivityMonitor monitor, ITSGeneratedType tsType )
+            public bool GenerateRecordType( IActivityMonitor monitor, TypeScriptContext typeScriptContext, IRecordPocoType type, ITSGeneratedType tsType )
             {
                 Throw.DebugAssert( _type is IRecordPocoType r && !r.IsAnonymous );
                 var part = CreateTypePart( monitor, tsType );
                 if( part == null ) return false;
-                var root = tsType.File.Root;
+                var root = typeScriptContext.Root;
                 if( root.DocBuilder.GenerateDocumentation )
                 {
                     var xE = XmlDocumentationReader.GetDocumentationFor( monitor, tsType.Type, root.Memory );
@@ -171,9 +172,13 @@ namespace CK.StObj.TypeScript.Engine
                         part.AppendDocumentation( xE );
                     }
                 }
-                part.Append( "export class " ).Append( tsType.TypeName )
+                // INamedRecord is a pure TS type defined in IPoco.ts.
+                tsType.File.Imports.EnsureImport( typeScriptContext.GetTypeScriptPocoType( monitor ).File, "INamedRecord" );
+                part.Append( "export class " ).Append( tsType.TypeName ).Append( " implements INamedRecord")
                     .OpenBlock()
                     .Append( "constructor( " ).NewLine();
+                // A record constructor can have required parameters (not nullable, no default):
+                // they come first.
                 SortCtorParameters();
                 for( int i = 0; i < _fields.Length; i++ )
                 {
@@ -181,9 +186,20 @@ namespace CK.StObj.TypeScript.Engine
                     {
                         part.Append( ", " ).NewLine();
                     }
-                    _fields[i].WriteFieldDefinition( tsType.File, part );
+                    _fields[i].WriteCtorFieldDefinition( tsType.File, part );
                 }
-                part.NewLine().Append( ") {}" );
+                part.NewLine().Append( ") {}" ).NewLine()
+                    // The get pocoTypeModel() returns a static (shared pocoTypeModel instance).
+                    .Append( "get pocoTypeModel() { return " )
+                    .Append( tsType.TypeName ).Append( "._m; }" ).NewLine()
+                    // The pocoTypeModel is extensible. 
+                    .Append( "private static readonly _m = {" ).NewLine()
+                    .Append( "isNamedRecord: true," ).NewLine()
+                    .CreatePart( out var pocoTypeModelPart )
+                    .Append( "};" ).NewLine();
+                WritePocoTypeModel(monitor, pocoTypeModelPart, type );
+                part.Append( "readonly _brand!: INamedRecord[\"_brand\"] & {\"" )
+                    .Append( (type.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine();
                 return true;
             }
 
@@ -254,6 +270,13 @@ namespace CK.StObj.TypeScript.Engine
                     Array.Copy( fields, j, fields, j + 1, i - j );
                     fields[j] = f;
                 }
+            }
+
+            internal void WritePocoTypeModel( IActivityMonitor monitor, ITSCodePart pocoTypeModelPart, ICompositePocoType t )
+            {
+                pocoTypeModelPart.Append( "name: " ).AppendSourceString( t.ExternalOrCSharpName ).Append( "," ).NewLine()
+                .Append( "idxName: \"" ).Append( (t.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\"," );
+                // Let the trailing comma appear even if no one add content to pocoTypeModelPart.
             }
         }
 

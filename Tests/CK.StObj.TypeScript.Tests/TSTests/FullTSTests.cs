@@ -123,9 +123,15 @@ namespace CK.StObj.TypeScript.Tests
             runner.Run();
         }
 
-        public interface IBasicCommand : ICommand
+        public interface ITestSerializationCommand : ICommand
         {
-            string Action { get; set; }
+            string String { get; set; }
+            int Int32 { get; set; }
+            float Single { get; set; }
+            double Double { get; set; }
+            Guid Guid { get; set; }
+            DateTime DateTime { get; set; }
+            TimeSpan TimeSpan { get; set; }
         }
 
         [Test]
@@ -140,7 +146,8 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IWithObjectSpecializedAsPocoCommand ),
                 typeof( IResult ),
                 typeof( IWithObjectSpecializedAsSuperPocoCommand ),
-                typeof( ISuperResult )
+                typeof( ISuperResult ),
+                typeof( ITestSerializationCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
                                            tsTypes.Append( typeof( FakeCommandDirectory ) )

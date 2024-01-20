@@ -74,7 +74,7 @@ namespace CK.StObj.TypeScript.Engine
                 }
             }
 
-            internal readonly void WriteFieldDefinition( TypeScriptFile file, ITSCodeWriter w, IEnumerable<XElement>? docs = null, Action<DocumentationBuilder>? extension = null )
+            internal readonly void WriteCtorFieldDefinition( TypeScriptFile file, ITSCodeWriter w, IEnumerable<XElement>? docs = null, Action<DocumentationBuilder>? extension = null )
             {
                 using( file.Root.DocBuilder.RemoveGetOrSetPrefix() )
                 {

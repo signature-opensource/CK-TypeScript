@@ -17,7 +17,7 @@ namespace CK.Setup
         readonly ITSGeneratedType _tsType;
         readonly IPrimaryPocoType _pocoType;
         readonly IReadOnlyList<TSPocoField> _fields;
-        readonly ITSCodePart _pocoModelPart;
+        readonly ITSCodePart _pocoTypeModelPart;
         readonly ITSCodePart _interfacesPart;
         readonly ITSCodePart _ctorParametersPart;
         readonly ITSCodePart _ctorBodyPart;
@@ -31,7 +31,7 @@ namespace CK.Setup
                                                  IPrimaryPocoType pocoType,
                                                  IEnumerable<IAbstractPocoType> implementedInterfaces,
                                                  IReadOnlyList<TSPocoField> fields,
-                                                 ITSCodePart pocoModelPart,
+                                                 ITSCodePart pocoTypeModelPart,
                                                  ITSCodePart interfacesPart,
                                                  ITSCodePart ctorParametersPart,
                                                  ITSCodePart ctorBodyPart,
@@ -43,7 +43,7 @@ namespace CK.Setup
             _docTypes = pocoType.SecondaryTypes.Select( s => s.Type ).Prepend( pocoType.Type );
             _implementedInterfaces = implementedInterfaces;
             _fields = fields;
-            _pocoModelPart = pocoModelPart;
+            _pocoTypeModelPart = pocoTypeModelPart;
             _interfacesPart = interfacesPart;
             _ctorParametersPart = ctorParametersPart;
             _ctorBodyPart = ctorBodyPart;
@@ -140,8 +140,8 @@ namespace CK.Setup
         public IReadOnlyList<TSPocoField> Fields => _fields;
 
         /// <summary>
-        /// Gets the part to extend the poco model.
+        /// Gets the part to extend the poco type model.
         /// </summary>
-        public ITSCodePart PocoModelPart => _pocoModelPart;
+        public ITSCodePart PocoTypeModelPart => _pocoTypeModelPart;
     }
 }
