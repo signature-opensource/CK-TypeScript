@@ -21,7 +21,7 @@ namespace CK.StObj.TypeScript.Engine
         /// default to exist even if there is no default for the C#... and because we consider 
         /// only exchangeable fields, this may save some applicable defaults.
         /// </summary>
-        internal readonly record struct TSField
+        internal readonly struct TSField
         {
             public readonly IPocoField Field;
             public readonly ITSType TSFieldType;
@@ -41,9 +41,9 @@ namespace CK.StObj.TypeScript.Engine
                 Docs = doc;
             }
 
-            internal static TSField Create( IActivityMonitor monitor, TypeScriptRoot root, IPocoField field, ITSType tsFieldType )
+            internal static TSField Create( IActivityMonitor monitor, TypeScriptContext context, IPocoField field, ITSType tsFieldType )
             {
-                var doc = GetDocumentation( monitor, root, field.Originator );
+                var doc = GetDocumentation( monitor, context.Root, field.Originator );
                 return new TSField( field, tsFieldType, doc );
 
                 static ImmutableArray<XElement> GetDocumentation( IActivityMonitor monitor, TypeScriptRoot root, object? originator )

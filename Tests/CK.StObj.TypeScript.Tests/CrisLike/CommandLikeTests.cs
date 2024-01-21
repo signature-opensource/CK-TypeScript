@@ -101,6 +101,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             /// The record data.
             /// </summary>
             ref RecordData Data { get; }
+
+            /// <summary>
+            /// Gets or sets a command that returns a string.
+            /// Since NO such command exist, 
+            /// </summary>
+            ICommand<string>? ThereIsNoSuchCommand { get; set; }
         }
 
         [Test]
@@ -154,11 +160,13 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var tRecord = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/RecordData.ts" ) );
             tRecord.Should().Be( """
+                import { INamedRecord } from "../../../../Core/IPoco";
+
                 /**
                  * Simple record data.
                  **/
-                export class RecordData {
-                constructor( 
+                export class RecordData implements INamedRecord {
+                public constructor(
                 /**
                  * The data index.
                  **/
@@ -166,8 +174,27 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 /**
                  * A great name for the data.
                  **/
-                public superName: String = ""
-                ) {}
+                public superName: String = "")
+                {}
+                readonly _brand!: INamedRecord["_brand"] & {"38":any};
+                get pocoTypeModel() { return RecordData._m; }
+                private static readonly _m = {
+                isNamedRecord: true,
+                type: "RecordData",
+                index: 38,
+                fields: [
+                 {
+                name: "Index",
+                type: "Number",
+                isOptional:false,
+                index:0,
+                }, {
+                name: "SuperName",
+                type: "String",
+                isOptional:false,
+                index:1,
+                }],
+                };
                 }
 
                 """ );

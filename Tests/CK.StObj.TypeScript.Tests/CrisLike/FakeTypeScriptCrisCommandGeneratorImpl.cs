@@ -73,7 +73,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 e.PocoTypeModelPart.NewLine()
                  .Append( "applyAmbientValues( command: any, a: any, o: any )" )
                  .OpenBlock()
-                    .Append( "/*Apply HERE*/" )
+                    .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the ambient values.*/" )
                  .CloseBlock();
             }
         }

@@ -139,6 +139,13 @@ namespace CK.Setup
         internal void RaiseGeneratingAbstractPoco( GeneratingAbstractPocoEventArgs e ) => AbstractPocoGenerating?.Invoke( this, e );
 
         /// <summary>
+        /// Raised when generating code of a <see cref="IAbstractPocoType"/>.
+        /// </summary>
+        public event EventHandler<GeneratingNamedRecordPocoEventArgs>? NamedRecordPocoGenerating;
+
+        internal void RaiseGeneratingNamedRecordPoco( GeneratingNamedRecordPocoEventArgs e ) => NamedRecordPocoGenerating?.Invoke( this, e );
+
+        /// <summary>
         /// Gets the TypeScript IPoco generated type. The <see cref="ITSGeneratedType.File"/> contains
         /// the IPoco and its IPocoModel implementations.
         /// </summary>

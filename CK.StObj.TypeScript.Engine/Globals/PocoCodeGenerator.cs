@@ -9,6 +9,7 @@ using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 using static CK.CodeGen.TupleTypeName;
 
 namespace CK.StObj.TypeScript.Engine
@@ -142,7 +143,7 @@ namespace CK.StObj.TypeScript.Engine
                     Throw.DebugAssert( t is IRecordPocoType a && a.IsAnonymous );
                     var r = (IRecordPocoType)t;
                     Throw.DebugAssert( r.IsExchangeable == r.Fields.Any( f => f.IsExchangeable ) );
-                    var fieldsWriter = FieldsWriter.Create( monitor, r, true, context.Root );
+                    var fieldsWriter = FieldsWriter.Create( monitor, r, true, context );
                     ts = fieldsWriter.CreateAnonymousRecordType( monitor );
                 }
                 e.ResolvedType = isNullable ? ts.Nullable : ts;
@@ -266,16 +267,63 @@ namespace CK.StObj.TypeScript.Engine
                 _typeScriptContext = context;
             }
 
-            FieldsWriter GetFieldsWriter( IActivityMonitor monitor ) => _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _typeScriptContext.Root );
-
-            internal bool GenerateRecord( IActivityMonitor monitor, ITSGeneratedType type )
+            internal bool GenerateRecord( IActivityMonitor monitor, ITSGeneratedType tsType )
             {
-                return GetFieldsWriter( monitor ).GenerateRecordType( monitor, _typeScriptContext, _type, type );
+                _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _typeScriptContext );
+                var part = CreateTypePart( monitor, tsType );
+                if( part == null ) return false;
+                // INamedRecord is a pure TS type defined in IPoco.ts.
+                tsType.File.Imports.EnsureImport( _typeScriptContext.GetTypeScriptPocoType( monitor ).File, "INamedRecord" );
+                part.CreatePart( out var documentationPart )
+                    .Append( "export class " ).Append( tsType.TypeName ).Append( " implements INamedRecord" )
+                    .OpenBlock()
+                    .Append( "public constructor(" ).CreatePart( out var ctorParametersPart ).Append( ")" ).NewLine()
+                .Append( "{" )
+                .CreatePart( out var ctorBodyPart )
+                .Append( "}" ).NewLine()
+                .Append( "readonly _brand!: INamedRecord[\"_brand\"] & {\"" ).Append( (_type.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine()
+                .CreatePart( out var pocoTypeModelPart )
+                .Append( "};" ).NewLine();
+
+                // This sorts the fields and retrieves the TSField list that can be altered (skipping fields
+                // and altering documentation) by other generators.
+                // TSField.PocoTypeModelPart enables field models to be extended.
+                var fields = _fieldsWriter.Value.WritePocoTypeModelAndGetPocoFields( pocoTypeModelPart, tsType );
+
+                // Raises the event.
+                var e = new GeneratingNamedRecordPocoEventArgs( monitor,
+                                                                tsType,
+                                                                _type,
+                                                                fields,
+                                                                pocoTypeModelPart,
+                                                                ctorParametersPart,
+                                                                ctorBodyPart,
+                                                                part );
+
+                _typeScriptContext.RaiseGeneratingNamedRecordPoco( e );
+
+                if( _typeScriptContext.Root.DocBuilder.GenerateDocumentation )
+                {
+                    var xE = XmlDocumentationReader.GetDocumentationFor( monitor, tsType.Type, _typeScriptContext.Root.Memory );
+                    if( xE != null && xE.Elements( "param" ).Any() )
+                    {
+                        // Clones the element and removes any param
+                        // elements from it (for record constructor syntax).
+                        xE = new XElement( xE );
+                        xE.Elements( "param" ).Remove();
+                    }
+                    documentationPart.AppendDocumentation( xE, e.DocumentationExtension );
+                }
+                WriteCtorParameters( tsType, ctorParametersPart, fields );
+
+                return true;
             }
 
             internal string? GetDefaultValueSource( IActivityMonitor monitor, ITSGeneratedType type )
             {
-                return GetFieldsWriter( monitor ).HasDefault
+                Throw.DebugAssert( !_fieldsWriter.HasValue );
+                _fieldsWriter = FieldsWriter.Create( monitor, _type, false, _typeScriptContext );
+                return _fieldsWriter.Value.HasDefault
                         ? $"new {type.TypeName}()"
                         : null;
             }
@@ -284,8 +332,6 @@ namespace CK.StObj.TypeScript.Engine
         bool GeneratePrimaryPoco( IActivityMonitor monitor, ITSGeneratedType tsType, IPrimaryPocoType t )
         {
             Throw.DebugAssert( !tsType.IsNullable && !t.IsNullable );
-
-            TypeScriptRoot root = tsType.File.Root;
 
             var part = CreateTypePart( monitor, tsType );
             if( part == null ) return false;
@@ -300,23 +346,17 @@ namespace CK.StObj.TypeScript.Engine
                 .Append( "export class " ).Append( tsType.TypeName ).CreatePart( out var interfacesPart )
                 .OpenBlock()
                 .Append( "public constructor(" ).CreatePart( out var ctorParametersPart ).Append( ")" ).NewLine()
-                .Append( "{" ).CreatePart( out var ctorBodyPart ).Append( "}" ).NewLine()
-                // The get pocoTypeModel() returns a static (shared pocoTypeModel instance).
-                .Append( "get pocoTypeModel() { return " )
-                .Append( tsType.TypeName ).Append( "._m; }" ).NewLine()
-                // The pocoTypeModel is extensible. 
-                .Append( "private static readonly _m = {" ).NewLine()
-                .Append( "isNamedRecord: false," ).NewLine()
+                .Append( "{" )
+                .CreatePart( out var ctorBodyPart )
+                .Append( "}" ).NewLine()
                 .CreatePart( out var pocoTypeModelPart )
                 .Append( "};" ).NewLine();
 
-            var fieldsWriter = FieldsWriter.Create( monitor, t, false, root );
+            var fieldsWriter = FieldsWriter.Create( monitor, t, false, _typeScriptContext );
             Throw.DebugAssert( fieldsWriter.HasDefault );
             // This sorts the fields and retrieves the TSField list that can be altered (skipping fields
             // and altering documentation) by other generators.
-            var fields = fieldsWriter.GetPocoFields();
-            // Extends the pocoTypeModel with names and fields meta data.
-            fieldsWriter.WritePocoTypeModel( monitor, pocoTypeModelPart, t );
+            var fields = fieldsWriter.WritePocoTypeModelAndGetPocoFields( pocoTypeModelPart, tsType );
             // Raises the event.
             var e = new GeneratingPrimaryPocoEventArgs( monitor,
                                                         tsType,
@@ -333,7 +373,6 @@ namespace CK.StObj.TypeScript.Engine
 
             documentationPart.AppendDocumentation( monitor, e.ClassDocumentation, e.DocumentationExtension );
             WriteInterfacesAndBrand( monitor,
-                                     root,
                                      interfacesPart,
                                      isPrimaryPoco: true,
                                      implementedInterfaces,
@@ -341,18 +380,27 @@ namespace CK.StObj.TypeScript.Engine
                                      t,
                                      tsType,
                                      part );
-            for( int i = 0; i < fields.Length; i++ )
-            {
-                var f = fields[ i ];
-                if( i == 0 ) ctorParametersPart.NewLine();
-                else ctorParametersPart.Append( ", " ).NewLine();
-                if( !f.Skip ) f.WriteFieldDefinition( tsType.File, ctorParametersPart );
-            }
+            WriteCtorParameters( tsType, ctorParametersPart, fields );
             return true;
         }
 
+        private static void WriteCtorParameters( ITSGeneratedType tsType, ITSCodePart ctorParametersPart, TSPocoField[] fields )
+        {
+            bool atLeastOne = false;
+            for( int i = 0; i < fields.Length; i++ )
+            {
+                var f = fields[i];
+                if( i == 0 ) ctorParametersPart.NewLine();
+                else if( atLeastOne ) ctorParametersPart.Append( ", " ).NewLine();
+                if( !f.ConstructorSkip )
+                {
+                    f.WriteFieldDefinition( tsType.File, ctorParametersPart );
+                    atLeastOne = true;
+                }
+            }
+        }
+
         void WriteInterfacesAndBrand( IActivityMonitor monitor,
-                                      TypeScriptRoot root,
                                       ITSCodePart interfaces,
                                       bool isPrimaryPoco,
                                       IEnumerable<IAbstractPocoType> abstracts,
@@ -371,7 +419,7 @@ namespace CK.StObj.TypeScript.Engine
                 {
                     interfaces.Append( isPrimaryPoco ? " implements " : " extends " );
                 }
-                ITSType i = root.TSTypes.ResolveTSType( monitor, a );
+                ITSType i = _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, a );
                 interfaces.AppendTypeName( i );
 
                 // Handles branding.
@@ -399,20 +447,19 @@ namespace CK.StObj.TypeScript.Engine
             var part = CreateTypePart( monitor, tsType );
             if( part == null ) return false;
 
-            var root = tsType.File.Root;
             part.CreatePart( out var docPart )
                 .Append( "export interface " ).Append( tsType.TypeName ).CreatePart( out var interfacesPart )
                 .OpenBlock();
             foreach( var f in a.Fields )
             {
                 if( !_typeScriptContext.IsExchangeable( f.Type ) ) continue;
-                if( root.DocBuilder.GenerateDocumentation )
+                if( _typeScriptContext.Root.DocBuilder.GenerateDocumentation )
                 {
                     part.AppendDocumentation( monitor, f.Originator );
                 }
                 part.AppendIdentifier( f.Name );
                 if( f.Type.IsNullable ) part.Append( "?" );
-                part.Append( ": " ).AppendTypeName( root.TSTypes.ResolveTSType( monitor, f.Type.NonNullable ) ).Append(";").NewLine();
+                part.Append( ": " ).AppendTypeName( _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, f.Type.NonNullable ) ).Append(";").NewLine();
             }
 
             var e = new GeneratingAbstractPocoEventArgs( monitor, tsType, a, a.MinimalGeneralizations, interfacesPart, part );
@@ -420,7 +467,6 @@ namespace CK.StObj.TypeScript.Engine
 
             docPart.AppendDocumentation( monitor, e.TypeDocumentation, e.DocumentationExtension );
             WriteInterfacesAndBrand( monitor,
-                                     root,
                                      interfacesPart,
                                      isPrimaryPoco: false,
                                      e.ImplementedInterfaces,
@@ -467,6 +513,32 @@ namespace CK.StObj.TypeScript.Engine
                     }
 
                     /**
+                     * Models a field in a IPocoType.
+                     **/
+                    export type FieldModel = {
+
+                        /**
+                         * Gets the field name.
+                         **/
+                        readonly name: string,
+
+                        /**
+                         * Gets the field's type name.
+                         **/
+                        readonly type: string,
+
+                        /**
+                         * Gets whether the field can be "undefined".
+                         **/
+                        readonly isOptional: boolean;
+
+                        /**
+                         * Gets field index in its IPocoType.
+                         **/
+                        readonly index: number;
+                    };
+
+                    /**
                      * Describes a IPoco type. 
                      **/
                     export interface IPocoTypeModel {
@@ -474,16 +546,21 @@ namespace CK.StObj.TypeScript.Engine
                          * Gets whether this is a INamedRecord or a IPoco. 
                          **/
                         readonly isNamedRecord: boolean;
-                                            /**
-                         * Gets the name of the Poco. 
-                         **/
-                        readonly name: string;
 
                         /**
-                         * Gets a short name based on its unique index in
-                         * the Poco system. 
+                         * Gets the type name.
                          **/
-                        readonly idxName: string;
+                        readonly type: string;
+
+                        /**
+                         * Gets a unique index for this type in the Poco Type System. 
+                         **/
+                        readonly index: number;
+                    
+                        /**
+                         * Gets the model for each field. 
+                         **/
+                        readonly fields: ReadonlyArray<FieldModel>;
                     }
                                         
                     """ );

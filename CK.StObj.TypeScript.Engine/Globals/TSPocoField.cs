@@ -16,21 +16,22 @@ namespace CK.Setup
     public sealed class TSPocoField
     {
         readonly PocoCodeGenerator.TSField _f;
+        readonly ITSKeyedCodePart _fieldModelPart;
         IEnumerable<XElement> _docs;
         Action<DocumentationBuilder>? _documentationExtension;
-        bool _skip;
+        bool _constrctorSkip;
 
-        internal TSPocoField( PocoCodeGenerator.TSField f )
+        internal TSPocoField( ITSCodePart parantPart, PocoCodeGenerator.TSField f )
         {
-            Throw.DebugAssert( f.Field is IPrimaryPocoField );
             _f = f;
+            _fieldModelPart = parantPart.CreateKeyedPart( this, closer: "}" );
             _docs = _f.Docs;
         }
 
         /// <summary>
         /// Gets the Poco field.
         /// </summary>
-        public IPrimaryPocoField Field => Unsafe.As<IPrimaryPocoField>( _f.Field );
+        public IPocoField Field => _f.Field;
 
         /// <summary>
         /// Gets the TypeScript field type.
@@ -83,11 +84,16 @@ namespace CK.Setup
         /// constructor parameters. When a field is skipped here, it must be manually
         /// defined in the <see cref="GeneratingPrimaryPocoEventArgs.BodyPart"/>.
         /// </summary>
-        public bool Skip
+        public bool ConstructorSkip
         {
-            get => _skip;
-            set => _skip = value;
+            get => _constrctorSkip;
+            set => _constrctorSkip = value;
         }
+
+        /// <summary>
+        /// Gets the field model part that can be extended.
+        /// </summary>
+        public ITSKeyedCodePart FieldModelPart => _fieldModelPart;
 
         internal void WriteFieldDefinition( TypeScriptFile file, ITSCodeWriter w )
         {

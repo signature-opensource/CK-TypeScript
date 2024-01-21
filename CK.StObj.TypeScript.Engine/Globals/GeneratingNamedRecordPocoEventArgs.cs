@@ -9,30 +9,26 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Raised by <see cref="TypeScriptContext.PrimaryPocoGenerating"/>.
+    /// Raised by <see cref="TypeScriptContext.RaiseGeneratingNamedRecord"/>.
     /// This event enable participants to alter the TypeScript Poco code.
     /// </summary>
-    public sealed class GeneratingPrimaryPocoEventArgs : EventMonitoredArgs
+    public sealed class GeneratingNamedRecordPocoEventArgs : EventMonitoredArgs
     {
         readonly ITSGeneratedType _tsType;
-        readonly IPrimaryPocoType _pocoType;
+        readonly IRecordPocoType _pocoType;
         readonly IReadOnlyList<TSPocoField> _fields;
         readonly ITSCodePart _pocoTypeModelPart;
-        readonly ITSCodePart _interfacesPart;
         readonly ITSCodePart _ctorParametersPart;
         readonly ITSCodePart _ctorBodyPart;
         readonly ITSCodePart _bodyPart;
-        IEnumerable<Type> _docTypes;
-        IEnumerable<IAbstractPocoType> _implementedInterfaces;
+        Type? _docType;
         Action<DocumentationBuilder>? _documentationExtension;
 
-        internal GeneratingPrimaryPocoEventArgs( IActivityMonitor monitor,
+        internal GeneratingNamedRecordPocoEventArgs( IActivityMonitor monitor,
                                                  ITSGeneratedType tSGeneratedType,
-                                                 IPrimaryPocoType pocoType,
-                                                 IEnumerable<IAbstractPocoType> implementedInterfaces,
+                                                 IRecordPocoType pocoType,
                                                  IReadOnlyList<TSPocoField> fields,
                                                  ITSCodePart pocoTypeModelPart,
-                                                 ITSCodePart interfacesPart,
                                                  ITSCodePart ctorParametersPart,
                                                  ITSCodePart ctorBodyPart,
                                                  ITSCodePart bodyPart )
@@ -40,20 +36,18 @@ namespace CK.Setup
         {
             _tsType = tSGeneratedType;
             _pocoType = pocoType;
-            _docTypes = pocoType.SecondaryTypes.Select( s => s.Type ).Prepend( pocoType.Type );
-            _implementedInterfaces = implementedInterfaces;
+            _docType = pocoType.Type;
             _fields = fields;
             _pocoTypeModelPart = pocoTypeModelPart;
-            _interfacesPart = interfacesPart;
             _ctorParametersPart = ctorParametersPart;
             _ctorBodyPart = ctorBodyPart;
             _bodyPart = bodyPart;
         }
 
         /// <summary>
-        /// Gets the primary poco type that is being generated.
+        /// Gets the record poco type that is being generated.
         /// </summary>
-        public IPrimaryPocoType PrimaryPocoType => _pocoType;
+        public IRecordPocoType RecordPocoType => _pocoType;
 
         /// <summary>
         /// Gets the generated TypeScript type.
@@ -61,21 +55,15 @@ namespace CK.Setup
         public ITSGeneratedType TSGeneratedType => _tsType;
 
         /// <summary>
-        /// Gets or sets the types that will be used to generate
-        /// the documentation. It starts with the <see cref="PrimaryPocoType"/>'s type
-        /// followed by all the <see cref="IPrimaryPocoType.SecondaryTypes"/> types.
+        /// Gets or sets the interface type from which documentation will be extracted.
         /// <para>
-        /// This can set to substitute a filtered or expanded set if needed. 
+        /// This can be set to null to skip C# documentation adaptation. 
         /// </para>
         /// </summary>
-        public IEnumerable<Type> ClassDocumentation
+        public Type? ClassDocumentation
         {
-            get => _docTypes;
-            set
-            {
-                Throw.CheckNotNullArgument( value );
-                _docTypes = value;
-            }
+            get => _docType;
+            set => _docType = value;
         }
 
         /// <summary>
@@ -87,27 +75,6 @@ namespace CK.Setup
             get => _documentationExtension;
             set => _documentationExtension = value;
         }
-
-        /// <summary>
-        /// Gets or sets the base types that will be implemented.
-        /// <para>
-        /// This can set to substitute a filtered or expanded set if needed. 
-        /// </para>
-        /// </summary>
-        public IEnumerable<IAbstractPocoType> ImplementedInterfaces
-        {
-            get => _implementedInterfaces;
-            set
-            {
-                Throw.CheckNotNullArgument( value );
-                _implementedInterfaces = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the base interfaces part. By default, <see cref="ImplementedInterfaces"/> will be written in it.
-        /// </summary>
-        public ITSCodePart InterfacesPart => _interfacesPart;
 
         /// <summary>
         /// Gets the constructor parameters part.
@@ -126,14 +93,13 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the list of fields that will be written as constructor parameters.
-        /// Note that as these are Poco fields, none of them are required, all af them have
-        /// a sensible default value.
         /// <para>
-        /// Fields are ordered in 3 groups:
+        /// Fields are ordered in 4 groups:
         /// <list type="number">
+        ///   <item>Non nullable, no default (the required).</item>
         ///   <item>Non Nullable with default.</item>
         ///   <item>Nullable with non null default.</item>
-        ///   <item>Nullable without default (the truly optional ones).</item>
+        ///   <item>Nullable without default (the optionals).</item>
         /// </list>
         /// </para>
         /// </summary>
