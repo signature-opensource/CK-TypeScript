@@ -3,7 +3,7 @@ using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
-    sealed class TSTypeBuilder : ITSTypeBuilder
+    sealed class TSTypeBuilder : ITSTypeSignatureBuilder
     {
         readonly TypeScriptFile _virtualFile;
         readonly RawCodePart _typeName;
@@ -25,7 +25,7 @@ namespace CK.TypeScript.CodeGen
 
         public ITSCodePart DefaultValue => _defaultValue;
 
-        public TSType Build( bool typeNameIsDefaultValueSource = false )
+        public TSBasicType Build( bool typeNameIsDefaultValueSource = false )
         {
             Throw.CheckState( !BuiltDone );
             var b = new SmarterStringBuilder( new StringBuilder() );
@@ -38,7 +38,7 @@ namespace CK.TypeScript.CodeGen
             _typeName.Clear();
             _defaultValue.Clear();
             _root.Return( this );
-            return new TSType( tName, imports, defaultValueSource );
+            return new TSBasicType( tName, imports, defaultValueSource );
         }
     }
 }

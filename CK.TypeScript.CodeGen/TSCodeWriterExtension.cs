@@ -346,12 +346,14 @@ namespace CK.TypeScript.CodeGen
         /// <param name="enumType">The enum type.</param>
         /// <param name="typeName">The TypeScript type name.</param>
         /// <param name="export">True to prefix with 'export ' the enum definition.</param>
+        /// <param name="leaveTypeOpen">True to let the type opened (no '}' closer).</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
         static public T AppendEnumDefinition<T>( this T @this,
                                                  IActivityMonitor monitor,
                                                  Type enumType,
                                                  string typeName,
-                                                 bool export ) where T : ITSCodeWriter
+                                                 bool export,
+                                                 bool leaveTypeOpen = false ) where T : ITSCodeWriter
         {
             Throw.CheckArgument( enumType.IsEnum );
             var uT = enumType.GetEnumUnderlyingType();
@@ -369,27 +371,28 @@ namespace CK.TypeScript.CodeGen
                 @this.AppendDocumentation( xDoc, enumType );
                 docValuePrefix = XmlDocumentationReader.GetNameAttributeValueFor( "F:", enumType );
             }
-            return @this.Append( export ? "export enum " : "enum " ).Append( typeName )
-                        .OpenBlock()
-                        .Append( b =>
-                        {
-                            string[] names = Enum.GetNames( enumType );
-                            int[] values = Enum.GetValues( enumType ).Cast<object>().Select( x => Convert.ToInt32( x ) ).ToArray();
+            @this.Append( export ? "export enum " : "enum " ).Append( typeName )
+                  .OpenBlock()
+                  .Append( b =>
+                  {
+                      string[] names = Enum.GetNames( enumType );
+                      int[] values = Enum.GetValues( enumType ).Cast<object>().Select( x => Convert.ToInt32( x ) ).ToArray();
 
-                            for( int i = 0; i < names.Length; ++i )
-                            {
-                                if( i > 0 ) b.Append( "," ).NewLine();
+                      for( int i = 0; i < names.Length; ++i )
+                      {
+                          if( i > 0 ) b.Append( "," ).NewLine();
 
-                                var n = names[i];
-                                if( xDoc != null )
-                                {
-                                    Debug.Assert( docValuePrefix != null );
-                                    b.AppendDocumentation( XmlDocumentationReader.GetDocumentationElement( xDoc, docValuePrefix + '.' + n ) );
-                                }
-                                b.Append( n ).Append( " = " ).Append( values[i] );
-                            }
-                        } )
-                        .CloseBlock();
+                          var n = names[i];
+                          if( xDoc != null )
+                          {
+                              Debug.Assert( docValuePrefix != null );
+                              b.AppendDocumentation( XmlDocumentationReader.GetDocumentationElement( xDoc, docValuePrefix + '.' + n ) );
+                          }
+                          b.Append( n ).Append( " = " ).Append( values[i] );
+                      }
+                  } );
+            if( !leaveTypeOpen ) @this.CloseBlock();
+            return @this;
         }
 
 

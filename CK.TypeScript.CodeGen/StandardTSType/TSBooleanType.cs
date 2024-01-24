@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSBooleanType : TSType
+    class TSBooleanType : TSBasicType
     {
         public TSBooleanType()
             : base( "Boolean", null, "false" )

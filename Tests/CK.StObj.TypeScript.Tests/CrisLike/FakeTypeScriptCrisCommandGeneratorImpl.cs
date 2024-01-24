@@ -17,12 +17,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     // Hard coded Cris-like TypeScriptCrisCommandGeneratorImpl.
     public class FakeTypeScriptCrisCommandGeneratorImpl : ITSCodeGenerator
     {
-        TSType? _crisPoco;
-        TSType? _abstractCommand;
-        TSType? _command;
+        TSBasicType? _crisPoco;
+        TSBasicType? _abstractCommand;
+        TSBasicType? _command;
 
         // We don't add anything to the default IPocoType handling.
-        public virtual bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e ) => true;
+        public virtual bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
         // We don't generate global code.
         public virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g ) => true;
@@ -32,8 +32,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // This can be called IF multiple contexts must be generated:
             // we reset the cached instance here.
             _command = null;
-            context.PrimaryPocoGenerating += OnPrimaryPocoGenerating;
-            context.AbstractPocoGenerating += OnAbstractPocoGenerating;
+            context.PocoCodeGenerator.PrimaryPocoGenerating += OnPrimaryPocoGenerating;
+            context.PocoCodeGenerator.AbstractPocoGenerating += OnAbstractPocoGenerating;
             return true;
         }
 
@@ -80,7 +80,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
         public virtual bool OnResolveType( IActivityMonitor monitor,
                                            TypeScriptContext context,
-                                           TypeBuilderRequiredEventArgs builder )
+                                           RequireTSFromTypeEventArgs builder )
         {
             var t = builder.Type;
             // Hooks:
@@ -123,15 +123,15 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             GenerateCrisModelFile( monitor, context, modelFile );
             //GenerateCrisEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "CrisEndpoint.ts" ) );
             //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
-            _crisPoco = new TSType( "ICrisPoco", imports => imports.EnsureImport( modelFile, "ICrisPoco" ), null );
-            _abstractCommand = new TSType( "IAbstractCommand", imports => imports.EnsureImport( modelFile, "IAbstractCommand" ), null );
-            _command = new TSType( "ICommand", imports => imports.EnsureImport( modelFile, "ICommand" ), null );
+            _crisPoco = new TSBasicType( "ICrisPoco", imports => imports.EnsureImport( modelFile, "ICrisPoco" ), null );
+            _abstractCommand = new TSBasicType( "IAbstractCommand", imports => imports.EnsureImport( modelFile, "IAbstractCommand" ), null );
+            _command = new TSBasicType( "ICommand", imports => imports.EnsureImport( modelFile, "ICommand" ), null );
 
             static void GenerateCrisModelFile( IActivityMonitor monitor, TypeScriptContext context, TypeScriptFile fModel )
             {
                 fModel.Imports.EnsureImport( monitor, typeof( SimpleUserMessage ) );
                 fModel.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
-                var pocoType = context.GetTypeScriptPocoType( monitor );
+                var pocoType = context.PocoCodeGenerator.PocoModel.IPocoType;
                 // Imports the IPoco itself...
                 pocoType.EnsureRequiredImports( fModel.Imports );
                 // ...and its pure TypeScript IPocoTypeModel.
@@ -192,9 +192,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                  * Captures communication, validation or execution error.
                                  **/
                                 export class CrisError extends Error {
-                                    /**
-                                     * Get this error type.
-                                     */
+                                   /**
+                                    * Get this error type.
+                                    */
                                     public readonly errorType : "CommunicationError"|"ValidationError"|"ExecutionError";
                                     /**
                                      * Gets the messages. At least one message is guaranteed to exist.

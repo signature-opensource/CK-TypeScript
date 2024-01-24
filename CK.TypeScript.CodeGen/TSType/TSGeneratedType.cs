@@ -6,51 +6,27 @@ using System.Runtime.CompilerServices;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// This class is internal: only the ITSGeneratedType is exposed.
+    /// This class is internal: only the ITSFileCSharpType is exposed.
     /// </summary>
-    sealed class TSGeneratedType : TSType, ITSGeneratedType
+    sealed class TSGeneratedType : TSType, ITSFileCSharpType
     {
         readonly TSValueWriter? _tryWriteValue;
         internal readonly TSCodeGenerator? _codeGenerator;
+        readonly ITSKeyedCodePart _part;
         readonly Type _type;
         readonly TypeScriptFile _file;
+        string? _defaultValueSource;
         readonly bool _hasError;
 
-        sealed class GeneratedNull : Null, ITSGeneratedType
-        {
-            public GeneratedNull( ITSType nonNullable )
-                : base( nonNullable )
-            {
-            }
-
-            new TSGeneratedType NonNullable => Unsafe.As<TSGeneratedType>( base.NonNullable );
-
-            public new TypeScriptFile File => NonNullable.File;
-
-            ITSGeneratedType ITSGeneratedType.Nullable => this;
-
-            ITSGeneratedType ITSGeneratedType.NonNullable => NonNullable;
-
-            public Type Type => NonNullable.Type;
-
-            public ITSKeyedCodePart? TypePart => NonNullable.TypePart;
-
-            public bool HasError => NonNullable.HasError;
-
-            public ITSKeyedCodePart EnsureTypePart( string closer = "}\n", bool top = false )
-            {
-                return NonNullable.EnsureTypePart( closer, top );
-            }
-        }
-
         internal TSGeneratedType( Type t,
-                                   string typeName,
-                                   TypeScriptFile file,
-                                   string? defaultValue,
-                                   TSValueWriter? tryWriteValue,
-                                   TSCodeGenerator? codeGenerator,
-                                   bool hasError )
-            : base( typeName, null, defaultValue, t => new GeneratedNull( t ) )
+                                  string typeName,
+                                  TypeScriptFile file,
+                                  string? defaultValue,
+                                  TSValueWriter? tryWriteValue,
+                                  TSCodeGenerator? codeGenerator,
+                                  string partCloser,
+                                  bool hasError )
+            : base( typeName )
         {
             Throw.DebugAssert( t != null );
             Throw.DebugAssert( file != null );
@@ -58,6 +34,8 @@ namespace CK.TypeScript.CodeGen
             _file = file;
             _tryWriteValue = tryWriteValue;
             _codeGenerator = codeGenerator;
+            _defaultValueSource = defaultValue;
+            _part = File.Body.FindOrCreateKeyedPart( Type, partCloser );
             _hasError = hasError;
         }
 
@@ -65,11 +43,12 @@ namespace CK.TypeScript.CodeGen
 
         public override TypeScriptFile File => _file;
 
+        public override string? DefaultValueSource => _defaultValueSource;
+
+        internal void SetDefaultValueSource( string? v ) => _defaultValueSource = v;
+
+
         public bool HasError => _hasError;
-
-        public new ITSGeneratedType Nullable => (ITSGeneratedType)base.Nullable;
-
-        public new ITSGeneratedType NonNullable => this;
 
         public override void EnsureRequiredImports( ITSFileImportSection section )
         {
@@ -78,9 +57,7 @@ namespace CK.TypeScript.CodeGen
 
         protected override bool DoTryWriteValue( ITSCodeWriter writer, object value ) => _tryWriteValue?.Invoke( writer, this, value ) ?? false;
 
-        public ITSKeyedCodePart? TypePart => File.Body.FindKeyedPart( Type );
-
-        public ITSKeyedCodePart EnsureTypePart( string closer = "}\n", bool top = false ) => File.Body.FindOrCreateKeyedPart( Type, closer, top );
+        public ITSCodePart TypePart => _part;
 
     }
 

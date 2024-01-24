@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
@@ -14,26 +15,27 @@ namespace CK.Setup
     /// </summary>
     public sealed class GeneratingNamedRecordPocoEventArgs : EventMonitoredArgs
     {
-        readonly ITSGeneratedType _tsType;
+        readonly TSPocoModel _tsPocoModel;
+        readonly ITSFileCSharpType _tsType;
         readonly IRecordPocoType _pocoType;
         readonly IReadOnlyList<TSPocoField> _fields;
         readonly ITSCodePart _pocoTypeModelPart;
         readonly ITSCodePart _ctorParametersPart;
         readonly ITSCodePart _ctorBodyPart;
-        readonly ITSCodePart _bodyPart;
         Type? _docType;
         Action<DocumentationBuilder>? _documentationExtension;
 
         internal GeneratingNamedRecordPocoEventArgs( IActivityMonitor monitor,
-                                                 ITSGeneratedType tSGeneratedType,
-                                                 IRecordPocoType pocoType,
-                                                 IReadOnlyList<TSPocoField> fields,
-                                                 ITSCodePart pocoTypeModelPart,
-                                                 ITSCodePart ctorParametersPart,
-                                                 ITSCodePart ctorBodyPart,
-                                                 ITSCodePart bodyPart )
+                                                     TSPocoModel tsPocoModel,                    
+                                                     ITSFileCSharpType tSGeneratedType,
+                                                     IRecordPocoType pocoType,
+                                                     IReadOnlyList<TSPocoField> fields,
+                                                     ITSCodePart pocoTypeModelPart,
+                                                     ITSCodePart ctorParametersPart,
+                                                     ITSCodePart ctorBodyPart )
             : base( monitor )
         {
+            _tsPocoModel = tsPocoModel;
             _tsType = tSGeneratedType;
             _pocoType = pocoType;
             _docType = pocoType.Type;
@@ -41,8 +43,12 @@ namespace CK.Setup
             _pocoTypeModelPart = pocoTypeModelPart;
             _ctorParametersPart = ctorParametersPart;
             _ctorBodyPart = ctorBodyPart;
-            _bodyPart = bodyPart;
         }
+
+        /// <summary>
+        /// Gets the IPoco model.
+        /// </summary>
+        public TSPocoModel TSPocoModel => _tsPocoModel;
 
         /// <summary>
         /// Gets the record poco type that is being generated.
@@ -52,7 +58,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the generated TypeScript type.
         /// </summary>
-        public ITSGeneratedType TSGeneratedType => _tsType;
+        public ITSFileCSharpType TSGeneratedType => _tsType;
 
         /// <summary>
         /// Gets or sets the interface type from which documentation will be extracted.
@@ -85,11 +91,6 @@ namespace CK.Setup
         /// Gets the constructor body part. By default, nothing is written in this part.
         /// </summary>
         public ITSCodePart CtorBodyPart => _ctorBodyPart;
-
-        /// <summary>
-        /// Gets the type body (after the constructor). By default, nothing is written in this part.
-        /// </summary>
-        public ITSCodePart BodyPart => _bodyPart;
 
         /// <summary>
         /// Gets the list of fields that will be written as constructor parameters.

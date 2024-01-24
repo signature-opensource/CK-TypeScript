@@ -6,12 +6,12 @@ namespace CK.TypeScript.CodeGen
     /// Event arguments that exposes an object for which a <see cref="ITSType"/> must be resolved.
     /// This is raised when a key type that is not a C# type must be resolved.
     /// </summary>
-    public sealed class TSTypeRequiredEventArgs : EventMonitoredArgs
+    public sealed class RequireTSFromObjectEventArgs : EventMonitoredArgs
     {
         readonly object _keyType;
         ITSType? _resolved;
 
-        internal TSTypeRequiredEventArgs( IActivityMonitor monitor, object keyType )
+        internal RequireTSFromObjectEventArgs( IActivityMonitor monitor, object keyType )
             : base( monitor )
         {
             _keyType = keyType;

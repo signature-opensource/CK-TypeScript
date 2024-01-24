@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,8 @@ namespace CK.Setup
     /// </summary>
     public sealed class GeneratingAbstractPocoEventArgs : EventMonitoredArgs
     {
-        readonly ITSGeneratedType _tsType;
+        readonly TSPocoModel _tsPocoModel;
+        readonly ITSFileCSharpType _tsType;
         readonly IAbstractPocoType _pocoType;
         readonly ITSCodePart _interfacesPart;
         readonly ITSCodePart _bodyPart;
@@ -21,13 +23,15 @@ namespace CK.Setup
         Action<DocumentationBuilder>? _documentationExtension;
 
         internal GeneratingAbstractPocoEventArgs( IActivityMonitor monitor,
-                                                  ITSGeneratedType tSGeneratedType,
+                                                  TSPocoModel tsPocoModel, 
+                                                  ITSFileCSharpType tSGeneratedType,
                                                   IAbstractPocoType pocoType,
                                                   IEnumerable<IAbstractPocoType> implementedInterfaces,
                                                   ITSCodePart interfacesPart,
                                                   ITSCodePart bodyPart )
             : base( monitor )
         {
+            _tsPocoModel = tsPocoModel;
             _tsType = tSGeneratedType;
             _pocoType = pocoType;
             _docType = pocoType.Type;
@@ -37,6 +41,11 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Gets the IPoco model.
+        /// </summary>
+        public TSPocoModel TSPocoModel => _tsPocoModel;
+
+        /// <summary>
         /// Gets the primary poco type that is being generated.
         /// </summary>
         public IAbstractPocoType AbstractPocoType => _pocoType;
@@ -44,7 +53,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the generated TypeScript type.
         /// </summary>
-        public ITSGeneratedType TSGeneratedType => _tsType;
+        public ITSFileCSharpType TSGeneratedType => _tsType;
 
         /// <summary>
         /// Gets or sets the interface type from which documentation will be extracted.

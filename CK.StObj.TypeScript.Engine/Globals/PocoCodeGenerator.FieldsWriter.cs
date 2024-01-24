@@ -54,7 +54,7 @@ namespace CK.StObj.TypeScript.Engine
                                                TypeScriptContext context )
             {
                 Throw.DebugAssert( isAnonymousRecord == (type is IRecordPocoType r && r.IsAnonymous) );
-                var fields = type.Fields.Where( f => context.IsExchangeable( f.Type ) )
+                var fields = type.Fields.Where( f => context.PocoCodeGenerator.IsExchangeable( f.Type ) )
                                         .Select( f => TSField.Create( monitor,
                                                                       context,
                                                                       f,
@@ -97,9 +97,9 @@ namespace CK.StObj.TypeScript.Engine
                 return new FieldsWriter( type, fields, context, lastNonNullable, lastWithNonNullDefault, useTupleSyntax, hasDefault );
             }
 
-            public TSType CreateAnonymousRecordType( IActivityMonitor monitor )
+            public TSBasicType CreateAnonymousRecordType( IActivityMonitor monitor )
             {
-                var typeBuilder = _typeScriptContext.Root.GetTSTypeBuilder();
+                var typeBuilder = _typeScriptContext.Root.GetTSTypeSignatureBuilder();
                 if( _useTupleSyntax )
                 {
                     bool atLeastOne = false;
@@ -169,7 +169,7 @@ namespace CK.StObj.TypeScript.Engine
                     if( i > 0 ) part.Append( "," );
                     var f = _fields[i];
                     Throw.DebugAssert( "This has been handled while building the array of fields.",
-                                       _typeScriptContext.IsExchangeable( _fields[i].Field.Type ) );
+                                       _typeScriptContext.PocoCodeGenerator.IsExchangeable( _fields[i].Field.Type ) );
                     part.OpenBlock()
                         .Append( "name: " ).AppendSourceString( f.Field.Name ).Append( "," ).NewLine()
                         .Append( "type: " ).AppendSourceString( f.TSFieldType.TypeName ).Append( "," ).NewLine()
@@ -239,13 +239,6 @@ namespace CK.StObj.TypeScript.Engine
                     Array.Copy( fields, j, fields, j + 1, i - j );
                     fields[j] = f;
                 }
-            }
-
-            internal void WritePocoTypeModel( IActivityMonitor monitor, ITSCodePart pocoTypeModelPart, ICompositePocoType t )
-            {
-                pocoTypeModelPart.Append( "name: " ).AppendSourceString( t.ExternalOrCSharpName ).Append( "," ).NewLine()
-                .Append( "index: " ).Append( (t.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "," );
-                // Let the trailing comma appear even if no one add content to pocoTypeModelPart.
             }
         }
 

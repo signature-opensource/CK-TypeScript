@@ -86,7 +86,7 @@ namespace CK.StObj.TypeScript.Tests
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco1.ts",
-                """public readonly power: [Number, String, String?, unknown?] = [0, ""]""" );
+                """public readonly power: [Number, String, String?, {}?] = [0, ""]""" );
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco2.ts",
@@ -98,15 +98,15 @@ namespace CK.StObj.TypeScript.Tests
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco1.ts",
-                """public readonly power: {age: Number, userId: String, firstName?: String, lastName?: unknown} = {age: 0, userId: ""}""" );
+                """public readonly power: {age: Number, userId: String, firstName?: String, lastName?: {}} = {age: 0, userId: ""}""" );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco2.ts",
-                """public readonly power: {item1: Number, name: String, item3?: String, anotherName?: unknown} = {item1: 0, name: ""}""" );
+                """public readonly power: {item1: Number, name: String, item3?: String, anotherName?: {}} = {item1: 0, name: ""}""" );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco3.ts",
-                """public readonly power: {item1?: Number, name: String, item3: String, anotherName?: unknown} = {name: "", item3: ""}""" );
+                """public readonly power: {item1?: Number, name: String, item3: String, anotherName?: {}} = {name: "", item3: ""}""" );
         }
 
         [TypeScript( SameFolderAs = typeof( IRecordPoco1 ) )]
@@ -166,7 +166,7 @@ namespace CK.StObj.TypeScript.Tests
                 public age: Number = 0, 
                 public name: String = "", 
                 public altName?: String, 
-                public key?: unknown
+                public key?: {}
                 """ );
 
             CheckFile( targetProjectPath,
@@ -181,7 +181,7 @@ namespace CK.StObj.TypeScript.Tests
                 public age: Number = 0, 
                 public name: String = "Aur\u00E9lien", 
                 public altName: String|undefined = "Barrau", 
-                public key?: unknown
+                public key?: {}
                 """ );
 
             CheckFile( targetProjectPath,
@@ -190,7 +190,7 @@ namespace CK.StObj.TypeScript.Tests
                 public name: String = "Aur\u00E9lien", 
                 public age: Number = 40, 
                 public altName: String|undefined = "Barrau", 
-                public key?: unknown
+                public key?: {}
                 """ );
 
         }
@@ -218,7 +218,7 @@ namespace CK.StObj.TypeScript.Tests
                "RecTry.ts",
                """
                public name: String = "", 
-               public others: RecTry[] = []
+               public others: Array<RecTry> = []
                """ );
 
         }

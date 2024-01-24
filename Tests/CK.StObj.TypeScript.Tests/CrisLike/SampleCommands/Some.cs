@@ -12,7 +12,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     /// This command requires authentication and is device dependent.
     /// It returns an optional object as its result.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScript( Folder = "Cmd/Some" )]
     public interface IWithObjectCommand : ICommandAuthDeviceId, ICommand<object?>
     {
         /// <summary>
@@ -24,6 +24,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     /// <summary>
     /// This command extends <see cref="IWithObjectCommand"/> to return a string (instead of object).
     /// </summary>
+    [TypeScript( Folder = "Cmd/Some" )]
     public interface IWithObjectSpecializedAsStringCommand : IWithObjectCommand, ICommand<string>
     {
         /// <summary>
@@ -35,37 +36,24 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         int PowerString { get; set; }
     }
 
-    [TypeScript( Folder = "" )]
+    /// <summary>
+    /// Some command requires a regular authentication level.
+    /// </summary>
+    [TypeScript( Folder = "Cmd/Some" )]
     public interface ISomeCommand : ICommandAuthNormal
     {
+        /// <summary>
+        /// Gets or sets the action identifier.
+        /// </summary>
         Guid ActionId { get; set; }
     }
 
-    [TypeScript( Folder = "" )]
+    /// <summary>
+    /// Specializes Some command to require a critical authentication level and return
+    /// a integer.
+    /// </summary>
+    [TypeScript( Folder = "Cmd/Some" )]
     public interface ISomeCommandIsCriticalAndReturnsInt : ISomeCommand, ICommand<int>, ICommandAuthCritical
-    {
-    }
-
-    [TypeScript( Folder = "" )]
-    public interface IResult : IPoco
-    {
-        int Result { get; set; }
-    }
-
-    [TypeScript( Folder = "" )]
-    public interface ISuperResult : IResult
-    {
-        string SuperResult { get; set; }
-    }
-
-    [TypeScript( Folder = "" )]
-    public interface IWithObjectSpecializedAsPocoCommand : IWithObjectCommand, ICommandAuthDeviceId, ICommand<IResult>
-    {
-        int PowerPoco { get; set; }
-    }
-
-    [TypeScript( Folder = "" )]
-    public interface IWithObjectSpecializedAsSuperPocoCommand : IWithObjectCommand, ICommand<ISuperResult>
     {
     }
 }

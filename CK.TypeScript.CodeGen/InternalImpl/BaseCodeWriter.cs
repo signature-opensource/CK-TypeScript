@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen
@@ -20,6 +21,31 @@ namespace CK.TypeScript.CodeGen
 
         public TypeScriptFile File { get; }
 
+        public virtual bool IsEmpty
+        {
+            get
+            {
+                if( _content.Count > 0 )
+                {
+                    foreach( var c in _content )
+                    {
+                        if( c is BaseCodeWriter p )
+                        {
+                            if( !p.IsEmpty ) return false;
+                        }
+                        else
+                        {
+                            if( !string.IsNullOrWhiteSpace( Unsafe.As<string>( c ) ) )
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+
         public void DoAdd( string? code )
         {
             if( !String.IsNullOrEmpty( code ) ) _content.Add( code );
@@ -36,7 +62,7 @@ namespace CK.TypeScript.CodeGen
             foreach( var c in _content )
             {
                 if( c is BaseCodeWriter p ) p.Build( b );
-                else b.Append( (string)c );
+                else b.Append( Unsafe.As<string>( c ) );
             }
             return b;
         }

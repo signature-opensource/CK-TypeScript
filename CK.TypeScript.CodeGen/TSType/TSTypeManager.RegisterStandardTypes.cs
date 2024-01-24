@@ -69,34 +69,34 @@ namespace CK.TypeScript.CodeGen
                         return true;
                     }
                     return false;
-                }, null, false );
-                tGuid.EnsureTypePart( closer: "" ).Append( @"
-/**
-* Simple immutable encapsulation of a string. No check is currently done on the 
-* value format that must be in the '00000000-0000-0000-0000-000000000000' form.
-*/
-export class Guid {
+                }, null, "}\n", false );
+                tGuid.TypePart.Append( """
+                    /**
+                    * Simple immutable encapsulation of a string. No check is currently done on the 
+                    * value format that must be in the '00000000-0000-0000-0000-000000000000' form.
+                    */
+                    export class Guid {
 
-    /**
-    * The empty Guid '00000000-0000-0000-0000-000000000000' is the default.
-    */
-    public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
-    
-    constructor( public readonly guid: string ) {
-    }
+                        /**
+                        * The empty Guid '00000000-0000-0000-0000-000000000000' is the default.
+                        */
+                        public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
+                        
+                        constructor( public readonly guid: string ) {
+                        }
 
-    get value() {
-        return this.guid;
-      }
+                        get value() {
+                            return this.guid;
+                          }
 
-    toString() {
-        return this.guid;
-      }
+                        toString() {
+                            return this.guid;
+                          }
 
-    toJSON() {
-        return this.guid;
-      }
-}" );
+                        toJSON() {
+                            return this.guid;
+                          }
+                    """ );
                 RegisterValueType<Guid>( tGuid );
             }
         }

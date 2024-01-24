@@ -15,6 +15,11 @@ namespace CK.TypeScript.CodeGen
         TypeScriptFile File { get; }
 
         /// <summary>
+        /// Gets whether this writer is empty.
+        /// </summary>
+        bool IsEmpty { get; }
+
+        /// <summary>
         /// Adds a raw string to this writer.
         /// </summary>
         /// <param name="code">Raw type script code. Can be null or empty.</param>

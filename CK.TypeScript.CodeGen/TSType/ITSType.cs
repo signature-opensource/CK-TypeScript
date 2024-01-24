@@ -48,7 +48,11 @@ namespace CK.TypeScript.CodeGen
         /// a default value of this type.
         /// <para>
         /// Null when this type has no default: this should concern only composites
-        /// and means that at least one of its field must be explcitely provided.
+        /// (means that at least one of its field must be explcitely provided) or abstractions
+        /// (no concrete type can be selected).
+        /// </para>
+        /// <para>
+        /// When <see cref="IsNullable"/> is true, this is "undefined".
         /// </para>
         /// </summary>
         string? DefaultValueSource { get; }

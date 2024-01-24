@@ -1,22 +1,16 @@
 using CK.Core;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Default implementation of <see cref="ITSType"/>.
+    /// Base class for <see cref="ITSType"/> implementations.
+    /// Handles nullable type (that may be specialized) and basic behavior.
     /// <para>
-    /// This concrete class can be be used for TypeScript types that don't have an associated <see cref="File"/>.
-    /// It is not linked to a specific C# type (as opposed to a <see cref="ITSGeneratedType"/> that handles C# type
-    /// in a <see cref="TypeScriptFile"/>).
-    /// </para>
-    /// <para>
-    /// It can be instantiated directly thanks to the public <see cref="TSType(string,Action{ITSFileImportSection},string)"/> constructor
-    /// or a <see cref="ITSTypeBuilder"/> can be used for more complex cases.
+    /// Only the <see cref="DefaultValueSource"/> property must be implemented.
     /// </para>
     /// </summary>
-    public class TSType : ITSType
+    public abstract class TSType : ITSType
     {
         /// <summary>
         /// Simple null wrapper. May be specialized if needed.
@@ -67,44 +61,31 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        [AllowNull]
         readonly ITSType _null;
         readonly string _typeName;
-        readonly Action<ITSFileImportSection>? _requiredImports;
-        string? _defaultValueSource;
 
         /// <summary>
-        /// Initializes a new <see cref="TSType"/>.
+        /// Initializes a new <see cref="TSBasicType"/>.
         /// </summary>
         /// <param name="typeName">The type name.</param>
-        /// <param name="imports">The required imports.</param>
-        /// <param name="defaultValue">The type default value if any.</param>
-        public TSType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValue )
-            : this( imports, typeName, defaultValue )
+        public TSType( string typeName )
         {
+            Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
+            _typeName = typeName;
             _null = new Null( this );
         }
 
         /// <summary>
-        /// Internal: only used by TSGeneratedType.
+        /// Initializes a new <see cref="TSBasicType"/> with a specialized typed
+        /// associated null instance.
         /// </summary>
         /// <param name="typeName">The type name.</param>
-        /// <param name="imports">Optional required imports to use this type.</param>
-        /// <param name="defaultValue">The default value as a non empty or whitespace string.</param>
-        /// <param name="nullFactory">The <see cref="Nullable"/> factory.</param>
-        internal TSType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValue, Func<TSType, ITSType> nullFactory )
-            : this( imports, typeName, defaultValue )
-        {
-            _null = nullFactory( this );
-        }
-
-        TSType( Action<ITSFileImportSection>? imports, string typeName, string? defaultValue )
+        /// <param name="nullFactory">The null instance factory.</param>
+        protected TSType( string typeName, Func<TSType, ITSType> nullFactory )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
-            Throw.CheckArgument( defaultValue == null || !string.IsNullOrWhiteSpace( defaultValue ) );
             _typeName = typeName;
-            _requiredImports = imports;
-            _defaultValueSource = defaultValue;
+            _null = nullFactory( this );
         }
 
         /// <inheritdoc />
@@ -117,16 +98,10 @@ namespace CK.TypeScript.CodeGen
         public bool IsNullable => false;
 
         /// <inheritdoc />
-        public string? DefaultValueSource
-        {
-            get => _defaultValueSource;
-            // Only set after type registration for TSGeneratedType from a provider if any.
-            internal set => _defaultValueSource = value;
-        }
+        public abstract string? DefaultValueSource { get; }
 
         /// <summary>
         /// Gets a null file at this level.
-        /// This is overridden by <see cref="ITSGeneratedType"/> implementations.
         /// </summary>
         public virtual TypeScriptFile? File => null;
 
@@ -137,10 +112,12 @@ namespace CK.TypeScript.CodeGen
         public ITSType NonNullable => this;
 
         /// <inheritdoc />
+        /// <remarks>
+        /// At this level, this does nothing: this applies to any type that is a pure signature
+        /// that doesn't require any imports (like a <c>number[]</c>).
+        /// </remarks>
         public virtual void EnsureRequiredImports( ITSFileImportSection section )
         {
-            Throw.CheckNotNullArgument( section );
-            _requiredImports?.Invoke( section );
         }
 
         /// <inheritdoc />
@@ -148,7 +125,7 @@ namespace CK.TypeScript.CodeGen
         {
             if( value != null && DoTryWriteValue( writer, value ) )
             {
-                _requiredImports?.Invoke( writer.File.Imports );
+                EnsureRequiredImports( writer.File.Imports );
                 return true;
             }
             return false;

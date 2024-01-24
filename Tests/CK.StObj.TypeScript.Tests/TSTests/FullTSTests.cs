@@ -123,6 +123,8 @@ namespace CK.StObj.TypeScript.Tests
             runner.Run();
         }
 
+
+
         public interface ITestSerializationCommand : ICommand
         {
             string String { get; set; }
@@ -140,13 +142,27 @@ namespace CK.StObj.TypeScript.Tests
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
             var tsTypes = new[]
             {
+                // SomeCommand
                 typeof( ISomeCommand ),
                 typeof( ISomeCommandIsCriticalAndReturnsInt ),
+                // WithObject
                 typeof( IWithObjectCommand ),
                 typeof( IWithObjectSpecializedAsPocoCommand ),
                 typeof( IResult ),
                 typeof( IWithObjectSpecializedAsSuperPocoCommand ),
                 typeof( ISuperResult ),
+                // AbstractCommands
+                typeof( ICommandAbs ),
+                typeof( IIntCommand ),
+                typeof( IStringCommand ),
+                typeof( NamedRecord ),
+                typeof( INamedRecordCommand ),
+                typeof( IAnonymousRecordCommand ),
+                typeof( ICommandAbsWithNullableKey ),
+                typeof( ICommandCommand ),
+                typeof( ICommandAbsWithResult ),
+                typeof( INamedRecordCommandWithResult ),
+                // Basic types.
                 typeof( ITestSerializationCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,

@@ -18,8 +18,8 @@ namespace CK.TypeScript.CodeGen
     /// the key can be any object.
     /// </para>
     /// <para>
-    /// The <see cref="object"/> type is mapped to "unknown", with no default values, no imports and no capacity to
-    /// write any values by itself. To register other basic types, <see cref="RegisterStandardTypes(IActivityMonitor, bool, bool, bool, bool)"/>
+    /// The <see cref="object"/> type is mapped to "{}" (this is the TS type that contains object and javascript primitive types except undefined and nul),
+    /// with no default values, no imports and no capacity to write any values by itself. To register other basic types, <see cref="RegisterStandardTypes(IActivityMonitor, bool, bool, bool, bool)"/>
     /// must be called.
     /// </para>
     /// </summary>
@@ -41,7 +41,7 @@ namespace CK.TypeScript.CodeGen
             _libraries = new Dictionary<string, LibraryImport>();
             _types = new Dictionary<object, ITSType?>
             {
-                { typeof( object ), new TSType( "unknown", null, null ) }
+                { typeof( object ), new TSBasicType( "{}", null, null ) }
             };
             _processList = new List<TSGeneratedType>();
         }
@@ -119,7 +119,7 @@ namespace CK.TypeScript.CodeGen
         public ITSType? Find( object keyType ) => _types.GetValueOrDefault( keyType );
 
         /// <summary>
-        /// Gets a registered TS type for a type o throws an <see cref="KeyNotFoundException"/>.
+        /// Gets a registered TS type for a type or throws an <see cref="KeyNotFoundException"/>.
         /// </summary>
         /// <param name="keyType">The key type for which a TS type should be found.</param>
         /// <returns>The TS type.</returns>
@@ -150,19 +150,20 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Raised when a <see cref="ITSGeneratedType"/> must be configured from a C# type.
+        /// Raised when a <see cref="ITSFileCSharpType"/> must be configured from a C# type
+        /// or a <see cref="RequireTSFromTypeEventArgs.ResolvedType"/> obtained.
         /// </summary>
-        public event EventHandler<TypeBuilderRequiredEventArgs>? TypeBuilderRequired;
+        public event EventHandler<RequireTSFromTypeEventArgs>? TSFromTypeRequired;
 
         /// <summary>
         /// Raised when a <see cref="ITSType"/> must be resolved for an object key type
         /// that is not a C# type.
         /// </summary>
-        public event EventHandler<TSTypeRequiredEventArgs>? TSTypeRequired;
+        public event EventHandler<RequireTSFromObjectEventArgs>? TSFromObjectRequired;
 
         /// <summary>
-        /// Resolves the mapping from a key type to a <see cref="ITSType"/> by raising <see cref="TypeBuilderRequired"/>
-        /// or <see cref="TSTypeRequired"/> events.
+        /// Resolves the mapping from a key type to a <see cref="ITSType"/> by raising <see cref="TSFromTypeRequired"/>
+        /// or <see cref="TSFromObjectRequired"/> events.
         /// <para>
         /// When <paramref name="keyType"/> is a C# type, and no mapping exits and <see cref="IsValidGeneratedType(Type)"/> returns false,
         /// this throws an <see cref="ArgumentException"/>.
@@ -198,8 +199,8 @@ namespace CK.TypeScript.CodeGen
 
         ITSType ResolveTSTypeFromObject( IActivityMonitor monitor, object keyType )
         {
-            var e = new TSTypeRequiredEventArgs( monitor, keyType );
-            TSTypeRequired?.Invoke( this, e );
+            var e = new RequireTSFromObjectEventArgs( monitor, keyType );
+            TSFromObjectRequired?.Invoke( this, e );
             if( e.ResolvedType == null )
             {
                 Throw.CKException( $"Unable to resolve TSType from keyType '{keyType}'." );
@@ -217,8 +218,8 @@ namespace CK.TypeScript.CodeGen
             }
             // Don't set the TypeName, Folder and other configurable properties upfront:
             // by setting them to null a builder configurator can decide to use the default values.
-            var e = new TypeBuilderRequiredEventArgs( monitor, t, GetSafeName( t ) );
-            TypeBuilderRequired?.Invoke( this, e );
+            var e = new RequireTSFromTypeEventArgs( monitor, t, GetSafeName( t ) );
+            TSFromTypeRequired?.Invoke( this, e );
             if( e.ResolvedType != null )
             {
                 return e.ResolvedType;
@@ -242,7 +243,7 @@ namespace CK.TypeScript.CodeGen
                     }
                     target = ResolveTSTypeFromType( monitor, refTarget, true, ref sameFolderDetector );
                 }
-                if( target is not ITSGeneratedType gTarget )
+                if( target is not ITSFileCSharpType gTarget )
                 {
                     monitor.Warn( $"Type '{refTarget:C}' cannot be used in SameFileAs or SameFolderAs attributes since it is not a type associated to a generated file. Type '{t:N}' will be in a folder/file based on its namespace/name." );
                 }
@@ -281,11 +282,12 @@ namespace CK.TypeScript.CodeGen
                                               e.DefaultValueSource,
                                               e.TryWriteValueImplementation,
                                               e.Implementor,
+                                              e.PartCloser,
                                               e.HasError );
             _processList.Add( newOne );
             _types.Add( t, newOne );
             // Now that the type has been registered, we can resolve the DefaultValueSource.
-            newOne.DefaultValueSource ??= e.DefaultValueSourceProvider?.Invoke( monitor, newOne );
+            if( newOne.DefaultValueSource == null ) newOne.SetDefaultValueSource( e.DefaultValueSourceProvider?.Invoke( monitor, newOne ) );
             return newOne;
 
             static string GetSafeName( Type t )
@@ -306,14 +308,13 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        static bool ImplementEnum( IActivityMonitor monitor, ITSGeneratedType type )
+        static bool ImplementEnum( IActivityMonitor monitor, ITSFileCSharpType type )
         {
-            type.EnsureTypePart( closer: "" )
-                .AppendEnumDefinition( monitor, type.Type, type.TypeName, true );
+            type.TypePart.AppendEnumDefinition( monitor, type.Type, type.TypeName, export: true, leaveTypeOpen: true );
             return true;
         }
 
-        static bool WriteEnumValue( ITSCodeWriter writer, ITSGeneratedType type, object val )
+        static bool WriteEnumValue( ITSCodeWriter writer, ITSFileCSharpType type, object val )
         {
             if( val.GetType() == type.Type )
             {
@@ -323,7 +324,7 @@ namespace CK.TypeScript.CodeGen
             return false;
         }
 
-        static string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, TypeBuilderRequiredEventArgs d )
+        static string? SelectEnumTypeDefaultValue( IActivityMonitor monitor, RequireTSFromTypeEventArgs d )
         {
             Debug.Assert( d.Type.IsEnum && d.DefaultValueSource == null );
             // [Doc] The elements of the array are sorted by the binary values (that is, the unsigned values)
@@ -357,10 +358,10 @@ namespace CK.TypeScript.CodeGen
         /// Gets whether a type can be used to call <see cref="ResolveTSType(IActivityMonitor, object)"/>.
         /// <see cref="object"/>, <see cref="void"/>, arrays, collections (list, set and dictionary),
         /// nullable value types, value tuples must be handled explicitly since these are "inlined" types in TypeScript
-        /// and cannot have an associated <see cref="ITSGeneratedType"/>.
+        /// and cannot have an associated <see cref="ITSFileCSharpType"/>.
         /// </summary>
         /// <param name="t">The type that may require a dedicated file.</param>
-        /// <returns>True if the type can be defined by a <see cref="ITSGeneratedType"/>, false otherwise.</returns>
+        /// <returns>True if the type can be defined by a <see cref="ITSFileCSharpType"/>, false otherwise.</returns>
         public static bool IsValidGeneratedType( Type t )
         {
             if( t.IsArray )
@@ -392,9 +393,9 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
-        internal List<ITSGeneratedType>? GenerateCode( IActivityMonitor monitor )
+        internal List<ITSFileCSharpType>? GenerateCode( IActivityMonitor monitor )
         {
-            List<ITSGeneratedType>? required = null;
+            List<ITSFileCSharpType>? required = null;
             int current = 0;
             while( current < _processList.Count )
             {
@@ -409,7 +410,7 @@ namespace CK.TypeScript.CodeGen
                 if( g == null )
                 {
                     monitor.Warn( $"The type '{type.Type:C}' has no TypeScript implementor function." );
-                    required ??= new List<ITSGeneratedType>();
+                    required ??= new List<ITSFileCSharpType>();
                     required.Add( type );
                 }
                 else if( !g( monitor, type ) )
@@ -419,7 +420,7 @@ namespace CK.TypeScript.CodeGen
                 else if( type.TypePart == null )
                 {
                     monitor.Warn( $"TypeScript implementor for type '{type.Type:C}' didn't create the TypePart." );
-                    required ??= new List<ITSGeneratedType>();
+                    required ??= new List<ITSFileCSharpType>();
                     required.Add( type );
                 }
             }

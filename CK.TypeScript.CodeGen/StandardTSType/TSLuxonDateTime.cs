@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace CK.TypeScript.CodeGen
 {
-    sealed class TSLuxonDateTime : TSType
+    sealed class TSLuxonDateTime : TSBasicType
     {
         public TSLuxonDateTime( LibraryImport luxonLib )
             : base( "DateTime", i => i.EnsureImportFromLibrary( luxonLib, "DateTime" ), "DateTime.utc(1,1,1)" )

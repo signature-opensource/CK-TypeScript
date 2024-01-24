@@ -24,7 +24,7 @@ namespace CK.Setup
         /// <summary>
         /// Optional extension point called once all the <see cref="TypeScriptContext.GlobalGenerators"/>
         /// have been discovered.
-        /// Typically used to subscribe to <see cref="TSTypeManager.TypeBuilderRequired"/>, <see cref="TypeScriptRoot.BeforeCodeGeneration"/>
+        /// Typically used to subscribe to <see cref="TSTypeManager.TSFromTypeRequired"/>, <see cref="TypeScriptRoot.BeforeCodeGeneration"/>
         /// or <see cref="TypeScriptRoot.AfterCodeGeneration"/> events.
         /// This can also be used to subscribe to other events that may be raised by other global generators.
         /// </summary>
@@ -34,7 +34,7 @@ namespace CK.Setup
         bool Initialize( IActivityMonitor monitor, TypeScriptContext context );
 
         /// <summary>
-        /// Configures the <see cref="TypeBuilderRequiredEventArgs"/> (this is called for each <see cref="TSTypeManager.TypeBuilderRequired"/> event).
+        /// Configures the <see cref="RequireTSFromTypeEventArgs"/> (this is called for each <see cref="TSTypeManager.TSFromTypeRequired"/> event).
         /// If a <see cref="TypeScriptAttribute"/> decorates the type, its properties have been applied to the builder.
         /// <para>
         /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because other generators
@@ -45,12 +45,12 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The TypeScript context.</param>
-        /// <param name="builder">The builder with the <see cref="TypeBuilderRequiredEventArgs.Type"/> that is handled.</param>
+        /// <param name="builder">The builder with the <see cref="RequireTSFromTypeEventArgs.Type"/> that is handled.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder );
+        bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder );
 
         /// <summary>
-        /// Should set the <see cref="TSTypeRequiredEventArgs.ResolvedType"/> (this is called for each <see cref="TSTypeManager.TSTypeRequired"/> event).
+        /// Should set the <see cref="RequireTSFromObjectEventArgs.ResolvedType"/> (this is called for each <see cref="TSTypeManager.TSFromObjectRequired"/> event).
         /// <para>
         /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because other generators
         /// can call <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/>.
@@ -61,11 +61,11 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The TypeScript context.</param>
         /// <param name="e">
-        /// The event with the <see cref="TSTypeRequiredEventArgs.KeyType"/> that is handled and
-        /// the <see cref="TSTypeRequiredEventArgs.ResolvedType"/> to set.
+        /// The event with the <see cref="RequireTSFromObjectEventArgs.KeyType"/> that is handled and
+        /// the <see cref="RequireTSFromObjectEventArgs.ResolvedType"/> to set.
         /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e );
+        bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e );
 
         /// <summary>
         /// Generates any TypeScript in the provided context.

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace CK.StObj.TypeScript.Engine
 {
-    public sealed class TSUnionType : TSType
+    public sealed class TSUnionType : TSBasicType
     {
         readonly IReadOnlyList<ITSType> _types;
 

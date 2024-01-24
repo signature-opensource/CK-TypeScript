@@ -4,7 +4,7 @@ using System;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Event arguments that acts as a builder of <see cref="ITSGeneratedType"/>.
+    /// Event arguments that acts as a builder of <see cref="ITSFileCSharpType"/>.
     /// This is raised when a C# type must be resolved.
     /// <para>
     /// Captures a TypeScript type name, target file and folder, the <see cref="ITSType.DefaultValueSource"/>,
@@ -16,10 +16,11 @@ namespace CK.TypeScript.CodeGen
     /// cannot be changed.
     /// </para>
     /// </summary>
-    public sealed class TypeBuilderRequiredEventArgs : EventMonitoredArgs
+    public sealed class RequireTSFromTypeEventArgs : EventMonitoredArgs
     {
         readonly Type _type;
         readonly string _defaultTypeName;
+        string _partCloser;
         string? _folder;
         string? _fileName;
         Type? _sameFolderAs;
@@ -32,12 +33,13 @@ namespace CK.TypeScript.CodeGen
         ITSType? _resolved;
         bool _hasError;
 
-        public TypeBuilderRequiredEventArgs( IActivityMonitor monitor, Type type, string defaultTypeName )
+        public RequireTSFromTypeEventArgs( IActivityMonitor monitor, Type type, string defaultTypeName )
             : base( monitor )
         {
             Throw.CheckNotNullArgument( type );
             _type = type;
             _defaultTypeName = defaultTypeName;
+            _partCloser = "}\n";
         }
 
         /// <summary>
@@ -46,8 +48,8 @@ namespace CK.TypeScript.CodeGen
         public Type Type => _type;
 
         /// <summary>
-        /// Gets or sets the <see cref="ITSType"/> to use for this C# type. This can be a <see cref="ITSGeneratedType"/>
-        /// (bound to a file) or a <see cref="TSType"/>.
+        /// Gets or sets the <see cref="ITSType"/> to use for this C# type. This can be a <see cref="ITSFileCSharpType"/>
+        /// (bound to a file) or a <see cref="TSBasicType"/>.
         /// <para>
         /// When this type is set, all other properties are ignored.
         /// </para>
@@ -334,6 +336,20 @@ namespace CK.TypeScript.CodeGen
         {
             get => _implementor;
             set => _implementor = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the closer of the <see cref="ITSFileType.TypePart"/>.
+        /// Defaults to "}".
+        /// </summary>
+        public string PartCloser
+        {
+            get => _partCloser;
+            set
+            {
+                Throw.CheckNotNullArgument( value );
+                _partCloser = value;
+            }
         }
 
         /// <summary>

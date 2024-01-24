@@ -1,18 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -21,12 +10,12 @@ namespace CK.TypeScript.CodeGen
     /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
     /// <para>
     /// The <see cref="TSTypes"/> maps C# types to <see cref="ITSType"/>. Types can be registered directly or
-    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> that raises <see cref="TSTypeManager.TypeBuilderRequired"/>
-    /// event and registers <see cref="ITSGeneratedType"/> that must eventually be generated when <see cref="GenerateCode(IActivityMonitor)"/>
+    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> that raises <see cref="TSTypeManager.TSFromTypeRequired"/>
+    /// event and registers <see cref="ITSFileCSharpType"/> that must eventually be generated when <see cref="GenerateCode(IActivityMonitor)"/>
     /// is called.
     /// </para>
     /// <para>
-    /// Actual code generation is done either by the <see cref="TSGeneratedTypeBuilder.Implementor"/> for each <see cref="ITSGeneratedType"/>
+    /// Actual code generation is done either by the <see cref="TSGeneratedTypeBuilder.Implementor"/> for each <see cref="ITSFileCSharpType"/>
     /// or during <see cref="BeforeCodeGeneration"/> or <see cref="AfterCodeGeneration"/> events.
     /// </para>
     /// <para>
@@ -148,11 +137,11 @@ namespace CK.TypeScript.CodeGen
         public TSTypeManager TSTypes => _tsTypes;
 
         /// <summary>
-        /// Gets a <see cref="ITSTypeBuilder"/>. <see cref="ITSTypeBuilder.Build(bool)"/> must be called
+        /// Gets a <see cref="ITSTypeSignatureBuilder"/>. <see cref="ITSTypeSignatureBuilder.Build(bool)"/> must be called
         /// once and only once.
         /// </summary>
-        /// <returns>A <see cref="TSType"/> builder.</returns>
-        public ITSTypeBuilder GetTSTypeBuilder()
+        /// <returns>A <see cref="TSBasicType"/> builder.</returns>
+        public ITSTypeSignatureBuilder GetTSTypeSignatureBuilder()
         {
             var b = _firstFreeBuilder;
             if( b != null )
@@ -173,8 +162,19 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Finds or creates a <see cref="TSManualFile"/>.
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <returns>A file where TypeScript types can be created.</returns>
+        public TSManualFile FindOrCreateManualFile( NormalizedPath path )
+        {
+            var f = Root.FindOrCreateFile( path );
+            return new TSManualFile( _tsTypes, f );
+        }
+
+        /// <summary>
         /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling
-        /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> on all <see cref="ITSGeneratedType"/>.
+        /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> on all <see cref="ITSFileCSharpType"/>.
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
 
@@ -189,17 +189,17 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public sealed class AfterCodeGenerationEventArgs : EventMonitoredArgs
         {
-            internal AfterCodeGenerationEventArgs( IActivityMonitor monitor, IReadOnlyList<ITSGeneratedType>? required )
+            internal AfterCodeGenerationEventArgs( IActivityMonitor monitor, IReadOnlyList<ITSFileCSharpType>? required )
                 : base( monitor )
             {
-                RequiredTypes = required ?? Array.Empty<ITSGeneratedType>();
+                RequiredTypes = required ?? Array.Empty<ITSFileCSharpType>();
             }
 
             /// <summary>
-            /// Gets the <see cref="ITSGeneratedType"/> that has no <see cref="ITSGeneratedType.TypePart"/>
+            /// Gets the <see cref="ITSFileCSharpType"/> that has no <see cref="ITSFileCSharpType.TypePart"/>
             /// in their file and must be handled.
             /// </summary>
-            public IReadOnlyList<ITSGeneratedType> RequiredTypes { get; }
+            public IReadOnlyList<ITSFileCSharpType> RequiredTypes { get; }
         }
 
         /// <summary>

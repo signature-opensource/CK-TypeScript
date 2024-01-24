@@ -79,10 +79,10 @@ namespace CK.TypeScript.CodeGen
         public ITSFileImportSection EnsureImport( ITSType tsType, params ITSType[] tsTypes )
         {
             Throw.CheckArgument( tsType != null && tsTypes != null );
-            if( tsType.File != null ) EnsureImport( tsType.File, tsType.TypeName );
+            tsType.EnsureRequiredImports( this );
             foreach( var t in tsTypes )
             {
-                if( t.File != null ) EnsureImport( t.File, t.TypeName );
+                t.EnsureRequiredImports( this );
             }
             return this;
         }
@@ -112,7 +112,7 @@ namespace CK.TypeScript.CodeGen
         {
             Throw.CheckNotNullArgument( type );
             var tsType = _file.Root.TSTypes.ResolveTSType( monitor, type );
-            if( tsType.File != null ) EnsureImport( tsType.File, tsType.TypeName );
+            tsType.EnsureRequiredImports( this );
         }
 
         public int ImportCount => _importCount;

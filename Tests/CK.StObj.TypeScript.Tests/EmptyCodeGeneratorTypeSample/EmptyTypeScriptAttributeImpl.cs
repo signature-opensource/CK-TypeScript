@@ -19,17 +19,16 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample
         {
         }
 
-        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder )
+        public bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder )
         {
             builder.Implementor = GenerateCode;
             return true;
         }
 
-        bool GenerateCode( IActivityMonitor monitor, ITSGeneratedType tsType )
+        bool GenerateCode( IActivityMonitor monitor, ITSFileCSharpType tsType )
         {
             // Let the default closer "}" in EnsureTypePart.
-            var code = tsType.EnsureTypePart();
-            code.Append( "export " ).Append( tsType.Type.IsEnum
+            tsType.TypePart.Append( "export " ).Append( tsType.Type.IsEnum
                                                 ? "enum "
                                                 : tsType.Type.IsInterface
                                                     ? "interface "

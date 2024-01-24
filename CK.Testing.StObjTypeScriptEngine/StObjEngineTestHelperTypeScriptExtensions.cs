@@ -211,9 +211,9 @@ namespace CK
             readonly NormalizedPath _targetProjectPath;
             readonly Dictionary<string, string>? _environmentVariables;
             readonly string _yarnCommand;
+            readonly Action? _jestDispose;
             bool _isDisposed;
             List<object>? _onDisposeList;
-            Action? _jestDispose;
 
             internal TypeScriptRunner( Testing.IStObjEngineTestHelper helper,
                                        NormalizedPath targetProjectPath,

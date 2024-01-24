@@ -17,13 +17,13 @@ namespace CK.Setup
     public interface ITSCodeGeneratorType : ITSCodeGeneratorAutoDiscovery
     {
         /// <summary>
-        /// Configures the <see cref="TypeBuilderRequiredEventArgs"/>.
+        /// Configures the <see cref="RequireTSFromTypeEventArgs"/>.
         /// If a <see cref="TypeScriptAttribute"/> decorates the type, its properties have been applied to the builder.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The global TypeScript context.</param>
-        /// <param name="builder">The <see cref="ITSGeneratedType"/> builder to configure.</param>
+        /// <param name="builder">The <see cref="ITSFileCSharpType"/> builder to configure.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, TypeBuilderRequiredEventArgs builder );
+        bool ConfigureBuilder( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder );
     }
 }

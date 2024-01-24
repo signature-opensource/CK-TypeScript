@@ -5,7 +5,8 @@ using System.Text;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Extends <see cref="ITSCodePart"/> with a key that identifies it.
+    /// Extends <see cref="ITSCodePart"/> with a key that identifies it and
+    /// an object tag that can be used freely.
     /// </summary>
     public interface ITSKeyedCodePart : ITSCodePart
     {

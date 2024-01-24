@@ -19,7 +19,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     // The real one doesn't do this and injects code into the Poco TypeSript implementation.
     public class FakeTypeScriptCrisCommandGeneratorWithFoldersImpl : FakeTypeScriptCrisCommandGeneratorImpl
     {
-        public override bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, TSTypeRequiredEventArgs e )
+        public override bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e )
         {
             if( !base.OnResolveObjectKey( monitor, context, e ) ) return false;
             return true;
@@ -27,7 +27,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
         public override bool OnResolveType( IActivityMonitor monitor,
                                             TypeScriptContext context,
-                                            TypeBuilderRequiredEventArgs builder )
+                                            RequireTSFromTypeEventArgs builder )
         {
             if( !base.OnResolveType( monitor, context, builder ) ) return false;
             // All ICommand here (without specified TypeScript Folder) will be in Cris/Commands.

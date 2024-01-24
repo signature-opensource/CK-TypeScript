@@ -33,7 +33,7 @@ namespace CK.Setup
         readonly IPocoTypeSystem _pocoTypeSystem;
         readonly ExchangeableTypeNameMap? _jsonNames;
         readonly TypeScriptRoot _tsRoot;
-
+        readonly PocoCodeGenerator _pocoGenerator;
         readonly Dictionary<Type, RegType> _registeredTypes;
         readonly Dictionary<Type, TypeScriptAttribute> _fromConfiguration;
         readonly List<ITSCodeGenerator> _globals;
@@ -65,14 +65,19 @@ namespace CK.Setup
             _jsonNames = jsonNames;
             _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions, tsConfig.PascalCase, tsConfig.GenerateDocumentation );
             _tsRoot.FolderCreated += OnFolderCreated;
-            _tsRoot.TSTypes.TypeBuilderRequired += OnTypeBuilderRequired;
-            _tsRoot.TSTypes.TSTypeRequired += OnTSTypeRequired;
+            _tsRoot.TSTypes.TSFromTypeRequired += OnTypeBuilderRequired;
+            _tsRoot.TSTypes.TSFromObjectRequired += OnTSTypeRequired;
             _registeredTypes = new Dictionary<Type, RegType>();
             _fromConfiguration = new Dictionary<Type, TypeScriptAttribute>();
             _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
-            _globals = new List<ITSCodeGenerator>();
             _success = true;
             Root.Root.EnsureBarrel();
+            _pocoGenerator = new PocoCodeGenerator( this, _pocoTypeSystem );
+            _globals = new List<ITSCodeGenerator>
+            {
+                _pocoGenerator,
+                new GlobalizationTypesCodeGenerator()
+            };
         }
 
         void OnFolderCreated( TypeScriptFolder f )
@@ -83,7 +88,7 @@ namespace CK.Setup
             }
         }
 
-        void OnTSTypeRequired( object? sender, TSTypeRequiredEventArgs e )
+        void OnTSTypeRequired( object? sender, RequireTSFromObjectEventArgs e )
         {
             foreach( var g in _globals )
             {
@@ -91,7 +96,7 @@ namespace CK.Setup
             }
         }
 
-        void OnTypeBuilderRequired( object? sender, TypeBuilderRequiredEventArgs e )
+        void OnTypeBuilderRequired( object? sender, RequireTSFromTypeEventArgs e )
         {
             bool success = true;
             _registeredTypes.TryGetValue( e.Type, out RegType regType );
@@ -125,38 +130,14 @@ namespace CK.Setup
         public TypeScriptRoot Root => _tsRoot;
 
         /// <summary>
-        /// Raised when generating code of a <see cref="IPrimaryPocoType"/>.
-        /// </summary>
-        public event EventHandler<GeneratingPrimaryPocoEventArgs>? PrimaryPocoGenerating;
-
-        internal void RaiseGeneratingPrimaryPoco( GeneratingPrimaryPocoEventArgs e ) => PrimaryPocoGenerating?.Invoke( this, e );
-
-        /// <summary>
-        /// Raised when generating code of a <see cref="IAbstractPocoType"/>.
-        /// </summary>
-        public event EventHandler<GeneratingAbstractPocoEventArgs>? AbstractPocoGenerating;
-
-        internal void RaiseGeneratingAbstractPoco( GeneratingAbstractPocoEventArgs e ) => AbstractPocoGenerating?.Invoke( this, e );
-
-        /// <summary>
-        /// Raised when generating code of a <see cref="IAbstractPocoType"/>.
-        /// </summary>
-        public event EventHandler<GeneratingNamedRecordPocoEventArgs>? NamedRecordPocoGenerating;
-
-        internal void RaiseGeneratingNamedRecordPoco( GeneratingNamedRecordPocoEventArgs e ) => NamedRecordPocoGenerating?.Invoke( this, e );
-
-        /// <summary>
-        /// Gets the TypeScript IPoco generated type. The <see cref="ITSGeneratedType.File"/> contains
-        /// the IPoco and its IPocoModel implementations.
-        /// </summary>
-        /// <param name="monitor">Required monitor.</param>
-        /// <returns>The IPoco fenerated type.</returns>
-        public ITSGeneratedType GetTypeScriptPocoType( IActivityMonitor monitor ) => ((PocoCodeGenerator)_globals[0]).GetTypeScriptPocoType( monitor );
-
-        /// <summary>
         /// Gets the <see cref="ICodeGenerationContext"/> that is being processed.
         /// </summary>
         public ICodeGenerationContext CodeContext => _codeContext;
+
+        /// <summary>
+        /// Gets the <see cref="ITSPocoCodeGenerator "/>.
+        /// </summary>
+        public ITSPocoCodeGenerator PocoCodeGenerator => _pocoGenerator;
 
         /// <summary>
         /// Gets the <see cref="TypeScriptAspectConfiguration"/>.
@@ -174,22 +155,6 @@ namespace CK.Setup
         public ExchangeableTypeNameMap? JsonNames => _jsonNames;
 
         /// <summary>
-        /// Gets whether a <see cref="IPocoType"/> is exchangeable: it is <see cref="IPocoType.IsExchangeable"/>
-        /// and if <see cref="JsonNames"/> exists, then <see cref="ExchangeableTypeNameMap.IsExchangeable(IPocoType)"/>
-        /// is also true.
-        /// </summary>
-        /// <param name="type">The poco type.</param>
-        /// <returns>True if this poco type must be available in TypeScript.</returns>
-        public bool IsExchangeable( IPocoType type )
-        {
-            if( _jsonNames != null )
-            {
-                return _jsonNames.IsExchangeable( type );
-            }
-            return type.IsExchangeable;
-        }
-
-        /// <summary>
         /// Gets all the global generators.
         /// </summary>
         public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
@@ -197,8 +162,8 @@ namespace CK.Setup
         internal bool Run( IActivityMonitor monitor )
         {
             _tsRoot.TSTypes.RegisterStandardTypes( monitor );
+            _pocoGenerator.Initialize( monitor );
             var pocoDirectory = CodeContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoDirectory>();
-            var pocoTypeSystem = CodeContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
             using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
             {
                 return // Projects the BinPathConfiguration.Types in RegType.Attribute.
@@ -208,12 +173,12 @@ namespace CK.Setup
                         // - Type bound generators are registered in RegType.Generators,
                         // - TypeScript atributes are stored in RegType.Attribute (if the type appeared in BinPathConfiguration.Types,
                         //   the configured values override the code values).
-                        && BuildRegTypesFromAttributesAndDiscoverGenerators( monitor, pocoTypeSystem )
+                        && BuildRegTypesFromAttributesAndDiscoverGenerators( monitor )
                         // Initializes the global generators.
                         && CallGlobalCodeGenerators( monitor, initialize: true )
                         // Calls Root.TSTypes.ResolveType for each non null RegType.Attribute.
                         && ResolveRegisteredTypes( monitor )
-                        // Calls the TypeScriptRoot to generate the code for all ITSGeneratedType.
+                        // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType.
                         && _tsRoot.GenerateCode( monitor )
                         // Runs the global generators GenerateCode.
                         && CallGlobalCodeGenerators( monitor, false );
@@ -263,11 +228,8 @@ namespace CK.Setup
 
         }
 
-        bool BuildRegTypesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem )
+        bool BuildRegTypesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor )
         {
-            _globals.Add( new PocoCodeGenerator( this, pocoTypeSystem ) );
-            _globals.Add( new GlobalizationTypesCodeGenerator() );
-
             using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGenerator attributes." ) )
             {
                 // These variables are reused per type.
@@ -337,7 +299,7 @@ namespace CK.Setup
             string action = initialize ? "Initializing" : "Executing";
             Debug.Assert( _success );
             // Executes all the globals.
-            using( monitor.OpenInfo( $"{action} the {_globals.Count} global {nameof(ITSCodeGenerator)} TypeScript generators." ) )
+            using( monitor.OpenInfo( $"{action} the {_globals.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
             {
                 foreach( var global in _globals )
                 {
@@ -526,7 +488,7 @@ namespace CK.Setup
                             {
                                 foreach( var p in cleanupPaths )
                                 {
-                                    monitor.Debug( $"Deleting '{p.AsSpan(ckGenFolder.Path.Length)}'." );
+                                    monitor.Debug( $"Deleting '{p.AsSpan( ckGenFolder.Path.Length )}'." );
                                     try
                                     {
                                         if( File.Exists( p ) ) File.Delete( p );
@@ -545,7 +507,7 @@ namespace CK.Setup
             return success;
         }
 
-        void CheckTypeScriptSdkVersion( IActivityMonitor monitor, string typeScriptSdkVersion, string targetTypeScriptVersion )
+        static void CheckTypeScriptSdkVersion( IActivityMonitor monitor, string typeScriptSdkVersion, string targetTypeScriptVersion )
         {
             if( typeScriptSdkVersion != targetTypeScriptVersion )
             {
@@ -590,7 +552,7 @@ namespace CK.Setup
                                            NormalizedPath targetProjectPath,
                                            NormalizedPath projectJsonPath,
                                            bool addTestJestScript,
-                                           string? typeScriptVersion, 
+                                           string? typeScriptVersion,
                                            string targetTypescriptVersion,
                                            NormalizedPath yarnPath,
                                            string? jestVersion,

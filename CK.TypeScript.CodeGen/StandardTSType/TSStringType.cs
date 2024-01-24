@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSStringType : TSType
+    class TSStringType : TSBasicType
     {
         public TSStringType()
             : base( "String", null, "''" )
