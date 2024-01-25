@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Reflection;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -41,8 +42,6 @@ namespace CK.TypeScript.CodeGen
             public ITSType Nullable => this;
 
             public ITSType NonNullable => _nonNullable;
-
-            public TypeScriptFile? File => _nonNullable.File;
 
             /// <summary>
             /// Overridden to return the <see cref="TypeName"/>.

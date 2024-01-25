@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the file that implements this type.
         /// </summary>
-        new TypeScriptFile File { get; }
+        TypeScriptFile File { get; }
 
         /// <summary>
         /// Gets the code part. 

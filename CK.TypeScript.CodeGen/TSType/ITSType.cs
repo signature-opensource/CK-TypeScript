@@ -28,12 +28,6 @@ namespace CK.TypeScript.CodeGen
         bool IsNullable { get; }
 
         /// <summary>
-        /// Gets the local file that implements this type or
-        /// null if this is not implemented locally.
-        /// </summary>
-        TypeScriptFile? File { get; }
-
-        /// <summary>
         /// Gets the nullable associated type.
         /// </summary>
         ITSType Nullable { get; }
@@ -72,5 +66,6 @@ namespace CK.TypeScript.CodeGen
         /// <param name="value">The value to write.</param>
         /// <returns>True if this type has been able to write the value, false otherwise.</returns>
         bool TryWriteValue( ITSCodeWriter writer, object? value );
+
     }
 }

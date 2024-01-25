@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen
     /// Default implementation of <see cref="ITSType"/> for basic types.
     /// <para>
     /// This concrete class can be be used for TypeScript types that don't have an associated <see cref="File"/>: they have no code
-    /// other than their TypeName and DefaultValueSource, they are "simple signatures".
+    /// other than their TypeName and DefaultValueSource, they are simple signatures.
     /// </para>
     /// <para>
     /// It is not linked to a specific C# type (as opposed to a <see cref="ITSFileCSharpType"/> that handles C# type

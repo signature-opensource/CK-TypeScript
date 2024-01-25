@@ -35,7 +35,7 @@ namespace CK.TypeScript.CodeGen
             _tryWriteValue = tryWriteValue;
             _codeGenerator = codeGenerator;
             _defaultValueSource = defaultValue;
-            _part = File.Body.FindOrCreateKeyedPart( Type, partCloser );
+            _part = file.Body.FindOrCreateKeyedPart( Type, partCloser );
             _hasError = hasError;
         }
 
