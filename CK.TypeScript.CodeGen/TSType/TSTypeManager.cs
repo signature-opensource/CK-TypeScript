@@ -126,14 +126,24 @@ namespace CK.TypeScript.CodeGen
         public ITSType this[object keyType] => _types[keyType] ?? throw new KeyNotFoundException( $"Key type '{keyType}' is currently resolving." );
 
         /// <summary>
-        /// Registers a new key type to <see cref="ITSType"/> mapping.
+        /// Registers a new mapping from C# type to <see cref="ITSType"/> mapping.
         /// This throws a <see cref="ArgumentException"/> if the key is already mapped.
         /// </summary>
-        /// <param name="keyType">The key type.</param>
+        /// <param name="type">The C# reference type.</param>
         /// <param name="tsType">The associated TS type.</param>
-        public void Register( object keyType, ITSType tsType )
+        public void RegisterType( Type type, ITSType tsType )
         {
-            _types.Add( keyType, tsType );
+            Throw.CheckNotNullArgument( tsType );
+            Throw.CheckArgument( !tsType.IsNullable );
+            if( type.IsValueType )
+            {
+                if( Nullable.GetUnderlyingType( type ) != null )
+                {
+                    Throw.ArgumentException( "Nullable value type cannot be registered." );
+                }
+                _types.Add( typeof(Nullable<>).MakeGenericType( type ), tsType.Nullable );
+            }
+            _types.Add( type, tsType );
         }
 
         /// <summary>

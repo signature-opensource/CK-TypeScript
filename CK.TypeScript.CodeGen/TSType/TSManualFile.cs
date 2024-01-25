@@ -37,7 +37,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Creates a <see cref="ITSFileType"/> in this file. This file is not bound to a C# type.
-        /// The <paramref name="typeName"/> must not already be defined in this file.
+        /// The <paramref name="typeName"/> must not already exist in the <see cref="TSTypeManager"/>.
         /// </summary>
         /// <param name="typeName">The type name.</param>
         /// <param name="additionalImports">The required imports. Null when using this type requires only this file.</param>
@@ -55,8 +55,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Creates a <see cref="ITSFileCSharpType"/> in this file.
-        /// The <paramref name="typeName"/> must not already be defined in this file AND the <paramref name="type"/>
-        /// must not already be registered in the <see cref="TSTypeManager"/>.
+        /// The <paramref name="typeName"/> and the <paramref name="type"/> must not already exist in the <see cref="TSTypeManager"/>.
         /// </summary>
         /// <param name="typeName">The type name.</param>
         /// <param name="additionalImports">The required imports. Null when using this type requires only this file.</param>
@@ -72,7 +71,7 @@ namespace CK.TypeScript.CodeGen
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             Throw.CheckNotNullArgument( type );
             var t = new TSLocalType( this, typeName, additionalImports, type, defaultValueSource, closer );
-            _typeManager.Register(type, t);
+            _typeManager.RegisterType( type, t );
             return t;
         }
 
@@ -108,7 +107,7 @@ namespace CK.TypeScript.CodeGen
             public override void EnsureRequiredImports( ITSFileImportSection section )
             {
                 base.EnsureRequiredImports( section );
-                section.EnsureImport( File, TypeName );
+                section.EnsureImport( _file._file, TypeName );
             }
         }
     }

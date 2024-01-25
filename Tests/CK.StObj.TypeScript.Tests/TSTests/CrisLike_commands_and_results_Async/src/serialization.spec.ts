@@ -1,12 +1,13 @@
-import { Guid, IPoco } from "@local/ck-gen";
+import { Guid, IPoco, IPocoType } from "@local/ck-gen";
 import { DateTime, Duration } from "luxon";
 import { TestSerializationCommand } from "@local/ck-gen";
-
 
 
 export interface IPocoJSONSerializer {
   getReplacer(): (key:string,value:any) => any;
 }
+
+
 
 class DefaultJsonSerializer implements IPocoJSONSerializer
 {
@@ -17,7 +18,20 @@ class DefaultJsonSerializer implements IPocoJSONSerializer
       return value;
     };
   }
+
   
+  getTyped( o: unknown ) : unknown {
+    if( o === null || typeof o === "undefined" ) return null;
+    if( typeof o === "number" || typeof o === "string" || typeof(o) === "boolean" || typeof o === "bigint" ) return o;
+    if( typeof o === "function" || typeof o === "symbol" ) throw new Error( "Function or Symbol are not supported." );
+    if( o instanceof Array )
+    {
+
+    }
+    
+  }
+
+
 } 
 
 export class PocoSerializer {
