@@ -8,6 +8,7 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Simple file with manually defined types.
+    /// Created by the factory <see cref="TypeScriptRoot.FindOrCreateManualFile(NormalizedPath)"/>.
     /// </summary>
     public sealed class TSManualFile 
     {
@@ -28,7 +29,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the all the TypeScript types that are defined in this <see cref="File"/>.
         /// </summary>
-        public IEnumerable<ITSType> AllTypes => Types;
+        public IEnumerable<ITSFileType> AllTypes => Types;
 
         /// <summary>
         /// Gets the TypeScript bound to a C# type types that are defined in this <see cref="File"/>.
@@ -58,6 +59,7 @@ namespace CK.TypeScript.CodeGen
         /// The <paramref name="typeName"/> and the <paramref name="type"/> must not already exist in the <see cref="TSTypeManager"/>.
         /// </summary>
         /// <param name="typeName">The type name.</param>
+        /// <param name="type">The C# type.</param>
         /// <param name="additionalImports">The required imports. Null when using this type requires only this file.</param>
         /// <param name="defaultValueSource">The type default value if any.</param>
         /// <param name="closer">Closer of the part.</param>
@@ -79,6 +81,7 @@ namespace CK.TypeScript.CodeGen
                                                           .Select( p => p.Key as TSLocalType )
                                                           .Where( k => k != null )!;
 
+        // This is a ITSFileCSharpType only if Type is not null.
         sealed class TSLocalType : TSBasicType, ITSFileCSharpType
         {
             readonly TSManualFile _file;
@@ -91,7 +94,7 @@ namespace CK.TypeScript.CodeGen
                                 Type? type,
                                 string? defaultValueSource,
                                 string closer )
-                : base( typeName, additionalImports, defaultValueSource )
+                : base( file._typeManager, typeName, additionalImports, defaultValueSource )
             {
                 _file = file;
                 Part = file.File.Body.CreateKeyedPart( this, closer );

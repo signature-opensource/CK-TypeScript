@@ -1,7 +1,7 @@
-import { Guid, IPoco, IPocoType } from "@local/ck-gen";
+import { CTSType, Guid, IPoco, UserMessageLevel } from "@local/ck-gen";
 import { DateTime, Duration } from "luxon";
 import { TestSerializationCommand } from "@local/ck-gen";
-
+import { SimpleUserMessage } from "@local/ck-gen";
 
 export interface IPocoJSONSerializer {
   getReplacer(): (key:string,value:any) => any;
@@ -20,15 +20,12 @@ class DefaultJsonSerializer implements IPocoJSONSerializer
   }
 
   
-  getTyped( o: unknown ) : unknown {
+  getTyped( o: any ) : unknown {
     if( o === null || typeof o === "undefined" ) return null;
     if( typeof o === "number" || typeof o === "string" || typeof(o) === "boolean" || typeof o === "bigint" ) return o;
     if( typeof o === "function" || typeof o === "symbol" ) throw new Error( "Function or Symbol are not supported." );
-    if( o instanceof Array )
-    {
-
-    }
-    
+    if( o._ctsType ) return [o._ctsType.name,o];
+    throw new Error( "Untyped object. A type must be specified with CTSType." );
   }
 
 
@@ -55,6 +52,7 @@ describe('Command serialization', () => {
         Duration.fromMillis(3712) );
 
       const s = JSON.stringify(c,PocoSerializer.getDefaultJsonSerializer().getReplacer() );
+      
       expect(s).toBe( '{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":null,"timeSpan":"PT3.712S"}' );
     });
   });

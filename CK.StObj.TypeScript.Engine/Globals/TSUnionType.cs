@@ -1,4 +1,5 @@
-﻿using CK.TypeScript.CodeGen;
+using CK.Setup;
+using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 
@@ -6,21 +7,21 @@ namespace CK.StObj.TypeScript.Engine
 {
     public sealed class TSUnionType : TSBasicType
     {
-        readonly IReadOnlyList<ITSType> _types;
+        readonly IReadOnlyList<(IPocoType,ITSType)> _types;
 
-        public TSUnionType( string typeName, Action<ITSFileImportSection>? imports, IReadOnlyList<ITSType> types )
-            : base( typeName, imports, null )
+        public TSUnionType( TSTypeManager typeManager, string typeName, Action<ITSFileImportSection>? imports, IReadOnlyList<(IPocoType, ITSType)> types )
+            : base( typeManager, typeName, imports, null )
         {
             _types = types;
         }
 
-        public IReadOnlyList<ITSType> Types => _types;
+        public IReadOnlyList<(IPocoType PocoType, ITSType TSType)> Types => _types;
 
         protected override bool DoTryWriteValue( ITSCodeWriter writer, object value )
         {
-            foreach( var t in _types )
+            foreach( var (_,ts) in _types )
             {
-                if( t.TryWriteValue( writer, value ) ) return true;
+                if( ts.TryWriteValue( writer, value ) ) return true;
             }
             return false;
         }

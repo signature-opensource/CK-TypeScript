@@ -179,7 +179,7 @@ namespace CK.StObj.TypeScript.Tests
                 "RecordPoco2.ts",
                 """
                 public age: Number = 0, 
-                public name: String = "Aur\u00E9lien", 
+                public name: String = "Aurélien", 
                 public altName: String|undefined = "Barrau", 
                 public key?: {}
                 """ );
@@ -187,7 +187,7 @@ namespace CK.StObj.TypeScript.Tests
             CheckFile( targetProjectPath,
                 "Rec3.ts",
                 """
-                public name: String = "Aur\u00E9lien", 
+                public name: String = "Aurélien", 
                 public age: Number = 40, 
                 public altName: String|undefined = "Barrau", 
                 public key?: {}

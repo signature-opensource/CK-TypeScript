@@ -3,10 +3,10 @@ using System.Numerics;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSNumberType : TSBasicType
+    sealed class TSNumberType : TSBasicType
     {
-        public TSNumberType()
-            : base( "Number", null, "0" )
+        public TSNumberType( TSTypeManager typeManager )
+            : base( typeManager, "Number", null, "0" )
         {
         }
 

@@ -8,8 +8,5 @@ module.exports = {
         '^.+\\.ts$': ['ts-jest', {diagnostics: {ignoreCodes: ['TS151001']}}],
     },
     testEnvironment: 'node',
-    setupFiles: ["../jest.StObjTypeScriptEngine.js"],
-    
-    console: "integratedTerminal",
-    internalConsoleOptions: "neverOpen"
+    setupFiles: ["../jest.StObjTypeScriptEngine.js"]
 };

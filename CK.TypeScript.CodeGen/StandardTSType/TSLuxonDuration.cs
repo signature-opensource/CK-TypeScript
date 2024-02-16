@@ -3,10 +3,10 @@ using System.Globalization;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSLuxonDuration : TSBasicType
+    sealed class TSLuxonDuration : TSBasicType
     {
-        public TSLuxonDuration( LibraryImport luxonLib )
-            : base( "Duration", i => i.EnsureImportFromLibrary( luxonLib, "Duration" ), "Duration.fromMillis(0)" )
+        public TSLuxonDuration( TSTypeManager typeManager, LibraryImport luxonLib )
+            : base( typeManager, "Duration", i => i.EnsureImportFromLibrary( luxonLib, "Duration" ), "Duration.fromMillis(0)" )
         {
         }
 

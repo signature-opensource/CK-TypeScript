@@ -9,6 +9,7 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -19,7 +20,7 @@ namespace CK.StObj.TypeScript.Engine
 
     partial class PocoCodeGenerator
     {
-        readonly struct FieldsWriter
+        internal readonly struct FieldsWriter
         {
             readonly TSField[] _fields;
             readonly ICompositePocoType _type;
@@ -51,17 +52,18 @@ namespace CK.StObj.TypeScript.Engine
             public static FieldsWriter Create( IActivityMonitor monitor,
                                                ICompositePocoType type,
                                                bool isAnonymousRecord,
-                                               TypeScriptContext context )
+                                               TypeScriptContext context,
+                                               IPocoTypeSet exchangeableSet )
             {
                 Throw.DebugAssert( isAnonymousRecord == (type is IRecordPocoType r && r.IsAnonymous) );
-                var fields = type.Fields.Where( f => context.PocoCodeGenerator.IsExchangeable( f.Type ) )
+                var fields = type.Fields.Where( f => exchangeableSet.Contains( f.Type ) )
                                         .Select( f => TSField.Create( monitor,
                                                                       context,
                                                                       f,
                                                                       context.Root.TSTypes.ResolveTSType( monitor, f.Type ) ) )
                                         .ToArray();
                 // Let's check a basic invariant.
-                Throw.DebugAssert( fields.All( f => f.Field.Type.IsNullable == f.TSFieldType.IsNullable ) );
+                Throw.DebugAssert( fields.All( f => f.PocoField.Type.IsNullable == f.TSFieldType.IsNullable ) );
 
                 // We use tuple syntax if all fields are unnamed. This applies to record only.
                 bool useTupleSyntax = isAnonymousRecord;
@@ -81,7 +83,7 @@ namespace CK.StObj.TypeScript.Engine
                 {
                     ref var f = ref fields[i];
                     hasDefault &= f.HasDefault;
-                    if( useTupleSyntax && !((IRecordPocoField)f.Field).IsUnnamed )
+                    if( useTupleSyntax && !((IRecordPocoField)f.PocoField).IsUnnamed )
                     {
                         useTupleSyntax = false;
                     }
@@ -97,7 +99,7 @@ namespace CK.StObj.TypeScript.Engine
                 return new FieldsWriter( type, fields, context, lastNonNullable, lastWithNonNullDefault, useTupleSyntax, hasDefault );
             }
 
-            public TSBasicType CreateAnonymousRecordType( IActivityMonitor monitor )
+            public ITSType CreateAnonymousRecordType( IActivityMonitor monitor, out TSField[] fields )
             {
                 var typeBuilder = _typeScriptContext.Root.GetTSTypeSignatureBuilder();
                 if( _useTupleSyntax )
@@ -131,13 +133,13 @@ namespace CK.StObj.TypeScript.Engine
                         ref TSField f = ref _fields[i];
                         if( atLeastOne ) typeBuilder.TypeName.Append( ", " );
                         atLeastOne = true;
-                        typeBuilder.TypeName.AppendIdentifier( f.Field.Name );
+                        typeBuilder.TypeName.AppendIdentifier( f.PocoField.Name );
                         typeBuilder.TypeName.Append( f.IsNullable ? "?: " : ": " );
                         typeBuilder.TypeName.AppendTypeName( f.TSFieldType.NonNullable );
                         if( f.HasNonNullDefault )
                         {
                             if( atLeastOneDefault ) typeBuilder.DefaultValue.Append( ", " );
-                            typeBuilder.DefaultValue.AppendIdentifier( f.Field.Name ).Append( ": " );
+                            typeBuilder.DefaultValue.AppendIdentifier( f.PocoField.Name ).Append( ": " );
                             f.WriteDefaultValue( typeBuilder.DefaultValue );
                             atLeastOneDefault = true;
                         }
@@ -145,42 +147,23 @@ namespace CK.StObj.TypeScript.Engine
                     typeBuilder.TypeName.Append( "}" );
                     typeBuilder.DefaultValue.Append( "}" );
                 }
+                fields = _fields;
                 return typeBuilder.Build();
             }
 
-            public TSPocoField[] WritePocoTypeModelAndGetPocoFields( ITSCodePart part, ITSType tsType )
+            public ImmutableArray<TSNamedCompositeField> SortAndGetNamedCompositeFields()
             {
                 SortCtorParameters();
-                // The get pocoTypeModel() returns a static (shared pocoTypeModel instance).
-                part.Append( "get pocoTypeModel() { return " )
-                    .Append( tsType.TypeName ).Append( "._m; }" ).NewLine()
-                    // The pocoTypeModel is extensible. 
-                    .Append( "private static readonly _m = {" ).NewLine()
-                    .Append( "isNamedRecord: " ).Append( _type.Kind == PocoTypeKind.Record ).Append( "," ).NewLine()
-                    // Type name is CSharpName, not INamedPocoType.ExternalOrCSharpName so that this name is coherent
-                    // with FieldMode.csType that is bound to any IPocoType.
-                    .Append( "type: " ).AppendSourceString( tsType.TypeName ).Append( "," ).NewLine()
-                    .Append( "index: " ).Append( (_type.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "," ).NewLine()
-                    .Append( "fields: [" ).NewLine();
+#if DEBUG
+                TSField[] clone = (TSField[])_fields.Clone();
+                SortCtorParameters();
+                Throw.DebugAssert( "SortCtorParameters must be a stable sort (even if we call it only once).", clone.SequenceEqual( _fields ) );
+#endif
 
-                var fields = new TSPocoField[_fields.Length];
-                for( int i = 0; i < _fields.Length; i++ )
-                {
-                    if( i > 0 ) part.Append( "," );
-                    var f = _fields[i];
-                    Throw.DebugAssert( "This has been handled while building the array of fields.",
-                                       _typeScriptContext.PocoCodeGenerator.IsExchangeable( _fields[i].Field.Type ) );
-                    part.OpenBlock()
-                        .Append( "name: " ).AppendSourceString( f.Field.Name ).Append( "," ).NewLine()
-                        .Append( "type: " ).AppendSourceString( f.TSFieldType.TypeName ).Append( "," ).NewLine()
-                        .Append( "isOptional:" ).Append( f.IsNullable ).Append( "," ).NewLine()
-                        .Append( "index:" ).Append( i.ToString( CultureInfo.InvariantCulture ) ).Append( "," ).NewLine();
-                    // This creates the TSPocoField.FieldModelPart (with the '}' closer).
-                    fields[i] = new TSPocoField( part, f );
-                }
-                // Let the trailing comma appear even if no one add content to pocoTypeModelPart.
-                part.Append( "]," ).NewLine();
-                return fields;
+#if NET8_0_OR_GREATER
+                return ImmutableArray.CreateRange( _fields.AsImmutableArray(), f => new TSNamedCompositeField( f ) );
+#endif
+                return ImmutableArray.CreateRange( _fields.Select( f => new TSNamedCompositeField( f ) ) );
             }
 
             /// <summary>

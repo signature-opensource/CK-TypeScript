@@ -3,10 +3,10 @@ using System.Numerics;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSBigIntType : TSBasicType
+    sealed class TSBigIntType : TSBasicType
     {
-        public TSBigIntType()
-            : base( "BigInt", null, "0n" )
+        public TSBigIntType( TSTypeManager typeManager )
+            : base( typeManager, "BigInt", null, "0n" )
         {
         }
 

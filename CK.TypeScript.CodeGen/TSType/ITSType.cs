@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Models a purely TypeScript type.
-    /// Such type doesn't necessarily correspond to a single C# <see cref="Type"/>.
+    /// Such type may correspond to a more than one or no C# <see cref="Type"/>.
     /// </summary>
     public interface ITSType
     {
@@ -26,6 +26,26 @@ namespace CK.TypeScript.CodeGen
         /// Gets whether this type is nullable ("undefinable" in TypeScript).
         /// </summary>
         bool IsNullable { get; }
+
+        /// <summary>
+        /// Gets a unique index for this TS type.
+        /// When <see cref="IsNullable"/> is true this is the negative non nullable index.
+        /// The value 0 is invalid.
+        /// </summary>
+        int Index { get; }
+
+        /// <summary>
+        /// Gets this type model in the TSType file.
+        /// <para>
+        /// This part is an extension point after the fields "tsName" and "index" that are automatically
+        /// written for all types. Other information can be defined such as a fields descriptor for composite
+        /// types like:
+        /// <code>
+        /// "fields": { "name": TSType["String"], "isOn": TSType["Boolean"], "uid": TSType["Guid"] }
+        /// </code>
+        /// </para>
+        /// </summary>
+        ITSCodePart TSTypeModel { get; }
 
         /// <summary>
         /// Gets the nullable associated type.

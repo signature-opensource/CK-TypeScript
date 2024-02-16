@@ -43,6 +43,10 @@ namespace CK.TypeScript.CodeGen
 
             public ITSType NonNullable => _nonNullable;
 
+            public int Index => -_nonNullable.Index;
+
+            public ITSCodePart TSTypeModel => NonNullable.TSTypeModel;
+
             /// <summary>
             /// Overridden to return the <see cref="TypeName"/>.
             /// </summary>
@@ -62,29 +66,21 @@ namespace CK.TypeScript.CodeGen
 
         readonly ITSType _null;
         readonly string _typeName;
+        readonly ITSCodePart _model;
+        readonly int _index;
 
         /// <summary>
-        /// Initializes a new <see cref="TSBasicType"/>.
+        /// Initializes a new <see cref="TSType"/>.
+        /// The <paramref name="typeName"/> must not already exist in the <paramref name="typeManager"/>.
         /// </summary>
+        /// <param name="typeManager">The type manager.</param>
         /// <param name="typeName">The type name.</param>
-        public TSType( string typeName )
+        public TSType( TSTypeManager typeManager, string typeName )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             _typeName = typeName;
             _null = new Null( this );
-        }
-
-        /// <summary>
-        /// Initializes a new <see cref="TSBasicType"/> with a specialized typed
-        /// associated null instance.
-        /// </summary>
-        /// <param name="typeName">The type name.</param>
-        /// <param name="nullFactory">The null instance factory.</param>
-        protected TSType( string typeName, Func<TSType, ITSType> nullFactory )
-        {
-            Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
-            _typeName = typeName;
-            _null = nullFactory( this );
+            _index = typeManager.Register( this, out _model );
         }
 
         /// <inheritdoc />
@@ -103,6 +99,11 @@ namespace CK.TypeScript.CodeGen
         /// Gets a null file at this level.
         /// </summary>
         public virtual TypeScriptFile? File => null;
+
+        public int Index => _index;
+
+        /// <inheritdoc />
+        public ITSCodePart TSTypeModel => _model;
 
         /// <inheritdoc />
         public ITSType Nullable => _null;

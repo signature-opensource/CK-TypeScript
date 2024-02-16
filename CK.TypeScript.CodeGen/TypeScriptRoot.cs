@@ -59,7 +59,6 @@ namespace CK.TypeScript.CodeGen
             _libraryManager = new LibraryManager();
             _pascalCase = pascalCase;
             _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
-            _tsTypes = new TSTypeManager( this, libraryVersionConfiguration );
             if( GetType() == typeof( TypeScriptRoot ) )
             {
                 Root = new TypeScriptFolder( this );
@@ -70,6 +69,7 @@ namespace CK.TypeScript.CodeGen
                 Root = (TypeScriptFolder)rootType.GetMethod( "Create", BindingFlags.NonPublic | BindingFlags.Static )!
                                                  .Invoke( null, new object[] { this } )!;
             }
+            _tsTypes = new TSTypeManager( this, libraryVersionConfiguration );
         }
 
         /// <summary>
@@ -231,6 +231,7 @@ namespace CK.TypeScript.CodeGen
                             }
                             else
                             {
+                                
                                 monitor.Warn( $"{required.Count} TypeScript Types have not been generated." );
                             }
                             AfterCodeGeneration?.Invoke( this, new AfterCodeGenerationEventArgs( monitor, required ) );

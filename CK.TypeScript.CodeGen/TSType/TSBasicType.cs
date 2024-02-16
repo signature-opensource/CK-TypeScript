@@ -26,29 +26,19 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Initializes a new <see cref="TSBasicType"/>.
+        /// The <paramref name="typeName"/> must not already exist in the <paramref name="typeManager"/>.
         /// </summary>
+        /// <param name="typeManager">The type manager.</param>
         /// <param name="typeName">The type name.</param>
         /// <param name="imports">The required imports. Null when using this type doesn't require imports.</param>
         /// <param name="defaultValueSource">The type default value if any.</param>
-        public TSBasicType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValueSource )
-            : this( imports, typeName, defaultValueSource )
+        public TSBasicType( TSTypeManager typeManager, string typeName, Action<ITSFileImportSection>? imports, string? defaultValueSource )
+            : this( typeManager, imports, typeName, defaultValueSource )
         {
         }
 
-        /// <summary>
-        /// Internal: only used by TSGeneratedType.
-        /// </summary>
-        /// <param name="typeName">The type name.</param>
-        /// <param name="imports">Optional required imports to use this type.</param>
-        /// <param name="defaultValueSource">The default value as a non empty or whitespace string.</param>
-        /// <param name="nullFactory">The <see cref="Nullable"/> factory.</param>
-        internal TSBasicType( string typeName, Action<ITSFileImportSection>? imports, string? defaultValueSource, Func<TSBasicType, ITSType> nullFactory )
-            : this( imports, typeName, defaultValueSource )
-        {
-        }
-
-        TSBasicType( Action<ITSFileImportSection>? imports, string typeName, string? defaultValueSource )
-            : base( typeName ) 
+        TSBasicType( TSTypeManager typeManager, Action<ITSFileImportSection>? imports, string typeName, string? defaultValueSource )
+            : base( typeManager, typeName ) 
         {
             Throw.CheckArgument( defaultValueSource == null || !string.IsNullOrWhiteSpace( defaultValueSource ) );
             _requiredImports = imports;

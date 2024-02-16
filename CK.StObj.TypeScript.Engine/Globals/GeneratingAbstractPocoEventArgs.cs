@@ -13,7 +13,7 @@ namespace CK.Setup
     /// </summary>
     public sealed class GeneratingAbstractPocoEventArgs : EventMonitoredArgs
     {
-        readonly TSPocoModel _tsPocoModel;
+        readonly TypeScriptContext _typeScriptContext;
         readonly ITSFileCSharpType _tsType;
         readonly IAbstractPocoType _pocoType;
         readonly ITSCodePart _interfacesPart;
@@ -23,7 +23,7 @@ namespace CK.Setup
         Action<DocumentationBuilder>? _documentationExtension;
 
         internal GeneratingAbstractPocoEventArgs( IActivityMonitor monitor,
-                                                  TSPocoModel tsPocoModel, 
+                                                  TypeScriptContext typeScriptContext,
                                                   ITSFileCSharpType tSGeneratedType,
                                                   IAbstractPocoType pocoType,
                                                   IEnumerable<IAbstractPocoType> implementedInterfaces,
@@ -31,7 +31,7 @@ namespace CK.Setup
                                                   ITSCodePart bodyPart )
             : base( monitor )
         {
-            _tsPocoModel = tsPocoModel;
+            _typeScriptContext = typeScriptContext;
             _tsType = tSGeneratedType;
             _pocoType = pocoType;
             _docType = pocoType.Type;
@@ -41,9 +41,9 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the IPoco model.
+        /// Gets the context.
         /// </summary>
-        public TSPocoModel TSPocoModel => _tsPocoModel;
+        public TypeScriptContext TypeScriptContext => _typeScriptContext;
 
         /// <summary>
         /// Gets the primary poco type that is being generated.

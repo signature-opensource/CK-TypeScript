@@ -4,6 +4,7 @@ using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,195 +15,219 @@ using System.Xml.Linq;
 
 namespace CK.StObj.TypeScript.Engine
 {
-
     /// <summary>
     /// Handles TypeScript generation of any type that appears in the <see cref="IPocoTypeSystem"/>.
+    /// <para>
+    /// This is not a <see cref="ITSCodeGenerator"/>: <see cref="OnResolveObjectKey(IActivityMonitor, RequireTSFromObjectEventArgs)"/>
+    /// and <see cref="OnResolveType(IActivityMonitor, RequireTSFromTypeEventArgs)"/> are called by the TypeScriptContext.
+    /// </para>
     /// </summary>
-    /// <remarks>
-    /// This code generator is directly added by the <see cref="TypeScriptAspect"/> as the first <see cref="TypeScriptContext.GlobalGenerators"/>,
-    /// it is not initiated by an attribute like other code generators (that is generally done thanks to a <see cref="ContextBoundDelegationAttribute"/>).
-    /// </remarks>
-    sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator, ITSCodeGenerator
+    sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
     {
         readonly TypeScriptContext _typeScriptContext;
-        readonly IPocoTypeSystem _pocoTypeSystem;
-        [AllowNull] TSPocoModel _tsPocoModel;
-        IAbstractPocoType? _closedPocoType;
+        readonly CTSTypeSystem? _ctsTypeSystem;
+        readonly IPocoTypeSet _typeScriptSet;
 
-        internal PocoCodeGenerator( TypeScriptContext typeScriptContext, IPocoTypeSystem pocoTypeSystem )
+        internal PocoCodeGenerator( TypeScriptContext typeScriptContext,
+                                    IPocoTypeSet typeScriptSet,
+                                    IPocoTypeNameMap? jsonExchangeableNames )
         {
             _typeScriptContext = typeScriptContext;
-            _pocoTypeSystem = pocoTypeSystem;
+            _typeScriptSet = typeScriptSet;
+            if( jsonExchangeableNames != null )
+            {
+                _ctsTypeSystem = new CTSTypeSystem( typeScriptContext, jsonExchangeableNames );
+            }
         }
-
-        internal void Initialize( IActivityMonitor monitor )
-        {
-            _tsPocoModel = new TSPocoModel( monitor, _typeScriptContext );
-        }
-
-        public TSPocoModel PocoModel => _tsPocoModel;
 
         public event EventHandler<GeneratingPrimaryPocoEventArgs>? PrimaryPocoGenerating;
 
-        void RaiseGeneratingPrimaryPoco( GeneratingPrimaryPocoEventArgs e ) => PrimaryPocoGenerating?.Invoke( this, e );
+        void RaiseGeneratingPrimaryPoco( GeneratingPrimaryPocoEventArgs e )
+        {
+            _ctsTypeSystem?.OnGeneratingPrimaryPoco( e );
+            PrimaryPocoGenerating?.Invoke( this, e );
+        }
 
         public event EventHandler<GeneratingAbstractPocoEventArgs>? AbstractPocoGenerating;
 
-        void RaiseGeneratingAbstractPoco( GeneratingAbstractPocoEventArgs e ) => AbstractPocoGenerating?.Invoke( this, e );
+        void RaiseGeneratingAbstractPoco( GeneratingAbstractPocoEventArgs e )
+        {
+            AbstractPocoGenerating?.Invoke( this, e );
+        }
 
         public event EventHandler<GeneratingNamedRecordPocoEventArgs>? NamedRecordPocoGenerating;
 
-        void RaiseGeneratingNamedRecordPoco( GeneratingNamedRecordPocoEventArgs e ) => NamedRecordPocoGenerating?.Invoke( this, e );
-
-        public bool IsExchangeable( IPocoType type )
+        void RaiseGeneratingNamedRecordPoco( GeneratingNamedRecordPocoEventArgs e )
         {
-            if( _typeScriptContext.JsonNames != null )
-            {
-                return _typeScriptContext.JsonNames.IsExchangeable( type );
-            }
-            return type.IsExchangeable;
+            _ctsTypeSystem?.OnGeneratingNamedRecord( e );
+            NamedRecordPocoGenerating?.Invoke( this, e );
         }
 
-        IAbstractPocoType GetClosedPocoType() => _closedPocoType ??= _pocoTypeSystem.FindByType<IAbstractPocoType>( typeof( IClosedPoco ) )!;
+        public IPocoTypeSet TypeScriptSet => _typeScriptSet;
 
-        /// <summary>
-        /// Does nothing (it is the <see cref="OnResolveType"/> method that sets a <see cref="TSGeneratedTypeBuilder.Implementor"/>). 
-        /// </summary>
-        bool ITSCodeGenerator.GenerateCode( IActivityMonitor monitor, TypeScriptContext context ) => true;
-
-        bool ITSCodeGenerator. Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
-
-        bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e )
+        internal bool OnResolveObjectKey( IActivityMonitor monitor, RequireTSFromObjectEventArgs e )
         {
-            if( e.KeyType is IPocoType t )
+            if( e.KeyType is IPocoType t && _typeScriptSet.Contains( t ) )
             {
+                var tsTypeManager = _typeScriptContext.Root.TSTypes;
+
+                if( !t.IsOblivious && t.IsNullable )
+                {
+                    e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, t.NonNullable ).Nullable );
+                    return true;
+                }
+
+                // Secondary is mapped to its Primary. It is erased in TS.
+                // Secondary interfaces are not visible outside: we simply map them to the primary type.
+                if( t.Kind == PocoTypeKind.SecondaryPoco )
+                {
+                    e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, ((ISecondaryPocoType)t).PrimaryPocoType ) );
+                    return true;
+                }
+
+                // We'll do the CTS mapping only for Oblivous type: Json serialization works on the Oblivious types.
+                bool callCTSMapping = _ctsTypeSystem != null && t.IsOblivious;
+
                 // Important: the type nullability is projected here.
                 bool isNullable = t.IsNullable;
                 if( isNullable ) t = t.NonNullable;
-                // "Actual types" (not anonymous records, collections and union types) are handled by their type.
+
+                ITSType ts;
+                // The following types are handled by their C# Type. This "ping-pong" allows:
+                // - The basic types to be associated to preregistered/mapped types like object => {}, decimal => bigint, DateTime => luxon datetime, etc.
+                // - Enum types to be generated by the CK.TypeScript.CodeGen lib (that currently handles the [ExternalName] attribute so is Poco compatible).
+                // - The complex types (AbstractPoco, PrimaryPoco, Record) to use the "builder" capabilities of the "by type" event instead
+                //   of being restricted to set the final ResolvedType that this "by object" event supports: they need to defer their
+                //   implementation generation.
                 if( t.Kind is PocoTypeKind.Basic
                               or PocoTypeKind.Any
                               or PocoTypeKind.Enum
                               or PocoTypeKind.PrimaryPoco
-                              or PocoTypeKind.SecondaryPoco
                               or PocoTypeKind.AbstractPoco
                               or PocoTypeKind.Record )
                 {
-                    var mapped = context.Root.TSTypes.ResolveTSType( monitor, t.Type );
-                    e.ResolvedType = isNullable ? mapped.Nullable : mapped;
-                    return true;
-                }
-                if( !CheckExchangeable( monitor, t ) )
-                {
-                    return false;
-                }
-                Throw.DebugAssert( "Handles array, list, set, dictionary, union and anonymous record here.",
-                                    t.Kind is PocoTypeKind.Array
-                                              or PocoTypeKind.List
-                                              or PocoTypeKind.HashSet
-                                              or PocoTypeKind.Dictionary
-                                              or PocoTypeKind.UnionType
-                                              or PocoTypeKind.AnonymousRecord );
-                TSBasicType ts;
-                if( t is ICollectionPocoType tColl )
-                {
-                    switch( tColl.Kind )
-                    {
-                        case PocoTypeKind.Array:
-                        case PocoTypeKind.List:
-                            {
-                                var inner = context.Root.TSTypes.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                // Uses Array<> rather than "(inner.TypeName)[]".
-                                var tName = $"Array<{inner.TypeName}>";
-                                ts = new TSBasicType( tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
-                                break;
-                            }
-                        case PocoTypeKind.HashSet:
-                            {
-                                var inner = context.Root.TSTypes.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                var tName = $"Set<{inner.TypeName}>";
-                                ts = new TSBasicType( tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
-                                break;
-                            }
-                        case PocoTypeKind.Dictionary:
-                            {
-                                var tKey = context.Root.TSTypes.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                var tValue = context.Root.TSTypes.ResolveTSType( monitor, tColl.ItemTypes[1] );
-                                var tName = $"Map<{tKey.TypeName},{tValue.TypeName}>";
-                                ts = new TSBasicType( tName,
-                                                 i =>
-                                                 {
-                                                    tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
-                                                    tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
-                                                 },
-                                                 $"new {tName}()" );
-                                break;
-                            }
-                        default: throw new NotSupportedException( t.ToString() );
-                    }
-                }
-                else if( t is IUnionPocoType tU )
-                {
-                    var types = tU.AllowedTypes.Select( t => context.Root.TSTypes.ResolveTSType( monitor, t ) ).ToArray();
-                    var b = new StringBuilder();
-                    foreach( var u in types )
-                    {
-                        if( b.Length > 0 ) b.Append( '|' );
-                        b.Append( u.NonNullable.TypeName );
-                    }
-                    var tName = b.ToString();
-                    ts = new TSUnionType( tName,
-                                          i =>
-                                          {
-                                                foreach( var t in types )
-                                                {
-                                                    i.EnsureImport( t );
-                                                }
-                                          },
-                                          types );
+                    ts = tsTypeManager.ResolveTSType( monitor, t.Type );
                 }
                 else
                 {
-                    Throw.DebugAssert( t is IRecordPocoType a && a.IsAnonymous );
-                    var r = (IRecordPocoType)t;
-                    Throw.DebugAssert( r.IsExchangeable == r.Fields.Any( f => f.IsExchangeable ) );
-                    var fieldsWriter = FieldsWriter.Create( monitor, r, true, context );
-                    ts = fieldsWriter.CreateAnonymousRecordType( monitor );
+                    Throw.DebugAssert( "Handles array, list, set, dictionary, union and anonymous record here.",
+                                        t.Kind is PocoTypeKind.Array
+                                                  or PocoTypeKind.List
+                                                  or PocoTypeKind.HashSet
+                                                  or PocoTypeKind.Dictionary
+                                                  or PocoTypeKind.UnionType
+                                                  or PocoTypeKind.AnonymousRecord );
+                    if( t is ICollectionPocoType tColl )
+                    {
+                        switch( tColl.Kind )
+                        {
+                            case PocoTypeKind.Array:
+                            case PocoTypeKind.List:
+                                {
+                                    var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                                    // Uses Array<> rather than "(inner.TypeName)[]".
+                                    var tName = $"Array<{inner.TypeName}>";
+                                    ts = tsTypeManager.FindByTypeName( tName )
+                                         ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
+                                    break;
+                                }
+                            case PocoTypeKind.HashSet:
+                                {
+                                    var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                                    var tName = $"Set<{inner.TypeName}>";
+                                    ts = tsTypeManager.FindByTypeName( tName )
+                                         ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
+                                    break;
+                                }
+                            case PocoTypeKind.Dictionary:
+                                {
+                                    var tKey = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                                    var tValue = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[1] );
+                                    var tName = $"Map<{tKey.TypeName},{tValue.TypeName}>";
+                                    ts = tsTypeManager.FindByTypeName( tName )
+                                         ?? new TSBasicType( tsTypeManager, tName,
+                                                             i =>
+                                                             {
+                                                                 tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
+                                                                 tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
+                                                             },
+                                                             $"new {tName}()" );
+                                    break;
+                                }
+                            default: throw new NotSupportedException( t.ToString() );
+                        }
+                    }
+                    else if( t is IUnionPocoType tU )
+                    {
+                        var types = tU.AllowedTypes.Where( _typeScriptSet.Contains )
+                                                   .Select( t => (t, ts: tsTypeManager.ResolveTSType( monitor, t )) ).ToArray();
+                        var b = new StringBuilder();
+                        foreach( var (_,u) in types )
+                        {
+                            if( b.Length > 0 ) b.Append( '|' );
+                            b.Append( u.NonNullable.TypeName );
+                        }
+                        var tName = b.ToString();
+                        ts = tsTypeManager.FindByTypeName( tName )
+                             ?? new TSUnionType( tsTypeManager,
+                                                 tName,
+                                                 i =>
+                                                 {
+                                                     foreach( var t in types )
+                                                     {
+                                                         i.EnsureImport( t.ts );
+                                                     }
+                                                 },
+                                                 types );
+                    }
+                    else
+                    {
+                        Throw.DebugAssert( t is IRecordPocoType a && a.IsAnonymous );
+                        var r = (IRecordPocoType)t;
+                        var fieldsWriter = FieldsWriter.Create( monitor, r, true, _typeScriptContext, _typeScriptSet );
+                        ts = fieldsWriter.CreateAnonymousRecordType( monitor, out var fields );
+                        if( callCTSMapping )
+                        {
+                            Throw.DebugAssert( _ctsTypeSystem != null );
+                            _ctsTypeSystem.EnsureMappingForAnonymousRecord( r, ts, fields );
+                            callCTSMapping = false;
+                        }
+                    }
                 }
-                e.ResolvedType = isNullable ? ts.Nullable : ts;
+                e.SetResolvedType( isNullable ? ts.Nullable : ts );
+                // This is where the serialization layer kicks in: all IPocoType will have a CTSType entry.
+                //
+                // For "inline" TSTypes that reference other types (collections and union types), the EnsureMapping
+                // also creates the CTSType model of the type ("genParams" and "allowedTypes").
+                // For the composites (record and primary poco), the model of "fields" are created when generating their
+                // implementations.
+                //
+                // OnAfterCodeGeneration: all Oblivious types that are mapped to true javascript object with a constructor should
+                // have the ITSKeyedCodePart.ConstructorBodyPart so that the "_ctsType" key can be defined (it is hidden in typescript)
+                // that points to its CTSType entry.
+                //
+                if( callCTSMapping )
+                {
+                    Throw.DebugAssert( _ctsTypeSystem != null );
+                    _ctsTypeSystem?.EnsureMapping( t, ts );
+                }
             }
             return true;
         }
 
-        bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder )
+        internal bool OnResolveType( IActivityMonitor monitor, RequireTSFromTypeEventArgs builder )
         {
-            // Hook the IPoco type to generate the IPoco.ts (with empty PartCloser) even
-            // if the PocoTypeSystem is empty.
-            if( builder.Type == typeof( IPoco ) )
+            // Gets the IPocoType if this is a Poco compliant type and it must be exchangeable.
+            // If a type is not a Poco or is not an exchangeable one, it is not an error: other code generators
+            // can handle it.
+            // Important note: If the type is a Poco compliant type, then this is actually called by OnResolveObjectKey with the IPocoType
+            //                 and it is OnResolveObjectKey that will call the CTSTypeSystem.EnsureMapping (if serialization is available).
+            IPocoType? t = _typeScriptSet.TypeSystem.FindByType( builder.Type );
+            if( t != null && _typeScriptSet.Contains( t ) )
             {
-                // There are multiple types.
-                builder.PartCloser = "";
-                // Avoid a "missing implementor" warning.
-                builder.Implementor ??= static ( monitor, tsType ) => true;
-                return true;
-            }
-            var t = _pocoTypeSystem.FindByType( builder.Type );
-            if( t != null )
-            {
-                if( !CheckExchangeable( monitor, t ) )
-                {
-                    // This is an error: PocoType exchangeability must be resolved
-                    // up front.
-                    return false;
-                }
-                if( t.Kind == PocoTypeKind.SecondaryPoco )
-                {
-                    // Secondary interfaces are not visible outside:
-                    // we simply map them to the primary type. We resolve the C# type here to avoid
-                    // a useless object => IPocoType.Type intermediate step.
-                    builder.ResolvedType = context.Root.TSTypes.ResolveTSType( monitor, ((ISecondaryPocoType)t).PrimaryPocoType.Type );
-                    return true;
-                }
+                // Only PrimaryPoco, AbstractPoco, named record (including the CK.Globalization.SimpleUserMessage),
+                // and the IBasicRefType ExtendedCultureInfo and NormalizedCultureInfoCode are handled here.
+                // Other Poco compliant types are handled by their associated IPocoType (by OnResolveObjectKey).
                 if( t.Kind == PocoTypeKind.PrimaryPoco )
                 {
                     // For IPoco, if the TypeName is not set (which should almost never be set),
@@ -233,19 +258,19 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 else if( t.Kind == PocoTypeKind.AbstractPoco )
                 {
+                    // There is no default value for abstraction.
+                    // We must only build a name with its required imports.
                     var tAbstract = (IAbstractPocoType)t;
                     // AbstractPoco are TypeScript interfaces in their own file... except for generics:
                     // ICommand<string> or ICommand<List<IMission>> are TSType (without implementation file). 
                     if( tAbstract.IsGenericType )
                     {
-                        // There is no default value for abstraction.
-                        // We must only build a name with its required imports.
-                        var b = context.Root.GetTSTypeSignatureBuilder();
-                        var genDef = context.Root.TSTypes.ResolveTSType( monitor, tAbstract.GenericTypeDefinition.Type );
+                        var b = _typeScriptContext.Root.GetTSTypeSignatureBuilder();
+                        var genDef = _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, tAbstract.GenericTypeDefinition.Type );
                         b.TypeName.AppendTypeName( genDef ).Append( "<" );
                         foreach( var arg in tAbstract.GenericArguments )
                         {
-                            b.TypeName.AppendTypeName( context.Root.TSTypes.ResolveTSType( monitor, arg.Type ) );
+                            b.TypeName.AppendTypeName( _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, arg.Type ) );
                         }
                         b.TypeName.Append( ">" );
                         builder.ResolvedType = b.Build();
@@ -273,7 +298,143 @@ namespace CK.StObj.TypeScript.Engine
                         if( !hasDefaultSet ) builder.DefaultValueSourceProvider = b.GetDefaultValueSource;
                     }
                 }
-                // Other PocoTypes are handled by their IPocoType.
+                else if( t.Kind == PocoTypeKind.Basic )
+                {
+                    if( builder.Type == typeof( ExtendedCultureInfo ) )
+                    {
+                        builder.DefaultValueSource = "NormalizedCultureInfo.codeDefault";
+                        builder.TryWriteValueImplementation = ExtendedCultureInfoWrite;
+                        builder.Implementor = ExtendedCultureInfoCode;
+                    }
+                    else if( builder.Type == typeof( NormalizedCultureInfo ) )
+                    {
+                        builder.DefaultValueSource = "NormalizedCultureInfo.codeDefault";
+                        builder.TryWriteValueImplementation = NormalizedCultureInfoWrite;
+                        builder.Implementor = NormalizedCultureInfoCode;
+                    }
+                    else if( builder.Type == typeof( SimpleUserMessage ) )
+                    {
+                        builder.TryWriteValueImplementation = SimpleUserMessageWrite;
+                        builder.Implementor = SimpleUserMessageCode;
+                    }
+
+                    static bool ExtendedCultureInfoWrite( ITSCodeWriter w, ITSFileCSharpType t, object o )
+                    {
+                        if( o is ExtendedCultureInfo c )
+                        {
+                            w.Append( "new ExtendedCultureInfo( " ).AppendSourceString( c.Name ).Append( " )" );
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    static bool ExtendedCultureInfoCode( IActivityMonitor monitor, ITSFileCSharpType t )
+                    {
+                        t.TypePart.Append( """
+                                    /**
+                                    * Mere encapsulation of the culture name..
+                                    **/
+                                    export class ExtendedCultureInfo {
+
+                                    constructor(public readonly name: string)
+                                    {
+                                """ )
+                            .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart )
+                            .Append( """
+                                    }
+                                        toString() { return this.name; }
+                                    """ );
+                        return true;
+                    }
+
+                    static bool NormalizedCultureInfoWrite( ITSCodeWriter w, ITSFileCSharpType t, object o )
+                    {
+                        if( o is NormalizedCultureInfo c )
+                        {
+                            if( c == NormalizedCultureInfo.CodeDefault )
+                            {
+                                w.Append( "NormalizedCultureInfo.codeDefault" );
+                            }
+                            else
+                            {
+                                w.Append( "new NormalizedCultureInfo( " ).AppendSourceString( c.Name ).Append( " )" );
+                            }
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    static bool NormalizedCultureInfoCode( IActivityMonitor monitor, ITSFileCSharpType t )
+                    {
+                        t.File.Imports.EnsureImport( monitor, typeof( ExtendedCultureInfo ) );
+                        t.TypePart.Append( """
+                                /**
+                                * Only mirrors the C# side architecture: a normalized culture is an extended
+                                * culture with a single culture name.
+                                **/
+                                export class NormalizedCultureInfo extends ExtendedCultureInfo {
+
+                                /**
+                                * Gets the code default culture ("en").
+                                **/
+                                static codeDefault: NormalizedCultureInfo = new NormalizedCultureInfo("en");
+                        
+                                constructor(name: string) 
+                                {
+                                    super(name);
+                                """ )
+                            .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart )
+                            .Append( """
+                                }
+                                """ );
+                        return true;
+                    }
+
+                    static bool SimpleUserMessageWrite( ITSCodeWriter w, ITSFileCSharpType t, object o )
+                    {
+                        if( o is SimpleUserMessage m )
+                        {
+                            w.Append( "new SimpleUserMessage( " )
+                             .Append( m.Level ).Append( ", " )
+                             .AppendSourceString( m.Message ).Append( ", " )
+                             .Append( m.Depth );
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    static bool SimpleUserMessageCode( IActivityMonitor monitor, ITSFileCSharpType t )
+                    {
+                        t.File.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
+                        t.TypePart.Append( """
+                                /**
+                                * Immutable simple info, warn or error message with an optional indentation.
+                                **/
+                                export class SimpleUserMessage
+                                {
+                                    /**
+                                        * Initializes a new SimpleUserMessage.
+                                        * @param level Message level (info, warn or error). 
+                                        * @param message Message text. 
+                                        * @param depth Optional indentation. 
+                                    **/
+                                    constructor(
+                                        public readonly level: UserMessageLevel,
+                                        public readonly message: string,
+                                        public readonly depth: number = 0
+                                    )
+                                    {
+
+                                """ )
+                            .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart )
+                            .Append( """
+                                    }
+
+                                    toString() { return '['+UserMessageLevel[this.level]+'] ' + this.message; }
+                                """ );
+                            return true;
+                    }
+                }
             }
             return true;
         }
@@ -292,32 +453,28 @@ namespace CK.StObj.TypeScript.Engine
 
             internal bool GenerateRecord( IActivityMonitor monitor, ITSFileCSharpType tsType )
             {
-                _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _generator._typeScriptContext );
-                // INamedRecord is a pure TS type defined in IPoco.ts.
-                tsType.File.Imports.EnsureImport( _generator.PocoModel.IPocoType.File, "INamedRecord" );
-                tsType.TypePart.CreatePart( out var documentationPart )
-                    .Append( "export class " ).Append( tsType.TypeName ).Append( " implements INamedRecord" )
+                _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _generator._typeScriptContext, _generator._typeScriptSet );
+                //// INamedRecord is a pure TS type defined in IPoco.ts.
+                ////tsType.File.Imports.EnsureImport( _generator.PocoModel.IPocoType.File, "INamedRecord" );
+                tsType.TypePart.InsertPart( out var documentationPart )
+                    .Append( "export class " ).Append( tsType.TypeName )
                     .OpenBlock()
-                    .Append( "public constructor(" ).CreatePart( out var ctorParametersPart ).Append( ")" ).NewLine()
-                    .Append( "{" )
-                    .CreatePart( out var ctorBodyPart )
+                    .Append( "public constructor(" ).InsertPart( out var ctorParametersPart ).Append( ")" ).NewLine()
+                    .Append( "{" ).NewLine()
+                    .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart, out var ctorBodyPart )
                     .Append( "}" ).NewLine()
-                    .Append( "readonly _brand!: INamedRecord[\"_brand\"] & {\"" ).Append( (_type.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine()
-                    .CreatePart( out var pocoTypeModelPart )
-                    .Append( "};" ).NewLine();
+                    .Append( "readonly _brand!: {\"" ).Append( (_type.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine();
 
-                // This sorts the fields and retrieves the TSField list that can be altered (skipping fields
+                // This sorts the fields and retrieves the TSNamedCompositeField list that can be altered (skipping fields
                 // and altering documentation) by other generators.
-                // TSField.PocoTypeModelPart enables field models to be extended.
-                var fields = _fieldsWriter.Value.WritePocoTypeModelAndGetPocoFields( pocoTypeModelPart, tsType );
+                var fields = _fieldsWriter.Value.SortAndGetNamedCompositeFields();
 
                 // Raises the event.
                 var e = new GeneratingNamedRecordPocoEventArgs( monitor,
-                                                                _generator._tsPocoModel,
+                                                                _generator._typeScriptContext,
                                                                 tsType,
                                                                 _type,
                                                                 fields,
-                                                                pocoTypeModelPart,
                                                                 ctorParametersPart,
                                                                 ctorBodyPart );
 
@@ -343,7 +500,7 @@ namespace CK.StObj.TypeScript.Engine
             internal string? GetDefaultValueSource( IActivityMonitor monitor, ITSFileCSharpType type )
             {
                 Throw.DebugAssert( !_fieldsWriter.HasValue );
-                _fieldsWriter = FieldsWriter.Create( monitor, _type, false, _generator._typeScriptContext );
+                _fieldsWriter = FieldsWriter.Create( monitor, _type, false, _generator._typeScriptContext, _generator._typeScriptSet );
                 return _fieldsWriter.Value.HasDefault
                         ? $"new {type.TypeName}()"
                         : null;
@@ -354,35 +511,26 @@ namespace CK.StObj.TypeScript.Engine
         {
             Throw.DebugAssert( !tsType.IsNullable && !t.IsNullable );
 
-            IEnumerable<IAbstractPocoType> implementedInterfaces = t.MinimalAbstractTypes;
-            if( t.FamilyInfo.IsClosedPoco )
-            {
-                implementedInterfaces = implementedInterfaces.Append( GetClosedPocoType() );
-            }
-
-            tsType.TypePart.CreatePart( out var documentationPart )
-                .Append( "export class " ).Append( tsType.TypeName ).CreatePart( out var interfacesPart )
+            tsType.TypePart.InsertPart( out var documentationPart )
+                .Append( "export class " ).Append( tsType.TypeName ).InsertPart( out var interfacesPart )
                 .OpenBlock()
-                .Append( "public constructor(" ).CreatePart( out var ctorParametersPart ).Append( ")" ).NewLine()
-                .Append( "{" )
-                .CreatePart( out var ctorBodyPart )
-                .Append( "}" ).NewLine()
-                .CreatePart( out var pocoTypeModelPart )
-                .Append( "};" ).NewLine();
+                .Append( "public constructor(" ).InsertPart( out var ctorParametersPart ).Append( ")" ).NewLine()
+                .Append( "{" ).NewLine()
+                .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart, out var ctorBodyPart )
+                .Append( "}" ).NewLine();
 
-            var fieldsWriter = FieldsWriter.Create( monitor, t, false, _typeScriptContext );
+            var fieldsWriter = FieldsWriter.Create( monitor, t, false, _typeScriptContext, _typeScriptSet );
             Throw.DebugAssert( fieldsWriter.HasDefault );
             // This sorts the fields and retrieves the TSField list that can be altered (skipping fields
             // and altering documentation) by other generators.
-            var fields = fieldsWriter.WritePocoTypeModelAndGetPocoFields( pocoTypeModelPart, tsType );
+            var fields = fieldsWriter.SortAndGetNamedCompositeFields();
             // Raises the event.
             var e = new GeneratingPrimaryPocoEventArgs( monitor,
-                                                        _tsPocoModel,
+                                                        _typeScriptContext,
                                                         tsType,
                                                         t,
-                                                        implementedInterfaces,
+                                                        t.MinimalAbstractTypes,
                                                         fields,
-                                                        pocoTypeModelPart,
                                                         interfacesPart,
                                                         ctorParametersPart,
                                                         ctorBodyPart );
@@ -393,7 +541,7 @@ namespace CK.StObj.TypeScript.Engine
             WriteInterfacesAndBrand( monitor,
                                      interfacesPart,
                                      isPrimaryPoco: true,
-                                     implementedInterfaces,
+                                     t.MinimalAbstractTypes,
                                      isIPoco: false,
                                      t,
                                      tsType );
@@ -401,7 +549,7 @@ namespace CK.StObj.TypeScript.Engine
             return true;
         }
 
-        static void WriteCtorParameters( ITSFileCSharpType tsType, ITSCodePart ctorParametersPart, TSPocoField[] fields )
+        static void WriteCtorParameters( ITSFileCSharpType tsType, ITSCodePart ctorParametersPart, ImmutableArray<TSNamedCompositeField> fields )
         {
             bool atLeastOne = false;
             for( int i = 0; i < fields.Length; i++ )
@@ -411,7 +559,7 @@ namespace CK.StObj.TypeScript.Engine
                 else if( atLeastOne ) ctorParametersPart.Append( ", " ).NewLine();
                 if( !f.ConstructorSkip )
                 {
-                    f.WriteFieldDefinition( tsType.File, ctorParametersPart );
+                    f.WriteCtorFieldDefinition( tsType.File, ctorParametersPart );
                     atLeastOne = true;
                 }
             }
@@ -446,9 +594,10 @@ namespace CK.StObj.TypeScript.Engine
             }
             if( !atLeastOne && !isIPoco )
             {
+                var iPoco = _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, typeof(IPoco) );
                 interfaces.Append( isPrimaryPoco ? " implements " : " extends " )
-                          .AppendTypeName( _tsPocoModel.IPocoType );
-                tsType.TypePart.Append( _tsPocoModel.IPocoType.TypeName ).Append( "[\"_brand\"]" );
+                          .AppendTypeName( iPoco );
+                tsType.TypePart.Append( iPoco.TypeName ).Append( "[\"_brand\"]" );
             }
             tsType.TypePart.Append( " & {\"" ).Append( (pocoType.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine();
         }
@@ -456,12 +605,12 @@ namespace CK.StObj.TypeScript.Engine
         bool GenerateAbstractPoco( IActivityMonitor monitor, ITSFileCSharpType tsType, IAbstractPocoType a )
         {
             var part = tsType.TypePart;
-            part.CreatePart( out var docPart )
-                .Append( "export interface " ).Append( tsType.TypeName ).CreatePart( out var interfacesPart )
+            part.InsertPart( out var docPart )
+                .Append( "export interface " ).Append( tsType.TypeName ).InsertPart( out var interfacesPart )
                 .OpenBlock();
             foreach( var f in a.Fields )
             {
-                if( !IsExchangeable( f.Type ) ) continue;
+                if( !_typeScriptSet.Contains( f.Type ) ) continue;
                 if( _typeScriptContext.Root.DocBuilder.GenerateDocumentation )
                 {
                     part.AppendDocumentation( monitor, f.Originator );
@@ -472,7 +621,7 @@ namespace CK.StObj.TypeScript.Engine
                 part.Append( ": " ).AppendTypeName( _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, f.Type.NonNullable ) ).Append(";").NewLine();
             }
 
-            var e = new GeneratingAbstractPocoEventArgs( monitor, _tsPocoModel, tsType, a, a.MinimalGeneralizations, interfacesPart, part );
+            var e = new GeneratingAbstractPocoEventArgs( monitor, _typeScriptContext, tsType, a, a.MinimalGeneralizations, interfacesPart, part );
             RaiseGeneratingAbstractPoco( e );
 
             docPart.AppendDocumentation( monitor, e.TypeDocumentation, e.DocumentationExtension );
@@ -484,24 +633,6 @@ namespace CK.StObj.TypeScript.Engine
                                      a,
                                      tsType );
 
-            return true;
-        }
-
-        bool CheckExchangeable( IActivityMonitor monitor, IPocoType t )
-        {
-            if( !IsExchangeable( t ) )
-            {
-                if( !t.IsExchangeable )
-                {
-                    monitor.Error( $"PocoType '{t}' has been marked as not exchangeable." );
-                }
-                else
-                {
-                    monitor.Error( $"PocoType '{t}' has been marked as not exchangeable in the Json map: " +
-                                   $"a Poco type that is not Json serializable (when Json exchange is available) cannot be exchanged." );
-                }
-                return false;
-            }
             return true;
         }
     }

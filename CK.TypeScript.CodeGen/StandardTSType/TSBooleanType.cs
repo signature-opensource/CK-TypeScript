@@ -3,10 +3,10 @@ using System.Numerics;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSBooleanType : TSBasicType
+    sealed class TSBooleanType : TSBasicType
     {
-        public TSBooleanType()
-            : base( "Boolean", null, "false" )
+        public TSBooleanType( TSTypeManager typeManager )
+            : base( typeManager, "Boolean", null, "false" )
         {
         }
 

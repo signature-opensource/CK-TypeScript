@@ -2,6 +2,7 @@ using CK.Core;
 using CK.CrisLike;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -20,22 +21,27 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         TSBasicType? _crisPoco;
         TSBasicType? _abstractCommand;
         TSBasicType? _command;
+        TypeScriptFile? _modelFile;
 
-        // We don't add anything to the default IPocoType handling.
-        public virtual bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
-
-        // We don't generate global code.
-        public virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext g ) => true;
-
-        public virtual bool Initialize( IActivityMonitor monitor, TypeScriptContext context )
+        public virtual bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
         {
             // This can be called IF multiple contexts must be generated:
             // we reset the cached instance here.
             _command = null;
+
+            return initializer.EnsureRegister( monitor, typeof( IAspNetCrisResult ), mustBePocoType: true )
+                   && initializer.EnsureRegister( monitor, typeof( IAspNetCrisResultError ), mustBePocoType: true );
+        }
+
+        public virtual bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+        {
             context.PocoCodeGenerator.PrimaryPocoGenerating += OnPrimaryPocoGenerating;
             context.PocoCodeGenerator.AbstractPocoGenerating += OnAbstractPocoGenerating;
             return true;
         }
+
+        // We don't add anything to the default IPocoType handling.
+        public virtual bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
         void OnAbstractPocoGenerating( object? sender, GeneratingAbstractPocoEventArgs e )
         {
@@ -70,11 +76,17 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         {
             if( e.PrimaryPocoType.AbstractTypes.Any( a => a.Type == typeof(IAbstractCommand) ) )
             {
-                e.PocoTypeModelPart.NewLine()
-                 .Append( "applyAmbientValues( command: any, a: any, o: any )" )
-                 .OpenBlock()
-                    .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the ambient values.*/" )
-                 .CloseBlock();
+                e.PocoTypePart.File.Imports.EnsureImport( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "ICommandModel" );
+                e.PocoTypePart.NewLine()
+                    .Append( "get commandModel(): ICommandModel { return " ).Append( e.TSGeneratedType.TypeName ).Append( "._m; }" ).NewLine()
+                    .NewLine()
+                    .Append( "private static _m = " )
+                    .OpenBlock()
+                        .Append( "applyAmbientValues( command: any, a: any, o: any )" )
+                        .OpenBlock()
+                        .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the ambient values.*/" )
+                        .CloseBlock()
+                    .CloseBlock();
             }
         }
 
@@ -111,37 +123,34 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         }
 
         [MemberNotNull(nameof(_command), nameof( _abstractCommand ), nameof( _crisPoco ) )]
-        void EnsureCrisCommandModel( IActivityMonitor monitor, TypeScriptContext context )
+        TypeScriptFile EnsureCrisCommandModel( IActivityMonitor monitor, TypeScriptContext context )
         {
-            if( _command != null )
+            if( _modelFile == null )
             {
-                Throw.DebugAssert( _abstractCommand != null && _crisPoco != null );
-                return;
+                _modelFile = context.Root.Root.FindOrCreateFile( "CK/Cris/Model.ts" );
+                GenerateCrisModelFile( monitor, context, _modelFile );
+                //GenerateCrisEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "CrisEndpoint.ts" ) );
+                //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
+                _crisPoco = new TSBasicType( context.Root.TSTypes, "ICrisPoco", imports => imports.EnsureImport( _modelFile, "ICrisPoco" ), null );
+                _abstractCommand = new TSBasicType( context.Root.TSTypes, "IAbstractCommand", imports => imports.EnsureImport( _modelFile, "IAbstractCommand" ), null );
+                _command = new TSBasicType( context.Root.TSTypes, "ICommand", imports => imports.EnsureImport( _modelFile, "ICommand" ), null );
             }
-
-            var modelFile = context.Root.Root.FindOrCreateFile( "CK/Cris/Model.ts" );
-            GenerateCrisModelFile( monitor, context, modelFile );
-            //GenerateCrisEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "CrisEndpoint.ts" ) );
-            //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
-            _crisPoco = new TSBasicType( "ICrisPoco", imports => imports.EnsureImport( modelFile, "ICrisPoco" ), null );
-            _abstractCommand = new TSBasicType( "IAbstractCommand", imports => imports.EnsureImport( modelFile, "IAbstractCommand" ), null );
-            _command = new TSBasicType( "ICommand", imports => imports.EnsureImport( modelFile, "ICommand" ), null );
+            Throw.DebugAssert( _command != null && _abstractCommand != null && _crisPoco != null );
+            return _modelFile;
 
             static void GenerateCrisModelFile( IActivityMonitor monitor, TypeScriptContext context, TypeScriptFile fModel )
             {
                 fModel.Imports.EnsureImport( monitor, typeof( SimpleUserMessage ) );
                 fModel.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
-                var pocoType = context.PocoCodeGenerator.PocoModel.IPocoType;
+                var pocoType = context.Root.TSTypes.ResolveTSType( monitor, typeof(IPoco) );
                 // Imports the IPoco itself...
                 pocoType.EnsureRequiredImports( fModel.Imports );
-                // ...and its pure TypeScript IPocoTypeModel.
-                fModel.Imports.EnsureImport( pocoType.File, "IPocoTypeModel" );
 
                 fModel.Body.Append( """
                                 /**
-                                 * Extends the Poco type model. 
+                                 * Describes a Command type. 
                                  **/
-                                export interface ICommandModel extends IPocoTypeModel {
+                                export interface ICommandModel {
                                     /**
                                      * This supports the CrisEndpoint implementation. This is not to be used directly.
                                      **/
@@ -157,14 +166,15 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                 }
 
                                 /** 
-                                 * Command abstraction extends the associated Poco model to be a ICommandModel.
+                                 * Command abstraction.
                                  **/
                                 export interface IAbstractCommand extends ICrisPoco
                                 {
                                     /** 
                                      * Gets the command model.
                                      **/
-                                    get pocoTypeModel(): ICommandModel;
+                                    get commandModel(): ICommandModel;
+
                                     readonly _brand: ICrisPoco["_brand"] & {"ICommand": any};
                                 }
 

@@ -25,11 +25,13 @@ namespace CK.TypeScript.CodeGen
 
         public ITSCodePart DefaultValue => _defaultValue;
 
-        public TSBasicType Build( bool typeNameIsDefaultValueSource = false )
+        public ITSType Build( bool typeNameIsDefaultValueSource = false )
         {
             Throw.CheckState( !BuiltDone );
             var b = new SmarterStringBuilder( new StringBuilder() );
             var tName = _typeName.Build( b, false ).ToString().Trim();
+            var ts = _root.TSTypes.FindByTypeName( tName );
+            if( ts != null ) return ts;
             b.Reset();
             var defaultValueSource = typeNameIsDefaultValueSource ? tName : _defaultValue.Build( b, false ).ToString().Trim();
             if( defaultValueSource.Length == 0 ) defaultValueSource = null;
@@ -38,7 +40,7 @@ namespace CK.TypeScript.CodeGen
             _typeName.Clear();
             _defaultValue.Clear();
             _root.Return( this );
-            return new TSBasicType( tName, imports, defaultValueSource );
+            return new TSBasicType( _root.TSTypes, tName, imports, defaultValueSource );
         }
     }
 }

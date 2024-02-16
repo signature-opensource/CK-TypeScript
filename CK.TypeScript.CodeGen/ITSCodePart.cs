@@ -32,7 +32,7 @@ namespace CK.TypeScript.CodeGen
         public IEnumerable<ITSCodePart> Parts { get; }
 
         /// <summary>
-        /// Creates a segment of code inside this code.
+        /// Creates a segment of code inside this code and returns it.
         /// </summary>
         /// <param name="closer">Optional <see cref="Closer"/> of the subordinate part.</param>
         /// <param name="top">
@@ -43,7 +43,7 @@ namespace CK.TypeScript.CodeGen
         ITSCodePart CreatePart( string closer = "", bool top = false );
 
         /// <summary>
-        /// Creates a new identifiable segment of code inside this code.
+        /// Creates a new identifiable segment of code inside this code and returns it.
         /// This throws an <see cref="InvalidOperationException"/> if a part with the same key already exists.
         /// </summary>
         /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>

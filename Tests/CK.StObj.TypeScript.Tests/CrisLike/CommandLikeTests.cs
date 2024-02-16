@@ -121,13 +121,14 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( ICommandOne ),
                 typeof( ICommandTwo ),
                 typeof( ICommandThree ),
-                typeof( ICommandFour ),
-                typeof( ICrisResult ),
-                typeof( ICrisResultError )
+                typeof( ICommandFour )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) )
-                                                  .Append( typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) ),
+                                           // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
+                                           // that ensures that they benlong to the TypeScriptSet.
+                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
+                                                                                    typeof( IAspNetCrisResultError ),
+                                                                                    typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
             var p = targetProjectPath.Combine( "ck-gen/src" );
             File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).Should().Contain( "export enum Power" );
@@ -145,7 +146,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) );
             tTwo.Should().Contain( """import { Power } from "../../TheFolder/Power";""" )
                      .And.Contain( """import { CommandThree, CommandOne } from "../../TheFolder/CMDCommandOne";""" )
-                     .And.Contain( """import { ICommand } from "../../CK/Cris/Model";""" );
+                     .And.Contain( """import { ICommandModel, ICommand } from "../../CK/Cris/Model";""" );
 
             tTwo.Should().Contain( "export class CommandTwo implements ICommand {" )
                      .And.Contain( "public age: Number = 0," )
@@ -160,12 +161,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var tRecord = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/RecordData.ts" ) );
             tRecord.Should().Be( """
-                import { INamedRecord } from "../../../../Core/IPoco";
-
                 /**
                  * Simple record data.
                  **/
-                export class RecordData implements INamedRecord {
+                export class RecordData {
                 public constructor(
                 /**
                  * The data index.
@@ -175,26 +174,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                  * A great name for the data.
                  **/
                 public superName: String = "")
-                {}
-                readonly _brand!: INamedRecord["_brand"] & {"38":any};
-                get pocoTypeModel() { return RecordData._m; }
-                private static readonly _m = {
-                isNamedRecord: true,
-                type: "RecordData",
-                index: 38,
-                fields: [
-                 {
-                name: "Index",
-                type: "Number",
-                isOptional:false,
-                index:0,
-                }, {
-                name: "SuperName",
-                type: "String",
-                isOptional:false,
-                index:1,
-                }],
-                };
+                {
+                }
+                readonly _brand!: {"15":any};
                 }
 
                 """ );
@@ -210,7 +192,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( IWithObjectSpecializedAsStringCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) ).Append( typeof( FakeTypeScriptCrisCommandGenerator ) ),
+                                           // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
+                                           // that ensures that they benlong to the TypeScriptSet.
+                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
+                                                                                    typeof( IAspNetCrisResultError ),
+                                                                                    typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
         }
 
@@ -229,8 +215,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( ISuperResult )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) )
-                                                  .Append( typeof( FakeTypeScriptCrisCommandGenerator ) ),
+                                           // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
+                                           // that ensures that they benlong to the TypeScriptSet.
+                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
+                                                                                    typeof( IAspNetCrisResultError ),
+                                                                                    typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
         }
 

@@ -4,6 +4,7 @@ using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
 
@@ -15,40 +16,37 @@ namespace CK.Setup
     /// </summary>
     public sealed class GeneratingNamedRecordPocoEventArgs : EventMonitoredArgs
     {
-        readonly TSPocoModel _tsPocoModel;
+        readonly TypeScriptContext _typeScriptContext;
         readonly ITSFileCSharpType _tsType;
         readonly IRecordPocoType _pocoType;
-        readonly IReadOnlyList<TSPocoField> _fields;
-        readonly ITSCodePart _pocoTypeModelPart;
+        readonly ImmutableArray<TSNamedCompositeField> _fields;
         readonly ITSCodePart _ctorParametersPart;
         readonly ITSCodePart _ctorBodyPart;
         Type? _docType;
         Action<DocumentationBuilder>? _documentationExtension;
 
         internal GeneratingNamedRecordPocoEventArgs( IActivityMonitor monitor,
-                                                     TSPocoModel tsPocoModel,                    
+                                                     TypeScriptContext typeScriptContext,
                                                      ITSFileCSharpType tSGeneratedType,
                                                      IRecordPocoType pocoType,
-                                                     IReadOnlyList<TSPocoField> fields,
-                                                     ITSCodePart pocoTypeModelPart,
+                                                     ImmutableArray<TSNamedCompositeField> fields,
                                                      ITSCodePart ctorParametersPart,
                                                      ITSCodePart ctorBodyPart )
             : base( monitor )
         {
-            _tsPocoModel = tsPocoModel;
+            _typeScriptContext = typeScriptContext;
             _tsType = tSGeneratedType;
             _pocoType = pocoType;
             _docType = pocoType.Type;
             _fields = fields;
-            _pocoTypeModelPart = pocoTypeModelPart;
             _ctorParametersPart = ctorParametersPart;
             _ctorBodyPart = ctorBodyPart;
         }
 
         /// <summary>
-        /// Gets the IPoco model.
+        /// Gets the context.
         /// </summary>
-        public TSPocoModel TSPocoModel => _tsPocoModel;
+        public TypeScriptContext TypeScriptContext => _typeScriptContext;
 
         /// <summary>
         /// Gets the record poco type that is being generated.
@@ -104,11 +102,11 @@ namespace CK.Setup
         /// </list>
         /// </para>
         /// </summary>
-        public IReadOnlyList<TSPocoField> Fields => _fields;
+        public ImmutableArray<TSNamedCompositeField> Fields => _fields;
 
         /// <summary>
-        /// Gets the part to extend the poco type model.
+        /// Gets the part to extend the poco class.
         /// </summary>
-        public ITSCodePart PocoTypeModelPart => _pocoTypeModelPart;
+        public ITSCodePart PocoTypePart => _tsType.TypePart;
     }
 }

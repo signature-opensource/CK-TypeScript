@@ -1,12 +1,9 @@
 using CK.Core;
-using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
-using System.Numerics;
-using System.Security;
-using System.Threading;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -25,10 +22,13 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public sealed partial class TSTypeManager
     {
+        // Only non nullable types. Index is available in ITSType.Index.
+        readonly List<TSType> _allTypes;
         // Null value is used to detect reentrancy while resolving.
         readonly Dictionary<object, ITSType?> _types;
         readonly Dictionary<string, LibraryImport> _libraries;
         readonly TypeScriptRoot _root;
+        readonly ITSCodePart _tsTypes;
         internal readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
         // New TSGeneratedType are appended to this list: GenerateCode
         // loops until no new type appears in this list.
@@ -36,15 +36,27 @@ namespace CK.TypeScript.CodeGen
 
         internal TSTypeManager( TypeScriptRoot root, IReadOnlyDictionary<string, string>? libraryVersionConfiguration )
         {
+            _allTypes = new List<TSType>();
             _root = root;
             _libVersionsConfig = libraryVersionConfiguration;
             _libraries = new Dictionary<string, LibraryImport>();
-            _types = new Dictionary<object, ITSType?>
-            {
-                { typeof( object ), new TSBasicType( "{}", null, null ) }
-            };
+            _types = new Dictionary<object, ITSType?>();
             _processList = new List<TSGeneratedType>();
+            _tsTypes = root.Root.FindOrCreateFile( "CK/Core/TSType.ts" )
+                                .Body.Append( "export const TSType = {" )
+                                     .CreatePart( closer: "}\n" );
+            _types.Add( typeof( object ), new TSBasicType( this, "{}", null, null ) );
         }
+
+        /// <summary>
+        /// Gets the "CK/Core/TSType.ts" file that contains the TSType map that contains
+        /// all the <see cref="ITSType.TSTypeModel"/>.
+        /// <para>
+        /// This acts as a meta model that can be used to brand types. It can be extended
+        /// to offer more functionalities.
+        /// </para>
+        /// </summary>
+        public TypeScriptFile TSTypeFile => _tsTypes.File;
 
         /// <summary>
         /// Registers an imported library. The first wins: all subsequent imports with the same name will
@@ -125,6 +137,26 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The TS type.</returns>
         public ITSType this[object keyType] => _types[keyType] ?? throw new KeyNotFoundException( $"Key type '{keyType}' is currently resolving." );
 
+        internal int Register( TSType tsType, out ITSCodePart model )
+        {
+            _types.Add( tsType.TypeName, tsType );
+            _allTypes.Add( tsType );
+            int index = _allTypes.Count;
+            if( !_tsTypes.IsEmpty ) _tsTypes.Append( "," ).NewLine();
+            model = _tsTypes.AppendSourceString( tsType.TypeName ).Append( ": {" ).NewLine()
+                            .Append( "tsName: " ).AppendSourceString( tsType.TypeName ).Append( "," ).NewLine()
+                            .Append( "index: " ).Append( index.ToString( CultureInfo.InvariantCulture ) ).Append( "," )
+                            .CreateKeyedPart( tsType, closer: "}" );
+            return _allTypes.Count;
+        }
+
+        /// <summary>
+        /// Tries to find a TypeScript type from its <see cref="ITSType.TypeName"/>.
+        /// </summary>
+        /// <param name="typeName">The type name to lookup.</param>
+        /// <returns>The type or null.</returns>
+        public ITSType? FindByTypeName( string typeName ) => _types.GetValueOrDefault( typeName );
+
         /// <summary>
         /// Registers a new mapping from C# type to <see cref="ITSType"/> mapping.
         /// This throws a <see cref="ArgumentException"/> if the key is already mapped.
@@ -168,6 +200,11 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Raised when a <see cref="ITSType"/> must be resolved for an object key type
         /// that is not a C# type.
+        /// <para>
+        /// The TSType must be resolved by setting <see cref="RequireTSFromObjectEventArgs.ResolvedType"/>.
+        /// Often, the event handler first calls back <see cref="ResolveTSType(IActivityMonitor, object)"/> with a
+        /// C# type to resolve the object to its "underlying type".
+        /// </para>
         /// </summary>
         public event EventHandler<RequireTSFromObjectEventArgs>? TSFromObjectRequired;
 
@@ -209,14 +246,51 @@ namespace CK.TypeScript.CodeGen
 
         ITSType ResolveTSTypeFromObject( IActivityMonitor monitor, object keyType )
         {
-            var e = new RequireTSFromObjectEventArgs( monitor, keyType );
+            var e = new RequireTSFromObjectEventArgs( monitor, this, keyType );
             TSFromObjectRequired?.Invoke( this, e );
             if( e.ResolvedType == null )
             {
-                Throw.CKException( $"Unable to resolve TSType from keyType '{keyType}'." );
+                Throw.CKException( $"Unable to resolve TSType for object '{keyType}'." );
             }
-            _types.Add( keyType, e.ResolvedType );
+            // This micro model exhibits a reentrancy issue when using the Object key:
+            //
+            //         public record struct RecTry( string Name, List<RecTry> Others );
+            //         public interface IRecTryPoco : IPoco { IList<RecTry> R1 { get; } }
+            //
+            // Let's firts register an Object, the Poco: {[PrimaryPoco]CK.StObj.TypeScript.Tests.RecordTests.IRecTryPoco}.
+            // PrimaryPoco, NamedRecord and Basic types are rerouted to their C# Type. This registers:
+            // 	    {Name = "IRecTryPoco" FullName = "CK.StObj.TypeScript.Tests.RecordTests+IRecTryPoco"}
+            // Fields resolution is deferred (no reentrancy).
+            // The Type is in the cache.
+            // There is no issue with the DefaultValue: it is "new PocoTypeName()" and it is ALWAYS available.
+            // The Object is in the cache.
+            // 
+            // Let's now register the RecTry Object: {[Record]CK.StObj.TypeScript.Tests.RecordTests.RecTry}
+            // 	Same as the PrimaryPoco case, it is rerouted to its C# resolution:
+            // 	    {Name = "RecTry" FullName = "CK.StObj.TypeScript.Tests.RecordTests+RecTry"}
+            // 	Type is in the Cache but here the DefaultValue kciks in... Even if the default value is simply $"new TypeName()", 
+            // 	to know IF there is a default (i.e. all fields have a defaults), one need to resolve the field types
+            // 	and this can lead to an infinite recursion...
+            // 	This resolution is slightly deferred by using the builder.DefaultValueSourceProvider: the Type will be registered in the cache
+            //  as soon as the call the TSFromTypeRequired event ends and then, before returning the TSType to the caller, its Default value
+            //  will be set by calling the DefaultValueSourceProvider that will resolve the fields types:
+            // 	-> Resolving the DefaultValueSource for named record RecTry.
+            // 		{[Basic]string}
+            // 		{[List]List<CK.StObj.TypeScript.Tests.RecordTests.RecTry>}
+            // 		-> A list is an inline type: its argument needs to be resolved to compute its TypeName.
+            // 		-> We reenter the Object RecTry {[Record]CK.StObj.TypeScript.Tests.RecordTests.RecTry}
+            // 		   As usual the Object is rerouted to its Type -> {Name = "RecTry" FullName = "CK.StObj.TypeScript.Tests.RecordTests+RecTry"}
+            // 		   but here it is found in the cache: this why the DefaultValue is "slightly deferred".
+            // 		   The Object is added to the cache. We are done with it... But in a nested call.
+            // When the top level resolution ends, the Object is already in the cache.
+            // We have no other choice than to upsert it instead of adding it.
+            _types[keyType] = e.ResolvedType;
             return e.ResolvedType;
+        }
+
+        internal void OnResolvedByMapping( object keyType, ITSType tsType )
+        {
+            _types.Add( keyType, tsType );
         }
 
         ITSType? ResolveTSTypeFromType( IActivityMonitor monitor, Type t, bool internalCall, ref HashSet<Type>? sameFolderDetector )
@@ -286,7 +360,32 @@ namespace CK.TypeScript.CodeGen
                 e.TryWriteValueImplementation ??= WriteEnumValue;
                 e.Implementor ??= ImplementEnum;
             }
-            var newOne = new TSGeneratedType( t,
+            else if( e.Implementor == null )
+            {
+                // There is no implementor function. We can provide defaults for some well-known types.
+                // 
+                // We trigger this default only if there is no implementor function as the default DefaultValueSource and
+                // TryWriteValueImplementation method may not be compatible with all TypeScript implementations of the type.
+
+                // Currently, only the Guid is handled.
+                if( t == typeof( Guid ) )
+                {
+                    // Default Guid implementation:
+                    e.DefaultValueSource ??= "Guid.empty";
+                    e.TryWriteValueImplementation ??= static ( w, t, o ) =>
+                    {
+                        if( o is Guid g )
+                        {
+                            w.Append( "new Guid(" ).AppendSourceString( g.ToString() ).Append( ")" );
+                            return true;
+                        }
+                        return false;
+                    };
+                    e.Implementor = ImplementDefaultGuid;
+                }
+            }
+            var newOne = new TSGeneratedType( this,
+                                              t,
                                               e.TypeName,
                                               file,
                                               e.DefaultValueSource,
@@ -318,6 +417,42 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
+        static bool ImplementDefaultGuid( IActivityMonitor monitor, ITSFileCSharpType type )
+        {
+            type.TypePart.Append( """
+                    /**
+                    * Simple immutable encapsulation of a string. No check is currently done on the 
+                    * value format that must be in the '00000000-0000-0000-0000-000000000000' form.
+                    */
+                    export class Guid {
+
+                        /**
+                        * The empty Guid '00000000-0000-0000-0000-000000000000' is the default.
+                        */
+                        public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
+                        
+                        constructor( public readonly guid: string ) {
+
+                    """ )
+                .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart )
+                .Append( """
+                        }
+
+                        get value() {
+                            return this.guid;
+                          }
+
+                        toString() {
+                            return this.guid;
+                          }
+
+                        toJSON() {
+                            return this.guid;
+                          }
+                    """ );
+            return true;
+        }
+
         static bool ImplementEnum( IActivityMonitor monitor, ITSFileCSharpType type )
         {
             type.TypePart.AppendEnumDefinition( monitor, type.Type, type.TypeName, export: true, leaveTypeOpen: true );
@@ -342,6 +477,9 @@ namespace CK.TypeScript.CodeGen
             // 
             // => This is perfect for us: if 0 is defined (that is the "normal" default), then it will be
             //    the first value even if negative exist.
+            //
+            // Note: This reproduces what is done in the PocoTypeSystem. This default TypeScript enum implementation
+            //       is compatible with the IEnumPocoType.
             Array values = d.Type.GetEnumValues();
             if( values.Length == 0 )
             {

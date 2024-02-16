@@ -18,7 +18,8 @@ namespace CK.TypeScript.CodeGen
         string? _defaultValueSource;
         readonly bool _hasError;
 
-        internal TSGeneratedType( Type t,
+        internal TSGeneratedType( TSTypeManager typeManager,
+                                  Type t,
                                   string typeName,
                                   TypeScriptFile file,
                                   string? defaultValue,
@@ -26,7 +27,7 @@ namespace CK.TypeScript.CodeGen
                                   TSCodeGenerator? codeGenerator,
                                   string partCloser,
                                   bool hasError )
-            : base( typeName )
+            : base( typeManager, typeName )
         {
             Throw.DebugAssert( t != null );
             Throw.DebugAssert( file != null );

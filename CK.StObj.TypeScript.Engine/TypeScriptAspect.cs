@@ -47,25 +47,67 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
         {
-            foreach( var genBinPath in context.AllBinPaths )
+            foreach( var codeGenContext in context.AllBinPaths )
             {
                 // Skip the purely unified BinPath.
-                if( genBinPath.CurrentRun.ConfigurationGroup.IsUnifiedPure ) continue;
+                if( codeGenContext.CurrentRun.ConfigurationGroup.IsUnifiedPure ) continue;
                 // Obtains the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
                 // We MAY here decide that ONE BinPath have more than one TypeScriptAspectConfiguration, but
                 // currently, one BinPath can define 0 or 1 TypeScriptAspectConfiguration.
-                var rootedConfigs = GetRootedConfigurations( monitor, genBinPath );
+                var rootedConfigs = GetRootedConfigurations( monitor, codeGenContext );
                 if( rootedConfigs != null )
                 {
-                    var pocoTypeSystem = genBinPath.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
-                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<IPocoJsonGeneratorService>();
-                    if( jsonCodeGen?.JsonNames == null )
+                    // Tries to obtain the IPocoJsonSerializationServiceEngine (that exposes the IPocoTypeSystem) for this BinPath.
+                    // If it is not here (no Json serialization), we obtain the IPocoTypeSystem and we have no exchangeableNames.
+                    IPocoTypeSet exchangeableSet;
+                    var jsonSerialization = codeGenContext.CurrentRun.ServiceContainer.GetService<IPocoJsonSerializationServiceEngine>();
+                    if( jsonSerialization == null )
                     {
                         monitor.Info( $"No Json serialization available in this context." );
+                        exchangeableSet = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>().SetManager.AllExchangeable;
                     }
+                    else
+                    {
+                        exchangeableSet = jsonSerialization.SerializableLayer.AllExchangeable;
+                    }
+                    // We are in a BinPathConfiguration.
+                    // Currently, only one TypeScriptAspectBinPathConfiguration is handled in a BinPathConfiguration but this may change.
+                    // We loop here on a single item list.
+                    // We associate a TypeScriptContext to each TypeScriptAspectBinPathConfiguration and run it.
                     foreach( var tsBinPathconfig in rootedConfigs )
                     {
-                        var g = new TypeScriptContext( genBinPath, _tsConfig, tsBinPathconfig, pocoTypeSystem, jsonCodeGen?.JsonNames );
+                        // First handles the configured <Types>, types that have [TypeScript] attribute or are decorated by some
+                        // ITSCodeGeneratorType and any type that are decorated with "global" ITSCodeGenerator. Then the discovered globals
+                        // ITSCodeGenerator.Initialize are called: new registered types can be added by global generators.
+                        // On success, the final TSContextInitializer.TypeScriptExchangeableSet is computed from all the registered types that
+                        // are IPocoType from the EmptyExchangeable set: this is an allow list.
+                        // => Only Poco compliant types that are reachable from a registered Poco type will be in TypeScriptExchangeableSet
+                        //    and handled by the PocoCodeGenerator.
+                        var initializer = TSContextInitializer.Create( monitor,
+                                                                       codeGenContext,
+                                                                       _tsConfig,
+                                                                       tsBinPathconfig,
+                                                                       exchangeableSet,
+                                                                       jsonSerialization );
+                        if( initializer == null ) return false;
+
+                        // We now have the Global code generators initailzed, the configured attributes on explicitly registered types,
+                        // discovered types or newly added types and a set of "TypeScriptExchangeable" Poco types.
+                        IPocoTypeNameMap? exchangeableNames = null;
+                        if( jsonSerialization != null )
+                        {
+                            // If Json serialization is available, let's get the name map for them.
+                            // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
+                            // beacause of anonymous record names that expose their fields).
+                            if( !initializer.TypeScriptExchangeableSet.SameContentAs( exchangeableSet ) )
+                            {
+                                // Uses the Clone virtual method to handle future evolution that may not use
+                                // the standard PocoTypeNameMap implementation for Json names.
+                                exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames.Clone( initializer.TypeScriptExchangeableSet );
+                            }
+                        }
+                        // The TypeScriptContext for this configuration can now be initialized and run.
+                        var g = new TypeScriptContext( codeGenContext, _tsConfig, tsBinPathconfig, initializer, exchangeableNames );
                         _generators.Add( g );
                         if( !g.Run( monitor ) )
                         {

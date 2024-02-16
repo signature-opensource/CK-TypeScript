@@ -39,6 +39,6 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="typeNameIsDefaultValueSource">True to use the type name as the <see cref="ITSType.DefaultValueSource"/>.</param>
         /// <returns>The built type.</returns>
-        TSBasicType Build( bool typeNameIsDefaultValueSource = false );
+        ITSType Build( bool typeNameIsDefaultValueSource = false );
     }
 }

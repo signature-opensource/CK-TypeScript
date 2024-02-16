@@ -157,14 +157,14 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeResolver">Type resolver for <see cref="SameFolderAs"/> and <see cref="SameFileAs"/>.</param>
         /// <returns>The type script arrtibute or null on error.</returns>
-        public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<IActivityMonitor,string,Type?> typeResolver )
+        public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<string,Type?> typeResolver )
         {
             bool success = true;
             if( TypeName != null ) success &= ValidNotEmpty( monitor, this, "TypeName", TypeName );
             Type? tSameFile = null;
             if( SameFileAs != null )
             {
-                tSameFile = ResolveType( monitor, this, typeResolver, "SameFileAs", SameFileAs );
+                tSameFile = FindType( monitor, this, typeResolver, "SameFileAs", SameFileAs );
                 success &= tSameFile != null; 
                 if( FileName != null ) success &= Error( monitor, this, "FileName", "SameFileAs" );
                 if( Folder != null ) success &= Error( monitor, this, "Folder", "SameFileAs" );
@@ -173,7 +173,7 @@ namespace CK.Setup
             Type? tSameFolder = null;
             if( SameFolderAs != null )
             {
-                tSameFolder = ResolveType( monitor, this, typeResolver, "SameFolderAs", SameFolderAs );
+                tSameFolder = FindType( monitor, this, typeResolver, "SameFolderAs", SameFolderAs );
                 success &= tSameFile != null;
                 if( Folder != null ) success &= Error( monitor, this, "Folder", "SameFolderAs" );
             }
@@ -187,13 +187,13 @@ namespace CK.Setup
                 return false;
             }
 
-            static Type? ResolveType( IActivityMonitor monitor, TypeScriptTypeConfiguration c, Func<IActivityMonitor, string, Type?> typeResolver, string name, string value )
+            static Type? FindType( IActivityMonitor monitor, TypeScriptTypeConfiguration c, Func<string, Type?> typeResolver, string name, string value )
             {
                 if( !ValidNotEmpty( monitor, c, name, value ) )
                 {
                     return null;
                 }
-                var t = typeResolver( monitor, value );
+                var t = typeResolver( value );
                 if( t == null )
                 {
                     monitor.Error( $"TypeScriptAspect configuration error: unable to resolve type for '{name}': '{value}' in:{Environment.NewLine}{c.ToXml()}" );

@@ -170,7 +170,7 @@ namespace CK.TypeScript.CodeGen
             if( s == null ) @this.Append( "null" );
             else
             {
-                @this.Append( "\"" ).Append( JavaScriptEncoder.Default.Encode( s ) ).Append( "\"" );
+                @this.Append( "\"" ).Append( JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode( s ) ).Append( "\"" );
             }
             return @this;
         }
@@ -260,8 +260,35 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Appends a boolean value ("true" or "false") without requiring a TSType mapping.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="b">The value to write.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        static public T Append<T>( this T @this, bool b ) where T : ITSCodeWriter
+        {
+            @this.DoAdd( b ? "true" : "false" );
+            return @this;
+        }
+
+        /// <summary>
+        /// Appends an integer value without requiring a TSType mapping.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="v">The value to write.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        static public T Append<T>( this T @this, int v ) where T : ITSCodeWriter
+        {
+            @this.DoAdd( v.ToString( CultureInfo.InvariantCulture) );
+            return @this;
+        }
+
+        /// <summary>
         /// Tries to appends the code source for an untyped object.
-        /// Only types that have an associated <see cref="ITSType"/> are handled.
+        /// Only types that have an associated <see cref="ITSType"/> are handled and the
+        /// <see cref="ITSType.TryWriteValue(ITSCodeWriter, object?)"/> should return true.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
         /// <param name="this">This code writer.</param>
@@ -283,7 +310,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Creates a segment of code inside this part.
+        /// Inserts a segment of code inside this part.
         /// This signature allows a fluent code to "emit" one or more insertion points.
         /// </summary>
         /// <typeparam name="T">The code part type.</typeparam>
@@ -292,26 +319,57 @@ namespace CK.TypeScript.CodeGen
         /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This part to enable fluent syntax.</returns>
-        public static T CreatePart<T>( this T @this, out ITSCodePart part, string closer = "", bool top = false ) where T : ITSCodePart
+        public static T InsertPart<T>( this T @this, out ITSCodePart part, string closer = "", bool top = false ) where T : ITSCodePart
         {
             part = @this.CreatePart( closer, top );
             return @this;
         }
 
         /// <summary>
-        /// Creates a keyed part of code inside this part.
+        /// Inserts a segment of code inside this part.
         /// This signature allows a fluent code to "emit" one or more insertion points.
         /// </summary>
         /// <typeparam name="T">The code part type.</typeparam>
         /// <param name="this">This code part.</param>
+        /// <param name="closer">Optional closer of the subordinate part.</param>
+        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
+        /// <returns>This part to enable fluent syntax.</returns>
+        public static T InsertPart<T>( this T @this, string closer = "", bool top = false ) where T : ITSCodePart
+        {
+            @this.CreatePart( closer, top );
+            return @this;
+        }
+
+        /// <summary>
+        /// Inserts a keyed part of code inside this part.
+        /// This signature allows a fluent code to "emit" one or more insertion points.
+        /// </summary>
+        /// <typeparam name="T">The code part type.</typeparam>
+        /// <param name="this">This code part.</param>
+        /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="part">Outputs the keyed part to use to inject code at this location (or at the <paramref name="top"/>).</param>
+        /// <param name="closer">Optional closer of the subordinate part.</param>
+        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
+        /// <returns>This code part to enable fluent syntax.</returns>
+        public static T InsertKeyedPart<T>( this T @this, object key, out ITSKeyedCodePart part, string closer = "", bool top = false ) where T : ITSCodePart
+        {
+            part = @this.CreateKeyedPart( key, closer, top );
+            return @this;
+        }
+
+        /// <summary>
+        /// Inserts a keyed part of code inside this part.
+        /// This signature allows a fluent code to "emit" one or more insertion points.
+        /// </summary>
+        /// <typeparam name="T">The code part type.</typeparam>
+        /// <param name="this">This code part.</param>
         /// <param name="key">The <see cref="ITSKeyedCodePart.Key"/>.</param>
         /// <param name="closer">Optional closer of the subordinate part.</param>
         /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
         /// <returns>This code part to enable fluent syntax.</returns>
-        public static T CreateKeyedPart<T>( this T @this, out ITSKeyedCodePart part, object key, string closer = "", bool top = false ) where T : ITSCodePart
+        public static T InsertKeyedPart<T>( this T @this, object key, string closer = "", bool top = false ) where T : ITSCodePart
         {
-            part = @this.CreateKeyedPart( key, closer, top );
+            @this.CreateKeyedPart( key, closer, top );
             return @this;
         }
 

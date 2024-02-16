@@ -5,11 +5,6 @@ import {IPoco,
 import {SomeCommand, 
         WithObjectCommand, Result } from "@local/ck-gen";
 
-class PocoArray<T> extends Array<T>
-{
-    
-}
-
 it("What follows cannot be tested because it is a compile time feature...",() => {
     expect("Brands have no runtime existence, they only exist at compile time.").toBeTruthy();
   });

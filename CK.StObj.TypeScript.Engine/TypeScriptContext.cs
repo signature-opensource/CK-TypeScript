@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.StObj.TypeScript;
@@ -27,57 +28,30 @@ namespace CK.Setup
     public sealed class TypeScriptContext
     {
         readonly ICodeGenerationContext _codeContext;
-        readonly IReadOnlyDictionary<Type, ITypeAttributesCache> _attributeCache;
         readonly TypeScriptAspectConfiguration _configuration;
         readonly TypeScriptAspectBinPathConfiguration _binPathConfiguration;
-        readonly IPocoTypeSystem _pocoTypeSystem;
-        readonly ExchangeableTypeNameMap? _jsonNames;
+        readonly TSContextInitializer _initializer;
         readonly TypeScriptRoot _tsRoot;
         readonly PocoCodeGenerator _pocoGenerator;
-        readonly Dictionary<Type, RegType> _registeredTypes;
-        readonly Dictionary<Type, TypeScriptAttribute> _fromConfiguration;
-        readonly List<ITSCodeGenerator> _globals;
         bool _success;
-
-        readonly struct RegType
-        {
-            public RegType( IReadOnlyList<ITSCodeGeneratorType>? generators, TypeScriptAttribute? attr )
-            {
-                Generators = generators;
-                Attribute = attr;
-            }
-
-            public readonly TypeScriptAttribute? Attribute;
-
-            public readonly IReadOnlyList<ITSCodeGeneratorType>? Generators;
-        }
 
         internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                     TypeScriptAspectConfiguration tsConfig,
                                     TypeScriptAspectBinPathConfiguration tsBinPathConfig,
-                                    IPocoTypeSystem pocoTypeSystem,
-                                    ExchangeableTypeNameMap? jsonNames )
+                                    TSContextInitializer initializer,
+                                    IPocoTypeNameMap? jsonExchangeableNames )
         {
             _codeContext = codeCtx;
             _configuration = tsConfig;
             _binPathConfiguration = tsBinPathConfig;
-            _pocoTypeSystem = pocoTypeSystem;
-            _jsonNames = jsonNames;
+            _initializer = initializer;
             _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions, tsConfig.PascalCase, tsConfig.GenerateDocumentation );
             _tsRoot.FolderCreated += OnFolderCreated;
-            _tsRoot.TSTypes.TSFromTypeRequired += OnTypeBuilderRequired;
-            _tsRoot.TSTypes.TSFromObjectRequired += OnTSTypeRequired;
-            _registeredTypes = new Dictionary<Type, RegType>();
-            _fromConfiguration = new Dictionary<Type, TypeScriptAttribute>();
-            _attributeCache = codeCtx.CurrentRun.EngineMap.AllTypesAttributesCache;
-            _success = true;
+            _tsRoot.TSTypes.TSFromTypeRequired += OnTSFromTypeRequired;
+            _tsRoot.TSTypes.TSFromObjectRequired += OnTSFromObjectRequired;
             Root.Root.EnsureBarrel();
-            _pocoGenerator = new PocoCodeGenerator( this, _pocoTypeSystem );
-            _globals = new List<ITSCodeGenerator>
-            {
-                _pocoGenerator,
-                new GlobalizationTypesCodeGenerator()
-            };
+            _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
+            _success = true;
         }
 
         void OnFolderCreated( TypeScriptFolder f )
@@ -88,27 +62,41 @@ namespace CK.Setup
             }
         }
 
-        void OnTSTypeRequired( object? sender, RequireTSFromObjectEventArgs e )
+        /// <summary>
+        /// When an object must be resolved, we simply dispatch the event to all the global ITSCodeGenerator
+        /// available. It's up to them to handle it if they recognize the object.
+        /// </summary>
+        /// <param name="sender">The TSTypeManager.</param>
+        /// <param name="e">The event with the key and the final <see cref="RequireTSFromObjectEventArgs.ResolvedType"/> to be set.</param>
+        void OnTSFromObjectRequired( object? sender, RequireTSFromObjectEventArgs e )
         {
-            foreach( var g in _globals )
+            var success = true;
+            foreach( var g in _initializer.GlobalCodeGenerators )
             {
-                g.OnResolveObjectKey( e.Monitor, this, e );
+                success &= g.OnResolveObjectKey( e.Monitor, this, e );
+            }
+            if( success )
+            {
+                _pocoGenerator.OnResolveObjectKey( e.Monitor, e );
             }
         }
 
-        void OnTypeBuilderRequired( object? sender, RequireTSFromTypeEventArgs e )
+        /// <summary>
+        /// To resolve a C# type, we first see if a configuration must be applied to it. If it's the case, the
+        /// configuration is applied to the event (FolderType, TypeName, etc.).
+        /// Then we call all the global ITSCodeGenerator with the event and then all the ITSCodeGeneratorType associated
+        /// to the type.
+        /// </summary>
+        /// <param name="sender">The TSTypeManager.</param>
+        /// <param name="e">The event that acts as a TSType builder.</param>
+        void OnTSFromTypeRequired( object? sender, RequireTSFromTypeEventArgs e )
         {
             bool success = true;
-            _registeredTypes.TryGetValue( e.Type, out RegType regType );
+            _initializer.RegisteredTypes.TryGetValue( e.Type, out RegisteredType regType );
             var a = regType.Attribute;
             if( a != null )
             {
                 success &= e.TryInitialize( e.Monitor, a.Folder, a.FileName, a.TypeName, a.SameFolderAs, a.SameFileAs );
-            }
-            // Applies global generators.
-            foreach( var g in _globals )
-            {
-                success &= g.OnResolveType( e.Monitor, this, e );
             }
             // Applies type generators.
             var typeGenerators = regType.Generators;
@@ -118,6 +106,15 @@ namespace CK.Setup
                 {
                     success &= g.ConfigureBuilder( e.Monitor, this, e );
                 }
+            }
+            // Applies global generators.
+            foreach( var g in _initializer.GlobalCodeGenerators )
+            {
+                success &= g.OnResolveType( e.Monitor, this, e );
+            }
+            if( success )
+            {
+                _pocoGenerator.OnResolveType( e.Monitor, e );
             }
             // Consider any initialization error as an error that condems the type (and will eventually
             // condemn the whole process).
@@ -150,181 +147,72 @@ namespace CK.Setup
         public TypeScriptAspectBinPathConfiguration BinPathConfiguration => _binPathConfiguration;
 
         /// <summary>
-        /// Gets the Json <see cref="ExchangeableTypeNameMap"/> if it is available.
-        /// </summary>
-        public ExchangeableTypeNameMap? JsonNames => _jsonNames;
-
-        /// <summary>
         /// Gets all the global generators.
         /// </summary>
-        public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
+        public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _initializer.GlobalCodeGenerators;
 
         internal bool Run( IActivityMonitor monitor )
         {
             _tsRoot.TSTypes.RegisterStandardTypes( monitor );
-            _pocoGenerator.Initialize( monitor );
-            var pocoDirectory = CodeContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoDirectory>();
             using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
             {
-                return // Projects the BinPathConfiguration.Types in RegType.Attribute.
-                        BuildRegTypesFromConfiguration( monitor, pocoDirectory )
-                        // Discovering the globals ITSCodeGenerator, type bound ITSCodeGenerator and TypeScript attributes.
-                        // - Registers the globals,
-                        // - Type bound generators are registered in RegType.Generators,
-                        // - TypeScript atributes are stored in RegType.Attribute (if the type appeared in BinPathConfiguration.Types,
-                        //   the configured values override the code values).
-                        && BuildRegTypesFromAttributesAndDiscoverGenerators( monitor )
-                        // Initializes the global generators.
-                        && CallGlobalCodeGenerators( monitor, initialize: true )
-                        // Calls Root.TSTypes.ResolveType for each non null RegType.Attribute.
+                return  // Initializes the global generators.
+                        TSContextInitializer.CallGlobalCodeGenerators( monitor, _initializer.GlobalCodeGenerators, null, this )
+                        // Calls Root.TSTypes.ResolveType for each RegisteredType:
+                        // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
+                        // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
                         && ResolveRegisteredTypes( monitor )
-                        // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType.
-                        && _tsRoot.GenerateCode( monitor )
-                        // Runs the global generators GenerateCode.
-                        && CallGlobalCodeGenerators( monitor, false );
-            }
-        }
-
-        bool BuildRegTypesFromConfiguration( IActivityMonitor monitor, IPocoDirectory directory )
-        {
-            using( monitor.OpenInfo( $"Building TypeScriptAttribute for {BinPathConfiguration.Types.Count} Type configurations." ) )
-            {
-                bool success = true;
-                foreach( TypeScriptTypeConfiguration c in _binPathConfiguration.Types )
-                {
-                    Type? t = FindType( directory, c.Type );
-                    if( t == null )
-                    {
-                        monitor.Error( $"Unable to resolve type '{c.Type}' in TypeScriptAspectConfiguration in:{Environment.NewLine}{c.ToXml()}" );
-                        success = false;
-                    }
-                    else
-                    {
-                        var attr = c.ToAttribute( monitor, ( monitor, typeName ) => FindType( directory, typeName ) );
-                        if( attr == null ) success = false;
-                        else
-                        {
-                            _fromConfiguration.Add( t, attr );
-                            _registeredTypes.Add( t, new RegType( null, attr ) );
-                        }
-                    }
-                }
-                monitor.CloseGroup( $"{_fromConfiguration.Count} configurations processed." );
-                return success;
-            }
-
-            static Type? FindType( IPocoDirectory d, string typeName )
-            {
-                var t = SimpleTypeFinder.WeakResolver( typeName, false );
-                if( t == null )
-                {
-                    if( d.NamedFamilies.TryGetValue( typeName, out var rootInfo ) )
-                    {
-                        t = rootInfo.PrimaryInterface.PocoInterface;
-                    }
-                }
-                return t;
-            }
-
-        }
-
-        bool BuildRegTypesFromAttributesAndDiscoverGenerators( IActivityMonitor monitor )
-        {
-            using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGenerator attributes." ) )
-            {
-                // These variables are reused per type.
-                TypeScriptAttributeImpl? impl;
-                List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
-
-                foreach( ITypeAttributesCache attributeCache in _attributeCache.Values )
-                {
-                    impl = null;
-                    generators.Clear();
-
-                    foreach( var m in attributeCache.GetTypeCustomAttributes<ITSCodeGeneratorAutoDiscovery>() )
-                    {
-                        if( m is ITSCodeGenerator g )
-                        {
-                            _globals.Add( g );
-                        }
-                        if( m is TypeScriptAttributeImpl a )
-                        {
-                            if( impl != null )
-                            {
-                                monitor.Error( $"Multiple TypeScriptAttribute decorates '{attributeCache.Type}'." );
-                                _success = false;
-                            }
-                            impl = a;
-                        }
-                        if( m is ITSCodeGeneratorType tG )
-                        {
-                            generators.Add( tG );
-                        }
-                    }
-                    // If the attribute is only a ITSCodeGeneratorType, we don't consider it as an empty TypeScriptAttribute,
-                    // we register it if and only if it appears in the configuration (we let the TSDecoratedType.Attribute be null).
-                    // And if it is not declared in the configuration we keep the array of its generators to be able to
-                    // use them if the type is referenced by another referenced type.
-                    if( impl != null || generators.Count > 0 )
-                    {
-                        // Did this type appear in the configuration?
-                        // If yes, the configuration must override the values from the code.
-                        var configuredAttr = _registeredTypes.GetValueOrDefault( attributeCache.Type ).Attribute;
-                        var a = impl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
-                        _registeredTypes[attributeCache.Type] = new RegType( generators.Count > 0 ? generators.ToArray() : null, a );
-                    }
-                }
-                if( _success ) monitor.CloseGroup( $"Found {_globals.Count} global generators and {_registeredTypes.Count} types to consider." );
-                return _success;
+                        // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
+                        && _tsRoot.GenerateCode( monitor );
             }
         }
 
         bool ResolveRegisteredTypes( IActivityMonitor monitor )
         {
-            using( monitor.OpenInfo( $"Declaring registered types." ) )
+            bool success = true;
+            Type? t = null;
+            IPocoType? pT = null;
+            try
             {
-                foreach( var (type, dec) in _registeredTypes )
+                using( monitor.OpenInfo( $"Declaring {_initializer.RegisteredTypes.Count} registered types." ) )
                 {
-                    if( dec.Attribute != null )
+                    foreach( var (type, reg) in _initializer.RegisteredTypes )
                     {
-                        _tsRoot.TSTypes.ResolveTSType( monitor, type );
-                    }
-                }
-                return true;
-            }
-        }
-
-        bool CallGlobalCodeGenerators( IActivityMonitor monitor, bool initialize )
-        {
-            string action = initialize ? "Initializing" : "Executing";
-            Debug.Assert( _success );
-            // Executes all the globals.
-            using( monitor.OpenInfo( $"{action} the {_globals.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
-            {
-                foreach( var global in _globals )
-                {
-                    using( monitor.OpenTrace( $"{action} '{global.GetType().FullName}' global TypeScript generator." ) )
-                    {
-                        try
+                        if( reg.PocoType != null )
                         {
-                            _success = initialize
-                                        ? global.Initialize( monitor, this )
-                                        : global.GenerateCode( monitor, this );
+                            pT = reg.PocoType;
+                            _tsRoot.TSTypes.ResolveTSType( monitor, pT );
                         }
-                        catch( Exception ex )
+                        else
                         {
-                            monitor.Error( ex );
-                            _success = false;
-                        }
-                        if( !_success )
-                        {
-                            monitor.CloseGroup( "Failed." );
-                            return false;
+                            pT = null;
+                            t = type;
+                            _tsRoot.TSTypes.ResolveTSType( monitor, type );
                         }
                     }
                 }
+                using( monitor.OpenInfo( $"Ensuring that all the Poco of the TypeScriptSet are registered." ) )
+                {
+                    foreach( var p in _pocoGenerator.TypeScriptSet.NonNullableTypes )
+                    {
+                        pT = p;
+                        _tsRoot.TSTypes.ResolveTSType( monitor, pT );
+                    }
+                }
             }
-            return _success;
+            catch( Exception ex )
+            {
+                success = false;
+                if( pT != null )
+                {
+                    monitor.Error( $"Unable to resolve Poco type '{pT}'.", ex );
+                }
+                else
+                {
+                    monitor.Error( $"Unable to resolve type '{t:C}'.", ex );
+                }
+            }
+            return success;
         }
 
         internal bool Save( IActivityMonitor monitor )

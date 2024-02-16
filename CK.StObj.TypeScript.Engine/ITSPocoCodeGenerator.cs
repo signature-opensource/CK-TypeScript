@@ -14,18 +14,9 @@ namespace CK.Setup
     public interface ITSPocoCodeGenerator
     {
         /// <summary>
-        /// Gets the TypeScript Poco model.
+        /// Gets the set of Poco types that are handled by this generator.
         /// </summary>
-        TSPocoModel PocoModel { get; }
-
-        /// <summary>
-        /// Gets whether a <see cref="IPocoType"/> is exchangeable: it is <see cref="IPocoType.IsExchangeable"/>
-        /// and if <see cref="TypeScriptContext.JsonNames"/> exists, then <see cref="ExchangeableTypeNameMap.IsExchangeable(IPocoType)"/>
-        /// is also true.
-        /// </summary>
-        /// <param name="type">The poco type.</param>
-        /// <returns>True if this poco type must be available in TypeScript.</returns>
-        bool IsExchangeable( IPocoType type );
+        IPocoTypeSet TypeScriptSet { get;  }
 
         /// <summary>
         /// Raised when generating code of a <see cref="IAbstractPocoType"/>.

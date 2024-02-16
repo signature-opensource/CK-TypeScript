@@ -1,4 +1,4 @@
-import { ICommandAbs, IntCommand, StringCommand, NamedRecordCommand, NamedRecord } from "@local/ck-gen";
+import { ICommandAbs, IntCommand, StringCommand, NamedRecordCommand, NamedRecord, SymCTS } from "@local/ck-gen";
 
 // Sample test.
 describe('Abstract commands', () => {
@@ -19,6 +19,11 @@ describe('Abstract commands', () => {
       cA = cR;
       expect(cA.key).toBeInstanceOf( NamedRecord );
       const theKey = cA.key as NamedRecord;
+
+      expect(theKey).not.toEqual( {name: "Hello!", value: 3712} );
+
+      delete theKey[SymCTS];
+
       expect(theKey).toEqual( {name: "Hello!", value: 3712} );
 
     });

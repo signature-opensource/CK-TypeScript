@@ -13,12 +13,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static CK.StObj.TypeScript.Tests.CrisLike.CommandLikeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace CK.StObj.TypeScript.Tests
+namespace CK.StObj.TypeScript.Tests.TSTests
 {
     [TestFixture]
     public class FullTSTests
@@ -166,8 +165,12 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( ITestSerializationCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           tsTypes.Append( typeof( FakeCommandDirectory ) )
-                                                  .Append( typeof( FakeTypeScriptCrisCommandGenerator ) ),
+                                           // Registers IAspNetResults only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
+                                           // that ensures that they benlong to the TypeScriptSet.
+                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
+                                                                                    typeof( IAspNetCrisResultError ),
+                                                                                    typeof( CommonPocoJsonSupport ),
+                                                                                    typeof( FakeTypeScriptCrisCommandGenerator ) } ),
                                            tsTypes );
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
             await TestHelper.SuspendAsync( resume => resume );

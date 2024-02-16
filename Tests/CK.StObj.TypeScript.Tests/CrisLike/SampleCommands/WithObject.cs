@@ -38,6 +38,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         /// </summary>
         int PowerPoco { get; set; }
     }
+
     /// <summary>
     /// Specializes <see cref="IWithObjectSpecializedAsPocoCommand"/> to return a <see cref="ISuperResult"/>.
     /// </summary>

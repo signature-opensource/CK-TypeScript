@@ -3,10 +3,10 @@ using System.Globalization;
 
 namespace CK.TypeScript.CodeGen
 {
-    class TSStringType : TSBasicType
+    sealed class TSStringType : TSBasicType
     {
-        public TSStringType()
-            : base( "String", null, "''" )
+        public TSStringType( TSTypeManager typeManager )
+            : base( typeManager, "String", null, "''" )
         {
         }
 
