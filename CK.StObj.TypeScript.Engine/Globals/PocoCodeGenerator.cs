@@ -6,17 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Xml.Linq;
 
 namespace CK.StObj.TypeScript.Engine
 {
     /// <summary>
     /// Handles TypeScript generation of any type that appears in the <see cref="IPocoTypeSystem"/>.
+    /// This is exposed on the <see cref="TypeScriptContext.PocoCodeGenerator"/>.
     /// <para>
     /// This is not a <see cref="ITSCodeGenerator"/>: <see cref="OnResolveObjectKey(IActivityMonitor, RequireTSFromObjectEventArgs)"/>
     /// and <see cref="OnResolveType(IActivityMonitor, RequireTSFromTypeEventArgs)"/> are called by the TypeScriptContext.

@@ -26,7 +26,6 @@ namespace CK.Setup
         readonly TSContextInitializer _initializer;
         readonly TypeScriptRoot _tsRoot;
         readonly PocoCodeGenerator _pocoGenerator;
-        bool _success;
 
         internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                     TypeScriptAspectConfiguration tsConfig,
@@ -44,7 +43,6 @@ namespace CK.Setup
             _tsRoot.TSTypes.TSFromObjectRequired += OnTSFromObjectRequired;
             Root.Root.EnsureBarrel();
             _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
-            _success = true;
         }
 
         void OnFolderCreated( TypeScriptFolder f )

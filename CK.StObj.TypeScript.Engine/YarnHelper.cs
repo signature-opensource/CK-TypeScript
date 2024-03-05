@@ -174,7 +174,7 @@ namespace CK.Setup
                                                             "target": "es5",
                                                             "module": "ES6",
                                                             "moduleResolution": "node",
-                                                            "lib": ["es2015", "es2016", "es2017", "dom"],
+                                                            "lib": ["es2019", "dom"],
                                                             "baseUrl": "./src",
                                                             "outDir": "./dist/esm",
                                                             "sourceMap": true,
@@ -599,8 +599,14 @@ namespace CK.Setup
                                                         rootDir: 'src',
                                                         testRegex: '.*\\.spec\\.ts$',
                                                         transform: {
-                                                            // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
-                                                            '^.+\\.ts$': ['ts-jest', {diagnostics: {ignoreCodes: ['TS151001']}}],
+                                                            '^.+\\.ts$': ['ts-jest', {
+                                                                // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
+                                                                diagnostics: {ignoreCodes: ['TS151001']},
+                                                                // tsconfig fo Jest comes here. 
+                                                                tsconfig: {
+                                                                    "lib": ["es2019", "dom"]
+                                                                    }    
+                                                            }],
                                                         },
                                                         testEnvironment: 'node',
                                                         setupFiles: ["../{{{JestSetupFileName}}}"]

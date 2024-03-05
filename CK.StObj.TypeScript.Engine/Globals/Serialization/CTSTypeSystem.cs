@@ -12,21 +12,32 @@ namespace CK.Setup
     /// This is available on <see cref="TypeScriptContext.CTSTypeSystem"/> only when Json serialization
     /// in available in the generation context.
     /// </summary>
-    public sealed class CTSTypeSystem
+    public sealed partial class CTSTypeSystem
     {
         readonly TypeScriptContext _typeScriptContext;
         readonly IPocoTypeNameMap _jsonExhangeableNames;
         readonly ITSCodePart _ctsType;
+        readonly HasPolymorphicMap _hasPolymorphicMap;
 
         internal CTSTypeSystem( TypeScriptContext typeScriptContext, IPocoTypeNameMap jsonExhangeableNames )
         {
             _typeScriptContext = typeScriptContext;
             _jsonExhangeableNames = jsonExhangeableNames;
+            _hasPolymorphicMap = new HasPolymorphicMap( jsonExhangeableNames.TypeSet );
             var file = _typeScriptContext.Root.Root.FindOrCreateFile( "CK/Core/CTSType.ts" );
             file.Imports.EnsureImport( typeScriptContext.Root.TSTypes.TSTypeFile, "TSType" );
 
             _ctsType = file.Body.Append( """export const SymCTS = Symbol.for("CK.CTSType");""" ).NewLine()
-                                .Append( "export const CTSType: any  = {" ).NewLine()
+                                .Append( """
+                                export const CTSType: any  = {
+                                   typedJson( o: any ) : unknown {
+                                     if( o === null || typeof o === "undefined" ) return null;
+                                     const t = o[SymCTS];
+                                     if( !t ) throw new Error( "Untyped object. A type must be specified with CTSType." );
+                                     return [t.name, t.json( o )];
+                                  },
+
+                                """ )
                                 .CreatePart( closer: "}\n" );
             typeScriptContext.Root.AfterCodeGeneration += OnAfterCodeGeneration;
         }
@@ -83,11 +94,10 @@ namespace CK.Setup
             var part = _ctsType.FindOrCreateKeyedPart( ctsName, closer: "},\n" );
             if( part.IsEmpty )
             {
-                var isAbstract = t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.AbstractPoco || t.Kind == PocoTypeKind.UnionType;
                 part.AppendSourceString( ctsName ).Append( ": {" ).NewLine()
                     .Append( "name: " ).AppendSourceString( ctsName ).Append( "," ).NewLine()
-                    .Append( "tsType: TSType[" ).AppendSourceString( ts.TypeName ).Append( "]," ).NewLine()
-                    .Append( "isAbstract: " ).Append( isAbstract ).Append( "," ).NewLine();
+                    .Append( "tsType: TSType[" ).AppendSourceString( ts.TypeName ).Append( "]," ).NewLine();
+                var isAbstract = t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.AbstractPoco || t.Kind == PocoTypeKind.UnionType;
                 if( !isAbstract )
                 {
                     part.File.Imports.EnsureImport( ts );
@@ -99,12 +109,38 @@ namespace CK.Setup
                     part.Append( "itemTypes: [ " );
                     WriteItemTypes( part, c.ItemTypes );
                     part.Append( " ]," ).NewLine();
+
+                    part.Append( "json( o: any ) {" ).NewLine();
+                    if( c.Kind is PocoTypeKind.Array or PocoTypeKind.List )
+                    {
+                        if( !_hasPolymorphicMap.Contains( t ) )
+                        {
+                            part.Append( "return o;" );
+                        }
+                        else
+                        {
+                            if( c.ItemTypes[0].IsPolymorphic )
+                            {
+                                part.Append( "return o.map( CTSType.typedJson );" );
+                            }
+                            else
+                            {
+                                part.Append( "const t = this[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0] ) ).Append( "];" ).NewLine();
+                                part.Append( "return o.map( t.json );" );
+                            }
+                        }
+                    }
+                    part.NewLine().Append( "}," ).NewLine();
                 }
                 else if( ts is TSUnionType tU )
                 {
                     part.Append( "allowedTypes: [ " );
                     WriteItemTypes( part, tU.Types.Select( uT => uT.PocoType ) );
                     part.Append( " ]," ).NewLine();
+                }
+                else if( t.Kind == PocoTypeKind.Basic )
+                {
+                    part.Append( "json( o: any ) { return o.toJSON(); }," ).NewLine();
                 }
             }
             return part;
@@ -131,7 +167,7 @@ namespace CK.Setup
                 .Append( "]; }" );
             if( isField )
             {
-                // Here my come the FieldModelPart if needed.
+                // Here may come the FieldModelPart if needed.
                 part.Append( "," ).NewLine();
             }
         }
@@ -169,12 +205,14 @@ namespace CK.Setup
                 if( i > 0 ) part.Append( "," );
                 part.NewLine()
                     .AppendIdentifier( f.PocoField.Name ).Append( ": {" ).NewLine()
-                    .Append( "name: " ).AppendSourceString( f.PocoField.Name ).Append( "," ).NewLine();
+                    .Append( "name: '" ).AppendIdentifier( f.PocoField.Name ).Append( "'," ).NewLine();
                 WriteIsNullableAndType( part, f.PocoField.Type, isField: true );
                 part.Append( "}" ).NewLine();
                 ++i;
             }
             part.NewLine().Append( "}" ).NewLine();
         }
+
     }
+
 }

@@ -4,9 +4,15 @@ module.exports = {
     rootDir: 'src',
     testRegex: '.*\\.spec\\.ts$',
     transform: {
-        // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
-        '^.+\\.ts$': ['ts-jest', {diagnostics: {ignoreCodes: ['TS151001']}}],
+        '^.+\\.ts$': ['ts-jest', {
+            // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
+            diagnostics: {ignoreCodes: ['TS151001']},
+            // tsconfig fo Jest comes here. 
+            tsconfig: {
+                "lib": ["es2019", "dom"]
+              }    
+        }],
     },
     testEnvironment: 'node',
-    setupFiles: ["../jest.StObjTypeScriptEngine.js"]
+    setupFiles: ["../jest.StObjTypeScriptEngine.js"],
 };
