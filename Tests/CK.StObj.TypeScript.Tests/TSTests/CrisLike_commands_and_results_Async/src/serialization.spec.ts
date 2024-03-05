@@ -8,7 +8,6 @@ export interface IPocoJSONSerializer {
 }
 
 
-
 class DefaultJsonSerializer implements IPocoJSONSerializer
 {
   getReplacer(): (key: string, value: any) => any {
@@ -24,8 +23,10 @@ class DefaultJsonSerializer implements IPocoJSONSerializer
     if( o === null || typeof o === "undefined" ) return null;
     if( typeof o === "number" || typeof o === "string" || typeof(o) === "boolean" || typeof o === "bigint" ) return o;
     if( typeof o === "function" || typeof o === "symbol" ) throw new Error( "Function or Symbol are not supported." );
-    if( o._ctsType ) return [o._ctsType.name,o];
-    throw new Error( "Untyped object. A type must be specified with CTSType." );
+    if( !o._ctsType ) throw new Error( "Untyped object. A type must be specified with CTSType." );
+    if( o._ctsType.isAbstract ) throw new Error( `Type '${o._ctsType.name}' is abstract.` );
+    
+    
   }
 
 

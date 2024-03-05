@@ -126,7 +126,7 @@ namespace CK.StObj.TypeScript.Engine
                                 {
                                     var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
                                     // Uses Array<> rather than "(inner.TypeName)[]".
-                                    var tName = $"Array<{inner.TypeName}>";
+                                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlyArray<{inner.TypeName}>" : $"Array<{inner.TypeName}>";
                                     ts = tsTypeManager.FindByTypeName( tName )
                                          ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
                                     break;
@@ -134,7 +134,7 @@ namespace CK.StObj.TypeScript.Engine
                             case PocoTypeKind.HashSet:
                                 {
                                     var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                    var tName = $"Set<{inner.TypeName}>";
+                                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlySet<{inner.TypeName}>" : $"Set<{inner.TypeName}>";
                                     ts = tsTypeManager.FindByTypeName( tName )
                                          ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
                                     break;
@@ -143,7 +143,7 @@ namespace CK.StObj.TypeScript.Engine
                                 {
                                     var tKey = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
                                     var tValue = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[1] );
-                                    var tName = $"Map<{tKey.TypeName},{tValue.TypeName}>";
+                                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlyMap<{tKey.TypeName},{tValue.TypeName}>" : $"Map<{tKey.TypeName},{tValue.TypeName}>";
                                     ts = tsTypeManager.FindByTypeName( tName )
                                          ?? new TSBasicType( tsTypeManager, tName,
                                                              i =>

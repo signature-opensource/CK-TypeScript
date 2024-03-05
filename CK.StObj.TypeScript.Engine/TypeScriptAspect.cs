@@ -91,7 +91,7 @@ namespace CK.Setup
                                                                        jsonSerialization );
                         if( initializer == null ) return false;
 
-                        // We now have the Global code generators initailzed, the configured attributes on explicitly registered types,
+                        // We now have the Global code generators initialized, the configured attributes on explicitly registered types,
                         // discovered types or newly added types and a set of "TypeScriptExchangeable" Poco types.
                         IPocoTypeNameMap? exchangeableNames = null;
                         if( jsonSerialization != null )
@@ -99,7 +99,11 @@ namespace CK.Setup
                             // If Json serialization is available, let's get the name map for them.
                             // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
                             // beacause of anonymous record names that expose their fields).
-                            if( !initializer.TypeScriptExchangeableSet.SameContentAs( exchangeableSet ) )
+                            if( initializer.TypeScriptExchangeableSet.SameContentAs( exchangeableSet ) )
+                            {
+                                exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames;
+                            }
+                            else
                             {
                                 // Uses the Clone virtual method to handle future evolution that may not use
                                 // the standard PocoTypeNameMap implementation for Json names.

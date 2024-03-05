@@ -1,4 +1,5 @@
 import { ICommandAbs, IntCommand, StringCommand, NamedRecordCommand, NamedRecord, SymCTS } from "@local/ck-gen";
+ 
 
 // Sample test.
 describe('Abstract commands', () => {
@@ -27,4 +28,44 @@ describe('Abstract commands', () => {
       expect(theKey).toEqual( {name: "Hello!", value: 3712} );
 
     });
-  });
+});
+
+
+it("violates covariance",() => {
+
+    interface IAbove 
+    {
+        readonly keyList: Array<{}>;
+    }
+
+    class Below implements IAbove {
+        public constructor( public readonly keyList: Array<{notAnyObject:boolean}> = [] ) { }
+    }  
+  
+    const b = new Below();
+    const a : IAbove = b;
+    const shouldNotBeAllowed = {bug:true};
+    a.keyList.push(shouldNotBeAllowed);
+    expect( b.keyList ).toContain(shouldNotBeAllowed);
+});
+
+
+it("requires explicit covariance support via readonly collections",() => {
+
+    interface ISafeAbove 
+    {
+        readonly keyList: ReadonlyArray<{}>;
+    }
+    
+    class Below2 implements ISafeAbove {
+        public constructor( public readonly keyList: Array<{notAnyObject:boolean}> = [] )
+        {
+        }
+    }  
+  
+    const b = new Below2();
+    const a : ISafeAbove = b;
+    const shouldNotBeAllowed = {bug:true};
+    //a.keyList.push(shouldNotBeAllowed);
+    expect( b.keyList ).not.toContain(shouldNotBeAllowed);
+});
