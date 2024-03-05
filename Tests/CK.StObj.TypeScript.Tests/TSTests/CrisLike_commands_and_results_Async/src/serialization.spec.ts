@@ -12,21 +12,26 @@ class DefaultJsonSerializer implements IPocoJSONSerializer
 {
   getReplacer(): (key: string, value: any) => any {
 
+    let isRoot = true;
+
     return function(key: string, value: any) {
-      console.debug(this);
+      if( isRoot )
+      {
+        isRoot = false;
+        return DefaultJsonSerializer.getTyped( value );
+      }
       return value;
     };
   }
 
   
-  getTyped( o: any ) : unknown {
+  static getTyped( o: any ) : unknown {
     if( o === null || typeof o === "undefined" ) return null;
     if( typeof o === "number" || typeof o === "string" || typeof(o) === "boolean" || typeof o === "bigint" ) return o;
     if( typeof o === "function" || typeof o === "symbol" ) throw new Error( "Function or Symbol are not supported." );
     if( !o._ctsType ) throw new Error( "Untyped object. A type must be specified with CTSType." );
     if( o._ctsType.isAbstract ) throw new Error( `Type '${o._ctsType.name}' is abstract.` );
-    
-    
+    return [o._ctsType.name, o];
   }
 
 
