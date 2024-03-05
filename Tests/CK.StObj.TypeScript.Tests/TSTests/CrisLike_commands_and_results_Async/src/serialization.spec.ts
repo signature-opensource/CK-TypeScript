@@ -1,4 +1,4 @@
-import { CTSType, Guid, IPoco, UserMessageLevel } from "@local/ck-gen";
+import { CTSType, Guid, IPoco, UserMessageLevel, SymCTS } from "@local/ck-gen";
 import { DateTime, Duration } from "luxon";
 import { TestSerializationCommand } from "@local/ck-gen";
 import { SimpleUserMessage } from "@local/ck-gen";
@@ -29,9 +29,10 @@ class DefaultJsonSerializer implements IPocoJSONSerializer
     if( o === null || typeof o === "undefined" ) return null;
     if( typeof o === "number" || typeof o === "string" || typeof(o) === "boolean" || typeof o === "bigint" ) return o;
     if( typeof o === "function" || typeof o === "symbol" ) throw new Error( "Function or Symbol are not supported." );
-    if( !o._ctsType ) throw new Error( "Untyped object. A type must be specified with CTSType." );
-    if( o._ctsType.isAbstract ) throw new Error( `Type '${o._ctsType.name}' is abstract.` );
-    return [o._ctsType.name, o];
+    const t = o[SymCTS];
+    if( !t ) throw new Error( "Untyped object. A type must be specified with CTSType." );
+    if( t.isAbstract ) throw new Error( `Type '${o._ctsType.name}' is abstract.` );
+    return [t.name, o];
   }
 
 
@@ -59,6 +60,6 @@ describe('Command serialization', () => {
 
       const s = JSON.stringify(c,PocoSerializer.getDefaultJsonSerializer().getReplacer() );
       
-      expect(s).toBe( '{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":null,"timeSpan":"PT3.712S"}' );
+      expect(s).toBe( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":null,"timeSpan":"PT3.712S"}]' );
     });
   });
