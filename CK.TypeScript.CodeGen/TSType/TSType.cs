@@ -114,7 +114,7 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc />
         /// <remarks>
         /// At this level, this does nothing: this applies to any type that is a pure signature
-        /// that doesn't require any imports (like a <c>number[]</c>).
+        /// that doesn't require any imports (like a <c>Array&lt;number&gt;</c>).
         /// </remarks>
         public virtual void EnsureRequiredImports( ITSFileImportSection section )
         {

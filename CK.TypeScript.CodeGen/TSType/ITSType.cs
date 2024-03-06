@@ -28,6 +28,12 @@ namespace CK.TypeScript.CodeGen
         bool IsNullable { get; }
 
         /// <summary>
+        /// Gets whether this is the "Number", "String", "Boolean" or "BigInt" type.
+        /// These types are handled automatically by the <see cref="TypeScriptRoot"/>.
+        /// </summary>
+        bool IsPrimitive => ReferenceEquals( TypeName, "String" ) || ReferenceEquals( TypeName, "Number" ) || ReferenceEquals( TypeName, "Boolean" ) || ReferenceEquals( TypeName, "BigInt" );
+
+        /// <summary>
         /// Gets a unique index for this TS type.
         /// When <see cref="IsNullable"/> is true this is the negative non nullable index.
         /// The value 0 is invalid.

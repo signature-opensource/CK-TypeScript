@@ -1,11 +1,12 @@
 using CK.Core;
+using System;
 using System.Collections;
 
 namespace CK.Setup
 {
     public sealed partial class CTSTypeSystem
     {
-        readonly struct HasPolymorphicMap
+        readonly struct RequiresHandlingMap
         {
             sealed class TypeSet
             {
@@ -27,7 +28,7 @@ namespace CK.Setup
             readonly TypeSet _result;
             readonly IPocoTypeSet _exchangeSet;
 
-            internal HasPolymorphicMap( IPocoTypeSet exchangeSet )
+            internal RequiresHandlingMap( IPocoTypeSet exchangeSet )
             {
                 _exchangeSet = exchangeSet;
                 _done = new TypeSet( exchangeSet.TypeSystem.AllNonNullableTypes.Count );
@@ -36,23 +37,39 @@ namespace CK.Setup
 
             public IPocoTypeSet ExchangeSet => _exchangeSet;
 
+            public bool RequiresToJSONCall( IPocoType t )
+            {
+                // Our Guid and Extended/NormalizedCultureInfo and SimpleUserMessage have toJSON().
+                // Luxon DateTime and Duration also have it.
+                var tt = t.Type;
+                return tt == typeof( Guid )
+                       || tt == typeof( DateTime ) || tt == typeof( DateTimeOffset ) || tt == typeof( TimeSpan )
+                       || tt == typeof( ExtendedCultureInfo ) || tt == typeof( NormalizedCultureInfo )
+                       || tt == typeof( SimpleUserMessage );
+            }
+
             public bool Contains( IPocoType t )
             {
                 if( _done.Add( t ) )
                 {
                     Throw.CheckArgument( ExchangeSet.Contains( t ) );
-                    if( t.IsPolymorphic ) _result.Add( t );
+                    if( t.IsPolymorphic || RequiresToJSONCall( t ) ) _result.Add( t );
                     else
                     {
                         if( t is ICollectionPocoType coll )
                         {
-                            foreach( var i in coll.ItemTypes )
+                            if( coll.Kind is PocoTypeKind.List or PocoTypeKind.Array )
                             {
-                                if( Contains( i ) )
+                                // Array or List of cool types are cool.
+                                if( Contains( coll.ItemTypes[0] ) )
                                 {
                                     _result.Add( t );
-                                    break;
                                 }
+                            }
+                            else
+                            {
+                                // Set and Map require to be handled.
+                                _result.Add( t );
                             }
                         }
                         else if( t is ICompositePocoType c )

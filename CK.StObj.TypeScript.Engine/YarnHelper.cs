@@ -602,7 +602,7 @@ namespace CK.Setup
                                                             '^.+\\.ts$': ['ts-jest', {
                                                                 // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
                                                                 diagnostics: {ignoreCodes: ['TS151001']},
-                                                                // tsconfig fo Jest comes here. 
+                                                                // tsconfig for Jest comes here. 
                                                                 tsconfig: {
                                                                     "lib": ["es2019", "dom"]
                                                                     }    

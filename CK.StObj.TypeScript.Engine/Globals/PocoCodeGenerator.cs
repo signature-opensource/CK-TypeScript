@@ -342,6 +342,7 @@ namespace CK.StObj.TypeScript.Engine
                             .Append( """
                                     }
                                         toString() { return this.name; }
+                                        toJSON() { return this.name; }
                                     """ );
                         return true;
                     }
@@ -430,6 +431,9 @@ namespace CK.StObj.TypeScript.Engine
                                     }
 
                                     toString() { return '['+UserMessageLevel[this.level]+'] ' + this.message; }
+                                    toJSON() { return this.level !== UserMessageLevel.None
+                                                        ? [this.level,this.message,this.depth]
+                                                        : [0]; }
                                 """ );
                             return true;
                     }

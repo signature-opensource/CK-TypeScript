@@ -17,13 +17,13 @@ namespace CK.Setup
         readonly TypeScriptContext _typeScriptContext;
         readonly IPocoTypeNameMap _jsonExhangeableNames;
         readonly ITSCodePart _ctsType;
-        readonly HasPolymorphicMap _hasPolymorphicMap;
+        readonly RequiresHandlingMap _requiresHandlingMap;
 
         internal CTSTypeSystem( TypeScriptContext typeScriptContext, IPocoTypeNameMap jsonExhangeableNames )
         {
             _typeScriptContext = typeScriptContext;
             _jsonExhangeableNames = jsonExhangeableNames;
-            _hasPolymorphicMap = new HasPolymorphicMap( jsonExhangeableNames.TypeSet );
+            _requiresHandlingMap = new RequiresHandlingMap( jsonExhangeableNames.TypeSet );
             var file = _typeScriptContext.Root.Root.FindOrCreateFile( "CK/Core/CTSType.ts" );
             file.Imports.EnsureImport( typeScriptContext.Root.TSTypes.TSTypeFile, "TSType" );
 
@@ -97,12 +97,22 @@ namespace CK.Setup
                 part.AppendSourceString( ctsName ).Append( ": {" ).NewLine()
                     .Append( "name: " ).AppendSourceString( ctsName ).Append( "," ).NewLine()
                     .Append( "tsType: TSType[" ).AppendSourceString( ts.TypeName ).Append( "]," ).NewLine();
-                var isAbstract = t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.AbstractPoco || t.Kind == PocoTypeKind.UnionType;
-                if( !isAbstract )
+                var canSetType = t.Kind != PocoTypeKind.Any
+                                 && t.Kind != PocoTypeKind.AbstractPoco
+                                 && t.Kind != PocoTypeKind.UnionType;
+                if( canSetType )
                 {
                     part.File.Imports.EnsureImport( ts );
-                    part.Append( "set( o: " ).Append( ts.TypeName ).Append( " ): " ).Append( ts.TypeName )
-                        .Append( " { (o as any)[SymCTS] = this; return o; }," ).NewLine();
+                    part.Append( "set( o: " ).Append( ts.TypeName ).Append( " ): " ).Append( ts.TypeName ).Append( " { " );
+                    if( t.Kind == PocoTypeKind.Enum )
+                    {
+                        part.Append( "o = new Number( o );" );
+                    }
+                    else if( ts.IsPrimitive )
+                    {
+                        part.Append( "o = new " ).Append( ts.TypeName ).Append("( o );");
+                    }
+                    part.Append( " (o as any)[SymCTS] = this; return o; }," ).NewLine();
                 }
                 if( t is ICollectionPocoType c )
                 {
@@ -113,7 +123,7 @@ namespace CK.Setup
                     part.Append( "json( o: any ) {" ).NewLine();
                     if( c.Kind is PocoTypeKind.Array or PocoTypeKind.List )
                     {
-                        if( !_hasPolymorphicMap.Contains( t ) )
+                        if( !_requiresHandlingMap.Contains( t ) )
                         {
                             part.Append( "return o;" );
                         }
@@ -121,12 +131,95 @@ namespace CK.Setup
                         {
                             if( c.ItemTypes[0].IsPolymorphic )
                             {
-                                part.Append( "return o.map( CTSType.typedJson );" );
+                                part.Append( "return !!o ? o.map( CTSType.typedJson ) : null;" );
                             }
                             else
                             {
-                                part.Append( "const t = this[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0] ) ).Append( "];" ).NewLine();
-                                part.Append( "return o.map( t.json );" );
+                                part.Append( "if( !o ) return null;" ).NewLine()
+                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0] ) ).Append( "];" ).NewLine()
+                                    .Append( "return o.map( t.json );" );
+                            }
+                        }
+                    }
+                    else if( c.Kind is PocoTypeKind.HashSet )
+                    {
+                        if( !_requiresHandlingMap.Contains( t ) )
+                        {
+                            part.Append( "return !!o ? Array.from( o ) : null;" );
+                        }
+                        else
+                        {
+                            if( c.ItemTypes[0].IsPolymorphic )
+                            {
+                                part.Append( "return !!o ? Array.from( o ).map( CTSType.typedJson ) : null;" );
+                            }
+                            else
+                            {
+                                part.Append( "if( !o ) return null;" ).NewLine()
+                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0] ) ).Append( "];" ).NewLine()
+                                    .Append( "return Array.from( o ).map( t.json );" );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Throw.DebugAssert( c.Kind is PocoTypeKind.Dictionary );
+                        if( c.ItemTypes[0].Type == typeof( string ) )
+                        {
+                            if( !_requiresHandlingMap.Contains( c.ItemTypes[1] ) )
+                            {
+                                part.Append( "return !!o ? Object.fromEntries(o.entries()) : null;" );
+                            }
+                            if( c.ItemTypes[1].IsPolymorphic )
+                            {
+                                part.Append( """
+                                    if( !o ) return null;
+                                    let r = {} as any;
+                                    for( const i of o ) {
+                                      r[i[0]] = CTSType.typedJson(i[1]);
+                                    }
+                                    return r;
+                                    """ );
+                            }
+                            else
+                            {
+                                part.Append( "if( !o ) return null;" ).NewLine()
+                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[1] ) ).Append( "];" ).NewLine()
+                                    .Append( """
+                                        let r = {} as any;
+                                        for( const i of o ) {
+                                          r[i[0]] = t.json(i[1]);
+                                        }
+                                        return r;
+                                        """ );
+                            }
+                        }
+                        else
+                        {
+                            if( !_requiresHandlingMap.Contains( t ) )
+                            {
+                                part.Append( "return !!o ? Array.from( o ) : null;" );
+                            }
+                            else
+                            {
+                                if( c.ItemTypes[0].IsPolymorphic )
+                                {
+                                    part.Append( "return !!o ? Array.from( o ).map( CTSType.typedJson ) : null;" );
+                                }
+                                else
+                                {
+                                    string aKey = GetMapAccessor( part, c, 0 );
+                                    string aVal = GetMapAccessor( part, c, 1 );
+
+                                    part.Append( $$"""
+                                        if( !o ) return null;
+                                        const r = new Array<[any,any]>;
+                                        for( const i of o ) {
+                                          r.push([{{aKey}},{{aVal}}]);
+                                        }
+                                        return r;
+                                        """ );
+                                }
                             }
                         }
                     }
@@ -140,10 +233,42 @@ namespace CK.Setup
                 }
                 else if( t.Kind == PocoTypeKind.Basic )
                 {
-                    part.Append( "json( o: any ) { return o.toJSON(); }," ).NewLine();
+                    part.Append( "json( o: any ) {" );
+                    if( _requiresHandlingMap.RequiresToJSONCall( t ) )
+                    {
+                        part.Append( "return !!o ? o.toJSON() : null;" );
+                    }
+                    else 
+                    {
+                        // MCString and CodeString are excluded from TypeScript exchangeable set.
+                        // We are left with the primitive types.
+                        if( !ts.IsPrimitive ) Throw.CKException( $"Unsuported Basic type '{t.Type}'." );
+                        part.Append( "return o;" );
+                    }
+                    part.NewLine().Append( "}," ).NewLine();
+                }
+                else if( t.Kind == PocoTypeKind.Enum )
+                {
+                    part.Append( "json( o: any ) { return o; }" ).NewLine();
                 }
             }
             return part;
+        }
+
+        string GetMapAccessor( ITSKeyedCodePart part, ICollectionPocoType c, int i )
+        {
+            var vMap = $"i[{i}]";
+            var tK = c.ItemTypes[0];
+            if( tK.IsPolymorphic )
+            {
+                vMap = $"CTSType.typedJson({vMap})";
+            }
+            else if( _requiresHandlingMap.Contains( tK ) )
+            {
+                part.Append( $"const t{i} = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[i] ) ).Append( "];" ).NewLine();
+                vMap = $"t{i}.json({vMap})";
+            }
+            return vMap;
         }
 
         void WriteItemTypes( ITSKeyedCodePart part, IEnumerable<IPocoType> types )
@@ -194,6 +319,40 @@ namespace CK.Setup
             var part = _ctsType.FindKeyedPart( ctsName );
             Throw.DebugAssert( part != null );
             DoWriteFieldModels( part, fields );
+
+            // SimpleUserMessage uses type toJSON method.
+            if( t.Type == typeof( SimpleUserMessage ) ) return;
+
+            part.Append( "json( o: any ) {" );
+            if( _requiresHandlingMap.Contains( t ) )
+            {
+                part.Append( "if( !o ) return null;" ).NewLine()
+                    .Append( "let r = {} as any;" ).NewLine();
+                foreach( var field in fields )
+                {
+                    part.Append( "r." ).AppendIdentifier( field.PocoField.Name ).Append( " = " );
+                    if( field.PocoField.Type.IsPolymorphic )
+                    {
+                        part.Append( "CTSType.typedJson( o." ).AppendIdentifier( field.PocoField.Name ).Append(" )" );
+                    }
+                    else if( _requiresHandlingMap.Contains( field.PocoField.Type ) )
+                    {
+                        part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( field.PocoField.Type ) ).Append( "].json( " )
+                            .Append( "o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
+                    }
+                    else
+                    {
+                        part.Append( "o." ).AppendIdentifier( field.PocoField.Name );
+                    }
+                    part.Append( ";" ).NewLine();
+                }
+                part.Append( "return r;" ).NewLine();
+            }
+            else
+            {
+                part.Append( "return o;" );
+            }
+            part.NewLine().Append( "}," ).NewLine();
         }
 
         void DoWriteFieldModels( ITSCodePart part, IEnumerable<TSField> fields )
@@ -210,7 +369,7 @@ namespace CK.Setup
                 part.Append( "}" ).NewLine();
                 ++i;
             }
-            part.NewLine().Append( "}" ).NewLine();
+            part.NewLine().Append( "}," ).NewLine();
         }
 
     }

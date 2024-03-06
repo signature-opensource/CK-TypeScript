@@ -48,15 +48,16 @@ namespace CK.TypeScript.CodeGen
         /// <inheritdoc />
         public override string? DefaultValueSource => _defaultValueSource;
 
-        // Only set after type registration for TSGeneratedType from a deferred factory function if any.
-        internal void SetDefaultValueSource( string? v ) => _defaultValueSource = v;
-
         /// <inheritdoc cref="ITSType.EnsureRequiredImports(ITSFileImportSection)" />
         public override void EnsureRequiredImports( ITSFileImportSection section )
         {
             Throw.CheckNotNullArgument( section );
             _requiredImports?.Invoke( section );
         }
+
+        // Only set after type registration for TSGeneratedType from a deferred factory function if any.
+        internal void SetDefaultValueSource( string? v ) => _defaultValueSource = v;
+
     }
 }
 
