@@ -31,7 +31,10 @@ namespace CK.TypeScript.CodeGen
         /// Gets whether this is the "Number", "String", "Boolean" or "BigInt" type.
         /// These types are handled automatically by the <see cref="TypeScriptRoot"/>.
         /// </summary>
-        bool IsPrimitive => ReferenceEquals( TypeName, "String" ) || ReferenceEquals( TypeName, "Number" ) || ReferenceEquals( TypeName, "Boolean" ) || ReferenceEquals( TypeName, "BigInt" );
+        bool IsPrimitive => ReferenceEquals( TypeName, "String" )
+                            || ReferenceEquals( TypeName, "Number" )
+                            || ReferenceEquals( TypeName, "Boolean" )
+                            || ReferenceEquals( TypeName, "BigInt" );
 
         /// <summary>
         /// Gets a unique index for this TS type.

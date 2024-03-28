@@ -1,6 +1,7 @@
 using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,9 +18,9 @@ namespace CK.StObj.TypeScript.Tests
         public interface IValueTuplePoco1 : IPoco
         {
             // Anonymous record with no name at all: TypeScript [tuple] syntax.
-            ref (int, string, string?, object?) Power { get; }
+            ref (int, string, string?, Guid?) Power { get; }
             // Note that the default is optimized.
-            // => public power: [Number, String, String?, unknown?] = [0, ""]
+            // => public power: [Number, String, String?, Guid?] = [0, ""]
         }
 
         [TypeScript( Folder = "" )]
@@ -48,8 +49,8 @@ namespace CK.StObj.TypeScript.Tests
         public interface IValueTupleWithNamePoco1 : IPoco
         {
             // When fields have name: {object} syntax.
-            ref (int Age, string UserId, string? FirstName, object? LastName) Power { get; }
-            // => public readonly power: {age: Number, userId: String, firstName?: String, lastName?: unknown} = {age: 0, userId: ""}
+            ref (int Age, string UserId, string? FirstName, Guid? LastName) Power { get; }
+            // => public readonly power: {age: Number, userId: String, firstName?: String, lastName?: Guid} = {age: 0, userId: ""}
         }
 
         [TypeScript( Folder = "" )]
@@ -57,16 +58,16 @@ namespace CK.StObj.TypeScript.Tests
         {
             // When at least one field has name: {object} syntax.
             // Missing names are item1, item2, etc.
-            ref (int, string Name, string?, object? AnotherName) Power { get; }
-            // => public readonly power: {item1: Number, name: String, item3?: String, anotherName?: unknown} = {item1: 0, name: ""}
+            ref (int, string Name, string?, Guid? AnotherName) Power { get; }
+            // => public readonly power: {item1: Number, name: String, item3?: String, anotherName?: Guid} = {item1: 0, name: ""}
         }
 
         [TypeScript( Folder = "" )]
         public interface IValueTupleWithNamePoco3 : IPoco
         {
             // {object} syntax with leading nullable (optional) fields is fine.
-            ref (int?, string Name, string, object? AnotherName) Power { get; }
-            // => public readonly power: {item1?: Number, name: String, item3: String, anotherName?: unknown} = {name: "", item3: ""}
+            ref (int?, string Name, string, Guid? AnotherName) Power { get; }
+            // => public readonly power: {item1?: Number, name: String, item3: String, anotherName?: Guid} = {name: "", item3: ""}
         }
 
         [Test]
@@ -86,7 +87,7 @@ namespace CK.StObj.TypeScript.Tests
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco1.ts",
-                """public readonly power: [Number, String, String?, {}?] = [0, ""]""" );
+                """public readonly power: [Number, String, String?, Guid?] = [0, ""]""" );
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco2.ts",
@@ -98,22 +99,22 @@ namespace CK.StObj.TypeScript.Tests
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco1.ts",
-                """public readonly power: {age: Number, userId: String, firstName?: String, lastName?: {}} = {age: 0, userId: ""}""" );
+                """public readonly power: {age: Number, userId: String, firstName?: String, lastName?: Guid} = {age: 0, userId: ""}""" );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco2.ts",
-                """public readonly power: {item1: Number, name: String, item3?: String, anotherName?: {}} = {item1: 0, name: ""}""" );
+                """public readonly power: {item1: Number, name: String, item3?: String, anotherName?: Guid} = {item1: 0, name: ""}""" );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco3.ts",
-                """public readonly power: {item1?: Number, name: String, item3: String, anotherName?: {}} = {name: "", item3: ""}""" );
+                """public readonly power: {item1?: Number, name: String, item3: String, anotherName?: Guid} = {name: "", item3: ""}""" );
         }
 
         [TypeScript( SameFolderAs = typeof( IRecordPoco1 ) )]
         public record struct Rec1( int Age,
                                    string Name,
                                    string? AltName,
-                                   object? Key );
+                                   Guid? Key );
 
         [TypeScript( Folder = "" )]
         public interface IRecordPoco1 : IPoco
@@ -125,7 +126,7 @@ namespace CK.StObj.TypeScript.Tests
         public record struct Rec2( int Age,
                                    string Name = "Aurélien",
                                    string? AltName = "Barrau",
-                                   object? Key = null );
+                                   Guid? Key = null );
 
         [TypeScript( Folder = "" )]
         public interface IRecordPoco2 : IPoco
@@ -135,7 +136,7 @@ namespace CK.StObj.TypeScript.Tests
 
 
         [TypeScript( SameFolderAs = typeof( IRecordPoco3 ) )]
-        public record struct Rec3( object? Key = null,
+        public record struct Rec3( Guid? Key = null,
                                    string? AltName = "Barrau",
                                    string Name = "Aurélien",
                                    int Age = 40 );
@@ -166,7 +167,7 @@ namespace CK.StObj.TypeScript.Tests
                 public age: Number = 0, 
                 public name: String = "", 
                 public altName?: String, 
-                public key?: {}
+                public key?: Guid
                 """ );
 
             CheckFile( targetProjectPath,
@@ -181,7 +182,7 @@ namespace CK.StObj.TypeScript.Tests
                 public age: Number = 0, 
                 public name: String = "Aurélien", 
                 public altName: String|undefined = "Barrau", 
-                public key?: {}
+                public key?: Guid
                 """ );
 
             CheckFile( targetProjectPath,
@@ -190,7 +191,7 @@ namespace CK.StObj.TypeScript.Tests
                 public name: String = "Aurélien", 
                 public age: Number = 40, 
                 public altName: String|undefined = "Barrau", 
-                public key?: {}
+                public key?: Guid
                 """ );
 
         }
@@ -224,7 +225,7 @@ namespace CK.StObj.TypeScript.Tests
         }
 
         // The only way to have a non defaultable field in the Poco world is a reference
-        // ro an abstract type. And the only abstract type is a IAbstractPoco.
+        // to an abstract type. And the only abstract type is a IAbstractPoco.
         [TypeScript( SameFolderAs = typeof( IRecWithNonNullDefaultPoco ) )]
         public record struct RecWithNonNullDefault( double? Nullable, IPoco IMustExist, string Name, int Age = 42 );
 

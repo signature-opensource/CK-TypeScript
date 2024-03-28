@@ -35,6 +35,13 @@ namespace CK.CrisLike
         object? Result { get; set; }
 
         /// <summary>
+        /// Gets an optional list of <see cref="UserMessageLevel.Info"/>, <see cref="UserMessageLevel.Warn"/> or <see cref="UserMessageLevel.Error"/>
+        /// messages issued by the validation of the command.
+        /// Validation error messages also appear in the <see cref="IAspNetCrisResultError.Errors"/>.
+        /// </summary>
+        List<SimpleUserMessage>? ValidationMessages { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional correlation identifier.
         /// </summary>
         string? CorrelationId { get; set; }

@@ -10,14 +10,21 @@ namespace CK.TypeScript.CodeGen
         /// Registers the standard types.
         /// String and booleans are always mapped to <see cref="ITSType"/> with a '' (empty string) and
         /// false default values.
+        /// <para>
+        /// <see cref="decimal"/> is not yet supported. Best candidates seems to be https://github.com/MikeMcl/decimal.js-light/
+        /// or https://www.npmjs.com/package/decimal.js... This should be made configurable. We only need a correct toJson/parsing
+        /// support from them.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="withNumbers">When true, byte, sbyte, short, ushort, int and uint are mapped to Number with a 0 default.</param>
-        /// <param name="withBigInts">When true, long, ulong, BigInteger and decimal are mapped to BigInt with a 0n default.</param>
+        /// <param name="withBigInts">When true, long, ulong, BigInteger are mapped to BigInt with a 0n default.</param>
+        /// <param name="withDecimal">Not implemented yet. Currently maps to BigInt.</param>
         /// <param name="withLuxonTypes">When true, DateTime, DateTimeOffset and TimeSpan are mapped to Luxon's DatTime and Duration types.</param>
         public void RegisterStandardTypes( IActivityMonitor monitor,
                                            bool withNumbers = true,
                                            bool withBigInts = true,
+                                           bool withDecimal = true,
                                            bool withLuxonTypes = true )
         {
             _types.Add( typeof( string ), new TSStringType( this ) );
@@ -35,13 +42,19 @@ namespace CK.TypeScript.CodeGen
                 RegisterValueType<double>( number );
                 RegisterValueType<Half>( number );
             }
-            if( withBigInts )
+            if( withBigInts || withDecimal )
             {
                 var bigInt = new TSBigIntType( this );
-                RegisterValueType<long>( bigInt );
-                RegisterValueType<ulong>( bigInt );
-                RegisterValueType<BigInteger>( bigInt );
-                RegisterValueType<decimal>( bigInt );
+                if( withBigInts )
+                {
+                    RegisterValueType<long>( bigInt );
+                    RegisterValueType<ulong>( bigInt );
+                    RegisterValueType<BigInteger>( bigInt );
+                }
+                if( withDecimal )
+                {
+                    RegisterValueType<decimal>( bigInt );
+                }
             }
             if( withLuxonTypes )
             {

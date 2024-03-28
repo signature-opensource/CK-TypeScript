@@ -40,10 +40,13 @@ namespace CK.Setup
             public bool RequiresToJSONCall( IPocoType t )
             {
                 // Our Guid and Extended/NormalizedCultureInfo and SimpleUserMessage have toJSON().
-                // Luxon DateTime and Duration also have it.
+                // Luxon DateTime and Duration also have it. But... we use Luxon DateTime toJSON as
+                // it uses the ISO 8601 format (same as .Net) but we don't use the Duration.toJSON()
+                // because it also uses the ISO 8601 and this is not supported on .NET:
+                // see https://github.com/dotnet/runtime/issues/28862#issuecomment-1273503317
                 var tt = t.Type;
                 return tt == typeof( Guid )
-                       || tt == typeof( DateTime ) || tt == typeof( DateTimeOffset ) || tt == typeof( TimeSpan )
+                       || tt == typeof( DateTime ) || tt == typeof( DateTimeOffset )
                        || tt == typeof( ExtendedCultureInfo ) || tt == typeof( NormalizedCultureInfo )
                        || tt == typeof( SimpleUserMessage );
             }
@@ -53,7 +56,10 @@ namespace CK.Setup
                 if( _done.Add( t ) )
                 {
                     Throw.CheckArgument( ExchangeSet.Contains( t ) );
-                    if( t.IsPolymorphic || RequiresToJSONCall( t ) ) _result.Add( t );
+                    if( t.IsPolymorphic || RequiresToJSONCall( t ) || t.Type == typeof(TimeSpan) )
+                    {
+                        _result.Add( t );
+                    }
                     else
                     {
                         if( t is ICollectionPocoType coll )

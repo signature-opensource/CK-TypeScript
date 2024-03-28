@@ -1,12 +1,10 @@
 using CK.Core;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace CK.CrisLike
 {
     /// <summary>
-    /// Simplified <see cref="ICrisResultError"/>: messages are <see cref="SimpleUserMessage"/>.
+    /// Simplified ICrisResultError.
     /// </summary>
     [ExternalName( "AspNetCrisResultError" )]
     public interface IAspNetCrisResultError : IPoco
@@ -17,10 +15,9 @@ namespace CK.CrisLike
         bool IsValidationError { get; set; }
 
         /// <summary>
-        /// Gets the list of user messages.
-        /// At least one of them should be a <see cref="UserMessageLevel.Error"/> but this is not checked.
+        /// Gets one or more error messages.
         /// </summary>
-        IList<SimpleUserMessage> Messages { get; }
+        IList<string> Errors { get; }
 
         /// <summary>
         /// Gets or sets a <see cref="ActivityMonitor.LogKey"/> that enables to locate the logs of the command execution.

@@ -4,6 +4,7 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace CK.Setup
 {
@@ -49,7 +50,7 @@ namespace CK.Setup
 
             foreach( var t in _jsonExhangeableNames.TypeSet.NonNullableTypes )
             {
-                if( t.IsOblivious && t.Kind is PocoTypeKind.Basic or PocoTypeKind.Record or PocoTypeKind.PrimaryPoco )
+                if( t.Kind is PocoTypeKind.Basic or PocoTypeKind.Record or PocoTypeKind.PrimaryPoco )
                 {
                     var ts = _typeScriptContext.Root.TSTypes.Find( t ) as ITSFileType;
                     var ctorBody = ts?.TypePart.FindKeyedPart( ITSKeyedCodePart.ConstructorBodyPart );
@@ -88,8 +89,7 @@ namespace CK.Setup
         /// </summary>
         internal ITSCodePart EnsureMapping( IPocoType t, ITSType ts )
         {
-            Throw.DebugAssert( t.IsNullable == ts.IsNullable );
-            Throw.DebugAssert( t.IsOblivious );
+            Throw.DebugAssert( !t.IsNullable && !ts.IsNullable );
             var ctsName = _jsonExhangeableNames.GetName( t );
             var part = _ctsType.FindOrCreateKeyedPart( ctsName, closer: "},\n" );
             if( part.IsEmpty )
@@ -136,7 +136,7 @@ namespace CK.Setup
                             else
                             {
                                 part.Append( "if( !o ) return null;" ).NewLine()
-                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0] ) ).Append( "];" ).NewLine()
+                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0].NonNullable ) ).Append( "];" ).NewLine()
                                     .Append( "return o.map( t.json );" );
                             }
                         }
@@ -156,7 +156,7 @@ namespace CK.Setup
                             else
                             {
                                 part.Append( "if( !o ) return null;" ).NewLine()
-                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0] ) ).Append( "];" ).NewLine()
+                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[0].NonNullable ) ).Append( "];" ).NewLine()
                                     .Append( "return Array.from( o ).map( t.json );" );
                             }
                         }
@@ -170,7 +170,7 @@ namespace CK.Setup
                             {
                                 part.Append( "return !!o ? Object.fromEntries(o.entries()) : null;" );
                             }
-                            if( c.ItemTypes[1].IsPolymorphic )
+                            else if( c.ItemTypes[1].IsPolymorphic )
                             {
                                 part.Append( """
                                     if( !o ) return null;
@@ -184,7 +184,7 @@ namespace CK.Setup
                             else
                             {
                                 part.Append( "if( !o ) return null;" ).NewLine()
-                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[1] ) ).Append( "];" ).NewLine()
+                                    .Append( "const t = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[1].NonNullable ) ).Append( "];" ).NewLine()
                                     .Append( """
                                         let r = {} as any;
                                         for( const i of o ) {
@@ -202,24 +202,19 @@ namespace CK.Setup
                             }
                             else
                             {
-                                if( c.ItemTypes[0].IsPolymorphic )
-                                {
-                                    part.Append( "return !!o ? Array.from( o ).map( CTSType.typedJson ) : null;" );
-                                }
-                                else
-                                {
-                                    string aKey = GetMapAccessor( part, c, 0 );
-                                    string aVal = GetMapAccessor( part, c, 1 );
+                                Throw.DebugAssert( "Dictionary key invariants.",
+                                                   c.ItemTypes[0].IsReadOnlyCompliant && !c.ItemTypes[0].IsNullable && !c.ItemTypes[0].IsPolymorphic );
+                                string aKey = GetMapAccessor( part, c, 0 );
+                                string aVal = GetMapAccessor( part, c, 1 );
 
-                                    part.Append( $$"""
-                                        if( !o ) return null;
-                                        const r = new Array<[any,any]>;
-                                        for( const i of o ) {
-                                          r.push([{{aKey}},{{aVal}}]);
-                                        }
-                                        return r;
-                                        """ );
-                                }
+                                part.Append( $$"""
+                                    if( !o ) return null;
+                                    const r = new Array<[any,any]>;
+                                    for( const i of o ) {
+                                        r.push([{{aKey}},{{aVal}}]);
+                                    }
+                                    return r;
+                                    """ );
                             }
                         }
                     }
@@ -238,7 +233,23 @@ namespace CK.Setup
                     {
                         part.Append( "return !!o ? o.toJSON() : null;" );
                     }
-                    else 
+                    else if( t.Type == typeof( TimeSpan ) )
+                    {
+                        // We do what we can here. In a perfect world, toMillis() should return a BigInt instead
+                        // of a Number. We simply add '0000' to "convert" into 10th of microseconds (100 nanoseconds).
+                        part.Append( "return o.toMillis().toString()+'0000';" );
+                    }
+                    else if( t.Type == typeof( long ) || t.Type == typeof( ulong ) || t.Type == typeof( BigInteger ) || t.Type == typeof( long )
+                             || t.Type == typeof(decimal) )
+                    {
+                        // These are mapped to BigInt and this primitive type has no toJson support.
+                        // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#use_within_json.
+                        // The toString() method is fine for us.
+                        // And this MUST also work for Decimal implementation: both https://mikemcl.github.io/decimal.js-light/#toString
+                        // and https://mikemcl.github.io/decimal.js/#toString do the job.
+                        part.Append( "return o.toString();" );
+                    }
+                    else
                     {
                         // MCString and CodeString are excluded from TypeScript exchangeable set.
                         // We are left with the primitive types.
@@ -258,14 +269,14 @@ namespace CK.Setup
         string GetMapAccessor( ITSKeyedCodePart part, ICollectionPocoType c, int i )
         {
             var vMap = $"i[{i}]";
-            var tK = c.ItemTypes[0];
-            if( tK.IsPolymorphic )
+            var t = c.ItemTypes[i];
+            if( t.IsPolymorphic )
             {
                 vMap = $"CTSType.typedJson({vMap})";
             }
-            else if( _requiresHandlingMap.Contains( tK ) )
+            else if( _requiresHandlingMap.Contains( t ) )
             {
-                part.Append( $"const t{i} = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[i] ) ).Append( "];" ).NewLine();
+                part.Append( $"const t{i} = CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( c.ItemTypes[i].NonNullable ) ).Append( "];" ).NewLine();
                 vMap = $"t{i}.json({vMap})";
             }
             return vMap;
@@ -288,7 +299,7 @@ namespace CK.Setup
         {
             part.Append( "isNullable: " ).Append( t.IsNullable ).Append( "," ).NewLine()
                 .Append( "get type(): any { return " )
-                .Append( "CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( t.NonNullable.ObliviousType ) )
+                .Append( "CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( t.NonNullable ) )
                 .Append( "]; }" );
             if( isField )
             {
@@ -315,6 +326,7 @@ namespace CK.Setup
 
         void WriteFieldModels( IPocoType t, IEnumerable<TSField> fields )
         {
+            Throw.DebugAssert( !t.IsNullable );
             var ctsName = _jsonExhangeableNames.GetName( t );
             var part = _ctsType.FindKeyedPart( ctsName );
             Throw.DebugAssert( part != null );
@@ -337,7 +349,7 @@ namespace CK.Setup
                     }
                     else if( _requiresHandlingMap.Contains( field.PocoField.Type ) )
                     {
-                        part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( field.PocoField.Type ) ).Append( "].json( " )
+                        part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( field.PocoField.Type.NonNullable ) ).Append( "].json( " )
                             .Append( "o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
                     }
                     else

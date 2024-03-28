@@ -205,9 +205,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         new IList<ICommand> KeyList { get; }
 
         /// <summary>
-        /// Gets the mutable set of command.
+        /// The mutable set of command is not possible: a set must have read-only compliant key and a poco is
+        /// everything but read-only compliant.
         /// </summary>
-        new ISet<ICommand> KeySet { get; }
+        new ISet<ExtendedCultureInfo> KeySet { get; }
 
         /// <summary>
         /// Gets the mutable dictionary of command.

@@ -116,7 +116,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var tsTypes = new[]
             {
-                // We must register the enum otherwise the [TypeScript} is ignored.
+                // We must register the enum otherwise the [TypeScript] is ignored.
                 typeof( Power ),
                 typeof( ICommandOne ),
                 typeof( ICommandTwo ),

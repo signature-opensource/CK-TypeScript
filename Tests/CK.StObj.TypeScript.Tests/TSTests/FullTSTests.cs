@@ -102,7 +102,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         {
             IList<RecordData> TypedList { get; }
             IDictionary<string, IWithUnions> TypedDic1 { get; }
-            IDictionary<IWithReadOnly, string> TypedDic2 { get; }
+            IDictionary<Guid,IWithReadOnly?> TypedDic2 { get; }
         }
 
         [Test]
@@ -122,8 +122,6 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             runner.Run();
         }
 
-
-
         public interface ITestSerializationCommand : ICommand
         {
             string String { get; set; }
@@ -133,6 +131,8 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             Guid Guid { get; set; }
             DateTime DateTime { get; set; }
             TimeSpan TimeSpan { get; set; }
+            // SimpleUserMessage has no default value: we must use the nullable.
+            SimpleUserMessage? SimpleUserMessage { get; set; }
         }
 
         [Test]
@@ -166,7 +166,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
                                            // Registers IAspNetResults only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
-                                           // that ensures that they benlong to the TypeScriptSet.
+                                           // that ensures that they belong to the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
                                                                                     typeof( CommonPocoJsonSupport ),

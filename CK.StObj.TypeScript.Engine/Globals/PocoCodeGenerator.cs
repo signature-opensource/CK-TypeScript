@@ -70,7 +70,7 @@ namespace CK.StObj.TypeScript.Engine
             {
                 var tsTypeManager = _typeScriptContext.Root.TSTypes;
 
-                if( !t.IsOblivious && t.IsNullable )
+                if( t.IsNullable )
                 {
                     e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, t.NonNullable ).Nullable );
                     return true;
@@ -85,11 +85,8 @@ namespace CK.StObj.TypeScript.Engine
                 }
 
                 // We'll do the CTS mapping only for Oblivous type: Json serialization works on the Oblivious types.
-                bool callCTSMapping = _ctsTypeSystem != null && t.IsOblivious;
-
-                // Important: the type nullability is projected here.
-                bool isNullable = t.IsNullable;
-                if( isNullable ) t = t.NonNullable;
+                bool isIOType = t.IsRegular && (t.IsFinalType || t.Nullable.IsFinalType);
+                bool callCTSMapping = _ctsTypeSystem != null && isIOType;
 
                 ITSType ts;
                 // The following types are handled by their C# Type. This "ping-pong" allows:
@@ -193,7 +190,7 @@ namespace CK.StObj.TypeScript.Engine
                         }
                     }
                 }
-                e.SetResolvedType( isNullable ? ts.Nullable : ts );
+                e.SetResolvedType( ts );
                 // This is where the serialization layer kicks in: all IPocoType will have a CTSType entry.
                 //
                 // For "inline" TSTypes that reference other types (collections and union types), the EnsureMapping
@@ -201,14 +198,14 @@ namespace CK.StObj.TypeScript.Engine
                 // For the composites (record and primary poco), the model of "fields" are created when generating their
                 // implementations.
                 //
-                // OnAfterCodeGeneration: all Oblivious types that are mapped to true javascript object with a constructor should
+                // OnAfterCodeGeneration: all types that are mapped to true javascript object with a constructor should
                 // have the ITSKeyedCodePart.ConstructorBodyPart so that the "_ctsType" key can be defined (it is hidden in typescript)
                 // that points to its CTSType entry.
                 //
                 if( callCTSMapping )
                 {
                     Throw.DebugAssert( _ctsTypeSystem != null );
-                    _ctsTypeSystem?.EnsureMapping( t, ts );
+                    _ctsTypeSystem.EnsureMapping( t, ts );
                 }
             }
             return true;
@@ -224,6 +221,9 @@ namespace CK.StObj.TypeScript.Engine
             IPocoType? t = _typeScriptSet.TypeSystem.FindByType( builder.Type );
             if( t != null && _typeScriptSet.Contains( t ) )
             {
+                // We work on the non nullable type.
+                t = t.NonNullable;
+
                 // Only PrimaryPoco, AbstractPoco, named record (including the CK.Globalization.SimpleUserMessage),
                 // and the IBasicRefType ExtendedCultureInfo and NormalizedCultureInfoCode are handled here.
                 // Other Poco compliant types are handled by their associated IPocoType (by OnResolveObjectKey).
@@ -313,6 +313,7 @@ namespace CK.StObj.TypeScript.Engine
                     }
                     else if( builder.Type == typeof( SimpleUserMessage ) )
                     {
+                        builder.DefaultValueSource = "SimpleUserMessage.invalid";
                         builder.TryWriteValueImplementation = SimpleUserMessageWrite;
                         builder.Implementor = SimpleUserMessageCode;
                     }
@@ -412,12 +413,18 @@ namespace CK.StObj.TypeScript.Engine
                                 **/
                                 export class SimpleUserMessage
                                 {
-                                    /**
-                                        * Initializes a new SimpleUserMessage.
-                                        * @param level Message level (info, warn or error). 
-                                        * @param message Message text. 
-                                        * @param depth Optional indentation. 
-                                    **/
+
+                                /**
+                                * Gets the default, invalid, message.
+                                **/
+                                static invalid: SimpleUserMessage = new SimpleUserMessage(UserMessageLevel.None,"",0);
+
+                                /**
+                                * Initializes a new SimpleUserMessage.
+                                * @param level Message level (info, warn or error). 
+                                * @param message Message text. 
+                                * @param depth Optional indentation. 
+                                **/
                                     constructor(
                                         public readonly level: UserMessageLevel,
                                         public readonly message: string,
@@ -457,8 +464,6 @@ namespace CK.StObj.TypeScript.Engine
             internal bool GenerateRecord( IActivityMonitor monitor, ITSFileCSharpType tsType )
             {
                 _fieldsWriter ??= FieldsWriter.Create( monitor, _type, false, _generator._typeScriptContext, _generator._typeScriptSet );
-                //// INamedRecord is a pure TS type defined in IPoco.ts.
-                ////tsType.File.Imports.EnsureImport( _generator.PocoModel.IPocoType.File, "INamedRecord" );
                 tsType.TypePart.InsertPart( out var documentationPart )
                     .Append( "export class " ).Append( tsType.TypeName )
                     .OpenBlock()

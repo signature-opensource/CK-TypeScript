@@ -103,12 +103,16 @@ namespace CK.Setup
                             {
                                 monitor.Warn( $"Type '{t:N}' is not registered in PocoTypeSystem." );
                             }
-                            else if( !allExchangeableSet.Contains( pT ) )
+                            else
                             {
-                                // If it is a IPocoType, then it must be exchangeable.
-                                // This is an error since it appears in the configuration.
-                                monitor.Error( $"Poco type '{pT}' is not exchangeable in TypeScriptAspectConfiguration:{Environment.NewLine}{c.ToXml()}" );
-                                success = false;
+                                pT = pT.NonNullable;
+                                if( !allExchangeableSet.Contains( pT ) )
+                                {
+                                    // If it is a IPocoType, then it must be exchangeable.
+                                    // This is an error since it appears in the configuration.
+                                    monitor.Error( $"Poco type '{pT}' is not exchangeable in TypeScriptAspectConfiguration:{Environment.NewLine}{c.ToXml()}" );
+                                    success = false;
+                                }
                             }
                             if( success )
                             {
