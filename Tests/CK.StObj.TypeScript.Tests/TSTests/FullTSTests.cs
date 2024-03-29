@@ -133,6 +133,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             TimeSpan TimeSpan { get; set; }
             // SimpleUserMessage has no default value: we must use the nullable.
             SimpleUserMessage? SimpleUserMessage { get; set; }
+            Decimal Decimal { get; set; }
         }
 
         [Test]

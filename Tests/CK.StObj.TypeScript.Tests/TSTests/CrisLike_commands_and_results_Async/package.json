@@ -6,6 +6,7 @@
   ],
   "dependencies": {
     "@local/ck-gen": "workspace:*",
+    "decimal.js-light": "2.5.1",
     "luxon": "3.4.4"
   },
   "devDependencies": {

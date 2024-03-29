@@ -334,7 +334,7 @@ namespace CK.Setup
                                         if( testScriptCommand != null && typeScriptVersion != null )
                                         {
                                             monitor.Info( $"TypeScript test script command '{testScriptCommand}' (and 'typescript@{typeScriptVersion}') already exists. " +
-                                                          $"Skipping EnsureJestTestSupport." );
+                                                          "Skipping EnsureJestTestSupport." );
                                         }
                                         else
                                         {

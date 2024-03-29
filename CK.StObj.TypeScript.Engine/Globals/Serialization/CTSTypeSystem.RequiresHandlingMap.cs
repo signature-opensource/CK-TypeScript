@@ -8,11 +8,11 @@ namespace CK.Setup
     {
         readonly struct RequiresHandlingMap
         {
-            sealed class TypeSet
+            sealed class BitArrayTypeSet
             {
                 readonly BitArray _flags;
 
-                public TypeSet( int nonNullableCount ) => _flags = new BitArray( nonNullableCount );
+                public BitArrayTypeSet( int nonNullableCount ) => _flags = new BitArray( nonNullableCount );
 
                 public bool Contains( IPocoType t ) => _flags[t.Index >> 1];
 
@@ -24,28 +24,31 @@ namespace CK.Setup
                 }
             }
 
-            readonly TypeSet _done;
-            readonly TypeSet _result;
+            readonly BitArrayTypeSet _done;
+            readonly BitArrayTypeSet _result;
             readonly IPocoTypeSet _exchangeSet;
 
             internal RequiresHandlingMap( IPocoTypeSet exchangeSet )
             {
                 _exchangeSet = exchangeSet;
-                _done = new TypeSet( exchangeSet.TypeSystem.AllNonNullableTypes.Count );
-                _result = new TypeSet( exchangeSet.TypeSystem.AllNonNullableTypes.Count );
+                _done = new BitArrayTypeSet( exchangeSet.TypeSystem.AllNonNullableTypes.Count );
+                _result = new BitArrayTypeSet( exchangeSet.TypeSystem.AllNonNullableTypes.Count );
             }
 
             public IPocoTypeSet ExchangeSet => _exchangeSet;
 
-            public bool RequiresToJSONCall( IPocoType t )
+            public bool HasToJSONMethod( IPocoType t )
             {
                 // Our Guid and Extended/NormalizedCultureInfo and SimpleUserMessage have toJSON().
                 // Luxon DateTime and Duration also have it. But... we use Luxon DateTime toJSON as
                 // it uses the ISO 8601 format (same as .Net) but we don't use the Duration.toJSON()
                 // because it also uses the ISO 8601 and this is not supported on .NET:
                 // see https://github.com/dotnet/runtime/issues/28862#issuecomment-1273503317
+                //
+                // The TimeSpan is handled explicitly.
                 var tt = t.Type;
                 return tt == typeof( Guid )
+                       || tt == typeof( Decimal )
                        || tt == typeof( DateTime ) || tt == typeof( DateTimeOffset )
                        || tt == typeof( ExtendedCultureInfo ) || tt == typeof( NormalizedCultureInfo )
                        || tt == typeof( SimpleUserMessage );
@@ -56,7 +59,7 @@ namespace CK.Setup
                 if( _done.Add( t ) )
                 {
                     Throw.CheckArgument( ExchangeSet.Contains( t ) );
-                    if( t.IsPolymorphic || RequiresToJSONCall( t ) || t.Type == typeof(TimeSpan) )
+                    if( t.IsPolymorphic || t.Type == typeof(TimeSpan) )
                     {
                         _result.Add( t );
                     }

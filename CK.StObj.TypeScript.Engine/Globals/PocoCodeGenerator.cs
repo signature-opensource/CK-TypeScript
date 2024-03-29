@@ -84,9 +84,9 @@ namespace CK.StObj.TypeScript.Engine
                     return true;
                 }
 
-                // We'll do the CTS mapping only for Oblivous type: Json serialization works on the Oblivious types.
-                bool isIOType = t.IsRegular && (t.IsFinalType || t.Nullable.IsFinalType);
-                bool callCTSMapping = _ctsTypeSystem != null && isIOType;
+                // We'll do the CTS mapping only for Regular types: nullability is preserved but anonymous record
+                // field names are erased and only concrete collections appear.
+                bool callCTSMapping = _ctsTypeSystem != null && t.IsRegular;
 
                 ITSType ts;
                 // The following types are handled by their C# Type. This "ping-pong" allows:
@@ -193,14 +193,12 @@ namespace CK.StObj.TypeScript.Engine
                 e.SetResolvedType( ts );
                 // This is where the serialization layer kicks in: all IPocoType will have a CTSType entry.
                 //
-                // For "inline" TSTypes that reference other types (collections and union types), the EnsureMapping
-                // also creates the CTSType model of the type ("genParams" and "allowedTypes").
-                // For the composites (record and primary poco), the model of "fields" are created when generating their
-                // implementations.
+                // The EnsureMapping creates the CTSType model of the type with its json( o: any ) and
+                // its nosj( o: T|undefined ) functions.
                 //
                 // OnAfterCodeGeneration: all types that are mapped to true javascript object with a constructor should
-                // have the ITSKeyedCodePart.ConstructorBodyPart so that the "_ctsType" key can be defined (it is hidden in typescript)
-                // that points to its CTSType entry.
+                // have the ITSKeyedCodePart.ConstructorBodyPart so that the "_ctsType" key can be defined (_ctsType is a
+                // javascript property, not exposed in typescript) that points to its CTSType entry.
                 //
                 if( callCTSMapping )
                 {

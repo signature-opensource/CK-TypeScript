@@ -66,6 +66,11 @@ namespace CK.TypeScript.CodeGen
         int ImportCount { get; }
 
         /// <summary>
+        /// Gets the currently imported library names.
+        /// </summary>
+        IEnumerable<string> ImportedLibraryNames { get; }
+
+        /// <summary>
         /// Gets the current import code section.
         /// </summary>
         /// <returns>The import section. Can be empty.</returns>

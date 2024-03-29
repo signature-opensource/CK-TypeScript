@@ -28,22 +28,45 @@ namespace CK.TypeScript.CodeGen
     public class TypeScriptRoot
     {
         /// <summary>
-        /// "@types/luxon" package version used by default. A configured version (in <see cref="LibraryVersionConfiguration"/>)
+        /// Default "@types/luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
         /// overrides this default.
         /// </summary>
         public const string LuxonTypesVersion = "3.3.7";
 
         /// <summary>
-        /// "luxon" package version used by default. A configured version (in <see cref="LibraryVersionConfiguration"/>)
+        /// Default "luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
         /// overrides this default.
         /// </summary>
         public const string LuxonVersion = "3.4.4";
+
+        /// <summary>
+        /// See https://mikemcl.github.io/decimal.js-light/.
+        /// </summary>
+        public const string DecimalJSLight = "decimal.js-light";
+
+        /// <summary>
+        /// Default "decimal.js-light" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
+        /// overrides this default.
+        /// </summary>
+        public const string DecimalJSLightVersion = "2.5.1";
+
+        /// <summary>
+        /// See https://mikemcl.github.io/decimal.js/.
+        /// </summary>
+        public const string DecimalJS = "decimal.js";
+
+        /// <summary>
+        /// Default "decimal.js" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
+        /// overrides this default.
+        /// </summary>
+        public const string DecimalJSVersion = "10.4.3";
 
         Dictionary<object, object?>? _memory;
         readonly TSTypeManager _tsTypes;
         readonly LibraryManager _libraryManager;
         readonly DocumentationBuilder _docBuilder;
         readonly bool _pascalCase;
+        readonly string _decimalLibraryName;
         TSTypeBuilder? _firstFreeBuilder;
 
         /// <summary>
@@ -52,12 +75,22 @@ namespace CK.TypeScript.CodeGen
         /// <param name="libraryVersionConfiguration">The external library name to version mapping to use.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
+        /// <param name="decimalLibraryName">
+        /// Support library for decimal. If <see cref="decimal"/> is used, we default to use https://github.com/MikeMcl/decimal.js-light
+        /// in version <see cref="DecimalJSLightVersion"/>. if "decimal.js" is specified here, it'll be used with <see cref="DecimalJSVersion"/>.
+        /// The actual version used can be overridden thanks to <paramref name="libraryVersionConfiguration"/>.
+        /// <para>
+        /// Other (unknown) library version MUST be provided in <paramref name="libraryVersionConfiguration"/>.
+        /// </para>
+        /// </param>
         public TypeScriptRoot( IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
                                bool pascalCase,
-                               bool generateDocumentation )
+                               bool generateDocumentation,
+                               string decimalLibraryName = "decimal.js-light" )
         {
             _libraryManager = new LibraryManager();
             _pascalCase = pascalCase;
+            _decimalLibraryName = decimalLibraryName;
             _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
             if( GetType() == typeof( TypeScriptRoot ) )
             {
@@ -82,6 +115,11 @@ namespace CK.TypeScript.CodeGen
         /// Gets a reusable documentation builder.
         /// </summary>
         public DocumentationBuilder DocBuilder => _docBuilder;
+
+        /// <summary>
+        /// Gets the library to use for <see cref="decimal"/>.
+        /// </summary>
+        public string DecimalLibraryName => _decimalLibraryName;
 
         /// <summary>
         /// Gets the configured versions for npm packages. These configurations take precedence over the

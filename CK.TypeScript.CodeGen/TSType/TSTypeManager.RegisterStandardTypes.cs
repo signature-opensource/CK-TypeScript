@@ -42,19 +42,23 @@ namespace CK.TypeScript.CodeGen
                 RegisterValueType<double>( number );
                 RegisterValueType<Half>( number );
             }
-            if( withBigInts || withDecimal )
+            if( withBigInts )
             {
                 var bigInt = new TSBigIntType( this );
-                if( withBigInts )
-                {
-                    RegisterValueType<long>( bigInt );
-                    RegisterValueType<ulong>( bigInt );
-                    RegisterValueType<BigInteger>( bigInt );
-                }
-                if( withDecimal )
-                {
-                    RegisterValueType<decimal>( bigInt );
-                }
+                RegisterValueType<long>( bigInt );
+                RegisterValueType<ulong>( bigInt );
+                RegisterValueType<BigInteger>( bigInt );
+            }
+            if( withDecimal )
+            {
+                var knownLibVersion = _root.DecimalLibraryName == TypeScriptRoot.DecimalJSLight
+                                        ? TypeScriptRoot.DecimalJSLightVersion
+                                        : _root.DecimalLibraryName == TypeScriptRoot.DecimalJS
+                                            ? TypeScriptRoot.DecimalJSVersion
+                                            : null;
+                var decimalLib = RegisterLibrary( monitor, _root.DecimalLibraryName, DependencyKind.Dependency, knownLibVersion );
+                var tsDecimal = new TSDecimalType( this, decimalLib );
+                RegisterValueType<decimal>( tsDecimal );
             }
             if( withLuxonTypes )
             {

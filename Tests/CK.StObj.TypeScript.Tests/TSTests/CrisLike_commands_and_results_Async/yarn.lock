@@ -719,6 +719,7 @@ __metadata:
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
     "@types/luxon": "npm:3.3.7"
+    decimal.js-light: "npm:2.5.1"
     luxon: "npm:3.4.4"
     typescript: "npm:5.3.3"
   languageName: unknown
@@ -1351,6 +1352,7 @@ __metadata:
     "@local/ck-gen": "workspace:*"
     "@types/jest": "npm:^29.5.11"
     "@types/luxon": "npm:3.3.7"
+    decimal.js-light: "npm:2.5.1"
     jest: "npm:^29.7.0"
     luxon: "npm:3.4.4"
     ts-jest: "npm:^29.1.1"
@@ -1378,6 +1380,13 @@ __metadata:
     supports-color:
       optional: true
   checksum: 0073c3bcbd9cb7d71dd5f6b55be8701af42df3e56e911186dfa46fac3a5b9eb7ce7f377dd1d3be6db8977221f8eb333d945216f645cf56f6b688cd484837d255
+  languageName: node
+  linkType: hard
+
+"decimal.js-light@npm:2.5.1":
+  version: 2.5.1
+  resolution: "decimal.js-light@npm:2.5.1"
+  checksum: 6360911e31221a9b8b90e23020aa969d104e182c5c6518589cdfedc3ced31bf1f19cf931e265bd451ae6ee3a35ee15e81f5456a86813606fda96f8374616688f
   languageName: node
   linkType: hard
 

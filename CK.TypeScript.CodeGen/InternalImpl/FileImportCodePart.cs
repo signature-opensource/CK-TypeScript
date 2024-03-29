@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -116,6 +117,8 @@ namespace CK.TypeScript.CodeGen
         }
 
         public int ImportCount => _importCount;
+
+        public IEnumerable<string> ImportedLibraryNames => _importLibs?.Select( l => l.LibraryName ) ?? ImmutableArray<string>.Empty;
 
         internal Action<ITSFileImportSection> CreateImportSnapshotAndClear()
         {

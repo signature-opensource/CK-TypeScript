@@ -1,5 +1,6 @@
 import { CTSType, Guid, IPoco, UserMessageLevel, SymCTS } from "@local/ck-gen";
 import { DateTime, Duration } from "luxon";
+import { Decimal } from "decimal.js-light";
 import { TestSerializationCommand } from "@local/ck-gen";
 import { SimpleUserMessage } from "@local/ck-gen";
 
@@ -72,7 +73,7 @@ it('O map with projection can use 2 methods.', () => {
 
 // Sample test.
 describe('Command serialization', () => {
-    it('should be true', () => {
+    it('Command with basic types.', () => {
       var c = new TestSerializationCommand( 
         "A string", 
         42,
@@ -81,10 +82,14 @@ describe('Command serialization', () => {
         new Guid("d0acf1b1-4675-4a23-af51-3c834d910f3d"),
         DateTime.utc(2024,3,6,13,26,12,854),
         Duration.fromMillis(3712),
+        new Decimal( "79228162514264337593543950335" ),
         new SimpleUserMessage(UserMessageLevel.Info,"Hello!") );
 
-      const json = CTSType.typedJson( c );
+      const json = CTSType.toTypedJson( c );
       const s = JSON.stringify(json);
-      expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","simpleUserMessage":[4,"Hello!",0]}]' );
+      expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","decimal":"79228162514264337593543950335","simpleUserMessage":[4,"Hello!",0]}]' );
+      const raw = JSON.parse(s);
+      const back = CTSType.fromTypedJson( raw );
+      expect( back ).toBe( json );
     });
   });
