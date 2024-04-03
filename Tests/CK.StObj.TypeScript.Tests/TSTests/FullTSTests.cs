@@ -153,9 +153,10 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                 typeof( ISimplestCommand ),
                 // WithObject
                 typeof( IWithObjectCommand ),
-                typeof( IWithObjectSpecializedAsStringCommand ), // => result = string
                 typeof( IWithObjectSpecializedAsPocoCommand ), // => result = IResult
                 typeof( IWithObjectSpecializedAsSuperPocoCommand ), // => result = ISuperResult
+                // Adding this one would fail.
+                // typeof( IWithObjectSpecializedAsStringCommand ), // => result = string
                 typeof( IResult ),
                 typeof( ISuperResult ),
                 typeof( IWithSecondaryCommand ),

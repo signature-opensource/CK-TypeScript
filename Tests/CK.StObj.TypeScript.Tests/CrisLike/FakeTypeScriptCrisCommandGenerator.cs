@@ -3,6 +3,7 @@ using CK.CrisLike;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -51,16 +52,25 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             // By filtering out the base interface it doesn't appear in the base interfaces
             // nor in the branded type. 
+            if( HasICommand( e.AbstractPocoType, e.ImplementedInterfaces, out var mustRemoveICommand ) && mustRemoveICommand )
+            {
+                e.ImplementedInterfaces = e.ImplementedInterfaces.Where( i => i.Type != typeof( ICommand ) );
+            }
+        }
+
+        static bool HasICommand( IPocoType t, IEnumerable<IAbstractPocoType> implementedInterfaces, out bool mustRemoveICommand )
+        {
             IPocoType? typedResult = null;
             bool hasICommand = false;
-            foreach( var i in e.ImplementedInterfaces )
+            foreach( var i in implementedInterfaces )
             {
                 if( i.GenericTypeDefinition?.Type == typeof( ICommand<> ) )
                 {
                     var tResult = i.GenericArguments[0].Type;
                     if( typedResult != null )
                     {
-                        e.Monitor.Error( $"{typedResult} and {tResult}" );
+                        // This has been already checked.
+                        throw new CKException( $"{t} returns both '{typedResult}' and '{tResult}'." );
                     }
                     typedResult = tResult;
                 }
@@ -69,16 +79,18 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     hasICommand = true;
                 }
             }
-            if( hasICommand && typedResult != null )
-            {
-                e.ImplementedInterfaces = e.ImplementedInterfaces.Where( i => i.Type != typeof( ICommand ) );
-            }
+            mustRemoveICommand = hasICommand && typedResult != null;
+            return hasICommand || typedResult != null;
         }
 
         void OnPrimaryPocoGenerating( object? sender, GeneratingPrimaryPocoEventArgs e )
         {
-            if( e.PrimaryPocoType.AbstractTypes.Any( a => a.Type == typeof(IAbstractCommand) ) )
+            if( HasICommand( e.PrimaryPocoType, e.ImplementedInterfaces, out var mustRemoveICommand ) )
             {
+                if( mustRemoveICommand )
+                {
+                    e.ImplementedInterfaces = e.ImplementedInterfaces.Where( i => i.Type != typeof( ICommand ) );
+                }
                 e.PocoTypePart.File.Imports.EnsureImport( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "ICommandModel" );
                 e.PocoTypePart.NewLine()
                     .Append( "get commandModel(): ICommandModel { return " ).Append( e.TSGeneratedType.TypeName ).Append( ".#m; }" ).NewLine()

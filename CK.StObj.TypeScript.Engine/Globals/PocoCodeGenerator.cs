@@ -636,12 +636,17 @@ namespace CK.StObj.TypeScript.Engine
 
         static void WriteCtorParameters( ITSFileCSharpType tsType, ITSCodePart ctorParametersPart, ImmutableArray<TSNamedCompositeField> fields )
         {
+            bool atLeastOne = false;
             for( int i = 0; i < fields.Length; i++ )
             {
                 var f = fields[i];
                 if( i == 0 ) ctorParametersPart.NewLine();
-                else ctorParametersPart.Append( ", " ).NewLine();
-                f.WriteCtorFieldDefinition( tsType.File, ctorParametersPart );
+                else if( atLeastOne ) ctorParametersPart.Append( ", " ).NewLine();
+                if( !f.ConstructorSkip )
+                {
+                    f.WriteCtorFieldDefinition( tsType.File, ctorParametersPart );
+                    atLeastOne = true;
+                }
             }
         }
 

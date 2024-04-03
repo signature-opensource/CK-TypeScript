@@ -10,30 +10,30 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     [TypeScript( Folder = "Cmd/WithObject" )]
     public interface IWithSecondaryCommand : ICommand
     {
-        ///// <summary>
-        ///// A mutable field. Uninitialized since nullable.
-        ///// </summary>
-        //IWithObjectSpecializedAsSuperPocoCommand? NullableCmdWithSetter { get; set; }
+        /// <summary>
+        /// A mutable field. Uninitialized since nullable.
+        /// </summary>
+        IWithObjectSpecializedAsSuperPocoCommand? NullableCmdWithSetter { get; set; }
 
-        ///// <summary>
-        ///// A mutable field. Initialized to an initial command since non nullable.
-        ///// </summary>
-        //IWithObjectSpecializedAsPocoCommand CmdWithSetter { get; set; }
+        /// <summary>
+        /// A mutable field. Initialized to an initial command since non nullable.
+        /// </summary>
+        IWithObjectSpecializedAsPocoCommand CmdWithSetter { get; set; }
 
-        ///// <summary>
-        ///// Read-only field. Initialized to an initial command.
-        ///// </summary>
-        //IWithObjectSpecializedAsStringCommand CmdAuto { get; }
+        /// <summary>
+        /// Read-only field. Initialized to an initial command.
+        /// </summary>
+        IWithObjectSpecializedAsSuperPocoCommand CmdAuto { get; }
 
         /// <summary>
         /// Concrete list must have getter and setter.
         /// </summary>
         List<IWithObjectSpecializedAsSuperPocoCommand> ListSecondary { get; set; }
 
-        ///// <summary>
-        ///// "Standard" Poco covariant auto implementation.
-        ///// </summary>
-        //IList<IWithObjectSpecializedAsStringCommand> ListSecondaryAuto { get; }
+        /// <summary>
+        /// "Standard" Poco covariant auto implementation.
+        /// </summary>
+        IList<IWithObjectSpecializedAsPocoCommand> ListSecondaryAuto { get; }
     }
 
 }
