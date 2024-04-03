@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.CrisLike;
+using NUnit.Framework;
 
 namespace CK.StObj.TypeScript.Tests.CrisLike
 {
@@ -16,7 +17,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     }
 
     /// <summary>
-    /// Specializes <see cref="IResult"/> to add a string.
+    /// Secondary definition that adds a string to <see cref="IResult"/>.
     /// </summary>
     [TypeScript( Folder = "Cmd/WithObject" )]
     public interface ISuperResult : IResult
@@ -28,7 +29,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     }
 
     /// <summary>
-    /// Specializes <see cref="IWithObjectCommand"/> to return a <see cref="IResult"/>.
+    /// Secondary definition that makes <see cref="IWithObjectCommand"/> return a <see cref="IResult"/> and requires
+    /// the device identifier.
     /// </summary>
     [TypeScript( Folder = "Cmd/WithObject" )]
     public interface IWithObjectSpecializedAsPocoCommand : IWithObjectCommand, ICommandAuthDeviceId, ICommand<IResult>
@@ -40,7 +42,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     }
 
     /// <summary>
-    /// Specializes <see cref="IWithObjectSpecializedAsPocoCommand"/> to return a <see cref="ISuperResult"/>.
+    /// Secondary definition that makes <see cref="IWithObjectSpecializedAsPocoCommand"/> return a <see cref="ISuperResult"/>.
     /// </summary>
     [TypeScript( Folder = "Cmd/WithObject" )]
     public interface IWithObjectSpecializedAsSuperPocoCommand : IWithObjectSpecializedAsPocoCommand, ICommand<ISuperResult>

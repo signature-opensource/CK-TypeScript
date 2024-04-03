@@ -192,12 +192,16 @@ namespace CK
         /// <param name="targetProjectPath">The target TypeScript project path.</param>
         /// <param name="registeredTypes">The types to register in the <see cref="StObjCollector"/>.</param>
         /// <param name="tsTypes">The types to generate in TypeScript.</param>
+        /// <param name="cSharpCompile">Optionally parse or compile the generated C# code of the single <see cref="BinPathConfiguration"/>.</param>
         public static void GenerateTypeScript( this Testing.IStObjEngineTestHelper helper,
                                                NormalizedPath targetProjectPath,
                                                IEnumerable<Type> registeredTypes,
-                                               IEnumerable<Type> tsTypes )
+                                               IEnumerable<Type> tsTypes,
+                                               CompileOption cSharpCompile = CompileOption.None )
         {
-            var engine = new StObjEngine( helper.Monitor, ConfigureTypeScript( helper, null, targetProjectPath, tsTypes.ToArray() ) );
+            StObjEngineConfiguration config = ConfigureTypeScript( helper, null, targetProjectPath, tsTypes.ToArray() );
+            config.BinPaths[0].CompileOption = cSharpCompile;
+            var engine = new StObjEngine( helper.Monitor, config );
             var collectorResults = new MonoCollectorResolver( helper, registeredTypes.ToArray() );
             engine.Run( collectorResults ).Success.Should().BeTrue( "StObjEngine.Run worked." );
         }

@@ -1,10 +1,4 @@
-using CK.Core;
 using CK.CrisLike;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.StObj.TypeScript.Tests.CrisLike
 {
@@ -22,7 +16,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
     }
 
     /// <summary>
-    /// This command extends <see cref="IWithObjectCommand"/> to return a string (instead of object).
+    /// Secondary definition that makes <see cref="IWithObjectCommand"/> return a string (instead of object).
     /// </summary>
     [TypeScript( Folder = "Cmd/Some" )]
     public interface IWithObjectSpecializedAsStringCommand : IWithObjectCommand, ICommand<string>
@@ -36,24 +30,5 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
         int PowerString { get; set; }
     }
 
-    /// <summary>
-    /// Some command requires a regular authentication level.
-    /// </summary>
-    [TypeScript( Folder = "Cmd/Some" )]
-    public interface ISomeCommand : ICommandAuthNormal
-    {
-        /// <summary>
-        /// Gets or sets the action identifier.
-        /// </summary>
-        Guid ActionId { get; set; }
-    }
 
-    /// <summary>
-    /// Specializes Some command to require a critical authentication level and return
-    /// a integer.
-    /// </summary>
-    [TypeScript( Folder = "Cmd/Some" )]
-    public interface ISomeCommandIsCriticalAndReturnsInt : ISomeCommand, ICommand<int>, ICommandAuthCritical
-    {
-    }
 }

@@ -23,7 +23,6 @@ namespace CK.StObj.TypeScript.Engine
         internal readonly struct FieldsWriter
         {
             readonly TSField[] _fields;
-            readonly ICompositePocoType _type;
             readonly TypeScriptContext _typeScriptContext;
             readonly int _lastNonNullable;
             readonly int _lastWithNonNullDefault;
@@ -32,15 +31,13 @@ namespace CK.StObj.TypeScript.Engine
 
             public bool HasDefault => _hasDefault;
 
-            FieldsWriter( ICompositePocoType type,
-                          TSField[] fields,
+            FieldsWriter( TSField[] fields,
                           TypeScriptContext context,
                           int lastNonNullable,
                           int lastWithNonNullDefault,
                           bool useTupleSyntax,
                           bool hasDefault )
             {
-                _type = type;
                 _fields = fields;
                 _typeScriptContext = context;
                 _lastNonNullable = lastNonNullable;
@@ -96,8 +93,14 @@ namespace CK.StObj.TypeScript.Engine
                         lastWithNonNullDefault = i;
                     }
                 }
-                return new FieldsWriter( type, fields, context, lastNonNullable, lastWithNonNullDefault, useTupleSyntax, hasDefault );
+                return new FieldsWriter( fields, context, lastNonNullable, lastWithNonNullDefault, useTupleSyntax, hasDefault );
             }
+
+            /// <summary>
+            /// Gets whether [tuple, syntax] iw used instead of {"tuple": "syntax"}.
+            /// This is true only for anonymous records where all fields are <see cref="IRecordPocoField.IsUnnamed"/>.
+            /// </summary>
+            public bool UseTupleSyntax => _useTupleSyntax;
 
             public ITSType CreateAnonymousRecordType( IActivityMonitor monitor, out TSField[] fields )
             {

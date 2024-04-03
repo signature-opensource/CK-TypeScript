@@ -171,10 +171,10 @@ namespace CK.Setup
                                                      {
                                                         "compilerOptions": {
                                                             "strict": true,
-                                                            "target": "es5",
+                                                            "target": "es2022",
                                                             "module": "ES6",
                                                             "moduleResolution": "node",
-                                                            "lib": ["es2019", "dom"],
+                                                            "lib": ["es2022", "dom"],
                                                             "baseUrl": "./src",
                                                             "outDir": "./dist/esm",
                                                             "sourceMap": true,
@@ -604,7 +604,8 @@ namespace CK.Setup
                                                                 diagnostics: {ignoreCodes: ['TS151001']},
                                                                 // tsconfig for Jest comes here. 
                                                                 tsconfig: {
-                                                                    "lib": ["es2019", "dom"]
+                                                                    "target": "ES2022",
+                                                                    "lib": ["es2022", "dom"]
                                                                     }    
                                                             }],
                                                         },

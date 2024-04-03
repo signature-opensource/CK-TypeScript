@@ -66,6 +66,7 @@ namespace CK.TypeScript.CodeGen
         readonly LibraryManager _libraryManager;
         readonly DocumentationBuilder _docBuilder;
         readonly bool _pascalCase;
+        readonly bool _reflectTS;
         readonly string _decimalLibraryName;
         TSTypeBuilder? _firstFreeBuilder;
 
@@ -75,6 +76,7 @@ namespace CK.TypeScript.CodeGen
         /// <param name="libraryVersionConfiguration">The external library name to version mapping to use.</param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
+        /// <param name="reflectTS">True to generate TSType map.</param>
         /// <param name="decimalLibraryName">
         /// Support library for decimal. If <see cref="decimal"/> is used, we default to use https://github.com/MikeMcl/decimal.js-light
         /// in version <see cref="DecimalJSLightVersion"/>. if "decimal.js" is specified here, it'll be used with <see cref="DecimalJSVersion"/>.
@@ -86,10 +88,12 @@ namespace CK.TypeScript.CodeGen
         public TypeScriptRoot( IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
                                bool pascalCase,
                                bool generateDocumentation,
+                               bool reflectTS = false,
                                string decimalLibraryName = "decimal.js-light" )
         {
             _libraryManager = new LibraryManager();
             _pascalCase = pascalCase;
+            _reflectTS = reflectTS;
             _decimalLibraryName = decimalLibraryName;
             _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
             if( GetType() == typeof( TypeScriptRoot ) )
@@ -110,6 +114,11 @@ namespace CK.TypeScript.CodeGen
         /// This is used by <see cref="ToIdentifier(string)"/>.
         /// </summary>
         public bool PascalCase => _pascalCase;
+
+        /// <summary>
+        /// Gets whether TSType map must be generated.
+        /// </summary>
+        public bool ReflectTS => _reflectTS;
 
         /// <summary>
         /// Gets a reusable documentation builder.

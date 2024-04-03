@@ -226,7 +226,12 @@ namespace CK.StObj.TypeScript.Tests
             /// <summary>
             /// Method doc.
             /// </summary>
-            public void M() { }
+            public void M()
+            {
+                // Avoids: CA1822 on this member // Mark members as static
+                //         and CS0067 on E // An event was declared but never used in the class in which it was declared.
+                E?.Invoke( this, EventArgs.Empty );
+            }
 
             /// <summary>
             /// Property doc.
@@ -283,7 +288,12 @@ namespace CK.StObj.TypeScript.Tests
             /// The parameter is <paramref name="a"/>.
             /// </summary>
             /// <param name="a">The A.</param>
-            public void M( int a ) { }
+            public void M( int a )
+            {
+                // Avoids: CA1822 on this member // Mark members as static
+                //         and CS0067 on E // An event was declared but never used in the class in which it was declared.
+                E?.Invoke( this, EventArgs.Empty );
+            }
 
             /// <summary>
             /// The field is <see cref="F"/>.

@@ -64,29 +64,71 @@ namespace CK.StObj.TypeScript.Engine
 
         public IPocoTypeSet TypeScriptSet => _typeScriptSet;
 
+        /// <summary>
+        /// Secondary is mapped to its Primary: secondary interfaces are not visible in TS, we map them to the primary type
+        /// and use the NonSecondaryConcreteCollection that also ignores abstract collection.
+        /// <para>
+        /// Nullability is preserved.
+        /// </para>
+        /// </summary>
+        /// <param name="t">The poco type.</param>
+        /// <returns>The mapped type.</returns>
+        internal static IPocoType MapType( IPocoType t )
+        {
+            if( t is ISecondaryPocoType sec ) t = sec.PrimaryPocoType;
+            else if( t is ICollectionPocoType c )
+            {
+                Throw.DebugAssert( !c.IsAbstractReadOnly );
+                t = c.NonSecondaryConcreteCollection;
+            }
+            return t;
+        }
+
         internal bool OnResolveObjectKey( IActivityMonitor monitor, RequireTSFromObjectEventArgs e )
         {
-            if( e.KeyType is IPocoType t && _typeScriptSet.Contains( t ) )
+            if( e.KeyType is IPocoType t )
             {
                 var tsTypeManager = _typeScriptContext.Root.TSTypes;
 
+                // Regardless of the TypeScript set of types, blindly maps the nullable to their non nullable.
+                // We only handle non nullable types here.
                 if( t.IsNullable )
                 {
-                    e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, t.NonNullable ).Nullable );
+                    var mapped = tsTypeManager.ResolveTSType( monitor, t.NonNullable );
+                    Throw.DebugAssert( !mapped.IsNullable );
+                    e.SetResolvedType( t.IsNullable ? mapped.Nullable : mapped );
                     return true;
                 }
 
-                // Secondary is mapped to its Primary. It is erased in TS.
-                // Secondary interfaces are not visible outside: we simply map them to the primary type.
-                if( t.Kind == PocoTypeKind.SecondaryPoco )
+                if( !_typeScriptSet.Contains( t ) )
                 {
-                    e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, ((ISecondaryPocoType)t).PrimaryPocoType ) );
+                    // For abstractions (coming from GenerateAbstractPoco) fields types we need to allow them
+                    // as they have implementations.
+                    if( t.Kind == PocoTypeKind.Any )
+                    {
+                        e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, t.Type ) );
+                    }
+                    else if(t is ICollectionPocoType c && c.IsAbstractReadOnly )
+                    {
+                        e.SetResolvedType( MapCollectionType( monitor, tsTypeManager, c ) );
+                    }
+                    // No more handling at our level.
                     return true;
                 }
 
-                // We'll do the CTS mapping only for Regular types: nullability is preserved but anonymous record
-                // field names are erased and only concrete collections appear.
-                bool callCTSMapping = _ctsTypeSystem != null && t.IsRegular;
+                // Erase the Secondary poco type.
+                var tMapped = MapType( t );
+                if( tMapped != t )
+                {
+                    Throw.DebugAssert( !tMapped.IsNullable );
+                    var mapped = tsTypeManager.ResolveTSType( monitor, tMapped );
+                    Throw.DebugAssert( !mapped.IsNullable );
+                    e.SetResolvedType( t.IsNullable ? mapped.Nullable : mapped );
+                    return true;
+                }
+
+                // Anonymous records call EnsureCTSEntry directly.
+                bool callCTSMapping = _ctsTypeSystem != null;
 
                 ITSType ts;
                 // The following types are handled by their C# Type. This "ping-pong" allows:
@@ -115,43 +157,7 @@ namespace CK.StObj.TypeScript.Engine
                                                   or PocoTypeKind.AnonymousRecord );
                     if( t is ICollectionPocoType tColl )
                     {
-                        switch( tColl.Kind )
-                        {
-                            case PocoTypeKind.Array:
-                            case PocoTypeKind.List:
-                                {
-                                    var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                    // Uses Array<> rather than "(inner.TypeName)[]".
-                                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlyArray<{inner.TypeName}>" : $"Array<{inner.TypeName}>";
-                                    ts = tsTypeManager.FindByTypeName( tName )
-                                         ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
-                                    break;
-                                }
-                            case PocoTypeKind.HashSet:
-                                {
-                                    var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlySet<{inner.TypeName}>" : $"Set<{inner.TypeName}>";
-                                    ts = tsTypeManager.FindByTypeName( tName )
-                                         ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
-                                    break;
-                                }
-                            case PocoTypeKind.Dictionary:
-                                {
-                                    var tKey = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                                    var tValue = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[1] );
-                                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlyMap<{tKey.TypeName},{tValue.TypeName}>" : $"Map<{tKey.TypeName},{tValue.TypeName}>";
-                                    ts = tsTypeManager.FindByTypeName( tName )
-                                         ?? new TSBasicType( tsTypeManager, tName,
-                                                             i =>
-                                                             {
-                                                                 tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
-                                                                 tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
-                                                             },
-                                                             $"new {tName}()" );
-                                    break;
-                                }
-                            default: throw new NotSupportedException( t.ToString() );
-                        }
+                        ts = MapCollectionType( monitor, tsTypeManager, tColl );
                     }
                     else if( t is IUnionPocoType tU )
                     {
@@ -185,7 +191,7 @@ namespace CK.StObj.TypeScript.Engine
                         if( callCTSMapping )
                         {
                             Throw.DebugAssert( _ctsTypeSystem != null );
-                            _ctsTypeSystem.EnsureMappingForAnonymousRecord( r, ts, fields );
+                            _ctsTypeSystem.EnsureMappingForAnonymousRecord( r, ts, fields, fieldsWriter.UseTupleSyntax );
                             callCTSMapping = false;
                         }
                     }
@@ -203,10 +209,54 @@ namespace CK.StObj.TypeScript.Engine
                 if( callCTSMapping )
                 {
                     Throw.DebugAssert( _ctsTypeSystem != null );
-                    _ctsTypeSystem.EnsureMapping( t, ts );
+                    _ctsTypeSystem.EnsureCTSEntry( t, ts );
                 }
             }
             return true;
+        }
+
+        static ITSType MapCollectionType( IActivityMonitor monitor, TSTypeManager tsTypeManager, ICollectionPocoType tColl )
+        {
+            ITSType ts;
+            switch( tColl.Kind )
+            {
+                case PocoTypeKind.Array:
+                case PocoTypeKind.List:
+                    {
+                        var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                        // Uses Array<> rather than "(inner.TypeName)[]".
+                        var tName = tColl.IsAbstractReadOnly ? $"ReadonlyArray<{inner.TypeName}>" : $"Array<{inner.TypeName}>";
+                        ts = tsTypeManager.FindByTypeName( tName )
+                                ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
+                        break;
+                    }
+                case PocoTypeKind.HashSet:
+                    {
+                        var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                        var tName = tColl.IsAbstractReadOnly ? $"ReadonlySet<{inner.TypeName}>" : $"Set<{inner.TypeName}>";
+                        ts = tsTypeManager.FindByTypeName( tName )
+                                ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
+                        break;
+                    }
+                case PocoTypeKind.Dictionary:
+                    {
+                        var tKey = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                        var tValue = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[1] );
+                        var tName = tColl.IsAbstractReadOnly ? $"ReadonlyMap<{tKey.TypeName},{tValue.TypeName}>" : $"Map<{tKey.TypeName},{tValue.TypeName}>";
+                        ts = tsTypeManager.FindByTypeName( tName )
+                                ?? new TSBasicType( tsTypeManager, tName,
+                                                    i =>
+                                                    {
+                                                        tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
+                                                        tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
+                                                    },
+                                                    $"new {tName}()" );
+                        break;
+                    }
+                default: throw new NotSupportedException( tColl.ToString() );
+            }
+
+            return ts;
         }
 
         internal bool OnResolveType( IActivityMonitor monitor, RequireTSFromTypeEventArgs builder )
@@ -412,10 +462,12 @@ namespace CK.StObj.TypeScript.Engine
                                 export class SimpleUserMessage
                                 {
 
+                                static #invalid: SimpleUserMessage;
+
                                 /**
                                 * Gets the default, invalid, message.
                                 **/
-                                static invalid: SimpleUserMessage = new SimpleUserMessage(UserMessageLevel.None,"",0);
+                                static get invalid() : SimpleUserMessage { return SimpleUserMessage.#invalid ??= new SimpleUserMessage(UserMessageLevel.None, "", 0); }
 
                                 /**
                                 * Initializes a new SimpleUserMessage.
@@ -439,6 +491,33 @@ namespace CK.StObj.TypeScript.Engine
                                     toJSON() { return this.level !== UserMessageLevel.None
                                                         ? [this.level,this.message,this.depth]
                                                         : [0]; }
+                                    static parse( o: {} ) : SimpleUserMessage
+                                    {
+                                        if( o instanceof Array )
+                                        {
+                                            if( o.length === 1 )
+                                            {
+                                                if( o[0] === 0 ) return SimpleUserMessage.invalid;
+                                            }
+                                            else if( o.length == 3 )
+                                            {
+                                                const level = o[0];
+                                                if( level === UserMessageLevel.Info || level === UserMessageLevel.Warn || level === UserMessageLevel.Error )
+                                                {
+                                                    const msg = o[1];
+                                                    if( typeof msg == "string" )
+                                                    {
+                                                        const d = o[2];
+                                                        if( typeof d === "number" && d >= 0 && d <= 255 )
+                                                        {
+                                                            return new SimpleUserMessage( level, msg, d );
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        throw new Error( `Unable to parse '{{o}}' as SimpleUserMessage.` );
+                                    }
                                 """ );
                             return true;
                     }
@@ -557,17 +636,12 @@ namespace CK.StObj.TypeScript.Engine
 
         static void WriteCtorParameters( ITSFileCSharpType tsType, ITSCodePart ctorParametersPart, ImmutableArray<TSNamedCompositeField> fields )
         {
-            bool atLeastOne = false;
             for( int i = 0; i < fields.Length; i++ )
             {
                 var f = fields[i];
                 if( i == 0 ) ctorParametersPart.NewLine();
-                else if( atLeastOne ) ctorParametersPart.Append( ", " ).NewLine();
-                if( !f.ConstructorSkip )
-                {
-                    f.WriteCtorFieldDefinition( tsType.File, ctorParametersPart );
-                    atLeastOne = true;
-                }
+                else ctorParametersPart.Append( ", " ).NewLine();
+                f.WriteCtorFieldDefinition( tsType.File, ctorParametersPart );
             }
         }
 
@@ -616,7 +690,9 @@ namespace CK.StObj.TypeScript.Engine
                 .OpenBlock();
             foreach( var f in a.Fields )
             {
-                if( !_typeScriptSet.Contains( f.Type ) ) continue;
+                var hasImpl = a.PrimaryPocoTypes.Where( _typeScriptSet.Contains )
+                                                .Any( impl => impl.Fields.Any( implF => implF.Name == f.Name && _typeScriptSet.Contains( implF.Type ) ) );
+                if( !hasImpl ) continue;
                 if( _typeScriptContext.Root.DocBuilder.GenerateDocumentation )
                 {
                     part.AppendDocumentation( monitor, f.Originator );

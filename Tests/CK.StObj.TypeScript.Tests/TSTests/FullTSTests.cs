@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
@@ -128,6 +129,9 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             int Int32 { get; set; }
             float Single { get; set; }
             double Double { get; set; }
+            long Long { get; set; }
+            ulong ULong { get; set; }
+            BigInteger BigInteger { get; set; }
             Guid Guid { get; set; }
             DateTime DateTime { get; set; }
             TimeSpan TimeSpan { get; set; }
@@ -142,15 +146,19 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
             var tsTypes = new[]
             {
-                // SomeCommand
+                // SampleCommands
                 typeof( ISomeCommand ),
-                typeof( ISomeCommandIsCriticalAndReturnsInt ),
+                typeof( ISomeIsCriticalAndReturnsIntCommand ),
+                typeof( ISimpleCommand ),
+                typeof( ISimplestCommand ),
                 // WithObject
                 typeof( IWithObjectCommand ),
-                typeof( IWithObjectSpecializedAsPocoCommand ),
+                typeof( IWithObjectSpecializedAsStringCommand ), // => result = string
+                typeof( IWithObjectSpecializedAsPocoCommand ), // => result = IResult
+                typeof( IWithObjectSpecializedAsSuperPocoCommand ), // => result = ISuperResult
                 typeof( IResult ),
-                typeof( IWithObjectSpecializedAsSuperPocoCommand ),
                 typeof( ISuperResult ),
+                typeof( IWithSecondaryCommand ),
                 // AbstractCommands
                 typeof( ICommandAbs ),
                 typeof( IIntCommand ),
@@ -161,7 +169,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                 typeof( ICommandAbsWithNullableKey ),
                 typeof( ICommandCommand ),
                 typeof( ICommandAbsWithResult ),
-                typeof( INamedRecordCommandWithResult ),
+                typeof( INamedRecordWithResultCommand ),
                 // Basic types.
                 typeof( ITestSerializationCommand )
             };
@@ -172,7 +180,8 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                                                                                     typeof( IAspNetCrisResultError ),
                                                                                     typeof( CommonPocoJsonSupport ),
                                                                                     typeof( FakeTypeScriptCrisCommandGenerator ) } ),
-                                           tsTypes );
+                                           tsTypes,
+                                           cSharpCompile: CompileOption.Compile );
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
             await TestHelper.SuspendAsync( resume => resume );
             runner.Run();

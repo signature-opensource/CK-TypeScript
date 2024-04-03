@@ -9,7 +9,8 @@ module.exports = {
             diagnostics: {ignoreCodes: ['TS151001']},
             // tsconfig fo Jest comes here. 
             tsconfig: {
-                "lib": ["es2019", "dom"]
+                "target": "ES2022",
+                "lib": ["es2022", "dom"]
               }    
         }],
     },

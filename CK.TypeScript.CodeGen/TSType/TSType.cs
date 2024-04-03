@@ -45,7 +45,7 @@ namespace CK.TypeScript.CodeGen
 
             public int Index => -_nonNullable.Index;
 
-            public ITSCodePart TSTypeModel => NonNullable.TSTypeModel;
+            public ITSCodePart? TSTypeModel => NonNullable.TSTypeModel;
 
             /// <summary>
             /// Overridden to return the <see cref="TypeName"/>.
@@ -66,7 +66,7 @@ namespace CK.TypeScript.CodeGen
 
         readonly ITSType _null;
         readonly string _typeName;
-        readonly ITSCodePart _model;
+        readonly ITSCodePart? _model;
         readonly int _index;
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace CK.TypeScript.CodeGen
         public int Index => _index;
 
         /// <inheritdoc />
-        public ITSCodePart TSTypeModel => _model;
+        public ITSCodePart? TSTypeModel => _model;
 
         /// <inheritdoc />
         public ITSType Nullable => _null;

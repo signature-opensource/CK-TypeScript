@@ -52,6 +52,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="keyType">The object or C# type to resolve.</param>
+        /// <param name="isNullable">Not null to force the nullability.</param>
         /// <returns>The resolved type.</returns>
         public ITSType ResolveByMapping( IActivityMonitor monitor, object keyType, bool? isNullable = null )
         {

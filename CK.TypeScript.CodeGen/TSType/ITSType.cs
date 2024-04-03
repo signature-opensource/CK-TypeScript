@@ -46,6 +46,9 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets this type model in the TSType file.
         /// <para>
+        /// <see cref="TypeScriptRoot.ReflectTS"/> must be true for for this to be not null.
+        /// </para>
+        /// <para>
         /// This part is an extension point after the fields "tsName" and "index" that are automatically
         /// written for all types. Other information can be defined such as a fields descriptor for composite
         /// types like:
@@ -54,7 +57,7 @@ namespace CK.TypeScript.CodeGen
         /// </code>
         /// </para>
         /// </summary>
-        ITSCodePart TSTypeModel { get; }
+        ITSCodePart? TSTypeModel { get; }
 
         /// <summary>
         /// Gets the nullable associated type.

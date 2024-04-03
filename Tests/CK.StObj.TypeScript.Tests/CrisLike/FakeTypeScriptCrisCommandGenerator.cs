@@ -51,22 +51,25 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             // By filtering out the base interface it doesn't appear in the base interfaces
             // nor in the branded type. 
-            bool withoutResult = false;
-            bool withResult = false;
+            IPocoType? typedResult = null;
+            bool hasICommand = false;
             foreach( var i in e.ImplementedInterfaces )
             {
-                if( !withResult && i.GenericTypeDefinition?.Type == typeof( ICommand<> ) )
+                if( i.GenericTypeDefinition?.Type == typeof( ICommand<> ) )
                 {
-                    withResult = true;
-                    if( withoutResult ) break;
+                    var tResult = i.GenericArguments[0].Type;
+                    if( typedResult != null )
+                    {
+                        e.Monitor.Error( $"{typedResult} and {tResult}" );
+                    }
+                    typedResult = tResult;
                 }
-                if( !withoutResult && i.Type == typeof( ICommand ) )
+                if( i.Type == typeof( ICommand ) )
                 {
-                    withoutResult = true;
-                    if( withResult ) break;
+                    hasICommand = true;
                 }
             }
-            if( withResult && withoutResult )
+            if( hasICommand && typedResult != null )
             {
                 e.ImplementedInterfaces = e.ImplementedInterfaces.Where( i => i.Type != typeof( ICommand ) );
             }
@@ -78,9 +81,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             {
                 e.PocoTypePart.File.Imports.EnsureImport( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "ICommandModel" );
                 e.PocoTypePart.NewLine()
-                    .Append( "get commandModel(): ICommandModel { return " ).Append( e.TSGeneratedType.TypeName ).Append( "._m; }" ).NewLine()
+                    .Append( "get commandModel(): ICommandModel { return " ).Append( e.TSGeneratedType.TypeName ).Append( ".#m; }" ).NewLine()
                     .NewLine()
-                    .Append( "private static _m = " )
+                    .Append( "static #m = " )
                     .OpenBlock()
                         .Append( "applyAmbientValues( command: any, a: any, o: any )" )
                         .OpenBlock()

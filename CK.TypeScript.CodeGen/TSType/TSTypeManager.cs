@@ -28,7 +28,8 @@ namespace CK.TypeScript.CodeGen
         readonly Dictionary<object, ITSType?> _types;
         readonly Dictionary<string, LibraryImport> _libraries;
         readonly TypeScriptRoot _root;
-        readonly ITSCodePart _tsTypes;
+        // Not null when TypeScriptRoot.ReflectTS is true.
+        readonly ITSCodePart? _reflectTSTypes;
         internal readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
         // New TSGeneratedType are appended to this list: GenerateCode
         // loops until no new type appears in this list.
@@ -42,9 +43,12 @@ namespace CK.TypeScript.CodeGen
             _libraries = new Dictionary<string, LibraryImport>();
             _types = new Dictionary<object, ITSType?>();
             _processList = new List<TSGeneratedType>();
-            _tsTypes = root.Root.FindOrCreateFile( "CK/Core/TSType.ts" )
+            if( root.ReflectTS )
+            {
+                _reflectTSTypes = root.Root.FindOrCreateFile( "CK/Core/TSType.ts" )
                                 .Body.Append( "export const TSType = {" )
                                      .CreatePart( closer: "}\n" );
+            }
             _types.Add( typeof( object ), new TSBasicType( this, "{}", null, null ) );
         }
 
@@ -52,11 +56,14 @@ namespace CK.TypeScript.CodeGen
         /// Gets the "CK/Core/TSType.ts" file that contains the TSType map that contains
         /// all the <see cref="ITSType.TSTypeModel"/>.
         /// <para>
+        /// <see cref="TypeScriptRoot.ReflectTS"/> must be true for for this to be not null.
+        /// </para>
+        /// <para>
         /// This acts as a meta model that can be used to brand types. It can be extended
         /// to offer more functionalities.
         /// </para>
         /// </summary>
-        public TypeScriptFile TSTypeFile => _tsTypes.File;
+        public TypeScriptFile? ReflectTSTypeFile => _reflectTSTypes?.File;
 
         /// <summary>
         /// Registers an imported library. The first wins: all subsequent imports with the same name will
@@ -137,16 +144,23 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The TS type.</returns>
         public ITSType this[object keyType] => _types[keyType] ?? throw new KeyNotFoundException( $"Key type '{keyType}' is currently resolving." );
 
-        internal int Register( TSType tsType, out ITSCodePart model )
+        internal int Register( TSType tsType, out ITSCodePart? model )
         {
             _types.Add( tsType.TypeName, tsType );
             _allTypes.Add( tsType );
-            int index = _allTypes.Count;
-            if( !_tsTypes.IsEmpty ) _tsTypes.Append( "," ).NewLine();
-            model = _tsTypes.AppendSourceString( tsType.TypeName ).Append( ": {" ).NewLine()
-                            .Append( "tsName: " ).AppendSourceString( tsType.TypeName ).Append( "," ).NewLine()
-                            .Append( "index: " ).Append( index.ToString( CultureInfo.InvariantCulture ) ).Append( "," )
-                            .CreateKeyedPart( tsType, closer: "}" );
+            if( _reflectTSTypes != null )
+            {
+                int index = _allTypes.Count;
+                if( !_reflectTSTypes.IsEmpty ) _reflectTSTypes.Append( "," ).NewLine();
+                model = _reflectTSTypes.AppendSourceString( tsType.TypeName ).Append( ": {" ).NewLine()
+                                .Append( "tsName: " ).AppendSourceString( tsType.TypeName ).Append( "," ).NewLine()
+                                .Append( "index: " ).Append( index.ToString( CultureInfo.InvariantCulture ) ).Append( "," )
+                                .CreateKeyedPart( tsType, closer: "}" );
+            }
+            else
+            {
+                model = null;
+            }
             return _allTypes.Count;
         }
 
@@ -426,10 +440,12 @@ namespace CK.TypeScript.CodeGen
                     */
                     export class Guid {
 
+                        static #empty : Guid;   
+
                         /**
                         * The empty Guid '00000000-0000-0000-0000-000000000000' is the default.
                         */
-                        public static readonly empty : Guid = new Guid('00000000-0000-0000-0000-000000000000');
+                        public static get empty() { return Guid.#empty ??= new Guid('00000000-0000-0000-0000-000000000000'); }
                         
                         constructor( public readonly guid: string ) {
 

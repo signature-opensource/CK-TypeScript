@@ -125,7 +125,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
                                            // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
-                                           // that ensures that they benlong to the TypeScriptSet.
+                                           // that ensures that they belong to the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
                                                                                     typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
@@ -193,7 +193,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
                                            // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
-                                           // that ensures that they benlong to the TypeScriptSet.
+                                           // that ensures that they belong to the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
                                                                                     typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
@@ -207,7 +207,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var tsTypes = new[]
             {
                 typeof( ISomeCommand ),
-                typeof( ISomeCommandIsCriticalAndReturnsInt ),
+                typeof( ISomeIsCriticalAndReturnsIntCommand ),
                 typeof( IWithObjectCommand ),
                 typeof( IWithObjectSpecializedAsPocoCommand ),
                 typeof( IResult ),
@@ -216,12 +216,51 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
                                            // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
-                                           // that ensures that they benlong to the TypeScriptSet.
+                                           // that ensures that they belong to the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
                                                                                     typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
         }
 
+        [Test]
+        public void commands_with_string_and_command()
+        {
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+
+            var tsTypes = new[] { typeof( IStringCommand ), typeof( ICommandCommand ) };
+            TestHelper.GenerateTypeScript( targetProjectPath,
+                                           // Registers Results only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
+                                           // that ensures that they belong to the TypeScriptSet.
+                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
+                                                                                    typeof( IAspNetCrisResultError ),
+                                                                                    typeof( FakeTypeScriptCrisCommandGenerator ) } ),
+                                           tsTypes );
+            var p = targetProjectPath.Combine( "ck-gen/src" );
+
+            var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) );
+            tS.Should().StartWith( """
+                import { ICommandModel, ICommand } from "../../../../Cris/Model";
+                import { ICommandAbs } from "./ICommandAbs";
+                """ );
+            tS.Should().Contain( "export class StringCommand implements ICommand, ICommandAbs {" )
+                    .And.Contain( "public key: String = \"\"," )
+                    .And.Contain( "public readonly keyList: Array<String> = []," )
+                    .And.Contain( "public readonly keySet: Set<String> = new Set<String>()," )
+                    .And.Contain( "public readonly keyDictionary: Map<String,String> = new Map<String,String>()" );
+
+            var tC = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/CommandCommand.ts" ) );
+            tC.Should().StartWith( """
+                import { ICommandModel, ICommand } from "../../../../Cris/Model";
+                import { ICommandAbsWithNullableKey } from "./ICommandAbsWithNullableKey";
+                import { ExtendedCultureInfo } from "../../../../Core/ExtendedCultureInfo";
+                """ );
+            tC.Should().Contain( "export class CommandCommand implements ICommand, ICommandAbsWithNullableKey {" )
+                    .And.Contain( "public readonly keyList: Array<ICommand> = []," )
+                    .And.Contain( "public readonly keySet: Set<ExtendedCultureInfo> = new Set<ExtendedCultureInfo>()," )
+                    .And.Contain( "public readonly keyDictionary: Map<String,ICommand> = new Map<String,ICommand>()" )
+                    .And.Contain( "public key?: ICommand" );
+
+        }
     }
 }
