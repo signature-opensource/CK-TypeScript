@@ -137,9 +137,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( """
                      public constructor()
                      public constructor(
-                     name: String,
-                     power: Power,
-                     friend: CommandTwo)
+                     name?: String,
+                     power?: Power,
+                     friend?: CommandTwo)
                      constructor(
                      name?: String,
                      power?: Power,
@@ -161,10 +161,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( """
                     public constructor()
                     public constructor(
-                    age: Number,
-                    anotherPower: Power,
-                    anotherFriend: CommandOne|undefined,
-                    friendThree: CommandThree)
+                    age?: Number,
+                    anotherPower?: Power,
+                    anotherFriend?: CommandOne,
+                    friendThree?: CommandThree)
                     constructor(
                     age?: Number,
                     anotherPower?: Power,
@@ -183,8 +183,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( """
                     public constructor()
                     public constructor(
-                    uniqueId: Guid|undefined,
-                    data: RecordData)
+                    uniqueId?: Guid,
+                    data?: RecordData)
                     constructor(
                     uniqueId?: Guid,
                     data?: RecordData)

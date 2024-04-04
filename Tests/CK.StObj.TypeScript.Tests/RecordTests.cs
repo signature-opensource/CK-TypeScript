@@ -92,7 +92,7 @@ namespace CK.StObj.TypeScript.Tests
                 public readonly power: [Number, String, String?, Guid?];
                 public constructor()
                 public constructor(
-                power: [Number, String, String?, Guid?])
+                power?: [Number, String, String?, Guid?])
                 constructor(
                 power?: [Number, String, String?, Guid?])
                 {
@@ -229,7 +229,7 @@ namespace CK.StObj.TypeScript.Tests
                 public readonly r1: Rec1;
                 public constructor()
                 public constructor(
-                r1: Rec1)
+                r1?: Rec1)
                 constructor(
                 r1?: Rec1)
                 {

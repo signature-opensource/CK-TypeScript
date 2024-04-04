@@ -23,7 +23,6 @@ namespace CK.Setup
         readonly ITSCodePart _interfacesPart;
         readonly ITSCodePart _fieldDefinitionPart;
         readonly ITSCodePart _ctorParametersPart;
-        readonly ITSCodePart _ctorImplementationParametersPart;
         readonly ITSCodePart _ctorBodyPart;
         IEnumerable<Type> _docTypes;
         IEnumerable<IAbstractPocoType> _implementedInterfaces;
@@ -38,7 +37,6 @@ namespace CK.Setup
                                                  ITSCodePart interfacesPart,
                                                  ITSCodePart fieldDefinitionPart,
                                                  ITSCodePart ctorParametersPart,
-                                                 ITSCodePart ctorImplementationParametersPart,
                                                  ITSCodePart ctorBodyPart )
             : base( monitor )
         {
@@ -51,7 +49,6 @@ namespace CK.Setup
             _interfacesPart = interfacesPart;
             _fieldDefinitionPart = fieldDefinitionPart;
             _ctorParametersPart = ctorParametersPart;
-            _ctorImplementationParametersPart = ctorImplementationParametersPart;
             _ctorBodyPart = ctorBodyPart;
         }
 
@@ -126,15 +123,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the exposed constructor parameters part. It will be filled with the <see cref="Fields"/>
-        /// with their potentially nullable type ("|undefined").
-        /// </summary>
-        public ITSCodePart CtorParametersPart => _ctorParametersPart;
-
-        /// <summary>
-        /// Gets the implementation constructor parameters part. It will be filled with the <see cref="Fields"/>
         /// all marked as optional and their non nullable type.
         /// </summary>
-        public ITSCodePart CtorImplementationParametersPart => _ctorImplementationParametersPart;
+        public ITSCodePart CtorParametersPart => _ctorParametersPart;
 
         /// <summary>
         /// Gets the constructor body part. It will be filled with <see cref="Fields"/> assignation (from <see cref="CtorImplementationParametersPart"/>)

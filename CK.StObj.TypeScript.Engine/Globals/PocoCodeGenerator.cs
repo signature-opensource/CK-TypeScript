@@ -634,7 +634,6 @@ namespace CK.StObj.TypeScript.Engine
                                                         interfacesPart,
                                                         fieldDefinitionPart,
                                                         ctorParametersPart,
-                                                        ctorImplementationParametersPart,
                                                         ctorBodyPart );
 
             RaiseGeneratingPrimaryPoco( e );
@@ -655,10 +654,6 @@ namespace CK.StObj.TypeScript.Engine
                 f.WriteFieldDefinition( fieldDefinitionPart );
                 fieldDefinitionPart.Append( ";" ).NewLine();
 
-                if( i != 0 ) ctorParametersPart.Append( "," );
-                ctorParametersPart.NewLine()
-                    .AppendIdentifier( f.TSField.PocoField.Name ).Append(": ").AppendTypeName( f.TSField.TSFieldType );
-
                 if( i != 0 ) ctorImplementationParametersPart.Append( "," );
                 ctorImplementationParametersPart.NewLine()
                     .AppendIdentifier( f.TSField.PocoField.Name ).Append( "?: " ).AppendTypeName( f.TSField.TSFieldType.NonNullable );
@@ -671,7 +666,7 @@ namespace CK.StObj.TypeScript.Engine
                 }
                 ctorBodyPart.Append( ";" ).NewLine();
             }
-
+            ctorParametersPart.Append( ctorImplementationParametersPart.ToString() );
             return true;
         }
 
