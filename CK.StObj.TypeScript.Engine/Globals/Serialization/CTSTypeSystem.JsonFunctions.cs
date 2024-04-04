@@ -195,20 +195,20 @@ namespace CK.Setup
                     .Append( "let r = {} as any;" ).NewLine();
                 foreach( var field in fields )
                 {
-                    part.Append( "r." ).AppendIdentifier( field.PocoField.Name ).Append( " = " );
+                    part.Append( "r." ).Append( field.FieldName ).Append( " = " );
                     var tF = PocoCodeGenerator.MapType( field.PocoField.Type ).NonNullable;
                     if( tF.IsPolymorphic )
                     {
-                        part.Append( "CTSType.toTypedJson( o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
+                        part.Append( "CTSType.toTypedJson( o." ).Append( field.FieldName ).Append( " )" );
                     }
                     else if( _requiresHandlingMap.Contains( tF ) )
                     {
                         part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( tF ) ).Append( "].json( " )
-                            .Append( "o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
+                            .Append( "o." ).Append( field.FieldName ).Append( " )" );
                     }
                     else
                     {
-                        part.Append( "o." ).AppendIdentifier( field.PocoField.Name );
+                        part.Append( "o." ).Append( field.FieldName );
                     }
                     part.Append( ";" ).NewLine();
                 }

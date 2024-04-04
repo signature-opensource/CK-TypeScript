@@ -15,10 +15,6 @@ namespace CK.TypeScript.CodeGen
     /// is called.
     /// </para>
     /// <para>
-    /// Actual code generation is done either by the <see cref="TSGeneratedTypeBuilder.Implementor"/> for each <see cref="ITSFileCSharpType"/>
-    /// or during <see cref="BeforeCodeGeneration"/> or <see cref="AfterCodeGeneration"/> events.
-    /// </para>
-    /// <para>
     /// Once code generation succeeds, <see cref="Save"/> can be called.
     /// </para>
     /// <para>
@@ -133,7 +129,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the configured versions for npm packages. These configurations take precedence over the
         /// library version that can be specified by code (through <see cref="LibraryImport"/> when
-        /// calling <see cref="ITSFileImportSection.EnsureLibrary(LibraryImport)"/>).
+        /// calling <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>).
         /// </summary>
         public IReadOnlyDictionary<string, string>? LibraryVersionConfiguration => _tsTypes._libVersionsConfig;
 

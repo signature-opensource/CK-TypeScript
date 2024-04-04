@@ -40,6 +40,11 @@ namespace CK.StObj.TypeScript.Engine
         public readonly ImmutableArray<XElement> Docs;
 
         /// <summary>
+        /// Gets the field name in camel case.
+        /// </summary>
+        public readonly string FieldName;
+
+        /// <summary>
         /// Gets whether this field is nullable. 
         /// </summary>
         public bool IsNullable => TSFieldType.IsNullable;
@@ -55,17 +60,18 @@ namespace CK.StObj.TypeScript.Engine
         public bool HasNonNullDefault => (PocoField.DefaultValueInfo.RequiresInit && PocoField.DefaultValueInfo.DefaultValue.SimpleValue != null)
                                             || TSFieldType.DefaultValueSource is not null and not "undefined";
 
-        TSField( IPocoField field, ITSType tsFieldType, ImmutableArray<XElement> doc )
+        TSField( IPocoField field, ITSType tsFieldType, ImmutableArray<XElement> doc, string fieldName )
         {
             PocoField = field;
             TSFieldType = tsFieldType;
             Docs = doc;
+            FieldName = fieldName;
         }
 
         internal static TSField Create( IActivityMonitor monitor, TypeScriptContext context, IPocoField field, ITSType tsFieldType )
         {
             var doc = GetDocumentation( monitor, context.Root, field.Originator );
-            return new TSField( field, tsFieldType, doc );
+            return new TSField( field, tsFieldType, doc, context.Root.ToIdentifier( field.Name ) );
 
             static ImmutableArray<XElement> GetDocumentation( IActivityMonitor monitor, TypeScriptRoot root, object? originator )
             {
@@ -108,7 +114,7 @@ namespace CK.StObj.TypeScript.Engine
             w.Append( "public " );
             bool ro = PocoField is IPrimaryPocoField pF && pF.FieldAccess is PocoFieldAccessKind.MutableReference or PocoFieldAccessKind.IsByRef;
             if( ro ) w.Append( "readonly " );
-            w.AppendIdentifier( PocoField.Name );
+            w.Append( FieldName );
             bool optional = IsNullable && !HasNonNullDefault;
             if( optional ) w.Append( "?" );
             w.Append( ": " ).AppendTypeName( optional ? TSFieldType.NonNullable : TSFieldType );

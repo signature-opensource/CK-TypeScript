@@ -189,12 +189,12 @@ namespace CK.Setup
                 atLeastOne = true;
                 if( field.PocoField.Type.IsPolymorphic )
                 {
-                    part.Append( "CTSType.fromTypedJson( o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
+                    part.Append( "CTSType.fromTypedJson( o." ).Append( field.FieldName ).Append( " )" );
                 }
                 else
                 {
                     part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( PocoCodeGenerator.MapType( field.PocoField.Type ).NonNullable ) )
-                        .Append( "].nosj( " ).Append( "o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
+                        .Append( "].nosj( " ).Append( "o." ).Append( field.FieldName ).Append( " )" );
                 }
                 if( t.Kind == PocoTypeKind.Record && field.HasNonNullDefault )
                 {

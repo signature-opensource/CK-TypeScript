@@ -32,6 +32,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Version of the package, which will be used in the package.json.
+        /// This version can be overridden by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
         /// </summary>
         public string Version { get; }
 

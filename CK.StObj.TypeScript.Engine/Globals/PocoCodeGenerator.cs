@@ -656,9 +656,9 @@ namespace CK.StObj.TypeScript.Engine
 
                 if( i != 0 ) ctorImplementationParametersPart.Append( "," );
                 ctorImplementationParametersPart.NewLine()
-                    .AppendIdentifier( f.TSField.PocoField.Name ).Append( "?: " ).AppendTypeName( f.TSField.TSFieldType.NonNullable );
+                    .Append( f.TSField.FieldName ).Append( "?: " ).AppendTypeName( f.TSField.TSFieldType.NonNullable );
 
-                ctorBodyPart.Append( "this." ).AppendIdentifier( f.TSField.PocoField.Name ).Append( " = " ).AppendIdentifier( f.TSField.PocoField.Name );
+                ctorBodyPart.Append( "this." ).Append( f.TSField.FieldName ).Append( " = " ).Append( f.TSField.FieldName );
                 if( f.TSField.HasNonNullDefault )
                 {
                     ctorBodyPart.Append( " ?? " );

@@ -1,19 +1,10 @@
 using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
-using Microsoft.VisualBasic.FileIO;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
-using System.Globalization;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Xml.Linq;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -136,13 +127,13 @@ namespace CK.StObj.TypeScript.Engine
                         ref TSField f = ref _fields[i];
                         if( atLeastOne ) typeBuilder.TypeName.Append( ", " );
                         atLeastOne = true;
-                        typeBuilder.TypeName.AppendIdentifier( f.PocoField.Name );
+                        typeBuilder.TypeName.Append( f.FieldName );
                         typeBuilder.TypeName.Append( f.IsNullable ? "?: " : ": " );
                         typeBuilder.TypeName.AppendTypeName( f.TSFieldType.NonNullable );
                         if( f.HasNonNullDefault )
                         {
                             if( atLeastOneDefault ) typeBuilder.DefaultValue.Append( ", " );
-                            typeBuilder.DefaultValue.AppendIdentifier( f.PocoField.Name ).Append( ": " );
+                            typeBuilder.DefaultValue.Append( f.FieldName ).Append( ": " );
                             f.WriteDefaultValue( typeBuilder.DefaultValue );
                             atLeastOneDefault = true;
                         }
