@@ -1,11 +1,7 @@
-using CK.Core;
 using CK.CrisLike;
-using CK.Setup;
-using CK.TypeScript.CodeGen;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using static CK.Testing.StObjEngineTestHelper;
@@ -133,7 +129,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var p = targetProjectPath.Combine( "ck-gen/src" );
             File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).Should().Contain( "export enum Power" );
 
-            var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) );
+            var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) ).ReplaceLineEndings();
             tOne.Should().Contain( """import { Power } from "./Power";""" )
                      .And.Contain( """import { CommandTwo } from "../Commands/CrisLike/CMDCommandTwo";""" );
 
@@ -153,10 +149,10 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      this.power = power ?? Power.None;
                      this.friend = friend ?? new CommandTwo();
                      }
-                     """ );
+                     """.ReplaceLineEndings() );
 
 
-            var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) );
+            var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) ).ReplaceLineEndings();
             tTwo.Should().Contain( """import { Power } from "../../TheFolder/Power";""" )
                      .And.Contain( """import { CommandOne, CommandThree } from "../../TheFolder/CMDCommandOne";""" )
                      .And.Contain( """import { ICommandModel, ICommand } from "../../CK/Cris/Model";""" );
@@ -180,9 +176,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     this.anotherFriend = anotherFriend;
                     this.friendThree = friendThree ?? new CommandThree();
                     }
-                    """ );
+                    """.ReplaceLineEndings() );
 
-            var tFour = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandFour.ts" ) );
+            var tFour = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandFour.ts" ) ).ReplaceLineEndings();
             tFour.Should().Contain( "export class CommandFour implements ICommand {" )
                      .And.Contain( """
                     public constructor()
@@ -196,9 +192,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     this.uniqueId = uniqueId;
                     this.data = data ?? new RecordData();
                     }
-                    """ );
+                    """.ReplaceLineEndings() );
 
-            var tRecord = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/RecordData.ts" ) );
+            var tRecord = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/RecordData.ts" ) ).ReplaceLineEndings();
             tRecord.Should().Be( """
                 /**
                  * Simple record data.
@@ -218,7 +214,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 readonly _brand!: {"15":any};
                 }
 
-                """ );
+                """.ReplaceLineEndings() );
         }
 
         [Test]
@@ -277,11 +273,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                            tsTypes );
             var p = targetProjectPath.Combine( "ck-gen/src" );
 
-            var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) );
+            var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) ).ReplaceLineEndings();
             tS.Should().StartWith( """
                 import { ICommandModel, ICommand } from "../../../../Cris/Model";
                 import { ICommandAbs } from "./ICommandAbs";
-                """ );
+                """.ReplaceLineEndings() );
             tS.Should().Contain( "export class StringCommand implements ICommand, ICommandAbs {" )
                     .And.Contain( """
                 constructor(
@@ -295,14 +291,14 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 this.keySet = keySet ?? new Set<String>();
                 this.keyDictionary = keyDictionary ?? new Map<String,String>();
                 }
-                """ );
+                """.ReplaceLineEndings() );
 
-            var tC = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/CommandCommand.ts" ) );
+            var tC = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/CommandCommand.ts" ) ).ReplaceLineEndings();
             tC.Should().StartWith( """
                 import { ICommandModel, ICommand } from "../../../../Cris/Model";
                 import { ICommandAbsWithNullableKey } from "./ICommandAbsWithNullableKey";
                 import { ExtendedCultureInfo } from "../../../../Core/ExtendedCultureInfo";
-                """ );
+                """.ReplaceLineEndings() );
             tC.Should().Contain( "export class CommandCommand implements ICommand, ICommandAbsWithNullableKey {" )
                     .And.Contain( """
                 constructor(
@@ -316,7 +312,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 this.keySet = keySet ?? new Set<ExtendedCultureInfo>();
                 this.keyDictionary = keyDictionary ?? new Map<String,ICommand>();
                 }
-                """ );
+                """.ReplaceLineEndings() );
 
         }
     }
