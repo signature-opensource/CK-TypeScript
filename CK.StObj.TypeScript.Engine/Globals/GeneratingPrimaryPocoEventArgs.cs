@@ -21,7 +21,9 @@ namespace CK.Setup
         readonly IPrimaryPocoType _pocoType;
         readonly ImmutableArray<TSNamedCompositeField> _fields;
         readonly ITSCodePart _interfacesPart;
+        readonly ITSCodePart _fieldDefinitionPart;
         readonly ITSCodePart _ctorParametersPart;
+        readonly ITSCodePart _ctorImplementationParametersPart;
         readonly ITSCodePart _ctorBodyPart;
         IEnumerable<Type> _docTypes;
         IEnumerable<IAbstractPocoType> _implementedInterfaces;
@@ -34,7 +36,9 @@ namespace CK.Setup
                                                  IEnumerable<IAbstractPocoType> implementedInterfaces,
                                                  ImmutableArray<TSNamedCompositeField> fields,
                                                  ITSCodePart interfacesPart,
+                                                 ITSCodePart fieldDefinitionPart,
                                                  ITSCodePart ctorParametersPart,
+                                                 ITSCodePart ctorImplementationParametersPart,
                                                  ITSCodePart ctorBodyPart )
             : base( monitor )
         {
@@ -45,7 +49,9 @@ namespace CK.Setup
             _implementedInterfaces = implementedInterfaces;
             _fields = fields;
             _interfacesPart = interfacesPart;
+            _fieldDefinitionPart = fieldDefinitionPart;
             _ctorParametersPart = ctorParametersPart;
+            _ctorImplementationParametersPart = ctorImplementationParametersPart;
             _ctorBodyPart = ctorBodyPart;
         }
 
@@ -114,12 +120,25 @@ namespace CK.Setup
         public ITSCodePart InterfacesPart => _interfacesPart;
 
         /// <summary>
-        /// Gets the constructor parameters part.
+        /// Gets the field definition part.
+        /// </summary>
+        public ITSCodePart FieldDefinitionPart => _fieldDefinitionPart;
+
+        /// <summary>
+        /// Gets the exposed constructor parameters part. It will be filled with the <see cref="Fields"/>
+        /// with their potentially nullable type ("|undefined").
         /// </summary>
         public ITSCodePart CtorParametersPart => _ctorParametersPart;
 
         /// <summary>
-        /// Gets the constructor body part. By default, nothing is written in this part.
+        /// Gets the implementation constructor parameters part. It will be filled with the <see cref="Fields"/>
+        /// all marked as optional and their non nullable type.
+        /// </summary>
+        public ITSCodePart CtorImplementationParametersPart => _ctorImplementationParametersPart;
+
+        /// <summary>
+        /// Gets the constructor body part. It will be filled with <see cref="Fields"/> assignation (from <see cref="CtorImplementationParametersPart"/>)
+        /// with the ?? field's default value when the field has a default value.
         /// </summary>
         public ITSCodePart CtorBodyPart => _ctorBodyPart;
 
@@ -142,5 +161,6 @@ namespace CK.Setup
         /// Gets the part to extend the poco class.
         /// </summary>
         public ITSCodePart PocoTypePart => _tsType.TypePart;
+
     }
 }

@@ -87,27 +87,70 @@ namespace CK.StObj.TypeScript.Tests
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco1.ts",
-                """public readonly power: [Number, String, String?, Guid?] = [0, ""]""" );
+                """
+                export class ValueTuplePoco1 implements IPoco {
+                public readonly power: [Number, String, String?, Guid?];
+                public constructor()
+                public constructor(
+                power: [Number, String, String?, Guid?])
+                constructor(
+                power?: [Number, String, String?, Guid?])
+                {
+                this.power = power ?? [0, ""];
+                }
+                readonly _brand!: IPoco["_brand"] & {"0":any};
+                }
+                """ );
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco2.ts",
-                """public readonly power: [Number, String|undefined, String, NormalizedCultureInfo?, Number?] = [0, undefined, ""]""" );
+                """
+                constructor(
+                power?: [Number, String|undefined, String, NormalizedCultureInfo?, Number?])
+                {
+                this.power = power ?? [0, undefined, ""];
+                }
+                """ );
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco3.ts",
-                """public readonly power: [Number, String, NormalizedCultureInfo, Number] = [0, "", NormalizedCultureInfo.codeDefault, 0]""" );
+                """
+                constructor(
+                power?: [Number, String, NormalizedCultureInfo, Number])
+                {
+                this.power = power ?? [0, "", NormalizedCultureInfo.codeDefault, 0];
+                }
+                """ );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco1.ts",
-                """public readonly power: {age: Number, userId: String, firstName?: String, lastName?: Guid} = {age: 0, userId: ""}""" );
+                """
+                constructor(
+                power?: {age: Number, userId: String, firstName?: String, lastName?: Guid})
+                {
+                this.power = power ?? {age: 0, userId: ""};
+                }
+                """ );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco2.ts",
-                """public readonly power: {item1: Number, name: String, item3?: String, anotherName?: Guid} = {item1: 0, name: ""}""" );
+                """
+                constructor(
+                power?: {item1: Number, name: String, item3?: String, anotherName?: Guid})
+                {
+                this.power = power ?? {item1: 0, name: ""};
+                }
+                """ );
 
             CheckFile( targetProjectPath,
                 "ValueTupleWithNamePoco3.ts",
-                """public readonly power: {item1?: Number, name: String, item3: String, anotherName?: Guid} = {name: "", item3: ""}""" );
+                """
+                constructor(
+                power?: {item1?: Number, name: String, item3: String, anotherName?: Guid})
+                {
+                this.power = power ?? {name: "", item3: ""};
+                }
+                """ );
         }
 
         [TypeScript( SameFolderAs = typeof( IRecordPoco1 ) )]
@@ -164,16 +207,36 @@ namespace CK.StObj.TypeScript.Tests
             CheckFile( targetProjectPath,
                 "Rec1.ts",
                 """
+                import { Guid } from "./System/Guid";
+
+                export class Rec1 {
+                public constructor(
                 public age: Number = 0, 
                 public name: String = "", 
                 public altName?: String, 
-                public key?: Guid
+                public key?: Guid)
+                {
+                }
+                readonly _brand!: {"4":any};
+                }
+                
                 """ );
 
             CheckFile( targetProjectPath,
                 "RecordPoco1.ts",
                 """
-                public readonly r1: Rec1 = new Rec1()
+                export class RecordPoco1 implements IPoco {
+                public readonly r1: Rec1;
+                public constructor()
+                public constructor(
+                r1: Rec1)
+                constructor(
+                r1?: Rec1)
+                {
+                this.r1 = r1 ?? new Rec1();
+                }
+                readonly _brand!: IPoco["_brand"] & {"0":any};
+                }
                 """ );
 
             CheckFile( targetProjectPath,

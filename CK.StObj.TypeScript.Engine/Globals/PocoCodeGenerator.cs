@@ -2,14 +2,17 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
+using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
+using System.Data.SqlTypes;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using static CK.StObj.TypeScript.Engine.PocoCodeGenerator;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -550,8 +553,7 @@ namespace CK.StObj.TypeScript.Engine
                     .Append( "}" ).NewLine()
                     .Append( "readonly _brand!: {\"" ).Append( (_type.Index >> 1).ToString( CultureInfo.InvariantCulture ) ).Append( "\":any};" ).NewLine();
 
-                // This sorts the fields and retrieves the TSNamedCompositeField list that can be altered (skipping fields
-                // and altering documentation) by other generators.
+                // This sorts the fields and retrieves the TSNamedCompositeField list that allows other generators to alter the documentation.
                 var fields = _fieldsWriter.Value.SortAndGetNamedCompositeFields();
 
                 // Raises the event.
@@ -577,9 +579,20 @@ namespace CK.StObj.TypeScript.Engine
                     }
                     documentationPart.AppendDocumentation( xE, e.DocumentationExtension );
                 }
-                WriteCtorParameters( tsType, ctorParametersPart, fields );
-
+                WriteCtorParameters( ctorParametersPart, fields );
                 return true;
+
+                static void WriteCtorParameters( ITSCodePart ctorParametersPart, ImmutableArray<TSNamedCompositeField> fields )
+                {
+                    for( int i = 0; i < fields.Length; i++ )
+                    {
+                        var f = fields[i];
+                        if( i == 0 ) ctorParametersPart.NewLine();
+                        else ctorParametersPart.Append( ", " ).NewLine();
+                        f.WriteCtorFieldDefinition( ctorParametersPart );
+                    }
+                }
+
             }
 
             internal string? GetDefaultValueSource( IActivityMonitor monitor, ITSFileCSharpType type )
@@ -599,16 +612,18 @@ namespace CK.StObj.TypeScript.Engine
             tsType.TypePart.InsertPart( out var documentationPart )
                 .Append( "export class " ).Append( tsType.TypeName ).InsertPart( out var interfacesPart )
                 .OpenBlock()
+                .InsertPart( out var fieldDefinitionPart )
+                .Append( "public constructor()" ).NewLine()
                 .Append( "public constructor(" ).InsertPart( out var ctorParametersPart ).Append( ")" ).NewLine()
+                .Append( "constructor(" ).InsertPart( out var ctorImplementationParametersPart ).Append( ")" ).NewLine()
                 .Append( "{" ).NewLine()
                 .InsertKeyedPart( ITSKeyedCodePart.ConstructorBodyPart, out var ctorBodyPart )
                 .Append( "}" ).NewLine();
 
             var fieldsWriter = FieldsWriter.Create( monitor, t, false, _typeScriptContext, _typeScriptSet );
             Throw.DebugAssert( fieldsWriter.HasDefault );
-            // This sorts the fields and retrieves the TSField list that can be altered (skipping fields
-            // and altering documentation) by other generators.
-            var fields = fieldsWriter.SortAndGetNamedCompositeFields();
+            // Retrieves the TSNamedCompositeField list in their declaration order that allows other generators to alter the documentation.
+            var fields = fieldsWriter.GetNamedCompositeFields();
             // Raises the event.
             var e = new GeneratingPrimaryPocoEventArgs( monitor,
                                                         _typeScriptContext,
@@ -617,7 +632,9 @@ namespace CK.StObj.TypeScript.Engine
                                                         t.MinimalAbstractTypes,
                                                         fields,
                                                         interfacesPart,
+                                                        fieldDefinitionPart,
                                                         ctorParametersPart,
+                                                        ctorImplementationParametersPart,
                                                         ctorBodyPart );
 
             RaiseGeneratingPrimaryPoco( e );
@@ -630,24 +647,32 @@ namespace CK.StObj.TypeScript.Engine
                                      isIPoco: false,
                                      t,
                                      tsType );
-            WriteCtorParameters( tsType, ctorParametersPart, fields );
-            return true;
-        }
 
-        static void WriteCtorParameters( ITSFileCSharpType tsType, ITSCodePart ctorParametersPart, ImmutableArray<TSNamedCompositeField> fields )
-        {
-            bool atLeastOne = false;
             for( int i = 0; i < fields.Length; i++ )
             {
-                var f = fields[i];
-                if( i == 0 ) ctorParametersPart.NewLine();
-                else if( atLeastOne ) ctorParametersPart.Append( ", " ).NewLine();
-                if( !f.ConstructorSkip )
+                TSNamedCompositeField? f = fields[i];
+
+                f.WriteFieldDefinition( fieldDefinitionPart );
+                fieldDefinitionPart.Append( ";" ).NewLine();
+
+                if( i != 0 ) ctorParametersPart.Append( "," );
+                ctorParametersPart.NewLine()
+                    .AppendIdentifier( f.TSField.PocoField.Name ).Append(": ").AppendTypeName( f.TSField.TSFieldType );
+
+                if( i != 0 ) ctorImplementationParametersPart.Append( "," );
+                ctorImplementationParametersPart.NewLine()
+                    .AppendIdentifier( f.TSField.PocoField.Name ).Append( "?: " ).AppendTypeName( f.TSField.TSFieldType.NonNullable );
+
+                ctorBodyPart.Append( "this." ).AppendIdentifier( f.TSField.PocoField.Name ).Append( " = " ).AppendIdentifier( f.TSField.PocoField.Name );
+                if( f.TSField.HasNonNullDefault )
                 {
-                    f.WriteCtorFieldDefinition( tsType.File, ctorParametersPart );
-                    atLeastOne = true;
+                    ctorBodyPart.Append( " ?? " );
+                    f.TSField.WriteDefaultValue( ctorBodyPart );
                 }
+                ctorBodyPart.Append( ";" ).NewLine();
             }
+
+            return true;
         }
 
         void WriteInterfacesAndBrand( IActivityMonitor monitor,

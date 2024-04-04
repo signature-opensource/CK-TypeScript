@@ -11,7 +11,7 @@ namespace CK.Setup
 {
     public sealed partial class CTSTypeSystem
     {
-        void GenerateBasicNosjFunction( IPocoType t, ITSType ts, ITSKeyedCodePart part )
+        static void GenerateBasicNosjFunction( IPocoType t, ITSType ts, ITSKeyedCodePart part )
         {
             part.Append( "nosj( o: any ) {" );
             if( t.Type == typeof( decimal ) )
@@ -178,6 +178,7 @@ namespace CK.Setup
 
         void GenerateCompositeNosjFunction( ITSKeyedCodePart part, ITSType tsType, IPocoType t, IEnumerable<TSField> fields )
         {
+            Throw.DebugAssert( t.Kind is PocoTypeKind.Record or PocoTypeKind.PrimaryPoco );
             part.Append( "nosj( o: any ) {" );
             part.Append( "if( o == null ) return undefined;" ).NewLine()
                 .Append( "return new " ).Append( tsType.TypeName ).Append( "(" ).NewLine();
@@ -195,7 +196,7 @@ namespace CK.Setup
                     part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( PocoCodeGenerator.MapType( field.PocoField.Type ).NonNullable ) )
                         .Append( "].nosj( " ).Append( "o." ).AppendIdentifier( field.PocoField.Name ).Append( " )" );
                 }
-                if( field.HasNonNullDefault )
+                if( t.Kind == PocoTypeKind.Record && field.HasNonNullDefault )
                 {
                     part.Append( " ?? " );
                     field.WriteDefaultValue( part );

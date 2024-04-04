@@ -154,6 +154,22 @@ namespace CK.StObj.TypeScript.Engine
                 return typeBuilder.Build();
             }
 
+            /// <summary>
+            /// Used for PrimaryPoco: fields are not sorted.
+            /// </summary>
+            /// <returns>The fields.</returns>
+            public ImmutableArray<TSNamedCompositeField> GetNamedCompositeFields()
+            {
+#if NET8_0_OR_GREATER
+                return ImmutableArray.CreateRange( _fields.AsImmutableArray(), f => new TSNamedCompositeField( f ) );
+#endif
+                return ImmutableArray.CreateRange( _fields.Select( f => new TSNamedCompositeField( f ) ) );
+            }
+
+            /// <summary>
+            /// Used for Records: fields are sorted.
+            /// </summary>
+            /// <returns>The fields.</returns>
             public ImmutableArray<TSNamedCompositeField> SortAndGetNamedCompositeFields()
             {
                 SortCtorParameters();
@@ -162,11 +178,7 @@ namespace CK.StObj.TypeScript.Engine
                 SortCtorParameters();
                 Throw.DebugAssert( "SortCtorParameters must be a stable sort (even if we call it only once).", clone.SequenceEqual( _fields ) );
 #endif
-
-#if NET8_0_OR_GREATER
-                return ImmutableArray.CreateRange( _fields.AsImmutableArray(), f => new TSNamedCompositeField( f ) );
-#endif
-                return ImmutableArray.CreateRange( _fields.Select( f => new TSNamedCompositeField( f ) ) );
+                return GetNamedCompositeFields();
             }
 
             /// <summary>
@@ -182,7 +194,7 @@ namespace CK.StObj.TypeScript.Engine
             /// </list>
             /// </para>
             /// </summary>
-            public void SortCtorParameters()
+            void SortCtorParameters()
             {
                 int requiredOffset = 0;
                 int nonNullableWithDefaultOffset = 0;

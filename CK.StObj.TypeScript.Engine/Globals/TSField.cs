@@ -95,12 +95,13 @@ namespace CK.StObj.TypeScript.Engine
             }
         }
 
-        internal readonly void WriteCtorFieldDefinition( TypeScriptFile file,
-                                                         ITSCodeWriter w,
-                                                         IEnumerable<XElement>? docs = null,
-                                                         Action<DocumentationBuilder>? extension = null )
+        internal readonly void WriteFieldDefinition( ITSCodeWriter w,
+                                                     bool withDefault,
+                                                     IEnumerable<XElement>? docs = null,
+                                                     Action<DocumentationBuilder>? extension = null )
         {
-            using( file.Root.DocBuilder.RemoveGetOrSetPrefix() )
+
+            using( w.File.Root.DocBuilder.RemoveGetOrSetPrefix() )
             {
                 w.AppendDocumentation( docs ?? Docs, extension );
             }
@@ -108,10 +109,10 @@ namespace CK.StObj.TypeScript.Engine
             bool ro = PocoField is IPrimaryPocoField pF && pF.FieldAccess is PocoFieldAccessKind.MutableReference or PocoFieldAccessKind.IsByRef;
             if( ro ) w.Append( "readonly " );
             w.AppendIdentifier( PocoField.Name );
-            bool optField = IsNullable && !HasNonNullDefault;
-            if( optField ) w.Append( "?" );
-            w.Append( ": " ).AppendTypeName( optField ? TSFieldType.NonNullable : TSFieldType );
-            if( HasNonNullDefault )
+            bool optional = IsNullable && !HasNonNullDefault;
+            if( optional ) w.Append( "?" );
+            w.Append( ": " ).AppendTypeName( optional ? TSFieldType.NonNullable : TSFieldType );
+            if( withDefault && HasNonNullDefault )
             {
                 w.Append( " = " );
                 WriteDefaultValue( w );

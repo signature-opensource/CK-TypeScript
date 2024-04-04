@@ -138,26 +138,65 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( """import { CommandTwo } from "../Commands/CrisLike/CMDCommandTwo";""" );
 
             tOne.Should().Contain( "export class CommandOne implements ICommand {" )
-                     .And.Contain( """public name: String = "",""" )
-                     .And.Contain( """public power: Power = Power.None,""" )
-                     .And.Contain( """public readonly friend: CommandTwo = new CommandTwo()""" );
+                     .And.Contain( """
+                     public constructor()
+                     public constructor(
+                     name: String,
+                     power: Power,
+                     friend: CommandTwo)
+                     constructor(
+                     name?: String,
+                     power?: Power,
+                     friend?: CommandTwo)
+                     {
+                     this.name = name ?? "";
+                     this.power = power ?? Power.None;
+                     this.friend = friend ?? new CommandTwo();
+                     }
+                     """ );
 
 
             var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) );
             tTwo.Should().Contain( """import { Power } from "../../TheFolder/Power";""" )
-                     .And.Contain( """import { CommandThree, CommandOne } from "../../TheFolder/CMDCommandOne";""" )
+                     .And.Contain( """import { CommandOne, CommandThree } from "../../TheFolder/CMDCommandOne";""" )
                      .And.Contain( """import { ICommandModel, ICommand } from "../../CK/Cris/Model";""" );
 
             tTwo.Should().Contain( "export class CommandTwo implements ICommand {" )
-                     .And.Contain( "public age: Number = 0," )
-                     .And.Contain( "public anotherPower: Power = Power.None," )
-                     .And.Contain( "public friendThree: CommandThree = new CommandThree()," )
-                     .And.Contain( "public anotherFriend?: CommandOne");
+                     .And.Contain( """
+                    public constructor()
+                    public constructor(
+                    age: Number,
+                    anotherPower: Power,
+                    anotherFriend: CommandOne|undefined,
+                    friendThree: CommandThree)
+                    constructor(
+                    age?: Number,
+                    anotherPower?: Power,
+                    anotherFriend?: CommandOne,
+                    friendThree?: CommandThree)
+                    {
+                    this.age = age ?? 0;
+                    this.anotherPower = anotherPower ?? Power.None;
+                    this.anotherFriend = anotherFriend;
+                    this.friendThree = friendThree ?? new CommandThree();
+                    }
+                    """ );
 
             var tFour = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandFour.ts" ) );
             tFour.Should().Contain( "export class CommandFour implements ICommand {" )
-                     .And.Contain( "public readonly data: RecordData = new RecordData()," )
-                     .And.Contain( "public uniqueId?: Guid" );
+                     .And.Contain( """
+                    public constructor()
+                    public constructor(
+                    uniqueId: Guid|undefined,
+                    data: RecordData)
+                    constructor(
+                    uniqueId?: Guid,
+                    data?: RecordData)
+                    {
+                    this.uniqueId = uniqueId;
+                    this.data = data ?? new RecordData();
+                    }
+                    """ );
 
             var tRecord = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/RecordData.ts" ) );
             tRecord.Should().Be( """
@@ -244,10 +283,19 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 import { ICommandAbs } from "./ICommandAbs";
                 """ );
             tS.Should().Contain( "export class StringCommand implements ICommand, ICommandAbs {" )
-                    .And.Contain( "public key: String = \"\"," )
-                    .And.Contain( "public readonly keyList: Array<String> = []," )
-                    .And.Contain( "public readonly keySet: Set<String> = new Set<String>()," )
-                    .And.Contain( "public readonly keyDictionary: Map<String,String> = new Map<String,String>()" );
+                    .And.Contain( """
+                constructor(
+                key?: String,
+                keyList?: Array<String>,
+                keySet?: Set<String>,
+                keyDictionary?: Map<String,String>)
+                {
+                this.key = key ?? "";
+                this.keyList = keyList ?? [];
+                this.keySet = keySet ?? new Set<String>();
+                this.keyDictionary = keyDictionary ?? new Map<String,String>();
+                }
+                """ );
 
             var tC = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/CommandCommand.ts" ) );
             tC.Should().StartWith( """
@@ -256,10 +304,19 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 import { ExtendedCultureInfo } from "../../../../Core/ExtendedCultureInfo";
                 """ );
             tC.Should().Contain( "export class CommandCommand implements ICommand, ICommandAbsWithNullableKey {" )
-                    .And.Contain( "public readonly keyList: Array<ICommand> = []," )
-                    .And.Contain( "public readonly keySet: Set<ExtendedCultureInfo> = new Set<ExtendedCultureInfo>()," )
-                    .And.Contain( "public readonly keyDictionary: Map<String,ICommand> = new Map<String,ICommand>()" )
-                    .And.Contain( "public key?: ICommand" );
+                    .And.Contain( """
+                constructor(
+                key?: ICommand,
+                keyList?: Array<ICommand>,
+                keySet?: Set<ExtendedCultureInfo>,
+                keyDictionary?: Map<String,ICommand>)
+                {
+                this.key = key;
+                this.keyList = keyList ?? [];
+                this.keySet = keySet ?? new Set<ExtendedCultureInfo>();
+                this.keyDictionary = keyDictionary ?? new Map<String,ICommand>();
+                }
+                """ );
 
         }
     }

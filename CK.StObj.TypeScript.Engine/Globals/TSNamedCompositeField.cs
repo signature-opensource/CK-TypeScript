@@ -10,10 +10,9 @@ using System.Xml.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Expose Poco fields that will appear in the constructor, allowing them to be skipped
-    /// and/or to alter its documentation.
+    /// Expose Poco fields that will appear in the constructor, allowing to alter its documentation.
     /// <para>
-    /// This is wrapper around the <see cref="TSField"/> value that adds mutable <see cref="ConstructorSkip"/>,
+    /// This is wrapper around the <see cref="TSField"/> value that adds mutable 
     /// <see cref="DocElements"/> and <see cref="DocumentationExtension"/> properties.
     /// </para>
     /// </summary>
@@ -22,7 +21,6 @@ namespace CK.Setup
         readonly TSField _f;
         IEnumerable<XElement> _docs;
         Action<DocumentationBuilder>? _documentationExtension;
-        bool _constrctorSkip;
 
         internal TSNamedCompositeField( TSField f )
         {
@@ -61,20 +59,15 @@ namespace CK.Setup
             set => _documentationExtension = value;
         }
 
-        /// <summary>
-        /// Gets or sets whether this field must be skipped from being written in the
-        /// constructor parameters. When a field is skipped here, it must be manually
-        /// initialized in the <see cref="GeneratingPrimaryPocoEventArgs.BodyPart"/>.
-        /// </summary>
-        public bool ConstructorSkip
+
+        internal void WriteCtorFieldDefinition( ITSCodeWriter w )
         {
-            get => _constrctorSkip;
-            set => _constrctorSkip = value;
+            _f.WriteFieldDefinition( w, true, _docs, _documentationExtension );
         }
 
-        internal void WriteCtorFieldDefinition( TypeScriptFile file, ITSCodeWriter w )
+        internal void WriteFieldDefinition( ITSCodeWriter w )
         {
-            _f.WriteCtorFieldDefinition( file, w, _docs, _documentationExtension );
+            _f.WriteFieldDefinition( w, false, _docs, _documentationExtension );
         }
 
     }

@@ -86,12 +86,12 @@ describe('Command serialization', () => {
         new Guid("d0acf1b1-4675-4a23-af51-3c834d910f3d"),
         DateTime.utc(2024,3,6,13,26,12,854),
         Duration.fromMillis(3712),
-        new Decimal( "79228162514264337593543950335" ),
-        new SimpleUserMessage(UserMessageLevel.Info,"Hello!") );
+        new SimpleUserMessage(UserMessageLevel.Info,"Hello!"),
+        new Decimal( "79228162514264337593543950335" ) );
 
       const json = CTSType.toTypedJson( c );
       const s = JSON.stringify(json);
-      expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"long":"9999","uLong":"-87878","bigInteger":"99999999","guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","decimal":"79228162514264337593543950335","simpleUserMessage":[4,"Hello!",0]}]' );
+      expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"long":"9999","uLong":"-87878","bigInteger":"99999999","guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","simpleUserMessage":[4,"Hello!",0],"decimal":"79228162514264337593543950335"}]' );
       const raw = JSON.parse(s);
       const back = CTSType.fromTypedJson( raw );
       expect( back ).toStrictEqual( c );
@@ -135,19 +135,19 @@ describe('Command serialization', () => {
       const c = new CommandCommand();
       expect( c.key ).toBeUndefined();
       const json1 = CTSType.stringify( c );
-      expect(json1).toEqual('["CK.StObj.TypeScript.Tests.CrisLike.ICommandCommand",{"keyList":[],"keySet":[],"keyDictionary":{},"key":null}]');
+      expect(json1).toEqual('["CK.StObj.TypeScript.Tests.CrisLike.ICommandCommand",{"key":null,"keyList":[],"keySet":[],"keyDictionary":{}}]');
       const back1 = CTSType.parse( json1 );
       expect( back1 ).toStrictEqual( c );
 
       c.key = new SomeCommand(new Guid("...guid..."), 3712 );
       const json2 = CTSType.stringify( c );
-      expect(json2).toEqual('["CK.StObj.TypeScript.Tests.CrisLike.ICommandCommand",{"keyList":[],"keySet":[],"keyDictionary":{},"key":["CK.StObj.TypeScript.Tests.CrisLike.ISomeCommand",{"actionId":"...guid...","actorId":3712}]}]');
+      expect(json2).toEqual('["CK.StObj.TypeScript.Tests.CrisLike.ICommandCommand",{"key":["CK.StObj.TypeScript.Tests.CrisLike.ISomeCommand",{"actionId":"...guid...","actorId":3712}],"keyList":[],"keySet":[],"keyDictionary":{}}]');
       const back2 = CTSType.parse( json2 );
       expect( back2 ).toStrictEqual( c );
 
       c.keyList.push( c.key, new SimplestCommand(), new SimpleCommand("do!") );
       const json3 = CTSType.stringify( c );
-      expect(json3).toEqual('["CK.StObj.TypeScript.Tests.CrisLike.ICommandCommand",{"keyList":[["CK.StObj.TypeScript.Tests.CrisLike.ISomeCommand",{"actionId":"...guid...","actorId":3712}],["CK.StObj.TypeScript.Tests.CrisLike.ISimplestCommand",{}],["CK.StObj.TypeScript.Tests.CrisLike.ISimpleCommand",{"action":"do!"}]],"keySet":[],"keyDictionary":{},"key":["CK.StObj.TypeScript.Tests.CrisLike.ISomeCommand",{"actionId":"...guid...","actorId":3712}]}]');
+      expect(json3).toEqual('["CK.StObj.TypeScript.Tests.CrisLike.ICommandCommand",{"key":["CK.StObj.TypeScript.Tests.CrisLike.ISomeCommand",{"actionId":"...guid...","actorId":3712}],"keyList":[["CK.StObj.TypeScript.Tests.CrisLike.ISomeCommand",{"actionId":"...guid...","actorId":3712}],["CK.StObj.TypeScript.Tests.CrisLike.ISimplestCommand",{}],["CK.StObj.TypeScript.Tests.CrisLike.ISimpleCommand",{"action":"do!"}]],"keySet":[],"keyDictionary":{}}]');
       const back3 = CTSType.parse( json3 );
       expect( back3 ).toStrictEqual( c );
 
