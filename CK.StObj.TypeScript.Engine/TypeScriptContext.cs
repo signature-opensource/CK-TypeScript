@@ -325,7 +325,8 @@ namespace CK.Setup
                                                                                      out var typeScriptVersion,
                                                                                      out var jestVersion,
                                                                                      out var tsJestVersion,
-                                                                                     out var typesJestVersion )
+                                                                                     out var typesJestVersion,
+                                                                                     out var typesNodeVersion )
                                         && BinPathConfiguration.EnsureTestSupport )
                                     {
                                         // If we must ensure test support, we consider that as soon as a "test" script is available
@@ -338,7 +339,7 @@ namespace CK.Setup
                                         }
                                         else
                                         {
-                                            // Note: Only the "typescript" package has a version here. We may 
+                                            // Note: Only the "typescript" package has a version here. 
                                             success &= EnsureJestTestSupport( monitor,
                                                                               targetProjectPath,
                                                                               projectJsonPath,
@@ -347,7 +348,8 @@ namespace CK.Setup
                                                                               yarnPath.Value,
                                                                               jestVersion,
                                                                               tsJestVersion,
-                                                                              typesJestVersion );
+                                                                              typesJestVersion,
+                                                                              typesNodeVersion );
                                         }
                                     }
                                 }
@@ -436,7 +438,8 @@ namespace CK.Setup
                                            NormalizedPath yarnPath,
                                            string? jestVersion,
                                            string? tsJestVersion,
-                                           string? typesJestVersion )
+                                           string? typesJestVersion,
+                                           string typesNodeVersion )
         {
             bool success = true;
             using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )
@@ -446,6 +449,7 @@ namespace CK.Setup
                 Add( ref a, ref i, "jest", jestVersion, null );
                 Add( ref a, ref i, "ts-jest", tsJestVersion, null );
                 Add( ref a, ref i, "@types/jest", typesJestVersion, null );
+                Add( ref a, ref i, "@types/node", typesNodeVersion, null );
 
                 static void Add( ref string a, ref string i, string name, string? currentVersion, string? version )
                 {

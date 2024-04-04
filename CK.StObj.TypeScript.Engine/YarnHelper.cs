@@ -412,7 +412,8 @@ namespace CK.Setup
                                                             out string? typeScriptVersion,
                                                             out string? jestVersion,
                                                             out string? tsJestVersion,
-                                                            out string? typesJestVersion )
+                                                            out string? typesJestVersion,
+                                                            out string? typesNodeVersion )
         {
             Throw.DebugAssert( projectJsonPath.LastPart == "package.json" );
             testScriptCommand = null;
@@ -420,6 +421,7 @@ namespace CK.Setup
             jestVersion = null;
             tsJestVersion = null;
             typesJestVersion = null;
+            typesNodeVersion = null;
 
             if( packageJson == null )
             {
@@ -441,6 +443,7 @@ namespace CK.Setup
                 jestVersion = devDependencies["jest"]?.ToString();
                 tsJestVersion = devDependencies["ts-jest"]?.ToString();
                 typesJestVersion = devDependencies["@types/jest"]?.ToString();
+                typesNodeVersion = devDependencies["@types/node"]?.ToString();
             }
             return !modified || SavePackageJsonFile( monitor, projectJsonPath, packageJson );
 
