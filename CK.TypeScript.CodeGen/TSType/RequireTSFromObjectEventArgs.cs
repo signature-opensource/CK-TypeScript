@@ -1,5 +1,4 @@
 using CK.Core;
-using System;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -9,14 +8,12 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public sealed class RequireTSFromObjectEventArgs : EventMonitoredArgs
     {
-        readonly TSTypeManager _tsTypes;
         readonly object _keyType;
         ITSType? _resolved;
 
-        internal RequireTSFromObjectEventArgs( IActivityMonitor monitor, TSTypeManager tSTypes, object keyType )
+        internal RequireTSFromObjectEventArgs( IActivityMonitor monitor, object keyType )
             : base( monitor )
         {
-            _tsTypes = tSTypes;
             _keyType = keyType;
         }
 

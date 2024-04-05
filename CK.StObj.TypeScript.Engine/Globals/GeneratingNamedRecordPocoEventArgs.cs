@@ -11,7 +11,7 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Raised by <see cref="TypeScriptContext.RaiseGeneratingNamedRecord"/>.
+    /// Raised by <see cref="PocoCodeGenerator.NamedRecordPocoGenerating"/>.
     /// This event enable participants to alter the TypeScript Poco code.
     /// </summary>
     public sealed class GeneratingNamedRecordPocoEventArgs : EventMonitoredArgs

@@ -113,7 +113,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Appends a <see cref="ITSType.TypeName"/> (or <see cref="ITSType.OptionalTypeName"/>) with
-        /// its <see cref="ITSType.RequiredImports"/>.
+        /// its required imports (calls <see cref="ITSType.EnsureRequiredImports(ITSFileImportSection)"/>).
         /// </summary>
         /// <typeparam name="T">The code writer type.</typeparam>
         /// <param name="this">This code writer.</param>

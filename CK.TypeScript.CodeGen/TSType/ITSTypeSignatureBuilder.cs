@@ -24,7 +24,7 @@ namespace CK.TypeScript.CodeGen
         bool BuiltDone { get; }
 
         /// <summary>
-        /// Gets the part (a <see cref="ITSCodeWriter"/>) to use to build the <see cref="TSBasicType.TypeName"/>.
+        /// Gets the part (a <see cref="ITSCodeWriter"/>) to use to build the <see cref="ITSType.TypeName"/>.
         /// </summary>
         ITSCodePart TypeName { get; }
 

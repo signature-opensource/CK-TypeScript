@@ -69,7 +69,7 @@ namespace CK
         /// <summary>
         /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
         /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup and scripts "test" command is
-        /// available: <see cref="RunTypeScriptTest(Testing.IStObjEngineTestHelper, NormalizedPath)"/> can be called.
+        /// available: GenerateTypeScript methods can be called with it.
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
@@ -170,7 +170,7 @@ namespace CK
 
         /// <summary>
         /// Helper that runs a <see cref="StObjEngine"/> with a <see cref="ConfigureTypeScript(Testing.IStObjEngineTestHelper, StObjEngineConfiguration?, NormalizedPath, Type[])"/>
-        /// configuration. TypeScript "/ck-gen" folder with the provided <paramref name="tsTypes"/> is generated (whether TypeScript tooling
+        /// configuration. TypeScript "/ck-gen" folder with the provided <paramref name="types"/> is generated (whether TypeScript tooling
         /// is setup or run depends on the <paramref name="targetProjectPath"/>.
         /// </summary>
         /// <param name="helper">This helper.</param>
@@ -207,7 +207,7 @@ namespace CK
         }
 
         /// <summary>
-        /// Disposable running test created by <see cref="CreateTypeScriptRunner(Testing.IStObjEngineTestHelper, NormalizedPath, Dictionary{string, string}?)"/>.
+        /// Disposable running test created by <see cref="CreateTypeScriptRunner(Testing.IStObjEngineTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/>.
         /// </summary>
         public class TypeScriptRunner : IAsyncDisposable
         {
@@ -305,7 +305,7 @@ namespace CK
         /// runner.Run();
         /// </code>
         /// <para>
-        /// This 2-steps pattern enables to temporarily inserts a <see cref="CK.Testing.Suspendable.SuspendAsync(string)"/>
+        /// This 2-steps pattern enables to temporarily inserts a <see cref="CK.Testing.Monitoring.IMonitorTestHelperCore.SuspendAsync"/>
         /// before calling the <see cref="TypeScriptRunner.Run()"/> in order to be able to keep a running context alive while
         /// working on the TypeScript side (fixing, debugging, analyzing, etc.) TypeScript tests. 
         /// </para>
@@ -313,6 +313,7 @@ namespace CK
         /// <param name="this">This helper.</param>
         /// <param name="targetProjectPath">The target test path.</param>
         /// <param name="environmentVariables">Optional environment variables to set.</param>
+        /// <param name="command">Yarn command that will be executed.</param>
         public static TypeScriptRunner CreateTypeScriptRunner( this Testing.IStObjEngineTestHelper @this,
                                                                NormalizedPath targetProjectPath,
                                                                Dictionary<string, string>? environmentVariables = null,

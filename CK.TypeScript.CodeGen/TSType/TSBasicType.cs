@@ -7,7 +7,7 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// Default implementation of <see cref="ITSType"/> for basic types.
     /// <para>
-    /// This concrete class can be be used for TypeScript types that don't have an associated <see cref="File"/>: they have no code
+    /// This concrete class can be be used for TypeScript types that don't have an associated <see cref="TSType.File"/>: they have no code
     /// other than their TypeName and DefaultValueSource, they are simple signatures.
     /// </para>
     /// <para>
@@ -15,7 +15,7 @@ namespace CK.TypeScript.CodeGen
     /// in a <see cref="TypeScriptFile"/>).
     /// </para>
     /// <para>
-    /// It can be instantiated directly thanks to the public <see cref="TSBasicType(string,Action{ITSFileImportSection},string)"/> constructor
+    /// It can be instantiated directly thanks to the public constructor
     /// or a <see cref="ITSTypeSignatureBuilder"/> can be used for more complex cases.
     /// </para>
     /// </summary>

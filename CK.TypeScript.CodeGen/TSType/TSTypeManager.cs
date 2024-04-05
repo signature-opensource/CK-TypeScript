@@ -260,7 +260,7 @@ namespace CK.TypeScript.CodeGen
 
         ITSType ResolveTSTypeFromObject( IActivityMonitor monitor, object keyType )
         {
-            var e = new RequireTSFromObjectEventArgs( monitor, this, keyType );
+            var e = new RequireTSFromObjectEventArgs( monitor, keyType );
             TSFromObjectRequired?.Invoke( this, e );
             if( e.ResolvedType == null )
             {
@@ -282,7 +282,7 @@ namespace CK.TypeScript.CodeGen
             // Let's now register the RecTry Object: {[Record]CK.StObj.TypeScript.Tests.RecordTests.RecTry}
             // 	Same as the PrimaryPoco case, it is rerouted to its C# resolution:
             // 	    {Name = "RecTry" FullName = "CK.StObj.TypeScript.Tests.RecordTests+RecTry"}
-            // 	Type is in the Cache but here the DefaultValue kciks in... Even if the default value is simply $"new TypeName()", 
+            // 	Type is in the Cache but here the DefaultValue kicks in... Even if the default value is simply $"new TypeName()", 
             // 	to know IF there is a default (i.e. all fields have a defaults), one need to resolve the field types
             // 	and this can lead to an infinite recursion...
             // 	This resolution is slightly deferred by using the builder.DefaultValueSourceProvider: the Type will be registered in the cache
@@ -300,11 +300,6 @@ namespace CK.TypeScript.CodeGen
             // We have no other choice than to upsert it instead of adding it.
             _types[keyType] = e.ResolvedType;
             return e.ResolvedType;
-        }
-
-        internal void OnResolvedByMapping( object keyType, ITSType tsType )
-        {
-            _types.Add( keyType, tsType );
         }
 
         ITSType? ResolveTSTypeFromType( IActivityMonitor monitor, Type t, bool internalCall, ref HashSet<Type>? sameFolderDetector )

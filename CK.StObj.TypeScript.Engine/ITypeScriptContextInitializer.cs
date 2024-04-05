@@ -46,7 +46,7 @@ namespace CK.Setup
         /// <summary>
         /// Ensures that a type is registered. If the type is a registered <see cref="IPocoType"/> it
         /// must be in the <see cref="IPocoTypeSetManager.AllExchangeable"/> set to be considered
-        /// and added to the <see cref="PocoCodeGenerator.TypeScriptSet"/>.
+        /// and added to the <see cref="ITSPocoCodeGenerator.TypeScriptSet"/>.
         /// <list type="bullet">
         ///     <item>If it is not exchangeable and <paramref name="mustBePocoType"/> is true an error is logged and false is return.</item>
         ///     <item>
@@ -57,6 +57,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="t">The type that must be mapped in TypeScript.</param>
+        /// <param name="mustBePocoType">True if the type must be a Poco compliant type.</param>
         /// <param name="attributeConfigurator">Optional factory or updater of the associated <see cref="TypeScriptAttribute"/>.</param>
         /// <returns>
         /// True on success, false on error (when the type is a non exchangeable Poco type and <paramref name="mustBePocoType"/> is true).

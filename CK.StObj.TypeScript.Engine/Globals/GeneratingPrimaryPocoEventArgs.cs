@@ -11,7 +11,7 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Raised by <see cref="TypeScriptContext.PrimaryPocoGenerating"/>.
+    /// Raised by <see cref="PocoCodeGenerator.PrimaryPocoGenerating"/>.
     /// This event enable participants to alter the TypeScript Poco code.
     /// </summary>
     public sealed class GeneratingPrimaryPocoEventArgs : EventMonitoredArgs
@@ -128,7 +128,7 @@ namespace CK.Setup
         public ITSCodePart CtorParametersPart => _ctorParametersPart;
 
         /// <summary>
-        /// Gets the constructor body part. It will be filled with <see cref="Fields"/> assignation (from <see cref="CtorImplementationParametersPart"/>)
+        /// Gets the constructor body part. It will be filled with <see cref="Fields"/> assignation (from <see cref="CtorParametersPart"/>)
         /// with the ?? field's default value when the field has a default value.
         /// </summary>
         public ITSCodePart CtorBodyPart => _ctorBodyPart;

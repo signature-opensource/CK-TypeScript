@@ -11,7 +11,8 @@ using System.Xml.Linq;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Helper to build documentation.
+    /// Helper to build documentation. This object is always available on <see cref="TypeScriptRoot.DocBuilder"/>
+    /// even if <see cref="GenerateDocumentation"/> is false.
     /// </summary>
     public sealed class DocumentationBuilder
     {

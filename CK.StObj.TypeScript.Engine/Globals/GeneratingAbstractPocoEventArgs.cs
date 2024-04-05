@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Raised by <see cref="TypeScriptContext.AbstractPocoGenerating"/>.
+    /// Raised by <see cref="PocoCodeGenerator.AbstractPocoGenerating"/>.
     /// This event enable participants to alter the TypeScript Poco code.
     /// </summary>
     public sealed class GeneratingAbstractPocoEventArgs : EventMonitoredArgs

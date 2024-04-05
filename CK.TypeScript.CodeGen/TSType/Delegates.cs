@@ -4,10 +4,9 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// A code generator function is in charge of generating the TypeScript implementation
-    /// of a <see cref="ITSFileCSharpType"/> by calling <see cref="ITSFileCSharpType.EnsureTypePart(string, bool)"/>
-    /// and append the code into the <see cref="ITSKeyedCodePart"/>.
+    /// of a <see cref="ITSFileCSharpType"/>.
     /// <para>
-    /// The generator function has access to the <see cref="ITSFileCSharpType.File"/> that hosts the code
+    /// The generator function has access to the <see cref="ITSFileType.File"/> that hosts the code
     /// (with its <see cref="TypeScriptFile.Imports"/> section) and to the whole generation context
     /// thanks to <see cref="TypeScriptFile.Root"/>.
     /// </para>
@@ -27,12 +26,11 @@ namespace CK.TypeScript.CodeGen
     public delegate bool TSValueWriter( ITSCodeWriter writer, ITSFileCSharpType type, object value );
 
     /// <summary>
-    /// A deferred function to compute the <see cref="ITSType.GetDefaultValueSource(IActivityMonitor)"/>.
+    /// A deferred function to compute the <see cref="ITSType.DefaultValueSource"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The <see cref="ITSType"/> for which the code must be generated.</param>
-    /// <param name="value">The value to write.</param>
-    /// <returns>True if the type can write the value, false otherwise.</returns>
+    /// <returns>The default TypeScript value or null on error.</returns>
     public delegate string? DefaultValueSourceProvider( IActivityMonitor monitor, ITSFileCSharpType type );
 
 }

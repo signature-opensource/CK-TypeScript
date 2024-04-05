@@ -73,8 +73,8 @@ namespace CK.Setup
         bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder );
 
         /// <summary>
-        /// Can call <see cref="RequireTSFromObjectEventArgs.SetResolvedType(ITSType)"/> or <see cref="RequireTSFromObjectEventArgs.ResolveByMapping(IActivityMonitor, object, bool?)"/>
-        /// if the <see cref="RequireTSFromObjectEventArgs.KeyType"/> is handled by this generator.
+        /// Can call <see cref="RequireTSFromObjectEventArgs.SetResolvedType(ITSType)"/> if the <see cref="RequireTSFromObjectEventArgs.KeyType"/>
+        /// is handled by this generator.
         /// <para>
         /// Note that this method may be called after the single call to <see cref="StartCodeGeneration"/> because other generators
         /// can call <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/>.

@@ -14,7 +14,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
-        /// and can be automatically installed. See <see cref="AutoInstallYarnPath"/>.
+        /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
         /// </summary>
         public const string AutomaticYarnVersion = "4.0.2";
 
@@ -88,6 +88,7 @@ namespace CK.Setup
         /// <para>
         /// If "<see cref="TargetProjectPath"/>/.vscode" folder or "<see cref="TargetProjectPath"/>/.yarn/sdks" is missing,
         /// the commands "add --dev @yarnpkg/sdks" and "sdks vscode" are executed.
+        /// </para>
         /// <para>
         /// This installs the package locally instead of "yarn dlx @yarnpkg/sdks vscode" that does a one-shot install from a temporary
         /// folder: when using zero-install, the vscode support is available directly.
@@ -117,7 +118,7 @@ namespace CK.Setup
         public bool GitIgnoreCKGenFolder { get; set; }
 
         /// <summary>
-        /// Gets a list of optional barrel paths that are relative to the <see cref="OutputPath"/>.
+        /// Gets a list of optional barrel paths that are relative to the "<see cref="TargetProjectPath"/>/ck-gen" folder.
         /// An index.ts file will be generated in each of these folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
         /// <para>
         /// A barrel is systematically generated at the root OutputPath level. This allows sub folders to also have barrels.

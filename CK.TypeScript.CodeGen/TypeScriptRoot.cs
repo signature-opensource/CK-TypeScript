@@ -10,9 +10,8 @@ namespace CK.TypeScript.CodeGen
     /// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
     /// <para>
     /// The <see cref="TSTypes"/> maps C# types to <see cref="ITSType"/>. Types can be registered directly or
-    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, Type)"/> that raises <see cref="TSTypeManager.TSFromTypeRequired"/>
-    /// event and registers <see cref="ITSFileCSharpType"/> that must eventually be generated when <see cref="GenerateCode(IActivityMonitor)"/>
-    /// is called.
+    /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/> that raises a <see cref="TSTypeManager.TSFromTypeRequired"/>
+    /// or <see cref="TSTypeManager.TSFromObjectRequired"/> event.
     /// </para>
     /// <para>
     /// Once code generation succeeds, <see cref="Save"/> can be called.
@@ -216,14 +215,13 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling
-        /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> on all <see cref="ITSFileCSharpType"/>.
+        /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling the deferred implementors
+        /// on types.
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
 
         /// <summary>
-        /// Raised after the <see cref="TSGeneratedTypeBuilder.Implementor"/> have run on all
-        /// types to implement.
+        /// Raised after the deferred implementors have run on all types to implement.
         /// </summary>
         public event EventHandler<AfterCodeGenerationEventArgs>? AfterCodeGeneration;
 
@@ -239,7 +237,7 @@ namespace CK.TypeScript.CodeGen
             }
 
             /// <summary>
-            /// Gets the <see cref="ITSFileCSharpType"/> that has no <see cref="ITSFileCSharpType.TypePart"/>
+            /// Gets the <see cref="ITSFileCSharpType"/> that has no <see cref="ITSFileType.TypePart"/>
             /// in their file and must be handled.
             /// </summary>
             public IReadOnlyList<ITSFileCSharpType> RequiredTypes { get; }
@@ -247,7 +245,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Raises the <see cref="BeforeCodeGeneration"/> event, generates the code by calling all
-        /// the <see cref="TSGeneratedTypeBuilder.Implementor"/> and if no error has been logged,
+        /// the deferred implementors on <see cref="ITSFileCSharpType"/> and if no error has been logged,
         /// raises the <see cref="AfterCodeGeneration"/> event.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -301,8 +299,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <remarks>
         /// This is better not to use this directly: hiding this shared storage behind extension methods
-        /// like <see cref="TSCodeWriterDocumentationExtensions.AppendDocumentation{T}(T, IActivityMonitor, System.Reflection.MemberInfo)"/> should
-        /// be done.
+        /// is recommended.
         /// </remarks>
         public IDictionary<object, object?> Memory => _memory ??= new Dictionary<object, object?>();
 

@@ -22,29 +22,63 @@ namespace CK.TypeScript.CodeGen
             readonly string _typeName;
             readonly string _optionalTypeName;
 
+            /// <summary>
+            /// Initialize the null type of a non nullable type.
+            /// </summary>
+            /// <param name="nonNullable"></param>
             public Null( ITSType nonNullable )
             {
+                Throw.CheckNotNullArgument( nonNullable );
+                Throw.CheckArgument( !nonNullable.IsNullable );
                 _nonNullable = nonNullable;
                 _typeName = nonNullable.TypeName + "|undefined";
                 _optionalTypeName = nonNullable.TypeName + "?";
             }
 
+            /// <summary>
+            /// Gets the <see cref="NonNullable"/> type name with "|undefined" suffix.
+            /// </summary>
             public string TypeName => _typeName;
 
+            /// <summary>
+            /// Gets the <see cref="NonNullable"/> type name with "?" suffix.
+            /// </summary>
             public string OptionalTypeName => _optionalTypeName;
 
+            /// <summary>
+            /// Always true.
+            /// </summary>
             public bool IsNullable => true;
 
+            /// <summary>
+            /// Always "undefined".
+            /// </summary>
             public string? DefaultValueSource => "undefined";
 
+            /// <summary>
+            /// Relays to <see cref="NonNullable"/>'s EnsureRequiredImports.
+            /// </summary>
+            /// <param name="section">The target import section.</param>
             public void EnsureRequiredImports( ITSFileImportSection section ) => _nonNullable.EnsureRequiredImports( section );
 
+            /// <summary>
+            /// Gets this instance.
+            /// </summary>
             public ITSType Nullable => this;
 
+            /// <summary>
+            /// Gets the non nullable type.
+            /// </summary>
             public ITSType NonNullable => _nonNullable;
 
+            /// <summary>
+            /// Gets the negative of the <see cref="NonNullable"/> index.
+            /// </summary>
             public int Index => -_nonNullable.Index;
 
+            /// <summary>
+            /// Gets the <see cref="NonNullable"/>'s model.
+            /// </summary>
             public ITSCodePart? TSTypeModel => NonNullable.TSTypeModel;
 
             /// <summary>
@@ -53,6 +87,12 @@ namespace CK.TypeScript.CodeGen
             /// <returns>The <see cref="TypeName"/>.</returns>
             public override string ToString() => TypeName;
 
+            /// <summary>
+            /// If <paramref name="value"/> is null, writes "undefined", otherwise relays to the <see cref="NonNullable"/>'s TryWriteValue.
+            /// </summary>
+            /// <param name="writer">The target writer.</param>
+            /// <param name="value">The value to write.</param>
+            /// <returns>True if the value has been written, false otherwise.</returns>
             public bool TryWriteValue( ITSCodeWriter writer, object? value )
             {
                 if( value == null )
@@ -100,6 +140,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public virtual TypeScriptFile? File => null;
 
+        /// <inheritdoc />
         public int Index => _index;
 
         /// <inheritdoc />

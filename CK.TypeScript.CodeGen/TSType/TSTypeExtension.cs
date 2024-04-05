@@ -3,6 +3,9 @@ using CK.Core;
 
 namespace CK.TypeScript.CodeGen
 {
+    /// <summary>
+    /// Extends <see cref="TSType"/>.
+    /// </summary>
     public static class TSTypeExtension
     {
         /// <summary>

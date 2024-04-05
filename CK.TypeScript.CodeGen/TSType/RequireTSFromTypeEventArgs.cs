@@ -33,7 +33,7 @@ namespace CK.TypeScript.CodeGen
         ITSType? _resolved;
         bool _hasError;
 
-        public RequireTSFromTypeEventArgs( IActivityMonitor monitor, Type type, string defaultTypeName )
+        internal RequireTSFromTypeEventArgs( IActivityMonitor monitor, Type type, string defaultTypeName )
             : base( monitor )
         {
             Throw.CheckNotNullArgument( type );
@@ -260,8 +260,8 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets or sets the type name to use for this type.
-        /// This takes precedence over the <see cref="ExternalNameAttribute"/> that itself
-        /// takes precedence over the <see cref="MemberInfo.Name"/> of the type.
+        /// This takes precedence over any CK.Core.ExternalNameAttribute that itself
+        /// takes precedence over the <see cref="System.Reflection.MemberInfo.Name"/> of the type.
         /// <para>
         /// When let or set to null, the C# type name is used.
         /// When set to a non null string, it must not be empty or white space.
@@ -319,6 +319,7 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
+        /// <summary>
         /// Gets or sets a function that can implement <see cref="ITSType.TryWriteValue(ITSCodeWriter, object)"/>
         /// if a value of the generated type corresponds can be expressed as a TypeScript construct.
         /// </summary>

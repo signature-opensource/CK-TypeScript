@@ -78,7 +78,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Appends the documentation of a type, method, property, event or constructor if <see cref="TypeScriptRoot.GenerateDocumentation"/> is true.
+        /// Appends the documentation of a type, method, property, event or constructor.
         /// See <see cref="DocumentationBuilder.AppendDocumentation(TypeScriptFile, IEnumerable{XElement})"/>.
         /// </summary>
         /// <typeparam name="T">Actual type of the code writer.</typeparam>
