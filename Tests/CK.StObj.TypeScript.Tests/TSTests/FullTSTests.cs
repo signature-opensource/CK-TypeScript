@@ -175,10 +175,12 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                 typeof( ITestSerializationCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetResults only as Poco type: it is the FakeTypeScriptCrisCommandGeneratorImpl
-                                           // that ensures that they belong to the TypeScriptSet.
+                                           // Registers IAspNetXXX and IAmbientValues only as Poco type: it is the
+                                           // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
+                                           // the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
+                                                                                    typeof( IAmbientValues ),
                                                                                     typeof( CommonPocoJsonSupport ),
                                                                                     typeof( FakeTypeScriptCrisCommandGenerator ) } ),
                                            tsTypes,

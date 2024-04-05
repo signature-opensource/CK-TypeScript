@@ -31,7 +31,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             _command = null;
 
             return initializer.EnsureRegister( monitor, typeof( IAspNetCrisResult ), mustBePocoType: true )
-                   && initializer.EnsureRegister( monitor, typeof( IAspNetCrisResultError ), mustBePocoType: true );
+                   && initializer.EnsureRegister( monitor, typeof( IAspNetCrisResultError ), mustBePocoType: true )
+                   && initializer.EnsureRegister( monitor, typeof( IAmbientValues ), mustBePocoType: true );
         }
 
         public virtual bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
@@ -144,8 +145,13 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             {
                 _modelFile = context.Root.Root.FindOrCreateFile( "CK/Cris/Model.ts" );
                 GenerateCrisModelFile( monitor, context, _modelFile );
+
                 //GenerateCrisEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "CrisEndpoint.ts" ) );
+                // Real GenerateCrisEndpoint needs to resolve the AmbientValues.
+                var tA = (ITSFileType)context.Root.TSTypes.ResolveTSType( monitor, typeof( IAmbientValues ) );
+                //
                 //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
+
                 _crisPoco = new TSBasicType( context.Root.TSTypes, "ICrisPoco", imports => imports.EnsureImport( _modelFile, "ICrisPoco" ), null );
                 _abstractCommand = new TSBasicType( context.Root.TSTypes, "IAbstractCommand", imports => imports.EnsureImport( _modelFile, "IAbstractCommand" ), null );
                 _command = new TSBasicType( context.Root.TSTypes, "ICommand", imports => imports.EnsureImport( _modelFile, "ICommand" ), null );

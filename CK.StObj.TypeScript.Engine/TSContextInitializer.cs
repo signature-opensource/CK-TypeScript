@@ -291,9 +291,16 @@ namespace CK.Setup
                     return true;
                 }
                 var pocoType = CheckPocoType( monitor, _allExchangeableSet, t, out bool isPocoType );
-                if( pocoType == null && isPocoType && mustBePocoType )
+                if( mustBePocoType && pocoType == null )
                 {
-                    monitor.Error( $"Poco type '{pocoType}' is not exchangeable. It cannot be registered." );
+                    if( isPocoType )
+                    {
+                        monitor.Error( $"Type '{t:C}' is a Poco but is not exchangeable. It cannot be registered in TypeScript." );
+                    }
+                    else
+                    {
+                        monitor.Error( $"Type '{t:C}' is not a registered Poco. It cannot be registered in TypeScript." );
+                    }
                     return false;
                 }
                 var attr = attributeConfigurator?.Invoke( null );

@@ -439,7 +439,7 @@ namespace CK.Setup
                                            string? jestVersion,
                                            string? tsJestVersion,
                                            string? typesJestVersion,
-                                           string typesNodeVersion )
+                                           string? typesNodeVersion )
         {
             bool success = true;
             using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )

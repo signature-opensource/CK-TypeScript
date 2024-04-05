@@ -15,7 +15,7 @@ namespace CK.CrisLike
         /// current <see cref="IAuthenticationInfo.UnsafeUser"/>.
         /// </summary>
         [AmbientValue]
-        int? ActorId { get; set; }
+        int ActorId { get; set; }
     }
 
 }

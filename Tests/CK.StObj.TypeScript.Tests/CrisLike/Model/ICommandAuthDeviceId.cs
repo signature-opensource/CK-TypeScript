@@ -15,6 +15,6 @@ namespace CK.CrisLike
         /// Gets or sets the device identifier.
         /// </summary>
         [AmbientValue]
-        string? DeviceId { get; set; }
+        string DeviceId { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,6 +19,6 @@ namespace CK.CrisLike
         /// The default <see cref="CrisAuthenticationService"/> validates this field against the current <see cref="IAuthenticationInfo.ActualUser"/>.
         /// </summary>
         [AmbientValue]
-        int? ActualActorId { get; set; }
+        int ActualActorId { get; set; }
     }
 }
