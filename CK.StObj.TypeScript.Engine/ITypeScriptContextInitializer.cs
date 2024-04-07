@@ -14,11 +14,6 @@ namespace CK.Setup
     public interface ITypeScriptContextInitializer
     {
         /// <summary>
-        /// Gets the current code generation context.
-        /// </summary>
-        ICodeGenerationContext CodeGenContext { get; }
-
-        /// <summary>
         /// Gets the set of exchangeable <see cref="IPocoType"/>.
         /// </summary>
         IPocoTypeSet AllExchangeableSet { get; }

@@ -30,6 +30,7 @@ namespace CK.Setup
         {
             Barrels = new HashSet<NormalizedPath>();
             Types = new List<TypeScriptTypeConfiguration>();
+            TypeFilterName = "TypeScript";
         }
 
         /// <summary>
@@ -50,6 +51,15 @@ namespace CK.Setup
         /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
         /// </summary>
         public List<TypeScriptTypeConfiguration> Types { get; }
+
+        /// <summary>
+        /// Gets or sets the name of this TypeScript configuration that is the <see cref="ExchangeableRuntimeFilter.Name"/>
+        /// of the exhangeable type set defined by this configuration.
+        /// <para>
+        /// Defaults to "TypeScript".
+        /// </para>
+        /// </summary>
+        public string TypeFilterName { get; set; }
 
         /// <summary>
         /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>".
@@ -147,6 +157,7 @@ namespace CK.Setup
                        .Elements( StObjEngineConfiguration.xType )
                        .Select( e => new TypeScriptTypeConfiguration( e ) )
                        .ToList();
+            TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
         }
 
         /// <summary>
@@ -159,6 +170,7 @@ namespace CK.Setup
                                  new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                                  new XElement( TypeScriptAspectConfiguration.xBarrels,
                                                Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrels, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ),
+                                 new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
                                  new XAttribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, AutomaticTypeScriptVersion ),
                                  SkipTypeScriptTooling
                                     ? new XAttribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling, true )

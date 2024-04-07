@@ -61,6 +61,11 @@ namespace CK.Setup
         public static readonly XName xAutomaticTypeScriptVersion = XNamespace.None + "AutomaticTypeScriptVersion";
 
         /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.TypeFilterName"/> attribute name.
+        /// </summary>
+        public static readonly XName xTypeFilterName = XNamespace.None + "TypeScript";
+
+        /// <summary>
         /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallYarn"/> attribute name.
         /// </summary>
         public static readonly XName xAutoInstallYarn = XNamespace.None + "AutoInstallYarn";
@@ -121,11 +126,17 @@ namespace CK.Setup
         public static readonly XName xBarrel = XNamespace.None + "Barrel";
 
         /// <summary>
+        /// The <see cref="TypeScriptAspectBinPathConfiguration.DeferFileSave"/> attribute name.
+        /// </summary>
+        public static readonly XName xDeferFileSave = XNamespace.None + "DeferFileSave";
+
+        /// <summary>
         /// Initializes a new default configuration.
         /// </summary>
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
+            DeferFileSave = true;
             LibraryVersions = new Dictionary<string, string>();
         }
 
@@ -137,6 +148,7 @@ namespace CK.Setup
         {
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Attribute( xGenerateDocumentation ) ?? true;
+            DeferFileSave = (bool?)e.Attribute( xDeferFileSave ) ?? true;
             LibraryVersions = e.Element( xLibraryVersions )?
                     .Elements( xLibrary )
                     .Select( e => (e.Attribute( StObjEngineConfiguration.xName )?.Value, e.Attribute( StObjEngineConfiguration.xVersion )?.Value) )
@@ -180,6 +192,9 @@ namespace CK.Setup
                         GenerateDocumentation == false
                             ? new XAttribute( xGenerateDocumentation, false )
                             : null,
+                        DeferFileSave == false
+                            ? new XAttribute( xDeferFileSave, false )
+                            : null,
                         LibraryVersions.Count > 0
                             ? new XElement( xLibraryVersions,
                                             LibraryVersions.Select( kv => new XElement( xLibrary,
@@ -201,6 +216,12 @@ namespace CK.Setup
         /// Defaults to true.
         /// </summary>
         public bool GenerateDocumentation { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the file system is updated once all code generation is done.
+        /// Defaults to true.
+        /// </summary>
+        public bool DeferFileSave { get; set; }
 
         /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.

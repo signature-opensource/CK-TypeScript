@@ -16,14 +16,23 @@ namespace CK.Setup
         readonly List<ITSCodeGenerator> _globals;
         readonly IPocoTypeSet _typeScriptExchangeableSet;
 
+        /// <summary>
+        /// Gets the types that have been explictely registered.
+        /// </summary>
         public IReadOnlyDictionary<Type, RegisteredType> RegisteredTypes => _registeredTypes;
 
+        /// <summary>
+        /// Gets the list of the global TypeScript generators.
+        /// </summary>
         public IReadOnlyList<ITSCodeGenerator> GlobalCodeGenerators => _globals;
 
+        /// <summary>
+        /// Gets the set of Poco compliant types that must be handled in TypeScript.
+        /// </summary>
         public IPocoTypeSet TypeScriptExchangeableSet => _typeScriptExchangeableSet;
 
         public static TSContextInitializer? Create( IActivityMonitor monitor,
-                                                    ICodeGenerationContext codeGenContext,
+                                                    IGeneratedBinPath genBinPath,
                                                     TypeScriptAspectConfiguration configuration,
                                                     TypeScriptAspectBinPathConfiguration binPathConfiguration,
                                                     IPocoTypeSet allExchangeableSet,
@@ -32,11 +41,10 @@ namespace CK.Setup
             if( BuildRegTypesFromConfiguration( monitor, binPathConfiguration, allExchangeableSet, out var regTypes )
                 && BuildRegTypesFromAttributesAndDiscoverGenerators( monitor,
                                                                      regTypes,
-                                                                     codeGenContext.CurrentRun.EngineMap.AllTypesAttributesCache.Values,
+                                                                     genBinPath.EngineMap.AllTypesAttributesCache.Values,
                                                                      allExchangeableSet,
                                                                      out var globals )
                 && InitializeGlobalGenerators( monitor,
-                                               codeGenContext,
                                                configuration,
                                                binPathConfiguration,
                                                globals,
@@ -235,7 +243,6 @@ namespace CK.Setup
 
         sealed class Initializer : ITypeScriptContextInitializer
         {
-            readonly ICodeGenerationContext _codeGenContext;
             readonly TypeScriptAspectConfiguration _configuration;
             readonly TypeScriptAspectBinPathConfiguration _binPathConfiguration;
             readonly IReadOnlyList<ITSCodeGenerator> _globals;
@@ -243,15 +250,13 @@ namespace CK.Setup
             readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
             readonly IPocoTypeSet _allExchangeableSet;
 
-            public Initializer( ICodeGenerationContext codeGenContext,
-                                TypeScriptAspectConfiguration configuration,
+            public Initializer( TypeScriptAspectConfiguration configuration,
                                 TypeScriptAspectBinPathConfiguration binPathConfiguration,
                                 IReadOnlyList<ITSCodeGenerator> globals,
                                 Dictionary<Type, RegisteredType> regTypes,
                                 IPocoJsonSerializationServiceEngine? jsonSerialization,
                                 IPocoTypeSet allExchangeableSet )
             {
-                _codeGenContext = codeGenContext;
                 _configuration = configuration;
                 _binPathConfiguration = binPathConfiguration;
                 _globals = globals;
@@ -259,8 +264,6 @@ namespace CK.Setup
                 _jsonSerialization = jsonSerialization;
                 _allExchangeableSet = allExchangeableSet;
             }
-
-            public ICodeGenerationContext CodeGenContext => _codeGenContext;
 
             public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
 
@@ -311,7 +314,6 @@ namespace CK.Setup
 
         // Step 3.
         static bool InitializeGlobalGenerators( IActivityMonitor monitor,
-                                                ICodeGenerationContext codeGenContext,
                                                 TypeScriptAspectConfiguration configuration,
                                                 TypeScriptAspectBinPathConfiguration binPathConfiguration,
                                                 List<ITSCodeGenerator> globals,
@@ -319,7 +321,7 @@ namespace CK.Setup
                                                 IPocoTypeSet allExchangeableSet,
                                                 IPocoJsonSerializationServiceEngine? jsonSerialization )
         {
-            var i = new Initializer( codeGenContext, configuration, binPathConfiguration, globals, regTypes, jsonSerialization, allExchangeableSet );
+            var i = new Initializer( configuration, binPathConfiguration, globals, regTypes, jsonSerialization, allExchangeableSet );
             return CallGlobalCodeGenerators( monitor, globals, i, null );
         }
 

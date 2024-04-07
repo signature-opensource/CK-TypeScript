@@ -11,11 +11,9 @@ using System.Text.Json.Nodes;
 namespace CK.Setup
 {
     /// <summary>
-    /// Central class that handles TypeScript generation in a <see cref="TypeScriptRoot"/> (the <see cref="Root"/>)
-    /// and <see cref="ICodeGenerationContext"/> (the <see cref="CodeContext"/>).
+    /// Central class that handles TypeScript generation in a <see cref="TypeScriptRoot"/> (the <see cref="Root"/>).
     /// <para>
-    /// This is instantiated and made available to the participants (<see cref="ITSCodeGenerator"/> and <see cref="ITSCodeGeneratorType"/>)
-    /// only if the configuration actually allows the TypeScript generation for this <see cref="CodeContext"/>.
+    /// This context is provided to the <see cref="ITSCodeGenerator"/> and <see cref="ITSCodeGeneratorType"/>.
     /// </para>
     /// </summary>
     public sealed class TypeScriptContext
