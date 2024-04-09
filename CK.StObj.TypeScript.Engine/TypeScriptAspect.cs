@@ -51,16 +51,9 @@ namespace CK.Setup
             return new CSCodeGenerationResult( isJsonHere ? nameof( WaitForJsonSerialization ) : nameof( WaitForLockedTypeSystem ) );
         }
 
-        CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystemBuilder typeSystemBuilder )
+        CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoTypeSystem typeSystem )
         {
-            if( !typeSystemBuilder.IsLocked )
-            {
-                return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
-            }
-            // Gets the type system by locking again the builder.
-            IPocoTypeSystem typeSystem = typeSystemBuilder.Lock( monitor );
-
-            using( monitor.OpenInfo( $"PocoTypeSystemBuilder is locked (without Json serialization): handling TypeScript generation." ) )
+            using( monitor.OpenInfo( $"PocoTypeSystem is available (without Json serialization): handling TypeScript generation." ) )
             {
                 return Run( monitor, c, typeSystem, null )
                         ? CSCodeGenerationResult.Success
@@ -68,14 +61,8 @@ namespace CK.Setup
             }
         }
 
-        CSCodeGenerationResult WaitForJsonSerialization( IActivityMonitor monitor, ICSCodeGenerationContext c )
+        CSCodeGenerationResult WaitForJsonSerialization( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoJsonSerializationServiceEngine jsonSerialization )
         {
-            var jsonSerialization = c.CurrentRun.ServiceContainer.GetService<IPocoJsonSerializationServiceEngine>();
-            if( jsonSerialization == null )
-            {
-                return new CSCodeGenerationResult( nameof( WaitForJsonSerialization ) );
-            }
-
             using( monitor.OpenInfo( $"IPocoJsonSerializationServiceEngine is available: handling TypeScript generation." ) )
             {
                 return Run( monitor, c, jsonSerialization.SerializableLayer.TypeSystem, jsonSerialization )
