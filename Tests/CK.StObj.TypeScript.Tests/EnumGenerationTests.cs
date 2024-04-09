@@ -62,7 +62,7 @@ namespace CK.StObj.TypeScript.Tests
                 var tsB2 = new TypeScriptAspectBinPathConfiguration
                 {
                     TargetProjectPath = output2,
-                    TypeFilterName = "B2Specific",
+                    TypeFilterName = "TypeScript-B2Specific",
                     SkipTypeScriptTooling = true
                 };
                 tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );

@@ -56,7 +56,10 @@ namespace CK.Setup
         /// Gets or sets the name of this TypeScript configuration that is the <see cref="ExchangeableRuntimeFilter.Name"/>
         /// of the exhangeable type set defined by this configuration.
         /// <para>
-        /// Defaults to "TypeScript".
+        /// This defaults to "TypeScript". Any other name MUST start with "TypeScript": this acts as a simple yet effective
+        /// filter to secure a endpoint that exchange Poco compliant types to/from TypeScript. Any endpoint that handles
+        /// exchange with an external javascript/TypeScript application MUST reject any ExchangeableRuntimeFilter whose name
+        /// is not or doesn't start with "TypeScript".
         /// </para>
         /// </summary>
         public string TypeFilterName { get; set; }

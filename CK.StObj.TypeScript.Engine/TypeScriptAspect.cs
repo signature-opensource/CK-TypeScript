@@ -1,14 +1,10 @@
 using CK.Core;
 using CK.Setup.PocoJson;
-using CK.TypeScript.CodeGen;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace CK.Setup
 {
@@ -187,31 +183,45 @@ namespace CK.Setup
                               "no <TypeScript TargetProjectPath=\"...\"></TypeScript> element found or empty TargetProjectPath." );
                 return true;
             }
-            // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the GeneratedBinPath.
-            // Here we check only inside one but this is acceptable.
-            var targetPath = configurations.GroupBy( c => c.TargetProjectPath.Path, StringComparer.OrdinalIgnoreCase );
-            if( targetPath.Count() != configurations.Count )
+            return CheckConfigurations( monitor, binPath, configurations );
+
+            static bool CheckConfigurations( IActivityMonitor monitor, IGeneratedBinPath binPath, IReadOnlyCollection<TypeScriptAspectBinPathConfiguration> configurations )
             {
-                foreach( var g in targetPath.Where( g => g.Count() > 1 ) )
+                bool success = true;
+                // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the GeneratedBinPath.
+                // Here we check only inside one but this is acceptable.
+                var targetPath = configurations.GroupBy( c => c.TargetProjectPath.Path, StringComparer.OrdinalIgnoreCase );
+                if( targetPath.Count() != configurations.Count )
                 {
-                    monitor.Error( $"TypeScript configuration with TargetProjectPath=\"{g.Key}\" appear more than once in BinPathConfiguration '{binPath.ConfigurationGroup.Names}'. " +
-                                   $"Each configuration must target a different output path." );
-                    return false;
+                    foreach( var g in targetPath.Where( g => g.Count() > 1 ) )
+                    {
+                        monitor.Error( $"TypeScript configuration with TargetProjectPath=\"{g.Key}\" appear more than once in BinPathConfiguration '{binPath.ConfigurationGroup.Names}'. " +
+                                       $"Each configuration must target a different output path." );
+                    }
+                    success = false;
                 }
-            }
-            // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
-            // must be clearly identified.
-            var filterNames = configurations.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
-            if( filterNames.Count() != configurations.Count )
-            {
-                foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
+                // This test is important: the TypeFilterName MUST be or start with "TypeScript".
+                var badNames = configurations.Where( c => !c.TypeFilterName.StartsWith( "TypeScript" ) );
+                if( badNames.Any() )
                 {
-                    monitor.Error( $"TypeScript configuration with TypeFilterName=\"{g.Key}\" appear more than once in BinPathConfiguration '{binPath.ConfigurationGroup.Names}'. " +
-                                   $"They must use different names as they identify different set of types for the serialization layer." );
-                    return false;
+                    monitor.Error( $"TypeScript configuration TypeFilterName MUST be or start with \"TypeScript\". " +
+                                   $"Following TypeFilterName are invalid: '{badNames.Select( c => c.TypeFilterName ).Concatenate( "', '" )}'." );
+                    success = false; ;
                 }
+                // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
+                // must be uniquely identified.
+                var filterNames = configurations.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
+                if( filterNames.Count() != configurations.Count )
+                {
+                    foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
+                    {
+                        monitor.Error( $"TypeScript configuration with TypeFilterName=\"{g.Key}\" appear more than once in BinPathConfiguration '{binPath.ConfigurationGroup.Names}'. " +
+                                       $"They must use different names as they identify different set of types for the serialization layer." );
+                    }
+                    success = false;
+                }
+                return success;
             }
-            return true;
         }
 
         bool IStObjEngineAspect.Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context )
