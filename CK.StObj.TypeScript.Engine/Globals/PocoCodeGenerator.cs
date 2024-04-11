@@ -94,12 +94,12 @@ namespace CK.StObj.TypeScript.Engine
                 var tsTypeManager = _typeScriptContext.Root.TSTypes;
 
                 // Regardless of the TypeScript set of types, blindly maps the nullable to their non nullable.
-                // We only handle non nullable types here.
+                // We only handle non nullable types afterwards.
                 if( t.IsNullable )
                 {
                     var mapped = tsTypeManager.ResolveTSType( monitor, t.NonNullable );
                     Throw.DebugAssert( !mapped.IsNullable );
-                    e.SetResolvedType( t.IsNullable ? mapped.Nullable : mapped );
+                    e.SetResolvedType( mapped.Nullable );
                     return true;
                 }
 
@@ -126,7 +126,7 @@ namespace CK.StObj.TypeScript.Engine
                     Throw.DebugAssert( !tMapped.IsNullable );
                     var mapped = tsTypeManager.ResolveTSType( monitor, tMapped );
                     Throw.DebugAssert( !mapped.IsNullable );
-                    e.SetResolvedType( t.IsNullable ? mapped.Nullable : mapped );
+                    e.SetResolvedType( mapped );
                     return true;
                 }
 

@@ -552,38 +552,33 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
-        internal List<ITSFileCSharpType>? GenerateCode( IActivityMonitor monitor )
+        // Use the monitor for success tracking. This returns the number of TSGeneratedType to generate.
+        internal int GenerateCode( IActivityMonitor monitor )
         {
-            List<ITSFileCSharpType>? required = null;
-            int current = 0;
-            while( current < _processList.Count )
+            foreach( var type in _processList )
             {
-                var type = _processList[current++];
                 if( type.HasError )
                 {
-                    // Use Error to trigger the caller GenerateCode failure but continue.
                     monitor.Error( $"Skipping TS code generation for '{type.TypeName}' that is on error." );
-                    continue;
                 }
-                var g = type._codeGenerator;
-                if( g == null )
+                else
                 {
-                    monitor.Warn( $"The type '{type.Type:C}' has no TypeScript implementor function." );
-                    required ??= new List<ITSFileCSharpType>();
-                    required.Add( type );
-                }
-                else if( !g( monitor, type ) )
-                {
-                    monitor.Error( $"TypeScript implementor for type '{type.Type:C}' failed." );
-                }
-                else if( type.TypePart == null )
-                {
-                    monitor.Warn( $"TypeScript implementor for type '{type.Type:C}' didn't create the TypePart." );
-                    required ??= new List<ITSFileCSharpType>();
-                    required.Add( type );
+                    var g = type._codeGenerator;
+                    if( g == null )
+                    {
+                        monitor.Error( $"The type '{type.Type:C}' has no TypeScript implementor function." );
+                    }
+                    else if( !g( monitor, type ) )
+                    {
+                        monitor.Error( $"TypeScript implementor for type '{type.Type:C}' failed." );
+                    }
+                    else if( type.TypePart == null )
+                    {
+                        monitor.Error( $"TypeScript implementor for type '{type.Type:C}' didn't create the TypePart." );
+                    }
                 }
             }
-            return required;
+            return _processList.Count;
         }
     }
 

@@ -221,27 +221,9 @@ namespace CK.TypeScript.CodeGen
         public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
 
         /// <summary>
-        /// Raised after the deferred implementors have run on all types to implement.
+        /// Raised after the deferred implementors have successfully run on all types to implement.
         /// </summary>
-        public event EventHandler<AfterCodeGenerationEventArgs>? AfterCodeGeneration;
-
-        /// <summary>
-        /// Event raised by <see cref="AfterCodeGeneration"/> event.
-        /// </summary>
-        public sealed class AfterCodeGenerationEventArgs : EventMonitoredArgs
-        {
-            internal AfterCodeGenerationEventArgs( IActivityMonitor monitor, IReadOnlyList<ITSFileCSharpType>? required )
-                : base( monitor )
-            {
-                RequiredTypes = required ?? Array.Empty<ITSFileCSharpType>();
-            }
-
-            /// <summary>
-            /// Gets the <see cref="ITSFileCSharpType"/> that has no <see cref="ITSFileType.TypePart"/>
-            /// in their file and must be handled.
-            /// </summary>
-            public IReadOnlyList<ITSFileCSharpType> RequiredTypes { get; }
-        }
+        public event EventHandler<EventMonitoredArgs>? AfterCodeGeneration;
 
         /// <summary>
         /// Raises the <see cref="BeforeCodeGeneration"/> event, generates the code by calling all
@@ -263,22 +245,16 @@ namespace CK.TypeScript.CodeGen
                     BeforeCodeGeneration?.Invoke( this, new EventMonitoredArgs( monitor ) );
                     if( success )
                     {
-                        var required = _tsTypes.GenerateCode( monitor );
+                        var count = _tsTypes.GenerateCode( monitor );
                         if( success )
                         {
-                            if( required == null )
+                            using( monitor.OpenInfo( $"All {count} TypeScript types that require an implementation files have been generated." ) )
                             {
-                                monitor.Info( "All TypeScript Types have been generated." );
+                                AfterCodeGeneration?.Invoke( this, new EventMonitoredArgs( monitor ) );
                             }
-                            else
-                            {
-                                
-                                monitor.Warn( $"{required.Count} TypeScript Types have not been generated." );
-                            }
-                            AfterCodeGeneration?.Invoke( this, new AfterCodeGenerationEventArgs( monitor, required ) );
                         }
                     }
-                    return true;
+                    return success;
                 }
                 catch( Exception ex )
                 {

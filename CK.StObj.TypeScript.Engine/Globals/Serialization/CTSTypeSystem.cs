@@ -61,11 +61,8 @@ namespace CK.Setup
             typeScriptContext.Root.AfterCodeGeneration += OnAfterCodeGeneration;
         }
 
-        void OnAfterCodeGeneration( object? sender, TypeScriptRoot.AfterCodeGenerationEventArgs e )
+        void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e )
         {
-            // Skip if some types failed to be resolved.
-            if( e.RequiredTypes.Any() ) return;
-
             foreach( var t in _jsonExhangeableNames.TypeSet.NonNullableTypes )
             {
                 if( t.Kind is PocoTypeKind.Basic or PocoTypeKind.Record or PocoTypeKind.PrimaryPoco )
