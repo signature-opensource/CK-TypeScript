@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen
     sealed class TSBigIntType : TSBasicType
     {
         public TSBigIntType( TSTypeManager typeManager )
-            : base( typeManager, "BigInt", null, "0n" )
+            : base( typeManager, "bigint", null, "0n" )
         {
         }
 

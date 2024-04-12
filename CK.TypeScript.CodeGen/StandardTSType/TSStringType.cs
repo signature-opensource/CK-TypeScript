@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen
     sealed class TSStringType : TSBasicType
     {
         public TSStringType( TSTypeManager typeManager )
-            : base( typeManager, "String", null, "''" )
+            : base( typeManager, "string", null, "''" )
         {
         }
 

@@ -45,13 +45,13 @@ namespace CK.Setup
             }
             else if( t.Type == typeof( TimeSpan ) )
             {
-                // We do what we can here. In a perfect world, toMillis() should return a BigInt instead
-                // of a Number. We simply add '0000' to "convert" into 10th of microseconds (100 nanoseconds).
+                // We do what we can here. In a perfect world, toMillis() should return a bigint instead
+                // of a number. We simply add '0000' to "convert" into 10th of microseconds (100 nanoseconds).
                 part.Append( "return o != null ? o.toMillis().toString()+'0000' : null;" );
             }
-            else if( t.Type == typeof( long ) || t.Type == typeof( ulong ) || t.Type == typeof( BigInteger ) || t.Type == typeof( long ) )
+            else if( t.Type == typeof( long ) || t.Type == typeof( ulong ) || t.Type == typeof( BigInteger ) )
             {
-                // These are mapped to BigInt and this primitive type has no toJson support.
+                // These are mapped to bigint and this primitive type has no toJson support.
                 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#use_within_json.
                 // The toString() method is fine for us.
                 part.Append( "return o != null ? o.toString() : null;" );

@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen
     sealed class TSNumberType : TSBasicType
     {
         public TSNumberType( TSTypeManager typeManager )
-            : base( typeManager, "Number", null, "0" )
+            : base( typeManager, "number", null, "0" )
         {
         }
 

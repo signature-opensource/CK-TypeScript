@@ -11,15 +11,15 @@ namespace CK.TypeScript.CodeGen
         /// String and booleans are always mapped to <see cref="ITSType"/> with a '' (empty string) and
         /// false default values.
         /// <para>
-        /// <see cref="decimal"/> is not yet supported. Best candidates seems to be https://github.com/MikeMcl/decimal.js-light/
-        /// or https://www.npmjs.com/package/decimal.js... This should be made configurable. We only need a correct toJson/parsing
-        /// support from them.
+        /// <see cref="decimal"/> is mapped to an external library that must export a 'Decimal' type.
+        /// This is driven by <see cref="TypeScriptRoot.DecimalLibraryName"/> that defaults to https://github.com/MikeMcl/decimal.js-light/
+        /// but https://www.npmjs.com/package/decimal.js ca also be used.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="withNumbers">When true, byte, sbyte, short, ushort, int and uint are mapped to Number with a 0 default.</param>
         /// <param name="withBigInts">When true, long, ulong, BigInteger are mapped to BigInt with a 0n default.</param>
-        /// <param name="withDecimal">Not implemented yet. Currently maps to BigInt.</param>
+        /// <param name="withDecimal">When true, decimal is mapped to the 'Decimal' type of <see cref="TypeScriptRoot.DecimalLibraryName"/>.</param>
         /// <param name="withLuxonTypes">When true, DateTime, DateTimeOffset and TimeSpan are mapped to Luxon's DatTime and Duration types.</param>
         public void RegisterStandardTypes( IActivityMonitor monitor,
                                            bool withNumbers = true,

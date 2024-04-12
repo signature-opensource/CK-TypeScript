@@ -139,11 +139,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( """
                      public constructor()
                      public constructor(
-                     name?: String,
+                     name?: string,
                      power?: Power,
                      friend?: CommandTwo)
                      constructor(
-                     name?: String,
+                     name?: string,
                      power?: Power,
                      friend?: CommandTwo)
                      {
@@ -163,12 +163,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                      .And.Contain( """
                     public constructor()
                     public constructor(
-                    age?: Number,
+                    age?: number,
                     anotherPower?: Power,
                     anotherFriend?: CommandOne,
                     friendThree?: CommandThree)
                     constructor(
-                    age?: Number,
+                    age?: number,
                     anotherPower?: Power,
                     anotherFriend?: CommandOne,
                     friendThree?: CommandThree)
@@ -206,11 +206,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 /**
                  * The data index.
                  **/
-                public index: Number = 0, 
+                public index: number = 0, 
                 /**
                  * A great name for the data.
                  **/
-                public superName: String = "")
+                public superName: string = "")
                 {
                 }
                 """.ReplaceLineEndings() );
@@ -286,15 +286,15 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             tS.Should().Contain( "export class StringCommand implements ICommand, ICommandAbs {" )
                     .And.Contain( """
                 constructor(
-                key?: String,
-                keyList?: Array<String>,
-                keySet?: Set<String>,
-                keyDictionary?: Map<String,String>)
+                key?: string,
+                keyList?: Array<string>,
+                keySet?: Set<string>,
+                keyDictionary?: Map<string,string>)
                 {
                 this.key = key ?? "";
                 this.keyList = keyList ?? [];
-                this.keySet = keySet ?? new Set<String>();
-                this.keyDictionary = keyDictionary ?? new Map<String,String>();
+                this.keySet = keySet ?? new Set<string>();
+                this.keyDictionary = keyDictionary ?? new Map<string,string>();
                 }
                 """.ReplaceLineEndings() );
 
@@ -310,12 +310,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 key?: ICommand,
                 keyList?: Array<ICommand>,
                 keySet?: Set<ExtendedCultureInfo>,
-                keyDictionary?: Map<String,ICommand>)
+                keyDictionary?: Map<string,ICommand>)
                 {
                 this.key = key;
                 this.keyList = keyList ?? [];
                 this.keySet = keySet ?? new Set<ExtendedCultureInfo>();
-                this.keyDictionary = keyDictionary ?? new Map<String,ICommand>();
+                this.keyDictionary = keyDictionary ?? new Map<string,ICommand>();
                 }
                 """.ReplaceLineEndings() );
 

@@ -28,13 +28,13 @@ namespace CK.TypeScript.CodeGen
         bool IsNullable { get; }
 
         /// <summary>
-        /// Gets whether this is the "Number", "String", "Boolean" or "BigInt" type.
+        /// Gets whether this is the "number", "string", "boolean" or "bigint" type.
         /// These types are handled automatically by the <see cref="TypeScriptRoot"/>.
         /// </summary>
-        bool IsPrimitive => ReferenceEquals( TypeName, "String" )
-                            || ReferenceEquals( TypeName, "Number" )
-                            || ReferenceEquals( TypeName, "Boolean" )
-                            || ReferenceEquals( TypeName, "BigInt" );
+        bool IsPrimitive => ReferenceEquals( TypeName, "string" )
+                            || ReferenceEquals( TypeName, "number" )
+                            || ReferenceEquals( TypeName, "boolean" )
+                            || ReferenceEquals( TypeName, "bigint" );
 
         /// <summary>
         /// Gets a unique index for this TS type.

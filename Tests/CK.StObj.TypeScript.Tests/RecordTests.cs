@@ -89,12 +89,12 @@ namespace CK.StObj.TypeScript.Tests
                 "ValueTuplePoco1.ts",
                 """
                 export class ValueTuplePoco1 implements IPoco {
-                public readonly power: [Number, String, String?, Guid?];
+                public readonly power: [number, string, string?, Guid?];
                 public constructor()
                 public constructor(
-                power?: [Number, String, String?, Guid?])
+                power?: [number, string, string?, Guid?])
                 constructor(
-                power?: [Number, String, String?, Guid?])
+                power?: [number, string, string?, Guid?])
                 {
                 this.power = power ?? [0, ""];
                 }
@@ -106,7 +106,7 @@ namespace CK.StObj.TypeScript.Tests
                 "ValueTuplePoco2.ts",
                 """
                 constructor(
-                power?: [Number, String|undefined, String, NormalizedCultureInfo?, Number?])
+                power?: [number, string|undefined, string, NormalizedCultureInfo?, number?])
                 {
                 this.power = power ?? [0, undefined, ""];
                 }
@@ -116,7 +116,7 @@ namespace CK.StObj.TypeScript.Tests
                 "ValueTuplePoco3.ts",
                 """
                 constructor(
-                power?: [Number, String, NormalizedCultureInfo, Number])
+                power?: [number, string, NormalizedCultureInfo, number])
                 {
                 this.power = power ?? [0, "", NormalizedCultureInfo.codeDefault, 0];
                 }
@@ -126,7 +126,7 @@ namespace CK.StObj.TypeScript.Tests
                 "ValueTupleWithNamePoco1.ts",
                 """
                 constructor(
-                power?: {age: Number, userId: String, firstName?: String, lastName?: Guid})
+                power?: {age: number, userId: string, firstName?: string, lastName?: Guid})
                 {
                 this.power = power ?? {age: 0, userId: ""};
                 }
@@ -136,7 +136,7 @@ namespace CK.StObj.TypeScript.Tests
                 "ValueTupleWithNamePoco2.ts",
                 """
                 constructor(
-                power?: {item1: Number, name: String, item3?: String, anotherName?: Guid})
+                power?: {item1: number, name: string, item3?: string, anotherName?: Guid})
                 {
                 this.power = power ?? {item1: 0, name: ""};
                 }
@@ -146,7 +146,7 @@ namespace CK.StObj.TypeScript.Tests
                 "ValueTupleWithNamePoco3.ts",
                 """
                 constructor(
-                power?: {item1?: Number, name: String, item3: String, anotherName?: Guid})
+                power?: {item1?: number, name: string, item3: string, anotherName?: Guid})
                 {
                 this.power = power ?? {name: "", item3: ""};
                 }
@@ -211,9 +211,9 @@ namespace CK.StObj.TypeScript.Tests
 
                 export class Rec1 {
                 public constructor(
-                public age: Number = 0, 
-                public name: String = "", 
-                public altName?: String, 
+                public age: number = 0, 
+                public name: string = "", 
+                public altName?: string, 
                 public key?: Guid)
                 {
                 }
@@ -242,18 +242,18 @@ namespace CK.StObj.TypeScript.Tests
             CheckFile( targetProjectPath,
                 "RecordPoco2.ts",
                 """
-                public age: Number = 0, 
-                public name: String = "Aurélien", 
-                public altName: String|undefined = "Barrau", 
+                public age: number = 0, 
+                public name: string = "Aurélien", 
+                public altName: string|undefined = "Barrau", 
                 public key?: Guid
                 """ );
 
             CheckFile( targetProjectPath,
                 "Rec3.ts",
                 """
-                public name: String = "Aurélien", 
-                public age: Number = 40, 
-                public altName: String|undefined = "Barrau", 
+                public name: string = "Aurélien", 
+                public age: number = 40, 
+                public altName: string|undefined = "Barrau", 
                 public key?: Guid
                 """ );
 
@@ -281,7 +281,7 @@ namespace CK.StObj.TypeScript.Tests
             CheckFile( targetProjectPath,
                "RecTry.ts",
                """
-               public name: String = "", 
+               public name: string = "", 
                public others: Array<RecTry> = []
                """ );
 
@@ -312,9 +312,9 @@ namespace CK.StObj.TypeScript.Tests
               "RecWithNonNullDefault.ts",
               """
               public iMustExist: IPoco, 
-              public name: String = "", 
-              public age: Number = 42, 
-              public nullable?: Number
+              public name: string = "", 
+              public age: number = 42, 
+              public nullable?: number
               """ );
         }
 

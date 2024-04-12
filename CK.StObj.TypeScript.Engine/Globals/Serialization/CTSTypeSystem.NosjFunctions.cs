@@ -30,7 +30,7 @@ namespace CK.Setup
             {
                 part.Append( "return o != null ? Duration.fromMillis( Number.parseInt(o.substring(0,o.length-4)) ) : undefined;" );
             }
-            else if( t.Type == typeof( long ) || t.Type == typeof( ulong ) || t.Type == typeof( BigInteger ) || t.Type == typeof( long ) )
+            else if( t.Type == typeof( long ) || t.Type == typeof( ulong ) || t.Type == typeof( BigInteger ) )
             {
                 part.Append( "return o != null ? BigInt( o ) : undefined;" );
             }

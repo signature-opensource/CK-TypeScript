@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen
     sealed class TSBooleanType : TSBasicType
     {
         public TSBooleanType( TSTypeManager typeManager )
-            : base( typeManager, "Boolean", null, "false" )
+            : base( typeManager, "boolean", null, "false" )
         {
         }
 
