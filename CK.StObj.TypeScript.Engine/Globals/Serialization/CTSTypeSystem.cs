@@ -8,13 +8,17 @@ namespace CK.Setup
 {
     /// <summary>
     /// Manages the CTSType model for Json serialization.
+    /// This is available on the <see cref="ITSPocoCodeGenerator.CTSTypeSystem"/> if Json serialization
+    /// is available.
     /// </summary>
     public sealed partial class CTSTypeSystem
     {
         readonly TypeScriptContext _typeScriptContext;
         readonly IPocoTypeNameMap _jsonExhangeableNames;
+        readonly TSManualFile _manualFile;
+        readonly ITSFileType _symCTS;
         readonly ITSCodePart _initPart;
-        readonly ITSCodePart _ctsType;
+        readonly ITSFileType _ctsType;
         readonly JsonRequiresHandlingMap _requiresHandlingMap;
 
         internal CTSTypeSystem( TypeScriptContext typeScriptContext, IPocoTypeNameMap jsonExhangeableNames )
@@ -22,41 +26,46 @@ namespace CK.Setup
             _typeScriptContext = typeScriptContext;
             _jsonExhangeableNames = jsonExhangeableNames;
             _requiresHandlingMap = new JsonRequiresHandlingMap( jsonExhangeableNames.TypeSet );
-            var file = _typeScriptContext.Root.Root.FindOrCreateFile( "CK/Core/CTSType.ts" );
+            _manualFile = _typeScriptContext.Root.FindOrCreateManualFile( "CK/Core/CTSType.ts" );
+            _ctsType = _manualFile.CreateType( "CTSType", null, null );
+
+            _symCTS = _manualFile.CreateType( "SymCTS", null, null, closer: "" );
+            _symCTS.TypePart.Append( "export const SymCTS = Symbol.for(\"CK.CTSType\");" ).NewLine();
+
+            _initPart = _manualFile.File.Body.CreatePart();
+
+            _ctsType.TypePart.Append( """
+                export const CTSType: any  = {
+                    toTypedJson( o: any ) : unknown {
+                        if( o == null ) return null;
+                        const t = o[SymCTS];
+                        if( !t ) throw new Error( "Untyped object. A type must be specified with CTSType." );
+                        return [t.name, t.json( o )];
+                    },
+                    fromTypedJson( o: any ) : unknown {
+                        if( o == null ) return undefined;
+                        if( !(o instanceof Array && o.length === 2) ) throw new Error( "Expected 2-cells array." );
+                        var t = CTSType[o[0]];
+                        if( !t ) throw new Error( `Invalid type name: ${o[0]}.` );
+                        if( !t.set ) throw new Error( `Type name '${o[0]}' is not serializable.` );
+                        const j = t.nosj( o[1] );
+                        return t.set( j );
+                   },
+                   stringify( o: any, withType: boolean = true ) : string {
+                       var t = CTSType.toTypedJson( o );
+                       return JSON.stringify( withType ? t : t[1] );
+                   },
+                   parse( s: string ) : unknown {
+                       return CTSType.fromTypedJson( JSON.parse( s ) );
+                   },
+                
+                """ );
+
             if( typeScriptContext.Root.ReflectTS )
             {
                 Throw.DebugAssert( "ReflectTS is true.", typeScriptContext.Root.TSTypes.ReflectTSTypeFile != null );
-                file.Imports.EnsureImport( typeScriptContext.Root.TSTypes.ReflectTSTypeFile, "TSType" );
+                _manualFile.File.Imports.EnsureImport( typeScriptContext.Root.TSTypes.ReflectTSTypeFile, "TSType" );
             }
-            _initPart = file.Body.CreatePart();
-            _ctsType = file.Body.Append( """
-                             export const SymCTS = Symbol.for("CK.CTSType");
-                             export const CTSType: any  = {
-                                 toTypedJson( o: any ) : unknown {
-                                     if( o == null ) return null;
-                                     const t = o[SymCTS];
-                                     if( !t ) throw new Error( "Untyped object. A type must be specified with CTSType." );
-                                     return [t.name, t.json( o )];
-                                 },
-                                 fromTypedJson( o: any ) : unknown {
-                                     if( o == null ) return undefined;
-                                     if( !(o instanceof Array && o.length === 2) ) throw new Error( "Expected 2-cells array." );
-                                     var t = CTSType[o[0]];
-                                     if( !t ) throw new Error( `Invalid type name: ${o[0]}.` );
-                                     if( !t.set ) throw new Error( `Type name '${o[0]}' is not serializable.` );
-                                     const j = t.nosj( o[1] );
-                                     return t.set( j );
-                                },
-                                stringify( o: any, withType: boolean = true ) : string {
-                                    var t = CTSType.toTypedJson( o );
-                                    return JSON.stringify( withType ? t : t[1] );
-                                },
-                                parse( s: string ) : unknown {
-                                    return CTSType.fromTypedJson( JSON.parse( s ) );
-                                },
-
-                             """ )
-                            .CreatePart( closer: "}\n" );
 
             typeScriptContext.Root.AfterCodeGeneration += OnAfterCodeGeneration;
         }
@@ -91,9 +100,21 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the CTSType object that contains the CSharp names mapping.
+        /// Gets the CTSType file that defines the static <see cref="CTSType"/> and <see cref="SymCTS"/> types.
         /// </summary>
-        public ITSCodePart CTSType => _ctsType;
+        public TSManualFile CTSTypeFile => _manualFile;
+
+        /// <summary>
+        /// Gets the symbol used to type objects with their associated CTSType.
+        /// This is exposed so that <see cref="ITSFileImportSection.EnsureImport(ITSType, ITSType[])"/> can easily import it.
+        /// </summary>
+        public ITSType SymCTS => _symCTS;
+
+        /// <summary>
+        /// Gets the static CTSType object.
+        /// This is exposed so that <see cref="ITSFileImportSection.EnsureImport(ITSType, ITSType[])"/> can easily import it.
+        /// </summary>
+        public ITSType CTSType => _ctsType;
 
         /// <summary>
         /// Gets the exchangeable name map.
@@ -114,7 +135,7 @@ namespace CK.Setup
             Throw.DebugAssert( !t.IsNullable && !ts.IsNullable && t == PocoCodeGenerator.MapType( t ) );
 
             var ctsName = _jsonExhangeableNames.GetName( t );
-            var part = _ctsType.FindOrCreateKeyedPart( ctsName, closer: "},\n" );
+            var part = _ctsType.TypePart.FindOrCreateKeyedPart( ctsName, closer: "},\n" );
             if( part.IsEmpty )
             {
                 part.AppendSourceString( ctsName ).Append( ": {" ).NewLine()
@@ -223,7 +244,7 @@ namespace CK.Setup
         {
             Throw.DebugAssert( !t.IsNullable && t == PocoCodeGenerator.MapType( t ) );
             var ctsName = _jsonExhangeableNames.GetName( t );
-            var part = _ctsType.FindKeyedPart( ctsName );
+            var part = _ctsType.TypePart.FindKeyedPart( ctsName );
             Throw.DebugAssert( part != null );
 
             GenerateCompositeJsonFunction( part, t, fields );

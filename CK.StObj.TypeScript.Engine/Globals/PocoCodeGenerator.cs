@@ -2,17 +2,14 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
-using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
-using System.Data.SqlTypes;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
-using static CK.StObj.TypeScript.Engine.PocoCodeGenerator;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -41,6 +38,8 @@ namespace CK.StObj.TypeScript.Engine
                 _ctsTypeSystem = new CTSTypeSystem( typeScriptContext, jsonExchangeableNames );
             }
         }
+
+        public CTSTypeSystem? CTSTypeSystem => _ctsTypeSystem;
 
         public event EventHandler<GeneratingPrimaryPocoEventArgs>? PrimaryPocoGenerating;
 
