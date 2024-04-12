@@ -31,9 +31,9 @@ namespace CK.TypeScript.CodeGen
         // Not null when TypeScriptRoot.ReflectTS is true.
         readonly ITSCodePart? _reflectTSTypes;
         internal readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
-        // New TSGeneratedType are appended to this list: GenerateCode
-        // loops until no new type appears in this list.
+        // New TSGeneratedType are appended to this list: GenerateCode loops until no new type appears in this list.
         readonly List<TSGeneratedType> _processList;
+        bool _generateCodeDone;
 
         internal TSTypeManager( TypeScriptRoot root, IReadOnlyDictionary<string, string>? libraryVersionConfiguration )
         {
@@ -131,7 +131,8 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets a registered TS type for a type key or null if not found.
-        /// Use the indexer <see cref="this[object]"/> to throw if the type must be mapped.
+        /// Use the indexer <see cref="this[object]"/> to throw if the type must already be mapped.
+        /// Use the <see cref="FindByTypeName(string)"/> to find a TSType by its <see cref="ITSType.TypeName"/>.
         /// </summary>
         /// <param name="keyType">The key type for which a TS type should be found.</param>
         /// <returns>The TS type or null if not found.</returns>
@@ -144,8 +145,15 @@ namespace CK.TypeScript.CodeGen
         /// <returns>The TS type.</returns>
         public ITSType this[object keyType] => _types[keyType] ?? throw new KeyNotFoundException( $"Key type '{keyType}' is currently resolving." );
 
+        /// <summary>
+        /// Gets whether <see cref="TypeScriptRoot.GenerateCode(IActivityMonitor)"/> has been called: no more
+        /// types can be registered.
+        /// </summary>
+        public bool GenerateCodeDone => _generateCodeDone;
+
         internal int Register( TSType tsType, out ITSCodePart? model )
         {
+            Throw.CheckState( GenerateCodeDone is false );
             _types.Add( tsType.TypeName, tsType );
             _allTypes.Add( tsType );
             if( _reflectTSTypes != null )
@@ -186,6 +194,7 @@ namespace CK.TypeScript.CodeGen
         {
             Throw.CheckNotNullArgument( tsType );
             Throw.CheckArgument( !tsType.IsNullable );
+            Throw.CheckState( GenerateCodeDone is false );
             if( type.IsValueType )
             {
                 if( Nullable.GetUnderlyingType( type ) != null )
@@ -206,6 +215,7 @@ namespace CK.TypeScript.CodeGen
         {
             Throw.CheckNotNullArgument( tsType );
             Throw.CheckArgument( !tsType.IsNullable );
+            Throw.CheckState( GenerateCodeDone is false );
             _types.Add( typeof( T ), tsType );
             _types.Add( typeof( T? ), tsType.Nullable );
         }
@@ -241,6 +251,7 @@ namespace CK.TypeScript.CodeGen
         public ITSType ResolveTSType( IActivityMonitor monitor, object keyType )
         {
             Throw.CheckNotNullArgument( keyType );
+            Throw.CheckState( GenerateCodeDone is false );
             if( !_types.TryGetValue( keyType, out var mapped ) )
             {
                 if( keyType is Type t )

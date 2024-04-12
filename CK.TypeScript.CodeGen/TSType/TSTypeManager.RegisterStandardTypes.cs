@@ -27,6 +27,7 @@ namespace CK.TypeScript.CodeGen
                                            bool withDecimal = true,
                                            bool withLuxonTypes = true )
         {
+            Throw.CheckState( GenerateCodeDone is false );
             _types.Add( typeof( string ), new TSStringType( this ) );
             RegisterValueType<bool>( new TSBooleanType( this ) );
             if( withNumbers )

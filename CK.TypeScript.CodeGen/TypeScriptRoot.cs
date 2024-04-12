@@ -211,6 +211,8 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Raised after the deferred implementors have successfully run on all types to implement.
+        /// This can be used to generate pure TS support files (registering nex types will throw an
+        /// <see cref="InvalidOperationException"/>).
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? AfterCodeGeneration;
 
@@ -223,6 +225,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>True on success, false if an error occurred.</returns>
         public bool GenerateCode( IActivityMonitor monitor )
         {
+            Throw.CheckState( TSTypes.GenerateCodeDone is false );
             bool success = true;
             // If BeforeCodeGeneration emits an error, we skip the whole code generation.
             // If CodeGenerator emits an error, we skip the call to AfterCodeGeneration.
