@@ -340,7 +340,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
         public int? Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths  )
         {
-            using( monitor.OpenTrace( $"Saving {(IsRoot ? $"TypeScript Root folder into {outputPath}" : Name)}." ) )
+            using( monitor.OpenTrace( IsRoot ? $"Saving TypeScript Root folder into {outputPath}" : $"Saving /{Name}." ) )
             {
                 try
                 {
