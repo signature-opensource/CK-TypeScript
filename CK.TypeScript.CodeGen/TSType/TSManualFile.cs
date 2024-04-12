@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Simple file with manually defined types.
-    /// Created by the factory <see cref="TypeScriptRoot.FindOrCreateManualFile(NormalizedPath)"/>.
+    /// Created by <see cref="TypeScriptFolder.FindOrCreateManualFile(NormalizedPath)"/>.
     /// </summary>
     public sealed class TSManualFile 
     {

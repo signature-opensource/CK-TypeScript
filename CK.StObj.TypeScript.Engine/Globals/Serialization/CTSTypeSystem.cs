@@ -26,7 +26,7 @@ namespace CK.Setup
             _typeScriptContext = typeScriptContext;
             _jsonExhangeableNames = jsonExhangeableNames;
             _requiresHandlingMap = new JsonRequiresHandlingMap( jsonExhangeableNames.TypeSet );
-            _manualFile = _typeScriptContext.Root.FindOrCreateManualFile( "CK/Core/CTSType.ts" );
+            _manualFile = _typeScriptContext.Root.Root.FindOrCreateManualFile( "CK/Core/CTSType.ts" );
             _ctsType = _manualFile.CreateType( "CTSType", null, null );
 
             _symCTS = _manualFile.CreateType( "SymCTS", null, null, closer: "" );

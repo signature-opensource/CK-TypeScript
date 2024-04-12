@@ -204,17 +204,6 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Finds or creates a <see cref="TSManualFile"/>.
-        /// </summary>
-        /// <param name="path">The file path.</param>
-        /// <returns>A file where TypeScript types can be created.</returns>
-        public TSManualFile FindOrCreateManualFile( NormalizedPath path )
-        {
-            var f = Root.FindOrCreateFile( path );
-            return new TSManualFile( _tsTypes, f );
-        }
-
-        /// <summary>
         /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling the deferred implementors
         /// on types.
         /// </summary>

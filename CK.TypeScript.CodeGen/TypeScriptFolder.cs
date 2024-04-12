@@ -230,6 +230,25 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
+        /// Finds or creates a <see cref="TSManualFile"/> in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <param name="created">True if the file has been created, false if it already existed.</param>
+        /// <returns>A file where TypeScript types can be created.</returns>
+        public TSManualFile FindOrCreateManualFile( NormalizedPath path, out bool created )
+        {
+            var f = FindOrCreateFile( path, out created );
+            return new TSManualFile( Root.TSTypes, f );
+        }
+
+        /// <summary>
+        /// Finds or creates a <see cref="TSManualFile"/> in this folder or a subordinated folder.
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <returns>A file where TypeScript types can be created.</returns>
+        public TSManualFile FindOrCreateManualFile( NormalizedPath path ) => FindOrCreateManualFile( path, out _ );
+
+        /// <summary>
         /// Finds a file in this folder or a subordinated folder.
         /// </summary>
         /// <param name="path">The file's path to find or create. Must not be empty and must end with '.ts'.</param>

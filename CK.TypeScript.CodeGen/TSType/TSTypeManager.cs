@@ -174,6 +174,11 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Registers a new mapping from C# type to <see cref="ITSType"/> mapping.
         /// This throws a <see cref="ArgumentException"/> if the key is already mapped.
+        /// <para>
+        /// It is often easier to use <see cref="TypeScriptFolder.FindOrCreateManualFile(NormalizedPath)"/> and then
+        /// <see cref="TSManualFile.CreateType(string, Action{ITSFileImportSection}?, string?, string)"/> to manually
+        /// manage types.
+        /// </para>
         /// </summary>
         /// <param name="type">The C# reference type.</param>
         /// <param name="tsType">The associated TS type.</param>
