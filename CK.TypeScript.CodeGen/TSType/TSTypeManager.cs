@@ -336,7 +336,6 @@ namespace CK.TypeScript.CodeGen
             if( string.IsNullOrWhiteSpace( e.TypeName ) )
             {
                 e.TypeName = e.DefaultTypeName;
-                monitor.Warn( $"TypeName '{t:C}' has been set to null or empty. Using default name '{e.TypeName}'." );
             }
             TypeScriptFolder? folder = null;
             TypeScriptFile? file = null;
@@ -376,7 +375,11 @@ namespace CK.TypeScript.CodeGen
             }
             else
             {
-                monitor.Trace( $"Type '{t:C}' will be generated in '{file}'." );
+                Throw.DebugAssert( folder == file.Folder );
+                var defName = e.TypeName != e.DefaultTypeName
+                                ? $" (using explicit type name '{e.TypeName}' instead of default '{e.DefaultTypeName}')"
+                                : null;
+                monitor.Trace( $"Type '{t:C}' will be generated in '{folder.Path}/{file.Name}'{defName}." );
             }
             if( t.IsEnum )
             {
