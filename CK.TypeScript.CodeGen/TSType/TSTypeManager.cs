@@ -251,9 +251,12 @@ namespace CK.TypeScript.CodeGen
         public ITSType ResolveTSType( IActivityMonitor monitor, object keyType )
         {
             Throw.CheckNotNullArgument( keyType );
-            Throw.CheckState( GenerateCodeDone is false );
             if( !_types.TryGetValue( keyType, out var mapped ) )
             {
+                if( GenerateCodeDone )
+                {
+                    Throw.InvalidOperationException( $"Resolving '{keyType}': No new types muste be registered after Code Generation step." );
+                }
                 if( keyType is Type t )
                 {
                     HashSet<Type>? cycleSameFolderDetector = null;
