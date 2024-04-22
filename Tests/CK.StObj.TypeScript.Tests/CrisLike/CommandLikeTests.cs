@@ -120,12 +120,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( ICommandFour )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IAmbientValues only as Poco type: it is the
+                                           // Registers IAspNetXXX and IEndpointValues only as Poco type: it is the
                                            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
                                            // the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IAmbientValues ),
+                                                                                    typeof( IEndpointValues ),
                                                                                     typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
             var p = targetProjectPath.Combine( "ck-gen/src" );
@@ -226,12 +226,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( IWithObjectSpecializedAsStringCommand )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IAmbientValues only as Poco type: it is the
+                                           // Registers IAspNetXXX and IEndpointValues only as Poco type: it is the
                                            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
                                            // the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IAmbientValues ),
+                                                                                    typeof( IEndpointValues ),
                                                                                     typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
         }
@@ -251,12 +251,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( ISuperResult )
             };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IAmbientValues only as Poco type: it is the
+                                           // Registers IAspNetXXX and IEndpointValues only as Poco type: it is the
                                            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
                                            // the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IAmbientValues ),
+                                                                                    typeof( IEndpointValues ),
                                                                                     typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
                                            tsTypes );
         }
@@ -268,12 +268,12 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             var tsTypes = new[] { typeof( IStringCommand ), typeof( ICommandCommand ) };
             TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IAmbientValues only as Poco type: it is the
+                                           // Registers IAspNetXXX and IEndpointValues only as Poco type: it is the
                                            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
                                            // the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IAmbientValues ),
+                                                                                    typeof( IEndpointValues ),
                                                                                     typeof( FakeTypeScriptCrisCommandGenerator ) } ),
                                            tsTypes );
             var p = targetProjectPath.Combine( "ck-gen/src" );

@@ -14,7 +14,7 @@ namespace CK.CrisLike
         /// The default <see cref="CrisAuthenticationService"/> validates this field against the
         /// current <see cref="IAuthenticationInfo.UnsafeUser"/>.
         /// </summary>
-        [AmbientValue]
+        [EndpointValue]
         int ActorId { get; set; }
     }
 

@@ -574,8 +574,10 @@ namespace CK.TypeScript.CodeGen
         // Use the monitor for success tracking. This returns the number of TSGeneratedType to generate.
         internal int GenerateCode( IActivityMonitor monitor )
         {
-            foreach( var type in _processList )
+            Throw.DebugAssert( !_generateCodeDone );
+            for( int i = 0; i < _processList.Count; i++ )
             {
+                TSGeneratedType? type = _processList[i];
                 if( type.HasError )
                 {
                     monitor.Error( $"Skipping TS code generation for '{type.TypeName}' that is on error." );
@@ -597,6 +599,7 @@ namespace CK.TypeScript.CodeGen
                     }
                 }
             }
+            _generateCodeDone = true;
             return _processList.Count;
         }
     }

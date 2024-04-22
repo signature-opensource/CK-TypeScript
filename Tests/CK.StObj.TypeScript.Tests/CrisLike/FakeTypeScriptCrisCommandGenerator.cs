@@ -32,7 +32,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             return initializer.EnsureRegister( monitor, typeof( IAspNetCrisResult ), mustBePocoType: true )
                    && initializer.EnsureRegister( monitor, typeof( IAspNetCrisResultError ), mustBePocoType: true )
-                   && initializer.EnsureRegister( monitor, typeof( IAmbientValues ), mustBePocoType: true );
+                   && initializer.EnsureRegister( monitor, typeof( IEndpointValues ), mustBePocoType: true );
         }
 
         public virtual bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
@@ -98,9 +98,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     .NewLine()
                     .Append( "static #m = " )
                     .OpenBlock()
-                        .Append( "applyAmbientValues( command: any, a: any, o: any )" )
+                        .Append( "applyEndpointValues( command: any, a: any, o: any )" )
                         .OpenBlock()
-                        .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the ambient values.*/" )
+                        .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the endpoint values.*/" )
                         .CloseBlock()
                     .CloseBlock();
             }
@@ -147,8 +147,8 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 GenerateCrisModelFile( monitor, context, _modelFile );
 
                 //GenerateCrisEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "CrisEndpoint.ts" ) );
-                // Real GenerateCrisEndpoint needs to resolve the AmbientValues.
-                var tA = (ITSFileType)context.Root.TSTypes.ResolveTSType( monitor, typeof( IAmbientValues ) );
+                // Real GenerateCrisEndpoint needs to resolve the EndpointValues.
+                var tA = (ITSFileType)context.Root.TSTypes.ResolveTSType( monitor, typeof( IEndpointValues ) );
                 //
                 //GenerateCrisHttpEndpoint( monitor, modelFile.Folder.FindOrCreateFile( "HttpCrisEndpoint.ts" ) );
 
@@ -175,7 +175,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                     /**
                                      * This supports the CrisEndpoint implementation. This is not to be used directly.
                                      **/
-                                    readonly applyAmbientValues: (command: any, a: any, o: any ) => void;
+                                    readonly applyEndpointValues: (command: any, a: any, o: any ) => void;
                                 }
 
                                 /** 
