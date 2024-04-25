@@ -11,9 +11,19 @@ namespace CK.Setup
     /// <summary>
     /// Aspect that drives TypeScript code generation. Handles (and initialized) by the <see cref="TypeScriptAspectConfiguration"/>.
     /// </summary>
-    public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGenerator
+    public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
     {
         readonly TypeScriptAspectConfiguration _tsConfig;
+        // This enables deferring the TypeScript generation at the final step of CS code generation.
+        // A first part must run during the CS code generation to be able to register PocoTypeSet.
+        // But TypeScript generation itself is not CS code generation and by deferring the TS we allow
+        // the participants that subscribed to our TS events to use any Engine services available in the
+        // CurrentRun's ServiceContainer.
+        // This list is cleared by ICSCodeGenerator.Implement, filled by PrepareRun and its TypeScriptContexts
+        // are Run by ICSCodeGeneratorWithFinalization.FinalImplement.
+        readonly List<TypeScriptContext> _runContexts;
+
+        // This supports the TypeScriptAspectConfiguration.DeferFileSave: IStObjEngineAspect.Terminate uses it.
         readonly List<TypeScriptContext>? _deferedSave;
 
         /// <summary>
@@ -24,6 +34,7 @@ namespace CK.Setup
         {
             _tsConfig = config;
             _deferedSave = config.DeferFileSave ? new List<TypeScriptContext>() : null;
+            _runContexts = new List<TypeScriptContext>();
         }
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context ) => true;
@@ -36,6 +47,8 @@ namespace CK.Setup
         {
             // Skips the purely unified BinPath.
             if( c.CurrentRun.ConfigurationGroup.IsUnifiedPure ) return CSCodeGenerationResult.Success;
+
+            _runContexts.Clear();
 
             // We must not only wait for the IPocoTypeSystem to be available but we also need to know if the optional IPocoJsonSerializationServiceEngine
             // is available or not... The IPocoJsonSerializationServiceEngine requires first IPocoSerializationServiceEngine to be available.
@@ -55,7 +68,7 @@ namespace CK.Setup
         {
             using( monitor.OpenInfo( $"PocoTypeSystem is available (without Json serialization): handling TypeScript generation." ) )
             {
-                return Run( monitor, c, typeSystem, null )
+                return PrepareRun( monitor, c, typeSystem, null )
                         ? CSCodeGenerationResult.Success
                         : CSCodeGenerationResult.Failed;
             }
@@ -65,15 +78,17 @@ namespace CK.Setup
         {
             using( monitor.OpenInfo( $"IPocoJsonSerializationServiceEngine is available: handling TypeScript generation." ) )
             {
-                return Run( monitor, c, jsonSerialization.SerializableLayer.TypeSystem, jsonSerialization )
+                return PrepareRun( monitor, c, jsonSerialization.SerializableLayer.TypeSystem, jsonSerialization )
                         ? CSCodeGenerationResult.Success
                         : CSCodeGenerationResult.Failed;
             }
         }
 
-        bool Run( IActivityMonitor monitor, ICSCodeGenerationContext codeContext, IPocoTypeSystem typeSystem, IPocoJsonSerializationServiceEngine? jsonSerialization )
+        bool PrepareRun( IActivityMonitor monitor, ICSCodeGenerationContext codeContext, IPocoTypeSystem typeSystem, IPocoJsonSerializationServiceEngine? jsonSerialization )
         {
-            var binPath = codeContext.CurrentRun; 
+            var binPath = codeContext.CurrentRun;
+            using var _ = monitor.OpenInfo( $"Preparing TypeScript contexts for: {codeContext.CurrentRun.ConfigurationGroup.Names}." );
+
             // Obtains all the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
             // One BinPath can have any number of TypeScriptAspectConfiguration. The TypeFilterName identifies
             // one configuration among the others in the same BinPath.
@@ -119,8 +134,18 @@ namespace CK.Setup
                     // Regardless of whether it is the same as AllExchangeable or a sub set, we register the ExhangeableRuntimeTypeFilter.
                     jsonSerialization.SerializableLayer.RegisterExchangeableRuntimeFilter( monitor, tsBinPathconfig.TypeFilterName, initializer.TypeScriptExchangeableSet );
                 }
-                // The TypeScriptContext for this configuration can now be initialized and run.
-                var g = new TypeScriptContext( codeContext, _tsConfig, tsBinPathconfig, initializer, exchangeableNames );
+                // The TypeScriptContext for this configuration can now be initialized.
+                // It will be run by FinalImplement.
+                _runContexts.Add( new TypeScriptContext( codeContext, _tsConfig, tsBinPathconfig, initializer, exchangeableNames ) );
+            }
+            return true;
+        }
+
+        bool ICSCodeGeneratorWithFinalization.FinalImplement( IActivityMonitor monitor, ICSCodeGenerationContext codeContext )
+        {
+            using var _ = monitor.OpenInfo( $"Running TypeScript contexts for: {codeContext.CurrentRun.ConfigurationGroup.Names}." );
+            foreach( var g in _runContexts )
+            {
                 if( !g.Run( monitor ) )
                 {
                     return false;
