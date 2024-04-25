@@ -48,7 +48,8 @@ namespace CK.Setup
                         var t = CTSType[o[0]];
                         if( !t ) throw new Error( `Invalid type name: ${o[0]}.` );
                         if( !t.set ) throw new Error( `Type name '${o[0]}' is not serializable.` );
-                        return t.nosj( o[1] );
+                        const j = t.nosj( o[1] );
+                        return j !== null && typeof j === 'object' ? t.set( j ) : j;
                    },
                    stringify( o: any, withType: boolean = true ) : string {
                        var t = CTSType.toTypedJson( o );
