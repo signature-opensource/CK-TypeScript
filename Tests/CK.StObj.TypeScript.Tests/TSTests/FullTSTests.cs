@@ -180,7 +180,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                                            // the TypeScriptSet.
                                            registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
                                                                                     typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IEndpointValues ),
+                                                                                    typeof( IUbiquitousValues ),
                                                                                     typeof( CommonPocoJsonSupport ),
                                                                                     typeof( FakeTypeScriptCrisCommandGenerator ) } ),
                                            tsTypes,

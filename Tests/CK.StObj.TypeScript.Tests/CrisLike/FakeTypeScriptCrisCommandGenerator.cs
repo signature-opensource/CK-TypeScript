@@ -32,7 +32,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
 
             return initializer.EnsureRegister( monitor, typeof( IAspNetCrisResult ), mustBePocoType: true )
                    && initializer.EnsureRegister( monitor, typeof( IAspNetCrisResultError ), mustBePocoType: true )
-                   && initializer.EnsureRegister( monitor, typeof( IEndpointValues ), mustBePocoType: true );
+                   && initializer.EnsureRegister( monitor, typeof( IUbiquitousValues ), mustBePocoType: true );
         }
 
         public virtual bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
@@ -98,9 +98,9 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                     .NewLine()
                     .Append( "static #m = " )
                     .OpenBlock()
-                        .Append( "applyEndpointValues( command: any, a: any, o: any )" )
+                        .Append( "applyUbiquitousValues( command: any, a: any, o: any )" )
                         .OpenBlock()
-                        .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the endpoint values.*/" )
+                        .Append( "/*Apply code comes HERE but FakeTypeScriptCrisCommandGeneratorImpl doesn't handle the ubiquitous values.*/" )
                         .CloseBlock()
                     .CloseBlock();
             }
@@ -146,7 +146,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 _modelFile = context.Root.Root.FindOrCreateFile( "CK/Cris/Model.ts" );
                 GenerateCrisModelFile( monitor, context, _modelFile );
 
-                var tA = (ITSFileType)context.Root.TSTypes.ResolveTSType( monitor, typeof( IEndpointValues ) );
+                var tA = (ITSFileType)context.Root.TSTypes.ResolveTSType( monitor, typeof( IUbiquitousValues ) );
                 _crisPoco = new TSBasicType( context.Root.TSTypes, "ICrisPoco", imports => imports.EnsureImport( _modelFile, "ICrisPoco" ), null );
                 _abstractCommand = new TSBasicType( context.Root.TSTypes, "IAbstractCommand", imports => imports.EnsureImport( _modelFile, "IAbstractCommand" ), null );
                 _command = new TSBasicType( context.Root.TSTypes, "ICommand", imports => imports.EnsureImport( _modelFile, "ICommand" ), null );
@@ -170,7 +170,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                     /**
                                      * This supports the CrisEndpoint implementation. This is not to be used directly.
                                      **/
-                                    readonly applyEndpointValues: (command: any, a: any, o: any ) => void;
+                                    readonly applyUbiquitousValues: (command: any, a: any, o: any ) => void;
                                 }
 
                                 /** 

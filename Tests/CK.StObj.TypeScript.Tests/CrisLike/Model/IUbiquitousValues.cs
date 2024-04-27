@@ -8,10 +8,10 @@ namespace CK.CrisLike
     /// Defines an extensible set of properties that can be initialized from or need to
     /// be challenged against the endpoint services.
     /// <para>
-    /// The <see cref="IEndpointValuesCollectCommand"/> sent to the endpoint returns these values.
+    /// The <see cref="IUbiquitousValuesCollectCommand"/> sent to the endpoint returns these values.
     /// </para>
     /// </summary>
-    public interface IEndpointValues : IPoco
+    public interface IUbiquitousValues : IPoco
     {
     }
 }

@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Setup.PocoJson;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
