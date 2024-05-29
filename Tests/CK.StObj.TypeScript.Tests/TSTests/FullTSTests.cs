@@ -190,5 +190,20 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             runner.Run();
         }
 
+        [Test]
+        public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_AutomaticTypeScriptVersion_Async()
+        {
+            var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
+            TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: false );
+            TestHelper.GenerateTypeScript( targetProjectPath, configuration =>
+            {
+                configuration.BinPaths.Select( c => c.GetAspectConfiguration( "TypeScript" ) )
+                                      .Single()!
+                                      .SetAttributeValue( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, "5.1.6" );
+            }, typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
+            await TestHelper.SuspendAsync( resume => resume );
+            runner.Run();
+        }
     }
 }

@@ -55,7 +55,11 @@ namespace CK.Setup
         {
             var sdkTypeScriptPath = targetProjectPath.Combine( ".yarn/sdks/typescript/package.json" );
             var packageJson = LoadPackageJson( monitor, sdkTypeScriptPath, out var _ );
-            if( packageJson == null ) return null;
+            if( packageJson == null )
+            {
+                monitor.Error( $"Missing expected '{sdkTypeScriptPath}' to be able to read the Yarn sdk TypeScript version." );
+                return null;
+            }
             var version = (string?)packageJson["version"];
             if( version == null )
             {
@@ -79,7 +83,7 @@ namespace CK.Setup
         /// <param name="monitor">Required monitor.</param>
         /// <param name="targetProjectPath">The project path.</param>
         /// <param name="environmentVariables">Optional environment variables.</param>
-        /// <param name="afterRun">A cleanup actio that must be run once the test is over.</param>
+        /// <param name="afterRun">A cleanup action that must be run once the test is over.</param>
         /// <returns>True on success, false on error.</returns>
         public static bool PrepareJestRun( IActivityMonitor monitor,
                                            NormalizedPath targetProjectPath,
@@ -405,6 +409,33 @@ namespace CK.Setup
             return default;
         }
 
+        internal static void WriteMinimalTargetProjectPackageJson( NormalizedPath projectJsonPath, string? typeScriptVersion )
+        {
+            var typeScript = typeScriptVersion == null
+                                ? ""
+                                : $$"""
+                                ,
+                                "devDependencies": {
+                                   "typescript": "{{typeScriptVersion}}"
+                                }
+                                """;
+            File.WriteAllText( projectJsonPath, $$"""
+                    {
+                        "name": "{{projectJsonPath.Parts[^2].ToLowerInvariant()}}",
+                        "private": true,
+                        "workspaces":["ck-gen"],
+                        "dependencies": {
+                            "@local/ck-gen": "workspace:*"
+                        }
+                    """
+                    + typeScript
+                    + $$"""
+
+                    }
+                    """ );
+        }
+
+
         internal static bool SetupTargetProjectPackageJson( IActivityMonitor monitor,
                                                             NormalizedPath projectJsonPath,
                                                             JsonObject? packageJson,
@@ -426,7 +457,7 @@ namespace CK.Setup
             if( packageJson == null )
             {
                 monitor.Info( $"Creating a minimal package.json without typescript development dependency." );
-                WriteMinimalPackageJson( projectJsonPath, projectJsonPath );
+                WriteMinimalTargetProjectPackageJson( projectJsonPath, null );
                 return true;
             }
             bool modified = false;
@@ -446,21 +477,6 @@ namespace CK.Setup
                 typesNodeVersion = devDependencies["@types/node"]?.ToString();
             }
             return !modified || SavePackageJsonFile( monitor, projectJsonPath, packageJson );
-
-            static void WriteMinimalPackageJson( NormalizedPath targetProjectPath, NormalizedPath projectJsonPath )
-            {
-                File.WriteAllText( projectJsonPath,
-                   $$"""
-                    {
-                        "name": "{{targetProjectPath.Parts[^2].ToLowerInvariant()}}",
-                        "private": true,
-                        "workspaces":["ck-gen"],
-                        "dependencies": {
-                            "@local/ck-gen": "workspace:*"
-                        }
-                    }
-                    """ );
-            }
 
             static bool EnsureCKGenWorkspace( IActivityMonitor monitor, JsonObject o, ref bool modified )
             {

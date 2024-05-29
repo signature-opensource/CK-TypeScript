@@ -89,6 +89,17 @@ namespace CK.Setup
                                         }
                                         if( typeScriptSdkVersion == null )
                                         {
+                                            // Chicken & egg issue here:
+                                            // "yarn sdks vscode" or "yarn sdks base" will not install typescript support unless "typescript" appears in the package.json
+                                            // (and "yarn sdks tyescript" is not supported).
+                                            // So we must ensure that when starting from scratch, the target package.json has typescript installed.
+                                            // Starting from scratch: no error but no package.json in target project folder.
+                                            if( !invalidPackageJson && targetPackageJson == null )
+                                            {
+                                                monitor.Info( $"Creating a minimal package.json with typescript development dependency '{targetTypeScriptVersion}'." );
+                                                YarnHelper.WriteMinimalTargetProjectPackageJson( projectJsonPath, targetTypeScriptVersion );
+                                            }
+
                                             monitor.Info( $"Yarn TypeScript sdk is not installed. Installing it with{(BinPathConfiguration.AutoInstallVSCodeSupport ? "" : "out")} VSCode support." );
                                             success &= YarnHelper.InstallYarnSdkSupport( monitor, targetProjectPath, BinPathConfiguration.AutoInstallVSCodeSupport, yarnPath.Value );
                                             if( success )
@@ -215,7 +226,7 @@ namespace CK.Setup
                 targetProjectHasTypeScript = false;
                 if( typeScriptSdkVersion == null )
                 {
-                    typeScriptVersionSource = "Configuration.AutomaticTypeScriptVersion";
+                    typeScriptVersionSource = "BinPathConfiguration.AutomaticTypeScriptVersion property";
                     targetTypeScriptVersion = BinPathConfiguration.AutomaticTypeScriptVersion;
                 }
                 else

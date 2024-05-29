@@ -185,6 +185,23 @@ namespace CK
 
         /// <summary>
         /// Helper that runs a <see cref="StObjEngine"/> with a <see cref="ConfigureTypeScript(Testing.IStObjEngineTestHelper, StObjEngineConfiguration?, NormalizedPath, Type[])"/>
+        /// configuration. TypeScript "/ck-gen" folder with the provided <paramref name="types"/> is generated (whether TypeScript tooling
+        /// is setup or run depends on the <paramref name="targetProjectPath"/>.
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="targetProjectPath">The target TypeScript project path.</param>
+        /// <param name="configureEngine">Optional engine configurator.</param>
+        /// <param name="types">The types to generate in TypeScript.</param>
+        public static void GenerateTypeScript( this Testing.IStObjEngineTestHelper helper,
+                                               NormalizedPath targetProjectPath,
+                                               Action<StObjEngineConfiguration> configureEngine,
+                                               params Type[] types )
+        {
+            GenerateTypeScript( helper, targetProjectPath, types, types, configureEngine );
+        }
+
+        /// <summary>
+        /// Helper that runs a <see cref="StObjEngine"/> with a <see cref="ConfigureTypeScript(Testing.IStObjEngineTestHelper, StObjEngineConfiguration?, NormalizedPath, Type[])"/>
         /// configuration. TypeScript "/ck-gen" folder with the provided <paramref name="tsTypes"/> is generated (whether TypeScript tooling
         /// is setup or run depends on the <paramref name="targetProjectPath"/>.
         /// </summary>
@@ -192,15 +209,18 @@ namespace CK
         /// <param name="targetProjectPath">The target TypeScript project path.</param>
         /// <param name="registeredTypes">The types to register in the <see cref="StObjCollector"/>.</param>
         /// <param name="tsTypes">The types to generate in TypeScript.</param>
+        /// <param name="configureEngine">Optional engine configurator.</param>
         /// <param name="cSharpCompile">Optionally parse or compile the generated C# code of the single <see cref="BinPathConfiguration"/>.</param>
         public static void GenerateTypeScript( this Testing.IStObjEngineTestHelper helper,
                                                NormalizedPath targetProjectPath,
                                                IEnumerable<Type> registeredTypes,
                                                IEnumerable<Type> tsTypes,
+                                               Action<StObjEngineConfiguration>? configureEngine = null,
                                                CompileOption cSharpCompile = CompileOption.None )
         {
             StObjEngineConfiguration config = ConfigureTypeScript( helper, null, targetProjectPath, tsTypes.ToArray() );
             config.BinPaths[0].CompileOption = cSharpCompile;
+            configureEngine?.Invoke( config );
             var engine = new StObjEngine( helper.Monitor, config );
             var collectorResults = new MonoCollectorResolver( helper, registeredTypes.ToArray() );
             engine.Run( collectorResults ).Success.Should().BeTrue( "StObjEngine.Run worked." );
