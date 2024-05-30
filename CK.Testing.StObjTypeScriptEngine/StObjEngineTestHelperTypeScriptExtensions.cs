@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
@@ -68,8 +69,12 @@ namespace CK
 
         /// <summary>
         /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
-        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup and scripts "test" command is
-        /// available: GenerateTypeScript methods can be called with it.
+        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup, a script "test" command is
+        /// available and a "src/sample.spec.ts" file is ready to be used.
+        /// <para>
+        /// <see cref="CreateTypeScriptRunner(Testing.IStObjEngineTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
+        /// the TypeScript tests.
+        /// </para>
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
@@ -86,6 +91,61 @@ namespace CK
             BuildCKGenAndVSCodeSupport,
             WithTestSupport
         }
+
+        /// <summary>
+        /// Ensures that a <see cref="TypeScriptAspect"/> is available in <see cref="StObjEngineConfiguration.Aspects"/> and that at least
+        /// one <see cref="StObjEngineConfiguration.BinPaths"/> exists and that the first BinPath (others are ignored) contains a <see cref="TypeScriptAspectBinPathConfiguration"/>.
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="engineConfiguration">The engine configuration to configure.</param>
+        /// <param name="databaseOptions">Optional <see cref="ISqlServerDatabaseOptions"/>.</param>
+        /// <param name="resetDatabase">True to reset the database even if its options match the <paramref name="databaseOptions"/>.</param>
+        /// <param name="revertOrderingName">
+        /// By default, the topological sort of the real objects and setupable items graphs randomly sort the
+        /// items in the same rank with their ascending or descending names. This helps find missing constraints
+        /// in the graphs.
+        /// <para>
+        /// To disable the random behavior, set this to false.
+        /// </para>
+        /// </param>
+        public static void EnsureTypeScriptConfigurationAspect( this IMonitorTestHelper helper,
+                                                                StObjEngineConfiguration engineConfiguration,
+                                                                NormalizedPath targetProjectPath,
+                                                                params Type[] tsTypes )
+        {
+            Throw.CheckNotNullArgument( engineConfiguration );
+            Throw.CheckArgument( targetProjectPath.Parts.Count > 2 );
+            var testMode = targetProjectPath.Parts[^2] switch
+            {
+                "TSGeneratedOnly" => GenerateMode.SkipTypeScriptTooling,
+                "TSBuildOnly" => GenerateMode.BuildCKGen,
+                "TSBuildWithVSCode" => GenerateMode.BuildCKGenAndVSCodeSupport,
+                "TSTests" => GenerateMode.WithTestSupport,
+                _ => Throw.ArgumentException<GenerateMode>( $"Unsupported target project path: '{targetProjectPath}'.{Environment.NewLine}" +
+                                                            $"The target path must be obtained with TestHelper methods GetTypeScriptGeneratedOnlyTargetProjectPath()," +
+                                                            $"GetTypeScriptWithBuildTargetProjectPath(), GetTypeScriptWithBuildAndVSCodeTargetProjectPath() or " +
+                                                            $"GetTypeScriptWithTestsSupportTargetProjectPath()." )
+            };
+            var typeScriptAspect = engineConfiguration.Aspects.OfType<TypeScriptAspectConfiguration>().SingleOrDefault();
+            if( typeScriptAspect == null )
+            {
+                typeScriptAspect = new TypeScriptAspectConfiguration();
+                engineConfiguration.Aspects.Add( typeScriptAspect );
+            }
+            BinPathConfiguration b;
+            if( engineConfiguration.BinPaths.Count == 0 )
+            {
+                engineConfiguration.BinPaths.Add( b = new BinPathConfiguration() );
+            }
+            else
+            {
+                b = engineConfiguration.BinPaths[0];
+            }
+            var bAspect = b.AspectConfigurations.;
+
+        }
+
+
 
         /// <summary>
         /// Configures (or creates) a <see cref="StObjEngineConfiguration"/> with TypeScript support based on the
@@ -213,10 +273,26 @@ namespace CK
         /// <param name="cSharpCompile">Optionally parse or compile the generated C# code of the single <see cref="BinPathConfiguration"/>.</param>
         public static void GenerateTypeScript( this Testing.IStObjEngineTestHelper helper,
                                                NormalizedPath targetProjectPath,
-                                               IEnumerable<Type> registeredTypes,
+                                               ISet<Type> registeredTypes,
                                                IEnumerable<Type> tsTypes,
                                                Action<StObjEngineConfiguration>? configureEngine = null,
                                                CompileOption cSharpCompile = CompileOption.None )
+        {
+            StObjEngineConfiguration config = ConfigureTypeScript( helper, null, targetProjectPath, tsTypes.ToArray() );
+            config.BinPaths[0].CompileOption = cSharpCompile;
+            configureEngine?.Invoke( config );
+            var engine = new StObjEngine( helper.Monitor, config );
+            var collectorResults = new MonoCollectorResolver( helper, registeredTypes.ToArray() );
+            engine.Run( collectorResults ).Success.Should().BeTrue( "StObjEngine.Run worked." );
+        }
+
+        public static void RunWithTypeScriptGeneration( this Testing.IStObjEngineTestHelper helper,
+                                                        StObjEngineConfiguration engineConfiguration,
+                                                        NormalizedPath targetProjectPath,
+                                                        ISet<Type> registeredTypes,
+                                                        IEnumerable<Type> tsTypes,
+                                                        Action<StObjEngineConfiguration>? configureEngine = null,
+                                                        CompileOption cSharpCompile = CompileOption.None )
         {
             StObjEngineConfiguration config = ConfigureTypeScript( helper, null, targetProjectPath, tsTypes.ToArray() );
             config.BinPaths[0].CompileOption = cSharpCompile;
@@ -321,8 +397,14 @@ namespace CK
         /// Creates a <see cref="TypeScriptRunner"/> that MUST be disposed once <see cref="TypeScriptRunner.Run()"/> has been called:
         /// <code>
         /// await using var runner = TestHelper.CreateTypeScriptTestRunner( targetProjectPath );
-        /// // await CK.Testing.SuspendAsync();
-        /// runner.Run();
+        /// //
+        /// // The TypeScript environment is setup with Jest and can be used to develop/fix the TS code.
+        /// // By using the SuspendAsync trick, when running in Debug, the C# application is running (a web server
+        /// // for instance is available and can be called by the TypeScript tests).
+        /// //
+        /// // await TestHelper.SuspendAsync( resume => resume );
+        /// //
+        /// runner.Run(); // This executes the TypeScript tests.
         /// </code>
         /// <para>
         /// This 2-steps pattern enables to temporarily inserts a <see cref="CK.Testing.Monitoring.IMonitorTestHelperCore.SuspendAsync"/>
