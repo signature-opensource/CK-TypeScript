@@ -46,7 +46,7 @@ namespace CK.StObj.TypeScript.Tests
                 var output1 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b1" ), false );
                 var output2 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b2" ), false );
 
-                var config = new StObjEngineConfiguration();
+                var config = new EngineConfiguration();
                 config.Aspects.Add( new TypeScriptAspectConfiguration() );
 
                 var b1 = new BinPathConfiguration();

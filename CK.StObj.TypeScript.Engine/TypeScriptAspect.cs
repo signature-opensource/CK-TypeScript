@@ -36,7 +36,11 @@ namespace CK.Setup
             _runContexts = new List<TypeScriptContext>();
         }
 
-        bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context ) => true;
+        bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
+        {
+            context.StObjEngineConfiguration.Configuration.BinPaths.
+            return true;
+        }
 
         bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;
 
@@ -166,6 +170,8 @@ namespace CK.Setup
             var basePath = binPath.ConfigurationGroup.EngineConfiguration.BasePath;
             if( !basePath.IsRooted ) Throw.InvalidOperationException( $"Configuration BasePath '{basePath}' must be rooted." );
 
+
+
             static NormalizedPath MakeAbsoluteAndNormalize( NormalizedPath basePath, NormalizedPath p )
             {
                 if( p.LastPart.Equals( "ck-gen", StringComparison.OrdinalIgnoreCase ) )
@@ -179,11 +185,9 @@ namespace CK.Setup
                 return p.ResolveDots();
             }
 
-            var configurationNames = BinPathConfiguration.GetAspectConfigurationNames( nameof( TypeScriptAspectConfiguration ) );
             configurations = binPath.ConfigurationGroup.SimilarConfigurations
-                            .SelectMany( c => c.AspectConfigurations.Where( e => configurationNames.Contains( e.Name.LocalName ) ) )
-                            .Select( c => (Path: c!.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value, c!) )
-                            .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
+                            .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() )
+                            .Where( c => c != null && !string.IsNullOrWhiteSpace( c.TargetProjectPath ) )
                             .Select( c => (Path: MakeAbsoluteAndNormalize( basePath, c.Path ), c.Item2) )
                             .Where( c => !c.Path.IsEmptyPath )
                             .Select( c => new TypeScriptBinPathAspectConfiguration( c.Item2 ) { TargetProjectPath = c.Path } )
@@ -199,7 +203,7 @@ namespace CK.Setup
             static bool CheckConfigurations( IActivityMonitor monitor, IGeneratedBinPath binPath, IReadOnlyCollection<TypeScriptBinPathAspectConfiguration> configurations )
             {
                 bool success = true;
-                // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the GeneratedBinPath.
+                // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the BinPath.
                 // Here we check only inside one but this is acceptable.
                 var targetPath = configurations.GroupBy( c => c.TargetProjectPath.Path, StringComparer.OrdinalIgnoreCase );
                 if( targetPath.Count() != configurations.Count )

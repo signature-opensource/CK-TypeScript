@@ -23,7 +23,7 @@ namespace CK.Setup
     /// </para>
     /// See <see cref="TypeScriptBinPathAspectConfiguration"/> that models this required BinPathConfiguration.
     /// </summary>
-    public sealed partial class TypeScriptAspectConfiguration : StObjEngineAspectConfiguration
+    public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfiguration
     {
         /// <summary>
         /// Initializes a new default configuration.
@@ -46,7 +46,7 @@ namespace CK.Setup
             DeferFileSave = (bool?)e.Attribute( xDeferFileSave ) ?? true;
             LibraryVersions = e.Element( xLibraryVersions )?
                     .Elements( xLibrary )
-                    .Select( e => (e.Attribute( StObjEngineConfiguration.xName )?.Value, e.Attribute( StObjEngineConfiguration.xVersion )?.Value) )
+                    .Select( e => (e.Attribute( EngineConfiguration.xName )?.Value, e.Attribute( EngineConfiguration.xVersion )?.Value) )
                     .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
                     .GroupBy( e => e.Item1 )
                     .ToDictionary( g => g.Key!, g => g.Last().Item2! )
@@ -103,7 +103,7 @@ namespace CK.Setup
         /// <returns>The element.</returns>
         public override XElement SerializeXml( XElement e )
         {
-            e.Add( new XAttribute( StObjEngineConfiguration.xVersion, "1" ),
+            e.Add( new XAttribute( EngineConfiguration.xVersion, "1" ),
                         PascalCase == false
                             ? new XAttribute( xPascalCase, false )
                             : null,
@@ -116,8 +116,8 @@ namespace CK.Setup
                         LibraryVersions.Count > 0
                             ? new XElement( xLibraryVersions,
                                             LibraryVersions.Select( kv => new XElement( xLibrary,
-                                                new XAttribute( StObjEngineConfiguration.xName, kv.Key ),
-                                                new XAttribute( StObjEngineConfiguration.xVersion, kv.Value ) ) ) )
+                                                new XAttribute( EngineConfiguration.xName, kv.Key ),
+                                                new XAttribute( EngineConfiguration.xVersion, kv.Value ) ) ) )
                             : null
                  );
             return e;

@@ -89,7 +89,7 @@ namespace CK.Setup
         public TypeScriptTypeConfiguration( XElement e )
         {
             // Allow the type to be the element value.
-            Type = (string?)e.Attribute( StObjEngineConfiguration.xType ) ?? e.Value;
+            Type = (string?)e.Attribute( EngineConfiguration.xType ) ?? e.Value;
             TypeName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeName );
             Folder = (string?)e.Attribute( TypeScriptAspectConfiguration.xFolder );
             FileName = (string?)e.Attribute( TypeScriptAspectConfiguration.xFileName );
@@ -103,7 +103,7 @@ namespace CK.Setup
         /// <returns>The <see cref="XElement"/>.</returns>
         public XElement ToXml()
         {
-            return new XElement( StObjEngineConfiguration.xType,
+            return new XElement( EngineConfiguration.xType,
                                  TypeName != null ? new XAttribute( TypeScriptAspectConfiguration.xTypeName, TypeName ) : null,
                                  Folder != null ? new XAttribute( TypeScriptAspectConfiguration.xFolder, Folder ) : null,
                                  FileName != null ? new XAttribute( TypeScriptAspectConfiguration.xFileName, FileName ) : null,

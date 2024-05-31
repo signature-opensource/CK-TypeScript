@@ -9,20 +9,9 @@ namespace CK.Setup
 {
     /// <summary>
     /// Helper that models the <see cref="BinPathConfiguration"/> &lt;TypeScript&gt; element.
-    /// <para>
-    /// There can be at most one specific BinPath configuration per aspect type: ie. only one &lt;TypeScript&gt; element
-    /// per &lt;BinPath&gt;. However this aspect can perfectly handle multiple "TypeScript outputs". If more than one
-    /// TypesScript generation for the same BinPath is needed, this BinPath &lt;TypeScript&gt; aspect can:
-    /// <list type="bullet">
-    ///     <item>Contain other &lt;TypeScript&gt; elements. The <see cref="OtherConfigurations"/> will expose them.</item>
-    ///     <item>
-    ///     Or contain a unique &lt;Array&gt; with &lt;TypeScript&gt; elements.
-    ///     This will be the first one and the <see cref="OtherConfigurations"/> will contain the remaining ones.
-    ///     </item>
-    /// </list>
     /// </para>
     /// </summary>
-    public sealed class TypeScriptBinPathAspectConfiguration : BinPathAspectConfiguration
+    public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspectConfiguration<TypeScriptBinPathAspectConfiguration>
     {
         /// <summary>
         /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
@@ -47,7 +36,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets the TypeScript target project path that contains the "ck-gen" folder.
-        /// This path can be absolute or relative to <see cref="StObjEngineConfiguration.BasePath"/>.
+        /// This path can be absolute or relative to <see cref="EngineConfiguration.BasePath"/>.
         /// It can start with the "{BasePath}", "{OutputPath}" or "{ProjectPath}" placeholders.
         /// <list type="bullet">
         ///   <item>
@@ -152,20 +141,14 @@ namespace CK.Setup
         /// </summary>
         public HashSet<NormalizedPath> Barrels { get; }
 
-
-        /// <summary>
-        /// Gets a mutable list of 
-        /// </summary>
-        public List<TypeScriptBinPathAspectConfiguration> OtherConfiguration { get; }
-
         /// <inheritdoc />
-        public override void InitializeFrom( XElement e )
+        protected override void InitializeOneFrom( XElement e )
         {
             TargetProjectPath = e.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value;
             Barrels.Clear();
             Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
-                                                        .Select( c => new NormalizedPath( (string?)c.Attribute( StObjEngineConfiguration.xPath ) ?? c.Value ) ) );
+                                                        .Select( c => new NormalizedPath( (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) ) );
             AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? DefaultTypeScriptVersion;
             AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
@@ -173,18 +156,18 @@ namespace CK.Setup
             SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
             Types.Clear();
-            Types.AddRange( e.Elements( StObjEngineConfiguration.xTypes )
-                               .Elements( StObjEngineConfiguration.xType )
+            Types.AddRange( e.Elements( EngineConfiguration.xTypes )
+                               .Elements( EngineConfiguration.xType )
                                .Select( e => new TypeScriptTypeConfiguration( e ) ) );
             TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
         }
 
         /// <inheritdoc />
-        protected override void WriteXml( XElement e )
+        protected override void WriteOneXml( XElement e )
         {
             e.Add( new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                    new XElement( TypeScriptAspectConfiguration.xBarrels,
-                                    Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( StObjEngineConfiguration.xPath, p ) ) ) ),
+                                    Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
                    new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
                    new XAttribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, AutomaticTypeScriptVersion ),
                    SkipTypeScriptTooling
@@ -202,7 +185,7 @@ namespace CK.Setup
                    AutoInstallVSCodeSupport
                     ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport, true )
                     : null,
-                   new XElement( StObjEngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
+                   new XElement( EngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
                 );
         }
     }
