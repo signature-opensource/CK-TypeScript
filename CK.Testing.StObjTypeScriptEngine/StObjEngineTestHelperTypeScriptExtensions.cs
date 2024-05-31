@@ -94,7 +94,7 @@ namespace CK
 
         /// <summary>
         /// Ensures that a <see cref="TypeScriptAspect"/> is available in <see cref="StObjEngineConfiguration.Aspects"/> and that at least
-        /// one <see cref="StObjEngineConfiguration.BinPaths"/> exists and that the first BinPath (others are ignored) contains a <see cref="TypeScriptAspectBinPathConfiguration"/>.
+        /// one <see cref="StObjEngineConfiguration.BinPaths"/> exists and that the first BinPath (others are ignored) contains a <see cref="TypeScriptBinPathAspectConfiguration"/>.
         /// </summary>
         /// <param name="helper">This helper.</param>
         /// <param name="engineConfiguration">The engine configuration to configure.</param>
@@ -197,7 +197,7 @@ namespace CK
             {
                 b.ProjectPath = helper.TestProjectFolder;
             }
-            var tsBinPathConfig = new TypeScriptAspectBinPathConfiguration
+            var tsBinPathConfig = new TypeScriptBinPathAspectConfiguration
             {
                 TargetProjectPath = targetProjectPath,
                 SkipTypeScriptTooling = testMode == GenerateMode.SkipTypeScriptTooling,

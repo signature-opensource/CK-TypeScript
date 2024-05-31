@@ -16,14 +16,14 @@ namespace CK.Setup
     {
         readonly ICodeGenerationContext _codeContext;
         readonly TypeScriptAspectConfiguration _configuration;
-        readonly TypeScriptAspectBinPathConfiguration _binPathConfiguration;
+        readonly TypeScriptBinPathAspectConfiguration _binPathConfiguration;
         readonly TSContextInitializer _initializer;
         readonly TypeScriptRoot _tsRoot;
         readonly PocoCodeGenerator _pocoGenerator;
 
         internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                     TypeScriptAspectConfiguration tsConfig,
-                                    TypeScriptAspectBinPathConfiguration tsBinPathConfig,
+                                    TypeScriptBinPathAspectConfiguration tsBinPathConfig,
                                     TSContextInitializer initializer,
                                     IPocoTypeNameMap? jsonExchangeableNames )
         {
@@ -133,9 +133,9 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration Configuration => _configuration;
 
         /// <summary>
-        /// Gets the <see cref="TypeScriptAspectBinPathConfiguration"/>.
+        /// Gets the <see cref="TypeScriptBinPathAspectConfiguration"/>.
         /// </summary>
-        public TypeScriptAspectBinPathConfiguration BinPathConfiguration => _binPathConfiguration;
+        public TypeScriptBinPathAspectConfiguration BinPathConfiguration => _binPathConfiguration;
 
         /// <summary>
         /// Gets all the global generators.

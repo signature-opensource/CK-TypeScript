@@ -25,47 +25,47 @@ namespace CK.Setup
         public static readonly XName xLibrary = XNamespace.None + "Library";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.SkipTypeScriptTooling"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.SkipTypeScriptTooling"/> attribute name.
         /// </summary>
         public static readonly XName xSkipTypeScriptTooling = XNamespace.None + "SkipTypeScriptTooling";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.EnsureTestSupport"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.EnsureTestSupport"/> attribute name.
         /// </summary>
         public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutomaticTypeScriptVersion"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.AutomaticTypeScriptVersion"/> attribute name.
         /// </summary>
         public static readonly XName xAutomaticTypeScriptVersion = XNamespace.None + "AutomaticTypeScriptVersion";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.TypeFilterName"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.TypeFilterName"/> attribute name.
         /// </summary>
         public static readonly XName xTypeFilterName = XNamespace.None + "TypeScript";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallYarn"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/> attribute name.
         /// </summary>
         public static readonly XName xAutoInstallYarn = XNamespace.None + "AutoInstallYarn";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.GitIgnoreCKGenFolder"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> attribute name.
         /// </summary>
         public static readonly XName xGitIgnoreCKGenFolder = XNamespace.None + "GitIgnoreCKGenFolder";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallVSCodeSupport"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallVSCodeSupport"/> attribute name.
         /// </summary>
         public static readonly XName xAutoInstallVSCodeSupport = XNamespace.None + "AutoInstallVSCodeSupport";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration"/> element name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration"/> element name.
         /// </summary>
         public static readonly XName xTypeScript = XNamespace.None + "TypeScript";
 
         /// <summary>
-        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.TargetProjectPath"/>.
+        /// The attribute name of <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/>.
         /// </summary>
         public static readonly XName xTargetProjectPath = XNamespace.None + "TargetProjectPath";
 
@@ -95,17 +95,17 @@ namespace CK.Setup
         public static readonly XName xSameFolderAs = XNamespace.None + "SameFolderAs";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/> element name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.Barrels"/> element name.
         /// </summary>
         public static readonly XName xBarrels = XNamespace.None + "Barrels";
 
         /// <summary>
-        /// The child element name of <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/>.
+        /// The child element name of <see cref="TypeScriptBinPathAspectConfiguration.Barrels"/>.
         /// </summary>
         public static readonly XName xBarrel = XNamespace.None + "Barrel";
 
         /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.DeferFileSave"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.DeferFileSave"/> attribute name.
         /// </summary>
         public static readonly XName xDeferFileSave = XNamespace.None + "DeferFileSave";
 

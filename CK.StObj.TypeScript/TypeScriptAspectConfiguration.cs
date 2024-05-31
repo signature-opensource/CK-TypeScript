@@ -21,9 +21,9 @@ namespace CK.Setup
     /// that will generate index.ts files in the specified folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
     /// Use &lt;Barrel Path=""/&gt; to create a barrel at the root level.
     /// </para>
-    /// See <see cref="TypeScriptAspectBinPathConfiguration"/> that models this required BinPathConfiguration.
+    /// See <see cref="TypeScriptBinPathAspectConfiguration"/> that models this required BinPathConfiguration.
     /// </summary>
-    public sealed partial class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
+    public sealed partial class TypeScriptAspectConfiguration : StObjEngineAspectConfiguration
     {
         /// <summary>
         /// Initializes a new default configuration.
@@ -74,11 +74,34 @@ namespace CK.Setup
         public Dictionary<string, string> LibraryVersions { get; }
 
         /// <summary>
+        /// Gets or sets whether TypeScript generated properties should be PascalCased.
+        /// Defaults to false (identifiers are camelCased).
+        /// </summary>
+        public bool PascalCase { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether documentation should be generated.
+        /// Defaults to true.
+        /// </summary>
+        public bool GenerateDocumentation { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the file system is updated once all code generation is done.
+        /// Defaults to true.
+        /// </summary>
+        public bool DeferFileSave { get; set; }
+
+        /// <summary>
+        /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
+        /// </summary>
+        public override string AspectType => "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine";
+
+        /// <summary>
         /// Fills the given Xml element with this configuration values.
         /// </summary>
         /// <param name="e">The element to fill.</param>
         /// <returns>The element.</returns>
-        public XElement SerializeXml( XElement e )
+        public override XElement SerializeXml( XElement e )
         {
             e.Add( new XAttribute( StObjEngineConfiguration.xVersion, "1" ),
                         PascalCase == false
@@ -100,28 +123,7 @@ namespace CK.Setup
             return e;
         }
 
-        /// <summary>
-        /// Gets or sets whether TypeScript generated properties should be PascalCased.
-        /// Defaults to false (identifiers are camelCased).
-        /// </summary>
-        public bool PascalCase { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether documentation should be generated.
-        /// Defaults to true.
-        /// </summary>
-        public bool GenerateDocumentation { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether the file system is updated once all code generation is done.
-        /// Defaults to true.
-        /// </summary>
-        public bool DeferFileSave { get; set; }
-
-        /// <summary>
-        /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
-        /// </summary>
-        public string AspectType => "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine";
+        public override BinPathAspectConfiguration CreateBinPathConfiguration() => new TypeScriptBinPathAspectConfiguration();
 
     }
 

@@ -161,7 +161,7 @@ namespace CK.Setup
 
         bool GetRootedConfigurations( IActivityMonitor monitor,
                                       IGeneratedBinPath binPath,
-                                      [NotNullWhen(true)]out IReadOnlyCollection<TypeScriptAspectBinPathConfiguration>? configurations )
+                                      [NotNullWhen(true)]out IReadOnlyCollection<TypeScriptBinPathAspectConfiguration>? configurations )
         {
             var basePath = binPath.ConfigurationGroup.EngineConfiguration.BasePath;
             if( !basePath.IsRooted ) Throw.InvalidOperationException( $"Configuration BasePath '{basePath}' must be rooted." );
@@ -186,7 +186,7 @@ namespace CK.Setup
                             .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
                             .Select( c => (Path: MakeAbsoluteAndNormalize( basePath, c.Path ), c.Item2) )
                             .Where( c => !c.Path.IsEmptyPath )
-                            .Select( c => new TypeScriptAspectBinPathConfiguration( c.Item2 ) { TargetProjectPath = c.Path } )
+                            .Select( c => new TypeScriptBinPathAspectConfiguration( c.Item2 ) { TargetProjectPath = c.Path } )
                             .ToList();
             if( configurations.Count == 0 )
             {
@@ -196,7 +196,7 @@ namespace CK.Setup
             }
             return CheckConfigurations( monitor, binPath, configurations );
 
-            static bool CheckConfigurations( IActivityMonitor monitor, IGeneratedBinPath binPath, IReadOnlyCollection<TypeScriptAspectBinPathConfiguration> configurations )
+            static bool CheckConfigurations( IActivityMonitor monitor, IGeneratedBinPath binPath, IReadOnlyCollection<TypeScriptBinPathAspectConfiguration> configurations )
             {
                 bool success = true;
                 // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the GeneratedBinPath.

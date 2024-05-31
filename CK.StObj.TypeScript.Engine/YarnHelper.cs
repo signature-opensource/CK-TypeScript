@@ -27,7 +27,7 @@ namespace CK.Setup
         public const string JestSetupFileName = "jest.StObjTypeScriptEngine.js";
 
         const string _testRunningKey = "STOBJ_TYPESCRIPT_ENGINE";
-        const string _yarnFileName = $"yarn-{TypeScriptAspectBinPathConfiguration.AutomaticYarnVersion}.cjs";
+        const string _yarnFileName = $"yarn-{TypeScriptBinPathAspectConfiguration.AutomaticYarnVersion}.cjs";
         const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace CK.Setup
                     if( version.Major < 4 )
                     {
                         monitor.Warn( $"Yarn found at '{yarnPath}' but expected version is Yarn 4. " +
-                                      $"Please upgrade to Yarn 4: yarn set version {TypeScriptAspectBinPathConfiguration.AutomaticYarnVersion}." );
+                                      $"Please upgrade to Yarn 4: yarn set version {TypeScriptBinPathAspectConfiguration.AutomaticYarnVersion}." );
 
                     }
                     else

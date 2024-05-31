@@ -50,7 +50,7 @@ namespace CK.StObj.TypeScript.Tests
                 config.Aspects.Add( new TypeScriptAspectConfiguration() );
 
                 var b1 = new BinPathConfiguration();
-                var tsB1 = new TypeScriptAspectBinPathConfiguration
+                var tsB1 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output1,
                     SkipTypeScriptTooling = true
@@ -59,7 +59,7 @@ namespace CK.StObj.TypeScript.Tests
                 b1.AspectConfigurations.Add( tsB1.ToXml() );
 
                 var b2 = new BinPathConfiguration();
-                var tsB2 = new TypeScriptAspectBinPathConfiguration
+                var tsB2 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output2,
                     TypeFilterName = "TypeScript-B2Specific",

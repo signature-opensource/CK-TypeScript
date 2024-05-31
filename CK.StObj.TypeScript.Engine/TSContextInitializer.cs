@@ -34,7 +34,7 @@ namespace CK.Setup
         public static TSContextInitializer? Create( IActivityMonitor monitor,
                                                     IGeneratedBinPath genBinPath,
                                                     TypeScriptAspectConfiguration configuration,
-                                                    TypeScriptAspectBinPathConfiguration binPathConfiguration,
+                                                    TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                                     IPocoTypeSet allExchangeableSet,
                                                     IPocoJsonSerializationServiceEngine? jsonSerialization )
         {
@@ -82,7 +82,7 @@ namespace CK.Setup
 
         // Step 1.
         static bool BuildRegTypesFromConfiguration( IActivityMonitor monitor,
-                                                    TypeScriptAspectBinPathConfiguration binPathConfiguration,
+                                                    TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                                     IPocoTypeSet allExchangeableSet,
                                                     out Dictionary<Type, RegisteredType> registeredTypes )
         {
@@ -244,14 +244,14 @@ namespace CK.Setup
         sealed class Initializer : ITypeScriptContextInitializer
         {
             readonly TypeScriptAspectConfiguration _configuration;
-            readonly TypeScriptAspectBinPathConfiguration _binPathConfiguration;
+            readonly TypeScriptBinPathAspectConfiguration _binPathConfiguration;
             readonly IReadOnlyList<ITSCodeGenerator> _globals;
             readonly Dictionary<Type, RegisteredType> _regTypes;
             readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
             readonly IPocoTypeSet _allExchangeableSet;
 
             public Initializer( TypeScriptAspectConfiguration configuration,
-                                TypeScriptAspectBinPathConfiguration binPathConfiguration,
+                                TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                 IReadOnlyList<ITSCodeGenerator> globals,
                                 Dictionary<Type, RegisteredType> regTypes,
                                 IPocoJsonSerializationServiceEngine? jsonSerialization,
@@ -277,7 +277,7 @@ namespace CK.Setup
 
             public TypeScriptAspectConfiguration Configuration => _configuration;
 
-            public TypeScriptAspectBinPathConfiguration BinPathConfiguration => _binPathConfiguration;
+            public TypeScriptBinPathAspectConfiguration BinPathConfiguration => _binPathConfiguration;
 
             public bool EnsureRegister( IActivityMonitor monitor,
                                         Type t,
@@ -315,7 +315,7 @@ namespace CK.Setup
         // Step 3.
         static bool InitializeGlobalGenerators( IActivityMonitor monitor,
                                                 TypeScriptAspectConfiguration configuration,
-                                                TypeScriptAspectBinPathConfiguration binPathConfiguration,
+                                                TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                                 List<ITSCodeGenerator> globals,
                                                 Dictionary<Type, RegisteredType> regTypes,
                                                 IPocoTypeSet allExchangeableSet,

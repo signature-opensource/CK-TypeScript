@@ -18,7 +18,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the attribute that configures the TSType. This is null if the type:
         /// <list type="bullet">
-        /// <item>Doesn't appear in the <see cref="TypeScriptAspectBinPathConfiguration.Types"/> configuration.</item>
+        /// <item>Doesn't appear in the <see cref="TypeScriptBinPathAspectConfiguration.Types"/> configuration.</item>
         /// <item>And has only one or more attribute that implement <see cref="ITSCodeGeneratorType"/> type specific generators.</item>
         /// </list>
         /// </summary>

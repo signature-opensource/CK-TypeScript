@@ -68,9 +68,9 @@ namespace CK.Setup
         TypeScriptAspectConfiguration Configuration { get; }
 
         /// <summary>
-        /// Gets the <see cref="TypeScriptAspectBinPathConfiguration"/>.
+        /// Gets the <see cref="TypeScriptBinPathAspectConfiguration"/>.
         /// </summary>
-        TypeScriptAspectBinPathConfiguration BinPathConfiguration { get; }
+        TypeScriptBinPathAspectConfiguration BinPathConfiguration { get; }
 
     }
 }
