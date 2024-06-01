@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup.PocoJson;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -38,8 +39,98 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
         {
-            context.StObjEngineConfiguration.Configuration.BinPaths.
-            return true;
+            var c = context.StObjEngineConfiguration.Configuration;
+            var basePath = c.BasePath;
+            if( !basePath.IsRooted ) Throw.InvalidOperationException( $"EngineConfiguration.BasePath '{basePath}' must be rooted." );
+
+            var allBinPathConfigurations = c.BinPaths.SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() )
+                                            .ToList();
+            for( int i = 0; i < allBinPathConfigurations.Count; i++ )
+            {
+                TypeScriptBinPathAspectConfiguration? ts = allBinPathConfigurations[i];
+                if( !KeepValidTargetProjectPath( monitor, basePath, ts ) )
+                {
+                    allBinPathConfigurations.RemoveAt( i-- );
+                }
+            }
+            return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
+
+            static bool KeepValidTargetProjectPath( IActivityMonitor monitor, NormalizedPath basePath, TypeScriptBinPathAspectConfiguration ts )
+            {
+                Throw.DebugAssert( ts.Owner != null );
+                if( CheckEmptyTargetProjectPath( monitor, ts.Owner, ts ) )
+                {
+                    ts.TargetProjectPath = MakeAbsoluteAndNormalize( basePath, ts.TargetProjectPath );
+                    if( CheckEmptyTargetProjectPath( monitor, ts.Owner, ts ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+
+                static bool CheckEmptyTargetProjectPath( IActivityMonitor monitor, BinPathConfiguration owner, TypeScriptBinPathAspectConfiguration ts )
+                {
+                    if( ts.TargetProjectPath.IsEmptyPath )
+                    {
+                        monitor.Warn( $"Ignoring TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
+                        owner.RemoveAspect( ts );
+                        return false;
+                    }
+                    return true;
+                }
+
+                static NormalizedPath MakeAbsoluteAndNormalize( NormalizedPath basePath, NormalizedPath p )
+                {
+                    if( p.LastPart.Equals( "ck-gen", StringComparison.OrdinalIgnoreCase ) )
+                    {
+                        p = p.RemoveLastPart();
+                    }
+                    if( !p.IsRooted )
+                    {
+                        p = basePath.Combine( p );
+                    }
+                    return p.ResolveDots();
+                }
+
+            }
+
+            static bool CheckPathOrTypeScriptSetDuplicate( IActivityMonitor monitor, IReadOnlyCollection<TypeScriptBinPathAspectConfiguration> configurations )
+            {
+                bool success = true;
+                // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the BinPath.
+                // Here we check only inside one but this is acceptable.
+                var targetPath = configurations.GroupBy( c => c.TargetProjectPath.Path, StringComparer.OrdinalIgnoreCase );
+                if( targetPath.Count() != configurations.Count )
+                {
+                    foreach( var g in targetPath.Where( g => g.Count() > 1 ) )
+                    {
+                        monitor.Error( $"TypeScript BinPath configuration with TargetProjectPath=\"{g.Key}\" appear more than once. " +
+                                       $"Each configuration must target a different output path." );
+                    }
+                    success = false;
+                }
+                // This test is important: the TypeFilterName MUST be or start with "TypeScript".
+                var badNames = configurations.Where( c => !c.TypeFilterName.StartsWith( "TypeScript" ) );
+                if( badNames.Any() )
+                {
+                    monitor.Error( $"TypeScript configuration TypeFilterName MUST be or start with \"TypeScript\". " +
+                                   $"Following TypeFilterName are invalid: '{badNames.Select( c => c.TypeFilterName ).Concatenate( "', '" )}'." );
+                    success = false; ;
+                }
+                // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
+                // must be uniquely identified.
+                var filterNames = configurations.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
+                if( filterNames.Count() != configurations.Count )
+                {
+                    foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
+                    {
+                        monitor.Error( $"TypeScript BinPath configuration with TypeFilterName=\"{g.Key}\" appear more than once. " +
+                                       $"They must use different names as they identify different set of types for the serialization layer." );
+                    }
+                    success = false;
+                }
+                return success;
+            }
         }
 
         bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;
@@ -95,11 +186,10 @@ namespace CK.Setup
             // Obtains all the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
             // One BinPath can have any number of TypeScriptAspectConfiguration. The TypeFilterName identifies
             // one configuration among the others in the same BinPath.
-            if( !GetRootedConfigurations( monitor, binPath, out var rootedConfigs ) )
-            {
-                return false;
-            }
-            foreach( var tsBinPathconfig in rootedConfigs )
+            var configs = binPath.ConfigurationGroup.SimilarConfigurations
+                                        .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
+                                                            ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() );
+            foreach( var tsBinPathconfig in configs )
             {
                 // First handles the configured <Types>, types that have [TypeScript] attribute or are decorated by some
                 // ITSCodeGeneratorType and any type that are decorated with "global" ITSCodeGenerator. Then the discovered globals
@@ -109,11 +199,11 @@ namespace CK.Setup
                 // => Only Poco compliant types that are reachable from a registered Poco type will be in TypeScriptExchangeableSet
                 //    and handled by the PocoCodeGenerator.
                 var initializer = TSContextInitializer.Create( monitor,
-                                                               binPath,
-                                                               _tsConfig,
-                                                               tsBinPathconfig,
-                                                               typeSystem.SetManager.AllExchangeable,
-                                                               jsonSerialization );
+                                                                binPath,
+                                                                _tsConfig,
+                                                                tsBinPathconfig,
+                                                                typeSystem.SetManager.AllExchangeable,
+                                                                jsonSerialization );
                 if( initializer == null ) return false;
 
                 // We now have the Global code generators initialized, the configured attributes on explicitly registered types,
@@ -141,6 +231,10 @@ namespace CK.Setup
                 // It will be run by FinalImplement.
                 _runContexts.Add( new TypeScriptContext( codeContext, _tsConfig, tsBinPathconfig, initializer, exchangeableNames ) );
             }
+            if( _runContexts.Count == 0 )
+            {
+                monitor.Info( $"Skipped TypeScript generation for BinPathConfiguration '{binPath.ConfigurationGroup.Names}': no TypeScript BinPath configuration." );
+            }
             return true;
         }
 
@@ -162,82 +256,6 @@ namespace CK.Setup
 
 
         bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context ) => true;
-
-        bool GetRootedConfigurations( IActivityMonitor monitor,
-                                      IGeneratedBinPath binPath,
-                                      [NotNullWhen(true)]out IReadOnlyCollection<TypeScriptBinPathAspectConfiguration>? configurations )
-        {
-            var basePath = binPath.ConfigurationGroup.EngineConfiguration.BasePath;
-            if( !basePath.IsRooted ) Throw.InvalidOperationException( $"Configuration BasePath '{basePath}' must be rooted." );
-
-
-
-            static NormalizedPath MakeAbsoluteAndNormalize( NormalizedPath basePath, NormalizedPath p )
-            {
-                if( p.LastPart.Equals( "ck-gen", StringComparison.OrdinalIgnoreCase ) )
-                {
-                    p = p.RemoveLastPart();
-                }
-                if( !p.IsRooted )
-                {
-                    p = basePath.Combine( p );
-                }
-                return p.ResolveDots();
-            }
-
-            configurations = binPath.ConfigurationGroup.SimilarConfigurations
-                            .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() )
-                            .Where( c => c != null && !string.IsNullOrWhiteSpace( c.TargetProjectPath ) )
-                            .Select( c => (Path: MakeAbsoluteAndNormalize( basePath, c.Path ), c.Item2) )
-                            .Where( c => !c.Path.IsEmptyPath )
-                            .Select( c => new TypeScriptBinPathAspectConfiguration( c.Item2 ) { TargetProjectPath = c.Path } )
-                            .ToList();
-            if( configurations.Count == 0 )
-            {
-                monitor.Warn( $"Skipped TypeScript generation for BinPathConfiguration '{binPath.ConfigurationGroup.Names}': " +
-                              "no <TypeScript TargetProjectPath=\"...\"></TypeScript> element found or empty TargetProjectPath." );
-                return true;
-            }
-            return CheckConfigurations( monitor, binPath, configurations );
-
-            static bool CheckConfigurations( IActivityMonitor monitor, IGeneratedBinPath binPath, IReadOnlyCollection<TypeScriptBinPathAspectConfiguration> configurations )
-            {
-                bool success = true;
-                // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the BinPath.
-                // Here we check only inside one but this is acceptable.
-                var targetPath = configurations.GroupBy( c => c.TargetProjectPath.Path, StringComparer.OrdinalIgnoreCase );
-                if( targetPath.Count() != configurations.Count )
-                {
-                    foreach( var g in targetPath.Where( g => g.Count() > 1 ) )
-                    {
-                        monitor.Error( $"TypeScript configuration with TargetProjectPath=\"{g.Key}\" appear more than once in BinPathConfiguration '{binPath.ConfigurationGroup.Names}'. " +
-                                       $"Each configuration must target a different output path." );
-                    }
-                    success = false;
-                }
-                // This test is important: the TypeFilterName MUST be or start with "TypeScript".
-                var badNames = configurations.Where( c => !c.TypeFilterName.StartsWith( "TypeScript" ) );
-                if( badNames.Any() )
-                {
-                    monitor.Error( $"TypeScript configuration TypeFilterName MUST be or start with \"TypeScript\". " +
-                                   $"Following TypeFilterName are invalid: '{badNames.Select( c => c.TypeFilterName ).Concatenate( "', '" )}'." );
-                    success = false; ;
-                }
-                // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
-                // must be uniquely identified.
-                var filterNames = configurations.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
-                if( filterNames.Count() != configurations.Count )
-                {
-                    foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
-                    {
-                        monitor.Error( $"TypeScript configuration with TypeFilterName=\"{g.Key}\" appear more than once in BinPathConfiguration '{binPath.ConfigurationGroup.Names}'. " +
-                                       $"They must use different names as they identify different set of types for the serialization layer." );
-                    }
-                    success = false;
-                }
-                return success;
-            }
-        }
 
         bool IStObjEngineAspect.Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context )
         {

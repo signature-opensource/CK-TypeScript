@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -34,7 +35,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             // NotGeneratedByDefault is not generated.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( INotGeneratedByDefault ) }, Type.EmptyTypes );
+            TestHelper.GenerateTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( INotGeneratedByDefault ) ), Type.EmptyTypes );
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
         }
 
@@ -43,7 +44,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             // NotGeneratedByDefault is generated because it is referenced by IGeneratedByDefault.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) }, Type.EmptyTypes );
+            TestHelper.GenerateTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) ), Type.EmptyTypes );
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
         }
 
@@ -52,7 +53,7 @@ namespace CK.StObj.TypeScript.Tests
         {
             // NotGeneratedByDefault is generated because it is configured.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, new[] { typeof( INotGeneratedByDefault ) }, new[] { typeof( INotGeneratedByDefault ) } );
+            TestHelper.GenerateTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( INotGeneratedByDefault ) ), new[] { typeof( INotGeneratedByDefault ) } );
             File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
                 .Should().Contain( "export class NotGeneratedByDefault" );
         }

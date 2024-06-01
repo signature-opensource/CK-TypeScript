@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -83,7 +84,7 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IValueTupleWithNamePoco2 ),
                 typeof( IValueTupleWithNamePoco3 ),
             };
-            TestHelper.GenerateTypeScript( targetProjectPath, tsTypes, tsTypes );
+            TestHelper.GenerateTypeScript( targetProjectPath, tsTypes );
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco1.ts",
@@ -201,7 +202,7 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IRecordPoco2 ),
                 typeof( IRecordPoco3 ),
             };
-            var registeredTypes = tsTypes.Append( typeof( Rec1 ) ).Append( typeof( Rec2 ) ).Append( typeof( Rec3 ) );
+            var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
             TestHelper.GenerateTypeScript( targetProjectPath, registeredTypes, tsTypes );
 
             CheckFile( targetProjectPath,

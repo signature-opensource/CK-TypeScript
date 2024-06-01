@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -47,18 +48,10 @@ namespace CK.StObj.TypeScript.Tests
                 var output2 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b2" ), false );
 
                 var config = new EngineConfiguration();
-                config.Aspects.Add( new TypeScriptAspectConfiguration() );
-
-                var b1 = new BinPathConfiguration();
-                var tsB1 = new TypeScriptBinPathAspectConfiguration
-                {
-                    TargetProjectPath = output1,
-                    SkipTypeScriptTooling = true
-                };
-                tsB1.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
-                b1.AspectConfigurations.Add( tsB1.ToXml() );
+                TestHelper.EnsureTypeScriptConfigurationAspect( config, output1, types );
 
                 var b2 = new BinPathConfiguration();
+                config.AddBinPath( b2 );
                 var tsB2 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output2,
@@ -66,23 +59,21 @@ namespace CK.StObj.TypeScript.Tests
                     SkipTypeScriptTooling = true
                 };
                 tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
-                b2.AspectConfigurations.Add( tsB2.ToXml() );
+                b2.AddAspect( tsB2 );
 
                 // b3 has no TypeScript aspect or no TargetProjectPath or an empty TargetProjectPath:
                 // nothing must be generated and this is just a warning.
                 var b3 = new BinPathConfiguration();
+                config.AddBinPath( b3 );
                 switch( Environment.TickCount % 3 )
                 {
-                    case 0: b3.AspectConfigurations.Add( new XElement( "TypeScript", new XAttribute( "TargetProjectPath", " " ) ) ); break;
-                    case 1: b3.AspectConfigurations.Add( new XElement( "TypeScript" ) ); break;
+                    case 0: b3.AddAspect( new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = " " } ); break;
+                    case 1: b3.AddAspect( new TypeScriptBinPathAspectConfiguration() ); break;
                 }
 
-                config.BinPaths.Add( b1 );
-                config.BinPaths.Add( b2 );
-                config.BinPaths.Add( b3 );
-
-                var r = TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector( types ) );
-                StObjEngine.Run( TestHelper.Monitor, r, config ).Success.Should().BeTrue();
+                var r = TestHelper.GetSuccessfulCollectorResult( TestHelper.CreateTypeCollector( types ) );
+                var engine = new StObjEngine( TestHelper.Monitor, config );
+                engine.RunSingleBinPath( r ).Success.Should().BeTrue();
 
                 Directory.Exists( output1 ).Should().BeTrue();
                 Directory.Exists( output2 ).Should().BeTrue();

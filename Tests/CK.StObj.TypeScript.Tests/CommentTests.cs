@@ -1,4 +1,5 @@
 using CK.Setup;
+using CK.Testing;
 using CK.TypeScript.CodeGen;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestPlatform.Utilities;
@@ -76,6 +77,8 @@ namespace CK.StObj.TypeScript.Tests
         public void comments_on_enum_values_are_supported()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+            var c = TestHelper.CreateDefaultEngineConfiguration( generateSourceFiles: false, CompileOption.None );
+            TestHelper.RunEngine( TestHelper.EnsureTypeScriptConfigurationAspect( c, targetProjectPath, typeof( CommentedEnum ) ) );
             TestHelper.GenerateTypeScript( targetProjectPath, typeof( CommentedEnum ) );
 
             var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CommentedEnum.ts" ) );
