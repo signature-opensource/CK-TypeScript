@@ -48,7 +48,13 @@ namespace CK.StObj.TypeScript.Tests
                 var output2 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b2" ), false );
 
                 var config = new EngineConfiguration();
-                TestHelper.EnsureTypeScriptConfigurationAspect( config, output1, types );
+                config.AddAspect( new TypeScriptAspectConfiguration() );
+                var tsB1 = new TypeScriptBinPathAspectConfiguration
+                {
+                    TargetProjectPath = output1,
+                    SkipTypeScriptTooling = true
+                };
+                config.FirstBinPath.AddAspect( tsB1 );
 
                 var b2 = new BinPathConfiguration();
                 config.AddBinPath( b2 );
@@ -71,9 +77,8 @@ namespace CK.StObj.TypeScript.Tests
                     case 1: b3.AddAspect( new TypeScriptBinPathAspectConfiguration() ); break;
                 }
 
-                var r = TestHelper.GetSuccessfulCollectorResult( TestHelper.CreateTypeCollector( types ) );
                 var engine = new StObjEngine( TestHelper.Monitor, config );
-                engine.RunSingleBinPath( r ).Success.Should().BeTrue();
+                engine.Run( TestHelper.CreateTypeCollector( types ) ).Success.Should().BeTrue();
 
                 Directory.Exists( output1 ).Should().BeTrue();
                 Directory.Exists( output2 ).Should().BeTrue();
@@ -102,7 +107,7 @@ namespace CK.StObj.TypeScript.Tests
         public void explicit_Folder_configured()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( InAnotherFolder ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( InAnotherFolder ) );
 
             var f = targetProjectPath.Combine( "ck-gen/src/TheFolder/InAnotherFolder.ts" );
             var s = File.ReadAllText( f );
@@ -130,7 +135,7 @@ namespace CK.StObj.TypeScript.Tests
         public void empty_Folder_generates_code_at_the_Root()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( AtTheRootFolder ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( AtTheRootFolder ) );
 
             var f1 = targetProjectPath.Combine( "ck-gen/src/AtTheRootFolder.ts" );
             var s = File.ReadAllText( f1 );
@@ -164,7 +169,7 @@ namespace CK.StObj.TypeScript.Tests
         public void explicit_FileName_configured()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
 
             var f1 = targetProjectPath.Combine( "ck-gen/src/Folder/EnumFile.ts" );
             var s = File.ReadAllText( f1 );
@@ -194,7 +199,7 @@ namespace CK.StObj.TypeScript.Tests
         public void ExternalName_attribute_overrides_the_Type_name()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( InASpecificFileWithAnExternalName ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( InASpecificFileWithAnExternalName ) );
 
             var f = targetProjectPath.Combine( "ck-gen/src/IAmHere/EnumFile.ts" );
             var s = File.ReadAllText( f );
@@ -233,7 +238,7 @@ namespace CK.StObj.TypeScript.Tests
         public void ExternalName_attribute_overrides_the_TypeName_and_the_FileName()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( WithAnExternalName ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( WithAnExternalName ) );
 
             var f = targetProjectPath.Combine( "ck-gen/src/Folder/Toto.ts" );
             var s = File.ReadAllText( f );
@@ -254,7 +259,7 @@ namespace CK.StObj.TypeScript.Tests
         public void explicit_TypeName_and_FileName_override_the_ExternalName()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
 
             var f = targetProjectPath.Combine( "ck-gen/src/EnumFile.ts" );
             var s = File.ReadAllText( f );

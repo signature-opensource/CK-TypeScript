@@ -1,4 +1,5 @@
 using CK.CrisLike;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -119,15 +120,16 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( ICommandThree ),
                 typeof( ICommandFour )
             };
-            TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
-                                           // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
-                                           // the TypeScriptSet.
-                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
-                                                                                    typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IUbiquitousValues ),
-                                                                                    typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
-                                           tsTypes );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath,
+                                                // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
+                                                // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
+                                                // the TypeScriptSet.
+                                                types: TestHelper.CreateTypeCollector( typeof( IAspNetCrisResult ),
+                                                                                       typeof( IAspNetCrisResultError ),
+                                                                                       typeof( IUbiquitousValues ),
+                                                                                       typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) )
+                                                                 .Add( tsTypes ),
+                                                tsTypes );
             var p = targetProjectPath.Combine( "ck-gen/src" );
             File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).Should().Contain( "export enum Power" );
 
@@ -225,15 +227,16 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( IWithObjectCommand ),
                 typeof( IWithObjectSpecializedAsStringCommand )
             };
-            TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
-                                           // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
-                                           // the TypeScriptSet.
-                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
-                                                                                    typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IUbiquitousValues ),
-                                                                                    typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
-                                           tsTypes );
+            // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
+            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
+            // the TypeScriptSet.
+            var types = TestHelper.CreateTypeCollector( typeof( IAspNetCrisResult ),
+                                                        typeof( IAspNetCrisResultError ),
+                                                        typeof( IUbiquitousValues ),
+                                                        typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) )
+                                   .Add( tsTypes );
+
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, types, tsTypes );
         }
 
         [Test]
@@ -250,15 +253,14 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                 typeof( IWithObjectSpecializedAsSuperPocoCommand ),
                 typeof( ISuperResult )
             };
-            TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
-                                           // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
-                                           // the TypeScriptSet.
-                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
-                                                                                    typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IUbiquitousValues ),
-                                                                                    typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) } ),
-                                           tsTypes );
+            // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
+            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
+            // the TypeScriptSet.
+            var types = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( IAspNetCrisResult ),
+                                                                       typeof( IAspNetCrisResultError ),
+                                                                       typeof( IUbiquitousValues ),
+                                                                       typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, types, tsTypes );
         }
 
         [Test]
@@ -267,17 +269,18 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
             var tsTypes = new[] { typeof( IStringCommand ), typeof( ICommandCommand ) };
-            TestHelper.GenerateTypeScript( targetProjectPath,
-                                           // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
-                                           // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
-                                           // the TypeScriptSet.
-                                           registeredTypes: tsTypes.Concat( new[] { typeof( IAspNetCrisResult ),
-                                                                                    typeof( IAspNetCrisResultError ),
-                                                                                    typeof( IUbiquitousValues ),
-                                                                                    typeof( FakeTypeScriptCrisCommandGenerator ) } ),
-                                           tsTypes );
-            var p = targetProjectPath.Combine( "ck-gen/src" );
 
+            // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
+            // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
+            // the TypeScriptSet.
+            var types = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( IAspNetCrisResult ),
+                                                                       typeof( IAspNetCrisResultError ),
+                                                                       typeof( IUbiquitousValues ),
+                                                                       typeof( FakeTypeScriptCrisCommandGenerator ) );
+
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, types, tsTypes );
+
+            var p = targetProjectPath.Combine( "ck-gen/src" );
             var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) ).ReplaceLineEndings();
             tS.Should().StartWith( """
                 import { ICommandModel, ICommand } from "../../../../Cris/Model";

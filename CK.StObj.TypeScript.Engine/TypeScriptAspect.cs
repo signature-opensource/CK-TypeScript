@@ -39,7 +39,7 @@ namespace CK.Setup
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
         {
-            var c = context.StObjEngineConfiguration.Configuration;
+            var c = context.EngineConfiguration.Configuration;
             var basePath = c.BasePath;
             if( !basePath.IsRooted ) Throw.InvalidOperationException( $"EngineConfiguration.BasePath '{basePath}' must be rooted." );
 

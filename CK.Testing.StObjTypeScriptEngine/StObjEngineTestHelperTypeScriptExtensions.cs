@@ -102,10 +102,11 @@ namespace CK
         /// the other similar methods.
         /// </param>
         /// <param name="tsTypes">The types to generate in TypeScript.</param>
-        public static EngineConfiguration EnsureTypeScriptConfigurationAspect( this IMonitorTestHelper helper,
-                                                                               EngineConfiguration engineConfiguration,
-                                                                               NormalizedPath targetProjectPath,
-                                                                               params Type[] tsTypes )
+        /// <returns>The configured BinPath aspect.</returns>
+        public static TypeScriptBinPathAspectConfiguration EnsureTypeScriptConfigurationAspect( this IMonitorTestHelper helper,
+                                                                                                EngineConfiguration engineConfiguration,
+                                                                                                NormalizedPath targetProjectPath,
+                                                                                                params Type[] tsTypes )
         {
             Throw.CheckNotNullArgument( engineConfiguration );
             Throw.CheckArgument( targetProjectPath.Parts.Count > 2 );
@@ -115,7 +116,8 @@ namespace CK
                 "TSBuildOnly" => GenerateMode.BuildCKGen,
                 "TSBuildWithVSCode" => GenerateMode.BuildCKGenAndVSCodeSupport,
                 "TSTests" => GenerateMode.WithTestSupport,
-                _ => Throw.ArgumentException<GenerateMode>( $"Unsupported target project path: '{targetProjectPath}'.{Environment.NewLine}" +
+                _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath),
+                                                            $"Unsupported target project path: '{targetProjectPath}'.{Environment.NewLine}" +
                                                             $"The target path must be obtained with TestHelper methods GetTypeScriptGeneratedOnlyTargetProjectPath()," +
                                                             $"GetTypeScriptWithBuildTargetProjectPath(), GetTypeScriptWithBuildAndVSCodeTargetProjectPath() or " +
                                                             $"GetTypeScriptWithTestsSupportTargetProjectPath()." )
@@ -141,34 +143,66 @@ namespace CK
             tsBinPathAspect.GitIgnoreCKGenFolder = true;
             tsBinPathAspect.Types.Clear();
             tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
-            return engineConfiguration;
+            return tsBinPathAspect;
         }
 
-        public static StObjEngineResult RunEngineWithTypeScript( this IMonitorTestHelper helper,
-                                                                 EngineConfiguration engineConfiguration,
-                                                                 NormalizedPath targetProjectPath,
-                                                                 ISet<Type> types,
-                                                                 params Type[] tsTypes )
+        /// <summary>
+        /// Runs the engine on a default configuration. The same <paramref name="types"/> are registered in the engine
+        /// and provided to the TypeScript aspect.
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="targetProjectPath">The TypeScript target project path obtained from one of the GetTypeScriptXXXTargetProjectPath methods.</param>
+        /// <param name="types">The types to register in the engine and also to consider for TypeScript generation.</param>
+        /// <returns>The successful engine result.</returns>
+        public static StObjEngineResult RunSuccessfulEngineWithTypeScript( this IMonitorTestHelper helper,
+                                                                           NormalizedPath targetProjectPath,
+                                                                           params Type[] types )
+        {
+            return RunSuccessfulEngineWithTypeScript( helper, targetProjectPath, helper.CreateTypeCollector( types ), types );
+        }
+
+        /// <summary>
+        /// <list type="number">
+        ///     <item>Calls <see cref="StObjEngineTestHelperExtensions.CreateDefaultEngineConfiguration(IBasicTestHelper, bool, CompileOption)"/>.</item>
+        ///     <item>Calls <see cref="EnsureTypeScriptConfigurationAspect"/> on the configuration.</item>
+        ///     <item>Calls <see cref="StObjEngineTestHelperExtensions.RunEngine(IMonitorTestHelper, EngineConfiguration, ISet{Type})"/> with the provided <paramref name="types"/>.</item>
+        ///     <item>Checks that <see cref="StObjEngineResult.Success"/> is true.</item>
+        /// </list>
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="targetProjectPath">The TypeScript target project path obtained from one of the GetTypeScriptXXXTargetProjectPath methods.</param>
+        /// <param name="types">The types to register in the engine.</param>
+        /// <param name="tsTypes">The types to generate in TypeScript.</param>
+        /// <returns>The successful engine result.</returns>
+        public static StObjEngineResult RunSuccessfulEngineWithTypeScript( this IMonitorTestHelper helper,
+                                                                           NormalizedPath targetProjectPath,
+                                                                           ISet<Type> types,
+                                                                           params Type[] tsTypes )
+        {
+            return RunSuccessfulEngineWithTypeScript( helper, helper.CreateDefaultEngineConfiguration(), targetProjectPath, types, tsTypes );
+        }
+
+        /// <summary>
+        /// <list type="number">
+        ///     <item>Calls <see cref="EnsureTypeScriptConfigurationAspect"/> on the provided configuration.</item>
+        ///     <item>Calls <see cref="StObjEngineTestHelperExtensions.RunEngine(IMonitorTestHelper, EngineConfiguration, ISet{Type})"/> with the provided types.</item>
+        ///     <item>Checks that <see cref="StObjEngineResult.Success"/> is true.</item>
+        /// </list>
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="engineConfiguration">The engine configuration.</param>
+        /// <param name="targetProjectPath">The TypeScript target project path obtained from one of the GetTypeScriptXXXTargetProjectPath methods.</param>
+        /// <param name="types">The types to register in the engine.</param>
+        /// <param name="tsTypes">The types to generate in TypeScript.</param>
+        /// <returns>The successful engine result.</returns>
+        public static StObjEngineResult RunSuccessfulEngineWithTypeScript( this IMonitorTestHelper helper,
+                                                                           EngineConfiguration engineConfiguration,
+                                                                           NormalizedPath targetProjectPath,
+                                                                           ISet<Type> types,
+                                                                           params Type[] tsTypes )
         {
             EnsureTypeScriptConfigurationAspect( helper, engineConfiguration, targetProjectPath, tsTypes );
-            return helper.RunEngine( engineConfiguration, types );
-        }
-
-        public static StObjEngineResult GenerateTypeScript( this IMonitorTestHelper helper,
-                                                            NormalizedPath targetProjectPath,
-                                                            params Type[] types )
-        {
-            return GenerateTypeScript( helper, targetProjectPath, helper.CreateTypeCollector( types ), types );
-        }
-
-        public static StObjEngineResult GenerateTypeScript( this IMonitorTestHelper helper,
-                                                            NormalizedPath targetProjectPath,
-                                                            ISet<Type> registeredTypes,
-                                                            params Type[] tsTypes )
-        {
-            var engineConfiguration = helper.CreateDefaultEngineConfiguration( generateSourceFiles: false, CompileOption.None );
-            EnsureTypeScriptConfigurationAspect( helper, engineConfiguration, targetProjectPath, tsTypes );
-            var r = helper.RunEngine( engineConfiguration, registeredTypes );
+            var r = helper.RunEngine( engineConfiguration, types );
             r.Success.Should().BeTrue( "Engine.Run worked." );
             return r;
         }

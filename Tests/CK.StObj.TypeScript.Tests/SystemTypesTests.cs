@@ -25,7 +25,7 @@ namespace CK.StObj.TypeScript.Tests
         public void with_date_and_guid()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( IWithDateAndGuid ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( IWithDateAndGuid ) );
             File.Exists( targetProjectPath.Combine( "ck-gen/src/WithDateAndGuid.ts" ) ).Should().BeTrue();
         }
 

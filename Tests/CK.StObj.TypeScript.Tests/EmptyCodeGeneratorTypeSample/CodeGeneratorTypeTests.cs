@@ -43,10 +43,10 @@ namespace CK.StObj.TypeScript.Tests
         public void all_types_are_empty()
         {
             var targetOutputPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetOutputPath, typeof( EnumThatWillBeEmpty ),
-                                                             typeof( IWillBeEmpty ),
-                                                             typeof( WillBeEmptyClass ),
-                                                             typeof( WillBeEmptyStruct ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetOutputPath, typeof( EnumThatWillBeEmpty ),
+                                                                            typeof( IWillBeEmpty ),
+                                                                            typeof( WillBeEmptyClass ),
+                                                                            typeof( WillBeEmptyStruct ) );
 
             var e = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/EnumThatWillBeEmpty.ts" ) );
             var i = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/IWillBeEmpty.ts" ) );

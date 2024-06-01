@@ -84,7 +84,7 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IValueTupleWithNamePoco2 ),
                 typeof( IValueTupleWithNamePoco3 ),
             };
-            TestHelper.GenerateTypeScript( targetProjectPath, tsTypes );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, tsTypes );
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco1.ts",
@@ -203,7 +203,7 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IRecordPoco3 ),
             };
             var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
-            TestHelper.GenerateTypeScript( targetProjectPath, registeredTypes, tsTypes );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, registeredTypes, tsTypes );
 
             CheckFile( targetProjectPath,
                 "Rec1.ts",
@@ -277,8 +277,8 @@ namespace CK.StObj.TypeScript.Tests
             {
                 typeof( IRecTryPoco )
             };
-            var registeredTypes = tsTypes.Append( typeof( RecTry ) );
-            TestHelper.GenerateTypeScript( targetProjectPath, registeredTypes, tsTypes );
+            var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( RecTry ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, registeredTypes, tsTypes );
             CheckFile( targetProjectPath,
                "RecTry.ts",
                """
@@ -307,8 +307,8 @@ namespace CK.StObj.TypeScript.Tests
             {
                 typeof( IRecWithNonNullDefaultPoco )
             };
-            var registeredTypes = tsTypes.Append( typeof( RecWithNonNullDefault ) );
-            TestHelper.GenerateTypeScript( targetProjectPath, registeredTypes, tsTypes );
+            var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( RecWithNonNullDefault ) );
+            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, registeredTypes, tsTypes );
             CheckFile( targetProjectPath,
               "RecWithNonNullDefault.ts",
               """

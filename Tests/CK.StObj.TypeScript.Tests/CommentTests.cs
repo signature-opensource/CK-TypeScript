@@ -78,8 +78,8 @@ namespace CK.StObj.TypeScript.Tests
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             var c = TestHelper.CreateDefaultEngineConfiguration( generateSourceFiles: false, CompileOption.None );
-            TestHelper.RunEngine( TestHelper.EnsureTypeScriptConfigurationAspect( c, targetProjectPath, typeof( CommentedEnum ) ) );
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( CommentedEnum ) );
+            TestHelper.EnsureTypeScriptConfigurationAspect( c, targetProjectPath, typeof( CommentedEnum ) );
+            TestHelper.RunEngine( c, TestHelper.CreateTypeCollector( typeof( CommentedEnum ) ) );
 
             var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CommentedEnum.ts" ) );
 
