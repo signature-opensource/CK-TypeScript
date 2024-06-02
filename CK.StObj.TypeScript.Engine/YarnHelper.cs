@@ -57,7 +57,7 @@ namespace CK.Setup
             var packageJson = LoadPackageJson( monitor, sdkTypeScriptPath, out var _ );
             if( packageJson == null )
             {
-                monitor.Error( $"Missing expected '{sdkTypeScriptPath}' to be able to read the Yarn sdk TypeScript version." );
+                monitor.Warn( $"Missing expected '{sdkTypeScriptPath}' to be able to read the Yarn sdk TypeScript version." );
                 return null;
             }
             var version = (string?)packageJson["version"];

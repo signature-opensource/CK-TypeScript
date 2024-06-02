@@ -70,9 +70,9 @@ namespace CK.Setup
 
                 static bool CheckEmptyTargetProjectPath( IActivityMonitor monitor, BinPathConfiguration owner, TypeScriptBinPathAspectConfiguration ts )
                 {
-                    if( ts.TargetProjectPath.IsEmptyPath )
+                    if( ts.TargetProjectPath.IsEmptyPath || string.IsNullOrWhiteSpace( ts.TargetProjectPath ) )
                     {
-                        monitor.Warn( $"Ignoring TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
+                        monitor.Warn( $"Removing TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
                         owner.RemoveAspect( ts );
                         return false;
                     }
