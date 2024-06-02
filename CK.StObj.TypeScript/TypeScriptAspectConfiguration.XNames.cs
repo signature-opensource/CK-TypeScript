@@ -105,7 +105,7 @@ namespace CK.Setup
         public static readonly XName xBarrel = XNamespace.None + "Barrel";
 
         /// <summary>
-        /// The <see cref="TypeScriptBinPathAspectConfiguration.DeferFileSave"/> attribute name.
+        /// The <see cref="DeferFileSave"/> attribute name.
         /// </summary>
         public static readonly XName xDeferFileSave = XNamespace.None + "DeferFileSave";
 

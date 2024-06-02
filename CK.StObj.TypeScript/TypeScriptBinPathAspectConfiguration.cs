@@ -9,7 +9,6 @@ namespace CK.Setup
 {
     /// <summary>
     /// Helper that models the <see cref="BinPathConfiguration"/> &lt;TypeScript&gt; element.
-    /// </para>
     /// </summary>
     public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspectConfiguration<TypeScriptBinPathAspectConfiguration>
     {

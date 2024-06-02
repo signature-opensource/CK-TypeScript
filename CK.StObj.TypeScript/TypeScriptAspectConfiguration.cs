@@ -123,6 +123,7 @@ namespace CK.Setup
             return e;
         }
 
+        /// <inheritdoc />
         public override BinPathAspectConfiguration CreateBinPathConfiguration() => new TypeScriptBinPathAspectConfiguration();
 
     }
