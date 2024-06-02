@@ -119,15 +119,19 @@ namespace CK.Setup
                 }
                 // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
                 // must be uniquely identified.
-                var filterNames = configurations.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
-                if( filterNames.Count() != configurations.Count )
+                // But this is only per BinPath.
+                foreach( var gBinPath in configurations.GroupBy( c => c.Owner ) )
                 {
-                    foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
+                    var filterNames = gBinPath.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
+                    if( filterNames.Count() != gBinPath.Count() )
                     {
-                        monitor.Error( $"TypeScript BinPath configuration with TypeFilterName=\"{g.Key}\" appear more than once. " +
-                                       $"They must use different names as they identify different set of types for the serialization layer." );
+                        foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
+                        {
+                            monitor.Error( $"TypeScript BinPath configuration with TypeFilterName=\"{g.Key}\" appear more than once in BinPath '{gBinPath.Key!.Path}'. " +
+                                           $"They must use different names as they identify different set of types for the serialization layer." );
+                        }
+                        success = false;
                     }
-                    success = false;
                 }
                 return success;
             }

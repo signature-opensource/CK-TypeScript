@@ -29,7 +29,9 @@ namespace CK.StObj.TypeScript.Tests
         public void simple_enum_generation_in_multiple_BinPath()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            GenerateTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
+            var config = CreateConfigurationTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
+            var engine = new StObjEngine( TestHelper.Monitor, config );
+            engine.Run( TestHelper.CreateTypeCollector( typeof( Simple ) ) ).Success.Should().BeTrue();
 
             var f1 = targetProjectPath.Combine( "b1/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
             var f2 = targetProjectPath.Combine( "b2/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
@@ -42,18 +44,21 @@ namespace CK.StObj.TypeScript.Tests
             s.Should().Contain( "export enum Simple" );
             s.Should().Be( File.ReadAllText( f2 ) );
 
-            static void GenerateTSCodeInB1AndB2Outputs( NormalizedPath targetProjectPath, params Type[] types )
+            static EngineConfiguration CreateConfigurationTSCodeInB1AndB2Outputs( NormalizedPath targetProjectPath, params Type[] types )
             {
                 var output1 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b1" ), false );
                 var output2 = TestHelper.CleanupFolder( targetProjectPath.AppendPart( "b2" ), false );
 
                 var config = new EngineConfiguration();
                 config.AddAspect( new TypeScriptAspectConfiguration() );
+
                 var tsB1 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output1,
                     SkipTypeScriptTooling = true
                 };
+                // The Simple enum has [TypeScript] attribute: it is useless to declare it as a
+                // TSType.
                 config.FirstBinPath.AddAspect( tsB1 );
 
                 var b2 = new BinPathConfiguration();
@@ -61,9 +66,9 @@ namespace CK.StObj.TypeScript.Tests
                 var tsB2 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output2,
-                    TypeFilterName = "TypeScript-B2Specific",
                     SkipTypeScriptTooling = true
                 };
+                // Redundant declaration here.
                 tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
                 b2.AddAspect( tsB2 );
 
@@ -76,12 +81,7 @@ namespace CK.StObj.TypeScript.Tests
                     case 0: b3.AddAspect( new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = " " } ); break;
                     case 1: b3.AddAspect( new TypeScriptBinPathAspectConfiguration() ); break;
                 }
-
-                var engine = new StObjEngine( TestHelper.Monitor, config );
-                engine.Run( TestHelper.CreateTypeCollector( types ) ).Success.Should().BeTrue();
-
-                Directory.Exists( output1 ).Should().BeTrue();
-                Directory.Exists( output2 ).Should().BeTrue();
+                return config;
             }
 
         }

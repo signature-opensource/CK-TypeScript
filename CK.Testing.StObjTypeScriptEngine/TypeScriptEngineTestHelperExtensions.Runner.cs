@@ -1,19 +1,18 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Setup;
-using CK.Testing;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CK
+namespace CK.Testing
 {
-    public static partial class StObjEngineTestHelperTypeScriptExtensions
+    public static partial class TypeScriptEngineTestHelperExtensions
     {
         /// <summary>
-        /// Disposable running test created by <see cref="CreateTypeScriptRunner(Testing.IStObjEngineTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/>.
+        /// Disposable runner created by <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/>.
         /// </summary>
-        public sealed class TypeScriptRunner : IAsyncDisposable
+        public sealed class Runner : IAsyncDisposable
         {
             readonly IMonitorTestHelper _helper;
             readonly NormalizedPath _targetProjectPath;
@@ -23,11 +22,11 @@ namespace CK
             bool _isDisposed;
             List<object>? _onDisposeList;
 
-            internal TypeScriptRunner( IMonitorTestHelper helper,
-                                       NormalizedPath targetProjectPath,
-                                       Dictionary<string, string>? environmentVariables,
-                                       string yarnCommand,
-                                       Action? jestDispose )
+            internal Runner( IMonitorTestHelper helper,
+                                   NormalizedPath targetProjectPath,
+                                   Dictionary<string, string>? environmentVariables,
+                                   string yarnCommand,
+                                   Action? jestDispose )
             {
                 _helper = helper;
                 _targetProjectPath = targetProjectPath;

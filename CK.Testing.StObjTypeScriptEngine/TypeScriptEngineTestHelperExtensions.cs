@@ -1,26 +1,21 @@
 using CK.Core;
 using CK.Setup;
-using CK.Testing;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
 
-namespace CK
+namespace CK.Testing
 {
     /// <summary>
-    /// Extends <see cref="Testing.IStObjEngineTestHelper"/> for TypeScript support.
+    /// Extends <see cref="IMonitorTestHelper"/> for TypeScript support.
     /// </summary>
-    public static partial class StObjEngineTestHelperTypeScriptExtensions
+    public static partial class TypeScriptEngineTestHelperExtensions
     {
         /// <summary>
-        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSGeneratedOnly/<paramref name="testName"/>" path
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSGeneratedOnly/<paramref name="testName"/>" path
         /// for tests that only need to generate the "/ck-gen" folder without building it (no TypeScript tooling).
         /// <para>
         /// A .gitignore file with "*" is automatically generated in this folder.
@@ -29,7 +24,7 @@ namespace CK
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
         /// <returns>The TSGeneratedOnly test path.</returns>
-        public static NormalizedPath GetTypeScriptGeneratedOnlyTargetProjectPath( this Testing.IMonitorTestHelper @this, [CallerMemberName] string? testName = null )
+        public static NormalizedPath GetTypeScriptGeneratedOnlyTargetProjectPath( this IMonitorTestHelper @this, [CallerMemberName] string? testName = null )
         {
             var p = @this.TestProjectFolder.AppendPart( "TSGeneratedOnly" );
             if( !Directory.Exists( p ) )
@@ -42,43 +37,43 @@ namespace CK
         }
 
         /// <summary>
-        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
         /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built. No VSCode support nor TypeScript test
         /// tooling is installed.
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
         /// <returns>The TSBuildOnly test path.</returns>
-        public static NormalizedPath GetTypeScriptWithBuildTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        public static NormalizedPath GetTypeScriptWithBuildTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
             return @this.TestProjectFolder.AppendPart( "TSBuildOnly" ).AppendPart( testName );
         }
 
         /// <summary>
-        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSBuildWithVSCode/<paramref name="testName"/>" path
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildWithVSCode/<paramref name="testName"/>" path
         /// for tests that must be compiled. Yarn is installed, "/ck-gen" is built and VSCode support is installed.
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
-        /// <returns>The TSBuildOnly test path.</returns>
-        public static NormalizedPath GetTypeScriptWithBuildAndVSCodeTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        /// <returns>The TSBuildWithVSCode test path.</returns>
+        public static NormalizedPath GetTypeScriptWithBuildAndVSCodeTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
             return @this.TestProjectFolder.AppendPart( "TSBuildWithVSCode" ).AppendPart( testName );
         }
 
         /// <summary>
-        /// Gets "<see cref="Testing.IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
         /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup, a script "test" command is
         /// available and a "src/sample.spec.ts" file is ready to be used.
         /// <para>
-        /// <see cref="CreateTypeScriptRunner(Testing.IStObjEngineTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
+        /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
         /// the TypeScript tests.
         /// </para>
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
         /// <returns>The TSTests test path.</returns>
-        public static NormalizedPath GetTypeScriptWithTestsSupportTargetProjectPath( this Testing.IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        public static NormalizedPath GetTypeScriptWithTestsSupportTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
             return @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( testName );
         }
@@ -103,7 +98,7 @@ namespace CK
         /// </param>
         /// <param name="tsTypes">The types to generate in TypeScript.</param>
         /// <returns>The configured BinPath aspect.</returns>
-        public static TypeScriptBinPathAspectConfiguration EnsureTypeScriptConfigurationAspect( this IMonitorTestHelper helper,
+        public static TypeScriptBinPathAspectConfiguration EnsureTypeScriptConfigurationAspect( this IBasicTestHelper helper,
                                                                                                 EngineConfiguration engineConfiguration,
                                                                                                 NormalizedPath targetProjectPath,
                                                                                                 params Type[] tsTypes )
@@ -136,11 +131,11 @@ namespace CK
             }
 
             tsBinPathAspect.TargetProjectPath = targetProjectPath;
-            tsBinPathAspect.SkipTypeScriptTooling = testMode == GenerateMode.SkipTypeScriptTooling;
-            tsBinPathAspect.EnsureTestSupport = testMode == GenerateMode.WithTestSupport;
-            tsBinPathAspect.AutoInstallVSCodeSupport = testMode >= GenerateMode.BuildCKGenAndVSCodeSupport;
-            tsBinPathAspect.AutoInstallYarn = testMode >= GenerateMode.BuildCKGen;
             tsBinPathAspect.GitIgnoreCKGenFolder = true;
+            tsBinPathAspect.SkipTypeScriptTooling = testMode == GenerateMode.SkipTypeScriptTooling;
+            tsBinPathAspect.AutoInstallYarn = testMode >= GenerateMode.BuildCKGen;
+            tsBinPathAspect.AutoInstallVSCodeSupport = testMode >= GenerateMode.BuildCKGenAndVSCodeSupport;
+            tsBinPathAspect.EnsureTestSupport = testMode == GenerateMode.WithTestSupport;
             tsBinPathAspect.Types.Clear();
             tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
             return tsBinPathAspect;
@@ -208,7 +203,7 @@ namespace CK
         }
 
         /// <summary>
-        /// Creates a <see cref="TypeScriptRunner"/> that MUST be disposed once <see cref="TypeScriptRunner.Run()"/> has been called:
+        /// Creates a <see cref="Runner"/> that MUST be disposed once <see cref="Runner.Run()"/> has been called:
         /// <code>
         /// await using var runner = TestHelper.CreateTypeScriptTestRunner( targetProjectPath );
         /// //
@@ -221,22 +216,22 @@ namespace CK
         /// runner.Run(); // This executes the TypeScript tests.
         /// </code>
         /// <para>
-        /// This 2-steps pattern enables to temporarily inserts a <see cref="CK.Testing.Monitoring.IMonitorTestHelperCore.SuspendAsync"/>
-        /// before calling the <see cref="TypeScriptRunner.Run()"/> in order to be able to keep a running context alive while
-        /// working on the TypeScript side (fixing, debugging, analyzing, etc.) TypeScript tests. 
+        /// This 2-steps pattern enables to temporarily inserts a <see cref="Monitoring.IMonitorTestHelperCore.SuspendAsync"/>
+        /// before calling the <see cref="Runner.Run()"/> in order to be able to keep a running context alive while
+        /// working on the TypeScript side (fixing, debugging, analyzing, etc.) TypeScript code. 
         /// </para>
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="targetProjectPath">The target test path.</param>
         /// <param name="environmentVariables">Optional environment variables to set.</param>
         /// <param name="command">Yarn command that will be executed.</param>
-        public static TypeScriptRunner CreateTypeScriptRunner( this IMonitorTestHelper @this,
-                                                               NormalizedPath targetProjectPath,
-                                                               Dictionary<string, string>? environmentVariables = null,
-                                                               string command = "test" )
+        public static Runner CreateTypeScriptRunner( this IMonitorTestHelper @this,
+                                                     NormalizedPath targetProjectPath,
+                                                     Dictionary<string, string>? environmentVariables = null,
+                                                     string command = "test" )
         {
             YarnHelper.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
-            return new TypeScriptRunner( @this, targetProjectPath, environmentVariables, command, afterRun );
+            return new Runner( @this, targetProjectPath, environmentVariables, command, afterRun );
         }
 
     }

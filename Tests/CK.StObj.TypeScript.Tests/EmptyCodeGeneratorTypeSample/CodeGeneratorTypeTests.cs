@@ -1,4 +1,5 @@
 using CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
