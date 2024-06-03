@@ -13,17 +13,6 @@ namespace CK.Setup
     public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspectConfiguration<TypeScriptBinPathAspectConfiguration>
     {
         /// <summary>
-        /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
-        /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
-        /// </summary>
-        public const string AutomaticYarnVersion = "4.0.2";
-
-        /// <summary>
-        /// The default <see cref="AutomaticTypeScriptVersion"/> version to install.
-        /// </summary>
-        public const string DefaultTypeScriptVersion = "5.2.2";
-
-        /// <summary>
         /// Initializes a new empty configuration.
         /// </summary>
         public TypeScriptBinPathAspectConfiguration()
@@ -67,9 +56,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>".
-        /// Defaults to <see cref="DefaultTypeScriptVersion"/>.
+        /// Defaults to <see cref="TypeScriptAspectConfiguration.DefaultTypeScriptVersion"/>.
         /// </summary>
-        public string AutomaticTypeScriptVersion { get; set; } = DefaultTypeScriptVersion;
+        public string AutomaticTypeScriptVersion { get; set; } = TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
 
         /// <summary>
         /// Gets or sets whether yarn build of "<see cref="TargetProjectPath"/>/ck-gen" should be skipped
@@ -148,7 +137,7 @@ namespace CK.Setup
             Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) ) );
-            AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? DefaultTypeScriptVersion;
+            AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
             AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;

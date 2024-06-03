@@ -26,6 +26,17 @@ namespace CK.Setup
     public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfiguration
     {
         /// <summary>
+        /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
+        /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
+        /// </summary>
+        public const string AutomaticYarnVersion = "4.2.2";
+
+        /// <summary>
+        /// The default <see cref="AutomaticTypeScriptVersion"/> version to install.
+        /// </summary>
+        public const string DefaultTypeScriptVersion = "5.4.5";
+
+        /// <summary>
         /// Initializes a new default configuration.
         /// </summary>
         public TypeScriptAspectConfiguration()

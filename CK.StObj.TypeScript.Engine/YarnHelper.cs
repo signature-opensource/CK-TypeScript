@@ -27,8 +27,16 @@ namespace CK.Setup
         public const string JestSetupFileName = "jest.StObjTypeScriptEngine.js";
 
         const string _testRunningKey = "STOBJ_TYPESCRIPT_ENGINE";
-        const string _yarnFileName = $"yarn-{TypeScriptBinPathAspectConfiguration.AutomaticYarnVersion}.cjs";
+        const string _yarnFileName = $"yarn-{TypeScriptAspectConfiguration.AutomaticYarnVersion}.cjs";
         const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
+
+        static YarnHelper()
+        {
+            if( !typeof( YarnHelper ).Assembly.GetManifestResourceNames().Contains( $"CK.StObj.TypeScript.Engine.{_yarnFileName}" ) )
+            {
+                Throw.CKException( $"CK.StObj.TypeScript.Engine.csproj must be updated with <EmbeddedResource Include=\"../.yarn/releases/{_yarnFileName}\" />" );
+            }
+        }
 
         /// <summary>
         /// Locates yarn in <paramref name="workingDirectory"/> or above and calls it with the provided <paramref name="command"/>.
@@ -227,7 +235,7 @@ namespace CK.Setup
                     if( version.Major < 4 )
                     {
                         monitor.Warn( $"Yarn found at '{yarnPath}' but expected version is Yarn 4. " +
-                                      $"Please upgrade to Yarn 4: yarn set version {TypeScriptBinPathAspectConfiguration.AutomaticYarnVersion}." );
+                                      $"Please upgrade to Yarn 4: yarn set version {TypeScriptAspectConfiguration.AutomaticYarnVersion}." );
 
                     }
                     else
@@ -620,12 +628,7 @@ namespace CK.Setup
                                                         transform: {
                                                             '^.+\\.ts$': ['ts-jest', {
                                                                 // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
-                                                                diagnostics: {ignoreCodes: ['TS151001']},
-                                                                // tsconfig for Jest comes here. 
-                                                                tsconfig: {
-                                                                    "target": "ES2022",
-                                                                    "lib": ["es2022", "dom"]
-                                                                    }    
+                                                                diagnostics: {ignoreCodes: ['TS151001']}
                                                             }],
                                                         },
                                                         testEnvironment: 'node',
@@ -642,8 +645,8 @@ namespace CK.Setup
             const string header = """
                                   // This will run once before each test file and before the testing framework is installed.
                                   // This is used by TestHelper.CreateTypeScriptTestRunner to duplicate environment variables settings
-                                  // in a "persistent" way: these environment variables will be available until the TypeScriptRunner
-                                  // returned by CreateTypeScriptTestRunner is disposed.
+                                  // in a "persistent" way: these environment variables will be available until the Runner
+                                  // returned by TestHelper.CreateTypeScriptTestRunner is disposed.
                                   """;
             if( environmentVariables == null )
             {
@@ -684,7 +687,7 @@ namespace CK.Setup
             var existingTestFile = Directory.EnumerateFiles( srcFolder, "*.spec.ts", SearchOption.AllDirectories ).FirstOrDefault();
             if( existingTestFile != null )
             {
-                monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation ('{existingTestFile}')." );
+                monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation (found '{existingTestFile}')." );
                 return;
             }
             else
@@ -692,8 +695,13 @@ namespace CK.Setup
                 var sampleTestPath = srcFolder.AppendPart( "sample.spec.ts" );
                 monitor.Info( $"Creating 'src/sample.spec.ts' test file." );
                 Directory.CreateDirectory( srcFolder );
-                File.WriteAllText( sampleTestPath,
-                    """
+                File.WriteAllText( sampleTestPath, """
+                    // Trick from https://stackoverflow.com/a/77047461/190380
+                    // When debugging ("Debug Test at Cursor" in menu), this cancels jest timeout.
+                    if( process.env.VSCODE_INSPECTOR_OPTIONS ) {
+                      jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+                    }
+
                     // Sample test.
                     describe('Sample test', () => {
                         it('should be true', () => {

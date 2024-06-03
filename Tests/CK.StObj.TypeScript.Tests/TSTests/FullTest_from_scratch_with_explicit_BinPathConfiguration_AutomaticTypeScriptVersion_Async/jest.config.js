@@ -6,12 +6,7 @@ module.exports = {
     transform: {
         '^.+\\.ts$': ['ts-jest', {
             // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
-            diagnostics: {ignoreCodes: ['TS151001']},
-            // tsconfig for Jest comes here. 
-            tsconfig: {
-                "target": "ES2022",
-                "lib": ["es2022", "dom"]
-                }    
+            diagnostics: {ignoreCodes: ['TS151001']}
         }],
     },
     testEnvironment: 'node',

@@ -1,18 +1,12 @@
 using CK.Core;
 using CK.CrisLike;
-using CK.Setup;
 using CK.StObj.TypeScript.Tests.CrisLike;
 using CK.Testing;
-using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
