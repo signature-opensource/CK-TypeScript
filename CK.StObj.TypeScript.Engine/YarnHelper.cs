@@ -306,9 +306,11 @@ namespace CK.Setup
                                   !.yarn/sdks
                                   !.yarn/versions
 
-                                  # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz.
+                                  # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz
+                                  # and yarn/unplugged since we don't use Zero-Install.
                                   **/.yarn/install-state.gz
-                                  
+                                  **/.yarn/unplugged
+                                                                    
                                   """;
                     if( File.Exists( gitIgnore ) )
                     {
