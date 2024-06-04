@@ -150,7 +150,7 @@ namespace CK.Setup
                     part.Append( "set( o: " ).Append( ts.TypeName ).Append( " ): " ).Append( ts.TypeName ).Append( " { " );
                     if( t.Kind == PocoTypeKind.Enum )
                     {
-                        part.Append( "o = new Number( o );" );
+                        part.Append( "o = <" ).Append(ts.TypeName).Append( ">new Number( o );" );
                     }
                     else if( ts.IsPrimitive )
                     {
@@ -188,7 +188,11 @@ namespace CK.Setup
                 else if( t.Kind == PocoTypeKind.Enum )
                 {
                     Throw.DebugAssert( t.IsSerializedObservable );
-                    part.Append( "json( o: any ) { return o; }" ).NewLine();
+                    // This one is useless (enums are not in the _requiresHandlingMap
+                    // but it doesn't cost much (and will not be called).
+                    part.Append( "json( o: any ) { return o; }," ).NewLine();
+                    // Normalize null to undefined. This is useful.
+                    part.Append( "nosj( o: any ) { return o == null ? undefined : o; }," ).NewLine();
                 }
             }
             return part;

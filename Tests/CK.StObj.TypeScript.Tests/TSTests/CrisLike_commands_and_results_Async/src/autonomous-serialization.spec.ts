@@ -1,8 +1,14 @@
-import { CTSType, Guid, UserMessageLevel, NamedRecord, NamedRecordCommand, AnonymousRecordCommand, CommandCommand, SomeCommand, SimplestCommand, SimpleCommand, ExtendedCultureInfo } from "@local/ck-gen";
+import { CTSType, Guid, UserMessageLevel, NamedRecord, NamedRecordCommand, AnonymousRecordCommand, CommandCommand, SomeCommand, SimplestCommand, SimpleCommand, ExtendedCultureInfo, GrantLevel, TypeKind } from "@local/ck-gen";
 import { DateTime, Duration } from "luxon";
 import { Decimal } from "decimal.js-light";
 import { TestSerializationCommand } from "@local/ck-gen";
 import { SimpleUserMessage } from "@local/ck-gen";
+
+// Trick from https://stackoverflow.com/a/77047461/190380
+// When debugging ("Debug Test at Cursor" in menu), this cancels jest timeout.
+if( process.env.VSCODE_INSPECTOR_OPTIONS ) {
+  jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+}
 
 it('Set must use Array.from', () => {
   const set = new Set<string>();
@@ -83,6 +89,8 @@ describe('Command serialization', () => {
         9999n, 
         -87878n,
         99999999n, 
+        GrantLevel.Contributor,
+        TypeKind.FunctionPointer,
         new Guid("d0acf1b1-4675-4a23-af51-3c834d910f3d"),
         DateTime.utc(2024,3,6,13,26,12,854),
         Duration.fromMillis(3712),
@@ -91,7 +99,7 @@ describe('Command serialization', () => {
 
       const json = CTSType.toTypedJson( c );
       const s = JSON.stringify(json);
-      expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"long":"9999","uLong":"-87878","bigInteger":"99999999","guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","simpleUserMessage":[4,"Hello!",0],"decimal":"79228162514264337593543950335"}]' );
+      expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"long":"9999","uLong":"-87878","bigInteger":"99999999","grantLevel":32,"typeKind":13,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","simpleUserMessage":[4,"Hello!",0],"decimal":"79228162514264337593543950335"}]' );
       const raw = JSON.parse(s);
       const back = CTSType.fromTypedJson( raw );
       expect( back ).toStrictEqual( c );

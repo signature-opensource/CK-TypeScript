@@ -2,6 +2,7 @@ using CK.Core;
 using CK.CrisLike;
 using CK.StObj.TypeScript.Tests.CrisLike;
 using CK.Testing;
+using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -126,6 +127,10 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             long Long { get; set; }
             ulong ULong { get; set; }
             BigInteger BigInteger { get; set; }
+            // byte (from CK.Core).
+            GrantLevel GrantLevel { get; }
+            // From Microsoft.CodeAnalysis.
+            TypeKind TypeKind { get; }
             Guid Guid { get; set; }
             DateTime DateTime { get; set; }
             TimeSpan TimeSpan { get; set; }
