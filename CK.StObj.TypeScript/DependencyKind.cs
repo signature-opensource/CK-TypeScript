@@ -1,4 +1,4 @@
-namespace CK.TypeScript.CodeGen
+﻿namespace CK.StObj.TypeScript
 {
     /// <summary>
     /// Represent one of the dependencies list of the package.json.
@@ -20,4 +20,5 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         PeerDependency
     }
+
 }

@@ -9,11 +9,16 @@
     <!-- Stop Visual Studio TypeScript compilation. -->
     <TypeScriptCompileBlocked>True</TypeScriptCompileBlocked>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Remove="CodeGeneratorTypeSample\**" />
-    <EmbeddedResource Remove="CodeGeneratorTypeSample\**" />
-    <None Remove="CodeGeneratorTypeSample\**" />
+    <EmbeddedResource Include="**\*.ts" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="EmbeddedTypeScript\Res\IAmAlsoHere.ts" />
+    <None Remove="EmbeddedTypeScript\Res\IAmHereToo.ts" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="nunit" Version="4.1.0" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" Version="4.5.0" />

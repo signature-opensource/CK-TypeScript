@@ -140,9 +140,6 @@ namespace CK.Setup
 
                                """ );
                     var depsList = dependencies
-                        .Concat( dependencies.Where( s => s.Value.DependencyKind == DependencyKind.PeerDependency )
-                                             .Select( s => KeyValuePair.Create( s.Key,
-                                                                                new LibraryImport( s.Value.Name, s.Value.Version, DependencyKind.DevDependency ) ) ) )
                         .GroupBy( s => s.Value.DependencyKind, s => $"    \"{s.Value.Name}\": \"{s.Value.Version}\"" )
                         .Select( s => (s.Key switch
                         {
