@@ -285,7 +285,7 @@ namespace CK.TypeScript.CodeGen
         /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
         public int? Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths = null )
         {
-            // We need a root barrel for the generated module.
+            // We want a root barrel for the generated module.
             Root.EnsureBarrel();
             return Root.Save( monitor, outputPath, previousPaths );
         }

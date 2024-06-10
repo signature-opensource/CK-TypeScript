@@ -16,7 +16,7 @@ namespace CK.Setup
         readonly TypeScriptContext _typeScriptContext;
         readonly IPocoTypeNameMap _jsonExhangeableNames;
         readonly TSManualFile _manualFile;
-        readonly ITSFileType _symCTS;
+        readonly ITSDeclaredFileType _symCTS;
         readonly ITSCodePart _initPart;
         readonly ITSFileType _ctsType;
         readonly JsonRequiresHandlingMap _requiresHandlingMap;
@@ -29,10 +29,10 @@ namespace CK.Setup
             _manualFile = _typeScriptContext.Root.Root.FindOrCreateManualFile( "CK/Core/CTSType.ts" );
             _ctsType = _manualFile.CreateType( "CTSType", null, null );
 
-            _symCTS = _manualFile.CreateType( "SymCTS", null, null, closer: "" );
-            _symCTS.TypePart.Append( "export const SymCTS = Symbol.for(\"CK.CTSType\");" ).NewLine();
-
             _initPart = _manualFile.File.Body.CreatePart();
+
+            _symCTS = _manualFile.DeclareType( "SymCTS" );
+            _manualFile.File.Body.Append( "export const SymCTS = Symbol.for(\"CK.CTSType\");" ).NewLine();
 
             _ctsType.TypePart.Append( """
                 export const CTSType: any  = {

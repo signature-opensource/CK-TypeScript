@@ -1,15 +1,10 @@
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Defines a type that is locally implemented in a <see cref="File"/>.
+    /// Defines a type that is implemented in a <see cref="File"/> by a <see cref="TypePart"/>.
     /// </summary>
-    public interface ITSFileType : ITSType
+    public interface ITSFileType : ITSDeclaredFileType
     {
-        /// <summary>
-        /// Gets the file that implements this type.
-        /// </summary>
-        TypeScriptFile File { get; }
-
         /// <summary>
         /// Gets the code part. 
         /// </summary>

@@ -195,8 +195,8 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: false );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            var binPathAspect = TestHelper.EnsureTypeScriptConfigurationAspect(config, targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) );
-            binPathAspect.AutomaticTypeScriptVersion = "5.1.6";
+            var binPathAspect = TestHelper.EnsureTypeScriptConfigurationAspect( config, targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            binPathAspect.AutomaticTypeScriptVersion = "5.4.5";
 
             TestHelper.RunEngine( config, TestHelper.CreateTypeCollector( typeof( IWithReadOnly ), typeof( IWithUnions ) ) );
 
