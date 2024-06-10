@@ -22,6 +22,7 @@ namespace CK.TypeScript.CodeGen
         readonly TypeScriptFolder _folder;
         internal readonly FileImportCodePart _imports;
         internal TypeScriptFile? _next;
+        OriginResource? _origin;
 
         internal TypeScriptFile( TypeScriptFolder folder, string name )
         {
@@ -69,27 +70,22 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Saves this file into a folder on the file system.
-        /// The <see cref="Body"/> can be null (only <see cref="Imports"/> if any will be generated).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="outputPath">Target directory.</param>
-        /// <param name="previousPaths">
-        /// Optional set of file paths from which actually saved paths will be removed:
-        /// what's left will be the actual generated paths.
-        /// </param>
-        public void Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths )
+        /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
+        public void Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
         {
             if( _name != _hiddenFileName )
             {
-                monitor.Trace( $"Saving '{Name}'." );
-                var imports = Imports.ToString();
-                if( imports.Length > 0 ) imports += Environment.NewLine;
-                var all = imports + Body.ToString();
-                var file = outputPath.AppendPart( Name );
-                File.WriteAllText( file, all );
-                previousPaths?.Remove( file );
+                var filePath = saver._currentTarget.AppendPart( Name );
+                saver.SaveFile( monitor, this, filePath );
             }
         }
+
+        /// <summary>
+        /// Gets or sets an optional <see cref="OriginResource"/> for this file.
+        /// </summary>
+        public OriginResource? Origin { get => _origin; set => _origin = value; }
 
         /// <summary>
         /// Overridden to return this file name.

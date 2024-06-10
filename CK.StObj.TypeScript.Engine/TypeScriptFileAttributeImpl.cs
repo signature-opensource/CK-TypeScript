@@ -16,6 +16,7 @@ namespace CK.StObj.TypeScript.Engine
         readonly TypeScriptFileAttribute _attr;
         readonly Type _target;
         string? _content;
+        OriginResource? _originResource;
         NormalizedPath _targetPath;
 
         public TypeScriptFileAttributeImpl( TypeScriptFileAttribute attr, Type target )
@@ -35,7 +36,10 @@ namespace CK.StObj.TypeScript.Engine
                 var resLocator = new ResourceLocator( _target, _attr.ResourcePath ?? "Res" );
                 try
                 {
+                    // ResourceLocator should be refactored.
                     _content = resLocator.GetString( _attr.ResourceName, true );
+                    var fullName = resLocator.GetResourceName( _attr.ResourceName );
+                    _originResource = new OriginResource( _target.Assembly, fullName );
                 }
                 catch( Exception ex )
                 {
@@ -55,6 +59,7 @@ namespace CK.StObj.TypeScript.Engine
         public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
             TSManualFile file = context.Root.Root.FindOrCreateManualFile( _targetPath.AppendPart( _attr.ResourceName ) );
+            file.File.Origin = _originResource;
             file.File.Body.Append( _content );
             foreach( var tsType in _attr.TypeNames )
             {

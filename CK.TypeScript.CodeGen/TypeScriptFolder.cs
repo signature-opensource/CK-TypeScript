@@ -332,20 +332,18 @@ namespace CK.TypeScript.CodeGen
         /// Saves this folder, its files and all its subordinated folders, into a folder on the file system.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="outputPath">Target directory.</param>
-        /// <param name="previousPaths">
-        /// Optional set of file paths from which actually saved paths will be removed:
-        /// what's left will be the actual generated paths.
-        /// </param>
+        /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
         /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
-        public int? Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths  )
+        public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
         {
-            using( monitor.OpenTrace( IsRoot ? $"Saving TypeScript Root folder into {outputPath}" : $"Saving /{Name}." ) )
+            using( monitor.OpenTrace( IsRoot ? $"Saving TypeScript Root folder into {saver.Target}" : $"Saving /{Name}." ) )
             {
+                var parentTarget = saver._currentTarget;
+                var target = IsRoot ? saver.Target : parentTarget.AppendPart( Name );
+                saver._currentTarget = target;
                 try
                 {
                     int result = 0;
-                    var target = IsRoot ? outputPath : outputPath.AppendPart( Name );
 
                     bool createdDirectory = false;
                     if( _firstFile != null )
@@ -354,14 +352,14 @@ namespace CK.TypeScript.CodeGen
                         createdDirectory = true;
                         foreach( var file in Files )
                         {
-                            file.Save( monitor, target, previousPaths );
+                            file.Save( monitor, saver );
                             ++result;
                         }
                     }
                     var folder = _firstChild;
                     while( folder != null )
                     {
-                        var r = folder.Save( monitor, target, previousPaths );
+                        var r = folder.Save( monitor, saver );
                         if( !r.HasValue ) return null;
                         result += r.Value;
                         folder = folder._next;
@@ -376,7 +374,7 @@ namespace CK.TypeScript.CodeGen
 
                             var index = target.AppendPart( "index.ts" );
                             File.WriteAllText( index, b.ToString() );
-                            previousPaths?.Remove( index );
+                            saver.CleanupFiles?.Remove( index );
                             ++result;
                         }
                     }
@@ -386,6 +384,10 @@ namespace CK.TypeScript.CodeGen
                 {
                     monitor.Error( ex );
                     return null;
+                }
+                finally
+                {
+                    saver._currentTarget = parentTarget;
                 }
             }
         }

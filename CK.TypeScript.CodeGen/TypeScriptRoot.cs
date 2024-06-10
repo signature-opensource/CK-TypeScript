@@ -271,23 +271,32 @@ namespace CK.TypeScript.CodeGen
         /// </remarks>
         public IDictionary<object, object?> Memory => _memory ??= new Dictionary<object, object?>();
 
+
         /// <summary>
         /// Saves this <see cref="Root"/> (all its files and creates the necessary folders)
         /// into <paramref name="outputPath"/>, ensuring that a barrel will be generated for the <see cref="Root"/>
         /// folder.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="outputPath">The target output folder.</param>
-        /// <param name="previousPaths">
-        /// Optional set of file paths from which actually saved paths will be removed:
-        /// what's left will be the actual generated paths.
-        /// </param>
+        /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
         /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
-        public int? Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths = null )
+        public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
         {
-            // We want a root barrel for the generated module.
-            Root.EnsureBarrel();
-            return Root.Save( monitor, outputPath, previousPaths );
+            Throw.CheckNotNullArgument( saver );
+            try
+            {
+                if( !saver.Initialize( monitor ) )
+                {
+                    return null;
+                }
+                int? result = Root.Save( monitor, saver );
+                return saver.Finalize( monitor, result );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"Error while saving '{saver.Target}'.", ex );
+                return null;
+            }
         }
 
         /// <summary>
@@ -321,5 +330,6 @@ namespace CK.TypeScript.CodeGen
         }
 
     }
+
 
 }

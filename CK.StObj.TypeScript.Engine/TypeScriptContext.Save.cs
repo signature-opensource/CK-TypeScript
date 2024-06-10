@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json.Nodes;
 using System;
 using System.Linq;
+using CK.TypeScript.CodeGen;
 
 namespace CK.Setup
 {
@@ -16,21 +17,11 @@ namespace CK.Setup
             {
                 var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
                 var ckGenFolderSrc = ckGenFolder.AppendPart( "src" );
-                // To minimize impacts on file watchers, we don't destroy/recreate the ck-gen folder.
-                // Instead we update the existing files in place and then remove any paths that have not
-                // been generated.
-                HashSet<string>? cleanupPaths = null;
-                if( Directory.Exists( ckGenFolderSrc ) )
-                {
-                    var previous = Directory.EnumerateFiles( ckGenFolderSrc, "*", SearchOption.AllDirectories );
-                    if( Path.DirectorySeparatorChar != NormalizedPath.DirectorySeparatorChar )
-                    {
-                        previous = previous.Select( p => p.Replace( Path.DirectorySeparatorChar, NormalizedPath.DirectorySeparatorChar ) );
-                    }
-                    cleanupPaths = new HashSet<string>( previous );
-                    monitor.Trace( $"Found {cleanupPaths.Count} existing files in '{ckGenFolderSrc}'." );
-                }
-                int? savedCount = Root.Save( monitor, ckGenFolderSrc, cleanupPaths );
+
+                var saver = new TypeScriptFileSaveStrategy( ckGenFolderSrc );
+                // We want a root barrel for the generated module.
+                Root.Root.EnsureBarrel();
+                int? savedCount = Root.Save( monitor, saver );
                 if( savedCount.HasValue )
                 {
                     if( savedCount.Value == 0 )
@@ -170,31 +161,6 @@ namespace CK.Setup
                             }
                         }
                         else success = false;
-                    }
-                    if( cleanupPaths != null )
-                    {
-                        if( cleanupPaths.Count == 0 )
-                        {
-                            monitor.Info( "No previous file exist that have not been regenerated." );
-                        }
-                        else
-                        {
-                            using( monitor.OpenInfo( $"Deleting {cleanupPaths.Count} previous files." ) )
-                            {
-                                foreach( var p in cleanupPaths )
-                                {
-                                    monitor.Debug( $"Deleting '{p.AsSpan( ckGenFolder.Path.Length )}'." );
-                                    try
-                                    {
-                                        if( File.Exists( p ) ) File.Delete( p );
-                                    }
-                                    catch( Exception ex )
-                                    {
-                                        monitor.Error( $"While deleting '{p}'. Ignoring.", ex );
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
                 else success = false;

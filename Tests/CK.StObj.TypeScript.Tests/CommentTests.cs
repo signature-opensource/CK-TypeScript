@@ -136,7 +136,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "ICommented.ts" );
             GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
-            ctx.Save( TestHelper.Monitor, output );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -190,7 +190,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "IGeneric.ts" );
             GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
-            ctx.Save( TestHelper.Monitor, output );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -261,7 +261,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "FullClass.ts" );
             GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
-            ctx.Save( TestHelper.Monitor, output );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -331,7 +331,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "WithCodeReference.ts" );
             GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
-            ctx.Save( TestHelper.Monitor, output );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -365,7 +365,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "BuggyReference.ts" );
             GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );
-            ctx.Save( TestHelper.Monitor, output );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );

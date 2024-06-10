@@ -193,7 +193,10 @@ namespace CK.TypeScript.CodeGen
 
         public override string ToString()
         {
-            return Build( new SmarterStringBuilder( new StringBuilder() ) ).Builder.ToString();
+            var b = new StringBuilder();
+            Build( new SmarterStringBuilder( b ) );
+            if( b.Length > 0 ) b.Append( Environment.NewLine );
+            return b.ToString();
         }
     }
 }
