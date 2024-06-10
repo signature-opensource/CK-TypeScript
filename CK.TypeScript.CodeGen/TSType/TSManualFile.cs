@@ -9,6 +9,16 @@ namespace CK.TypeScript.CodeGen
     /// <summary>
     /// Simple file with manually defined types.
     /// Created by <see cref="TypeScriptFolder.FindOrCreateManualFile(NormalizedPath)"/>.
+    /// <para>
+    /// A manual file can contain purely exported <see cref="ITSDeclaredFileType"/>, types
+    /// with a dedicated part (the <see cref="ITSFileType"/>) and types with a dedicated part
+    /// and also bound to a C# type (the <see cref="ITSFileCSharpType"/>).
+    /// <para>
+    /// There is currently no <c>ITSCSharpTypeWithoutPart</c> that declares a TS type bound to a C# type
+    /// without a corresponding part in a file because we don't need it. TS types bound to C# are built
+    /// by resolving them with the help of the <see cref="RequireTSFromObjectEventArgs"/> or <see cref="RequireTSFromTypeEventArgs"/>.
+    /// </para>
+    /// </para>
     /// </summary>
     public sealed class TSManualFile 
     {
@@ -30,18 +40,22 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets the all the TypeScript types that are defined in this <see cref="File"/>.
         /// </summary>
-        public IEnumerable<ITSDeclaredFileType> AllTypes  => _declaredOnlyTypes != null ? _declaredOnlyTypes.Concat( LocalTypes ) : LocalTypes;
+        public IEnumerable<ITSDeclaredFileType> AllTypes  => _declaredOnlyTypes != null ? _declaredOnlyTypes.Concat( AllTypesWithPart ) : AllTypesWithPart;
 
         /// <summary>
-        /// Gets the all the TypeScript types that are defined in this <see cref="File"/> that have
-        /// a <see cref="ITSFileType.TypePart"/>.
+        /// Gets the all the TypeScript types that have a <see cref="ITSFileType.TypePart"/> defined
+        /// in this <see cref="File"/>.
         /// </summary>
-        public IEnumerable<ITSFileType> AllTypesWithPart => LocalTypes;
+        public IEnumerable<ITSFileType> AllTypesWithPart => _file.Body.Parts.OfType<ITSKeyedCodePart>()
+                                                                      .Select( p => p.Key as TSFileType )
+                                                                      .Where( k => k != null )!;
 
         /// <summary>
         /// Gets the TypeScript types bound to a C# type that are defined in this <see cref="File"/>.
         /// </summary>
-        public IEnumerable<ITSFileCSharpType> CSharpTypes => LocalTypes.Where( t => t.Type != null );
+        public IEnumerable<ITSFileCSharpType> CSharpTypes => _file.Body.Parts.OfType<ITSKeyedCodePart>()
+                                                                      .Select( p => p.Key as TSCSharpType )
+                                                                      .Where( k => k != null )!;
 
         /// <summary>
         /// Declares only a <see cref="ITSDeclaredFileType"/> in this file: the <paramref name="typeName"/> is implemented
@@ -80,7 +94,7 @@ namespace CK.TypeScript.CodeGen
                                        string closer = "}\n" )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
-            return new TSLocalType( this, typeName, additionalImports, null, defaultValueSource, closer );
+            return new TSFileType( this, typeName, additionalImports, defaultValueSource, closer );
         }
 
         /// <summary>
@@ -93,25 +107,21 @@ namespace CK.TypeScript.CodeGen
         /// <param name="defaultValueSource">The type default value if any.</param>
         /// <param name="closer">Closer of the part.</param>
         /// <returns></returns>
-        public ITSFileCSharpType CreateType( string typeName,
-                                             Type type,
-                                             Action<ITSFileImportSection>? additionalImports,
-                                             string? defaultValueSource,
-                                             string closer = "}\n" )
+        public ITSFileCSharpType CreateCSharpType( string typeName,
+                                                   Type type,
+                                                   Action<ITSFileImportSection>? additionalImports,
+                                                   string? defaultValueSource,
+                                                   string closer = "}\n" )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             Throw.CheckNotNullArgument( type );
-            var t = new TSLocalType( this, typeName, additionalImports, type, defaultValueSource, closer );
+            var t = new TSCSharpType( this, typeName, additionalImports, type, defaultValueSource, closer );
             _typeManager.RegisterType( type, t );
             return t;
         }
 
-        IEnumerable<TSLocalType> LocalTypes => _file.Body.Parts.OfType<ITSKeyedCodePart>()
-                                                          .Select( p => p.Key as TSLocalType )
-                                                          .Where( k => k != null )!;
-
         // Pure TS type declaration without a specific TypePart in the file.
-        sealed class TSDeclaredType : TSBasicType, ITSDeclaredFileType
+        class TSDeclaredType : TSBasicType, ITSDeclaredFileType
         {
             readonly TSManualFile _file;
 
@@ -122,42 +132,51 @@ namespace CK.TypeScript.CodeGen
             }
 
             public override TypeScriptFile File => _file._file;
-        }
-
-
-        // This is a "potential" ITSFileCSharpType only if Type is not null.
-        // Otherwise it is considered a ITSFileType: we always have the File and the TypePart
-        // and we use the KeyedTypePart with this to handle these types registration.
-        sealed class TSLocalType : TSBasicType, ITSFileCSharpType
-        {
-            readonly TSManualFile _file;
-            public readonly ITSKeyedCodePart Part;
-            public readonly Type? Type;
-
-            public TSLocalType( TSManualFile file,
-                                string typeName,
-                                Action<ITSFileImportSection>? additionalImports,
-                                Type? type,
-                                string? defaultValueSource,
-                                string closer )
-                : base( file._typeManager, typeName, additionalImports, defaultValueSource )
-            {
-                _file = file;
-                Part = file.File.Body.CreateKeyedPart( this, closer );
-                Type = type;
-            }
-
-            Type ITSFileCSharpType.Type => Type!;
-
-            public override TypeScriptFile File => _file._file;
-
-            public ITSCodePart TypePart => Part;
 
             public override void EnsureRequiredImports( ITSFileImportSection section )
             {
                 base.EnsureRequiredImports( section );
                 section.EnsureImport( _file._file, TypeName );
             }
+
+        }
+
+
+        // Extends TSDeclaredType: a TypePart exists.
+        // We always have the File and the TypePart and we use the KeyedTypePart with this as a key
+        // to handle these types registration.
+        class TSFileType : TSDeclaredType, ITSFileType
+        {
+            public readonly ITSKeyedCodePart Part;
+
+            public TSFileType( TSManualFile file,
+                               string typeName,
+                               Action<ITSFileImportSection>? additionalImports,
+                               string? defaultValueSource,
+                               string closer )
+                : base( file, typeName, additionalImports, defaultValueSource )
+            {
+                Part = file.File.Body.CreateKeyedPart( this, closer );
+            }
+
+            public ITSCodePart TypePart => Part;
+        }
+
+        // Extends a TSFileType to associate a C# type to this TS type.
+        sealed class TSCSharpType : TSFileType, ITSFileCSharpType
+        {
+            public TSCSharpType( TSManualFile file,
+                                string typeName,
+                                Action<ITSFileImportSection>? additionalImports,
+                                Type type,
+                                string? defaultValueSource,
+                                string closer )
+                : base( file, typeName, additionalImports, defaultValueSource, closer )
+            {
+                Type = type;
+            }
+
+            public Type Type { get; }
         }
     }
 }

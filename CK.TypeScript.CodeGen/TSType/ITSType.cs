@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen
 {
     /// <summary>
     /// Models a purely TypeScript type.
-    /// Such type may correspond to a more than one or no C# <see cref="Type"/>.
+    /// Such type may correspond to one, more than one, or no C# <see cref="Type"/> at all.
     /// </summary>
     public interface ITSType
     {
