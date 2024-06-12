@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CK.ObservableDomain</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="**\*.ts" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK-TS-JsonGraphSerializer\CK.TS.JsonGraphSerializer\CK.TS.JsonGraphSerializer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -31,7 +31,7 @@ namespace CK.Setup
         ///   This target project folder is created if it doesn't exist.
         ///   </item>
         ///   <item>
-        ///   The "/ck-gen" sub folder is created or cleared if it exists before generating files and folders.
+        ///   The "/ck-gen" sub folder is created and cleared if it exists before generating files and folders.
         ///   </item> 
         /// </list>
         /// </summary>
@@ -53,6 +53,16 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         public string TypeFilterName { get; set; }
+
+        /// <summary>
+        /// Gets or sets we are building a package. In this mode, the target "ck-gen/src" is protected: when a file
+        /// doesn't match the result of the generation and originates from the <see cref="BinPathConfiguration.Path"/>
+        /// the file is not overwritten instead a ".gen.ext" is written and an error is raised.
+        /// <para>
+        /// Defaults to false.
+        /// </para>
+        /// </summary>
+        public bool BuildMode { get; set; }
 
         /// <summary>
         /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>".
@@ -143,6 +153,8 @@ namespace CK.Setup
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
             SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
+            BuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xBuildMode ) ?? false;
+
             Types.Clear();
             Types.AddRange( e.Elements( EngineConfiguration.xTypes )
                                .Elements( EngineConfiguration.xType )
@@ -172,6 +184,9 @@ namespace CK.Setup
                     : null,
                    AutoInstallVSCodeSupport
                     ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport, true )
+                    : null,
+                   BuildMode
+                    ? new XAttribute( TypeScriptAspectConfiguration.xBuildMode, true )
                     : null,
                    new XElement( EngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
                 );

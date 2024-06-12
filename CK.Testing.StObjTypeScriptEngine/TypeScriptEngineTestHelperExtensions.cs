@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace CK.Testing
@@ -33,7 +34,14 @@ namespace CK.Testing
                 Directory.CreateDirectory( p );
                 File.WriteAllText( p.AppendPart( ".gitignore" ), "*" );
             }
-            return p.AppendPart( testName );
+            return p.AppendPart( RemoveAsyncSuffix( testName ) );
+        }
+
+        static string RemoveAsyncSuffix( string? testName )
+        {
+            Throw.DebugAssert( testName != null );
+            if( testName.EndsWith( "_Async" ) ) testName = testName.Substring( 0, testName.Length - 6 );
+            return testName;
         }
 
         /// <summary>
@@ -46,7 +54,7 @@ namespace CK.Testing
         /// <returns>The TSBuildOnly test path.</returns>
         public static NormalizedPath GetTypeScriptWithBuildTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
-            return @this.TestProjectFolder.AppendPart( "TSBuildOnly" ).AppendPart( testName );
+            return @this.TestProjectFolder.AppendPart( "TSBuildOnly" ).AppendPart( RemoveAsyncSuffix( testName ) );
         }
 
         /// <summary>
@@ -58,7 +66,7 @@ namespace CK.Testing
         /// <returns>The TSBuildWithVSCode test path.</returns>
         public static NormalizedPath GetTypeScriptWithBuildAndVSCodeTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
-            return @this.TestProjectFolder.AppendPart( "TSBuildWithVSCode" ).AppendPart( testName );
+            return @this.TestProjectFolder.AppendPart( "TSBuildWithVSCode" ).AppendPart( RemoveAsyncSuffix( testName ) );
         }
 
         /// <summary>
@@ -75,7 +83,26 @@ namespace CK.Testing
         /// <returns>The TSTests test path.</returns>
         public static NormalizedPath GetTypeScriptWithTestsSupportTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
-            return @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( testName );
+            return @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
+        }
+
+        /// <summary>
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildAndTests/<paramref name="testName"/>" path
+        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup, a script "test" command is
+        /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
+        /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
+        /// the modified files.
+        /// <para>
+        /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
+        /// the TypeScript tests.
+        /// </para>
+        /// </summary>
+        /// <param name="this">This helper.</param>
+        /// <param name="testName">The current test name.</param>
+        /// <returns>The TSBuildAndTests test path.</returns>
+        public static NormalizedPath GetTypeScriptBuildModeTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        {
+            return @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
         }
 
         enum GenerateMode
@@ -83,7 +110,8 @@ namespace CK.Testing
             SkipTypeScriptTooling,
             BuildCKGen,
             BuildCKGenAndVSCodeSupport,
-            WithTestSupport
+            WithTestSupport,
+            BuildMode
         }
 
         /// <summary>
@@ -111,11 +139,16 @@ namespace CK.Testing
                 "TSBuildOnly" => GenerateMode.BuildCKGen,
                 "TSBuildWithVSCode" => GenerateMode.BuildCKGenAndVSCodeSupport,
                 "TSTests" => GenerateMode.WithTestSupport,
-                _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath),
-                                                            $"Unsupported target project path: '{targetProjectPath}'.{Environment.NewLine}" +
-                                                            $"The target path must be obtained with TestHelper methods GetTypeScriptGeneratedOnlyTargetProjectPath()," +
-                                                            $"GetTypeScriptWithBuildTargetProjectPath(), GetTypeScriptWithBuildAndVSCodeTargetProjectPath() or " +
-                                                            $"GetTypeScriptWithTestsSupportTargetProjectPath()." )
+                "TSBuildAndTests" => GenerateMode.BuildMode,
+                _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath), $"""
+                                                            Unsupported target project path: '{targetProjectPath}'.
+                                                            $"The target path must be obtained with TestHelper methods:
+                                                            - GetTypeScriptGeneratedOnlyTargetProjectPath()
+                                                            - GetTypeScriptWithBuildTargetProjectPath()
+                                                            - GetTypeScriptWithBuildAndVSCodeTargetProjectPath()
+                                                            - GetTypeScriptWithTestsSupportTargetProjectPath() 
+                                                            - or GetTypeScriptBuildModeTargetProjectPath()
+                                                            """ )
             };
             var typeScriptAspect = engineConfiguration.Aspects.OfType<TypeScriptAspectConfiguration>().SingleOrDefault();
             if( typeScriptAspect == null )
@@ -135,7 +168,8 @@ namespace CK.Testing
             tsBinPathAspect.SkipTypeScriptTooling = testMode == GenerateMode.SkipTypeScriptTooling;
             tsBinPathAspect.AutoInstallYarn = testMode >= GenerateMode.BuildCKGen;
             tsBinPathAspect.AutoInstallVSCodeSupport = testMode >= GenerateMode.BuildCKGenAndVSCodeSupport;
-            tsBinPathAspect.EnsureTestSupport = testMode == GenerateMode.WithTestSupport;
+            tsBinPathAspect.EnsureTestSupport = testMode >= GenerateMode.WithTestSupport;
+            tsBinPathAspect.BuildMode = testMode == GenerateMode.BuildMode;
             tsBinPathAspect.Types.Clear();
             tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
             return tsBinPathAspect;
@@ -154,6 +188,23 @@ namespace CK.Testing
                                                                            params Type[] types )
         {
             return RunSuccessfulEngineWithTypeScript( helper, targetProjectPath, helper.CreateTypeCollector( types ), types );
+        }
+
+        /// <summary>
+        /// Runs the engine on a default configuration on an assembly's types.
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="targetProjectPath">The TypeScript target project path obtained from one of the GetTypeScriptXXXTargetProjectPath methods.</param>
+        /// <param name="assembly">Assembly from which types will be registered.</param>
+        /// <param name="tsTypes">The types to generate in TypeScript.</param>
+        /// <returns>The successful engine result.</returns>
+        public static StObjEngineResult RunSuccessfulEngineWithTypeScript( this IMonitorTestHelper helper,
+                                                                           NormalizedPath targetProjectPath,
+                                                                           Assembly assembly,
+                                                                           params Type[] tsTypes )
+        {
+            var types = helper.CreateTypeCollector().AddModelDependentAssembly( assembly );
+            return RunSuccessfulEngineWithTypeScript( helper, targetProjectPath, types, tsTypes );
         }
 
         /// <summary>

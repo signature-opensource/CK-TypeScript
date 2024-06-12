@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -6,8 +6,6 @@
     <LangVersion>11</LangVersion>
     <!-- This is required to test the TypeScript doncumentation from C# feature. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Stop Visual Studio TypeScript compilation. -->
-    <TypeScriptCompileBlocked>True</TypeScriptCompileBlocked>
   </PropertyGroup>
 
   <ItemGroup>

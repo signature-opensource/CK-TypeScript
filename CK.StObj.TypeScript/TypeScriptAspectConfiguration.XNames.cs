@@ -35,6 +35,11 @@ namespace CK.Setup
         public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
 
         /// <summary>
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.BuildMode"/> attribute name.
+        /// </summary>
+        public static readonly XName xBuildMode = XNamespace.None + "BuildMode";
+
+        /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.AutomaticTypeScriptVersion"/> attribute name.
         /// </summary>
         public static readonly XName xAutomaticTypeScriptVersion = XNamespace.None + "AutomaticTypeScriptVersion";

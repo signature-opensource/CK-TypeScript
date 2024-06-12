@@ -88,6 +88,12 @@ namespace CK.TypeScript.CodeGen
         public OriginResource? Origin { get => _origin; set => _origin = value; }
 
         /// <summary>
+        /// Computes and returns the concatenated <see cref="Imports"/> and <see cref="Body"/>.
+        /// </summary>
+        /// <returns>The full file content.</returns>
+        public string GetCurrentText() => _imports.ToString() + _body.ToString();
+
+        /// <summary>
         /// Overridden to return this file name.
         /// </summary>
         /// <returns>The <see cref="Name"/>.</returns>

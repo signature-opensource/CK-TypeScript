@@ -5,11 +5,63 @@ using System.Text.Json.Nodes;
 using System;
 using System.Linq;
 using CK.TypeScript.CodeGen;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
     public sealed partial class TypeScriptContext
     {
+
+        sealed class BuildModeSaver : TypeScriptFileSaveStrategy
+        {
+            List<NormalizedPath>? _clashes;
+
+            public BuildModeSaver( NormalizedPath targetPath )
+                : base( targetPath, withCleanupFiles: true )
+            {
+            }
+
+            public override void SaveFile( IActivityMonitor monitor, TypeScriptFile file, NormalizedPath filePath )
+            {
+                var fInfo = new FileInfo( filePath );
+                if( file.Origin != null && fInfo.Exists )
+                {
+                    using var fTxt = fInfo.OpenText();
+                    var existing = fTxt.ReadToEnd();
+                    var newOne = file.GetCurrentText();
+                    if( existing != newOne )
+                    {
+                        _clashes ??= new List<NormalizedPath>();
+                        _clashes.Add( file.Folder.Path.AppendPart( file.Name ) );
+                        var filePathGen = filePath.Path + ".gen.ts";
+                        monitor.Trace( $"Saving '{file.Name}.gen.ts'." );
+                        File.WriteAllText( filePathGen, file.GetCurrentText() );
+                        CleanupFiles?.Remove( filePath );
+                        return;
+                    }
+                }
+                base.SaveFile( monitor, file, filePath );
+            }
+
+            public override int? Finalize( IActivityMonitor monitor, int? savedCount )
+            {
+                if( _clashes != null )
+                {
+                    using( monitor.OpenError( $"BuildMode: {_clashes.Count} files have been generated differently than the existing one:" ) )
+                    {
+                        foreach( var f in _clashes )
+                        {
+                            monitor.Trace( f );
+                        }
+                    }
+                    base.Finalize( monitor, savedCount );
+                    return null;
+                }
+                return base.Finalize( monitor, savedCount );
+            }
+        }
+
+
         internal bool Save( IActivityMonitor monitor )
         {
             bool success = true;
@@ -18,7 +70,9 @@ namespace CK.Setup
                 var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
                 var ckGenFolderSrc = ckGenFolder.AppendPart( "src" );
 
-                var saver = new TypeScriptFileSaveStrategy( ckGenFolderSrc );
+                var saver = BinPathConfiguration.BuildMode
+                            ? new BuildModeSaver( ckGenFolderSrc )
+                            : new TypeScriptFileSaveStrategy( ckGenFolderSrc );
                 // We want a root barrel for the generated module.
                 Root.Root.EnsureBarrel();
                 int? savedCount = Root.Save( monitor, saver );

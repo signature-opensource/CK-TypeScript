@@ -91,7 +91,7 @@ namespace CK.TypeScript.CodeGen
         public virtual void SaveFile( IActivityMonitor monitor, TypeScriptFile file, NormalizedPath filePath )
         {
             monitor.Trace( $"Saving '{file.Name}'." );
-            File.WriteAllText( filePath, file.Imports.ToString() + file.Body.ToString() );
+            File.WriteAllText( filePath, file.GetCurrentText() );
             _cleanupFiles?.Remove( filePath );
         }
 
