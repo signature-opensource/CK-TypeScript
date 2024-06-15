@@ -77,7 +77,7 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
                   },
                   "devDependencies": {
                     "someLibDevDep": "^2",
-                    "typescript": ">=5.4.5"
+                    "typescript": "=5.4.5"
                   },
                   "peerDependencies": {
                     "someLibPeer": "^3"
