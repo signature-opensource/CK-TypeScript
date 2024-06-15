@@ -1,6 +1,8 @@
 using CK.Core;
+using CSemVer;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection;
 
 namespace CK.TypeScript.CodeGen
@@ -43,7 +45,7 @@ namespace CK.TypeScript.CodeGen
         /// Default "decimal.js-light" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
         /// overrides this default.
         /// </summary>
-        public const string DecimalJSLightVersion = "2.5.1";
+        public const string DecimalJSLightVersion = "^2.5.1";
 
         /// <summary>
         /// See https://mikemcl.github.io/decimal.js/.
@@ -54,7 +56,7 @@ namespace CK.TypeScript.CodeGen
         /// Default "decimal.js" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
         /// overrides this default.
         /// </summary>
-        public const string DecimalJSVersion = "10.4.3";
+        public const string DecimalJSVersion = "^10.4.3";
 
         Dictionary<object, object?>? _memory;
         readonly TSTypeManager _tsTypes;
@@ -62,13 +64,15 @@ namespace CK.TypeScript.CodeGen
         readonly DocumentationBuilder _docBuilder;
         readonly bool _pascalCase;
         readonly bool _reflectTS;
-        readonly string _decimalLibraryName;
         TSTypeBuilder? _firstFreeBuilder;
 
         /// <summary>
         /// Initializes a new <see cref="TypeScriptRoot"/>.
         /// </summary>
-        /// <param name="libraryVersionConfiguration">The external library name to version mapping to use.</param>
+        /// <param name="libraryVersionConfiguration"
+        /// >External library name to version mapping to use.
+        /// This dictionary must use the <see cref="StringComparer.OrdinalIgnoreCase"/> as its <see cref="ImmutableDictionary{TKey, TValue}.KeyComparer"/>.
+        /// </param>
         /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
         /// <param name="generateDocumentation">Whether documentation should be generated.</param>
         /// <param name="reflectTS">True to generate TSType map.</param>
@@ -76,20 +80,18 @@ namespace CK.TypeScript.CodeGen
         /// Support library for decimal. If <see cref="decimal"/> is used, we default to use https://github.com/MikeMcl/decimal.js-light
         /// in version <see cref="DecimalJSLightVersion"/>. if "decimal.js" is specified here, it'll be used with <see cref="DecimalJSVersion"/>.
         /// The actual version used can be overridden thanks to <paramref name="libraryVersionConfiguration"/>.
-        /// <para>
-        /// Other (unknown) library version MUST be provided in <paramref name="libraryVersionConfiguration"/>.
-        /// </para>
         /// </param>
-        public TypeScriptRoot( IReadOnlyDictionary<string, string>? libraryVersionConfiguration,
+        public TypeScriptRoot( ImmutableDictionary<string, SVersionBound> libraryVersionConfiguration,
                                bool pascalCase,
                                bool generateDocumentation,
+                               bool ignoreVersionsBound,
                                bool reflectTS = false,
                                string decimalLibraryName = "decimal.js-light" )
         {
-            _libraryManager = new LibraryManager();
+            Throw.CheckArgument( libraryVersionConfiguration.IsEmpty || libraryVersionConfiguration.KeyComparer == StringComparer.OrdinalIgnoreCase );
+            _libraryManager = new LibraryManager( libraryVersionConfiguration, decimalLibraryName, ignoreVersionsBound );
             _pascalCase = pascalCase;
             _reflectTS = reflectTS;
-            _decimalLibraryName = decimalLibraryName;
             _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
             if( GetType() == typeof( TypeScriptRoot ) )
             {
@@ -97,11 +99,12 @@ namespace CK.TypeScript.CodeGen
             }
             else
             {
+                // Optional generic Root strong typing.
                 var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
                 Root = (TypeScriptFolder)rootType.GetMethod( "Create", BindingFlags.NonPublic | BindingFlags.Static )!
                                                  .Invoke( null, new object[] { this } )!;
             }
-            _tsTypes = new TSTypeManager( this, libraryVersionConfiguration );
+            _tsTypes = new TSTypeManager( this );
         }
 
         /// <summary>
@@ -119,18 +122,6 @@ namespace CK.TypeScript.CodeGen
         /// Gets a reusable documentation builder.
         /// </summary>
         public DocumentationBuilder DocBuilder => _docBuilder;
-
-        /// <summary>
-        /// Gets the library to use for <see cref="decimal"/>.
-        /// </summary>
-        public string DecimalLibraryName => _decimalLibraryName;
-
-        /// <summary>
-        /// Gets the configured versions for npm packages. These configurations take precedence over the
-        /// library version that can be specified by code (through <see cref="LibraryImport"/> when
-        /// calling <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>).
-        /// </summary>
-        public IReadOnlyDictionary<string, string>? LibraryVersionConfiguration => _tsTypes._libVersionsConfig;
 
         /// <summary>
         /// Gets or sets the <see cref="IXmlDocumentationCodeRefHandler"/> to use.
@@ -257,7 +248,7 @@ namespace CK.TypeScript.CodeGen
         }
 
         /// <summary>
-        /// Gets the library manager.
+        /// Gets the external library manager.
         /// </summary>
         public LibraryManager LibraryManager => _libraryManager;
 
@@ -267,7 +258,7 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <remarks>
         /// This is better not to use this directly: hiding this shared storage behind extension methods
-        /// is recommended.
+        /// is recommended (and it is even better to not use this at all).
         /// </remarks>
         public IDictionary<object, object?> Memory => _memory ??= new Dictionary<object, object?>();
 

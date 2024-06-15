@@ -23,9 +23,10 @@ namespace CK.TypeScript.CodeGen
 
         public ITSFileImportSection EnsureImportFromLibrary( LibraryImport libraryImport, string typeName, params string[] typeNames )
         {
-            _file.Root.LibraryManager.EnsureLibrary( libraryImport );
+            Throw.CheckNotNullArgument( libraryImport );
             Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
             AddTypeNames( ref _importLibs, libraryImport.Name, typeName, typeNames );
+            libraryImport.IsUsed = true;
             return this;
         }
 

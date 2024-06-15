@@ -24,7 +24,12 @@ namespace CK.StObj.TypeScript.Engine
 
         public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
-            context.Root.LibraryManager.EnsureLibrary( new LibraryImport( _attr.Name, _attr.Version, (CK.TypeScript.CodeGen.DependencyKind)_attr.DependencyKind ) );
+            var lib = context.Root.LibraryManager.RegisterLibrary( monitor,
+                                                                   _attr.Name,
+                                                                   _attr.Version,
+                                                                   (CK.TypeScript.CodeGen.DependencyKind)_attr.DependencyKind );
+            if( lib == null ) return false;
+            lib.IsUsed = _attr.ForceUse;
             return true;
         }
     }

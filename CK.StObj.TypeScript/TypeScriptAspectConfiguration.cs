@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.StObj.TypeScript;
+using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace CK.Setup
         {
             GenerateDocumentation = true;
             DeferFileSave = true;
-            LibraryVersions = new Dictionary<string, string>();
+            LibraryVersions = new Dictionary<string, SVersionBound>();
         }
 
         /// <summary>
@@ -56,25 +57,38 @@ namespace CK.Setup
             GenerateDocumentation = (bool?)e.Attribute( xGenerateDocumentation ) ?? true;
             DeferFileSave = (bool?)e.Attribute( xDeferFileSave ) ?? true;
             LibraryVersions = e.Element( xLibraryVersions )?
-                    .Elements( xLibrary )
-                    .Select( e => (e.Attribute( EngineConfiguration.xName )?.Value, e.Attribute( EngineConfiguration.xVersion )?.Value) )
-                    .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
-                    .GroupBy( e => e.Item1 )
-                    .ToDictionary( g => g.Key!, g => g.Last().Item2! )
-                  ?? new Dictionary<string, string>();
+                                .Elements( xLibrary )
+                                .Select( e => (e.Attribute( EngineConfiguration.xName )?.Value, e.Attribute( EngineConfiguration.xVersion )?.Value) )
+                                .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
+                                .ToDictionary( e => e.Item1!, e => ParseSVersionBound( e.Item1!, e.Item2! ) )
+                                ?? new Dictionary<string, SVersionBound>();
+            IgnoreVersionsBound = (bool?)e.Attribute( xIgnoreVersionsBound ) ?? false;
 
+            static SVersionBound ParseSVersionBound( string name, string version )
+            {
+                var parseResult = SVersionBound.NpmTryParse( version, includePrerelease: false );
+                if( !parseResult.IsValid )
+                {
+                    Throw.XmlException( $"Invalid version '{version}' for library '{name}': {parseResult.Error}" );
+                }
+                return parseResult.Result;
+            }
         }
 
         /// <summary>
         /// Gets a dictionary that defines the version to use for an external package.
         /// The versions specified here override the ones specified in code while
         /// declaring an import.
+        ///<para>
+        /// The code can provide default versions (final version is upgrade, see <see cref="IgnoreVersionsBound"/>)
+        /// or no version at all: in this case the library version must be defined here.
+        ///</para>
         /// <para>
         /// Example:
         /// <code>
         ///     &lt;LibraryVersions&gt;
-        ///        &lt;Library Name="axios" Version="^1.2.1" /&gt;
-        ///        &lt;Library Name="luxon" Version="3.1.1" /&gt;
+        ///        &lt;Library Name="axios" Version="^1.7.2" /&gt;
+        ///        &lt;Library Name="luxon" Version=">=3.1.1" /&gt;
         ///     &lt;/LibraryVersions&gt;
         /// </code>
         /// </para>
@@ -82,7 +96,20 @@ namespace CK.Setup
         /// It is empty by default.
         /// </para>
         /// </summary>
-        public Dictionary<string, string> LibraryVersions { get; }
+        public Dictionary<string, SVersionBound> LibraryVersions { get; }
+
+        /// <summary>
+        /// Gets or sets whether when code declares multiple versions for the same library, 
+        /// version compatibility must be enforced or not.
+        /// <para>
+        /// When false (the default), if a package wants "axios": "^0.28.0" (in <see cref="SVersionBound"/> semantics: "0.28.0[LockMajor,Stable]")
+        /// and another one wants ">=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
+        /// </para>
+        /// <para>
+        /// When set to true, the greatest <see cref="SVersionBound.Base"/> wins: "1.7.2[Stable]" will be selected.
+        /// </para>
+        /// </summary>
+        public bool IgnoreVersionsBound { get; set; }
 
         /// <summary>
         /// Gets or sets whether TypeScript generated properties should be PascalCased.
@@ -124,13 +151,15 @@ namespace CK.Setup
                         DeferFileSave == false
                             ? new XAttribute( xDeferFileSave, false )
                             : null,
-                        LibraryVersions.Count > 0
-                            ? new XElement( xLibraryVersions,
-                                            LibraryVersions.Select( kv => new XElement( xLibrary,
-                                                new XAttribute( EngineConfiguration.xName, kv.Key ),
-                                                new XAttribute( EngineConfiguration.xVersion, kv.Value ) ) ) )
-                            : null
+                        IgnoreVersionsBound == true
+                            ? new XAttribute( xIgnoreVersionsBound, true )
+                            : null,
+                        new XElement( xLibraryVersions,
+                                      LibraryVersions.Select( kv => new XElement( xLibrary,
+                                        new XAttribute( EngineConfiguration.xName, kv.Key ),
+                                        new XAttribute( EngineConfiguration.xVersion, kv.Value.ToNpmString() ) ) ) )
                  );
+
             return e;
         }
 

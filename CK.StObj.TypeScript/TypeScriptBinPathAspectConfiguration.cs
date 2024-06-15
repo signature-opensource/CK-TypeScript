@@ -7,6 +7,7 @@ using System.Xml.Linq;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// Helper that models the <see cref="BinPathConfiguration"/> &lt;TypeScript&gt; element.
     /// </summary>
@@ -20,6 +21,7 @@ namespace CK.Setup
             Barrels = new HashSet<NormalizedPath>();
             Types = new List<TypeScriptTypeConfiguration>();
             TypeFilterName = "TypeScript";
+            ModuleSystem = TSModuleSystem.Default;
         }
 
         /// <summary>
@@ -62,7 +64,7 @@ namespace CK.Setup
         /// Defaults to false.
         /// </para>
         /// </summary>
-        public bool BuildMode { get; set; }
+        public bool CKGenBuildMode { get; set; }
 
         /// <summary>
         /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>".
@@ -131,6 +133,22 @@ namespace CK.Setup
         public bool GitIgnoreCKGenFolder { get; set; }
 
         /// <summary>
+        /// Choose the <see cref="TSModuleSystem"/>.
+        /// Defaults to <see cref="TSModuleSystem.Default"/>.
+        /// </summary>
+        public TSModuleSystem ModuleSystem { get; set; }
+
+        /// <summary>
+        /// True to add <c>"composite": true</c> to the /ck-gen/tsconfig.json.
+        /// <para>
+        /// It is up to the developper to ensure that a <c>"references": [ { "path": "./ck-gen" } ]</c> exists in
+        /// the target project tsconfig.json and to use <c>tsc --buildMode</c>.
+        /// See <see cref="https://www.typescriptlang.org/docs/handbook/project-references.html"/>.
+        /// </para>
+        /// </summary>
+        public bool EnableTSProjectReferences { get; set; }
+
+        /// <summary>
         /// Gets a list of optional barrel paths that are relative to the "<see cref="TargetProjectPath"/>/ck-gen" folder.
         /// An index.ts file will be generated in each of these folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
         /// <para>
@@ -153,7 +171,10 @@ namespace CK.Setup
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
             SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
-            BuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xBuildMode ) ?? false;
+            CKGenBuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xCKGenBuildMode ) ?? false;
+            var tsModuleSystem = (string?)e.Attribute( TypeScriptAspectConfiguration.xModuleSystem );
+            ModuleSystem = tsModuleSystem == null ? TSModuleSystem.Default : Enum.Parse<TSModuleSystem>( tsModuleSystem, ignoreCase: true );
+            EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
 
             Types.Clear();
             Types.AddRange( e.Elements( EngineConfiguration.xTypes )
@@ -185,8 +206,14 @@ namespace CK.Setup
                    AutoInstallVSCodeSupport
                     ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport, true )
                     : null,
-                   BuildMode
-                    ? new XAttribute( TypeScriptAspectConfiguration.xBuildMode, true )
+                   CKGenBuildMode
+                    ? new XAttribute( TypeScriptAspectConfiguration.xCKGenBuildMode, true )
+                    : null,
+                   ModuleSystem != TSModuleSystem.Default
+                    ? new XAttribute( TypeScriptAspectConfiguration.xModuleSystem, ModuleSystem.ToString() )
+                    : null,
+                   EnableTSProjectReferences
+                    ? new XAttribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences, true )
                     : null,
                    new XElement( EngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
                 );

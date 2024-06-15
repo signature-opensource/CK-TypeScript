@@ -112,26 +112,30 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Generates "package.json", "tsconfig.json" and "tsconfig-cjs.json".
+        /// Generates "/ck-gen/package.json", "/ck-gen/tsconfig.json" and potentially "/ck-gen/tsconfig-cjs.json" and "/ck-gen/tsconfig-es6.json".
         /// </summary>
-        internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor, NormalizedPath outputPath, string targetTypescriptVersion, TypeScriptContext g )
+        internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor, NormalizedPath ckGenFolder, string targetTypescriptVersion, TypeScriptContext g )
         {
             using var gLog = monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." );
 
             var reusable = new StringBuilder();
-            return GeneratePackageJson( monitor, outputPath, targetTypescriptVersion, g, reusable )
-                   && GenerateTSConfigJson( monitor, outputPath, g, reusable )
-                   && GenerateTSConfigCJSJson( monitor, outputPath );
+            return GeneratePackageJson( monitor, ckGenFolder, targetTypescriptVersion, g, reusable )
+                   && GenerateTSConfigJson( monitor, ckGenFolder, g, reusable );
 
-            static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath outputPath, string targetTypescriptVersion, TypeScriptContext g, StringBuilder sb )
+            static bool GeneratePackageJson( IActivityMonitor monitor, NormalizedPath ckGenFolder, string targetTypescriptVersion, TypeScriptContext g, StringBuilder sb )
             {
                 sb.Clear();
-                var packageJsonPath = Path.Combine( outputPath, "package.json" );
+                var packageJsonPath = Path.Combine( ckGenFolder, "package.json" );
                 using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
                 {
-                    // Uses the libray manager: this checks that no one has registered a typescript version that differs from
-                    // the chosen one.
-                    g.Root.LibraryManager.EnsureLibrary( new LibraryImport( "typescript", targetTypescriptVersion, DependencyKind.DevDependency ) );
+                    // Uses the libray manager: if some code did it with a greater version, this will work... unless IgnoreVersionsBound is false
+                    // and a version conflict happens.
+                    var typeScriptLib = g.Root.LibraryManager.RegisterLibrary( monitor, "typescript", targetTypescriptVersion, DependencyKind.DevDependency );
+                    if( typeScriptLib == null )
+                    {
+                        return false;
+                    }
+                    typeScriptLib.IsUsed = true;
                     var dependencies = g.Root.LibraryManager.LibraryImports;
                     sb.Clear();
                     sb.Append( """
@@ -139,29 +143,58 @@ namespace CK.Setup
                                  "name": "@local/ck-gen",
 
                                """ );
+
                     var depsList = dependencies
-                        .GroupBy( s => s.Value.DependencyKind, s => $"    \"{s.Value.Name}\": \"{s.Value.Version}\"" )
-                        .Select( s => (s.Key switch
-                        {
-                            DependencyKind.Dependency => "dependencies",
-                            DependencyKind.DevDependency => "devDependencies",
-                            DependencyKind.PeerDependency => "peerDependencies",
-                            _ => Throw.InvalidOperationException<string>()
-                        }, string.Join( "," + Environment.NewLine, s )) );
+                                    .Where( kv => kv.Value.IsUsed )
+                                    .GroupBy( s => s.Value.DependencyKind, s => $"    \"{s.Value.Name}\": \"{s.Value.Version.ToNpmString()}\"" )
+                                    .Select( s => (s.Key switch
+                                    {
+                                        DependencyKind.Dependency => "dependencies",
+                                        DependencyKind.DevDependency => "devDependencies",
+                                        DependencyKind.PeerDependency => "peerDependencies",
+                                        _ => Throw.InvalidOperationException<string>()
+                                    }, string.Join( "," + Environment.NewLine, s )) );
 
                     foreach( var deps in depsList )
                     {
                         sb.Append( "  \"" ).Append( deps.Item1 ).AppendLine( "\": {" ).AppendLine( deps.Item2 ).AppendLine( "  }," );
                     }
+                    if( g.BinPathConfiguration.EnableTSProjectReferences )
+                    {
+                        sb.Append( """
+                              "composite": true,
+
+                            """ );
+                    }
+                    if( g.BinPathConfiguration.ModuleSystem is TSModuleSystem.ES6 or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )
+                    {
+                        sb.Append( """
+                              "module": "./dist/es6/index.js",
+
+                            """ );
+                    }
+                    if( g.BinPathConfiguration.ModuleSystem is TSModuleSystem.CJS or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )
+                    {
+                        sb.Append( """
+                              "main": "./dist/cjs/index.js",
+
+                            """ );
+                    }
                     sb.Append( """
-                                  "private": true,
-                                  "files": [
-                                    "dist/"
-                                  ],
-                                  "main": "./dist/cjs/index.js",
-                                  "module": "./dist/esm/index.js",
-                                  "scripts": {
-                                    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json"
+                                 "private": true,
+                                 "scripts": {
+                                   "build": "tsc -p tsconfig.json
+                               """ );
+                    if( g.BinPathConfiguration.ModuleSystem == TSModuleSystem.ES6AndCJS )
+                    {
+                        sb.Append( " && tsc -p tsconfig-cjs.json" );
+                    }
+                    else if( g.BinPathConfiguration.ModuleSystem == TSModuleSystem.CJSAndES6 )
+                    {
+                        sb.Append( " && tsc -p tsconfig-es6.json" );
+                    }
+                    sb.Append( """
+                                "
                                   }
                                 }
                                 """ );
@@ -170,24 +203,60 @@ namespace CK.Setup
                 }
             }
 
-            static bool GenerateTSConfigJson( IActivityMonitor monitor, NormalizedPath outputPath, TypeScriptContext g, StringBuilder sb )
+            static bool GenerateTSConfigJson( IActivityMonitor monitor, NormalizedPath ckGenFolder, TypeScriptContext g, StringBuilder sb )
             {
                 sb.Clear();
-                var tsConfigFile = Path.Combine( outputPath, "tsconfig.json" );
+                var tsConfigFile = Path.Combine( ckGenFolder, "tsconfig.json" );
                 using( monitor.OpenTrace( $"Creating '{tsConfigFile}'." ) )
                 {
-                    File.WriteAllText( tsConfigFile, """
+                    string module, modulePath;
+                    string? otherModule = null, otherModulePath = null;
+                    string? unusedDist = null;
+                    var unusedConfigFiles = new List<string>();
+                    switch( g.BinPathConfiguration.ModuleSystem )
+                    {
+                        case TSModuleSystem.ES6:
+                            module = "ES6";
+                            modulePath = "es6";
+                            unusedDist = "dist/cjs";
+                            unusedConfigFiles.AddRangeArray( "tsconfig-cjs.json", "tsconfig-es6.json" );
+                            break;
+                        case TSModuleSystem.ES6AndCJS:
+                            module = "ES6";
+                            modulePath = "es6";
+                            otherModule = "CommonJS";
+                            otherModulePath = "cjs";
+                            unusedConfigFiles.Add( "tsconfig-es6.json" );
+                            break;
+                        case TSModuleSystem.CJS:
+                            module = "CommonJS";
+                            modulePath = "cjs";
+                            unusedDist = "dist/es6";
+                            unusedConfigFiles.AddRangeArray( "tsconfig-cjs.json", "tsconfig-es6.json" );
+                            break;
+                        case TSModuleSystem.CJSAndES6:
+                            module = "CommonJS";
+                            modulePath = "cjs";
+                            otherModule = "ES6";
+                            otherModulePath = "es6";
+                            unusedConfigFiles.Add( "tsconfig-cjs.json" );
+                            break;
+                        default: throw new CKException( "" );
+                    }
+                    DeleteUnused( monitor, ckGenFolder, unusedDist, unusedConfigFiles );
+                    File.WriteAllText( tsConfigFile, $$"""
                                                      {
                                                         "compilerOptions": {
                                                             "strict": true,
                                                             "target": "es2022",
-                                                            "module": "ES6",
                                                             "moduleResolution": "node",
                                                             "lib": ["es2022", "dom"],
                                                             "baseUrl": "./src",
-                                                            "outDir": "./dist/esm",
+                                                            "module": "{{module}}",
+                                                            "outDir": "./dist/{{modulePath}}",
                                                             "sourceMap": true,
                                                             "declaration": true,
+                                                            "declarationMap": true,
                                                             "esModuleInterop": true,
                                                             "resolveJsonModule": true,
                                                             "rootDir": "src"
@@ -197,26 +266,63 @@ namespace CK.Setup
                                                         ]
                                                      }
                                                      """ );
-                }
-                return true;
-            }
-
-            static bool GenerateTSConfigCJSJson( IActivityMonitor monitor, NormalizedPath outputPath )
-            {
-                var tsConfigCJSFile = Path.Combine( outputPath, "tsconfig-cjs.json" );
-                monitor.Trace( $"Creating '{tsConfigCJSFile}'." );
-                File.WriteAllText( tsConfigCJSFile, """
+                    if( otherModule != null )
+                    {
+                        var tsConfigOtherFile = Path.Combine( ckGenFolder, $"tsconfig-{otherModulePath}.json" );
+                        monitor.Trace( $"Creating '{tsConfigOtherFile}'." );
+                        File.WriteAllText( tsConfigOtherFile, $$"""
                                                     {
                                                       "extends": "./tsconfig.json",
                                                       "compilerOptions": {
-                                                        "module": "CommonJS",
-                                                        "outDir": "./dist/cjs"
+                                                        "module": "{{otherModule}}",
+                                                        "outDir": "./dist/{{otherModulePath}}"
                                                       },
                                                     }
                                                     """ );
+                    }
+                }
                 return true;
-            }
 
+                static void DeleteUnused( IActivityMonitor monitor, NormalizedPath outputPath, string? unusedDist, List<string> unusedConfigFiles )
+                {
+                    if( unusedDist != null )
+                    {
+                        var p = Path.Combine( outputPath, unusedDist );
+                        if( Directory.Exists( p ) )
+                        {
+                            using( monitor.OpenInfo( $"Deleting no more used folder '{unusedDist}'." ) )
+                            {
+                                try
+                                {
+                                    Directory.Delete( p, true );
+                                }
+                                catch( Exception ex )
+                                {
+                                    monitor.Warn( $"Unable to delete directory '{p}'. Ignoring.", ex );
+                                }
+                            }
+                        }
+                    }
+                    foreach( var f in unusedConfigFiles )
+                    {
+                        var p = Path.Combine( outputPath, f );
+                        if( File.Exists( p ) )
+                        {
+                            using( monitor.OpenInfo( $"Deleting useless file '{f}'." ) )
+                            {
+                                try
+                                {
+                                    File.Delete( p );
+                                }
+                                catch( Exception ex )
+                                {
+                                    monitor.Warn( $"Unable to delete file '{p}'. Ignoring.", ex );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, bool autoInstall )

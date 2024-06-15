@@ -169,7 +169,7 @@ namespace CK.Testing
             tsBinPathAspect.AutoInstallYarn = testMode >= GenerateMode.BuildCKGen;
             tsBinPathAspect.AutoInstallVSCodeSupport = testMode >= GenerateMode.BuildCKGenAndVSCodeSupport;
             tsBinPathAspect.EnsureTestSupport = testMode >= GenerateMode.WithTestSupport;
-            tsBinPathAspect.BuildMode = testMode == GenerateMode.BuildMode;
+            tsBinPathAspect.CKGenBuildMode = testMode == GenerateMode.BuildMode;
             tsBinPathAspect.Types.Clear();
             tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
             return tsBinPathAspect;

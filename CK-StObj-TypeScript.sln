@@ -43,7 +43,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CK-ObservableDomain", "CK-O
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.TS.ObservableDomain", "Tests\BuildMode\CK-ObservableDomain\CK.TS.ObservableDomain\CK.TS.ObservableDomain.csproj", "{7D416538-7736-48FB-9AC7-F1FB1F5861C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.TS.ObservableDomain.Tests", "Tests\BuildMode\CK-ObservableDomain\CK.TS.ObservableDomain.Tests\CK.TS.ObservableDomain.Tests.csproj", "{8DA63199-B1D4-4EA0-88C2-B5826C0EE32E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.TS.ObservableDomain.Tests", "Tests\BuildMode\CK-ObservableDomain\CK.TS.ObservableDomain.Tests\CK.TS.ObservableDomain.Tests.csproj", "{8DA63199-B1D4-4EA0-88C2-B5826C0EE32E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.TS.AspNet.Auth", "CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj", "{724B4C64-70D6-4A98-8521-DB92D40E6477}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.TS.AspNet.Auth.Tests", "Tests\CK.TS.AspNet.Auth.Tests\CK.TS.AspNet.Auth.Tests.csproj", "{81A46F45-5C42-4C9D-822E-9C06A3C93D42}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +95,14 @@ Global
 		{8DA63199-B1D4-4EA0-88C2-B5826C0EE32E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8DA63199-B1D4-4EA0-88C2-B5826C0EE32E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8DA63199-B1D4-4EA0-88C2-B5826C0EE32E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{724B4C64-70D6-4A98-8521-DB92D40E6477}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{724B4C64-70D6-4A98-8521-DB92D40E6477}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{724B4C64-70D6-4A98-8521-DB92D40E6477}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{724B4C64-70D6-4A98-8521-DB92D40E6477}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81A46F45-5C42-4C9D-822E-9C06A3C93D42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81A46F45-5C42-4C9D-822E-9C06A3C93D42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81A46F45-5C42-4C9D-822E-9C06A3C93D42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81A46F45-5C42-4C9D-822E-9C06A3C93D42}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -104,6 +116,7 @@ Global
 		{FC9C67AE-2FE6-4F3F-9F6D-A8801C5ECC67} = {C695CCD1-4BDB-4BD7-B5CC-5B0290F72DB4}
 		{7D416538-7736-48FB-9AC7-F1FB1F5861C6} = {FC9C67AE-2FE6-4F3F-9F6D-A8801C5ECC67}
 		{8DA63199-B1D4-4EA0-88C2-B5826C0EE32E} = {FC9C67AE-2FE6-4F3F-9F6D-A8801C5ECC67}
+		{81A46F45-5C42-4C9D-822E-9C06A3C93D42} = {554E1709-5785-4982-89F9-6AB3C5684F43}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {99B45435-DA3D-4967-A869-813B52AE2EF2}

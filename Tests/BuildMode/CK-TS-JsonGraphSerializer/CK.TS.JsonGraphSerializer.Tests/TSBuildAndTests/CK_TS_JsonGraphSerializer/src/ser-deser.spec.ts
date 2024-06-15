@@ -102,11 +102,11 @@ describe('serialize() and deserialize()', function () {
         testWithIdempotence(a, { prefix: "" });
     });
 
-    it('should work with external objects (1)', function () {
+    it('should work with external objects (1)', function (this:any) {
         const ext = this;
         const a = [ext];
 
-        const options = {
+        const options: ISerializeOptions & IDeserializeOptions = {
             substitor: r => {
                 if (r === ext) return { EXT: 1 };
                 return r;
@@ -122,7 +122,7 @@ describe('serialize() and deserialize()', function () {
         });
     });
 
-    it('should work with external objects (2)', function () {
+    it('should work with external objects (2)', function (this:any) {
         // a is graph with awful cycles in it.
         // and with references to srv1 and srv2.
         const srv1 = { host: this, addr: "an ip address" };
@@ -135,7 +135,7 @@ describe('serialize() and deserialize()', function () {
         a.rC = c;
         a.rD = d;
 
-        const options = {
+        const options: ISerializeOptions & IDeserializeOptions = {
             prefix: "",
             substitor: r => {
                 if (r === srv1) return { SERVER: 1 };

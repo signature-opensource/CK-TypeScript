@@ -28,6 +28,7 @@ namespace CK.TypeScript.CodeGen
                                            bool withLuxonTypes = true )
         {
             Throw.CheckState( GenerateCodeDone is false );
+            bool success = true;
             _types.Add( typeof( string ), new TSStringType( this ) );
             RegisterValueType<bool>( new TSBooleanType( this ) );
             if( withNumbers )
@@ -52,23 +53,27 @@ namespace CK.TypeScript.CodeGen
             }
             if( withDecimal )
             {
-                var knownLibVersion = _root.DecimalLibraryName == TypeScriptRoot.DecimalJSLight
-                                        ? TypeScriptRoot.DecimalJSLightVersion
-                                        : _root.DecimalLibraryName == TypeScriptRoot.DecimalJS
-                                            ? TypeScriptRoot.DecimalJSVersion
-                                            : null;
-                var decimalLib = RegisterLibrary( monitor, _root.DecimalLibraryName, DependencyKind.Dependency, knownLibVersion );
-                var tsDecimal = new TSDecimalType( this, decimalLib );
-                RegisterValueType<decimal>( tsDecimal );
+                var decimalLib = _root.LibraryManager.RegisterDefaultOrConfiguredDecimalLibrary( monitor );
+                if( decimalLib == null )
+                {
+                    success = false;
+                }
+                else
+                {
+                    var tsDecimal = new TSDecimalType( this, decimalLib );
+                    RegisterValueType<decimal>( tsDecimal );
+                }
+                
             }
             if( withLuxonTypes )
             {
-                var luxonTypesLib = RegisterLibrary( monitor, "@types/luxon", DependencyKind.DevDependency, TypeScriptRoot.LuxonTypesVersion );
-                var luxonLib = RegisterLibrary( monitor, "luxon", DependencyKind.Dependency, TypeScriptRoot.LuxonVersion, luxonTypesLib );
+                var luxonLib = _root.LibraryManager.RegisterLuxonLibrary( monitor );
                 var dateTime = new TSLuxonDateTime( this, luxonLib );
 
+                // Luxon DateTime handles .Net DateTime and DateTimeOffset.
                 RegisterValueType<DateTime>( dateTime );
                 RegisterValueType<DateTimeOffset>( dateTime );
+                // TimeSpan is Duration (works on milliseconds only).
                 RegisterValueType<TimeSpan>( new TSLuxonDuration( this, luxonLib ) );
             }
         }

@@ -1,3 +1,4 @@
+using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
@@ -9,14 +10,17 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
 {
-    [TypeScriptFile( "IAmHere.ts", "IAmHere" )]
-    public class Embedded { }
+    [TypeScriptPackage]
+    [TypeScriptFile( "TypeScriptFileAttr/Res/IAmHere.ts", "IAmHere" )]
+    [ImportTypeScriptLibrary( "someLibDep", "^1.1.1", DependencyKind.Dependency, ForceUse = true )]
+    public sealed class Embedded : TypeScriptPackage { }
 
-    [ImportTypeScriptLibrary( "someLibDep", "^1.0.0", DependencyKind.Dependency )]
-    [ImportTypeScriptLibrary( "someLibDevDep", "^2.0.0", DependencyKind.DevDependency )]
-    [ImportTypeScriptLibrary( "someLibPeer", "^3.0.0", DependencyKind.PeerDependency )]
-    [TypeScriptFile( "IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo" )]
-    public static class OtherEmbedded { }
+    [TypeScriptPackage]
+    [ImportTypeScriptLibrary( "someLibDep", "^1.0.0", DependencyKind.Dependency, ForceUse = true )]
+    [ImportTypeScriptLibrary( "someLibDevDep", "^2.0.0", DependencyKind.DevDependency, ForceUse = true )]
+    [ImportTypeScriptLibrary( "someLibPeer", "^3.0.0", DependencyKind.PeerDependency, ForceUse = true )]
+    [TypeScriptFile( "TypeScriptFileAttr/Res/IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo" )]
+    public sealed class OtherEmbedded : TypeScriptPackage { }
 
 
     [TestFixture]
@@ -40,8 +44,21 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
         public void TypeScriptFile_and_ImportTypeScriptLibrary()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            var c = TestHelper.CreateTypeCollector( typeof( Embedded ), typeof( OtherEmbedded ) );
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, c, Type.EmptyTypes );
+
+            //
+            // Using TSModuleSystem.CJS and EnableTSProjectReferences because we read the project.json
+            // so we can check that no "es6" exists, "composite" is true and
+            // the "build" only builds the single tsconfig.json.
+            //
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+            var tsAspect = TestHelper.EnsureTypeScriptConfigurationAspect( engineConfig, targetProjectPath, Type.EmptyTypes );
+            tsAspect.ModuleSystem = TSModuleSystem.CJS;
+            tsAspect.EnableTSProjectReferences = true;
+
+            var types = TestHelper.CreateTypeCollector( typeof( Embedded ), typeof( OtherEmbedded ) );
+            var r = TestHelper.RunEngine( engineConfig, types );
+            r.Success.Should().BeTrue( "Engine.Run worked." );
+
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
                 .Should().BeTrue();
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
@@ -56,23 +73,20 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
                 {
                   "name": "@local/ck-gen",
                   "dependencies": {
-                    "someLibDep": "^1.0.0"
+                    "someLibDep": "^1.1.1"
                   },
                   "devDependencies": {
-                    "someLibDevDep": "^2.0.0",
-                    "typescript": "5.4.5"
+                    "someLibDevDep": "^2",
+                    "typescript": ">=5.4.5"
                   },
                   "peerDependencies": {
-                    "someLibPeer": "^3.0.0"
+                    "someLibPeer": "^3"
                   },
-                  "private": true,
-                  "files": [
-                    "dist/"
-                  ],
+                  "composite": true,
                   "main": "./dist/cjs/index.js",
-                  "module": "./dist/esm/index.js",
+                  "private": true,
                   "scripts": {
-                    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json"
+                    "build": "tsc -p tsconfig.json"
                   }
                 }
                 """.ReplaceLineEndings() );

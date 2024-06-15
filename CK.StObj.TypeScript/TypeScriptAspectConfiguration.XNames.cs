@@ -25,6 +25,11 @@ namespace CK.Setup
         public static readonly XName xLibrary = XNamespace.None + "Library";
 
         /// <summary>
+        /// The <see cref="IgnoreVersionsBound"/> attribute name.
+        /// </summary>
+        public static readonly XName xIgnoreVersionsBound = XNamespace.None + "IgnoreVersionsBound";
+
+        /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.SkipTypeScriptTooling"/> attribute name.
         /// </summary>
         public static readonly XName xSkipTypeScriptTooling = XNamespace.None + "SkipTypeScriptTooling";
@@ -35,9 +40,19 @@ namespace CK.Setup
         public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
 
         /// <summary>
-        /// The <see cref="TypeScriptBinPathAspectConfiguration.BuildMode"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> attribute name.
         /// </summary>
-        public static readonly XName xBuildMode = XNamespace.None + "BuildMode";
+        public static readonly XName xCKGenBuildMode = XNamespace.None + "CKGenBuildMode";
+
+        /// <summary>
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.ModuleSystem"/> attribute name.
+        /// </summary>
+        public static readonly XName xModuleSystem = XNamespace.None + "ModuleSystem";
+
+        /// <summary>
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.EnableTSProjectReferences"/> attribute name.
+        /// </summary>
+        public static readonly XName xEnableTSProjectReferences = XNamespace.None + "EnableTSProjectReferences";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.AutomaticTypeScriptVersion"/> attribute name.

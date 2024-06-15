@@ -70,7 +70,7 @@ namespace CK.Setup
                 var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
                 var ckGenFolderSrc = ckGenFolder.AppendPart( "src" );
 
-                var saver = BinPathConfiguration.BuildMode
+                var saver = BinPathConfiguration.CKGenBuildMode
                             ? new BuildModeSaver( ckGenFolderSrc )
                             : new TypeScriptFileSaveStrategy( ckGenFolderSrc );
                 // We want a root barrel for the generated module.
@@ -104,9 +104,8 @@ namespace CK.Setup
                                                                                  out var typeScriptSdkVersion,
                                                                                  out var targetProjectHasTypeScript );
 
-                        // Generates "/ck-gen" files "package.json", "tsconfig.json" and "tsconfig-cjs.json".
-                        // This may fail if there's an error in the dependencies declared by the code
-                        // generator (in LibraryImport).
+                        // Generates "/ck-gen" files "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json".
+                        // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
                         if( YarnHelper.SaveCKGenBuildConfig( monitor, ckGenFolder, targetTypeScriptVersion, this ) )
                         {
                             if( BinPathConfiguration.SkipTypeScriptTooling )

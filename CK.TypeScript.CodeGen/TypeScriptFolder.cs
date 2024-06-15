@@ -23,7 +23,7 @@ namespace CK.TypeScript.CodeGen
         readonly TypeScriptFolder? _next;
         internal TypeScriptFile? _firstFile;
         readonly NormalizedPath _path;
-        bool _hasBarrel;
+        bool _wantBarrel;
 
         static readonly char[] _invalidFileNameChars = System.IO.Path.GetInvalidFileNameChars();
         static readonly char[] _invalidPathChars = System.IO.Path.GetInvalidPathChars();
@@ -73,12 +73,12 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets whether this folder has a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel).
         /// </summary>
-        public bool HasBarrel => _hasBarrel;
+        public bool HasBarrel => _wantBarrel;
 
         /// <summary>
         /// Definitely sets <see cref="HasBarrel"/> to true.
         /// </summary>
-        public void EnsureBarrel() => _hasBarrel = true;
+        public void EnsureBarrel() => _wantBarrel = true;
 
         TypeScriptFolder FindOrCreateLocalFolder( string name )
         {
@@ -183,6 +183,11 @@ namespace CK.TypeScript.CodeGen
         TypeScriptFile? FindLocalFile( string name )
         {
             CheckName( name, false );
+            return DoFindLocalFile( name );
+        }
+
+        private TypeScriptFile? DoFindLocalFile( string name )
+        {
             var c = _firstFile;
             while( c != null )
             {
@@ -194,6 +199,8 @@ namespace CK.TypeScript.CodeGen
 
         private protected virtual TypeScriptFile CreateLocalFile( string name )
         {
+            Throw.CheckArgument( "Cannot create a 'index.ts' at the root (this is the default barrel).",
+                                 !IsRoot || !name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) );
             var f = new TypeScriptFile( this, name );
             _root.OnFileCreated( f );
             return f;
@@ -364,7 +371,7 @@ namespace CK.TypeScript.CodeGen
                         result += r.Value;
                         folder = folder._next;
                     }
-                    if( _hasBarrel )
+                    if( _wantBarrel && DoFindLocalFile( "index.ts" ) == null )
                     {
                         var b = new StringBuilder();
                         AddExportsToBarrel( default, b );
@@ -394,7 +401,7 @@ namespace CK.TypeScript.CodeGen
 
         void AddExportsToBarrel( NormalizedPath subPath, StringBuilder b )
         {
-            if( !subPath.IsEmptyPath && _hasBarrel )
+            if( !subPath.IsEmptyPath && (_wantBarrel || DoFindLocalFile("index.ts") != null) )
             {
                 b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
             }

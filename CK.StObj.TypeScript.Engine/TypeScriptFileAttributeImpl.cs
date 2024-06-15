@@ -3,6 +3,7 @@ using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -27,19 +28,18 @@ namespace CK.StObj.TypeScript.Engine
 
         public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
         {
-            if( !_attr.ResourceName.EndsWith( ".ts" ) )
+            if( _attr.ResourcePath == null
+                || !_attr.ResourcePath.EndsWith( ".ts" )
+                || _attr.ResourcePath.Contains( '\\' ) )
             {
-                monitor.Error( $"[TypeScriptFile( resourceName )] on '{_target}': invalid resource name '{_attr.ResourceName}'. It must end with \".ts\"." );
+                monitor.Error( $"[TypeScriptFile( \"{_attr.ResourcePath}\" )] on '{_target}': invalid resource path. It must end with \".ts\" and not contain '\\'." );
             }
             else
             {
-                var resLocator = new ResourceLocator( _target, _attr.ResourcePath ?? "Res" );
                 try
                 {
-                    // ResourceLocator should be refactored.
-                    _content = resLocator.GetString( _attr.ResourceName, true );
-                    var fullName = resLocator.GetResourceName( _attr.ResourceName );
-                    _originResource = new OriginResource( _target.Assembly, fullName );
+                    _content = _target.Assembly.TryGetCKResourceString( monitor, "ck@" + _attr.ResourcePath );
+                    _originResource = new OriginResource( _target.Assembly, _attr.ResourcePath );
                 }
                 catch( Exception ex )
                 {
@@ -58,7 +58,7 @@ namespace CK.StObj.TypeScript.Engine
 
         public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
-            TSManualFile file = context.Root.Root.FindOrCreateManualFile( _targetPath.AppendPart( _attr.ResourceName ) );
+            TSManualFile file = context.Root.Root.FindOrCreateManualFile( _targetPath.AppendPart( Path.GetFileName( _attr.ResourcePath ) ) );
             file.File.Origin = _originResource;
             file.File.Body.Append( _content );
             foreach( var tsType in _attr.TypeNames )

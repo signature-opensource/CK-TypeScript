@@ -30,16 +30,14 @@ namespace CK.TypeScript.CodeGen
         readonly TypeScriptRoot _root;
         // Not null when TypeScriptRoot.ReflectTS is true.
         readonly ITSCodePart? _reflectTSTypes;
-        internal readonly IReadOnlyDictionary<string, string>? _libVersionsConfig;
         // New TSGeneratedType are appended to this list: GenerateCode loops until no new type appears in this list.
         readonly List<TSGeneratedType> _processList;
         bool _generateCodeDone;
 
-        internal TSTypeManager( TypeScriptRoot root, IReadOnlyDictionary<string, string>? libraryVersionConfiguration )
+        internal TSTypeManager( TypeScriptRoot root )
         {
             _allTypes = new List<TSType>();
             _root = root;
-            _libVersionsConfig = libraryVersionConfiguration;
             _libraries = new Dictionary<string, LibraryImport>();
             _types = new Dictionary<object, ITSType?>();
             _processList = new List<TSGeneratedType>();
@@ -64,59 +62,6 @@ namespace CK.TypeScript.CodeGen
         /// </para>
         /// </summary>
         public TypeScriptFile? ReflectTSTypeFile => _reflectTSTypes?.File;
-
-        /// <summary>
-        /// Registers an imported library. The first wins: all subsequent imports with the same name will
-        /// use the previously registered version and implied libraries.
-        /// <para>
-        /// The version defined in the configured versions is always preferred to the code
-        /// specified one given by the <paramref name="version"/> parameter.
-        /// When the version parameter is let to null, the version must be specified in the configured versions otherwise
-        /// an ArgumentException is thrown: the code should always specify a default version.
-        /// </para>
-        /// <para>
-        /// No check is done on the implied libraries: the first registration is left unchanged.
-        /// </para>
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="name">The library name. Must not be empty or whitespace.</param>
-        /// <param name="dependencyKind">The dependency kind.</param>
-        /// <param name="version">The code specified version. Null to require it to be configured.</param>
-        /// <param name="impliedDependencies">Optional dependencies that are implied by this one.</param>
-        /// <returns></returns>
-        public LibraryImport RegisterLibrary( IActivityMonitor monitor, string name, DependencyKind dependencyKind, string? version, params LibraryImport[] impliedDependencies )
-        {
-            Throw.CheckNotNullArgument( monitor );
-            Throw.CheckNotNullOrWhiteSpaceArgument( name );
-            Throw.CheckArgument( version == null || !string.IsNullOrWhiteSpace( version ) );
-            if( _libraries.TryGetValue( name, out var library ) )
-            {
-                if( version != null && version != library.Version )
-                {
-                    monitor.Warn( $"Library '{library.Name}' is already registered in version '{library.Version}'. The code specified version '{version}' will be ignored." );
-                }
-                return library;
-            }
-            if( _libVersionsConfig?.TryGetValue( name, out var configuredVersion ) is true )
-            {
-                if( version == null || version == configuredVersion )
-                {
-                    monitor.Info( $"Library '{name}' will use the externally configured version '{version}'." );
-                }
-                else
-                {
-                    monitor.Warn( $"Library '{name}' will use the externally configured version '{configuredVersion}', the code specified version '{version}' will be ignored." );
-                }
-                version = configuredVersion;
-            }
-            if( version == null )
-            {
-                Throw.ArgumentException( $"The library '{name}' has no externally configured version and no version is specified by code." );
-            }
-            library = new LibraryImport( name, version, dependencyKind, impliedDependencies );
-            _libraries.Add( name, library );
-            return library;
-        }
 
         /// <summary>
         /// Tries to find an already registered <see cref="LibraryImport"/>.

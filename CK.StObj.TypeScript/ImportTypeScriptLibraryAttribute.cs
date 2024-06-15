@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 namespace CK.StObj.TypeScript
 {
     /// <summary>
-    /// Decorates a class (that can be static) to specify a library that will be
+    /// Decorates any class (that can even be static) to specify a library that will be
     /// included in the /ck-gen/package.json file.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
@@ -39,6 +39,13 @@ namespace CK.StObj.TypeScript
         /// of the packgage.json the dependency should appear.
         /// </summary>
         public DependencyKind DependencyKind { get; }
+
+        /// <summary>
+        /// Gets ors sets whether the library should be considered even if no type are imported from it.
+        /// Default to false: by default for a library to appear in the /ck-gen/package.json, it must be used (and this is
+        /// fine for almost all scenario).
+        /// </summary>
+        public bool ForceUse { get; set; }
     }
 
 }

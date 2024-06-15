@@ -3,6 +3,7 @@ using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -31,7 +32,10 @@ namespace CK.Setup
             _configuration = tsConfig;
             _binPathConfiguration = tsBinPathConfig;
             _initializer = initializer;
-            _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions, tsConfig.PascalCase, tsConfig.GenerateDocumentation );
+            _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions.ToImmutableDictionary(),
+                                          tsConfig.PascalCase,
+                                          tsConfig.GenerateDocumentation,
+                                          tsConfig.IgnoreVersionsBound );
             _tsRoot.FolderCreated += OnFolderCreated;
             _tsRoot.TSTypes.TSFromTypeRequired += OnTSFromTypeRequired;
             _tsRoot.TSTypes.TSFromObjectRequired += OnTSFromObjectRequired;

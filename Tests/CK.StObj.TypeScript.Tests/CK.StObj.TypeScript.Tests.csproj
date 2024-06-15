@@ -9,10 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="**\*.ts" />
+    <EmbeddedResource Include="**\*.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="TSTests\CrisLike_commands_and_results\src\abstracts.spec.ts" />
+    <None Remove="TSTests\CrisLike_commands_and_results\src\autonomous-serialization.spec.ts" />
+    <None Remove="TSTests\CrisLike_commands_and_results\src\branding.spec.ts" />
+    <None Remove="TSTests\TypeScriptRunner_with_environment_variables\src\EnvironmentVariables.spec.ts" />
+    <None Remove="TSTests\TypeScriptRunner_with_environment_variables\src\PocoInitialization.spec.ts" />
     <None Remove="TypeScriptFileAttr\Res\IAmAlsoHere.ts" />
   </ItemGroup>
 
@@ -26,5 +33,22 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="%24StObjGen\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="TSTests\CrisLike_commands_and_results\src\abstracts.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\CrisLike_commands_and_results\src\autonomous-serialization.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\CrisLike_commands_and_results\src\branding.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\TypeScriptRunner_with_environment_variables\src\EnvironmentVariables.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\TypeScriptRunner_with_environment_variables\src\PocoInitialization.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

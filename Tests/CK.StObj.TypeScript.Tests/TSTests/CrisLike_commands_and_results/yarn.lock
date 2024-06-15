@@ -722,10 +722,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
-    "@types/luxon": "npm:3.3.7"
-    decimal.js-light: "npm:2.5.1"
-    luxon: "npm:3.4.4"
-    typescript: "npm:5.4.5"
+    "@types/luxon": "npm:=3.3.7"
+    decimal.js-light: "npm:>=2.5.1"
+    luxon: "npm:=3.4.4"
+    typescript: "npm:>=5.4.5"
   languageName: unknown
   linkType: soft
 
@@ -868,7 +868,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/luxon@npm:3.3.7":
+"@types/luxon@npm:=3.3.7":
   version: 3.3.7
   resolution: "@types/luxon@npm:3.3.7"
   checksum: 10/282ac72fd55da0c9d57f376ba9061ce83506cf6239c32259dacde0800964089f6183d2e449ef2ddd89b079fb8bfdffd7e5dbf187eb5c9f106aeaeca2aa60ed09
@@ -1355,10 +1355,13 @@ __metadata:
   dependencies:
     "@local/ck-gen": "workspace:*"
     "@types/jest": "npm:^29.5.12"
+    "@types/luxon": "npm:=3.3.7"
     "@types/node": "npm:^20.14.2"
+    decimal.js-light: "npm:>=2.5.1"
     jest: "npm:^29.7.0"
+    luxon: "npm:=3.4.4"
     ts-jest: "npm:^29.1.4"
-    typescript: "npm:5.4.5"
+    typescript: "npm:>=5.4.5"
   languageName: unknown
   linkType: soft
 
@@ -1385,7 +1388,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"decimal.js-light@npm:2.5.1":
+"decimal.js-light@npm:>=2.5.1":
   version: 2.5.1
   resolution: "decimal.js-light@npm:2.5.1"
   checksum: 10/6360911e31221a9b8b90e23020aa969d104e182c5c6518589cdfedc3ced31bf1f19cf931e265bd451ae6ee3a35ee15e81f5456a86813606fda96f8374616688f
@@ -2546,7 +2549,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"luxon@npm:3.4.4":
+"luxon@npm:=3.4.4":
   version: 3.4.4
   resolution: "luxon@npm:3.4.4"
   checksum: 10/c14164bc338987349075a08e63ea3ff902866735f7f5553a355b27be22667919765ff96fde4d3413d0e9a0edc4ff9e2e74ebcb8f86eae0ce8b14b27330d87d6e
@@ -3427,7 +3430,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.4.5":
+"typescript@npm:>=5.4.5":
   version: 5.4.5
   resolution: "typescript@npm:5.4.5"
   bin:
@@ -3437,7 +3440,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.4.5#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A>=5.4.5#optional!builtin<compat/typescript>":
   version: 5.4.5
   resolution: "typescript@patch:typescript@npm%3A5.4.5#optional!builtin<compat/typescript>::version=5.4.5&hash=5adc0c"
   bin:
