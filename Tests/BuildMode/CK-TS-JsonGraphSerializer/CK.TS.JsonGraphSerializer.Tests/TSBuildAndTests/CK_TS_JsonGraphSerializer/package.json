@@ -4,9 +4,6 @@
   "workspaces": [
     "ck-gen"
   ],
-  "dependencies": {
-    "@local/ck-gen": "workspace:*"
-  },
   "devDependencies": {
     "@local/ck-gen": "workspace:*",
     "@types/jest": "^29.5.12",
@@ -16,7 +13,6 @@
     "typescript": "5.4.5"
   },
   "scripts": {
-    "test": "jest",
-    "wckg": "tsc -p ./ck-gen/tsconfig-cjs.json --watch"
+    "test": "jest"
   }
 }
