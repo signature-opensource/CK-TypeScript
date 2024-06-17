@@ -13,7 +13,7 @@ import { WebFrontAuthError } from '../../ck-gen/src/index';
 import ResponseBuilder from '../helpers/response-builder';
 
 describe('AuthService', function () {
-    const axiosInstance = axios.create({ timeout: 0.1 });
+    const axiosInstance = axios.create({ timeout: 1 });
     let requestInterceptorId: number;
     let responseInterceptorId: number;
 
@@ -45,8 +45,8 @@ describe('AuthService', function () {
 
     beforeAll(function () {
         authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
-        
-        requestInterceptorId = axiosInstance.interceptors.request.use((config: AxiosRequestConfig) => {
+
+        requestInterceptorId = axiosInstance.interceptors.request.use((config) => {
             return config;
         });
 
@@ -77,7 +77,7 @@ describe('AuthService', function () {
     });
 
     describe('when using localStorage', function() {
-        
+
         it('JSON.stringify( StdAuthenticationInfo ) is safe (toJSON is implemented on all Std objects).', async function() {
 
             const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
@@ -92,7 +92,7 @@ describe('AuthService', function () {
                 .build();
 
             await authService.basicLogin('', '');
-            
+
 
             const expectedUser = '{"userId":2,"userName":"Alice","schemes":[{"name":"Basic","lastUsed":"'+ schemeLastUsed.toISOString() +'","status":1}]}';
             // Note that criticalExpires being undefined, it is not exported as JSON!
@@ -100,20 +100,20 @@ describe('AuthService', function () {
             const expected = '{"user":'+expectedUser+',"unsafeUser":'+expectedUser
                              +',"level":2,"expires":"'+ exp.toISOString() +'","deviceId":"","isImpersonated":false'
                              +',"actualUser":'+expectedUser+'}';
-            const result = JSON.stringify( authService.authenticationInfo ); 
+            const result = JSON.stringify( authService.authenticationInfo );
             expect( result ).toBe( expected );
         });
-        
+
         it('it is possible to store a null AuthenticationInfo (and schemes are saved nevertheless).', function() {
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage,
                                                                           'theEndPoint',
                                                                            null,
                                                                            ['Saved','Schemes','even', 'when','null','AuthInfo'] );
-            
+
             const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint' );
             expect( restored ).toBeNull();
             expect( schemes ).toStrictEqual( ['Saved','Schemes','even', 'when','null','AuthInfo'] );
-            
+
             const [_,schemes2] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', ['Hop'] );
             expect( schemes2 ).toStrictEqual( ['Hop'] );
         });
@@ -121,14 +121,14 @@ describe('AuthService', function () {
         it('AuthenticationInfo is restored as unsafe user.', function() {
             const nicoleUser = authService.typeSystem.userInfo.create( 3712, 'Nicole', [{name:'Provider', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
             const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
-           
+
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'theEndPoint', nicoleAuth );
 
             const [restored,schemes] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'theEndPoint', ['Provider']);
             expect( restored ).not.toBeNull();
             expect( restored ).not.toBe( nicoleAuth );
-            
+
             expect( restored!.level ).toBe( AuthLevel.Unsafe );
             expect( restored!.user ).toStrictEqual( authService.typeSystem.userInfo.anonymous );
             expect( restored!.unsafeUser.userName ).toBe( 'Nicole' );
@@ -141,9 +141,9 @@ describe('AuthService', function () {
             const nicoleAuth = authService.typeSystem.authenticationInfo.create(nicoleUser,exp,cexp);
             const momoUser = authService.typeSystem.userInfo.create( 10578, 'Momo', [{name:'Basic', lastUsed: new Date(), status: SchemeUsageStatus.Active}] );
             const momoAuth = authService.typeSystem.authenticationInfo.create(momoUser,exp);
-               
+
             expect( nicoleAuth.level ).toBe( AuthLevel.Critical );
-            authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForNicole', nicoleAuth ); 
+            authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForNicole', nicoleAuth );
             expect( momoAuth.level ).toBe( AuthLevel.Normal );
             authService.typeSystem.authenticationInfo.saveToLocalStorage( localStorage, 'EndPointForMomo', momoAuth );
 
@@ -156,7 +156,7 @@ describe('AuthService', function () {
             const [rMomo,_] = authService.typeSystem.authenticationInfo.loadFromLocalStorage(localStorage, 'EndPointForMomo' );
             expect( rMomo!.level ).toBe( AuthLevel.Unsafe );
             expect( rMomo!.unsafeUser.userName ).toBe( 'Momo' );
-            expect( rMomo!.unsafeUser.schemes[0].status ).toBe( SchemeUsageStatus.Active );         
+            expect( rMomo!.unsafeUser.schemes[0].status ).toBe( SchemeUsageStatus.Active );
         });
     });
 
@@ -548,12 +548,12 @@ describe('AuthService', function () {
             booleanArray.forEach(b => expect(b).toBe(true));
             // Clears the array.
             for(let i=0; i<booleanArray.length; ++i) booleanArray[i] = false;
-    
+
             functionArray.forEach(func => authService.removeOnChange(func));
             await doLogin( 'Alice' );
             booleanArray.forEach(b => expect(b).toBe(false));
         });
-    
+
     });
 
 });

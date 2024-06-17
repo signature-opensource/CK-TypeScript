@@ -1,4 +1,4 @@
-import { AxiosRequestConfig, AxiosError, AxiosInstance } from 'axios';
+import { AxiosRequestConfig, AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
 
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
 import { AuthLevel, IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';
@@ -208,11 +208,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
     }
 
-    private onIntercept(): ( value: AxiosRequestConfig ) => AxiosRequestConfig | Promise<AxiosRequestConfig> {
-        return ( config: AxiosRequestConfig ) => {
+    private onIntercept(): ( value: InternalAxiosRequestConfig<undefined> ) => InternalAxiosRequestConfig<undefined> {
+        return ( config: InternalAxiosRequestConfig<undefined> ) => {
             if ( this._token
                 && this.shouldSetToken( config.url! ) ) {
-                config.headers = config.headers ?? {};
+                config.headers = config.headers ?? new AxiosHeaders();
                 Object.assign( config.headers, { Authorization: `Bearer ${this._token}` } );
             }
             return config;
@@ -223,7 +223,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         return ( messageEvent ) => {
             if ( messageEvent.data.WFA === 'WFA' ) {
                 // We are the only one (in terms of domain origin) that can receive this message since we call the server with this
-                // document.location.origin and this has been used by the postMessage targetOrigin parameter. 
+                // document.location.origin and this has been used by the postMessage targetOrigin parameter.
                 // Still, anybody may send us such a message so here we check the other way around before accepting the message: the
                 // sender must origin from our endPoint.
                 const origin = messageEvent.origin + '/';
@@ -451,7 +451,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
      * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
-     * and can modify this dictionary of nullable strings. 
+     * and can modify this dictionary of nullable strings.
      */
     public async basicLogin( userName: string,
         password: string,
@@ -470,7 +470,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param payload The object payload that contain any information required to authenticate with the scheme.
      * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
      * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
-     * and can modify this dictionary of nullable strings. 
+     * and can modify this dictionary of nullable strings.
      */
     public async unsafeDirectLogin( provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null } ): Promise<void> {
         this.checkClosed();
@@ -531,11 +531,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     * Starts an inline login with the provided scheme. Local context is lost since the process will go through one or more pages
     * before redirecting to the provided return url.
     * @param provider The authentication scheme to use.
-    * @param returnUrl The final return url. Must starts with one of the configured AllowedReturnUrls. 
+    * @param returnUrl The final return url. Must starts with one of the configured AllowedReturnUrls.
     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
-    * and can modify this dictionary of nullable strings. 
+    * and can modify this dictionary of nullable strings.
     */
     public async startInlineLogin( scheme: string, returnUrl: string, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null } ): Promise<void> {
         this.checkClosed();
@@ -558,7 +558,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
-    * and can modify this dictionary of nullable strings. 
+    * and can modify this dictionary of nullable strings.
     */
     public async startPopupLogin( scheme: string,
         rememberMe?: boolean,

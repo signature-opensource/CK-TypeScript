@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CookieJar } from 'tough-cookie';
-import axiosCookieJarSupport from 'axios-cookiejar-support';
+import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 
 import {
     AuthService,
@@ -43,8 +43,8 @@ describe('AuthService', function() {
 
     beforeAll(async function() {
         const axiosInstance = axios.create();
-        axiosCookieJarSupport(axiosInstance);
         const cookieJar = new CookieJar();
+        addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
 
         const identityEndPoint = {
