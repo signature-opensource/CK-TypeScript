@@ -12,6 +12,8 @@ import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
 import { WebFrontAuthError } from '../../ck-gen/src/index';
 import ResponseBuilder from '../helpers/response-builder';
 
+if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+
 describe('AuthService', function () {
     const axiosInstance = axios.create({ timeout: 1 });
     let requestInterceptorId: number;
@@ -242,7 +244,7 @@ describe('AuthService', function () {
                 .withExpires(exp)
                 .withToken('CfDJ8CS62…pLB10X')
                 .withRefreshable(false)
-                .withVersion(AuthService.clientVersion)
+                .withVersion("the version")
                 .build();
             await authService.refresh();
 
@@ -254,7 +256,7 @@ describe('AuthService', function () {
             expect(authService.token).toBe('CfDJ8CS62…pLB10X');
             expect(authService.refreshable).toBe(false);
             expect(authService.lastResult.error).toBeUndefined();
-            expect(authService.endPointVersion).toBe( AuthService.clientVersion );
+            expect(authService.endPointVersion).toBe( "the version" );
 
             serverResponse = new ResponseBuilder()
                 .withUser({ id: 2, name: 'Alice', schemes: [{ name: 'Basic', lastUsed: schemeLastUsed }] })

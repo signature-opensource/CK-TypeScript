@@ -106,6 +106,8 @@ namespace CK.Setup
                 var packageJsonPath = Path.Combine( ckGenFolder, "package.json" );
                 using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
                 {
+                    // The /ck-gen/package.json dependencies is bound to the generated one (into wich
+                    // typescript has been added).
                     var p = PackageJsonFile.Create( packageJsonPath, deps );
                     p.Name = "@local/ck-gen";
 
@@ -486,7 +488,7 @@ namespace CK.Setup
         {
             using( monitor.OpenInfo( $"Running 'yarn {command}' in '{workingDirectory}'{(environmentVariables == null || environmentVariables.Count == 0
                                                                                             ? ""
-                                                                                            : $"with {environmentVariables.Select( kv => $"'{kv.Key}': '{kv.Value}'" ).Concatenate()}.")}." ) )
+                                                                                            : $" with {environmentVariables.Select( kv => $"'{kv.Key}': '{kv.Value}'" ).Concatenate()}")}." ) )
             {
                 int code = RunProcess( monitor, "node", $"{yarnPath} {command}", workingDirectory, environmentVariables );
                 if( code != 0 )
@@ -551,7 +553,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    monitor.Trace( $"The 'jest.config.js' file exists and is upt date. Leaving it unchanged." );
+                    monitor.Trace( $"The 'jest.config.js' file exists and is up to date. Leaving it unchanged." );
                 }
             }
             else
@@ -589,9 +591,13 @@ namespace CK.Setup
                                   // returned by TestHelper.CreateTypeScriptTestRunner is disposed.
                                   //
                                   // This part fixes a bug in testEnvionment: 'jsdom':
-                                  // <fix>
+                                  // <fix href="https://stackoverflow.com/questions/68468203/why-am-i-getting-textencoder-is-not-defined-in-jest">
                                   import { TextDecoder as ImportedTextDecoder, TextEncoder as ImportedTextEncoder, } from "util";
                                   Object.assign(global, { TextDecoder: ImportedTextDecoder, TextEncoder: ImportedTextEncoder, })
+                                  // </fix>
+                                  // And this is another one:
+                                  // <fix href="https://stackoverflow.com/questions/42677387/jest-returns-network-error-when-doing-an-authenticated-request-with-axios/43020260#43020260">
+                                  Object.assign(global, { XMLHttpRequest: undefined });
                                   // </fix>
 
                                   """;
@@ -659,6 +665,9 @@ namespace CK.Setup
 
         #region ProcessRunner for NodeBuild
 
+        static CKTrait StdErrTag = ActivityMonitor.Tags.Register( "StdErr" );
+        static CKTrait StdOutTag = ActivityMonitor.Tags.Register( "StdOut" );
+
         static int RunProcess( IActivityMonitor monitor,
                                string fileName,
                                string arguments,
@@ -678,36 +687,70 @@ namespace CK.Setup
             }
 
             using var process = new Process { StartInfo = info };
-            process.Start();
-            var left = new ChannelTextReader( process.StandardOutput );
-            var right = new ChannelTextReader( process.StandardError );
-            var processLogs = new ChannelReaderMerger<string, string, (string, bool)>(
-                left, ( s ) => (s, false),
-                right, ( s ) => (s, true)
-            );
-            _ = left.StartAsync();
-            _ = right.StartAsync();
-            _ = processLogs.StartAsync();
-
-            bool firstLoop = true;
-            while( !processLogs.Completion.IsCompleted || !process.HasExited )
+            process.OutputDataReceived += ( sender, data ) =>
             {
-                FlushLogs();
-                if( !firstLoop ) process.WaitForExit( 20 ); // avoid closed loop when waiting for log.
-                firstLoop = false;
-            }
-            FlushLogs();
-            Debug.Assert( process.HasExited );
+                if( data.Data != null ) monitor.Trace( StdOutTag, data.Data );
+            };
+            process.ErrorDataReceived += ( sender, data ) =>
+            {
+                if( data.Data != null ) monitor.Trace( StdErrTag, data.Data );
+            };
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.WaitForExit();
+
+            //var tracer = TraceAsync( process, monitor.ParallelLogger );
+            //while( !process.WaitForExit( 250 ) );
+            //while( !tracer.IsCompleted ) Thread.Sleep( 50 );
+
+            //var left = new ChannelTextReader( process.StandardOutput );
+            //var right = new ChannelTextReader( process.StandardError );
+            //var processLogs = new ChannelReaderMerger<string, string, (string, bool)>(
+            //    left, ( s ) => (s, false),
+            //    right, ( s ) => (s, true)
+            //);
+            //_ = left.StartAsync();
+            //_ = right.StartAsync();
+            //_ = processLogs.StartAsync();
+
+            //bool firstLoop = true;
+            //while( !processLogs.Completion.IsCompleted || !process.HasExited )
+            //{
+            //    FlushLogs();
+            //    if( !firstLoop ) process.WaitForExit( 20 ); // avoid closed loop when waiting for log.
+            //    firstLoop = false;
+            //}
+            //FlushLogs();
+            //Debug.Assert( process.HasExited );
 
             return process.ExitCode;
 
-            void FlushLogs()
+            static async Task TraceAsync( Process process, IParallelLogger logger )
             {
-                while( processLogs.TryRead( out var log ) )
+                var stdErr = DumpAsync( process.StandardError, logger, StdErrTag );
+                var stdOut = DumpAsync( process.StandardOutput, logger, StdOutTag );
+                await stdErr.ConfigureAwait( false );
+                await stdOut.ConfigureAwait( false );
+
+                static async Task DumpAsync( StreamReader input, IParallelLogger target, CKTrait tag )
                 {
-                    monitor.Log( log.Item2 ? LogLevel.Error : LogLevel.Trace, log.Item1 );
+                    while( true )
+                    {
+                        var line = await input.ReadLineAsync();
+                        if( line == null ) break;
+                        target.Trace( tag, line );
+                    }
                 }
             }
+
+            //void FlushLogs()
+            //{
+            //    while( processLogs.TryRead( out var log ) )
+            //    {
+            //        monitor.Log( log.Item2 ? LogLevel.Error : LogLevel.Trace, log.Item1 );
+            //    }
+            //}
 
         }
 

@@ -3,6 +3,7 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -71,8 +72,10 @@ namespace CK.TypeScript.CodeGen
                                                string name,
                                                string? version,
                                                DependencyKind dependencyKind,
+                                               [CallerFilePath]string? definitionSource = null,
                                                params LibraryImport[] impliedDependencies )
         {
+            definitionSource ??= "<no source>";
             if( string.IsNullOrWhiteSpace( name ) )
             {
                 monitor.Error( $"Invalid TypeScript library name '{name}'." );
@@ -80,7 +83,7 @@ namespace CK.TypeScript.CodeGen
             }
             if( version == null )
             {
-                return RegisterNoVersionLibrary( monitor, name, dependencyKind, impliedDependencies );
+                return RegisterNoVersionLibrary( monitor, name, dependencyKind, definitionSource, impliedDependencies );
             }
             if( !LibraryImport.TryParseVersion( monitor, name, version, dependencyKind, out var v ) )
             {
@@ -89,20 +92,21 @@ namespace CK.TypeScript.CodeGen
             bool isConfigured = _libVersionsConfig.TryGetValue( name, out var configured );
             if( isConfigured && v != configured )
             {
-                monitor.Info( $"TypeScript library '{name}' will use the configured version '{configured}'. Ignoring code provided version '{v}'." );
+                monitor.Info( $"TypeScript library '{name}' will use the configured version '{configured}'. Ignoring code provided version '{v}' (source: {definitionSource})." );
                 v = configured;
             }
             if( !_libraries.TryGetValue( name, out var lib ) )
             {
                 // New library: creating it (no log).
-                lib = LibraryImport.Create( monitor, name, v, dependencyKind, impliedDependencies );
+                lib = LibraryImport.Create( monitor, name, v, dependencyKind, definitionSource, impliedDependencies );
                 _libraries.Add( name, lib );
             }
             else 
             {
-                // It exists. If it comes from the configuration, don't try to upgrade the version
-                // but always boost the dependency kind and merger the implied dependencies.
-                if( !isConfigured && !lib.Update( monitor, v, _ignoreVersionsBound ) )
+                // It exists.
+                // If it comes from the configuration, don't try to upgrade the version
+                // but always boost the dependency kind and merge the implied dependencies.
+                if( !isConfigured && !lib.Update( monitor, v, _ignoreVersionsBound, definitionSource ) )
                 {
                     return null;
                 }
@@ -112,7 +116,11 @@ namespace CK.TypeScript.CodeGen
             return lib;
         }
 
-        LibraryImport? RegisterNoVersionLibrary( IActivityMonitor monitor, string name, DependencyKind dependencyKind, LibraryImport[] impliedDependencies )
+        LibraryImport? RegisterNoVersionLibrary( IActivityMonitor monitor,
+                                                 string name,
+                                                 DependencyKind dependencyKind,
+                                                 string definitionSource,
+                                                 LibraryImport[] impliedDependencies )
         {
             // Allow the library to be registered by another package before screaming.
             // This is not perfect: this depends on the execution order but this can avoid
@@ -128,7 +136,7 @@ namespace CK.TypeScript.CodeGen
                 monitor.Error( $"TypeScript library '{name}' requires its version to be configured." );
                 return null;
             }
-            lib = LibraryImport.Create( monitor, name, configured, dependencyKind, impliedDependencies );
+            lib = LibraryImport.Create( monitor, name, configured, dependencyKind, definitionSource, impliedDependencies );
             _libraries.Add( name, lib );
             return lib;
         }
@@ -140,16 +148,25 @@ namespace CK.TypeScript.CodeGen
                                     : _decimalLibraryName == TypeScriptRoot.DecimalJS
                                         ? TypeScriptRoot.DecimalJSVersion
                                         : null;
-            var lib = RegisterLibrary( monitor, _decimalLibraryName, knownLibVersion, DependencyKind.Dependency );
+            var lib = RegisterLibrary( monitor, _decimalLibraryName, knownLibVersion, DependencyKind.Dependency, "CK.TypeScript.CodeGen.LibraryManager" );
             Throw.DebugAssert( lib != null );
             return lib;
         }
 
         internal LibraryImport RegisterLuxonLibrary( IActivityMonitor monitor )
         {
-            var luxonTypesLib = RegisterLibrary( monitor, "@types/luxon", TypeScriptRoot.LuxonTypesVersion, DependencyKind.DevDependency );
+            var luxonTypesLib = RegisterLibrary( monitor,
+                                                 "@types/luxon",
+                                                 TypeScriptRoot.LuxonTypesVersion,
+                                                 DependencyKind.DevDependency,
+                                                 "CK.TypeScript.CodeGen.LibraryManager" );
             Throw.DebugAssert( luxonTypesLib != null );
-            var luxonLib = RegisterLibrary( monitor, "luxon", TypeScriptRoot.LuxonVersion, DependencyKind.Dependency, luxonTypesLib );
+            var luxonLib = RegisterLibrary( monitor,
+                                            "luxon",
+                                            TypeScriptRoot.LuxonVersion,
+                                            DependencyKind.Dependency,
+                                            "CK.TypeScript.CodeGen.LibraryManager",
+                                            luxonTypesLib );
             Throw.DebugAssert( luxonLib != null );
             return luxonLib;
         }

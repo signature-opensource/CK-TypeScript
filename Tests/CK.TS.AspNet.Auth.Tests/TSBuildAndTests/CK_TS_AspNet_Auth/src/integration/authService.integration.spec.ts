@@ -10,6 +10,11 @@ import {
 } from '../../ck-gen/src';
 import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-helpers';
 
+if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+
+const serverAddress = process.env.SERVER_ADDRESS ?? "";
+const decribeWithServer = serverAddress ? describe : describe.skip;
+
 /*
  * These tests require a webfrontauth() in order to run them.
  * It needs to have:
@@ -20,7 +25,7 @@ import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-
  *      }
  *  - A not null sliding expiration
  */
-describe('AuthService', function() {
+decribeWithServer('AuthService', function() {
     let authService: AuthService;
 
     const anonymous: IUserInfo = {
@@ -47,13 +52,7 @@ describe('AuthService', function() {
         addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
 
-        const identityEndPoint = {
-            hostname: 'localhost',
-            port: 27459,
-            disableSsl: true
-        };
-
-        authService = await AuthService.createAsync( { identityEndPoint }, axiosInstance );
+        authService = await AuthService.createAsync( { identityEndPoint: serverAddress }, axiosInstance );
     });
 
     beforeEach(async function() {
@@ -61,12 +60,12 @@ describe('AuthService', function() {
     });
 
     it('should basicLogin and logout.', async function() {
-        await authService.basicLogin('admin', 'admin');
+        await authService.basicLogin('Albert', 'success');
         let currentModel: IAuthenticationInfo = authService.authenticationInfo;
-        expect(currentModel.user.userName).toBe('admin');
-        expect(currentModel.unsafeUser.userName).toBe('admin');
-        expect(currentModel.actualUser.userName).toBe('admin');
-        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.user.userName).toBe('Albert');
+        expect(currentModel.unsafeUser.userName).toBe('Albert');
+        expect(currentModel.actualUser.userName).toBe('Albert');
+        expect(currentModel.unsafeActualUser.userName).toBe('Albert');
         expect(currentModel.isImpersonated).toBe(false);
         expect(currentModel.level).toBe(AuthLevel.Normal);
         expect(authService.token).not.toBe('');
@@ -93,12 +92,12 @@ describe('AuthService', function() {
         await authService.refresh();
         let currentModel: IAuthenticationInfo = authService.authenticationInfo;
 
-        await authService.basicLogin('admin', 'admin');
+        await authService.basicLogin('Albert', 'success');
         currentModel = authService.authenticationInfo;
-        expect(currentModel.user.userName).toBe('admin');
-        expect(currentModel.unsafeUser.userName).toBe('admin');
-        expect(currentModel.actualUser.userName).toBe('admin');
-        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.user.userName).toBe('Albert');
+        expect(currentModel.unsafeUser.userName).toBe('Albert');
+        expect(currentModel.actualUser.userName).toBe('Albert');
+        expect(currentModel.unsafeActualUser.userName).toBe('Albert');
         expect(currentModel.isImpersonated).toBe(false);
         expect(currentModel.level).toBe(AuthLevel.Normal);
         expect(authService.token).not.toBe('');
@@ -106,10 +105,10 @@ describe('AuthService', function() {
 
         await authService.refresh();
         currentModel = authService.authenticationInfo;
-        expect(currentModel.user.userName).toBe('admin');
-        expect(currentModel.unsafeUser.userName).toBe('admin');
-        expect(currentModel.actualUser.userName).toEqual('admin');
-        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.user.userName).toBe('Albert');
+        expect(currentModel.unsafeUser.userName).toBe('Albert');
+        expect(currentModel.actualUser.userName).toEqual('Albert');
+        expect(currentModel.unsafeActualUser.userName).toBe('Albert');
         expect(currentModel.isImpersonated).toBe(false);
         expect(currentModel.level).toBe(AuthLevel.Normal);
         expect(authService.token).not.toBe('');
@@ -118,9 +117,9 @@ describe('AuthService', function() {
         await authService.logout();
         currentModel = authService.authenticationInfo;
         expect(areUserInfoEquals(currentModel.user, anonymous)).toBe(true);
-        expect(currentModel.unsafeUser.userName).toBe('admin');
+        expect(currentModel.unsafeUser.userName).toBe('Albert');
         expect(areUserInfoEquals(currentModel.actualUser, anonymous)).toBe(true);
-        expect(currentModel.unsafeActualUser.userName).toBe('admin');
+        expect(currentModel.unsafeActualUser.userName).toBe('Albert');
         expect(currentModel.isImpersonated).toBe(false);
         expect(currentModel.level).toBe(AuthLevel.Unsafe);
         expect(authService.token).not.toBe('');
@@ -136,13 +135,14 @@ describe('AuthService', function() {
         let authenticationInfo: IAuthenticationInfo = authService.authenticationInfo;
         const onChangeFunction = () => authenticationInfo = authService.authenticationInfo;
         authService.addOnChange(onChangeFunction);
-        await authService.basicLogin('admin','admin');
+        await authService.basicLogin('Albert','success');
+        expect(authService.authenticationInfo.user.userName).toBe('Albert');
         expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(false);
         await authService.logout();
         expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
 
         authService.removeOnChange(onChangeFunction);
-        await authService.basicLogin('admin','admin');
+        await authService.basicLogin('Albert','success');
         expect(areUserInfoEquals(authenticationInfo.user, anonymous)).toBe(true);
     });
 });

@@ -99,26 +99,7 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
-        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound )
-        {
-            if( newVersion != _version )
-            {
-                var current = _version;
-                if( !DoUpdate( newVersion, ignoreVersionsBound, out var error, out var warn ) )
-                {
-                    monitor.Error( error );
-                    return false;
-                }
-                if( warn != null ) monitor.Warn( warn );
-                monitor.Trace( $"TypeScript library '{_name}': version upgrade from '{current}' to '{_version}'." );
-            }
-            return true;
-        }
-
-        internal bool DoUpdate( SVersionBound newVersion,
-                                bool ignoreVersionsBound,
-                                [NotNullWhen(false)]out string? error,
-                                out string? warn )
+        internal bool DoUpdate( SVersionBound newVersion, bool ignoreVersionsBound, [NotNullWhen(false)]out string? error, out string? warn )
         {
             Throw.DebugAssert( newVersion != _version );
             error = warn = null;
@@ -143,7 +124,10 @@ namespace CK.TypeScript.CodeGen
                         return false;
                     }
                     newV = _version.Base > newVersion.Base ? _version : newVersion;
-                    warn = $"TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'. Ignored since IgnoreVersionsBound is true.";
+                    warn = $"""
+                            TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'.
+                            Ignored since IgnoreVersionsBound is true.
+                            """;
                 }
             }
             _version = newV;

@@ -5,7 +5,7 @@
     "ck-gen"
   ],
   "dependencies": {
-    "axios": "=1.7.0"
+    "axios": "=1.7.2"
   },
   "devDependencies": {
     "@local/ck-gen": "workspace:*",
@@ -22,5 +22,7 @@
   "scripts": {
     "test": "jest"
   },
-  "peerDependencies": {}
+  "peerDependencies": {
+    "axios": "=1.7.2"
+  }
 }

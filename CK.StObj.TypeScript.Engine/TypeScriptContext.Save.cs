@@ -9,6 +9,7 @@ using System.Collections.Immutable;
 using Microsoft.Extensions.Hosting;
 using CSemVer;
 using System.Formats.Asn1;
+using System.Text;
 
 namespace CK.Setup
 {
@@ -17,7 +18,7 @@ namespace CK.Setup
 
         sealed class BuildModeSaver : TypeScriptFileSaveStrategy
         {
-            List<NormalizedPath>? _clashes;
+            List<(NormalizedPath Gen, OriginResource? Origin)>? _clashes;
 
             public BuildModeSaver( TypeScriptRoot root, NormalizedPath targetPath )
                 : base( root, targetPath, withCleanupFiles: true )
@@ -27,19 +28,21 @@ namespace CK.Setup
             public override void SaveFile( IActivityMonitor monitor, TypeScriptFile file, NormalizedPath filePath )
             {
                 var fInfo = new FileInfo( filePath );
-                if( file.Origin != null && fInfo.Exists )
+                if( fInfo.Exists )
                 {
                     using var fTxt = fInfo.OpenText();
                     var existing = fTxt.ReadToEnd();
                     var newOne = file.GetCurrentText();
                     if( existing != newOne )
                     {
-                        _clashes ??= new List<NormalizedPath>();
-                        _clashes.Add( file.Folder.Path.AppendPart( file.Name ) );
-                        var filePathGen = filePath.Path + ".gen.ts";
-                        monitor.Trace( $"Saving '{file.Name}.gen.ts'." );
+                        _clashes ??= new List<(NormalizedPath,OriginResource?)>();
+                        _clashes.Add( (file.Folder.Path.AppendPart( file.Name ), file.Origin) );
+                        var filePathGen = filePath.Path + ".G.ts";
+                        monitor.Trace( $"Saving '{file.Name}.G.ts'." );
                         File.WriteAllText( filePathGen, file.GetCurrentText() );
                         CleanupFiles?.Remove( filePath );
+                        // Avoid deleting the generated file if it already exists.
+                        CleanupFiles?.Remove( filePathGen );
                         return;
                     }
                 }
@@ -52,10 +55,27 @@ namespace CK.Setup
                 {
                     using( monitor.OpenError( $"BuildMode: {_clashes.Count} files have been generated differently than the existing one:" ) )
                     {
-                        foreach( var f in _clashes )
+                        var b = new StringBuilder();
+                        foreach( var clash in _clashes.GroupBy( c => c.Origin?.Assembly ) )
                         {
-                            monitor.Trace( f );
+                            if( clash.Key == null )
+                            {
+                                b.AppendLine( "> (unknwon assembly):" );
+                                foreach( var c in clash )
+                                {
+                                    b.Append( "   " ).AppendLine( c.Gen );
+                                }
+                            }
+                            else
+                            {
+                                b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append(':').AppendLine();
+                                foreach( var c in clash )
+                                {
+                                    b.Append( "   " ).Append( c.Gen ).Append( " <= " ).AppendLine( c.Origin!.ResourceName );
+                                }
+                            }
                         }
+                        monitor.Trace( b.ToString() );
                     }
                     base.Finalize( monitor, savedCount );
                     return null;
@@ -63,7 +83,6 @@ namespace CK.Setup
                 return base.Finalize( monitor, savedCount );
             }
         }
-
 
         internal bool Save( IActivityMonitor monitor )
         {
@@ -97,7 +116,9 @@ namespace CK.Setup
                         var targetProjectPath = BinPathConfiguration.TargetProjectPath;
                         var projectJsonPath = targetProjectPath.AppendPart( "package.json" );
                         // The targetPackageJson is null if it cannot be read and empty for an unexisting one.
-                        var targetPackageJson = PackageJsonFile.ReadFile( monitor, projectJsonPath, Root.LibraryManager.IgnoreVersionsBound );
+                        // We ignore the version bound check for the targetPackageJson because we update
+                        // only the PeerDependencies of the /ck-gen: these versions MUST be synchronized.
+                        var targetPackageJson = PackageJsonFile.ReadFile( monitor, projectJsonPath, ignoreVersionsBound: true );
 
                         // Even if we don't know yet whether Yarn is installed, we lookup the Yarn typescript sdk version.
                         // Before compiling the ck-gen folder, we must ensure that the Yarn typescript sdk is installed: if it's not, package resolution fails miserably.
@@ -264,8 +285,17 @@ namespace CK.Setup
                 }
             }
             // Propagates the PeerDependencies from /ck-gen to the target project.
-            targetPackageJson.Dependencies.UpdateDependencies( monitor, generatedDependencies.Values.Where( d => d.DependencyKind is DependencyKind.PeerDependency ) );
-            shouldRunYarnInstall = changeTracker != targetPackageJson.Dependencies.ChangeTracker;
+            var peerDependencies = generatedDependencies.Values.Where( d => d.DependencyKind is DependencyKind.PeerDependency ).ToList();
+            if( peerDependencies.Count > 0 )
+            {
+                using( monitor.OpenInfo( $"Propagating {peerDependencies.Count} peer dependencies from /ck-gen to target project." ) )
+                {
+                    // There is no reason for this to fail because we setup the targetPackageJson.Dependencies
+                    // to ignore version bounds.
+                    success &= targetPackageJson.Dependencies.UpdateDependencies( monitor, peerDependencies );
+                    shouldRunYarnInstall = changeTracker != targetPackageJson.Dependencies.ChangeTracker;
+                }
+            }
 
             targetPackageJson.Save();
                 

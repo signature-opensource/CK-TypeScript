@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CK.AspNet.Auth" Version="22.0.1--0048-develop" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
   </ItemGroup>
 

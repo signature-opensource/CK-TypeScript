@@ -3,6 +3,7 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
 {
@@ -17,16 +18,19 @@ namespace CK.TypeScript.CodeGen
     public sealed class LibraryImport
     {
         readonly PackageDependency _packageDependency;
+        string _definitionSource;
         IReadOnlyCollection<LibraryImport> _impliedDependencies;
         bool _isUsed;
 
         LibraryImport( string name,
                        SVersionBound version,
                        DependencyKind dependencyKind,
-                       IReadOnlyCollection<LibraryImport> impliedDependencies )
+                       IReadOnlyCollection<LibraryImport> impliedDependencies,
+                       string definitionSource )
         {
             _packageDependency = new PackageDependency( name, version, dependencyKind );
             _impliedDependencies = impliedDependencies;
+            _definitionSource = definitionSource;
         }
 
         internal static bool TryParseVersion( IActivityMonitor monitor, string name, string version, DependencyKind dependencyKind, out SVersionBound v )
@@ -43,15 +47,23 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
-        internal static LibraryImport Create( IActivityMonitor monitor, string name, SVersionBound v, DependencyKind dependencyKind, LibraryImport[] impliedDependencies )
+        internal static LibraryImport Create( IActivityMonitor monitor,
+                                              string name,
+                                              SVersionBound v,
+                                              DependencyKind dependencyKind,
+                                              string definitionSource,
+                                              LibraryImport[] impliedDependencies )
         {
             if( impliedDependencies.GroupBy( d => d.Name ).Count() != impliedDependencies.Length )
             {
                 var dup = impliedDependencies.Select( d => d.Name ).GroupBy( Util.FuncIdentity ).Where( d => d.Count() > 1 ).Select( d => d.Key );
-                monitor.Warn( $"Duplicate found in implied TypeScript libraries of library '{name}': {dup.Concatenate()}." );
+                monitor.Warn( $"""
+                            Duplicate found in implied TypeScript libraries of library '{name}': {dup.Concatenate()}.
+                            Source: {definitionSource}
+                            """ );
                 impliedDependencies = impliedDependencies.Distinct().ToArray();
             }
-            return new LibraryImport( name, v, dependencyKind, impliedDependencies );
+            return new LibraryImport( name, v, dependencyKind, impliedDependencies, definitionSource );
         }
 
         /// <summary>
@@ -104,7 +116,33 @@ namespace CK.TypeScript.CodeGen
 
         internal PackageDependency PackageDependency => _packageDependency;
 
-        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound ) => _packageDependency.Update( monitor, newVersion, ignoreVersionsBound );
+        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound, string definitionSource )
+        {
+            if( newVersion != _packageDependency.Version )
+            {
+                var current = _packageDependency.Version;
+                if( !_packageDependency.DoUpdate( newVersion, ignoreVersionsBound, out var error, out var warn ) )
+                {
+                    monitor.Error( AppendDefinitionSources( _definitionSource, definitionSource, error ) );
+                    return false;
+                }
+                if( warn != null ) monitor.Warn( AppendDefinitionSources( _definitionSource, definitionSource, warn ) );
+                if( _packageDependency.Version != current )
+                {
+                    monitor.Trace( $"TypeScript library '{_packageDependency.Name}': version upgrade from '{current}' to '{_packageDependency.Version}' (source: {definitionSource})." );
+                    _definitionSource = definitionSource;
+                }
+            }
+            return true;
+
+            static string AppendDefinitionSources( string currentSource, string definitionSource, string s )
+            {
+                return $"""
+                        {s}
+                        Defining conficting sources are: '{currentSource}' and '{definitionSource}'. 
+                        """;
+            }
+        }
 
         internal void Update( DependencyKind kind ) => _packageDependency.Update( kind );
 

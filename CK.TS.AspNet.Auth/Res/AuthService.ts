@@ -6,7 +6,6 @@ import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
 import { StdAuthenticationTypeSystem } from './type-system';
 import { PopupDescriptor } from './PopupDescriptor';
-import { version } from './AuthService.version';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
@@ -30,7 +29,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private _subscribers: Set<( eventSource: AuthService ) => void>;
     private _onMessage?: ( this: Window, ev: MessageEvent ) => void;
     private _closed: boolean;
-    private _checkVersion: boolean;
     private _popupWin: Window | undefined;
 
     /** Gets the current authentication information. */
@@ -43,10 +41,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get rememberMe(): boolean { return this._rememberMe; }
     /** Gets the available authentication schemes names. */
     public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
-    /** Gets the Authentication server version. This must be the same as this clientVersion otherwise behavior is not guaranteed. */
+    /** Gets the Authentication server version.*/
     public get endPointVersion(): string { return this._endPointVersion; }
-    /** Gets this client version. This must be the same as the endPointVersion otherwise behavior is not guaranteed. */
-    public static get clientVersion(): string { return version; }
     /** Gets the last server result with the last server data and error if any. */
     public get lastResult(): ILastResult { return this._lastResult; }
     /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
@@ -73,9 +69,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo.
      */
     constructor ( configuration: IAuthServiceConfiguration,
-        axiosInstance: AxiosInstance,
-        typeSystem?: IAuthenticationInfoTypeSystem<T>
-    ) {
+                  axiosInstance: AxiosInstance,
+                  typeSystem?: IAuthenticationInfoTypeSystem<T>)
+    {
         if ( !configuration ) { throw new Error( 'Configuration must be defined.' ); }
         this._configuration = new AuthServiceConfiguration( configuration );
 
@@ -84,7 +80,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this._interceptor = this._axiosInstance.interceptors.request.use( this.onIntercept() );
 
         this._closed = false;
-        this._checkVersion = !configuration.skipVersionsCheck;
         this._typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
         this._endPointVersion = '';
         this._availableSchemes = [];
@@ -115,10 +110,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param throwOnError True to throw if any error occurred (server cannot be reached, protocol error, etc.)
      * @returns A new AuthService that may have a currentError if parameter throwOnError is false (the default).
      */
-    public static async createAsync<T extends IUserInfo = IUserInfo>( configuration: IAuthServiceConfiguration,
-        axiosInstance: AxiosInstance,
-        typeSystem?: IAuthenticationInfoTypeSystem<T>,
-        throwOnError: boolean = false ): Promise<AuthService> {
+    public static async createAsync<T extends IUserInfo = IUserInfo>(configuration: IAuthServiceConfiguration,
+                                                                     axiosInstance: AxiosInstance,
+                                                                     typeSystem?: IAuthenticationInfoTypeSystem<T>,
+                                                                     throwOnError: boolean = false): Promise<AuthService>
+    {
         const authService = new AuthService<T>( configuration, axiosInstance, typeSystem );
         await authService.refresh( true );
         if ( authService.lastResult.error ) {
@@ -361,15 +357,6 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         if ( r.version ) {
             // Only refresh returns the version.
             this._endPointVersion = r.version;
-            if ( this._checkVersion && this._endPointVersion != AuthService.clientVersion ) {
-                const msg = `Client/Server version mismatch! this client version is '${AuthService.clientVersion}' but endpoint's version is '${this._endPointVersion}'.`;
-                this._currentError = new WebFrontAuthError( {
-                    errorId: 'ClientEndPointVersionMismatch',
-                    errorText: msg
-                } );
-                this.setLastResult( r );
-                throw new Error( msg );
-            }
         }
         if ( r.schemes ) { this._availableSchemes = r.schemes; }
 
