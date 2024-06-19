@@ -722,7 +722,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
-    axios: "npm:=1.7.2"
+    axios: "npm:1.7.2"
     typescript: "npm:=5.4.5"
   languageName: unknown
   linkType: soft
@@ -1086,7 +1086,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:=1.7.2":
+"axios@npm:1.7.0":
+  version: 1.7.0
+  resolution: "axios@npm:1.7.0"
+  dependencies:
+    follow-redirects: "npm:^1.15.6"
+    form-data: "npm:^4.0.0"
+    proxy-from-env: "npm:^1.1.0"
+  checksum: 10/fc97719eb1024626cf3ae716eed136964faea712cd750642c2693c8bf3843d342a9e373704d08319a851931b39ca318d2004f0ab4ca67f434f095754dc4aecee
+  languageName: node
+  linkType: hard
+
+"axios@npm:1.7.2":
   version: 1.7.2
   resolution: "axios@npm:1.7.2"
   dependencies:
@@ -1352,7 +1363,7 @@ __metadata:
     "@types/jest": "npm:^29.5.12"
     "@types/node": "npm:^20.14.2"
     "@types/tough-cookie": "npm:4.0.5"
-    axios: "npm:=1.7.2"
+    axios: "npm:1.7.0"
     axios-cookiejar-support: "npm:5.0.2"
     jest: "npm:^29.7.0"
     jest-environment-jsdom: "npm:^29.7.0"

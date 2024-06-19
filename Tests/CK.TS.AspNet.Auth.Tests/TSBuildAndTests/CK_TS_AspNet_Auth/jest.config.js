@@ -10,5 +10,5 @@ module.exports = {
         }],
     },
     testEnvironment: 'jsdom',
-    setupFiles: ["../jest.StObjTypeScriptEngine.js"]
+    setupFiles: ["../jest.CKTypeScriptEngine.ts"]
 };

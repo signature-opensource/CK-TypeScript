@@ -7,7 +7,7 @@ using System.Linq;
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Represent an external library that the generated code depend on.
+    /// Represent an external library that the generated code depends on.
     /// <para>
     /// LibraryImport are keyed by <see cref="Name"/> in <see cref="LibraryManager"/>. The <see cref="Version"/>
     /// is fixed by configuration xor is the minimal version bound of the code provided versions under the
@@ -16,9 +16,7 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public sealed class LibraryImport
     {
-        readonly string _name;
-        SVersionBound _version;
-        DependencyKind _dependencyKind;
+        readonly PackageDependency _packageDependency;
         IReadOnlyCollection<LibraryImport> _impliedDependencies;
         bool _isUsed;
 
@@ -27,9 +25,7 @@ namespace CK.TypeScript.CodeGen
                        DependencyKind dependencyKind,
                        IReadOnlyCollection<LibraryImport> impliedDependencies )
         {
-            _name = name;
-            _version = version;
-            _dependencyKind = dependencyKind;
+            _packageDependency = new PackageDependency( name, version, dependencyKind );
             _impliedDependencies = impliedDependencies;
         }
 
@@ -61,19 +57,19 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Name of the package name, which will be the string put in the package.json.
         /// </summary>
-        public string Name => _name;
+        public string Name => _packageDependency.Name;
 
         /// <summary>
         /// Version of the package, which will be used in the package.json.
         /// This version can be fixed by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
         /// </summary>
-        public SVersionBound Version => _version;
+        public SVersionBound Version => _packageDependency.Version;
 
         /// <summary>
         /// Dependency kind of the package. Will be used to determine in which list
         /// of the packgage.json the dependency should appear.
         /// </summary>
-        public DependencyKind DependencyKind => _dependencyKind;
+        public DependencyKind DependencyKind => _packageDependency.DependencyKind;
 
         /// <summary>
         /// Gets a set of dependencies that must be available whenever this one is.
@@ -106,36 +102,11 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound )
-        {
-            if( newVersion != _version )
-            {
-                SVersionBound newV;
-                if( Version.Contains( newVersion ) ) newV = newVersion;
-                else if( newVersion.Contains( Version ) ) newV = Version;
-                else
-                {
-                    if( !ignoreVersionsBound )
-                    {
-                        monitor.Error( $"""
-                                    TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'.
-                                    Set IgnoreVersionsBound to true to force the upgrade.
-                                    """ );
-                        return false;
-                    }
-                    newV = Version.Base > newVersion.Base ? Version : newVersion;
-                    monitor.Warn( $"TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'. IgnoreVersionsBound is true." );
-                }
-                monitor.Trace( $"TypeScript library '{_name}': version upgrade from '{_version}' to '{newV}'." );
-                _version = newV;
-            }
-            return true;
-        }
+        internal PackageDependency PackageDependency => _packageDependency;
 
-        internal void Update( DependencyKind kind )
-        {
-            if( kind > _dependencyKind ) _dependencyKind = kind;
-        }
+        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound ) => _packageDependency.Update( monitor, newVersion, ignoreVersionsBound );
+
+        internal void Update( DependencyKind kind ) => _packageDependency.Update( kind );
 
         internal void Update( IEnumerable<LibraryImport> implied )
         {
@@ -144,6 +115,5 @@ namespace CK.TypeScript.CodeGen
                 _impliedDependencies = _impliedDependencies.Concat( implied ).Distinct().ToArray();
             }
         }
-
     }
 }

@@ -6,6 +6,9 @@ using System;
 using System.Linq;
 using CK.TypeScript.CodeGen;
 using System.Collections.Immutable;
+using Microsoft.Extensions.Hosting;
+using CSemVer;
+using System.Formats.Asn1;
 
 namespace CK.Setup
 {
@@ -16,8 +19,8 @@ namespace CK.Setup
         {
             List<NormalizedPath>? _clashes;
 
-            public BuildModeSaver( NormalizedPath targetPath )
-                : base( targetPath, withCleanupFiles: true )
+            public BuildModeSaver( TypeScriptRoot root, NormalizedPath targetPath )
+                : base( root, targetPath, withCleanupFiles: true )
             {
             }
 
@@ -71,8 +74,8 @@ namespace CK.Setup
                 var ckGenFolderSrc = ckGenFolder.AppendPart( "src" );
 
                 var saver = BinPathConfiguration.CKGenBuildMode
-                            ? new BuildModeSaver( ckGenFolderSrc )
-                            : new TypeScriptFileSaveStrategy( ckGenFolderSrc );
+                            ? new BuildModeSaver( Root, ckGenFolderSrc )
+                            : new TypeScriptFileSaveStrategy( Root, ckGenFolderSrc );
                 // We want a root barrel for the generated module.
                 Root.Root.EnsureBarrel();
                 int? savedCount = Root.Save( monitor, saver );
@@ -93,20 +96,50 @@ namespace CK.Setup
                         // typescript by installing the BinPathConfiguration.AutomaticTypeScriptVersion typescript package.
                         var targetProjectPath = BinPathConfiguration.TargetProjectPath;
                         var projectJsonPath = targetProjectPath.AppendPart( "package.json" );
-                        var targetPackageJson = YarnHelper.LoadPackageJson( monitor, projectJsonPath, out bool invalidPackageJson );
+                        // The targetPackageJson is null if it cannot be read and empty for an unexisting one.
+                        var targetPackageJson = PackageJsonFile.ReadFile( monitor, projectJsonPath, Root.LibraryManager.IgnoreVersionsBound );
 
                         // Even if we don't know yet whether Yarn is installed, we lookup the Yarn typescript sdk version.
                         // Before compiling the ck-gen folder, we must ensure that the Yarn typescript sdk is installed: if it's not, package resolution fails miserably.
                         // We read the typeScriptSdkVersion here.
                         // We also return whether the target project has TypeScript installed: if yes, there's no need to "yarn add" it to
                         // the ck-gen project, "yarn install" is enough.
-                        var targetTypeScriptVersion = FindBestTypeScriptVersion( monitor, targetProjectPath, targetPackageJson,
-                                                                                 out var typeScriptSdkVersion,
-                                                                                 out var targetProjectHasTypeScript );
+                        PackageDependency typeScriptDep = FindBestTypeScriptVersion( monitor, targetProjectPath, targetPackageJson,
+                                                                                     out SVersion? typeScriptSdkVersion,
+                                                                                     out bool targetProjectHasTypeScript );
+                        // The code MAY have declared an incompatible version...
+                        if( !saver.GeneratedDependencies.AddOrUpdate( monitor, typeScriptDep, cloneAddedDependency: false ) )
+                        {
+                            return false;
+                        }
+                        // It is necessarily here.
+                        var final = saver.GeneratedDependencies["typescript"];
+                        if( final != typeScriptDep )
+                        {
+                            if( final.DependencyKind != DependencyKind.DevDependency )
+                            {
+                                monitor.Warn( $"Some package declared \"typescript\" as a '{final.DependencyKind}'. This has been corrected to a DevDependency." );
+                                // Come on, code! typescript is a dev dependency.
+                                final.UnconditionalSetDependencyKind( DependencyKind.DevDependency );
+                            }
+                            if( final.Version != typeScriptDep.Version )
+                            {
+                                monitor.Warn( $"Some package declared \"typescript\" in version '{final.Version.ToNpmString()}'. Using it." );
+                                typeScriptDep = final;
+                            }
+                        }
+                        if( typeScriptSdkVersion != null )
+                        {
+                            CheckTypeScriptSdkVersion( monitor, typeScriptSdkVersion, typeScriptDep.Version.Base );
+                        }
 
                         // Generates "/ck-gen" files "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json".
                         // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
-                        if( YarnHelper.SaveCKGenBuildConfig( monitor, ckGenFolder, targetTypeScriptVersion, this ) )
+                        if( YarnHelper.SaveCKGenBuildConfig( monitor,
+                                                             ckGenFolder,
+                                                             saver.GeneratedDependencies,
+                                                             BinPathConfiguration.ModuleSystem,
+                                                             BinPathConfiguration.EnableTSProjectReferences ) )
                         {
                             if( BinPathConfiguration.SkipTypeScriptTooling )
                             {
@@ -114,103 +147,13 @@ namespace CK.Setup
                             }
                             else
                             {
-                                var yarnPath = YarnHelper.GetYarnInstallPath( monitor,
-                                                                              targetProjectPath,
-                                                                              BinPathConfiguration.AutoInstallYarn );
-                                if( yarnPath.HasValue )
-                                {
-                                    // We have a yarn, we can build "@local/ck-gen".
-                                    using( monitor.OpenInfo( $"Building '@local/ck-gen' package..." ) )
-                                    {
-                                        // Ensuring that TypeScript is installed.
-                                        if( !targetProjectHasTypeScript )
-                                        {
-                                            success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, $"add --dev typescript@{targetTypeScriptVersion}", yarnPath.Value );
-                                        }
-                                        else
-                                        {
-                                            success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "install", yarnPath.Value );
-                                        }
-                                        if( typeScriptSdkVersion == null )
-                                        {
-                                            // Chicken & egg issue here:
-                                            // "yarn sdks vscode" or "yarn sdks base" will not install typescript support unless "typescript" appears in the package.json
-                                            // (and "yarn sdks tyescript" is not supported).
-                                            // So we must ensure that when starting from scratch, the target package.json has typescript installed.
-                                            // Starting from scratch: no error but no package.json in target project folder.
-                                            if( !invalidPackageJson && targetPackageJson == null )
-                                            {
-                                                monitor.Info( $"Creating a minimal package.json with typescript development dependency '{targetTypeScriptVersion}'." );
-                                                YarnHelper.WriteMinimalTargetProjectPackageJson( projectJsonPath, targetTypeScriptVersion );
-                                            }
-
-                                            monitor.Info( $"Yarn TypeScript sdk is not installed. Installing it with{(BinPathConfiguration.AutoInstallVSCodeSupport ? "" : "out")} VSCode support." );
-                                            success &= YarnHelper.InstallYarnSdkSupport( monitor, targetProjectPath, BinPathConfiguration.AutoInstallVSCodeSupport, yarnPath.Value );
-                                            if( success )
-                                            {
-                                                typeScriptSdkVersion = YarnHelper.GetYarnSdkTypeScriptVersion( monitor, targetProjectPath );
-                                                if( typeScriptSdkVersion == null )
-                                                {
-                                                    monitor.Error( $"Unable to read back the TypeScript version used by the Yarn sdk." );
-                                                    success = false;
-                                                }
-                                                else
-                                                {
-                                                    CheckTypeScriptSdkVersion( monitor, typeScriptSdkVersion, targetTypeScriptVersion );
-                                                }
-                                            }
-                                        }
-                                        // Only try a compilation if no error occurred so far.
-                                        if( success )
-                                        {
-                                            success = YarnHelper.DoRunYarn( monitor, ckGenFolder, "run build", yarnPath.Value );
-                                        }
-                                        monitor.CloseGroup( success ? "Success." : "Failed." );
-                                    }
-
-                                    // If the lookup made previously to the target package.json is not on error, we handle EnsureTestSupport.
-                                    // We do this even on compilation failure (if asked to do so) to be able to work in the
-                                    // target project.
-
-                                    // We always ensure that the workspaces:["ck-gen"] and "@local/ck-gen" dependency are here.
-                                    // We may read again the typeScriptVersion here but we don't care and it unifies the behavior:
-                                    // EnsureJestTestSupport "yarn add" only the packages that are not already here.
-                                    if( !invalidPackageJson
-                                        && YarnHelper.SetupTargetProjectPackageJson( monitor,
-                                                                                     projectJsonPath,
-                                                                                     targetPackageJson,
-                                                                                     out var testScriptCommand,
-                                                                                     out var typeScriptVersion,
-                                                                                     out var jestVersion,
-                                                                                     out var tsJestVersion,
-                                                                                     out var typesJestVersion,
-                                                                                     out var typesNodeVersion )
-                                        && BinPathConfiguration.EnsureTestSupport )
-                                    {
-                                        // If we must ensure test support, we consider that as soon as a "test" script is available
-                                        // we are done: the goal is to support "yarn test", Jest is our default test framework but is
-                                        // not required.
-                                        if( testScriptCommand != null && typeScriptVersion != null )
-                                        {
-                                            monitor.Info( $"TypeScript test script command '{testScriptCommand}' (and 'typescript@{typeScriptVersion}') already exists. " +
-                                                          "Skipping EnsureJestTestSupport." );
-                                        }
-                                        else
-                                        {
-                                            // Note: Only the "typescript" package has a version here. 
-                                            success &= EnsureJestTestSupport( monitor,
-                                                                              targetProjectPath,
-                                                                              projectJsonPath,
-                                                                              testScriptCommand == null,
-                                                                              typeScriptVersion, targetTypeScriptVersion,
-                                                                              yarnPath.Value,
-                                                                              jestVersion,
-                                                                              tsJestVersion,
-                                                                              typesJestVersion,
-                                                                              typesNodeVersion );
-                                        }
-                                    }
-                                }
+                                success = InstallTypeScriptTooling( monitor,
+                                                                    ckGenFolder,
+                                                                    targetProjectPath,
+                                                                    targetPackageJson,
+                                                                    typeScriptSdkVersion,
+                                                                    typeScriptDep,
+                                                                    saver.GeneratedDependencies );
                             }
                         }
                         else success = false;
@@ -221,7 +164,170 @@ namespace CK.Setup
             return success;
         }
 
-        static void CheckTypeScriptSdkVersion( IActivityMonitor monitor, string typeScriptSdkVersion, string targetTypeScriptVersion )
+        bool InstallTypeScriptTooling( IActivityMonitor monitor,
+                                       NormalizedPath ckGenFolder,
+                                       NormalizedPath targetProjectPath,
+                                       PackageJsonFile? targetPackageJson,
+                                       SVersion? typeScriptSdkVersion,
+                                       PackageDependency typeScriptDep,
+                                       DependencyCollection generatedDependencies )
+        {
+            var yarnPath = YarnHelper.GetYarnInstallPath( monitor,
+                                                          targetProjectPath,
+                                                          BinPathConfiguration.AutoInstallYarn );
+            if( !yarnPath.HasValue ) return false;
+
+            // The workspace dependency.
+            PackageDependency ckGenDep = new PackageDependency( "@local/ck-gen", SVersionBound.None, DependencyKind.DevDependency );
+
+            // If the targetPackageJson is null (reading error), we nevertheless try to build the ck-gen.
+            // We do this to be able to work in the target project if possible.
+            bool success = true;
+            // We have a yarn, we can build "@local/ck-gen".
+            // If the targetPackageJson is empty, a minimal one is created but if it is on error, we
+            // don't replace it!
+            using( monitor.OpenInfo( $"Building '@local/ck-gen' package..." ) )
+            {
+                // Ensuring that TypeScript is installed in /ck-gen.
+                // Install the /ck-gen dependencies.
+                success &= YarnHelper.DoRunYarn( monitor, ckGenFolder, "install", yarnPath.Value );
+                // If the yarn type script sdk is not installed (target project level), we must install it before
+                // trying to build the /ck-gen.
+                if( typeScriptSdkVersion == null )
+                {
+                    // Chicken & egg issue here:
+                    // "yarn sdks vscode" or "yarn sdks base" will not install typescript support unless "typescript" appears in the package.json
+                    // (and "yarn sdks typescript" is not supported).
+                    // So we must ensure that when starting from scratch, the target package.json has typescript installed.
+                    // (When starting from scratch: no error but no package.json in target project folder.)
+                    // If we failed to read it, we try...
+                    if( targetPackageJson != null && targetPackageJson.IsEmpty )
+                    {
+                        monitor.Info( $"Creating a minimal package.json with typescript development dependency '{typeScriptDep.Version.ToNpmString()}'." );
+                        targetPackageJson.Dependencies.AddOrUpdate( monitor, typeScriptDep, cloneAddedDependency: false );
+                        targetPackageJson.Name = targetPackageJson.SafeName;
+                        targetPackageJson.Private = true;
+                        targetPackageJson.Workspaces.Add( "ck-gen" );
+                        targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, cloneAddedDependency: false );
+                        targetPackageJson.Save();
+                    }
+                    using( monitor.OpenInfo( $"Yarn TypeScript sdk is not installed. Installing it with{(BinPathConfiguration.AutoInstallVSCodeSupport ? "" : "out")} VSCode support." ) )
+                    {
+                        success &= YarnHelper.InstallYarnSdkSupport( monitor,
+                                                                     targetProjectPath,
+                                                                     BinPathConfiguration.AutoInstallVSCodeSupport,
+                                                                     yarnPath.Value,
+                                                                     ref typeScriptSdkVersion );
+                        if( success )
+                        {
+                            Throw.DebugAssert( "The [NotNullWhen(true)] is ignored.", typeScriptSdkVersion != null );
+                            CheckTypeScriptSdkVersion( monitor, typeScriptSdkVersion, typeScriptDep.Version.Base );
+                        }
+                    }
+                }
+                // Only try a compilation if no error occurred so far.
+                if( success )
+                {
+                    success = YarnHelper.DoRunYarn( monitor, ckGenFolder, "run build", yarnPath.Value );
+                }
+                monitor.CloseGroup( success ? "Success." : "Failed." );
+            }
+
+            // Even if the build failed, if there is a targetPackageJson we configure its content.
+            // We always ensure that the workspaces:["ck-gen"] and the "@local/ck-gen" dependency are here
+            // and propagate the PeerDependencies from /ck-gen to the target project.
+            // But if targetPackageJson is invalid, give up.
+            if( targetPackageJson == null ) return false;
+
+            bool shouldRunYarnInstall = false;
+            int changeTracker = targetPackageJson.Dependencies.ChangeTracker;
+            if( !targetPackageJson.Workspaces.Contains( "*" ) && targetPackageJson.Workspaces.Add( "ck-gen" ) )
+            {
+                shouldRunYarnInstall = true;
+                monitor.Info( $"Added \"ck-gen\" workspace." );
+            }
+            if( !targetPackageJson.Dependencies.TryGetValue( "@local/ck-gen", out var ck )
+                || !ck.IsWorkspaceDependency
+                || ck.DependencyKind != DependencyKind.DevDependency )
+            {
+                shouldRunYarnInstall = true;
+                if( ck == null )
+                {
+                    targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, false );
+                    monitor.Info( $"Added \"@local/ck-gen\" as a workspace development dependency." );
+                }
+                else
+                {
+                    ck.UnconditionalSetVersion( SVersionBound.None );
+                    ck.UnconditionalSetDependencyKind( DependencyKind.DevDependency );
+                    monitor.Info( $"Fixed \"@local/ck-gen\" as a workspace development dependency." );
+                }
+            }
+            // Propagates the PeerDependencies from /ck-gen to the target project.
+            targetPackageJson.Dependencies.UpdateDependencies( monitor, generatedDependencies.Values.Where( d => d.DependencyKind is DependencyKind.PeerDependency ) );
+            shouldRunYarnInstall = changeTracker != targetPackageJson.Dependencies.ChangeTracker;
+
+            targetPackageJson.Save();
+                
+            if( BinPathConfiguration.EnsureTestSupport )
+            {
+                // If we must ensure test support, we consider that as soon as a "test" script is available
+                // we are done: the goal is to support "yarn test", Jest is our default test framework but is
+                // not required.
+                PackageDependency? actualTypeScriptDep;
+                if( targetPackageJson.Dependencies.TryGetValue( "typescript", out actualTypeScriptDep )
+                    && targetPackageJson.Scripts.TryGetValue( "test", out var testCommand )
+                    && testCommand != "jest" )
+                {
+                    monitor.Warn( $"TypeScript test script command '{testCommand}' is not 'jest'. Skipping Jest tests setup." );
+                }
+                else
+                {
+                    using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )
+                    {
+                        // Always setup jest even on error.
+                        YarnHelper.EnsureSampleJestTestInSrcFolder( monitor, targetProjectPath );
+                        YarnHelper.SetupJestConfigFile( monitor, targetProjectPath );
+                        targetPackageJson.Scripts["test"] = "jest";
+                        targetPackageJson.Save();
+
+                        int dCount = targetPackageJson.Dependencies.Count;
+                        IEnumerable<string> toInstall = new string[]
+                        {
+                                                "jest",
+                                                "ts-jest",
+                                                "@types/jest",
+                                                "@types/node",
+                                                // Because we use testEnvironment: 'jsdom' (this package is required from jest v29).
+                                                "jest-environment-jsdom"
+                        };
+                        toInstall = toInstall.Where( p => !targetPackageJson.Dependencies.ContainsKey( p ) );
+                        // Don't touch the exisiting typescript.
+                        if( actualTypeScriptDep == null )
+                        {
+                            toInstall = toInstall.Append( $"typescript@{typeScriptDep.Version.ToNpmString()}" );
+                        }
+                        if( toInstall.Any() )
+                        {
+                            success &= YarnHelper.DoRunYarn( monitor, targetProjectPath, $"add --prefer-dev {toInstall.Concatenate( " " )}", yarnPath.Value );
+                            shouldRunYarnInstall = false;
+                        }
+                        else
+                        {
+                            monitor.Trace( "No missing package to install." );
+                        }
+                    }
+                }
+
+                if( shouldRunYarnInstall )
+                {
+                    success &= YarnHelper.DoRunYarn( monitor, targetProjectPath, "install", yarnPath.Value );
+                }
+            }
+            return success;
+        }
+
+        static void CheckTypeScriptSdkVersion( IActivityMonitor monitor, SVersion typeScriptSdkVersion, SVersion targetTypeScriptVersion )
         {
             if( typeScriptSdkVersion != targetTypeScriptVersion )
             {
@@ -230,97 +336,38 @@ namespace CK.Setup
             }
         }
 
-        string FindBestTypeScriptVersion( IActivityMonitor monitor,
-                                          NormalizedPath targetProjectPath,
-                                          JsonObject? targetPackageJson,
-                                          out string? typeScriptSdkVersion,
-                                          out bool targetProjectHasTypeScript )
+        PackageDependency FindBestTypeScriptVersion( IActivityMonitor monitor,
+                                                     NormalizedPath targetProjectPath,
+                                                     PackageJsonFile? targetPackageJson,
+                                                     out SVersion? typeScriptSdkVersion,
+                                                     out bool targetProjectHasTypeScript )
         {
-            targetProjectHasTypeScript = true;
-            var typeScriptVersionSource = "target project";
-            var targetTypeScriptVersion = targetPackageJson?["devDependencies"]?["typescript"]?.ToString();
+            // Should we use ONLY this one if it exists?
+            // Currently the target project version leads and we emit warinings... Because the idea is
+            // to avoid changing the target project package.json.
             typeScriptSdkVersion = YarnHelper.GetYarnSdkTypeScriptVersion( monitor, targetProjectPath );
-            if( targetTypeScriptVersion == null )
+
+            targetProjectHasTypeScript = true;
+            var source = "target project";
+            var targetTypeScriptVersion = targetPackageJson?.Dependencies.GetValueOrDefault("typescript")?.Version;
+            if( targetTypeScriptVersion is null )
             {
                 targetProjectHasTypeScript = false;
                 if( typeScriptSdkVersion == null )
                 {
-                    typeScriptVersionSource = "BinPathConfiguration.AutomaticTypeScriptVersion property";
-                    targetTypeScriptVersion = BinPathConfiguration.AutomaticTypeScriptVersion;
+                    source = "BinPathConfiguration.AutomaticTypeScriptVersion property";
+                    var parseResult = SVersionBound.NpmTryParse( BinPathConfiguration.AutomaticTypeScriptVersion );
+                    Throw.DebugAssert( "The code defined version is necessarily valid.", parseResult.IsValid );
+                    targetTypeScriptVersion = parseResult.Result;
                 }
                 else
                 {
-                    typeScriptVersionSource = "Yarn TypeScript sdk";
-                    targetTypeScriptVersion = typeScriptSdkVersion;
+                    source = "Yarn TypeScript sdk";
+                    targetTypeScriptVersion = new SVersionBound( typeScriptSdkVersion, SVersionLock.Lock, PackageQuality.Stable );
                 }
             }
-            monitor.Info( $"Considering TypeScript version '{targetTypeScriptVersion}' from {typeScriptVersionSource}." );
-            if( typeScriptSdkVersion != null )
-            {
-                CheckTypeScriptSdkVersion( monitor, typeScriptSdkVersion, targetTypeScriptVersion );
-            }
-            return targetTypeScriptVersion;
-        }
-
-        static bool EnsureJestTestSupport( IActivityMonitor monitor,
-                                           NormalizedPath targetProjectPath,
-                                           NormalizedPath projectJsonPath,
-                                           bool addTestJestScript,
-                                           string? typeScriptVersion,
-                                           string targetTypescriptVersion,
-                                           NormalizedPath yarnPath,
-                                           string? jestVersion,
-                                           string? tsJestVersion,
-                                           string? typesJestVersion,
-                                           string? typesNodeVersion )
-        {
-            bool success = true;
-            using( monitor.OpenInfo( $"Ensuring TypeScript test with Jest." ) )
-            {
-                string a = string.Empty, i = string.Empty;
-                Add( ref a, ref i, "typescript", typeScriptVersion, targetTypescriptVersion );
-                Add( ref a, ref i, "jest", jestVersion, null );
-                Add( ref a, ref i, "ts-jest", tsJestVersion, null );
-                Add( ref a, ref i, "@types/jest", typesJestVersion, null );
-                Add( ref a, ref i, "@types/node", typesNodeVersion, null );
-
-                static void Add( ref string a, ref string i, string name, string? currentVersion, string? version )
-                {
-                    if( currentVersion == null )
-                    {
-                        if( version != null ) name = $"{name}@{version}";
-                        if( i.Length == 0 ) i = name;
-                        else i += ' ' + name;
-                    }
-                    else
-                    {
-                        a = $"{a}{(a.Length == 0 ? "" : ", ")}{name}@{currentVersion}";
-                    }
-                }
-
-                if( a.Length > 0 ) monitor.Info( $"Already installed: {a}." );
-                if( i.Length > 0 )
-                {
-                    success &= YarnHelper.DoRunYarn( monitor, targetProjectPath, $"add --dev {i}", yarnPath );
-                }
-                // Always setup jest even on error.
-                YarnHelper.EnsureSampleJestTestInSrcFolder( monitor, targetProjectPath );
-                YarnHelper.SetupJestConfigFile( monitor, targetProjectPath );
-
-                var packageJsonObject = YarnHelper.LoadPackageJson( monitor, projectJsonPath, out var invalidPackageJson );
-                // There is absolutely no reason here to not be able to read back the package.json.
-                // Defensive programming here.
-                if( !invalidPackageJson && packageJsonObject != null )
-                {
-                    bool modified = false;
-                    var scripts = YarnHelper.EnsureJsonObject( monitor, packageJsonObject, "scripts", ref modified );
-                    Throw.DebugAssert( scripts != null );
-                    scripts.Add( "test", "jest" );
-                    success &= YarnHelper.SavePackageJsonFile( monitor, projectJsonPath, packageJsonObject );
-                }
-            }
-
-            return success;
+            monitor.Info( $"Considering TypeScript version '{targetTypeScriptVersion}' from {source}." );
+            return new PackageDependency( "typescript", targetTypeScriptVersion.Value, DependencyKind.DevDependency );
         }
     }
 }

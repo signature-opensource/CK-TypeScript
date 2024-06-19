@@ -37,6 +37,10 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Gets whether <see cref="SVersionBound"/> are honored or not when different versions of
         /// the same library are declared.
+        /// <para>
+        /// When false, if a package wants "axios": "^0.28.0" (in <see cref="SVersionBound"/> semantics: "0.28.0[LockMajor,Stable]")
+        /// and another one wants ">=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
+        /// </para>
         /// </summary>
         public bool IgnoreVersionsBound => _ignoreVersionsBound;
 

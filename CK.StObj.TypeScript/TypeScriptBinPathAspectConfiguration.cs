@@ -116,7 +116,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets whether a test command (<c>"scripts": { "test": "..." }</c>) must be available in <see cref="TargetProjectPath"/>'s
-        /// package.json. When no test is available, this installs jest, ts-jest and @types/jest.
+        /// package.json. When no "test" command exists in target project package.json, this installs also install jest, ts-jest, @types/jest
+        /// and jest-environment-jsdom (as we use <c>testEnvironment: 'jsdom'</c> in jest.config.js).
         /// <para>
         /// Defaults to false.
         /// </para>
@@ -144,6 +145,9 @@ namespace CK.Setup
         /// It is up to the developper to ensure that a <c>"references": [ { "path": "./ck-gen" } ]</c> exists in
         /// the target project tsconfig.json and to use <c>tsc --buildMode</c>.
         /// See <see cref="https://www.typescriptlang.org/docs/handbook/project-references.html"/>.
+        /// </para>
+        /// <para>
+        /// Unforunately, this is currently not supported by Jest.
         /// </para>
         /// </summary>
         public bool EnableTSProjectReferences { get; set; }
