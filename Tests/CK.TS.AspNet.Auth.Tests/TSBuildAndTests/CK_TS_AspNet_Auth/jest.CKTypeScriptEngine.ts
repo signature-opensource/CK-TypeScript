@@ -10,7 +10,7 @@ Object.assign(global, { TextDecoder: ImportedTextDecoder, TextEncoder: ImportedT
 // </fix>
 // And this is another one:
 // <fix href="https://stackoverflow.com/questions/42677387/jest-returns-network-error-when-doing-an-authenticated-request-with-axios/43020260#43020260">
-Object.assign(global, { XMLHttpRequest: undefined });
+//Object.assign(global, { XMLHttpRequest: undefined });
 // </fix>
 
-Object.assign( process.env, {"SERVER_ADDRESS":"http://[::1]:62079","CK_TYPESCRIPT_ENGINE":"true"});
+Object.assign( process.env, {"SERVER_ADDRESS":"http://[::1]:7494","CK_TYPESCRIPT_ENGINE":"true"});
