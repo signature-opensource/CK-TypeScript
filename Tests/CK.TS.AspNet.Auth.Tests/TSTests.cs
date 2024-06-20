@@ -39,7 +39,7 @@ namespace CK.TS.AspNet.Auth.Tests
                 },
                 app =>
                 {
-                    app.UseCors( o => o.AllowAnyMethod().AllowCredentials().WithOrigins( "::1" ) );
+                    app.UseCors( o => o.AllowAnyMethod().AllowCredentials().AllowAnyHeader().SetIsOriginAllowed( _ => true ) );
                     app.UseAuthentication();
                     app.UseWelcomePage();
                 } );
