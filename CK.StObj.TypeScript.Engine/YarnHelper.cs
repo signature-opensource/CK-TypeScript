@@ -183,7 +183,7 @@ namespace CK.Setup
                     {
                         tsBuildMode = """
                                              "composite": true,
-                                      
+
                                       """;
                     }
 
@@ -356,7 +356,7 @@ namespace CK.Setup
                                   # and yarn/unplugged since we don't use Zero-Install.
                                   **/.yarn/install-state.gz
                                   **/.yarn/unplugged
-                                                                    
+
                                   """;
                     if( File.Exists( gitIgnore ) )
                     {
@@ -391,7 +391,7 @@ namespace CK.Setup
                        # we continue to use the yarn 3 default compression mode.
                        compressionLevel: mixed
 
-                       # We prevent Yarn to query the remote registries to validate that the lockfile 
+                       # We prevent Yarn to query the remote registries to validate that the lockfile
                        # content matches the remote information.
                        enableHardenedMode: false
 
@@ -597,7 +597,7 @@ namespace CK.Setup
                                   // </fix>
                                   // And this is another one:
                                   // <fix href="https://stackoverflow.com/questions/42677387/jest-returns-network-error-when-doing-an-authenticated-request-with-axios/43020260#43020260">
-                                  Object.assign(global, { XMLHttpRequest: undefined });
+                                  //Object.assign(global, { XMLHttpRequest: undefined });
                                   // </fix>
 
                                   """;
