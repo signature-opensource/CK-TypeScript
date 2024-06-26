@@ -8,6 +8,7 @@ using CK.AspNet.Auth;
 using Microsoft.AspNetCore.Builder;
 using System.Collections.Generic;
 using System;
+using CK.Setup;
 
 namespace CK.TS.AspNet.Auth.Tests
 {
@@ -19,10 +20,10 @@ namespace CK.TS.AspNet.Auth.Tests
         {
             var targetProjectPath = TestHelper.GetTypeScriptBuildModeTargetProjectPath();
 
-            var runResult = TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, typeof( CK.AspNet.Auth.TSPackage ).Assembly );
-            runResult.Success.Should().BeTrue();
-
-            var engineMap = runResult.Groups[0].LoadStObjMap( TestHelper.Monitor );
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
+            var map = engineConfig.RunSuccessfully().LoadMap();
 
             await using var server = await TestHelper.CreateMinimalAspNetServerAsync(
                 services =>
@@ -35,7 +36,7 @@ namespace CK.TS.AspNet.Auth.Tests
                             } );
                     services.AddSingleton<FakeUserDatabase>();
                     services.AddSingleton<IWebFrontAuthLoginService,FakeWebFrontLoginService>();
-                    services.AddStObjMap( TestHelper.Monitor, engineMap );
+                    services.AddStObjMap( TestHelper.Monitor, map );
                 },
                 app =>
                 {

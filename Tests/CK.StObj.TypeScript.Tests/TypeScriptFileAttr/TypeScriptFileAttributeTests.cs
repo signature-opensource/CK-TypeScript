@@ -30,7 +30,12 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
         public void TypeScriptFile_attribute()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( Embedded ) ), Type.EmptyTypes );
+
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.AddTypes( typeof( Embedded ) );
+            configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            configuration.RunSuccessfully();
+
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
                 .Should().BeTrue();
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
@@ -51,12 +56,10 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             // the "build" only builds the single tsconfig.json.
             //
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-            var tsAspect = Testing.TypeScriptConfigurationExtensions.EnsureTypeScriptConfigurationAspect( TestHelper, engineConfig, targetProjectPath, Type.EmptyTypes );
-            tsAspect.ModuleSystem = TSModuleSystem.CJS;
-
-            var types = TestHelper.CreateTypeCollector( typeof( Embedded ), typeof( OtherEmbedded ) );
-            var r = TestHelper.RunEngine( engineConfig, types );
-            r.Success.Should().BeTrue( "Engine.Run worked." );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, Type.EmptyTypes )
+                                     .ModuleSystem = TSModuleSystem.CJS;
+            engineConfig.FirstBinPath.AddTypes( typeof( Embedded ), typeof( OtherEmbedded ) );
+            engineConfig.RunSuccessfully();
 
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
                 .Should().BeTrue();

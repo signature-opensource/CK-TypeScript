@@ -1,3 +1,6 @@
+using CK.CrisLike;
+using CK.Setup;
+using CK.StObj.TypeScript.Tests.CrisLike;
 using CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
 using CK.Testing;
 using FluentAssertions;
@@ -43,16 +46,27 @@ namespace CK.StObj.TypeScript.Tests
         [Test]
         public void all_types_are_empty()
         {
-            var targetOutputPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetOutputPath, typeof( EnumThatWillBeEmpty ),
-                                                                            typeof( IWillBeEmpty ),
-                                                                            typeof( WillBeEmptyClass ),
-                                                                            typeof( WillBeEmptyStruct ) );
+            var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
-            var e = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/EnumThatWillBeEmpty.ts" ) );
-            var i = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/IWillBeEmpty.ts" ) );
-            var c = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/WillBeEmptyClass.ts" ) );
-            var s = File.ReadAllText( targetOutputPath.Combine( "ck-gen/src/WillBeEmptyStruct.ts" ) );
+            var types = new[]
+{
+                typeof( EnumThatWillBeEmpty ),
+                typeof( IWillBeEmpty ),
+                typeof( WillBeEmptyClass ),
+                typeof( WillBeEmptyStruct )
+            };
+
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
+            engineConfig.FirstBinPath.AddTypes( types );
+            engineConfig.RunSuccessfully();
+
+
+            var e = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/EnumThatWillBeEmpty.ts" ) );
+            var i = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/IWillBeEmpty.ts" ) );
+            var c = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/WillBeEmptyClass.ts" ) );
+            var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/WillBeEmptyStruct.ts" ) );
 
             e.Should().Be( "export enum EnumThatWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
             i.Should().Be( "export interface IWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );

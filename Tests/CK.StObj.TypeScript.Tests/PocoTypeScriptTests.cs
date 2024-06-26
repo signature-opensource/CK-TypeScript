@@ -1,4 +1,7 @@
 using CK.Core;
+using CK.CrisLike;
+using CK.Setup;
+using CK.StObj.TypeScript.Tests.CrisLike;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
@@ -35,7 +38,13 @@ namespace CK.StObj.TypeScript.Tests
         {
             // NotGeneratedByDefault is not generated.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( INotGeneratedByDefault ) ), Type.EmptyTypes );
+
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            engineConfig.FirstBinPath.AddTypes( typeof( INotGeneratedByDefault ) );
+            engineConfig.RunSuccessfully();
+
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
         }
 
@@ -44,7 +53,13 @@ namespace CK.StObj.TypeScript.Tests
         {
             // NotGeneratedByDefault is generated because it is referenced by IGeneratedByDefault.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) ), Type.EmptyTypes );
+
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath);
+            engineConfig.FirstBinPath.AddTypes( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
+            engineConfig.RunSuccessfully();
+
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
         }
 
@@ -53,7 +68,12 @@ namespace CK.StObj.TypeScript.Tests
         {
             // NotGeneratedByDefault is generated because it is configured.
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, TestHelper.CreateTypeCollector( typeof( INotGeneratedByDefault ) ), new[] { typeof( INotGeneratedByDefault ) } );
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(INotGeneratedByDefault));
+            engineConfig.FirstBinPath.AddTypes( typeof( INotGeneratedByDefault ) );
+            engineConfig.RunSuccessfully();
+
             File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
                 .Should().Contain( "export class NotGeneratedByDefault" );
         }

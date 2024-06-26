@@ -151,15 +151,8 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
 
-            var configuration = TestHelper.CreateDefaultEngineConfiguration();
-
-            configuration.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
-                                                 typeof( IAspNetCrisResultError ),
-                                                 typeof( IUbiquitousValues ),
-                                                 typeof( CommonPocoJsonSupport ),
-                                                 typeof( FakeTypeScriptCrisCommandGenerator ) );
-
-            configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, 
+            var tsTypes = new[]
+            {
                 // SampleCommands
                 typeof( ISomeCommand ),
                 typeof( ISomeIsCriticalAndReturnsIntCommand ),
@@ -187,7 +180,17 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                 typeof( INamedRecordWithResultCommand ),
                 // Basic types.
                 typeof( ITestSerializationCommand )
-            );
+            };
+
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+
+            configuration.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
+                                                 typeof( IAspNetCrisResultError ),
+                                                 typeof( IUbiquitousValues ),
+                                                 typeof( CommonPocoJsonSupport ),
+                                                 typeof( FakeTypeScriptCrisCommandGenerator ) );
+            configuration.FirstBinPath.AddTypes( tsTypes );
+            configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
 
             configuration.RunSuccessfully();
 
@@ -203,7 +206,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: false );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            config.FirstBinPath.AddTypes( typeof( IWithReadOnly ), typeof( IWithUnions ) );
             config.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
                                .AutomaticTypeScriptVersion = "5.4.5";
 

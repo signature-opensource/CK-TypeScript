@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
@@ -75,7 +76,7 @@ namespace CK.StObj.TypeScript.Tests
         public void anonymous_records_use_TypeScript_Tuple_or_Object_Syntax()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            var tsTypes = new[]
+            var types = new[]
             {
                 typeof( IValueTuplePoco1 ),
                 typeof( IValueTuplePoco2 ),
@@ -84,7 +85,11 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IValueTupleWithNamePoco2 ),
                 typeof( IValueTupleWithNamePoco3 ),
             };
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, tsTypes );
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, types);
+            engineConfig.FirstBinPath.AddTypes( types );
+            engineConfig.RunSuccessfully();
 
             CheckFile( targetProjectPath,
                 "ValueTuplePoco1.ts",
@@ -202,8 +207,12 @@ namespace CK.StObj.TypeScript.Tests
                 typeof( IRecordPoco2 ),
                 typeof( IRecordPoco3 ),
             };
-            var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, registeredTypes, tsTypes );
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, tsTypes);
+            engineConfig.FirstBinPath.AddTypes( tsTypes );
+            engineConfig.FirstBinPath.AddTypes( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
+            engineConfig.RunSuccessfully();
 
             CheckFile( targetProjectPath,
                 "Rec1.ts",
@@ -273,12 +282,13 @@ namespace CK.StObj.TypeScript.Tests
         public void recurse_via_record_is_handled()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            var tsTypes = new[]
-            {
-                typeof( IRecTryPoco )
-            };
-            var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( RecTry ) );
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, registeredTypes, tsTypes );
+
+            // We don't need any C# backend here.
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IRecTryPoco));
+            engineConfig.FirstBinPath.AddTypes( typeof( IRecTryPoco ), typeof( RecTry ) );
+            engineConfig.RunSuccessfully();
+
             CheckFile( targetProjectPath,
                "RecTry.ts",
                """
@@ -303,12 +313,12 @@ namespace CK.StObj.TypeScript.Tests
         public void record_with_fields_without_default_is_handled()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            var tsTypes = new[]
-            {
-                typeof( IRecWithNonNullDefaultPoco )
-            };
-            var registeredTypes = TestHelper.CreateTypeCollector( tsTypes ).Add( typeof( RecWithNonNullDefault ) );
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, registeredTypes, tsTypes );
+
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IRecWithNonNullDefaultPoco));
+            engineConfig.FirstBinPath.AddTypes( typeof( IRecWithNonNullDefaultPoco ), typeof( RecWithNonNullDefault ) );
+            engineConfig.RunSuccessfully();
+
             CheckFile( targetProjectPath,
               "RecWithNonNullDefault.ts",
               """
