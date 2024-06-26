@@ -149,12 +149,20 @@ namespace CK.Setup
         /// <summary>
         /// Relays the <see cref="TypeScriptRoot.BeforeCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
         /// as the sender.
+        /// <para>
+        /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
+        /// and will fail the code generation.
+        /// </para>
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
 
         /// <summary>
         /// Relays the <see cref="TypeScriptRoot.AfterCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
         /// as the sender.
+        /// <para>
+        /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
+        /// and will fail the code generation.
+        /// </para>
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? AfterCodeGeneration;
 

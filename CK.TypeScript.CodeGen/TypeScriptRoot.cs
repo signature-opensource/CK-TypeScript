@@ -198,13 +198,21 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> before calling the deferred implementors
         /// on types.
+        /// <para>
+        /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
+        /// and will fail the code generation.
+        /// </para>
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
 
         /// <summary>
         /// Raised after the deferred implementors have successfully run on all types to implement.
-        /// This can be used to generate pure TS support files (registering nex types will throw an
+        /// This can be used to generate pure TS support files (registering new types will throw an
         /// <see cref="InvalidOperationException"/>).
+        /// <para>
+        /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
+        /// and will fail the code generation.
+        /// </para>
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? AfterCodeGeneration;
 

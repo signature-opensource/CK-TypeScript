@@ -1,23 +1,28 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 
 namespace CK.Testing
 {
     /// <summary>
-    /// Running AspNet server with its <see cref="CrisEndpointUrl"/>, <see cref="Services"/>
-    /// and <see cref="Configuration"/>.
+    /// Running AspNet server with its <see cref="ServerAddress"/> (an url like "http://[::1]:60346"),
+    /// <see cref="Services"/> and <see cref="Configuration"/>.
+    /// <para>
+    /// The <see cref="AspNetServerTestHelperExtensions.CreateMinimalAspNetServerAsync(IMonitorTestHelper, Action{Microsoft.Extensions.DependencyInjection.IServiceCollection}?, Action{IApplicationBuilder}?)"/>
+    /// is not "generic", this class is sealed.
+    /// It should be extended through extension methods. If state must be maintained, the best way is to register a
+    /// dedicated singleton service and use the <see cref="Services"/> from the extension methods to expose the state.
+    /// This approach has the advantage to make this state easily accessible from the running application services.
+    /// </para>
     /// </summary>
     public sealed class RunningAspNetServer : IAsyncDisposable
     {
         readonly string _serverAddress;
-        readonly string _crisEndpointUrl;
         readonly WebApplication _app;
 
         internal RunningAspNetServer( WebApplication app, string serverAddress )
         {
             _app = app;
             _serverAddress = serverAddress;
-            _crisEndpointUrl = serverAddress + "/.cris/net";
         }
 
         /// <summary>
@@ -32,13 +37,9 @@ namespace CK.Testing
 
         /// <summary>
         /// Gets the server address (the port is automatically assigned).
+        /// Example: "http://[::1]:60346"
         /// </summary>
         public string ServerAddress => _serverAddress;
-
-        /// <summary>
-        /// Gets the absolute url to send Cris command: "<see cref="ServerAddress"/>/.cris/net".
-        /// </summary>
-        public string CrisEndpointUrl => _crisEndpointUrl;
 
         /// <summary>
         /// Stops the application.
