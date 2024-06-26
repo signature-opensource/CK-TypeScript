@@ -26,6 +26,7 @@ namespace CK.TypeScript.CodeGen
         // Avoids a reallocation.
         internal NormalizedPath _currentTarget;
         readonly HashSet<string>? _cleanupFiles;
+        readonly DependencyCollection _dependencies;
 
         /// <summary>
         /// Initializes a new strategy. The <paramref name="targetPath"/> is a folder that may not exist
@@ -34,8 +35,10 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         /// <param name="targetPath">The folder that will reflect the <see cref="TypeScriptRoot"/> content.</param>
         /// <param name="withCleanupFiles">False to keep existing files as-is.</param>
-        public TypeScriptFileSaveStrategy( NormalizedPath targetPath, bool withCleanupFiles = true )
+        public TypeScriptFileSaveStrategy( TypeScriptRoot root, NormalizedPath targetPath, bool withCleanupFiles = true )
         {
+            Throw.CheckNotNullArgument( root );
+            _dependencies = new DependencyCollection( root.LibraryManager.IgnoreVersionsBound );
             _target = targetPath;
             if( withCleanupFiles ) _cleanupFiles = new HashSet<string>();
         }
@@ -52,6 +55,14 @@ namespace CK.TypeScript.CodeGen
         /// </para>
         /// </summary>
         public HashSet<string>? CleanupFiles => _cleanupFiles;
+
+        /// <summary>
+        /// Gets the dependencies that the generated code requires.
+        /// <para>
+        /// This is updated by <see cref="TypeScriptRoot.Save(IActivityMonitor, TypeScriptFileSaveStrategy)"/>.
+        /// </para>
+        /// </summary>
+        public DependencyCollection GeneratedDependencies => _dependencies;
 
         /// <summary>
         /// Called by <see cref="TypeScriptRoot.Save(IActivityMonitor, TypeScriptFileSaveStrategy)"/> before saving

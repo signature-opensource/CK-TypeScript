@@ -3,11 +3,12 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.TypeScript.CodeGen
 {
     /// <summary>
-    /// Represent an external library that the generated code depend on.
+    /// Represent an external library that the generated code depends on.
     /// <para>
     /// LibraryImport are keyed by <see cref="Name"/> in <see cref="LibraryManager"/>. The <see cref="Version"/>
     /// is fixed by configuration xor is the minimal version bound of the code provided versions under the
@@ -16,21 +17,20 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public sealed class LibraryImport
     {
-        readonly string _name;
-        SVersionBound _version;
-        DependencyKind _dependencyKind;
+        readonly PackageDependency _packageDependency;
+        string _definitionSource;
         IReadOnlyCollection<LibraryImport> _impliedDependencies;
         bool _isUsed;
 
         LibraryImport( string name,
                        SVersionBound version,
                        DependencyKind dependencyKind,
-                       IReadOnlyCollection<LibraryImport> impliedDependencies )
+                       IReadOnlyCollection<LibraryImport> impliedDependencies,
+                       string definitionSource )
         {
-            _name = name;
-            _version = version;
-            _dependencyKind = dependencyKind;
+            _packageDependency = new PackageDependency( name, version, dependencyKind );
             _impliedDependencies = impliedDependencies;
+            _definitionSource = definitionSource;
         }
 
         internal static bool TryParseVersion( IActivityMonitor monitor, string name, string version, DependencyKind dependencyKind, out SVersionBound v )
@@ -47,33 +47,41 @@ namespace CK.TypeScript.CodeGen
             return true;
         }
 
-        internal static LibraryImport Create( IActivityMonitor monitor, string name, SVersionBound v, DependencyKind dependencyKind, LibraryImport[] impliedDependencies )
+        internal static LibraryImport Create( IActivityMonitor monitor,
+                                              string name,
+                                              SVersionBound v,
+                                              DependencyKind dependencyKind,
+                                              string definitionSource,
+                                              LibraryImport[] impliedDependencies )
         {
             if( impliedDependencies.GroupBy( d => d.Name ).Count() != impliedDependencies.Length )
             {
                 var dup = impliedDependencies.Select( d => d.Name ).GroupBy( Util.FuncIdentity ).Where( d => d.Count() > 1 ).Select( d => d.Key );
-                monitor.Warn( $"Duplicate found in implied TypeScript libraries of library '{name}': {dup.Concatenate()}." );
+                monitor.Warn( $"""
+                            Duplicate found in implied TypeScript libraries of library '{name}': {dup.Concatenate()}.
+                            Source: {definitionSource}
+                            """ );
                 impliedDependencies = impliedDependencies.Distinct().ToArray();
             }
-            return new LibraryImport( name, v, dependencyKind, impliedDependencies );
+            return new LibraryImport( name, v, dependencyKind, impliedDependencies, definitionSource );
         }
 
         /// <summary>
         /// Name of the package name, which will be the string put in the package.json.
         /// </summary>
-        public string Name => _name;
+        public string Name => _packageDependency.Name;
 
         /// <summary>
         /// Version of the package, which will be used in the package.json.
         /// This version can be fixed by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
         /// </summary>
-        public SVersionBound Version => _version;
+        public SVersionBound Version => _packageDependency.Version;
 
         /// <summary>
         /// Dependency kind of the package. Will be used to determine in which list
         /// of the packgage.json the dependency should appear.
         /// </summary>
-        public DependencyKind DependencyKind => _dependencyKind;
+        public DependencyKind DependencyKind => _packageDependency.DependencyKind;
 
         /// <summary>
         /// Gets a set of dependencies that must be available whenever this one is.
@@ -106,36 +114,37 @@ namespace CK.TypeScript.CodeGen
             }
         }
 
-        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound )
+        internal PackageDependency PackageDependency => _packageDependency;
+
+        internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound, string definitionSource )
         {
-            if( newVersion != _version )
+            if( newVersion != _packageDependency.Version )
             {
-                SVersionBound newV;
-                if( Version.Contains( newVersion ) ) newV = newVersion;
-                else if( newVersion.Contains( Version ) ) newV = Version;
-                else
+                var current = _packageDependency.Version;
+                if( !_packageDependency.DoUpdate( newVersion, ignoreVersionsBound, out var error, out var warn ) )
                 {
-                    if( !ignoreVersionsBound )
-                    {
-                        monitor.Error( $"""
-                                    TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'.
-                                    Set IgnoreVersionsBound to true to force the upgrade.
-                                    """ );
-                        return false;
-                    }
-                    newV = Version.Base > newVersion.Base ? Version : newVersion;
-                    monitor.Warn( $"TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'. IgnoreVersionsBound is true." );
+                    monitor.Error( AppendDefinitionSources( _definitionSource, definitionSource, error ) );
+                    return false;
                 }
-                monitor.Trace( $"TypeScript library '{_name}': version upgrade from '{_version}' to '{newV}'." );
-                _version = newV;
+                if( warn != null ) monitor.Warn( AppendDefinitionSources( _definitionSource, definitionSource, warn ) );
+                if( _packageDependency.Version != current )
+                {
+                    monitor.Trace( $"TypeScript library '{_packageDependency.Name}': version upgrade from '{current}' to '{_packageDependency.Version}' (source: {definitionSource})." );
+                    _definitionSource = definitionSource;
+                }
             }
             return true;
+
+            static string AppendDefinitionSources( string currentSource, string definitionSource, string s )
+            {
+                return $"""
+                        {s}
+                        Defining conficting sources are: '{currentSource}' and '{definitionSource}'. 
+                        """;
+            }
         }
 
-        internal void Update( DependencyKind kind )
-        {
-            if( kind > _dependencyKind ) _dependencyKind = kind;
-        }
+        internal void Update( DependencyKind kind ) => _packageDependency.Update( kind );
 
         internal void Update( IEnumerable<LibraryImport> implied )
         {
@@ -144,6 +153,5 @@ namespace CK.TypeScript.CodeGen
                 _impliedDependencies = _impliedDependencies.Concat( implied ).Distinct().ToArray();
             }
         }
-
     }
 }

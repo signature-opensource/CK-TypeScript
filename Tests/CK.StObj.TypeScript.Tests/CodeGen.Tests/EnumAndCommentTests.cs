@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Testing;
 using CK.TypeScript.CodeGen;
 using FluentAssertions;
@@ -14,8 +15,9 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.TypeScript.Tests
 {
+
     [TestFixture]
-    public class TypeScriptRootTests
+    public class EnumAndCommentTests
     {
         /// <summary>
         /// Commented enumeration.
@@ -83,7 +85,7 @@ namespace CK.StObj.TypeScript.Tests
 
             ctx.TSTypes.ResolveTSType( TestHelper.Monitor, typeof( CommentedEnum ) );
             ctx.GenerateCode( TestHelper.Monitor );
-            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( targetProjectPath ) );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, targetProjectPath ) );
 
             var s = File.ReadAllText( targetProjectPath.Combine( "CK/StObj/TypeScript/Tests/CommentedEnum.ts" ) );
 
@@ -143,7 +145,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "ICommented.ts" );
             GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
-            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( targetProjectPath ) );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, targetProjectPath ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( targetProjectPath.AppendPart( f.Name ) ).Should().Be( s );
@@ -200,7 +202,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "IGeneric.ts" );
             GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
-            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -274,7 +276,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "FullClass.ts" );
             GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
-            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -347,7 +349,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "WithCodeReference.ts" );
             GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
-            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
@@ -384,7 +386,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var f = ctx.Root.FindOrCreateFile( "BuggyReference.ts" );
             GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );
-            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( output ) );
+            ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
             var s = f.Body.ToString();
             File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );

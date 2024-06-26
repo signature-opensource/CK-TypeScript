@@ -28,7 +28,6 @@ namespace CK.TypeScript.CodeGen
                                            bool withLuxonTypes = true )
         {
             Throw.CheckState( GenerateCodeDone is false );
-            bool success = true;
             _types.Add( typeof( string ), new TSStringType( this ) );
             RegisterValueType<bool>( new TSBooleanType( this ) );
             if( withNumbers )
@@ -54,16 +53,8 @@ namespace CK.TypeScript.CodeGen
             if( withDecimal )
             {
                 var decimalLib = _root.LibraryManager.RegisterDefaultOrConfiguredDecimalLibrary( monitor );
-                if( decimalLib == null )
-                {
-                    success = false;
-                }
-                else
-                {
-                    var tsDecimal = new TSDecimalType( this, decimalLib );
-                    RegisterValueType<decimal>( tsDecimal );
-                }
-                
+                var tsDecimal = new TSDecimalType( this, decimalLib );
+                RegisterValueType<decimal>( tsDecimal );
             }
             if( withLuxonTypes )
             {

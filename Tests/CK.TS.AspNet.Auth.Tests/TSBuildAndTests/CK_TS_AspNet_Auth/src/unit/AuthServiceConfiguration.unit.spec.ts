@@ -1,6 +1,8 @@
 import { IAuthServiceConfiguration } from '../../ck-gen/src';
 import { AuthServiceConfiguration } from '../../ck-gen/src/CK/AspNet/Auth/index.private';
 
+if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+
 describe('AuthServiceConfiguration', function () {
 
     describe('when parsing identityEndPoint', function () {

@@ -5,21 +5,24 @@
     "ck-gen"
   ],
   "dependencies": {
-    "@local/ck-gen": "workspace:*",
     "axios": "=1.7.2"
   },
   "devDependencies": {
+    "@local/ck-gen": "workspace:*",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.2",
-    "@types/tough-cookie": "4.0.5",
-    "axios-cookiejar-support": "0.5.1",
-    "jest": "^29.7.0",
-    "tough-cookie": "4.1.4",
+    "@types/tough-cookie": "=4.0.5",
+    "axios-cookiejar-support": "=5.0.2",
+    "jest": "^29.7",
+    "jest-environment-jsdom": "^29.7",
+    "tough-cookie": "=4.1.4",
     "ts-jest": "^29.1.4",
-    "typescript": "5.4.5",
-    "@local/ck-gen": "workspace:*"
+    "typescript": "=5.4.5"
   },
   "scripts": {
     "test": "jest"
+  },
+  "peerDependencies": {
+    "axios": "=1.7.2"
   }
 }

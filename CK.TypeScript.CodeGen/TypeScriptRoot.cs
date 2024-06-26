@@ -3,6 +3,7 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
 
 namespace CK.TypeScript.CodeGen
@@ -45,7 +46,7 @@ namespace CK.TypeScript.CodeGen
         /// Default "decimal.js-light" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
         /// overrides this default.
         /// </summary>
-        public const string DecimalJSLightVersion = "^2.5.1";
+        public const string DecimalJSLightVersion = "2.5.1";
 
         /// <summary>
         /// See https://mikemcl.github.io/decimal.js/.
@@ -56,7 +57,7 @@ namespace CK.TypeScript.CodeGen
         /// Default "decimal.js" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
         /// overrides this default.
         /// </summary>
-        public const string DecimalJSVersion = "^10.4.3";
+        public const string DecimalJSVersion = "10.4.3";
 
         Dictionary<object, object?>? _memory;
         readonly TSTypeManager _tsTypes;
@@ -274,6 +275,10 @@ namespace CK.TypeScript.CodeGen
         public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
         {
             Throw.CheckNotNullArgument( saver );
+            if( !saver.GeneratedDependencies.UpdateDependencies( monitor, _libraryManager.LibraryImports.Values.Where( i => i.IsUsed ).Select( i => i.PackageDependency ) ) )
+            {
+                return null;
+            }
             try
             {
                 if( !saver.Initialize( monitor ) )

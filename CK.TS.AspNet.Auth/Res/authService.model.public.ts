@@ -114,24 +114,20 @@ export interface IUserSchemeInfo {
 
 /** Describes the AuthService configuration. */
 export interface IAuthServiceConfiguration {
-    /** Gets the endpoint to use. */
-    readonly identityEndPoint: IEndPoint;
+    /** Gets the endpoint to use. Can simply be the url of the server (prefixed with
+     *  the protocol 'htpp://' or 'https://').
+     */
+    readonly identityEndPoint: IEndPoint|string;
     /** True to enable local storage: current authentication is stored and 
      * restored (at Unsafe level) if server cannot be initially reached. */
     readonly useLocalStorage?: boolean;
-    /**
-     * When false (that is the default), as soon as the refresh method has obtained the endPointVersion 
-     * and it doesn't match, an error is thrown and the currentError is set.
-     * Set this to true to allow this clientVersion to interact with a different endPointVersion.   
-     */
-    readonly skipVersionsCheck?: boolean;
 }
 
 /** Defines the server address. */
 export interface IEndPoint {
-    /** Gets the host name. Can be the an ip address. */
+    /** Gets the host name. Can be an ip address. */
     readonly hostname?: string;
-    /** Gets the port Can be undefined if standard port is used (440 for https, 80 for http). */
+    /** Gets the port. Can be undefined if standard port is used (440 for https, 80 for http). */
     readonly port?: number;
     /** Gets whether http should be used instead of https. Obviously defaults to false. */
     readonly disableSsl?: boolean;

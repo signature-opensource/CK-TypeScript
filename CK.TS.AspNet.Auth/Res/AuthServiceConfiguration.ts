@@ -10,20 +10,26 @@ export class AuthServiceConfiguration {
     public get webFrontAuthEndPoint(): string { return this._identityServerEndPoint; }
 
     constructor(config: IAuthServiceConfiguration) {
-        this._identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
+        if (typeof config.identityEndPoint === "string") {
+            this._identityServerEndPoint = config.identityEndPoint;
+            if (!this._identityServerEndPoint.endsWith('/')) {
+                this._identityServerEndPoint += '/';
+            }
+        }
+        else {
+            this._identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
+        }
         if(  config.useLocalStorage ) this.localStorage = this.getAvailableStorage('localStorage');
     }
 
     private static getUrlFromEndPoint(endPoint: IEndPoint): string {
         if (!endPoint.hostname) { return '/'; }
         const isHttps = !endPoint.disableSsl;
-        const hostnameAndPort = endPoint.port !== undefined && endPoint.port !== null && !this.isDefaultPort(isHttps, endPoint.port)
-            ? `${endPoint.hostname}:${endPoint.port}`
-            : `${endPoint.hostname}`;
-
-        return hostnameAndPort
-            ? `${isHttps ? 'https' : 'http'}://${hostnameAndPort}/`
-            : '/';
+        let hostnameAndPort = endPoint.hostname;
+        if (endPoint.port !== undefined && endPoint.port !== null && !this.isDefaultPort(isHttps, endPoint.port)) {
+            hostnameAndPort += ':' + endPoint.port;
+        }
+        return `${isHttps ? 'https' : 'http'}://${hostnameAndPort}/`;
     }
 
     private static isDefaultPort(isHttps: boolean, portNumber: number): boolean {

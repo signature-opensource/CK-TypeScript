@@ -27,7 +27,8 @@ namespace CK.StObj.TypeScript.Engine
             var lib = context.Root.LibraryManager.RegisterLibrary( monitor,
                                                                    _attr.Name,
                                                                    _attr.Version,
-                                                                   (CK.TypeScript.CodeGen.DependencyKind)_attr.DependencyKind );
+                                                                   (CK.TypeScript.CodeGen.DependencyKind)_attr.DependencyKind,
+                                                                   _target.ToCSharpName() );
             if( lib == null ) return false;
             lib.IsUsed = _attr.ForceUse;
             return true;

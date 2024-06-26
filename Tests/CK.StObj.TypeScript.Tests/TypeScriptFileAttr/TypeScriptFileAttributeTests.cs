@@ -47,13 +47,12 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
 
             //
             // Using TSModuleSystem.CJS and EnableTSProjectReferences because we read the project.json
-            // so we can check that no "es6" exists, "composite" is true and
+            // so we can check that no "es6" exists and
             // the "build" only builds the single tsconfig.json.
             //
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
             var tsAspect = TestHelper.EnsureTypeScriptConfigurationAspect( engineConfig, targetProjectPath, Type.EmptyTypes );
             tsAspect.ModuleSystem = TSModuleSystem.CJS;
-            tsAspect.EnableTSProjectReferences = true;
 
             var types = TestHelper.CreateTypeCollector( typeof( Embedded ), typeof( OtherEmbedded ) );
             var r = TestHelper.RunEngine( engineConfig, types );
@@ -68,25 +67,27 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             barrel.Should().Contain( "export * from './CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere';" )
                        .And.Contain( "export * from './CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere';" );
 
+            // Note that a PeerDependency is also a regular dependency to be able to build the /ck-gen.
             var package = File.ReadAllText( targetProjectPath.Combine( "ck-gen/package.json" ) );
             package.ReplaceLineEndings().Should().Be( """
                 {
                   "name": "@local/ck-gen",
-                  "dependencies": {
-                    "someLibDep": "^1.1.1"
-                  },
-                  "devDependencies": {
-                    "someLibDevDep": "^2",
-                    "typescript": "=5.4.5"
-                  },
-                  "peerDependencies": {
-                    "someLibPeer": "^3"
-                  },
-                  "composite": true,
                   "main": "./dist/cjs/index.js",
                   "private": true,
                   "scripts": {
                     "build": "tsc -p tsconfig.json"
+                  },
+                  "workspaces": [],
+                  "devDependencies": {
+                    "someLibDevDep": "^2",
+                    "typescript": "=5.4.5"
+                  },
+                  "dependencies": {
+                    "someLibDep": "^1.1.1",
+                    "someLibPeer": "^3"
+                  },
+                  "peerDependencies": {
+                    "someLibPeer": "^3"
                   }
                 }
                 """.ReplaceLineEndings() );

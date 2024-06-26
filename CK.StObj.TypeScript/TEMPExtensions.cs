@@ -2,7 +2,7 @@ using CSemVer;
 
 namespace CK.Core
 {
-    public static class TEMPExtensions
+    static class TEMPExtensions
     {
         public static string ToNpmString( this SVersionBound b )
         {
