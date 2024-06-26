@@ -33,7 +33,7 @@ namespace CK.Setup
         ///   This target project folder is created if it doesn't exist.
         ///   </item>
         ///   <item>
-        ///   The "/ck-gen" sub folder is created and cleared if it exists before generating files and folders.
+        ///   The "/ck-gen" sub folder is created and cleaned up of useless (non generated) files at each generation.
         ///   </item> 
         /// </list>
         /// </summary>
@@ -57,9 +57,8 @@ namespace CK.Setup
         public string TypeFilterName { get; set; }
 
         /// <summary>
-        /// Gets or sets we are building a package. In this mode, the target "ck-gen/src" is protected: when a file
-        /// doesn't match the result of the generation and originates from the <see cref="BinPathConfiguration.Path"/>
-        /// the file is not overwritten instead a ".gen.ext" is written and an error is raised.
+        /// Gets or sets whether we are building a package. In this mode, the target "ck-gen/src" is protected: when a file
+        /// doesn't match the result of the generation the file is not overwritten instead a ".G.ext" is written and an error is raised.
         /// <para>
         /// Defaults to false.
         /// </para>

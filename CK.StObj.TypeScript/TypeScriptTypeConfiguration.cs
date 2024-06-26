@@ -113,8 +113,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets or sets the type assembly qualified name name that must be generated. For IPoco, it is the primary
-        /// interface assemby qualified name or <see cref="ExternalNameAttribute"/>.
+        /// Gets or sets the type assembly qualified name name that must be generated.
         /// </summary>
         public string Type { get; set; }
 
