@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.AspNet" Version="13.0.1--0013-develop" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="9.0.1--0016-develop" />
+    <PackageReference Include="CK.AspNet" Version="13.0.1--0014-develop" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="9.0.1--0017-develop" />
   </ItemGroup>
-
 </Project>

@@ -1,27 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <RootNamespace>CK.AspNet.Auth</RootNamespace>
   </PropertyGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="**\*.ts">
       <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="**\*.sql" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="22.0.1--0048-develop" />
+    <PackageReference Include="CK.AspNet.Auth" Version="22.0.1--0050-develop" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
   </ItemGroup>
-
 </Project>
