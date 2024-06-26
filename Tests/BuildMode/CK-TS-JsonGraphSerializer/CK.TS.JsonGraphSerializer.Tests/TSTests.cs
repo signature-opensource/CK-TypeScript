@@ -23,7 +23,7 @@ namespace CK.TS.JsonGraphSerializer.Tests
             var targetProjectPath = TestHelper.GetTypeScriptBuildModeTargetProjectPath();
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-            TestHelper.EnsureTypeScriptConfigurationAspect( engineConfig, targetProjectPath );
+            Testing.TypeScriptConfigurationExtensions.EnsureTypeScriptConfigurationAspect( TestHelper, engineConfig, targetProjectPath );
             var types = TestHelper.CreateTypeCollector( typeof( CK.JsonGraphSerializer.TSPackage ).Assembly );
 
             TestHelper.RunEngine( engineConfig, types ).Success.Should().BeTrue( "Engine.Run worked." );

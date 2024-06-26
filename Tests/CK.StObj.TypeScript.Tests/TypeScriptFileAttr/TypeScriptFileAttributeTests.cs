@@ -51,7 +51,7 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             // the "build" only builds the single tsconfig.json.
             //
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-            var tsAspect = TestHelper.EnsureTypeScriptConfigurationAspect( engineConfig, targetProjectPath, Type.EmptyTypes );
+            var tsAspect = Testing.TypeScriptConfigurationExtensions.EnsureTypeScriptConfigurationAspect( TestHelper, engineConfig, targetProjectPath, Type.EmptyTypes );
             tsAspect.ModuleSystem = TSModuleSystem.CJS;
 
             var types = TestHelper.CreateTypeCollector( typeof( Embedded ), typeof( OtherEmbedded ) );

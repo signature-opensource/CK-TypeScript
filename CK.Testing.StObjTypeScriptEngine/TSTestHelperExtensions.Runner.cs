@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CK.Testing
 {
-    public static partial class TypeScriptEngineTestHelperExtensions
+    public static partial class TSTestHelperExtensions
     {
         /// <summary>
         /// Disposable runner created by <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/>.

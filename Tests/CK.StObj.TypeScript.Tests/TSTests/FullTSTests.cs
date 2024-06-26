@@ -105,10 +105,17 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         public async Task TypeScriptRunner_with_environment_variables_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath,
-                                                           typeof( IWithReadOnly ),
-                                                           typeof( IWithUnions ),
-                                                           typeof( IWithTyped ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            var types = new[]
+            {
+                typeof( IWithReadOnly ),
+                typeof( IWithUnions ),
+                typeof( IWithTyped )
+            };
+            configuration.FirstBinPath.AddTypes( types );
+            configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
+            configuration.RunSuccessfully();
+
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,
                                                                         new Dictionary<string, string>()
                                                                         {
@@ -143,8 +150,16 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         public async Task CrisLike_commands_and_results_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
-            var tsTypes = new[]
-            {
+
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+
+            configuration.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
+                                                 typeof( IAspNetCrisResultError ),
+                                                 typeof( IUbiquitousValues ),
+                                                 typeof( CommonPocoJsonSupport ),
+                                                 typeof( FakeTypeScriptCrisCommandGenerator ) );
+
+            configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, 
                 // SampleCommands
                 typeof( ISomeCommand ),
                 typeof( ISomeIsCriticalAndReturnsIntCommand ),
@@ -172,16 +187,9 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                 typeof( INamedRecordWithResultCommand ),
                 // Basic types.
                 typeof( ITestSerializationCommand )
-            };
+            );
 
-            var types = TestHelper.CreateTypeCollector( tsTypes )
-                                  .Add( typeof( IAspNetCrisResult ),
-                                        typeof( IAspNetCrisResultError ),
-                                        typeof( IUbiquitousValues ),
-                                        typeof( CommonPocoJsonSupport ),
-                                        typeof( FakeTypeScriptCrisCommandGenerator ) );
-
-            TestHelper.RunSuccessfulEngineWithTypeScript( targetProjectPath, types, tsTypes );
+            configuration.RunSuccessfully();
 
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
             await TestHelper.SuspendAsync( resume => resume );
@@ -195,10 +203,11 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: false );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            var binPathAspect = TestHelper.EnsureTypeScriptConfigurationAspect( config, targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) );
-            binPathAspect.AutomaticTypeScriptVersion = "5.4.5";
+            config.FirstBinPath.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            config.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
+                               .AutomaticTypeScriptVersion = "5.4.5";
 
-            TestHelper.RunEngine( config, TestHelper.CreateTypeCollector( typeof( IWithReadOnly ), typeof( IWithUnions ) ) );
+            config.Run();
 
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
             await TestHelper.SuspendAsync( resume => resume );
