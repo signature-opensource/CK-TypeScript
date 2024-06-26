@@ -108,7 +108,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( InAnotherFolder ) );
-            engineConfig.FirstBinPath.AddTypes( typeof( InAnotherFolder ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( InAnotherFolder ) );
             engineConfig.RunSuccessfully();
 
             var f = targetProjectPath.Combine( "ck-gen/src/TheFolder/InAnotherFolder.ts" );
@@ -141,7 +141,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( AtTheRootFolder ) );
-            engineConfig.FirstBinPath.AddTypes( typeof( AtTheRootFolder ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( AtTheRootFolder ) );
             engineConfig.RunSuccessfully();
 
             var f1 = targetProjectPath.Combine( "ck-gen/src/AtTheRootFolder.ts" );
@@ -180,7 +180,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
-            engineConfig.FirstBinPath.AddTypes( typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
             engineConfig.RunSuccessfully();
 
             var f1 = targetProjectPath.Combine( "ck-gen/src/Folder/EnumFile.ts" );
@@ -214,7 +214,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( InASpecificFileWithAnExternalName ) );
-            engineConfig.FirstBinPath.AddTypes( typeof( InASpecificFileWithAnExternalName ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( InASpecificFileWithAnExternalName ) );
             engineConfig.RunSuccessfully();
 
             var f = targetProjectPath.Combine( "ck-gen/src/IAmHere/EnumFile.ts" );
@@ -257,7 +257,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( WithAnExternalName ) );
-            engineConfig.FirstBinPath.AddTypes( typeof( WithAnExternalName ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( WithAnExternalName ) );
             engineConfig.RunSuccessfully();
 
             var f = targetProjectPath.Combine( "ck-gen/src/Folder/Toto.ts" );
@@ -283,7 +283,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
-            engineConfig.FirstBinPath.AddTypes( typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
             engineConfig.RunSuccessfully();
 
             var f = targetProjectPath.Combine( "ck-gen/src/EnumFile.ts" );

@@ -31,7 +31,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IWithDateAndGuid));
-            engineConfig.FirstBinPath.AddTypes( typeof( IWithDateAndGuid ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( IWithDateAndGuid ) );
             engineConfig.RunSuccessfully();
 
             File.Exists( targetProjectPath.Combine( "ck-gen/src/WithDateAndGuid.ts" ) ).Should().BeTrue();

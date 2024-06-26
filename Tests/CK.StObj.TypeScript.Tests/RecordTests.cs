@@ -88,7 +88,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, types);
-            engineConfig.FirstBinPath.AddTypes( types );
+            engineConfig.FirstBinPath.Types.Add( types );
             engineConfig.RunSuccessfully();
 
             CheckFile( targetProjectPath,
@@ -210,8 +210,8 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, tsTypes);
-            engineConfig.FirstBinPath.AddTypes( tsTypes );
-            engineConfig.FirstBinPath.AddTypes( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
+            engineConfig.FirstBinPath.Types.Add( tsTypes )
+                                           .Add( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
             engineConfig.RunSuccessfully();
 
             CheckFile( targetProjectPath,
@@ -285,8 +285,8 @@ namespace CK.StObj.TypeScript.Tests
 
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IRecTryPoco));
-            engineConfig.FirstBinPath.AddTypes( typeof( IRecTryPoco ), typeof( RecTry ) );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IRecTryPoco ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( IRecTryPoco ), typeof( RecTry ) );
             engineConfig.RunSuccessfully();
 
             CheckFile( targetProjectPath,
@@ -316,7 +316,7 @@ namespace CK.StObj.TypeScript.Tests
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IRecWithNonNullDefaultPoco));
-            engineConfig.FirstBinPath.AddTypes( typeof( IRecWithNonNullDefaultPoco ), typeof( RecWithNonNullDefault ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( IRecWithNonNullDefaultPoco ), typeof( RecWithNonNullDefault ) );
             engineConfig.RunSuccessfully();
 
             CheckFile( targetProjectPath,

@@ -32,7 +32,7 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( Embedded ) );
+            configuration.FirstBinPath.Types.Add( typeof( Embedded ) );
             configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
             configuration.RunSuccessfully();
 
@@ -56,9 +56,9 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             // the "build" only builds the single tsconfig.json.
             //
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, Type.EmptyTypes )
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath )
                                      .ModuleSystem = TSModuleSystem.CJS;
-            engineConfig.FirstBinPath.AddTypes( typeof( Embedded ), typeof( OtherEmbedded ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( Embedded ), typeof( OtherEmbedded ) );
             engineConfig.RunSuccessfully();
 
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )

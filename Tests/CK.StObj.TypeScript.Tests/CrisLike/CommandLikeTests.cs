@@ -130,11 +130,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
             // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
             // the TypeScriptSet.
-            engineConfig.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
-                                                typeof( IAspNetCrisResultError ),
-                                                typeof( IUbiquitousValues ),
-                                                typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
-            engineConfig.FirstBinPath.AddTypes( tsTypes );
+            engineConfig.FirstBinPath.Types.Add( tsTypes )
+                                           .Add( typeof( IAspNetCrisResult ),
+                                                 typeof( IAspNetCrisResultError ),
+                                                 typeof( IUbiquitousValues ),
+                                                 typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
             engineConfig.RunSuccessfully();
 
 
@@ -242,11 +242,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
             // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
             // the TypeScriptSet.
-            engineConfig.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
-                                                typeof( IAspNetCrisResultError ),
-                                                typeof( IUbiquitousValues ),
-                                                typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
-            engineConfig.FirstBinPath.AddTypes( tsTypes );
+            engineConfig.FirstBinPath.Types.Add( tsTypes )
+                                           .Add( typeof( IAspNetCrisResult ),
+                                                 typeof( IAspNetCrisResultError ),
+                                                 typeof( IUbiquitousValues ),
+                                                 typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
             engineConfig.RunSuccessfully();
         }
 
@@ -271,11 +271,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
             // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
             // the TypeScriptSet.
-            engineConfig.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
-                                                typeof( IAspNetCrisResultError ),
-                                                typeof( IUbiquitousValues ),
-                                                typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
-            engineConfig.FirstBinPath.AddTypes( tsTypes );
+            engineConfig.FirstBinPath.Types.Add( tsTypes )
+                                           .Add( typeof( IAspNetCrisResult ),
+                                                 typeof( IAspNetCrisResultError ),
+                                                 typeof( IUbiquitousValues ),
+                                                 typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
             engineConfig.RunSuccessfully();
         }
 
@@ -293,11 +293,11 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
             // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
             // the TypeScriptSet.
-            engineConfig.FirstBinPath.Types.Add( typeof( IAspNetCrisResult ),
+            engineConfig.FirstBinPath.Types.Add( tsTypes )
+                                           .Add( typeof( IAspNetCrisResult ),
                                                  typeof( IAspNetCrisResultError ),
                                                  typeof( IUbiquitousValues ),
                                                  typeof( FakeTypeScriptCrisCommandGenerator ) );
-            engineConfig.FirstBinPath.Types.Add( tsTypes );
             engineConfig.RunSuccessfully();
 
             var p = targetProjectPath.Combine( "ck-gen/src" );

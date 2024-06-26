@@ -98,7 +98,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         {
             IList<RecordData> TypedList { get; }
             IDictionary<string, IWithUnions> TypedDic1 { get; }
-            IDictionary<Guid,IWithReadOnly?> TypedDic2 { get; }
+            IDictionary<Guid, IWithReadOnly?> TypedDic2 { get; }
         }
 
         [Test]
@@ -112,7 +112,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
                 typeof( IWithUnions ),
                 typeof( IWithTyped )
             };
-            configuration.FirstBinPath.AddTypes( types );
+            configuration.FirstBinPath.Types.Add( types );
             configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
             configuration.RunSuccessfully();
 
@@ -184,12 +184,12 @@ namespace CK.StObj.TypeScript.Tests.TSTests
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
 
-            configuration.FirstBinPath.AddTypes( typeof( IAspNetCrisResult ),
-                                                 typeof( IAspNetCrisResultError ),
-                                                 typeof( IUbiquitousValues ),
-                                                 typeof( CommonPocoJsonSupport ),
-                                                 typeof( FakeTypeScriptCrisCommandGenerator ) );
-            configuration.FirstBinPath.AddTypes( tsTypes );
+            configuration.FirstBinPath.Types.Add( tsTypes )
+                                            .Add( typeof( IAspNetCrisResult ),
+                                                  typeof( IAspNetCrisResultError ),
+                                                  typeof( IUbiquitousValues ),
+                                                  typeof( CommonPocoJsonSupport ),
+                                                  typeof( FakeTypeScriptCrisCommandGenerator ) );
             configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
 
             configuration.RunSuccessfully();
@@ -206,8 +206,8 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: false );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.AddTypes( typeof( IWithReadOnly ), typeof( IWithUnions ) );
-            config.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
+            config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
+            config.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
                                .AutomaticTypeScriptVersion = "5.4.5";
 
             config.Run();

@@ -42,7 +42,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-            engineConfig.FirstBinPath.AddTypes( typeof( INotGeneratedByDefault ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( INotGeneratedByDefault ) );
             engineConfig.RunSuccessfully();
 
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
@@ -56,8 +56,8 @@ namespace CK.StObj.TypeScript.Tests
 
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath);
-            engineConfig.FirstBinPath.AddTypes( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            engineConfig.FirstBinPath.Types.Add( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
             engineConfig.RunSuccessfully();
 
             File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
@@ -70,8 +70,8 @@ namespace CK.StObj.TypeScript.Tests
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(INotGeneratedByDefault));
-            engineConfig.FirstBinPath.AddTypes( typeof( INotGeneratedByDefault ) );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( INotGeneratedByDefault ) );
+            engineConfig.FirstBinPath.Types.Add( typeof( INotGeneratedByDefault ) );
             engineConfig.RunSuccessfully();
 
             File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )

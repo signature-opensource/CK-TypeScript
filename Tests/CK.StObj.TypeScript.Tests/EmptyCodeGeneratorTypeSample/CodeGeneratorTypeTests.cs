@@ -59,7 +59,7 @@ namespace CK.StObj.TypeScript.Tests
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
-            engineConfig.FirstBinPath.AddTypes( types );
+            engineConfig.FirstBinPath.Types.Add( types );
             engineConfig.RunSuccessfully();
 
 
