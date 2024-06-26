@@ -8,7 +8,3 @@
 import { TextDecoder as ImportedTextDecoder, TextEncoder as ImportedTextEncoder, } from "util";
 Object.assign(global, { TextDecoder: ImportedTextDecoder, TextEncoder: ImportedTextEncoder, })
 // </fix>
-// And this is another one:
-// <fix href="https://stackoverflow.com/questions/42677387/jest-returns-network-error-when-doing-an-authenticated-request-with-axios/43020260#43020260">
-Object.assign(global, { XMLHttpRequest: undefined });
-// </fix>
