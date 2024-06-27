@@ -10,9 +10,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="**\*.sql" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="CK.AspNet.Auth" Version="22.0.1--0055-develop" />
   </ItemGroup>
   <ItemGroup>

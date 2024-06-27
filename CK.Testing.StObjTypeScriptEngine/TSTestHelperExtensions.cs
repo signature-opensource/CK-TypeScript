@@ -134,7 +134,13 @@ namespace CK.Testing
         /// </para>
         /// </summary>
         /// <param name="this">This helper.</param>
-        /// <param name="targetProjectPath">The target test path.</param>
+        /// <param name="targetProjectPath">
+        /// The test target project path. Usually obtained by:
+        /// <list type="bullet">
+        ///     <item><see cref="GetTypeScriptWithTestsSupportTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath()</see></item>
+        ///     <item>or <see cref="GetTypeScriptBuildModeTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptBuildModeTargetProjectPath()</see></item>
+        /// </list>
+        /// </param>
         /// <param name="environmentVariables">Optional environment variables to set.</param>
         /// <param name="command">Yarn command that will be executed.</param>
         public static Runner CreateTypeScriptRunner( this IMonitorTestHelper @this,

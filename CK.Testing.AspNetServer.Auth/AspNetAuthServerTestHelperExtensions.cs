@@ -61,7 +61,6 @@ namespace CK.Testing
             {
                 app.UseCors( o => o.AllowAnyMethod().AllowCredentials().AllowAnyHeader().SetIsOriginAllowed( _ => true ) );
                 app.UseAuthentication();
-                app.UseWelcomePage();
 
                 configureApplication?.Invoke( app );
             }

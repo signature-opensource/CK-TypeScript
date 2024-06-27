@@ -5,7 +5,7 @@ namespace CK.Testing
 {
     /// <summary>
     /// Running AspNet server with its <see cref="ServerAddress"/> (an url like "http://[::1]:60346"),
-    /// <see cref="Services"/> and <see cref="Configuration"/>.
+    /// <see cref="Services"/> and <see cref="Configuration"/> and a basic <see cref="Client"/>.
     /// <para>
     /// The <see cref="AspNetServerTestHelperExtensions.CreateMinimalAspNetServerAsync(IMonitorTestHelper, Action{Microsoft.Extensions.DependencyInjection.IServiceCollection}?, Action{IApplicationBuilder}?)"/>
     /// is not "generic", this class is sealed.
@@ -14,10 +14,12 @@ namespace CK.Testing
     /// This approach has the advantage to make this state easily accessible from the running application services.
     /// </para>
     /// </summary>
-    public sealed class RunningAspNetServer : IAsyncDisposable
+    public sealed partial class RunningAspNetServer : IAsyncDisposable
     {
         readonly string _serverAddress;
         readonly WebApplication _app;
+        RunningClient? _client;
+
 
         internal RunningAspNetServer( WebApplication app, string serverAddress )
         {
@@ -42,11 +44,17 @@ namespace CK.Testing
         public string ServerAddress => _serverAddress;
 
         /// <summary>
+        /// Gets a simple client for this server.
+        /// </summary>
+        public RunningClient Client => _client ??= new RunningClient( this );
+
+        /// <summary>
         /// Stops the application.
         /// </summary>
         /// <returns>The awaitable.</returns>
         public async ValueTask DisposeAsync()
         {
+            _client?.Dispose();
             await _app.StopAsync();
         }
     }
