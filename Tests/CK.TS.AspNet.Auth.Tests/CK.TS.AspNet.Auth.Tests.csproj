@@ -14,12 +14,12 @@
 
   <ItemGroup>
     <!-- These will be package refenernces. -->
+    <ProjectReference Include="..\..\CK.Testing.AspNetServer.Auth\CK.Testing.AspNetServer.Auth.csproj" />
     <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CK.Testing.AspNetServer\CK.Testing.AspNetServer.csproj" />
     <ProjectReference Include="..\..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
   </ItemGroup>
 

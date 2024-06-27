@@ -49,7 +49,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.TS.AspNet.Auth", "CK.TS.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.TS.AspNet.Auth.Tests", "Tests\CK.TS.AspNet.Auth.Tests\CK.TS.AspNet.Auth.Tests.csproj", "{81A46F45-5C42-4C9D-822E-9C06A3C93D42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Testing.AspNetServer", "CK.Testing.AspNetServer\CK.Testing.AspNetServer.csproj", "{FC694DB7-834C-4543-AB8D-FAB7F34103A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Testing.AspNetServer", "CK.Testing.AspNetServer\CK.Testing.AspNetServer.csproj", "{FC694DB7-834C-4543-AB8D-FAB7F34103A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Testing.AspNetServer.Auth", "CK.Testing.AspNetServer.Auth\CK.Testing.AspNetServer.Auth.csproj", "{627F4A2B-3351-4827-9E55-3F65D545B7E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -109,6 +111,10 @@ Global
 		{FC694DB7-834C-4543-AB8D-FAB7F34103A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC694DB7-834C-4543-AB8D-FAB7F34103A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC694DB7-834C-4543-AB8D-FAB7F34103A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{627F4A2B-3351-4827-9E55-3F65D545B7E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{627F4A2B-3351-4827-9E55-3F65D545B7E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{627F4A2B-3351-4827-9E55-3F65D545B7E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{627F4A2B-3351-4827-9E55-3F65D545B7E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
