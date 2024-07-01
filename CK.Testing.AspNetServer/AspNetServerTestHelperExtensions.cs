@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing
 {
@@ -16,18 +17,18 @@ namespace CK.Testing
         /// <para>
         /// This services configuration is minimal:
         /// <code>
-        ///             builder.WebHost.UseScopedHttpContext();
+        ///             builder.AddScopedHttpContext();
         ///             configureServices?.Invoke( builder.Services );
-        ///             // Don't UseCKMonitoring() here or the GrandOutput.Default will be reconfigured:
-        ///             // only register the IActivityMonitor and its ParallelLogger (if they are not already registered).
+        ///             // Register the IActivityMonitor and its ParallelLogger (if they are not already registered).
         ///             builder.Services.TryAddScoped&lt;IActivityMonitor, ActivityMonitor&gt;();
         ///             builder.Services.TryAddScoped( sp => sp.GetRequiredService&lt;IActivityMonitor&gt;().ParallelLogger );
         /// </code>
-        /// As well as the the pipeline:
+        /// As well as the the pipeline (done by <see cref="BuildAndCreateRunningAspNetServerAsync(WebApplicationBuilder, Action{IApplicationBuilder}?)"/>):
         /// <code>
+        ///             app.UseScopedHttpContext();
+        ///             app.UseGuardRequestMonitor();
         ///             // This chooses a random, free port.
         ///             app.Urls.Add( "http://[::1]:0" );
-        ///             app.UseGuardRequestMonitor();
         ///             configureApplication?.Invoke( app );
         /// </code>
         /// </para>
@@ -41,19 +42,41 @@ namespace CK.Testing
                                                                                        Action<IApplicationBuilder>? configureApplication = null )
         {
             var builder = WebApplication.CreateBuilder();
-            builder.WebHost.UseScopedHttpContext();
+            builder.AddScopedHttpContext();
             configureServices?.Invoke( builder.Services );
             // Don't UseCKMonitoring() here or the GrandOutput.Default will be reconfigured:
             // only register the IActivityMonitor and its ParallelLogger (if they are not already registered).
             builder.Services.TryAddScoped<IActivityMonitor, ActivityMonitor>();
             builder.Services.TryAddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
 
-            var app = builder.Build();
+            return await builder.BuildAndCreateRunningAspNetServerAsync( configureApplication ).ConfigureAwait( false );
+        }
+
+        /// <summary>
+        /// Creates a <see cref="RunningAspNetServer"/> from this configured WebApplication with a minimal pipeline:
+        /// <code>
+        ///             app.UseScopedHttpContext();
+        ///             app.UseGuardRequestMonitor();
+        ///             // This chooses a random, free port.
+        ///             app.Urls.Add( "http://[::1]:0" );
+        ///             configureApplication?.Invoke( app );
+        /// </code>
+        /// </summary>
+        /// <param name="appBuilder">This web application.</param>
+        /// <param name="configureApplication">Optional application configurator.</param>
+        /// <returns>A running .NET server or null if an error occurred or the server failed to start.</returns>
+        public static async Task<RunningAspNetServer> BuildAndCreateRunningAspNetServerAsync( this WebApplicationBuilder appBuilder, Action<IApplicationBuilder>? configureApplication )
+        {
+            WebApplication? app = null;
             try
             {
+                app = appBuilder.Build();
+                app.UseScopedHttpContext();
+                app.UseGuardRequestMonitor();
+
                 // This chooses a random, free port.
                 app.Urls.Add( "http://[::1]:0" );
-                app.UseGuardRequestMonitor();
+
                 configureApplication?.Invoke( app );
                 await app.StartAsync().ConfigureAwait( false );
 
@@ -63,13 +86,13 @@ namespace CK.Testing
                 Throw.DebugAssert( addresses != null && addresses.Addresses.Count > 0 );
 
                 var serverAddress = addresses.Addresses.First();
-                helper.Monitor.Info( $"Server started. Server address: '{serverAddress}'." );
+                TestHelper.Monitor.Info( $"Server started. Server address: '{serverAddress}'." );
                 return new RunningAspNetServer( app, serverAddress );
             }
             catch( Exception ex )
             {
-                helper.Monitor.Error( "Unhandled error while starting http server.", ex );
-                await app.DisposeAsync();
+                TestHelper.Monitor.Error( "Unhandled error while starting http server.", ex );
+                if( app != null ) await app.DisposeAsync();
                 throw;
             }
         }
