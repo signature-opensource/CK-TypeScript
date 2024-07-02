@@ -93,19 +93,8 @@ namespace CodeCake
         /// </summary>
         public void Clean()
         {
-            var objs = Projects.Select( p => p.Path.GetDirectory().Combine( "bin" ).ToString() ).ToArray();
-            var bins = Projects.Select( p => p.Path.GetDirectory().Combine( "obj" ).ToString() ).ToArray();
-            // WTF??? Stack overflow here...
-            //_globalInfo.Cake.CleanDirectories( objs );
-            foreach( var p in objs )
-            {
-                Directory.Delete( p, true );
-            }
-            //_globalInfo.Cake.CleanDirectories( bins );
-            foreach( var p in bins )
-            {
-                Directory.Delete( p, true );
-            }
+            _globalInfo.Cake.CleanDirectories( Projects.Select( p => p.Path.GetDirectory().Combine( "bin" ) ) );
+            _globalInfo.Cake.CleanDirectories( Projects.Select( p => p.Path.GetDirectory().Combine( "obj" ) ) );
             _globalInfo.Cake.DeleteFiles( "Tests/**/TestResult*.xml" );
         }
 

@@ -1,20 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <RootNamespace>CK.ObservableDomain</RootNamespace>
   </PropertyGroup>
-
   <ItemGroup>
-    <EmbeddedResource Include="**\*.ts" >
+    <EmbeddedResource Include="**\*.ts">
       <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  
   <ItemGroup>
     <ProjectReference Include="..\..\CK-TS-JsonGraphSerializer\CK.TS.JsonGraphSerializer\CK.TS.JsonGraphSerializer.csproj" />
   </ItemGroup>
-
 </Project>

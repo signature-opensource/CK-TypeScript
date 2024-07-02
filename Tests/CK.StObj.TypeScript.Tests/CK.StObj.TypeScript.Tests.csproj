@@ -1,19 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <LangVersion>11</LangVersion>
     <!-- This is required to test the TypeScript doncumentation from C# feature. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="**\*.ts">
       <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="TSTests\CrisLike_commands_and_results\src\abstracts.spec.ts" />
     <None Remove="TSTests\CrisLike_commands_and_results\src\autonomous-serialization.spec.ts" />
@@ -22,7 +19,6 @@
     <None Remove="TSTests\TypeScriptRunner_with_environment_variables\src\PocoInitialization.spec.ts" />
     <None Remove="TypeScriptFileAttr\Res\IAmAlsoHere.ts" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="nunit" Version="4.1.0" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" Version="4.5.0" />
