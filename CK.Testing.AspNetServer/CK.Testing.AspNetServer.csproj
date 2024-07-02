@@ -8,6 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.AspNet" Version="13.0.1--0023-develop" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="9.0.1--0022-develop" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="9.0.1--0023-develop" />
   </ItemGroup>
 </Project>
