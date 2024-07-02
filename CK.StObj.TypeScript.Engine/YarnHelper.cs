@@ -490,7 +490,7 @@ namespace CK.Setup
                                                                                             ? ""
                                                                                             : $" with {environmentVariables.Select( kv => $"'{kv.Key}': '{kv.Value}'" ).Concatenate()}")}." ) )
             {
-                int code = RunProcess( monitor, "node", $"{yarnPath} {command}", workingDirectory, environmentVariables );
+                int code = RunProcess( monitor.ParallelLogger, "node", $"{yarnPath} {command}", workingDirectory, environmentVariables );
                 if( code != 0 )
                 {
                     monitor.Error( $"'yarn {command}' failed with code {code}." );
@@ -664,7 +664,7 @@ namespace CK.Setup
         static CKTrait StdErrTag = ActivityMonitor.Tags.Register( "StdErr" );
         static CKTrait StdOutTag = ActivityMonitor.Tags.Register( "StdOut" );
 
-        static int RunProcess( IActivityMonitor monitor,
+        static int RunProcess( IParallelLogger logger,
                                string fileName,
                                string arguments,
                                string workingDirectory,
@@ -685,167 +685,20 @@ namespace CK.Setup
             using var process = new Process { StartInfo = info };
             process.OutputDataReceived += ( sender, data ) =>
             {
-                if( data.Data != null ) monitor.Trace( StdOutTag, data.Data );
+                if( data.Data != null ) logger.Trace( StdOutTag, data.Data );
             };
             process.ErrorDataReceived += ( sender, data ) =>
             {
-                if( data.Data != null ) monitor.Trace( StdErrTag, data.Data );
+                if( data.Data != null ) logger.Trace( StdErrTag, data.Data );
             };
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             process.WaitForExit();
 
-            //var tracer = TraceAsync( process, monitor.ParallelLogger );
-            //while( !process.WaitForExit( 250 ) );
-            //while( !tracer.IsCompleted ) Thread.Sleep( 50 );
-
-            //var left = new ChannelTextReader( process.StandardOutput );
-            //var right = new ChannelTextReader( process.StandardError );
-            //var processLogs = new ChannelReaderMerger<string, string, (string, bool)>(
-            //    left, ( s ) => (s, false),
-            //    right, ( s ) => (s, true)
-            //);
-            //_ = left.StartAsync();
-            //_ = right.StartAsync();
-            //_ = processLogs.StartAsync();
-
-            //bool firstLoop = true;
-            //while( !processLogs.Completion.IsCompleted || !process.HasExited )
-            //{
-            //    FlushLogs();
-            //    if( !firstLoop ) process.WaitForExit( 20 ); // avoid closed loop when waiting for log.
-            //    firstLoop = false;
-            //}
-            //FlushLogs();
-            //Debug.Assert( process.HasExited );
-
             return process.ExitCode;
 
-            static async Task TraceAsync( Process process, IParallelLogger logger )
-            {
-                var stdErr = DumpAsync( process.StandardError, logger, StdErrTag );
-                var stdOut = DumpAsync( process.StandardOutput, logger, StdOutTag );
-                await stdErr.ConfigureAwait( false );
-                await stdOut.ConfigureAwait( false );
-
-                static async Task DumpAsync( StreamReader input, IParallelLogger target, CKTrait tag )
-                {
-                    while( true )
-                    {
-                        var line = await input.ReadLineAsync();
-                        if( line == null ) break;
-                        target.Trace( tag, line );
-                    }
-                }
-            }
-
-            //void FlushLogs()
-            //{
-            //    while( processLogs.TryRead( out var log ) )
-            //    {
-            //        monitor.Log( log.Item2 ? LogLevel.Error : LogLevel.Trace, log.Item1 );
-            //    }
-            //}
-
         }
-
-        abstract class ChannelReaderWrapper<T> : ChannelReader<T>
-        {
-            readonly Channel<T> _channel;
-            [AllowNull] Task _completion;
-
-            protected ChannelReaderWrapper( Channel<T> channel )
-            {
-                _channel = channel;
-            }
-
-            public Task StartAsync() => _completion = BackgroundTaskAsync();
-
-            protected ChannelWriter<T> Writer => _channel.Writer;
-
-            /// <inheritdoc/>
-            public override Task Completion => _completion;
-
-            /// <inheritdoc/>
-            public override bool TryRead( [MaybeNullWhen( false )] out T item ) => _channel.Reader.TryRead( out item );
-
-            /// <inheritdoc/>
-            public override ValueTask<T> ReadAsync( CancellationToken cancellationToken = default )
-                => _channel.Reader.ReadAsync( cancellationToken );
-
-            /// <inheritdoc/>
-            public override bool TryPeek( [MaybeNullWhen( false )] out T item )
-                => _channel.Reader.TryPeek( out item );
-
-            /// <inheritdoc/>
-            public override ValueTask<bool> WaitToReadAsync( CancellationToken cancellationToken = default ) => _channel.Reader.WaitToReadAsync( cancellationToken );
-
-            protected abstract Task BackgroundTaskAsync();
-        }
-
-        sealed class ChannelTextReader : ChannelReaderWrapper<string>
-        {
-            readonly TextReader _textReader;
-
-            public ChannelTextReader( TextReader textReader )
-                : base( Channel.CreateUnbounded<string>() )
-            {
-                Throw.CheckNotNullArgument( textReader );
-                _textReader = textReader;
-            }
-
-            protected override async Task BackgroundTaskAsync()
-            {
-                while( true )
-                {
-                    var line = await _textReader.ReadLineAsync();
-                    if( line == null ) break;
-                    Writer.TryWrite( line );
-                }
-                Writer.Complete();
-            }
-        }
-
-        sealed class ChannelReaderMerger<TLeft, TRight, TOut> : ChannelReaderWrapper<TOut>
-        {
-            readonly ChannelReader<TLeft> _left;
-            readonly Func<TLeft, TOut> _leftTransformer;
-            readonly ChannelReader<TRight> _right;
-            readonly Func<TRight, TOut> _rightTransformer;
-
-            public ChannelReaderMerger( ChannelReader<TLeft> left,
-                                        Func<TLeft, TOut> leftTransformer,
-                                        ChannelReader<TRight> right,
-                                        Func<TRight, TOut> rightTransformer,
-                                        bool singleReader = true )
-                : base( Channel.CreateUnbounded<TOut>( new UnboundedChannelOptions()
-                {
-                    SingleWriter = false,
-                    SingleReader = singleReader
-                } ) )
-            {
-                _left = left;
-                _leftTransformer = leftTransformer;
-                _right = right;
-                _rightTransformer = rightTransformer;
-            }
-
-            protected override async Task BackgroundTaskAsync()
-            {
-                await Task.WhenAll( ChannelLoopAsync( _left, _leftTransformer ), ChannelLoopAsync( _right, _rightTransformer ) );
-                Writer.Complete();
-            }
-
-            async Task ChannelLoopAsync<T>( ChannelReader<T> reader, Func<T, TOut> transformer )
-            {
-                await foreach( var item in reader.ReadAllAsync() )
-                {
-                    Writer.TryWrite( transformer( item ) );
-                }
-            }
-        }
-
 
         #endregion
     }
