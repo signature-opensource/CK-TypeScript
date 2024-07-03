@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
@@ -13,10 +14,12 @@ namespace CK.Setup
     public static class CKomposableAppBuilderExtensions
     {
         /// <summary>
-        /// Ensures that at least one <see cref="TypeScriptBinPathAspectConfiguration"/> exists in the given <paramref name="binPathName"/>
-        /// and configures it to target the conventionnal "<see cref="ICKomposableAppBuilder.GetHostFolderPath"/>/Client" path.
+        /// Ensures that at least one <see cref="TypeScriptBinPathAspectConfiguration"/> exists in the given <paramref name="binPathName"/>.
+        /// If <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/> is empty, configures it to target the
+        /// conventional "<see cref="ICKomposableAppBuilder.GetHostFolderPath"/>/Client" path.
         /// <para>
-        /// By default, <see cref="TypeScriptBinPathAspectConfiguration.EnsureTestSupport"/> is false.
+        /// Sets <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/>, <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallVSCodeSupport"/>
+        /// and <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> to true.
         /// </para>
         /// </summary>
         /// <param name="builder">This builder.</param>
@@ -30,7 +33,10 @@ namespace CK.Setup
             tsBinPathAspect.AutoInstallVSCodeSupport = true;
             tsBinPathAspect.AutoInstallYarn = true;
             tsBinPathAspect.GitIgnoreCKGenFolder = true;
-            tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( "Client" );
+            if( tsBinPathAspect.TargetProjectPath.IsEmptyPath )
+            {
+                tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( "Client" );
+            }
             return tsBinPathAspect;
         }
     }

@@ -72,9 +72,17 @@ namespace CK.Setup
                 {
                     if( ts.TargetProjectPath.IsEmptyPath || string.IsNullOrWhiteSpace( ts.TargetProjectPath ) )
                     {
-                        monitor.Warn( $"Removing TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
-                        owner.RemoveAspect( ts );
-                        return false;
+                        if( owner == owner.Owner?.FirstBinPath )
+                        {
+                            ts.TargetProjectPath = owner.ProjectPath.AppendPart( "Client" );
+                            monitor.Info( $"Set first BinPath (named '{owner.Name}') empty TypeScript TargetProjectPath to '{ts.TargetProjectPath}'." );
+                        }
+                        else
+                        {
+                            monitor.Warn( $"Removing TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
+                            owner.RemoveAspect( ts );
+                            return false;
+                        }
                     }
                     return true;
                 }
