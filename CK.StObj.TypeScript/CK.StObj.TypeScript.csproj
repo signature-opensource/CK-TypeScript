@@ -2,11 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description></Description>
-    <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Json" Version="25.0.0" />
-    <PackageReference Include="CK.StObj.Model" Version="25.0.0" />
+    <PackageReference Include="CK.Poco.Exc.Json" Version="26.0.0" />
   </ItemGroup>
 </Project>

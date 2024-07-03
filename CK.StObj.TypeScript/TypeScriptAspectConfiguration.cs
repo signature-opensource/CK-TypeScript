@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.StObj.TypeScript;
+using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,89 +22,20 @@ namespace CK.Setup
     /// that will generate index.ts files in the specified folders (see https://basarat.gitbook.io/typescript/main-1/barrel).
     /// Use &lt;Barrel Path=""/&gt; to create a barrel at the root level.
     /// </para>
-    /// See <see cref="TypeScriptAspectBinPathConfiguration"/> that models this required BinPathConfiguration.
+    /// See <see cref="TypeScriptBinPathAspectConfiguration"/> that models this required BinPathConfiguration.
     /// </summary>
-    public sealed class TypeScriptAspectConfiguration : IStObjEngineAspectConfiguration
+    public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfiguration
     {
         /// <summary>
-        /// The <see cref="PascalCase"/> attribute name.
+        /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
+        /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
         /// </summary>
-        public static readonly XName xPascalCase = XNamespace.None + "PascalCase";
+        public const string AutomaticYarnVersion = "4.2.2";
 
         /// <summary>
-        /// The <see cref="GenerateDocumentation"/> attribute name.
+        /// The default <see cref="AutomaticTypeScriptVersion"/> version to install.
         /// </summary>
-        public static readonly XName xGenerateDocumentation = XNamespace.None + "GenerateDocumentation";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.SkipTypeScriptTooling"/> attribute name.
-        /// </summary>
-        public static readonly XName xSkipTypeScriptTooling = XNamespace.None + "SkipTypeScriptTooling";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.EnsureTestSupport"/> attribute name.
-        /// </summary>
-        public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallYarn"/> attribute name.
-        /// </summary>
-        public static readonly XName xAutoInstallYarn = XNamespace.None + "AutoInstallYarn";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.GitIgnoreCKGenFolder"/> attribute name.
-        /// </summary>
-        public static readonly XName xGitIgnoreCKGenFolder = XNamespace.None + "GitIgnoreCKGenFolder";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.AutoInstallVSCodeSupport"/> attribute name.
-        /// </summary>
-        public static readonly XName xAutoInstallVSCodeSupport = XNamespace.None + "AutoInstallVSCodeSupport";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration"/> element name.
-        /// </summary>
-        public static readonly XName xTypeScript = XNamespace.None + "TypeScript";
-
-        /// <summary>
-        /// The attribute name of <see cref="TypeScriptAspectBinPathConfiguration.TargetProjectPath"/>.
-        /// </summary>
-        public static readonly XName xTargetProjectPath = XNamespace.None + "TargetProjectPath";
-
-        /// <summary>
-        /// The attribute name of <see cref="TypeScriptTypeConfiguration.TypeName"/>.
-        /// </summary>
-        public static readonly XName xTypeName = XNamespace.None + "TypeName";
-
-        /// <summary>
-        /// The attribute name of <see cref="TypeScriptTypeConfiguration.Folder"/>.
-        /// </summary>
-        public static readonly XName xFolder = XNamespace.None + "Folder";
-
-        /// <summary>
-        /// The attribute name of <see cref="TypeScriptTypeConfiguration.FileName"/>.
-        /// </summary>
-        public static readonly XName xFileName = XNamespace.None + "FileName";
-
-        /// <summary>
-        /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFileAs"/>.
-        /// </summary>
-        public static readonly XName xSameFileAs = XNamespace.None + "SameFileAs";
-
-        /// <summary>
-        /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFolderAs"/>.
-        /// </summary>
-        public static readonly XName xSameFolderAs = XNamespace.None + "SameFolderAs";
-
-        /// <summary>
-        /// The <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/> element name.
-        /// </summary>
-        public static readonly XName xBarrels = XNamespace.None + "Barrels";
-
-        /// <summary>
-        /// The child element name of <see cref="TypeScriptAspectBinPathConfiguration.Barrels"/>.
-        /// </summary>
-        public static readonly XName xBarrel = XNamespace.None + "Barrel";
+        public const string DefaultTypeScriptVersion = "5.4.5";
 
         /// <summary>
         /// Initializes a new default configuration.
@@ -111,6 +43,8 @@ namespace CK.Setup
         public TypeScriptAspectConfiguration()
         {
             GenerateDocumentation = true;
+            DeferFileSave = true;
+            LibraryVersions = new Dictionary<string, SVersionBound>();
         }
 
         /// <summary>
@@ -121,25 +55,61 @@ namespace CK.Setup
         {
             PascalCase = (bool?)e.Element( xPascalCase ) ?? false;
             GenerateDocumentation = (bool?)e.Attribute( xGenerateDocumentation ) ?? true;
+            DeferFileSave = (bool?)e.Attribute( xDeferFileSave ) ?? true;
+            LibraryVersions = e.Element( xLibraryVersions )?
+                                .Elements( xLibrary )
+                                .Select( e => (e.Attribute( EngineConfiguration.xName )?.Value, e.Attribute( EngineConfiguration.xVersion )?.Value) )
+                                .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
+                                .ToDictionary( e => e.Item1!, e => ParseSVersionBound( e.Item1!, e.Item2! ) )
+                                ?? new Dictionary<string, SVersionBound>();
+            IgnoreVersionsBound = (bool?)e.Attribute( xIgnoreVersionsBound ) ?? false;
+
+            static SVersionBound ParseSVersionBound( string name, string version )
+            {
+                var parseResult = SVersionBound.NpmTryParse( version, includePrerelease: false );
+                if( !parseResult.IsValid )
+                {
+                    Throw.XmlException( $"Invalid version '{version}' for library '{name}': {parseResult.Error}" );
+                }
+                return parseResult.Result;
+            }
         }
 
         /// <summary>
-        /// Fills the given Xml element with this configuration values.
+        /// Gets a dictionary that defines the version to use for an external package.
+        /// The versions specified here override the ones specified in code while
+        /// declaring an import.
+        ///<para>
+        /// The code can provide default versions (final version is upgrade, see <see cref="IgnoreVersionsBound"/>)
+        /// or no version at all: in this case the library version must be defined here.
+        ///</para>
+        /// <para>
+        /// Example:
+        /// <code>
+        ///     &lt;LibraryVersions&gt;
+        ///        &lt;Library Name="axios" Version="^1.7.2" /&gt;
+        ///        &lt;Library Name="luxon" Version=">=3.1.1" /&gt;
+        ///     &lt;/LibraryVersions&gt;
+        /// </code>
+        /// </para>
+        /// <para>
+        /// It is empty by default.
+        /// </para>
         /// </summary>
-        /// <param name="e">The element to fill.</param>
-        /// <returns>The element.</returns>
-        public XElement SerializeXml( XElement e )
-        {
-            e.Add( new XAttribute( StObjEngineConfiguration.xVersion, "1" ),
-                        PascalCase == false
-                            ? new XAttribute( xPascalCase, false )
-                            : null,
-                        GenerateDocumentation == false
-                            ? new XAttribute( xGenerateDocumentation, false )
-                            : null
-                 );
-            return e;
-        }
+        public Dictionary<string, SVersionBound> LibraryVersions { get; }
+
+        /// <summary>
+        /// Gets or sets whether when code declares multiple versions for the same library, 
+        /// version compatibility must be enforced or not.
+        /// <para>
+        /// When false (the default), if a package wants "axios": "^0.28.0" (in <see cref="SVersionBound"/> semantics: "0.28.0[LockMajor,Stable]")
+        /// and another one wants ">=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
+        /// </para>
+        /// <para>
+        /// When set to true, the greatest <see cref="SVersionBound.Base"/> wins: "1.7.2[Stable]" will be selected.
+        /// </para>
+        /// </summary>
+        public bool IgnoreVersionsBound { get; set; }
 
         /// <summary>
         /// Gets or sets whether TypeScript generated properties should be PascalCased.
@@ -154,9 +124,47 @@ namespace CK.Setup
         public bool GenerateDocumentation { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the file system is updated once all code generation is done.
+        /// Defaults to true.
+        /// </summary>
+        public bool DeferFileSave { get; set; }
+
+        /// <summary>
         /// Gets the "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine" assembly qualified name.
         /// </summary>
-        public string AspectType => "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine";
+        public override string AspectType => "CK.Setup.TypeScriptAspect, CK.StObj.TypeScript.Engine";
+
+        /// <summary>
+        /// Fills the given Xml element with this configuration values.
+        /// </summary>
+        /// <param name="e">The element to fill.</param>
+        /// <returns>The element.</returns>
+        public override XElement SerializeXml( XElement e )
+        {
+            e.Add( new XAttribute( EngineConfiguration.xVersion, "1" ),
+                        PascalCase == false
+                            ? new XAttribute( xPascalCase, false )
+                            : null,
+                        GenerateDocumentation == false
+                            ? new XAttribute( xGenerateDocumentation, false )
+                            : null,
+                        DeferFileSave == false
+                            ? new XAttribute( xDeferFileSave, false )
+                            : null,
+                        IgnoreVersionsBound == true
+                            ? new XAttribute( xIgnoreVersionsBound, true )
+                            : null,
+                        new XElement( xLibraryVersions,
+                                      LibraryVersions.Select( kv => new XElement( xLibrary,
+                                        new XAttribute( EngineConfiguration.xName, kv.Key ),
+                                        new XAttribute( EngineConfiguration.xVersion, kv.Value.ToNpmString() ) ) ) )
+                 );
+
+            return e;
+        }
+
+        /// <inheritdoc />
+        public override BinPathAspectConfiguration CreateBinPathConfiguration() => new TypeScriptBinPathAspectConfiguration();
 
     }
 

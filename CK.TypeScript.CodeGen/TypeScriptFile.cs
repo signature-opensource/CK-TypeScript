@@ -15,22 +15,32 @@ namespace CK.TypeScript.CodeGen
     /// </summary>
     public class TypeScriptFile
     {
+        internal const string _hiddenFileName = ".hidden-file.ts";
+
+        readonly string _name;
+        readonly ITSFileBodySection _body;
+        readonly TypeScriptFolder _folder;
+        internal readonly FileImportCodePart _imports;
         internal TypeScriptFile? _next;
+        OriginResource? _origin;
 
         internal TypeScriptFile( TypeScriptFolder folder, string name )
         {
-            Folder = folder;
-            Name = name;
-            _next = folder._firstFile;
-            folder._firstFile = this;
-            Imports = new FileImportCodePart( this );
-            Body = new FileBodyCodePart( this );
+            _folder = folder;
+            _name = name;
+            _imports = new FileImportCodePart( this );
+            _body = new FileBodyCodePart( this );
+            if( name != _hiddenFileName )
+            {
+                _next = folder._firstFile;
+                folder._firstFile = this;
+            }
         }
 
         /// <summary>
         /// Gets the folder of this file.
         /// </summary>
-        public TypeScriptFolder Folder { get; }
+        public TypeScriptFolder Folder => _folder;
 
         /// <inheritdoc cref="TypeScriptFolder.Root" />
         public TypeScriptRoot Root => Folder.Root;
@@ -39,45 +49,49 @@ namespace CK.TypeScript.CodeGen
         /// Gets this file name.
         /// It necessarily ends with '.ts'.
         /// </summary>
-        public string Name { get; }
+        public string Name => _name;
 
         /// <summary>
         /// Gets the import section of this file.
         /// </summary>
-        public ITSFileImportSection Imports { get; }
+        public ITSFileImportSection Imports => _imports;
 
         /// <summary>
         /// Gets the code section of this file.
         /// </summary>
-        public ITSFileBodySection Body { get; }
+        public ITSFileBodySection Body => _body;
 
         /// <summary>
         /// Creates a part that is bound to this file but whose content
         /// is not in this <see cref="Body"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A detached part.</returns>
         public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
 
         /// <summary>
         /// Saves this file into a folder on the file system.
-        /// The <see cref="Body"/> can be null (only <see cref="Imports"/> if any will be generated).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="outputPath">Target directory.</param>
-        /// <param name="previousPaths">
-        /// Optional set of file paths from which actually saved paths will be removed:
-        /// what's left will be the actual generated paths.
-        /// </param>
-        public void Save( IActivityMonitor monitor, NormalizedPath outputPath, HashSet<string>? previousPaths )
+        /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
+        public void Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
         {
-            monitor.Trace( $"Saving '{Name}'." );
-            var imports = Imports.ToString();
-            if( imports.Length > 0 ) imports += Environment.NewLine;
-            var all = imports + Body.ToString();
-            var file = outputPath.AppendPart( Name );
-            File.WriteAllText( file, all );
-            previousPaths?.Remove( file );
+            if( _name != _hiddenFileName )
+            {
+                var filePath = saver._currentTarget.AppendPart( Name );
+                saver.SaveFile( monitor, this, filePath );
+            }
         }
+
+        /// <summary>
+        /// Gets or sets an optional <see cref="OriginResource"/> for this file.
+        /// </summary>
+        public OriginResource? Origin { get => _origin; set => _origin = value; }
+
+        /// <summary>
+        /// Computes and returns the concatenated <see cref="Imports"/> and <see cref="Body"/>.
+        /// </summary>
+        /// <returns>The full file content.</returns>
+        public string GetCurrentText() => _imports.ToString() + _body.ToString();
 
         /// <summary>
         /// Overridden to return this file name.

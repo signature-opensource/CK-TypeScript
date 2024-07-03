@@ -1,9 +1,12 @@
 using CK.Core;
+using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using static CK.StObj.TypeScript.Tests.RecordTests;
 using static CK.Testing.StObjEngineTestHelper;
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -18,18 +21,21 @@ namespace CK.StObj.TypeScript.Tests
             DateTime D { get; set; }
             DateTimeOffset DOffset { get; set; }
             TimeSpan Span { get; set; }
-            List<Guid> Identifiers { get; }
+            IList<Guid> Identifiers { get; }
         }
 
         [Test]
         public void with_date_and_guid()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            TestHelper.GenerateTypeScript( targetProjectPath, typeof( IWithDateAndGuid ) );
+
+            var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IWithDateAndGuid));
+            engineConfig.FirstBinPath.Types.Add( typeof( IWithDateAndGuid ) );
+            engineConfig.RunSuccessfully();
+
             File.Exists( targetProjectPath.Combine( "ck-gen/src/WithDateAndGuid.ts" ) ).Should().BeTrue();
         }
-
-
 
     }
 }

@@ -8,7 +8,7 @@ namespace CK.Setup
     /// <summary>
     /// Configuration of a type that must be generated. This is the external version of <see cref="TypeScriptAttribute"/>.
     /// <para>
-    /// <see cref="ToAttribute(IActivityMonitor, Func{IActivityMonitor, string, Type?})"/> checks the validity and creates the
+    /// <see cref="ToAttribute(IActivityMonitor, Func{string, Type?})"/> checks the validity and creates the
     /// corresponding attribute. Then <see cref="TypeScriptAttribute.ApplyOverride(TypeScriptAttribute?)"/> is used if the
     /// type is decorated with the TypeScriptAttribute. The configuration overrides the declare attribute values.
     /// </para>
@@ -89,7 +89,7 @@ namespace CK.Setup
         public TypeScriptTypeConfiguration( XElement e )
         {
             // Allow the type to be the element value.
-            Type = (string?)e.Attribute( StObjEngineConfiguration.xType ) ?? e.Value;
+            Type = (string?)e.Attribute( EngineConfiguration.xType ) ?? e.Value;
             TypeName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeName );
             Folder = (string?)e.Attribute( TypeScriptAspectConfiguration.xFolder );
             FileName = (string?)e.Attribute( TypeScriptAspectConfiguration.xFileName );
@@ -103,7 +103,7 @@ namespace CK.Setup
         /// <returns>The <see cref="XElement"/>.</returns>
         public XElement ToXml()
         {
-            return new XElement( StObjEngineConfiguration.xType,
+            return new XElement( EngineConfiguration.xType,
                                  TypeName != null ? new XAttribute( TypeScriptAspectConfiguration.xTypeName, TypeName ) : null,
                                  Folder != null ? new XAttribute( TypeScriptAspectConfiguration.xFolder, Folder ) : null,
                                  FileName != null ? new XAttribute( TypeScriptAspectConfiguration.xFileName, FileName ) : null,
@@ -113,8 +113,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets or sets the type assembly qualified name name that must be generated. For IPoco, it is the primary
-        /// interface assemby qualified name or <see cref="ExternalNameAttribute"/>.
+        /// Gets or sets the type assembly qualified name name that must be generated.
         /// </summary>
         public string Type { get; set; }
 
@@ -157,14 +156,14 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeResolver">Type resolver for <see cref="SameFolderAs"/> and <see cref="SameFileAs"/>.</param>
         /// <returns>The type script arrtibute or null on error.</returns>
-        public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<IActivityMonitor,string,Type?> typeResolver )
+        public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<string,Type?> typeResolver )
         {
             bool success = true;
             if( TypeName != null ) success &= ValidNotEmpty( monitor, this, "TypeName", TypeName );
             Type? tSameFile = null;
             if( SameFileAs != null )
             {
-                tSameFile = ResolveType( monitor, this, typeResolver, "SameFileAs", SameFileAs );
+                tSameFile = FindType( monitor, this, typeResolver, "SameFileAs", SameFileAs );
                 success &= tSameFile != null; 
                 if( FileName != null ) success &= Error( monitor, this, "FileName", "SameFileAs" );
                 if( Folder != null ) success &= Error( monitor, this, "Folder", "SameFileAs" );
@@ -173,7 +172,7 @@ namespace CK.Setup
             Type? tSameFolder = null;
             if( SameFolderAs != null )
             {
-                tSameFolder = ResolveType( monitor, this, typeResolver, "SameFolderAs", SameFolderAs );
+                tSameFolder = FindType( monitor, this, typeResolver, "SameFolderAs", SameFolderAs );
                 success &= tSameFile != null;
                 if( Folder != null ) success &= Error( monitor, this, "Folder", "SameFolderAs" );
             }
@@ -187,13 +186,13 @@ namespace CK.Setup
                 return false;
             }
 
-            static Type? ResolveType( IActivityMonitor monitor, TypeScriptTypeConfiguration c, Func<IActivityMonitor, string, Type?> typeResolver, string name, string value )
+            static Type? FindType( IActivityMonitor monitor, TypeScriptTypeConfiguration c, Func<string, Type?> typeResolver, string name, string value )
             {
                 if( !ValidNotEmpty( monitor, c, name, value ) )
                 {
                     return null;
                 }
-                var t = typeResolver( monitor, value );
+                var t = typeResolver( value );
                 if( t == null )
                 {
                     monitor.Error( $"TypeScriptAspect configuration error: unable to resolve type for '{name}': '{value}' in:{Environment.NewLine}{c.ToXml()}" );

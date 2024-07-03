@@ -1,24 +1,30 @@
 using CK.Core;
-using CK.TypeScript.CodeGen;
-using Microsoft.Extensions.DependencyInjection;
+using CK.Setup.PocoJson;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Xml.Linq;
-
-#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Aspect that drives TypeScript code generation. Handles (and initialized by one) <see cref="TypeScriptAspectConfiguration"/>.
+    /// Aspect that drives TypeScript code generation. Handles (and initialized) by the <see cref="TypeScriptAspectConfiguration"/>.
     /// </summary>
-    public class TypeScriptAspect : IStObjEngineAspect
+    public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
     {
         readonly TypeScriptAspectConfiguration _tsConfig;
-        NormalizedPath _basePath;
-        readonly List<TypeScriptContext> _generators;
+        // This enables deferring the TypeScript generation at the final step of CS code generation.
+        // A first part must run during the CS code generation to be able to register PocoTypeSet.
+        // But TypeScript generation itself is not CS code generation and by deferring the TS we allow
+        // the participants that subscribed to our TS events to use any Engine services available in the
+        // CurrentRun's ServiceContainer.
+        // This list is cleared by ICSCodeGenerator.Implement, filled by PrepareRun and its TypeScriptContexts
+        // are Run by ICSCodeGeneratorWithFinalization.FinalImplement.
+        readonly List<TypeScriptContext> _runContexts;
+
+        // This supports the TypeScriptAspectConfiguration.DeferFileSave: IStObjEngineAspect.Terminate uses it.
+        readonly List<TypeScriptContext>? _deferedSave;
 
         /// <summary>
         /// Initializes a new aspect from its configuration.
@@ -27,139 +33,248 @@ namespace CK.Setup
         public TypeScriptAspect( TypeScriptAspectConfiguration config )
         {
             _tsConfig = config;
-            _generators = new List<TypeScriptContext>();
+            _deferedSave = config.DeferFileSave ? new List<TypeScriptContext>() : null;
+            _runContexts = new List<TypeScriptContext>();
         }
 
         bool IStObjEngineAspect.Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
         {
-            _basePath = context.StObjEngineConfiguration.Configuration.BasePath;
-            return true;
-        }
+            var c = context.EngineConfiguration.Configuration;
+            var basePath = c.BasePath;
+            if( !basePath.IsRooted ) Throw.InvalidOperationException( $"EngineConfiguration.BasePath '{basePath}' must be rooted." );
 
-        bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor )
-        {
-            return true;
-        }
-
-        bool IStObjEngineAspect.RunPreCode( IActivityMonitor monitor, IStObjEngineRunContext context )
-        {
-            return true;
-        }
-
-        bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
-        {
-            foreach( var genBinPath in context.AllBinPaths )
+            var allBinPathConfigurations = c.BinPaths.SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() )
+                                            .ToList();
+            for( int i = 0; i < allBinPathConfigurations.Count; i++ )
             {
-                // Skip the purely unified BinPath.
-                if( genBinPath.CurrentRun.ConfigurationGroup.IsUnifiedPure ) continue;
-                // Obtains the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
-                // We MAY here decide that ONE BinPath have more than one TypeScriptAspectConfiguration, but
-                // currently, on BinPath can define 0 or 1 TypeScriptAspectConfiguration.
-                var rootedConfigs = GetRootedConfigurations( monitor, genBinPath );
-                if( rootedConfigs != null )
+                TypeScriptBinPathAspectConfiguration? ts = allBinPathConfigurations[i];
+                if( !KeepValidTargetProjectPath( monitor, basePath, ts ) )
                 {
-                    var jsonCodeGen = genBinPath.CurrentRun.ServiceContainer.GetService<Json.JsonSerializationCodeGen>();
-                    if( jsonCodeGen == null )
+                    allBinPathConfigurations.RemoveAt( i-- );
+                }
+            }
+            return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
+
+            static bool KeepValidTargetProjectPath( IActivityMonitor monitor, NormalizedPath basePath, TypeScriptBinPathAspectConfiguration ts )
+            {
+                Throw.DebugAssert( ts.Owner != null );
+                if( CheckEmptyTargetProjectPath( monitor, ts.Owner, ts ) )
+                {
+                    ts.TargetProjectPath = MakeAbsoluteAndNormalize( basePath, ts.TargetProjectPath );
+                    if( CheckEmptyTargetProjectPath( monitor, ts.Owner, ts ) )
                     {
-                        monitor.Info( $"No Json serialization available in this context." );
+                        return true;
                     }
-                    foreach( var tsBinPathconfig in rootedConfigs )
+                }
+                return false;
+
+                static bool CheckEmptyTargetProjectPath( IActivityMonitor monitor, BinPathConfiguration owner, TypeScriptBinPathAspectConfiguration ts )
+                {
+                    if( ts.TargetProjectPath.IsEmptyPath || string.IsNullOrWhiteSpace( ts.TargetProjectPath ) )
                     {
-                        var g = new TypeScriptContext( genBinPath, _tsConfig, tsBinPathconfig, jsonCodeGen );
-                        _generators.Add( g );
-                        if( !g.Run( monitor ) )
+                        if( owner == owner.Owner?.FirstBinPath )
                         {
+                            ts.TargetProjectPath = owner.ProjectPath.AppendPart( "Client" );
+                            monitor.Info( $"Set first BinPath (named '{owner.Name}') empty TypeScript TargetProjectPath to '{ts.TargetProjectPath}'." );
+                        }
+                        else
+                        {
+                            monitor.Warn( $"Removing TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
+                            owner.RemoveAspect( ts );
                             return false;
                         }
                     }
-                    // The CK.Setup.TypeScriptCrisCommandGeneratorImpl in CK.Cris.AspNet.Engine
-                    // (triggered by the static CK.Cris.TypeScript.TypeScriptCrisCommandGenerator) needs
-                    // hooks the Poco TypeScript generation to handle Poco that are commands.
-                    // Only CK.Cris.IAbstractCommand thar are declared (by [TypeScript] or by the configuration)
-                    // are generated (this why, this uses a simple hook).
-                    // But CK.Cris.AspNet.CrisAspNetService needs to know tne TypeScriptified commands: they are
-                    // the only ones that must be handled by the /.cris handler. The allow-list of the AspNet endpoint
-                    // IS the same as the "TypeScript enabled commands" (we don't want a second filter to be configured
-                    // by the developer for this).
-                    // TODO:
-                    // - Decide:
-                    //      - If a central modeling of "AllowedEndpoints" can exist on the CrisPocoModel. This may
-                    //        be a simple list of endpoint names that can be used receive the command.
-                    //        This would be a cool feature (discoverability, transparency).
-                    //      - Or the allow-list should be managed by each endpoint, without any central model.
-                    //        This is less tempting... But may be simpler.
-                    // 
-                    //      In the 1) it will be up to the CK.Cris.AspNet.Engine to alter/mutate the PocoCrisModel...
-                    //      AFTER the code generation step :(
-                    // 
-                    //      In the 2) the "default AspNet Cris endpoint" has a special status and can do what it can
-                    //      to impact/configure the CrisAspNetEngine... But here again, this happens after the code
-                    //      generation step.
-                    //
-                    // It seems that we need to move the TypeScriptContext initialization up in the process to have the
-                    // list of declare TSTypes earlier... (its Run() can stay in the PostCode step).
-                    //
-                    //
-                    // This seems doable: if this aspect implements ICSCodeGenerator, its
-                    // Implement(IActivityMonitor, ICSCodeGenerationContext) will be called. It will have to "trampoline"
-                    // once to give the opportunity to the jsonCodeGen to be available in the CurrentRun.ServiceContainer.
-                    // It then can initialize the TypeScriptContexts for the BinPaths.
-                    // BUT the discovery is done in the Run() (as of today): it seems that nearly everything except the very
-                    // last step must be moved to the Implement step.
-                    //
-                    // Once done, the Implement step will be able to generate C# code with the "default aspnet endpoint"
-                    // configuration of the allowed commands (how this will be done is another story...).
+                    return true;
                 }
+
+                static NormalizedPath MakeAbsoluteAndNormalize( NormalizedPath basePath, NormalizedPath p )
+                {
+                    if( p.LastPart.Equals( "ck-gen", StringComparison.OrdinalIgnoreCase ) )
+                    {
+                        p = p.RemoveLastPart();
+                    }
+                    if( !p.IsRooted )
+                    {
+                        p = basePath.Combine( p );
+                    }
+                    return p.ResolveDots();
+                }
+
+            }
+
+            static bool CheckPathOrTypeScriptSetDuplicate( IActivityMonitor monitor, IReadOnlyCollection<TypeScriptBinPathAspectConfiguration> configurations )
+            {
+                bool success = true;
+                // This test is not perfect: the TargetProjectPath should be unique among all the TypeScript of all the BinPath.
+                // Here we check only inside one but this is acceptable.
+                var targetPath = configurations.GroupBy( c => c.TargetProjectPath.Path, StringComparer.OrdinalIgnoreCase );
+                if( targetPath.Count() != configurations.Count )
+                {
+                    foreach( var g in targetPath.Where( g => g.Count() > 1 ) )
+                    {
+                        monitor.Error( $"TypeScript BinPath configuration with TargetProjectPath=\"{g.Key}\" appear more than once. " +
+                                       $"Each configuration must target a different output path." );
+                    }
+                    success = false;
+                }
+                // This test is important: the TypeFilterName MUST be or start with "TypeScript".
+                var badNames = configurations.Where( c => !c.TypeFilterName.StartsWith( "TypeScript" ) );
+                if( badNames.Any() )
+                {
+                    monitor.Error( $"TypeScript configuration TypeFilterName MUST be or start with \"TypeScript\". " +
+                                   $"Following TypeFilterName are invalid: '{badNames.Select( c => c.TypeFilterName ).Concatenate( "', '" )}'." );
+                    success = false; ;
+                }
+                // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
+                // must be uniquely identified.
+                // But this is only per BinPath.
+                foreach( var gBinPath in configurations.GroupBy( c => c.Owner ) )
+                {
+                    var filterNames = gBinPath.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
+                    if( filterNames.Count() != gBinPath.Count() )
+                    {
+                        foreach( var g in filterNames.Where( g => g.Count() > 1 ) )
+                        {
+                            monitor.Error( $"TypeScript BinPath configuration with TypeFilterName=\"{g.Key}\" appear more than once in BinPath '{gBinPath.Key!.Path}'. " +
+                                           $"They must use different names as they identify different set of types for the serialization layer." );
+                        }
+                        success = false;
+                    }
+                }
+                return success;
+            }
+        }
+
+        bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;
+
+        bool IStObjEngineAspect.RunPreCode( IActivityMonitor monitor, IStObjEngineRunContext context ) => true;
+
+        CSCodeGenerationResult ICSCodeGenerator.Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
+        {
+            // Skips the purely unified BinPath.
+            if( c.CurrentRun.ConfigurationGroup.IsUnifiedPure ) return CSCodeGenerationResult.Success;
+
+            _runContexts.Clear();
+
+            // We must not only wait for the IPocoTypeSystem to be available but we also need to know if the optional IPocoJsonSerializationServiceEngine
+            // is available or not... The IPocoJsonSerializationServiceEngine requires first IPocoSerializationServiceEngine to be available.
+            // To know if the Json serialization will eventually be available, it COULD be as easy as:
+            //
+            // bool isJsonHere = Type.GetType( "CK.Core.CommonPocoJsonSupport, CK.Poco.Exc.Json" ) != null;
+            //
+            // Unfortunately, in a test contexts (where all objects are not registered), this will wait indefinitely. We must use
+            // a better check by exploiting the VFeatures: these are the assemblies for which at least one CK type has been handled.
+            //
+            Throw.DebugAssert( typeof( CommonPocoJsonSupport ).Assembly.GetName().Name == "CK.Poco.Exc.Json" );
+            bool isJsonHere = c.CurrentRun.EngineMap.Features.Any( f => f.Name == "CK.Poco.Exc.Json" );
+            return new CSCodeGenerationResult( isJsonHere ? nameof( WaitForJsonSerialization ) : nameof( WaitForLockedTypeSystem ) );
+        }
+
+        CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoTypeSystem typeSystem )
+        {
+            using( monitor.OpenInfo( $"PocoTypeSystem is available (without Json serialization): handling TypeScript generation." ) )
+            {
+                return PrepareRun( monitor, c, typeSystem, null )
+                        ? CSCodeGenerationResult.Success
+                        : CSCodeGenerationResult.Failed;
+            }
+        }
+
+        CSCodeGenerationResult WaitForJsonSerialization( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoJsonSerializationServiceEngine jsonSerialization )
+        {
+            using( monitor.OpenInfo( $"IPocoJsonSerializationServiceEngine is available: handling TypeScript generation." ) )
+            {
+                return PrepareRun( monitor, c, jsonSerialization.SerializableLayer.TypeSystem, jsonSerialization )
+                        ? CSCodeGenerationResult.Success
+                        : CSCodeGenerationResult.Failed;
+            }
+        }
+
+        bool PrepareRun( IActivityMonitor monitor, ICSCodeGenerationContext codeContext, IPocoTypeSystem typeSystem, IPocoJsonSerializationServiceEngine? jsonSerialization )
+        {
+            var binPath = codeContext.CurrentRun;
+            using var _ = monitor.OpenInfo( $"Preparing TypeScript contexts for: {codeContext.CurrentRun.ConfigurationGroup.Names}." );
+
+            // Obtains all the TypeScriptAspectConfiguration for all the BinPaths of the ConfigurationGroup.
+            // One BinPath can have any number of TypeScriptAspectConfiguration. The TypeFilterName identifies
+            // one configuration among the others in the same BinPath.
+            var configs = binPath.ConfigurationGroup.SimilarConfigurations
+                                        .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
+                                                            ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() );
+            foreach( var tsBinPathconfig in configs )
+            {
+                // First handles the configured <Types>, types that have [TypeScript] attribute or are decorated by some
+                // ITSCodeGeneratorType and any type that are decorated with "global" ITSCodeGenerator. Then the discovered globals
+                // ITSCodeGenerator.Initialize are called: new registered types can be added by global generators.
+                // On success, the final TSContextInitializer.TypeScriptExchangeableSet is computed from all the registered types that
+                // are IPocoType from the EmptyExchangeable set: this is an allow list.
+                // => Only Poco compliant types that are reachable from a registered Poco type will be in TypeScriptExchangeableSet
+                //    and handled by the PocoCodeGenerator.
+                var initializer = TSContextInitializer.Create( monitor,
+                                                                binPath,
+                                                                _tsConfig,
+                                                                tsBinPathconfig,
+                                                                typeSystem.SetManager.AllExchangeable,
+                                                                jsonSerialization );
+                if( initializer == null ) return false;
+
+                // We now have the Global code generators initialized, the configured attributes on explicitly registered types,
+                // discovered types or newly added types and a set of "TypeScriptExchangeable" Poco types.
+                IPocoTypeNameMap? exchangeableNames = null;
+                if( jsonSerialization != null )
+                {
+                    // If Json serialization is available, let's get the name map for them.
+                    // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
+                    // beacause of anonymous record names that expose their fields).
+                    if( initializer.TypeScriptExchangeableSet.SameContentAs( typeSystem.SetManager.AllExchangeable ) )
+                    {
+                        exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames;
+                    }
+                    else
+                    {
+                        // Uses the Clone virtual method to handle future evolution that may not use
+                        // the standard PocoTypeNameMap implementation for Json names.
+                        exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames.Clone( initializer.TypeScriptExchangeableSet );
+                    }
+                    // Regardless of whether it is the same as AllExchangeable or a sub set, we register the ExhangeableRuntimeTypeFilter.
+                    jsonSerialization.SerializableLayer.RegisterExchangeableRuntimeFilter( monitor, tsBinPathconfig.TypeFilterName, initializer.TypeScriptExchangeableSet );
+                }
+                // The TypeScriptContext for this configuration can now be initialized.
+                // It will be run by FinalImplement.
+                _runContexts.Add( new TypeScriptContext( codeContext, _tsConfig, tsBinPathconfig, initializer, exchangeableNames ) );
+            }
+            if( _runContexts.Count == 0 )
+            {
+                monitor.Info( $"Skipped TypeScript generation for BinPathConfiguration '{binPath.ConfigurationGroup.Names}': no TypeScript BinPath configuration." );
             }
             return true;
         }
 
-        IReadOnlyCollection<TypeScriptAspectBinPathConfiguration>? GetRootedConfigurations( IActivityMonitor monitor,
-                                                                                            ICodeGenerationContext genBinPath )
+        bool ICSCodeGeneratorWithFinalization.FinalImplement( IActivityMonitor monitor, ICSCodeGenerationContext codeContext )
         {
-            if( !_basePath.IsRooted ) Throw.InvalidOperationException( $"Configuration BasePath '{_basePath}' must be rooted." );
-
-            static NormalizedPath MakeAbsoluteAndNormalize( NormalizedPath basePath, NormalizedPath p )
+            using var _ = monitor.OpenInfo( $"Running TypeScript contexts for: {codeContext.CurrentRun.ConfigurationGroup.Names}." );
+            foreach( var g in _runContexts )
             {
-                if( p.LastPart.Equals( "ck-gen", StringComparison.OrdinalIgnoreCase ) )
+                if( !g.Run( monitor ) )
                 {
-                    p = p.RemoveLastPart();
+                    return false;
                 }
-                if( !p.IsRooted )
-                {
-                    p = basePath.Combine( p );
-                }
-                return p.ResolveDots();
+                // Save or defer.
+                if( _deferedSave != null ) _deferedSave.Add( g );
+                else if( !g.Save( monitor ) ) return false;
             }
-
-            var binPath = genBinPath.CurrentRun;
-            var rootedConfigs = binPath.ConfigurationGroup.SimilarConfigurations
-                            .Select( c => c.GetAspectConfiguration<TypeScriptAspect>() )
-                            .Where( c => c != null )
-                            .Select( c => (Path: c!.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value, c!) )
-                            .Where( c => !string.IsNullOrWhiteSpace( c.Path ) )
-                            .Select( c => (Path: MakeAbsoluteAndNormalize( _basePath, c.Path ), c.Item2) )
-                            .Where( c => !c.Path.IsEmptyPath )
-                            .Select( c => new TypeScriptAspectBinPathConfiguration( c.Item2 ) { TargetProjectPath = c.Path } )
-                            .ToList();
-            if( rootedConfigs.Count == 0 )
-            {
-                if( binPath.ConfigurationGroup.SimilarConfigurations.Count != 0 )
-                {
-                    monitor.Warn( $"Skipped TypeScript generation for BinPathConfiguration {binPath.ConfigurationGroup.Names}: " +
-                                  $"no <TypeScript TargetProjectPath=\"...\"></TypeScript> element found or empty TargetProjectPath." );
-                }
-                return null;
-            }
-            return rootedConfigs;
+            return true;
         }
+
+
+        bool IStObjEngineAspect.RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context ) => true;
 
         bool IStObjEngineAspect.Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context )
         {
             bool success = true;
-            if( context.EngineStatus.Success )
+            if( _deferedSave != null && context.EngineStatus.Success )
             {
-                foreach( var g in _generators )
+                foreach( var g in _deferedSave )
                 {
                     success &= g.Save( monitor );
                 }

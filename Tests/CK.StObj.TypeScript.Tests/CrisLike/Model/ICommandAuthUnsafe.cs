@@ -1,4 +1,3 @@
-
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 
 namespace CK.CrisLike
@@ -15,6 +14,8 @@ namespace CK.CrisLike
         /// The default <see cref="CrisAuthenticationService"/> validates this field against the
         /// current <see cref="IAuthenticationInfo.UnsafeUser"/>.
         /// </summary>
+        [UbiquitousValue]
         int ActorId { get; set; }
     }
+
 }

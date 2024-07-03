@@ -154,7 +154,7 @@ namespace CK.StObj.TypeScript
         }
 
         /// <summary>
-        /// Combines this attribute with another one (typically the one from a <see cref="TypeScriptTypeConfiguration.ToAttribute(IActivityMonitor, Func{IActivityMonitor, string, Type?})"/>).
+        /// Combines this attribute with another one (typically the one from a <see cref="TypeScriptTypeConfiguration.ToAttribute"/>).
         /// </summary>
         /// <param name="other">The other attribute to apply.</param>
         /// <returns>This attribute.</returns>

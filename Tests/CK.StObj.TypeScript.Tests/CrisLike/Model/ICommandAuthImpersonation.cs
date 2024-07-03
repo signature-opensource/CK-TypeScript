@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,6 +18,7 @@ namespace CK.CrisLike
         /// Gets or sets the actual actor identifier: the one that is connected, regardless of any impersonation.
         /// The default <see cref="CrisAuthenticationService"/> validates this field against the current <see cref="IAuthenticationInfo.ActualUser"/>.
         /// </summary>
+        [UbiquitousValue]
         int ActualActorId { get; set; }
     }
 }

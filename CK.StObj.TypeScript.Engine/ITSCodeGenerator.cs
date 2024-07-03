@@ -1,9 +1,8 @@
 using CK.Core;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
+using CK.TypeScript.CodeGen;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CK.Setup
 {
@@ -16,60 +15,81 @@ namespace CK.Setup
     /// by an attribute on a Type.
     /// </para>
     /// <para>
-    /// A global code generator like this coexists with other global and other <see cref="ITSCodeGeneratorType"/> on a type.
+    /// A global code generator like this coexists with other global and other type bound <see cref="ITSCodeGeneratorType"/>.
     /// It is up to the implementation to handle the collaboration (or to raise an error).
     /// </para>
     /// </summary>
     public interface ITSCodeGenerator : ITSCodeGeneratorAutoDiscovery
     {
         /// <summary>
-        /// Optional extension point (default implementation returns true) called once
-        /// all the <see cref="TypeScriptContext.GlobalGenerators"/> have been discovered.
-        /// Typically used to subscribe to events that may be raised by other global
-        /// generators (like <see cref="PocoCodeGenerator.PocoGenerating"/>).
+        /// Optional extension point called once all the <see cref="ITypeScriptContextInitializer.GlobalGenerators"/>
+        /// have been discovered.
+        /// Typically used to subscribe to <see cref="TSTypeManager.TSFromTypeRequired"/>, <see cref="TypeScriptRoot.BeforeCodeGeneration"/>
+        /// or <see cref="TypeScriptRoot.AfterCodeGeneration"/> events.
+        /// This can also be used to subscribe to other events that may be raised by other global generators.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="context">The generation context.</param>
+        /// <param name="initializer">The TypeScriptContext initializer.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool Initialize( IActivityMonitor monitor, TypeScriptContext context ) => true;
+        bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer );
 
         /// <summary>
-        /// Configures the <see cref="TypeScriptAttribute"/> that will be used by <see cref="TypeScriptContext.DeclareTSType(IActivityMonitor, Type, bool)"/>
-        /// to create the Type - File association and allows implementations to freely interact with the <paramref name="builder"/>.
+        /// This is called once the <see cref="TypeScriptContext"/> is setup, in the order of the <see cref="TypeScriptContext.GlobalGenerators"/>
+        /// list.
         /// <para>
-        /// Note that this method may be called after the single call to <see cref="GenerateCode"/> because of
-        /// the <see cref="TypeScriptAttribute.SameFolderAs"/> that may be resolved by the handling of another type
-        /// (note that in this case, there is necessarily no TypeScript attribute on the type (<paramref name="a"/> is a brand new one)
-        /// and <see cref="ITSTypeFileBuilder.Generators"/> is empty).
+        /// This can be used to generate any TypeScript in the provided context and/or to subscribe to exposed events like
+        /// <see cref="TypeScriptRoot.AfterCodeGeneration"/>, <see cref="PocoCodeGenerator.PrimaryPocoGenerating"/>, etc.
         /// </para>
         /// <para>
-        /// In practice this should not be an issue and if is, it up to this global code generator to correctly handle
+        /// Events <see cref="TSTypeManager.TSFromObjectRequired"/> and <see cref="TSTypeManager.TSFromTypeRequired"/> should not be
+        /// subscribed to as the <see cref="OnResolveObjectKey(IActivityMonitor, TypeScriptContext, RequireTSFromObjectEventArgs)"/> and
+        /// <see cref="OnResolveType(IActivityMonitor, TypeScriptContext, RequireTSFromTypeEventArgs)"/> are directly called by
+        /// the <see cref="TypeScriptContext"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="context">The TypeScript context.</param>
+        /// <returns>True on success, false on error (errors must be logged).</returns>
+        bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context );
+
+        /// <summary>
+        /// Can configure the <see cref="RequireTSFromTypeEventArgs"/> if the <see cref="RequireTSFromTypeEventArgs.Type"/>
+        /// can be handled by this generator.
+        /// <para>
+        /// If a <see cref="TypeScriptAttribute"/> decorates the type ot the type has been configured, the builder properties
+        /// reflects its configuration.
+        /// </para>
+        /// <para>
+        /// Note that this method may be called after the single call to <see cref="StartCodeGeneration"/> because other generators
+        /// can call <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/>.
+        /// In practice this should not be an issue and if it is, it is up to this global code generator to correctly handle
         /// these "after my GenerateCode call" new incoming types.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="builder">
-        /// The builder with the <see cref="ITSTypeFileBuilder.Type"/> that is handled, the <see cref="ITSTypeFileBuilder.Context"/>,
-        /// its <see cref="ITSTypeFileBuilder.Generators"/> that includes this one and the current <see cref="ITSTypeFileBuilder.Finalizer"/>.
-        /// </param>
-        /// <param name="a">
-        /// The attribute to configure. May be an empty one or the existing attribute on the type and may
-        /// already be configured by previous global <see cref="ITSCodeGenerator"/>.
-        /// </param>
+        /// <param name="context">The TypeScript context.</param>
+        /// <param name="builder">The builder with the <see cref="RequireTSFromTypeEventArgs.Type"/> that is handled.</param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool ConfigureTypeScriptAttribute( IActivityMonitor monitor,
-                                           ITSTypeFileBuilder builder,
-                                           TypeScriptAttribute a );
+        bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder );
 
         /// <summary>
-        /// Generates any TypeScript in the provided context.
-        /// This is called once and only once before any type bound methods <see cref="ITSCodeGeneratorType.GenerateCode"/>
-        /// are called.
+        /// Can call <see cref="RequireTSFromObjectEventArgs.SetResolvedType(ITSType)"/> if the <see cref="RequireTSFromObjectEventArgs.KeyType"/>
+        /// is handled by this generator.
+        /// <para>
+        /// Note that this method may be called after the single call to <see cref="StartCodeGeneration"/> because other generators
+        /// can call <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/>.
+        /// In practice this should not be an issue and if it is, it is up to this global code generator to correctly handle
+        /// these "after my GenerateCode call" new incoming types.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="context">The generation context.</param>
+        /// <param name="context">The TypeScript context.</param>
+        /// <param name="e">
+        /// The event with the <see cref="RequireTSFromObjectEventArgs.KeyType"/> that is handled and
+        /// the <see cref="RequireTSFromObjectEventArgs.ResolvedType"/> to set.
+        /// </param>
         /// <returns>True on success, false on error (errors must be logged).</returns>
-        bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context );
+        bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e );
 
     }
 }

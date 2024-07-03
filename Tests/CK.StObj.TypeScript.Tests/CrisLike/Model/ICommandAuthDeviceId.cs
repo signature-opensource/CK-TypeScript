@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-
 namespace CK.CrisLike
 {
     /// <summary>
@@ -15,9 +13,8 @@ namespace CK.CrisLike
     {
         /// <summary>
         /// Gets or sets the device identifier.
-        /// The default <see cref="CrisAuthenticationService"/> validates this field against the
-        /// current <see cref="IAuthenticationInfo.DeviceId"/>.
         /// </summary>
+        [UbiquitousValue]
         string DeviceId { get; set; }
     }
 }

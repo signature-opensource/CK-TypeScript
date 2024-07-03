@@ -1,22 +1,50 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <LangVersion>11</LangVersion>
     <!-- This is required to test the TypeScript doncumentation from C# feature. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="CodeGeneratorTypeSample\**" />
-    <EmbeddedResource Remove="CodeGeneratorTypeSample\**" />
-    <None Remove="CodeGeneratorTypeSample\**" />
+    <EmbeddedResource Include="**\*.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="nunit" Version="3.13.3" />
+    <None Remove="TSTests\CrisLike_commands_and_results\src\abstracts.spec.ts" />
+    <None Remove="TSTests\CrisLike_commands_and_results\src\autonomous-serialization.spec.ts" />
+    <None Remove="TSTests\CrisLike_commands_and_results\src\branding.spec.ts" />
+    <None Remove="TSTests\TypeScriptRunner_with_environment_variables\src\EnvironmentVariables.spec.ts" />
+    <None Remove="TSTests\TypeScriptRunner_with_environment_variables\src\PocoInitialization.spec.ts" />
+    <None Remove="TypeScriptFileAttr\Res\IAmAlsoHere.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="nunit" Version="4.1.0" />
     <PackageReference Include="NUnit3TestAdapter" PrivateAssets="all" Version="4.5.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="%24StObjGen\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="TSTests\CrisLike_commands_and_results\src\abstracts.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\CrisLike_commands_and_results\src\autonomous-serialization.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\CrisLike_commands_and_results\src\branding.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\TypeScriptRunner_with_environment_variables\src\EnvironmentVariables.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TSTests\TypeScriptRunner_with_environment_variables\src\PocoInitialization.spec.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

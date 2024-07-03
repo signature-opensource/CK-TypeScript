@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CK.TypeScript.CodeGen
 {
-    class FileBodyCodePart : RawCodePart, ITSFileBodySection
+    sealed class FileBodyCodePart : RawCodePart, ITSFileBodySection
     {
         public FileBodyCodePart( TypeScriptFile f )
             : base( f, String.Empty )

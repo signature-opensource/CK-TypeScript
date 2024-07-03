@@ -5,22 +5,20 @@ and the [TypeScriptAttribute](TypeScriptAttribute.cs).
 
 This is enough to drive the generation: the heavy stuff is in the [CK.StObj.TypeScript.Engine](..\CK.StObj.TypeScript.Engine).
 
-Note that this package depends on the CK.Poco.Json: generating TypesScript requires that the Json serialization is available. 
+Note that this package depends on the CK.Poco.Exc.Json: generating TypesScript requires that the Json serialization is available. 
 
 ## Basic types & Code Generator
 
 > Generic code generation from C# to TypeScript is almost an impossible task.
 
 Generators dedicated to specific type (or to a type family) must always be written
-so that a `.ts` file eventually contains the TypeScript projection of the C# Type.
+so that a `.ts` file eventually contains the TypeScript projection of the C# Type except for
+basic types.
 
-Exceptions to this rule exist for very simple types that follows the ECMAScriptStandard serialization
-mode (see [CK.Poco.Json](https://github.com/signature-opensource/CK-StObj/tree/master/CK.Poco.Json/README.md)).
-
-There is no need of any `.ts` file for them.
+There is no need of any `.ts` file for the folllowing types:
  - Basic types that have direct counterparts in TypeScript: 
    - `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `float`, `double` are mapped to [number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number).
-   - `long`, `ulong`, `decimal`, `BigInteger` are mapped to [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
+   - `long`, `ulong`, `BigInteger` are mapped to [bigint](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
    - `bool` is mapped to `boolean`.
    - `string` is mapped to `string`.
  - C# `object` are mapped to `unknown`. This is cleaner and safer than `any` (see [here](https://stackoverflow.com/a/51439876/190380)).
@@ -30,6 +28,12 @@ There is no need of any `.ts` file for them.
  - C# arrays, `IList<>` and `List<>` can be mapped to [js array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array).
  - Value tuples can use [Tuples](https://www.typescriptlang.org/docs/handbook/variable-declarations.html#tuple-destructuring).
 
+Some basic types can be supported with the help of wellknown libraries:
+ - `TimeSpan`, `DateTime` and `DateTimeOffset` can be mapped to `Duration` and `DateTime` from the
+   [luxon](https://github.com/moment/luxon/) library.
+ - `Decimal` can be mapped to `Decimal` from [decimal.js-light](https://mikemcl.github.io/decimal.js-light/)
+   or from [decimal.js](https://mikemcl.github.io/decimal.js/) libraries.
+
 Any other type requires an explicit generation and a final `.ts` file that will contain
 (and export) the generated TS type.
 
@@ -38,7 +42,7 @@ simple enough to be unambiguously mapped:
 
 ```csharp
 /// <summary>
-/// Folder for this type is explicitly "TheFolder" at the root of the TS export.
+/// Folder for this type is explicitly "TheFolder" at the root of the /ck-gen folder.
 /// </summary>
 [TypeScript( Folder = "TheFolder" )]
 public enum DemoEnum : byte
@@ -59,7 +63,7 @@ public enum DemoEnum : byte
 Is automatically generated as:
 ```ts
 /**
- * Folder for this type is explicitly "TheFolder" at the root of the TS export.
+ * Folder for this type is explicitly "TheFolder" at the root of the /ck-gen folder.
  **/
 export enum DemoEnum {
 
@@ -76,7 +80,7 @@ export enum DemoEnum {
     Chi = 3712
 }
 ```
-In the `TheFolder/DemoEnum.ts` file of the export folder.
+In the `ck-gen/TheFolder/DemoEnum.ts` file of the target project path.
 
 ## The [TypeScript] attribute
 
@@ -87,7 +91,7 @@ Actual generators are either global [ITSCodeGenerator](../CK.StObj.TypeScript.En
 to a type [ITSCodeGeneratorType](../CK.StObj.TypeScript.Engine/ITSCodeGeneratorType.cs)
 
 `TypeScriptAttribute` is optional: when no attribute is set, a type can be declared as a being a "TypeScript type" thanks to at least
-one call to `DeclareTSType` methods of the central [TypeScriptContext](../CK.StObj.TypeScript.Engine/TypeScriptContext.cs) during code generation.
+one call to `ResolveTSType` methods of the central [TypeScriptContext](../CK.StObj.TypeScript.Engine/TypeScriptContext.cs) during code generation.
 
 This *optionality* has many advantages:
   - It enables the support of generic generators for some types (based on interfaces, other attributes or any other hints) without the exported types 
@@ -106,9 +110,8 @@ but it's important to note that a generator in real life runs in the "engine spa
 by the CKSetup process and run by the StObjEngine. It would be tedious to setup a repository with its required CKSetup store support
 to handle one (or a few) types.
 
-As stated in the introduction, providing a generic code generator for any kind of types (any class) is pure utopia. The answer to
-this issue will be in the "Poco Like" family that is under development in the StObjEngine: a standard `PocoLikeCodeGenerator` will
-then be able to generate TS for these beasts since their "shape" will be controlled to be simple enough.
+As stated in the introduction, providing a generic code generator for any kind of types (any class) is pure utopia.
+The "generic translation" for Poco relies on the strict definition of the Poco Type System.
 
 
 
