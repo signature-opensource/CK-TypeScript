@@ -204,7 +204,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
-            System.IO.File.WriteAllText( targetProjectPath.AppendPart(".gitgnore"), "*" );
+            System.IO.File.WriteAllText( targetProjectPath.AppendPart(".gitignore"), "*" );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
             config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
