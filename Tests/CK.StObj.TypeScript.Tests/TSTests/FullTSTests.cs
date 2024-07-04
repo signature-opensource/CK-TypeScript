@@ -203,7 +203,8 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_AutomaticTypeScriptVersion_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
-            TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: false );
+            TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
+            System.IO.File.WriteAllText( targetProjectPath.AppendPart(".gitgnore"), "*" );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
             config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
