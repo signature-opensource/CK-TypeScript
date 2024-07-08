@@ -12,7 +12,7 @@
     <EmbeddedResource Include="**\*.sql" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="23.0.0" />
+    <PackageReference Include="CK.AspNet.Auth" Version="0.0.0--04ytpj7-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />

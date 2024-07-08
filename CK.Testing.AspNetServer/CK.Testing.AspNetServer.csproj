@@ -7,7 +7,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet" Version="14.0.0" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="10.0.0" />
+    <PackageReference Include="CK.AspNet" Version="0.0.0--04ytpit-develop" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="0.0.0--04ytpiu-develop" />
   </ItemGroup>
 </Project>
