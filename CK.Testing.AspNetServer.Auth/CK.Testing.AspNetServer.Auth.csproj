@@ -4,8 +4,8 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="0.0.0--04yuau9-develop" />
-    <PackageReference Include="CK.Testing.StObjEngine" Version="0.0.0--04ytqpo-develop" />
+    <PackageReference Include="CK.AspNet.Auth" Version="0.0.0--04yvw1j-develop" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="0.0.0--04yvw0m-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Testing.AspNetServer\CK.Testing.AspNetServer.csproj" />
