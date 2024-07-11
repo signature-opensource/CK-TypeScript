@@ -3,15 +3,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" Version="0.0.0--04yy55n-develop" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Update="README.md">
-      <SubType>Component</SubType>
-    </None>
-  </ItemGroup>
+
 </Project>
