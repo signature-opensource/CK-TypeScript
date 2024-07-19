@@ -6,21 +6,17 @@
     <!-- This is required to test the TypeScript doncumentation from C# feature. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="TypeScriptFileAttr\Res\**\*.ts">
       <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--04zcmka-develop" />
+    <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--04zdxpx-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
   </ItemGroup>
-
 </Project>
