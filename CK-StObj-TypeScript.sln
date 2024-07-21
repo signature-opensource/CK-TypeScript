@@ -17,9 +17,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.StObj.TypeScript", "CK.StObj.TypeScript\CK.StObj.TypeScript.csproj", "{CF49A663-C3F1-4238-93F4-FD8BD1CC99F4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{554E1709-5785-4982-89F9-6AB3C5684F43}"
-	ProjectSection(SolutionItems) = preProject
-		Tests\TestHelper.config = Tests\TestHelper.config
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.StObj.TypeScript.Engine", "CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj", "{1130F04B-73FC-4EA6-B765-DF9800B43158}"
 EndProject
