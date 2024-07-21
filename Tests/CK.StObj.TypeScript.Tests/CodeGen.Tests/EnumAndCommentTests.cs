@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Text;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved

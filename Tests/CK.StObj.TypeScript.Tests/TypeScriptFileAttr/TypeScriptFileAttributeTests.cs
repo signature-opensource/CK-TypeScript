@@ -2,9 +2,8 @@ using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
-using System;
 using System.IO;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 

@@ -4,7 +4,7 @@ using CK.TypeScript.CodeGen;
 using CSemVer;
 using FluentAssertions;
 using NUnit.Framework;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved

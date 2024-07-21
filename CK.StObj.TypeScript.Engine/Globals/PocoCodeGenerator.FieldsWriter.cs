@@ -5,6 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CK.StObj.TypeScript.Engine
 {
@@ -151,10 +152,7 @@ namespace CK.StObj.TypeScript.Engine
             /// <returns>The fields.</returns>
             public ImmutableArray<TSNamedCompositeField> GetNamedCompositeFields()
             {
-#if NET8_0_OR_GREATER
-                return ImmutableArray.CreateRange( _fields.AsImmutableArray(), f => new TSNamedCompositeField( f ) );
-#endif
-                return ImmutableArray.CreateRange( _fields.Select( f => new TSNamedCompositeField( f ) ) );
+                return ImmutableArray.CreateRange( ImmutableCollectionsMarshal.AsImmutableArray( _fields ), f => new TSNamedCompositeField( f ) );
             }
 
             /// <summary>

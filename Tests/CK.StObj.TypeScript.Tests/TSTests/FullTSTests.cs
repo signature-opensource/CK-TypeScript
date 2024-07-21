@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Numerics;
 using System.Threading.Tasks;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 

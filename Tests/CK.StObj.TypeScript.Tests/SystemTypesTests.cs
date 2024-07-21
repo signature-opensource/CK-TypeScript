@@ -6,8 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using static CK.StObj.TypeScript.Tests.RecordTests;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace CK.StObj.TypeScript.Tests

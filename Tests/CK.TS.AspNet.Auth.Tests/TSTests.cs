@@ -1,14 +1,15 @@
-using NUnit.Framework;
-using System.Threading.Tasks;
+using CK.Auth;
+using CK.Core;
 using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using CK.AspNet.Auth;
 using Microsoft.AspNetCore.Builder;
-using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using NUnit.Framework;
 using System;
-using CK.Setup;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TS.AspNet.Auth.Tests
 {
@@ -23,8 +24,16 @@ namespace CK.TS.AspNet.Auth.Tests
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
             engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
+            var map = engineConfig.RunSuccessfully().LoadMap();
 
-            await using var server = await engineConfig.FirstBinPath.CreateAspNetAuthServerAsync();
+            var builder = WebApplication.CreateSlimBuilder();
+
+            // Temp
+            Throw.DebugAssert( !builder.Services.Any( item => item.ServiceType == typeof( FakeUserDatabase ) ) );
+            builder.Services.AddSingleton<FakeUserDatabase>();
+            builder.AddUnsafeAllowAllCors();
+
+            await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
             await TestHelper.SuspendAsync( resume => resume );
             runner.Run();

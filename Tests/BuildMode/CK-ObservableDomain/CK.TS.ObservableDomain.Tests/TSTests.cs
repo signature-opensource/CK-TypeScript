@@ -1,8 +1,7 @@
+using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
-using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
-using CK.Setup;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TS.ObservableDomain.Tests
 {

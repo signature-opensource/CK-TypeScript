@@ -6,7 +6,7 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -26,9 +26,8 @@ namespace CK.StObj.TypeScript.Tests
         public void simple_enum_generation_in_multiple_BinPath()
         {
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
-            var config = CreateConfigurationTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
-            var engine = new StObjEngine( TestHelper.Monitor, config );
-            engine.Run( TestHelper.CreateTypeCollector( typeof( Simple ) ) ).Success.Should().BeTrue();
+            var engineConfiguration = CreateConfigurationTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
+            engineConfiguration.RunSuccessfully();
 
             var f1 = targetProjectPath.Combine( "b1/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
             var f2 = targetProjectPath.Combine( "b2/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
@@ -57,6 +56,7 @@ namespace CK.StObj.TypeScript.Tests
                 // The Simple enum has [TypeScript] attribute: it is useless to declare it as a
                 // TSType.
                 config.FirstBinPath.AddAspect( tsB1 );
+                config.FirstBinPath.Types.Add( types );
 
                 var b2 = new BinPathConfiguration();
                 config.AddBinPath( b2 );
@@ -65,9 +65,9 @@ namespace CK.StObj.TypeScript.Tests
                     TargetProjectPath = output2,
                     SkipTypeScriptTooling = true
                 };
-                // Redundant declaration here.
                 tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
                 b2.AddAspect( tsB2 );
+                b2.Types.Add( types );
 
                 // b3 has no TypeScript aspect or no TargetProjectPath or an empty TargetProjectPath:
                 // nothing must be generated and this is just a warning.
