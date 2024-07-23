@@ -30,7 +30,7 @@ namespace CK.Setup
         /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
         /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
         /// </summary>
-        public const string AutomaticYarnVersion = "4.2.2";
+        public const string AutomaticYarnVersion = "4.3.1";
 
         /// <summary>
         /// The default <see cref="AutomaticTypeScriptVersion"/> version to install.

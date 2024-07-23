@@ -4,7 +4,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../.yarn/releases/yarn-4.2.2.cjs" />
+    <EmbeddedResource Include="../.yarn/releases/yarn-4.3.1.cjs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="0.0.0--04zk0w8-develop" />
