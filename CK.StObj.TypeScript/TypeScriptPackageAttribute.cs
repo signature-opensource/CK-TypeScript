@@ -18,6 +18,14 @@ namespace CK.StObj.TypeScript
         }
 
         /// <summary>
+        /// Initializes a new specialized <see cref="TypeScriptPackageAttribute"/>.
+        /// </summary>
+        protected TypeScriptPackageAttribute( string actualAttributeTypeAssemblyQualifiedName )
+            : base( actualAttributeTypeAssemblyQualifiedName )
+        {
+        }
+
+        /// <summary>
         /// Gets or sets the package to which this package belongs.
         /// </summary>
         public Type? Package { get; set; }

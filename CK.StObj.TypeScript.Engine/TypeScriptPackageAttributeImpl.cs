@@ -9,6 +9,9 @@ namespace CK.StObj.TypeScript.Engine
 {
     /// <summary>
     /// Implementation class of the <see cref="TypeScriptPackageAttribute"/>.
+    /// <para>
+    /// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
+    /// </para>
     /// </summary>
     public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator
     {
@@ -27,13 +30,13 @@ namespace CK.StObj.TypeScript.Engine
             }
         }
 
-        void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
+        public virtual void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
         {
             //var transformers = owner.GetTypeCustomAttributes<TypeScriptTransformerAttributeImpl>().ToList();
             //_aspect.RegisterTransfomers( _type, transformers );
         }
 
-        void IStObjStructuralConfigurator.Configure( IActivityMonitor monitor, IStObjMutableItem o )
+        public virtual void Configure( IActivityMonitor monitor, IStObjMutableItem o )
         {
             if( _attr.Package != null )
             {
