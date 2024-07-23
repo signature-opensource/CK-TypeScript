@@ -54,20 +54,27 @@ namespace CK.Setup
             {
                 IPocoTypeSystem typeSystem = allExchangeableSet.TypeSystem;
                 var emptyExchangeableSet = typeSystem.SetManager.EmptyExchangeable;
+                IPocoTypeSet tsExchangeable;
                 // Creating the TypeScript exchangeable set based on EmptyExchangeable with all the registered types.
                 // We exclude the UserMessage and the FormattedString structs and the MCString and CodeString reference types
                 // because there are no TypeScript implementation for them (at least for now), only the SimpleUserMessage
                 // (that will be handled as any other named record) is TypeScript compliant.
-                var include = regTypes.Values.Select( r => r.PocoType ).Where( p => p != null );
-                var exclude = (new[] {
-                    typeSystem.FindByType( typeof( UserMessage ) ),
-                    typeSystem.FindByType( typeof( FormattedString ) ),
-                    typeSystem.FindByType( typeof( MCString ) ),
-                    typeSystem.FindByType( typeof( CodeString ) ),
-                }).Where( t => t != null );
-
-                var tsExchangeable = emptyExchangeableSet.IncludeAndExclude( include!, exclude! );
-                monitor.Info( $"Registered {tsExchangeable.NonNullableTypes.Count} exchangeable Poco types out of {regTypes.Count} types to register." );
+                if( binPathConfiguration.TypeFilterName != "None" )
+                {
+                    var include = regTypes.Values.Select( r => r.PocoType ).Where( p => p != null );
+                    var exclude = (new[] { typeSystem.FindByType( typeof( UserMessage ) ),
+                                           typeSystem.FindByType( typeof( FormattedString ) ),
+                                           typeSystem.FindByType( typeof( MCString ) ),
+                                           typeSystem.FindByType( typeof( CodeString ) ),
+                                        }).Where( t => t != null );
+                    tsExchangeable = emptyExchangeableSet.IncludeAndExclude( include!, exclude! );
+                    monitor.Info( $"Registered {tsExchangeable.NonNullableTypes.Count} exchangeable Poco types (out of {regTypes.Count} types to register)." );
+                }
+                else
+                {
+                    monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
+                    tsExchangeable = emptyExchangeableSet;
+                }
                 return new TSContextInitializer( regTypes, globals, tsExchangeable );
             }
             return null;

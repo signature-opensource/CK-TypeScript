@@ -117,8 +117,8 @@ namespace CK.Setup
                     }
                     success = false;
                 }
-                // This test is important: the TypeFilterName MUST be or start with "TypeScript".
-                var badNames = configurations.Where( c => !c.TypeFilterName.StartsWith( "TypeScript" ) );
+                // This test is important: the TypeFilterName MUST be "None" or start with "TypeScript".
+                var badNames = configurations.Where( c => c.TypeFilterName != "None" && !c.TypeFilterName.StartsWith( "TypeScript" ) );
                 if( badNames.Any() )
                 {
                     monitor.Error( $"TypeScript configuration TypeFilterName MUST be or start with \"TypeScript\". " +
@@ -126,9 +126,9 @@ namespace CK.Setup
                     success = false; ;
                 }
                 // This test is important: the TypeFilterName is registered (as an ExchangeableRuntimeFilter) and each set of types
-                // must be uniquely identified.
+                // must be uniquely identified (when they are not "None").
                 // But this is only per BinPath.
-                foreach( var gBinPath in configurations.GroupBy( c => c.Owner ) )
+                foreach( var gBinPath in configurations.Where( c => c.TypeFilterName != "None" ).GroupBy( c => c.Owner ) )
                 {
                     var filterNames = gBinPath.GroupBy( c => c.TypeFilterName, StringComparer.OrdinalIgnoreCase );
                     if( filterNames.Count() != gBinPath.Count() )
@@ -221,7 +221,7 @@ namespace CK.Setup
                 // We now have the Global code generators initialized, the configured attributes on explicitly registered types,
                 // discovered types or newly added types and a set of "TypeScriptExchangeable" Poco types.
                 IPocoTypeNameMap? exchangeableNames = null;
-                if( jsonSerialization != null )
+                if( jsonSerialization != null && tsBinPathconfig.TypeFilterName != "None" )
                 {
                     // If Json serialization is available, let's get the name map for them.
                     // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
