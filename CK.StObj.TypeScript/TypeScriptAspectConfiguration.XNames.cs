@@ -62,7 +62,7 @@ namespace CK.Setup
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.TypeFilterName"/> attribute name.
         /// </summary>
-        public static readonly XName xTypeFilterName = XNamespace.None + "TypeScript";
+        public static readonly XName xTypeFilterName = XNamespace.None + "TypeFilterName";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/> attribute name.
