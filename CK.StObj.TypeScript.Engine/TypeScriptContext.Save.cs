@@ -154,7 +154,7 @@ namespace CK.Setup
                             CheckTypeScriptSdkVersion( monitor, typeScriptSdkVersion, typeScriptDep.Version.Base );
                         }
 
-                        // Generates "/ck-gen" files "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json".
+                        // Generates "/ck-gen": "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json" files.
                         // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
                         if( YarnHelper.SaveCKGenBuildConfig( monitor,
                                                              ckGenFolder,

@@ -10,10 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace CK.Setup
 {
