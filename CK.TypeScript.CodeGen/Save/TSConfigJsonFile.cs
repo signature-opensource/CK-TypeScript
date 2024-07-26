@@ -4,6 +4,7 @@ using CSemVer;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,21 +19,15 @@ namespace CK.Setup
     /// </summary>
     public sealed class TSConfigJsonFile
     {
-        readonly JsonFile _file;
-        readonly NormalizedPath _folderPath;
-        readonly Dictionary<string, HashSet<string>> _paths;
-        readonly JsonObject _compilerOptions;
+        JsonFile _file;
+        NormalizedPath _folderPath;
+        [AllowNull] Dictionary<string, HashSet<string>> _paths;
+        [AllowNull] JsonObject _compilerOptions;
         NormalizedPath _baseUrl;
 
-        TSConfigJsonFile( JsonFile f,
-                          JsonObject compilerOptions,
-                          NormalizedPath baseUrl = default,
-                          Dictionary<string, HashSet<string>>? compilerOptionsPaths = null )
+        TSConfigJsonFile( JsonFile f )
         {
             _file = f;
-            _baseUrl = baseUrl;
-            _compilerOptions = compilerOptions;
-            _paths = compilerOptionsPaths ?? new Dictionary<string, HashSet<string>>();
             _folderPath = f.FilePath.RemoveLastPart();
         }
 
@@ -47,42 +42,48 @@ namespace CK.Setup
         /// </param>
         /// <returns>The <see cref="TSConfigJsonFile"/> or null on error.</returns>
         public static TSConfigJsonFile? ReadFile( IActivityMonitor monitor,
-                                                 NormalizedPath filePath,
-                                                 bool mustExist = false )
+                                                  NormalizedPath filePath,
+                                                  bool mustExist = false )
         {
             var nf = JsonFile.ReadFile( monitor, filePath, mustExist );
             if( !nf.HasValue ) return null;
-            return DoRead( monitor, nf.Value );
-        }
-
-        static TSConfigJsonFile? DoRead( IActivityMonitor monitor, JsonFile f )
-        {
-            bool success = f.GetNonJsonNull<JsonObject>( f.Root, monitor, "compilerOptions", out var compilerOptions );
-            if( compilerOptions == null )
-            {
-                compilerOptions = new JsonObject();
-                f.Root.Add( "compilerOptions", compilerOptions );
-            }
-            success &= f.GetNonNullJsonString( compilerOptions, monitor, "baseUrl", out var baseUrl );
-            var paths = ReadPaths( f, compilerOptions, monitor );
-            success &= paths != null;
-            if( !success )
-            {
-                monitor.Error( $"Unable to read file '{f.FilePath}'." );
-                return null;
-            }
-            return new TSConfigJsonFile( f, compilerOptions, baseUrl, paths );
+            var f = new TSConfigJsonFile( nf.Value );
+            return f.DoRead( monitor ) ? f : null;
         }
 
         /// <summary>
-        /// Creates a new empty tsConfig.json file.
+        /// Reloads the file.
         /// </summary>
-        /// <param name="filePath">The file path. Must be <see cref="NormalizedPath.IsRooted"/>.</param>
-        /// <returns>An empty package.json file.</returns>
-        public static TSConfigJsonFile CreateEmpty( NormalizedPath filePath )
+        /// <param name="monitor">The monitor to use.</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool Reload( IActivityMonitor monitor )
         {
-            Throw.CheckArgument( filePath.Parts.Count >= 3 && filePath.IsRooted );
-            return new TSConfigJsonFile( new JsonFile( new JsonObject(), filePath ), new JsonObject() );
+            var nf = JsonFile.ReadFile( monitor, _file.FilePath, mustExist: false );
+            if( !nf.HasValue ) return false;
+            _file = nf.Value;
+            return DoRead( monitor );
+        }
+
+        bool DoRead( IActivityMonitor monitor )
+        {
+            bool success = _file.GetNonJsonNull<JsonObject>( _file.Root, monitor, "compilerOptions", out var compilerOptions );
+            if( compilerOptions == null )
+            {
+                compilerOptions = new JsonObject();
+                _file.Root.Add( "compilerOptions", compilerOptions );
+            }
+            success &= _file.GetNonNullJsonString( compilerOptions, monitor, "baseUrl", out var baseUrl );
+            var paths = ReadPaths( _file, compilerOptions, monitor );
+            success &= paths != null;
+            if( !success )
+            {
+                monitor.Error( $"Unable to read file '{_file.FilePath}'." );
+                return false;
+            }
+            _compilerOptions = compilerOptions;
+            _baseUrl = baseUrl;
+            _paths = paths!;
+            return true;
         }
 
         /// <summary>

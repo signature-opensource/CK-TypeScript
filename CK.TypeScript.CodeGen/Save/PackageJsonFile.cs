@@ -18,10 +18,10 @@ namespace CK.Setup
     /// </summary>
     public sealed class PackageJsonFile 
     {
-        readonly JsonFile _file;
-        readonly DependencyCollection _dependencies;
-        readonly Dictionary<string, string> _scripts;
-        readonly HashSet<string> _workspaces;
+        JsonFile _file;
+        DependencyCollection _dependencies;
+        Dictionary<string, string> _scripts;
+        HashSet<string> _workspaces;
         string? _name;
         SVersion? _version;
         string? _module;

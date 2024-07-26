@@ -12,7 +12,4 @@
     <ProjectReference Include="..\..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
     <ProjectReference Include="..\CK.TS.ObservableDomain\CK.TS.ObservableDomain.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="TSBuildAndTests\" />
-  </ItemGroup>
 </Project>

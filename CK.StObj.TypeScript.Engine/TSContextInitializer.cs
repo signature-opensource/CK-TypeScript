@@ -15,6 +15,7 @@ namespace CK.Setup
         readonly Dictionary<Type, RegisteredType> _registeredTypes;
         readonly List<ITSCodeGenerator> _globals;
         readonly IPocoTypeSet _typeScriptExchangeableSet;
+        readonly TypeScriptIntegrationContext? _integrationContext;
 
         /// <summary>
         /// Gets the types that have been explictely registered.
@@ -31,6 +32,8 @@ namespace CK.Setup
         /// </summary>
         public IPocoTypeSet TypeScriptExchangeableSet => _typeScriptExchangeableSet;
 
+        public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
         public static TSContextInitializer? Create( IActivityMonitor monitor,
                                                     IGeneratedBinPath genBinPath,
                                                     TypeScriptAspectConfiguration configuration,
@@ -44,9 +47,10 @@ namespace CK.Setup
                                                                      genBinPath.EngineMap.AllTypesAttributesCache.Values,
                                                                      allExchangeableSet,
                                                                      out var globals )
+                && InitializeIntegrationContext( monitor, binPathConfiguration, out var integrationContext )
                 && InitializeGlobalGenerators( monitor,
-                                               configuration,
                                                binPathConfiguration,
+                                               integrationContext,
                                                globals,
                                                regTypes,
                                                allExchangeableSet,
@@ -75,16 +79,17 @@ namespace CK.Setup
                     monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
                     tsExchangeable = emptyExchangeableSet;
                 }
-                return new TSContextInitializer( regTypes, globals, tsExchangeable );
+                return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext );
             }
             return null;
         }
 
-        TSContextInitializer( Dictionary<Type, RegisteredType> r, List<ITSCodeGenerator> g, IPocoTypeSet s )
+        TSContextInitializer( Dictionary<Type, RegisteredType> r, List<ITSCodeGenerator> g, IPocoTypeSet s, TypeScriptIntegrationContext? integrationContext )
         {
             _registeredTypes = r;
             _globals = g;
             _typeScriptExchangeableSet = s;
+            _integrationContext = integrationContext;
         }
 
         // Step 1.
@@ -248,24 +253,47 @@ namespace CK.Setup
             return pocoType;
         }
 
+        // Step 3
+        static bool InitializeIntegrationContext( IActivityMonitor monitor,
+                                                  TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                                  out TypeScriptIntegrationContext? integrationContext )
+        {
+            integrationContext = null;
+            if( binPathConfiguration.IntegrationMode != CKGenIntegrationMode.None )
+            {
+                if( binPathConfiguration.IntegrationMode == CKGenIntegrationMode.NpmPackage )
+                {
+                    if( !binPathConfiguration.UseSrcFolder )
+                    {
+                        monitor.Warn( $"IntegrationMode NpmPackage implies UseSrcFolder. Ignoring the false configuration value." );
+                        binPathConfiguration.UseSrcFolder = true;
+                    }
+                }
+                integrationContext = TypeScriptIntegrationContext.Create( monitor, binPathConfiguration );
+                if( integrationContext == null ) return false;
+            }
+            return true;
+        }
+
+
         sealed class Initializer : ITypeScriptContextInitializer
         {
-            readonly TypeScriptAspectConfiguration _configuration;
             readonly TypeScriptBinPathAspectConfiguration _binPathConfiguration;
+            readonly TypeScriptIntegrationContext? _integrationContext;
             readonly IReadOnlyList<ITSCodeGenerator> _globals;
             readonly Dictionary<Type, RegisteredType> _regTypes;
             readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
             readonly IPocoTypeSet _allExchangeableSet;
 
-            public Initializer( TypeScriptAspectConfiguration configuration,
-                                TypeScriptBinPathAspectConfiguration binPathConfiguration,
+            public Initializer( TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                TypeScriptIntegrationContext? integrationContext,
                                 IReadOnlyList<ITSCodeGenerator> globals,
                                 Dictionary<Type, RegisteredType> regTypes,
                                 IPocoJsonSerializationServiceEngine? jsonSerialization,
                                 IPocoTypeSet allExchangeableSet )
             {
-                _configuration = configuration;
                 _binPathConfiguration = binPathConfiguration;
+                _integrationContext = integrationContext;
                 _globals = globals;
                 _regTypes = regTypes;
                 _jsonSerialization = jsonSerialization;
@@ -282,9 +310,9 @@ namespace CK.Setup
 
             public IPocoJsonSerializationServiceEngine? JsonSerialization => _jsonSerialization;
 
-            public TypeScriptAspectConfiguration Configuration => _configuration;
-
             public TypeScriptBinPathAspectConfiguration BinPathConfiguration => _binPathConfiguration;
+
+            public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
 
             public bool EnsureRegister( IActivityMonitor monitor,
                                         Type t,
@@ -319,16 +347,16 @@ namespace CK.Setup
             }
         }
 
-        // Step 3.
+        // Step 4.
         static bool InitializeGlobalGenerators( IActivityMonitor monitor,
-                                                TypeScriptAspectConfiguration configuration,
                                                 TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                                TypeScriptIntegrationContext? integrationContext,
                                                 List<ITSCodeGenerator> globals,
                                                 Dictionary<Type, RegisteredType> regTypes,
                                                 IPocoTypeSet allExchangeableSet,
                                                 IPocoJsonSerializationServiceEngine? jsonSerialization )
         {
-            var i = new Initializer( configuration, binPathConfiguration, globals, regTypes, jsonSerialization, allExchangeableSet );
+            var i = new Initializer( binPathConfiguration, integrationContext, globals, regTypes, jsonSerialization, allExchangeableSet );
             return CallGlobalCodeGenerators( monitor, globals, i, null );
         }
 

@@ -662,11 +662,11 @@ namespace CK.Setup
         static CKTrait StdErrTag = ActivityMonitor.Tags.Register( "StdErr" );
         static CKTrait StdOutTag = ActivityMonitor.Tags.Register( "StdOut" );
 
-        static int RunProcess( IParallelLogger logger,
-                               string fileName,
-                               string arguments,
-                               string workingDirectory,
-                               Dictionary<string,string>? environmentVariables )
+        internal static int RunProcess( IParallelLogger logger,
+                                        string fileName,
+                                        string arguments,
+                                        string workingDirectory,
+                                        Dictionary<string,string>? environmentVariables )
         {
             var info = new ProcessStartInfo( fileName, arguments )
             {

@@ -62,15 +62,11 @@ namespace CK.Setup
                              bool mustBePocoType,
                              Func<TypeScriptAttribute?, TypeScriptAttribute?>? attributeConfigurator = null );
 
-        /// <summary>
-        /// Gets the <see cref="TypeScriptAspectConfiguration"/>.
-        /// </summary>
-        TypeScriptAspectConfiguration Configuration { get; }
-
-        /// <summary>
-        /// Gets the <see cref="TypeScriptBinPathAspectConfiguration"/>.
-        /// </summary>
+        /// <inheritdoc cref="TypeScriptContext.BinPathConfiguration"/>
         TypeScriptBinPathAspectConfiguration BinPathConfiguration { get; }
+
+        /// <inheritdoc cref="TypeScriptContext.IntegrationContext"/>
+        TypeScriptIntegrationContext IntegrationContext { get; }
 
     }
 }

@@ -30,6 +30,11 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Gets the Engine level configuration.
+        /// </summary>
+        public new TypeScriptAspectConfiguration? AspectConfiguration => (TypeScriptAspectConfiguration?)base.AspectConfiguration;
+
+        /// <summary>
         /// Gets or sets the TypeScript target project path that contains the "ck-gen" folder.
         /// This path can be absolute or relative to <see cref="EngineConfiguration.BasePath"/>.
         /// It can start with the "{BasePath}", "{OutputPath}" or "{ProjectPath}" placeholders.

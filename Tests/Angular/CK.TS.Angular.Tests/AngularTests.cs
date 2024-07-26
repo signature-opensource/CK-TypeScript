@@ -15,6 +15,7 @@ namespace CK.TS.Angular.Tests
             var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
             configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ) );
             configuration.RunSuccessfully();
 

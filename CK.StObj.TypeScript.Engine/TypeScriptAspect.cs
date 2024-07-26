@@ -211,11 +211,11 @@ namespace CK.Setup
                 // => Only Poco compliant types that are reachable from a registered Poco type will be in TypeScriptExchangeableSet
                 //    and handled by the PocoCodeGenerator.
                 var initializer = TSContextInitializer.Create( monitor,
-                                                                binPath,
-                                                                _tsConfig,
-                                                                tsBinPathconfig,
-                                                                typeSystem.SetManager.AllExchangeable,
-                                                                jsonSerialization );
+                                                               binPath,
+                                                               _tsConfig,
+                                                               tsBinPathconfig,
+                                                               typeSystem.SetManager.AllExchangeable,
+                                                               jsonSerialization );
                 if( initializer == null ) return false;
 
                 // We now have the Global code generators initialized, the configured attributes on explicitly registered types,
@@ -241,7 +241,7 @@ namespace CK.Setup
                 }
                 // The TypeScriptContext for this configuration can now be initialized.
                 // It will be run by FinalImplement.
-                _runContexts.Add( new TypeScriptContext( codeContext, _tsConfig, tsBinPathconfig, initializer, exchangeableNames ) );
+                _runContexts.Add( new TypeScriptContext( codeContext, tsBinPathconfig, initializer, exchangeableNames ) );
             }
             if( _runContexts.Count == 0 )
             {

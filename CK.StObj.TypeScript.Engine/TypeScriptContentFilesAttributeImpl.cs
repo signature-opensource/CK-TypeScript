@@ -30,7 +30,8 @@ namespace CK.StObj.TypeScript.Engine
             if( string.IsNullOrWhiteSpace( _attr.ResourcePathPrefix )
                 || _attr.ResourcePathPrefix.Contains( '\\' ) )
             {
-                monitor.Error( $"[TypeScriptContentFiles( \"{_attr.ResourcePathPrefix}\" )] on '{_target}': must not be empty not contain '\\'." );
+                monitor.Error( $"[TypeScriptContentFiles( \"{_attr.ResourcePathPrefix}\" )] on '{_target}': must not be empty nor contain '\\'." );
+                return;
             }
             string prefix = "ck@" + _attr.ResourcePathPrefix;
             if( prefix[^1] != '/' ) prefix += '/';

@@ -12,7 +12,7 @@ namespace CK.TS.JsonGraphSerializer.Tests
         [Test]
         public async Task CK_TS_JsonGraphSerializer_Async()
         {
-            var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+            var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );

@@ -16,22 +16,23 @@ namespace CK.Setup
     public sealed partial class TypeScriptContext
     {
         readonly ICodeGenerationContext _codeContext;
-        readonly TypeScriptAspectConfiguration _configuration;
+        readonly TypeScriptIntegrationContext? _integrationContext;
         readonly TypeScriptBinPathAspectConfiguration _binPathConfiguration;
         readonly TSContextInitializer _initializer;
         readonly TypeScriptRoot _tsRoot;
         readonly PocoCodeGenerator _pocoGenerator;
 
         internal TypeScriptContext( ICodeGenerationContext codeCtx,
-                                    TypeScriptAspectConfiguration tsConfig,
                                     TypeScriptBinPathAspectConfiguration tsBinPathConfig,
                                     TSContextInitializer initializer,
                                     IPocoTypeNameMap? jsonExchangeableNames )
         {
             _codeContext = codeCtx;
-            _configuration = tsConfig;
+            _integrationContext = initializer.IntegrationContext;
             _binPathConfiguration = tsBinPathConfig;
             _initializer = initializer;
+            var tsConfig = tsBinPathConfig.AspectConfiguration;
+            Throw.DebugAssert( tsConfig != null );
             _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions.ToImmutableDictionary(),
                                           tsConfig.PascalCase,
                                           tsConfig.GenerateDocumentation,
@@ -117,6 +118,12 @@ namespace CK.Setup
         void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e ) => AfterCodeGeneration?.Invoke( this, e );
 
         /// <summary>
+        /// Gets the non null <see cref="TypeScriptIntegrationContext"/> if <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/>
+        /// is not <see cref="CKGenIntegrationMode.None"/>.
+        /// </summary>
+        public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
+        /// <summary>
         /// Gets the <see cref="TypeScriptRoot"/>.
         /// </summary>
         public TypeScriptRoot Root => _tsRoot;
@@ -130,11 +137,6 @@ namespace CK.Setup
         /// Gets the <see cref="ITSPocoCodeGenerator "/>.
         /// </summary>
         public ITSPocoCodeGenerator PocoCodeGenerator => _pocoGenerator;
-
-        /// <summary>
-        /// Gets the <see cref="TypeScriptAspectConfiguration"/>.
-        /// </summary>
-        public TypeScriptAspectConfiguration Configuration => _configuration;
 
         /// <summary>
         /// Gets the <see cref="TypeScriptBinPathAspectConfiguration"/>.
