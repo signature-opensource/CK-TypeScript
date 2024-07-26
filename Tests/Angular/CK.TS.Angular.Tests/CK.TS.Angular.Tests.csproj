@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,7 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="**\*.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+    <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>
 
 </Project>

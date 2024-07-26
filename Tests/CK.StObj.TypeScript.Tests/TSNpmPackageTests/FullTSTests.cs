@@ -104,7 +104,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         [Test]
         public async Task TypeScriptRunner_with_environment_variables_Async()
         {
-            var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
+            var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             var types = new[]
             {
@@ -149,7 +149,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         [Test]
         public async Task CrisLike_commands_and_results_Async()
         {
-            var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
+            var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
 
             var tsTypes = new[]
             {
@@ -202,7 +202,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         [Test]
         public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_AutomaticTypeScriptVersion_Async()
         {
-            var targetProjectPath = TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath();
+            var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
             System.IO.File.WriteAllText( targetProjectPath.AppendPart(".gitignore"), "*" );
 
@@ -211,7 +211,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
             config.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
                                .AutomaticTypeScriptVersion = "5.4.5";
 
-            config.Run();
+            config.RunSuccessfully();
 
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
             await TestHelper.SuspendAsync( resume => resume );
