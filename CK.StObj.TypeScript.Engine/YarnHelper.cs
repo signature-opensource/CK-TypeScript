@@ -488,7 +488,7 @@ namespace CK.Setup
                                                                                             ? ""
                                                                                             : $" with {environmentVariables.Select( kv => $"'{kv.Key}': '{kv.Value}'" ).Concatenate()}")}." ) )
             {
-                int code = RunProcess( monitor.ParallelLogger, "node", $"{yarnPath} {command}", workingDirectory, environmentVariables );
+                int code = RunProcess( monitor.ParallelLogger, "node", $"\"{yarnPath}\" {command}", workingDirectory, environmentVariables );
                 if( code != 0 )
                 {
                     monitor.Error( $"'yarn {command}' failed with code {code}." );
