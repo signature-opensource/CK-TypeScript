@@ -51,7 +51,7 @@ namespace CK.StObj.TypeScript.Tests
                 var tsB1 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output1,
-                    SkipTypeScriptTooling = true
+                    IntegrationMode = CKGenIntegrationMode.None
                 };
                 // The Simple enum has [TypeScript] attribute: it is useless to declare it as a
                 // TSType.
@@ -63,7 +63,7 @@ namespace CK.StObj.TypeScript.Tests
                 var tsB2 = new TypeScriptBinPathAspectConfiguration
                 {
                     TargetProjectPath = output2,
-                    SkipTypeScriptTooling = true
+                    IntegrationMode = CKGenIntegrationMode.None
                 };
                 tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
                 b2.AddAspect( tsB2 );

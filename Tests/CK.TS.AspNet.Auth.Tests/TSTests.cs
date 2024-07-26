@@ -19,7 +19,7 @@ namespace CK.TS.AspNet.Auth.Tests
         [Test]
         public async Task CK_TS_AspNet_Auth_Async()
         {
-            var targetProjectPath = TestHelper.GetTypeScriptBuildModeTargetProjectPath();
+            var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );

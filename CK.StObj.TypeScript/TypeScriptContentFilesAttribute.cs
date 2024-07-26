@@ -7,7 +7,7 @@ namespace CK.StObj.TypeScript
 {
     /// <summary>
     /// Decorates a <see cref="TypeScriptPackage"/> to declare multiple files
-    /// that will be generated in the /ck-gen/src folder.
+    /// that will be generated in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> folder.
     /// </summary>
     [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
     public sealed class TypeScriptContentFilesAttribute : ContextBoundDelegationAttribute
@@ -28,10 +28,10 @@ namespace CK.StObj.TypeScript
         public string ResourcePathPrefix { get; set; }
 
         /// <summary>
-        /// Gets or sets a target path in /ck-gen/src that overrides the default target path that uses
+        /// Gets or sets a target path in <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> that overrides the default target path that uses
         /// the decorated type namespace.
         /// <para>
-        /// By default, when this is let to null, the resource files are copied to "/ck-gen/src/The/Decorated/Type/Namespace"
+        /// By default, when this is let to null, the resource files are copied to "/ck-gen/The/Decorated/Type/Namespace"
         /// (the dots of the namespace are replaced with a '/').
         /// </para>
         /// </summary>

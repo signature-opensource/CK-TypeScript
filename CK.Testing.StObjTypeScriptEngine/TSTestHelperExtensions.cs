@@ -46,27 +46,15 @@ namespace CK.Testing
 
         /// <summary>
         /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
-        /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built. No VSCode support nor TypeScript test
-        /// tooling is installed.
+        /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built in <see cref="CKGenIntegrationMode.NpmPackage"/>.
+        /// No VSCode support nor TypeScript test tooling is installed.
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
         /// <returns>The TSBuildOnly test path.</returns>
-        public static NormalizedPath GetTypeScriptWithBuildTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        public static NormalizedPath GetTypeScriptBuildOnlyTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
             return @this.TestProjectFolder.AppendPart( "TSBuildOnly" ).AppendPart( RemoveAsyncSuffix( testName ) );
-        }
-
-        /// <summary>
-        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildWithVSCode/<paramref name="testName"/>" path
-        /// for tests that must be compiled. Yarn is installed, "/ck-gen" is built and VSCode support is installed.
-        /// </summary>
-        /// <param name="this">This helper.</param>
-        /// <param name="testName">The current test name.</param>
-        /// <returns>The TSBuildWithVSCode test path.</returns>
-        public static NormalizedPath GetTypeScriptWithBuildAndVSCodeTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
-        {
-            return @this.TestProjectFolder.AppendPart( "TSBuildWithVSCode" ).AppendPart( RemoveAsyncSuffix( testName ) );
         }
 
         /// <summary>
@@ -87,8 +75,8 @@ namespace CK.Testing
         }
 
         /// <summary>
-        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildAndTests/<paramref name="testName"/>" path
-        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup, a script "test" command is
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/NpmPackageTests/<paramref name="testName"/>" path
+        /// for real tests. Yarn is installed, VSCode support is setup, "/ck-gen" yarn workspace is built, a script "test" command is
         /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
         /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
         /// the modified files.
@@ -99,19 +87,35 @@ namespace CK.Testing
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
-        /// <returns>The TSBuildAndTests test path.</returns>
-        public static NormalizedPath GetTypeScriptBuildModeTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        /// <returns>The NpmPackageTests test path.</returns>
+        public static NormalizedPath GetTypeScriptNpmPackageTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
-            return @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
+            var p = @this.TestProjectFolder.AppendPart( "TSNpmPackageTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
+            TEMPMigrate( @this, testName, p );
+            return p;
+        }
+
+        static void TEMPMigrate( IBasicTestHelper @this, string? testName, NormalizedPath p )
+        {
+            var old1 = @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
+            var old2 = @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
+            if( Directory.Exists( old1 ) )
+            {
+                Directory.CreateDirectory( p.RemoveLastPart() );
+                Directory.Move( old1, p );
+            }
+            else if( Directory.Exists( old2 ) )
+            {
+                Directory.CreateDirectory( p.RemoveLastPart() );
+                Directory.Move( old2, p );
+            }
         }
 
         enum GenerateMode
         {
-            SkipTypeScriptTooling,
-            BuildCKGen,
-            BuildCKGenAndVSCodeSupport,
-            WithTestSupport,
-            BuildMode
+            GenerateOnly,
+            BuildOnly,
+            NpmPackage,
         }
 
         /// <summary>
@@ -138,7 +142,7 @@ namespace CK.Testing
         /// The test target project path. Usually obtained by:
         /// <list type="bullet">
         ///     <item><see cref="GetTypeScriptWithTestsSupportTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath()</see></item>
-        ///     <item>or <see cref="GetTypeScriptBuildModeTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptBuildModeTargetProjectPath()</see></item>
+        ///     <item>or <see cref="GetTypeScriptNpmPackageTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptBuildModeTargetProjectPath()</see></item>
         /// </list>
         /// </param>
         /// <param name="environmentVariables">Optional environment variables to set.</param>

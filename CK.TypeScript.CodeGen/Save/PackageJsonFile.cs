@@ -56,7 +56,7 @@ namespace CK.Setup
         /// <param name="filePath">The file path. Must be <see cref="NormalizedPath.IsRooted"/>.</param>
         /// <param name="ignoreVersionsBound">See <see cref="LibraryManager.IgnoreVersionsBound"/>.</param>
         /// <param name="mustExist">
-        /// True to emit an error and returen null if the file doesn't exist.
+        /// True to emit an error and return null if the file doesn't exist.
         /// By default, an empty PackageJsonFile is returned if there's no file.
         /// </param>
         /// <returns>The <see cref="PackageJsonFile"/> or null on error.</returns>
@@ -382,4 +382,5 @@ namespace CK.Setup
             return Encoding.UTF8.GetString( a.WrittenSpan );
         }
     }
+
 }

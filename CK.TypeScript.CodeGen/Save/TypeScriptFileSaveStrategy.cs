@@ -31,7 +31,7 @@ namespace CK.TypeScript.CodeGen
         /// <summary>
         /// Initializes a new strategy. The <paramref name="targetPath"/> is a folder that may not exist
         /// and must be totally dedicated to the automatic TypeScript generation: by default, any existing
-        /// file that has not been regenrated will be deleted.
+        /// file that has not been regenerated will be deleted.
         /// </summary>
         /// <param name="targetPath">The folder that will reflect the <see cref="TypeScriptRoot"/> content.</param>
         /// <param name="withCleanupFiles">False to keep existing files as-is.</param>

@@ -11,7 +11,7 @@ namespace CK.TS.ObservableDomain.Tests
         [Test]
         public async Task CK_TS_ObservableDomain_Async()
         {
-            var targetProjectPath = TestHelper.GetTypeScriptBuildModeTargetProjectPath();
+            var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
             engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );

@@ -13,6 +13,10 @@ namespace CK.Setup
     /// </summary>
     public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspectConfiguration<TypeScriptBinPathAspectConfiguration>
     {
+        private NormalizedPath _targetProjectPath;
+        private NormalizedPath _targetCKGenPath;
+        private bool _useSrcFolder;
+
         /// <summary>
         /// Initializes a new empty configuration.
         /// </summary>
@@ -22,6 +26,7 @@ namespace CK.Setup
             Types = new List<TypeScriptTypeConfiguration>();
             TypeFilterName = "TypeScript";
             ModuleSystem = TSModuleSystem.Default;
+            UseSrcFolder = true;
         }
 
         /// <summary>
@@ -37,7 +42,29 @@ namespace CK.Setup
         ///   </item> 
         /// </list>
         /// </summary>
-        public NormalizedPath TargetProjectPath { get; set; }
+        public NormalizedPath TargetProjectPath
+        {
+            get => _targetProjectPath;
+            set
+            {
+                _targetProjectPath = value;
+                _targetCKGenPath = _targetProjectPath;
+                if( _useSrcFolder ) _targetCKGenPath = TargetCKGenPath.AppendPart( "src" );
+            }
+        }
+
+        /// <summary>
+        /// Gets the '/ck-gen/src' or '/ck-gen' whether <see cref="UseSrcFolder"/> is true or false.
+        /// </summary>
+        public NormalizedPath TargetCKGenPath => _targetCKGenPath;
+
+        /// <summary>
+        /// Gets or sets whether the generated files will be in '/ck-gen/src' instead of '/ck-gen'.
+        /// <para>
+        /// Defaults to true.
+        /// </para>
+        /// </summary>
+        public bool UseSrcFolder { get => _useSrcFolder; set => _useSrcFolder = value; }
 
         /// <summary>
         /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
@@ -61,7 +88,12 @@ namespace CK.Setup
         public string TypeFilterName { get; set; }
 
         /// <summary>
-        /// Gets or sets whether we are building a package. In this mode, the target "ck-gen/src" is protected: when a file
+        /// Gets or sets how the /ck-gen generated sources are integrated in the <see cref="TargetProjectPath"/>.
+        /// </summary>
+        public CKGenIntegrationMode IntegrationMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether we are building a package. In this mode, the target <see cref="TargetCKGenPath"/> is protected: when a file
         /// doesn't match the result of the generation the file is not overwritten instead a ".G.ext" is written and an error is raised.
         /// <para>
         /// Defaults to false.
@@ -74,19 +106,6 @@ namespace CK.Setup
         /// Defaults to <see cref="TypeScriptAspectConfiguration.DefaultTypeScriptVersion"/>.
         /// </summary>
         public string AutomaticTypeScriptVersion { get; set; } = TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
-
-        /// <summary>
-        /// Gets or sets whether yarn build of "<see cref="TargetProjectPath"/>/ck-gen" should be skipped
-        /// as well as any other TypeScript tooling:
-        /// when set to true, <see cref="AutoInstallYarn"/>, <see cref="AutoInstallVSCodeSupport"/> and <see cref="EnsureTestSupport"/>
-        /// are ignored.
-        /// <para>
-        /// Defaults to false.
-        /// </para>
-        /// <para>
-        /// </para>
-        /// </summary>
-        public bool SkipTypeScriptTooling { get; set; }
 
         /// <summary>
         /// Gets or sets whether yarn will be automatically installed (in version <see cref="AutomaticYarnVersion"/>)
@@ -173,12 +192,16 @@ namespace CK.Setup
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) ) );
             AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
+
+            var tsIntegrationMode = (string?)e.Attribute( TypeScriptAspectConfiguration.xIntegrationMode );
+            IntegrationMode = tsIntegrationMode == null ? CKGenIntegrationMode.TSPathInline : Enum.Parse<CKGenIntegrationMode>( tsIntegrationMode, ignoreCase: true );
+
             AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
             GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
-            SkipTypeScriptTooling = (bool?)e.Attribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling ) ?? false;
             EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
             CKGenBuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xCKGenBuildMode ) ?? false;
+            UseSrcFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseSrcFolder ) ?? true;
             var tsModuleSystem = (string?)e.Attribute( TypeScriptAspectConfiguration.xModuleSystem );
             ModuleSystem = tsModuleSystem == null ? TSModuleSystem.Default : Enum.Parse<TSModuleSystem>( tsModuleSystem, ignoreCase: true );
             EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
@@ -198,8 +221,8 @@ namespace CK.Setup
                                     Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
                    new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
                    new XAttribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, AutomaticTypeScriptVersion ),
-                   SkipTypeScriptTooling
-                    ? new XAttribute( TypeScriptAspectConfiguration.xSkipTypeScriptTooling, true )
+                   IntegrationMode is not CKGenIntegrationMode.TSPathInline
+                    ? new XAttribute( TypeScriptAspectConfiguration.xIntegrationMode, IntegrationMode.ToString() )
                     : null,
                    EnsureTestSupport
                     ? new XAttribute( TypeScriptAspectConfiguration.xEnsureTestSupport, true )
@@ -216,6 +239,9 @@ namespace CK.Setup
                    CKGenBuildMode
                     ? new XAttribute( TypeScriptAspectConfiguration.xCKGenBuildMode, true )
                     : null,
+                   !UseSrcFolder
+                    ? new XAttribute( TypeScriptAspectConfiguration.xUseSrcFolder, false )
+                    : null,
                    ModuleSystem != TSModuleSystem.Default
                     ? new XAttribute( TypeScriptAspectConfiguration.xModuleSystem, ModuleSystem.ToString() )
                     : null,
@@ -226,4 +252,5 @@ namespace CK.Setup
                 );
         }
     }
+
 }

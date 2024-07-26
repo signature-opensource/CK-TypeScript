@@ -87,19 +87,21 @@ namespace CK.Setup
                                                    NormalizedPath ckGenFolder,
                                                    DependencyCollection deps,
                                                    TSModuleSystem moduleSystem,
-                                                   bool enableTSProjectReferences )
+                                                   bool enableTSProjectReferences,
+                                                   string? filePrefix = null )
         {
-            using var gLog = monitor.OpenInfo( $"Saving TypeScript and Yarn build configuration files..." );
+            using var gLog = monitor.OpenInfo( $"Saving TypeScript and TypeScript configuration files..." );
 
-            return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps )
-                   && GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, enableTSProjectReferences );
+            return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps, filePrefix )
+                   && GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, enableTSProjectReferences, filePrefix );
 
             static bool GeneratePackageJson( IActivityMonitor monitor,
                                              NormalizedPath ckGenFolder,
                                              TSModuleSystem moduleSystem,
-                                             DependencyCollection deps )
+                                             DependencyCollection deps,
+                                             string? filePrefix )
             {
-                var packageJsonPath = Path.Combine( ckGenFolder, "package.json" );
+                var packageJsonPath = Path.Combine( ckGenFolder, filePrefix + "package.json" );
                 using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
                 {
                     // The /ck-gen/package.json dependencies is bound to the generated one (into wich
@@ -131,10 +133,10 @@ namespace CK.Setup
                 }
             }
 
-            static bool GenerateTSConfigJson( IActivityMonitor monitor, NormalizedPath ckGenFolder, TSModuleSystem moduleSystem, bool enableTSProjectReferences )
+            static bool GenerateTSConfigJson( IActivityMonitor monitor, NormalizedPath ckGenFolder, TSModuleSystem moduleSystem, bool enableTSProjectReferences, string? filePrefix )
             {
                 var sb = new StringBuilder();
-                var tsConfigFile = Path.Combine( ckGenFolder, "tsconfig.json" );
+                var tsConfigFile = Path.Combine( ckGenFolder, filePrefix + "tsconfig.json" );
                 using( monitor.OpenTrace( $"Creating '{tsConfigFile}'." ) )
                 {
                     string module, modulePath;
@@ -207,7 +209,7 @@ namespace CK.Setup
                                                      """ );
                     if( otherModule != null )
                     {
-                        var tsConfigOtherFile = Path.Combine( ckGenFolder, $"tsconfig-{otherModulePath}.json" );
+                        var tsConfigOtherFile = Path.Combine( ckGenFolder, $"{filePrefix}tsconfig-{otherModulePath}.json" );
                         monitor.Trace( $"Creating '{tsConfigOtherFile}'." );
                         File.WriteAllText( tsConfigOtherFile, $$"""
                                                     {

@@ -46,28 +46,41 @@ namespace CK.Testing
             Throw.CheckArgument( targetProjectPath.Parts.Count > 2 );
             var testMode = targetProjectPath.Parts[^2] switch
             {
-                "TSGeneratedOnly" => GenerateMode.SkipTypeScriptTooling,
-                "TSBuildOnly" => GenerateMode.BuildCKGen,
-                "TSBuildWithVSCode" => GenerateMode.BuildCKGenAndVSCodeSupport,
-                "TSTests" => GenerateMode.WithTestSupport,
-                "TSBuildAndTests" => GenerateMode.BuildMode,
+                "TSGeneratedOnly" => GenerateMode.GenerateOnly,
+                "TSBuildOnly" => GenerateMode.BuildOnly,
+                "TSNpmPackageTests" => GenerateMode.NpmPackage,
                 _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath ), $"""
                                                             Unsupported target project path: '{targetProjectPath}'.
                                                             $"The target path must be obtained with TestHelper methods:
                                                             - GetTypeScriptGeneratedOnlyTargetProjectPath()
-                                                            - GetTypeScriptWithBuildTargetProjectPath()
-                                                            - GetTypeScriptWithBuildAndVSCodeTargetProjectPath()
-                                                            - GetTypeScriptWithTestsSupportTargetProjectPath() 
-                                                            - or GetTypeScriptBuildModeTargetProjectPath()
+                                                            - GetTypeScriptBuildOnlyTargetProjectPath()
+                                                            - GetTypeScriptNpmPackageTargetProjectPath() 
                                                             """ )
             };
             tsBinPathAspect.TargetProjectPath = targetProjectPath;
-            tsBinPathAspect.GitIgnoreCKGenFolder = true;
-            tsBinPathAspect.SkipTypeScriptTooling = testMode == GenerateMode.SkipTypeScriptTooling;
-            tsBinPathAspect.AutoInstallYarn = testMode >= GenerateMode.BuildCKGen;
-            tsBinPathAspect.AutoInstallVSCodeSupport = testMode >= GenerateMode.BuildCKGenAndVSCodeSupport;
-            tsBinPathAspect.EnsureTestSupport = testMode >= GenerateMode.WithTestSupport;
-            tsBinPathAspect.CKGenBuildMode = testMode == GenerateMode.BuildMode;
+            tsBinPathAspect.CKGenBuildMode = true;
+            if( testMode == GenerateMode.GenerateOnly )
+            {
+                tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.None;
+            }
+            else
+            {
+                tsBinPathAspect.AutoInstallYarn = true;
+                tsBinPathAspect.AutoInstallVSCodeSupport = true;
+                if( testMode == GenerateMode.BuildOnly )
+                {
+                    tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
+                }
+                else
+                {
+                    tsBinPathAspect.EnsureTestSupport = true;
+                    tsBinPathAspect.CKGenBuildMode = true;
+                    if( testMode == GenerateMode.NpmPackage )
+                    {
+                        tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage; 
+                    }
+                }
+            }
             tsBinPathAspect.Types.Clear();
             tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
             return tsBinPathAspect;

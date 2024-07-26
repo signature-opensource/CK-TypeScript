@@ -7,14 +7,14 @@ namespace CK.StObj.TypeScript
 {
     /// <summary>
     /// Decorates a <see cref="TypeScriptPackage"/> to declare an embedded resource files
-    /// that will be generated in the /ck-gen/src folder.
+    /// that will be generated in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> folder.
     /// </summary>
     [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
     public sealed class TypeScriptFileAttribute : ContextBoundDelegationAttribute
     {
         /// <summary>
         /// Initializes a new TypeScriptFileAttribute with a .ts file
-        /// embedded as resources that must be copied in the /ck-gen/src folder.
+        /// embedded as resources that must be copied in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> folder.
         /// </summary>
         /// <param name="resourcePath">
         /// The embedded file path (typically including "Res/" folder).
@@ -39,10 +39,10 @@ namespace CK.StObj.TypeScript
         public ImmutableArray<string> TypeNames { get; }
 
         /// <summary>
-        /// Gets or sets a target path in /ck-gen/src that overrides the default path that uses
+        /// Gets or sets a target path in <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> that overrides the default path that uses
         /// the decorated type namespace.
         /// <para>
-        /// By default, when this is let to null, the resource files are copied to "/ck-gen/src/The/Decorated/Type/Namespace"
+        /// By default, when this is let to null, the resource files are copied to "/ck-gen/The/Decorated/Type/Namespace"
         /// (the dots of the namespace are replaced with a '/').
         /// </para>
         /// </summary>

@@ -1,11 +1,21 @@
 # TypeScript source code generator
 
-This assembly introduces the [TypeScriptAspectConfiguration](TypeScriptAspectConfiguration.cs)
-and the [TypeScriptAttribute](TypeScriptAttribute.cs).
+This assembly introduces the [TypeScriptAspectConfiguration](TypeScriptAspectConfiguration.cs) and the
+BinPath specific [TypeScriptBinPathAspectConfiguration](TypeScriptBinPathAspectConfiguration.cs).
+
+
+[TypeScriptAttribute](TypeScriptAttribute.cs) can decorate any C# type to optionnaly specify its TypeScript type name
+and folder but this is not required as engines can generate TypeScript code for any kind of C# object the way they want.
+
+Specialized [TypeScriptPackage](TypeScriptPackage.cs) are used to define TypeScript resources that can be `.ts` files or any
+other kind of files (`.less`, `.png`, etc.).
+
+The [ImportTypeScriptLibraryAttribute](ImportTypeScriptLibraryAttribute.cs) is used to declare dependencies on npm packages.
 
 This is enough to drive the generation: the heavy stuff is in the [CK.StObj.TypeScript.Engine](..\CK.StObj.TypeScript.Engine).
 
-Note that this package depends on the CK.Poco.Exc.Json: generating TypesScript requires that the Json serialization is available. 
+Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath: Poco compliant types
+can be generated with or without serialization support.
 
 ## Basic types & Code Generator
 
@@ -101,14 +111,9 @@ This *optionality* has many advantages:
 
 ## Samples of implementations
    
-An example of a global code generator is the `IPoco` generator [PocoCodeGenerator](../CK.StObj.TypeScript.Engine/Poco/PocoCodeGenerator.cs) that
+An example of a global code generator is the `IPoco` generator [PocoCodeGenerator](../CK.StObj.TypeScript.Engine/Globals/PocoCodeGenerator.cs) that
 is available by default.
 It is not simple and rely on the IPoco discovery mechanism that captures the Poco model (their multiple interfaces with their properties).
-
-An example of a type bound code generator is planned to be exposed [here (in tests)](../Tests/CK.StObj.TypeScript.Tests/CodeGeneratorTypeSample/)
-but it's important to note that a generator in real life runs in the "engine space", it's ".Engine" assembly is dynamically resolved
-by the CKSetup process and run by the StObjEngine. It would be tedious to setup a repository with its required CKSetup store support
-to handle one (or a few) types.
 
 As stated in the introduction, providing a generic code generator for any kind of types (any class) is pure utopia.
 The "generic translation" for Poco relies on the strict definition of the Poco Type System.

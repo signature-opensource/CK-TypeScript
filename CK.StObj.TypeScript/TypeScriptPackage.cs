@@ -9,7 +9,7 @@ namespace CK.StObj.TypeScript
     [RealObject( ItemKind = DependentItemKindSpec.Container )]
     [StObjProperty( PropertyName = "ResourceLocation", PropertyType = typeof( IResourceLocator ) )]
     [CKTypeDefiner]
-    public class TypeScriptPackage : IRealObject
+    public abstract class TypeScriptPackage : IRealObject
     {
     }
 

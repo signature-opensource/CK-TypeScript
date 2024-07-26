@@ -30,9 +30,9 @@ namespace CK.Setup
         public static readonly XName xIgnoreVersionsBound = XNamespace.None + "IgnoreVersionsBound";
 
         /// <summary>
-        /// The <see cref="TypeScriptBinPathAspectConfiguration.SkipTypeScriptTooling"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/> attribute name.
         /// </summary>
-        public static readonly XName xSkipTypeScriptTooling = XNamespace.None + "SkipTypeScriptTooling";
+        public static readonly XName xIntegrationMode = XNamespace.None + "IntegrationMode";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.EnsureTestSupport"/> attribute name.
@@ -43,6 +43,11 @@ namespace CK.Setup
         /// The <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> attribute name.
         /// </summary>
         public static readonly XName xCKGenBuildMode = XNamespace.None + "CKGenBuildMode";
+
+        /// <summary>
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.UseSrcFolder"/> attribute name.
+        /// </summary>
+        public static readonly XName xUseSrcFolder = XNamespace.None + "UseSrcFolder";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.ModuleSystem"/> attribute name.
