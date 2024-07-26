@@ -7,5 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.TypeScript.Engine\CK.StObj.TypeScript.Engine.csproj" />
+    <ProjectReference Include="..\CK.TS.Angular\CK.TS.Angular.csproj" />
   </ItemGroup>
 </Project>

@@ -49,12 +49,14 @@ namespace CK.Testing
                 "TSGeneratedOnly" => GenerateMode.GenerateOnly,
                 "TSBuildOnly" => GenerateMode.BuildOnly,
                 "TSNpmPackageTests" => GenerateMode.NpmPackage,
+                "TSInlineTests" => GenerateMode.Inline,
                 _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath ), $"""
                                                             Unsupported target project path: '{targetProjectPath}'.
                                                             $"The target path must be obtained with TestHelper methods:
                                                             - GetTypeScriptGeneratedOnlyTargetProjectPath()
                                                             - GetTypeScriptBuildOnlyTargetProjectPath()
                                                             - GetTypeScriptNpmPackageTargetProjectPath() 
+                                                            - GetTypeScriptInlineTargetProjectPath() 
                                                             """ )
             };
             tsBinPathAspect.TargetProjectPath = targetProjectPath;
@@ -74,10 +76,18 @@ namespace CK.Testing
                 else
                 {
                     tsBinPathAspect.EnsureTestSupport = true;
-                    tsBinPathAspect.CKGenBuildMode = true;
-                    if( testMode == GenerateMode.NpmPackage )
+                    if( testMode == GenerateMode.Inline )
                     {
-                        tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage; 
+                        tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.Inline;
+                        tsBinPathAspect.UseSrcFolder = false;
+                    }
+                    else if( testMode == GenerateMode.NpmPackage )
+                    {
+                        tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
                     }
                 }
             }

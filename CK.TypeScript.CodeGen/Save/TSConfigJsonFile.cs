@@ -58,8 +58,12 @@ namespace CK.Setup
         static TSConfigJsonFile? DoRead( IActivityMonitor monitor, JsonFile f )
         {
             bool success = f.GetNonJsonNull<JsonObject>( f.Root, monitor, "compilerOptions", out var compilerOptions );
-            compilerOptions ??= new JsonObject();
-            success &= f.GetNonNullJsonString( f.Root, monitor, "baseUrl", out var baseUrl );
+            if( compilerOptions == null )
+            {
+                compilerOptions = new JsonObject();
+                f.Root.Add( "compilerOptions", compilerOptions );
+            }
+            success &= f.GetNonNullJsonString( compilerOptions, monitor, "baseUrl", out var baseUrl );
             var paths = ReadPaths( f, compilerOptions, monitor );
             success &= paths != null;
             if( !success )
@@ -89,7 +93,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this package.json is empty.
         /// </summary>
-        public bool IsEmpty => _file.Root.Count == 0;
+        public bool IsEmpty => _file.Root.Count == 1 && _compilerOptions.Count == 0;
 
         /// <summary>
         /// Gets or sets the "baseUrl".
@@ -112,7 +116,6 @@ namespace CK.Setup
         /// </summary>
         public void UpdateFileRoot()
         {
-            if( _compilerOptions.Parent == null ) _file.Root["compilerOptions"] = _compilerOptions;
             _file.SetString( _compilerOptions, "baseUrl", _baseUrl.IsEmptyPath ? null : _baseUrl.Path );
             SetPaths( _compilerOptions, _paths );
         }

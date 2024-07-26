@@ -96,7 +96,7 @@ namespace CK.Setup
                             case CKGenIntegrationMode.NpmPackage:
                                 success = NpmPackageIntegrate( monitor, ckGenFolder, BinPathConfiguration, saver, targetPackageJson, typeScriptDep, typeScriptSdkVersion );
                                 break;
-                            case CKGenIntegrationMode.TSPathInline:
+                            case CKGenIntegrationMode.Inline:
                                 success = TSPathInlineIntegrate( monitor, ckGenFolder, BinPathConfiguration, saver, targetPackageJson, typeScriptDep, typeScriptSdkVersion );
                                 break;
                         }
@@ -416,21 +416,25 @@ namespace CK.Setup
             // If the tsConfig is empty (it doesn't exist), let's create a default one.
             // If the tsc --init fails, ignores and continue (there sould be no reason for this to fail as we checked
             // that no tsConfig.json already exists).
-            if( YarnHelper.DoRunYarn( monitor, config.TargetProjectPath, "tsc --init", yarnPath.Value ) )
+            if( tsConfig.IsEmpty )
             {
-                // Read it back.
-                tsConfig = TSConfigJsonFile.ReadFile( monitor, config.TargetProjectPath.AppendPart( "tsConfig.json" ) );
-                if( tsConfig == null ) return false;
+                // No need to log: The "tsc --init" will appear in the logs. 
+                if( YarnHelper.DoRunYarn( monitor, config.TargetProjectPath, "tsc --init", yarnPath.Value ) )
+                {
+                    // Read it back.
+                    tsConfig = TSConfigJsonFile.ReadFile( monitor, config.TargetProjectPath.AppendPart( "tsConfig.json" ) );
+                    if( tsConfig == null ) return false;
+                }
             }
 
             // Ensure that the compilerOptions:paths has the "@local/ck-gen/*": ["./ck-gen/src/*"] entry (TSPathInline).
-            var baseUrl = tsConfig.ResolvedBaseUrl;
-            if( !TempNormalizedPathExt.TryGetRelativePathTo( baseUrl, config.TargetCKGenPath, out NormalizedPath mapping ) )
+            if( !tsConfig.ResolvedBaseUrl.TryGetRelativePathTo( config.TargetCKGenPath, out NormalizedPath mapping ) )
             {
-                monitor.Error( $"Unable to compute relative path from tsConfig.json baseUrl '{baseUrl}' to {config.TargetCKGenPath}." );
+                monitor.Error( $"Unable to compute relative path from tsConfig.json baseUrl '{tsConfig.ResolvedBaseUrl}' to {config.TargetCKGenPath}." );
                 return false;
             }
             bool shouldSaveTSConfig = false;
+            mapping = mapping + "/*";
             if( !tsConfig.CompilerOptionsPaths.TryGetValue( "@local/ck-gen/*", out var mappings )
                 || !mappings.Contains( mapping ) )
             {
@@ -454,8 +458,7 @@ namespace CK.Setup
                 // If we must ensure test support, we consider that as soon as a "test" script is available
                 // we are done: the goal is to support "yarn test", Jest is our default test framework but is
                 // not required.
-                PackageDependency? actualTypeScriptDep;
-                if( targetPackageJson.Dependencies.TryGetValue( "typescript", out actualTypeScriptDep )
+                if( targetPackageJson.Dependencies.TryGetValue( "typescript", out PackageDependency? actualTypeScriptDep )
                     && targetPackageJson.Scripts.TryGetValue( "test", out var testCommand )
                     && testCommand != "jest" )
                 {

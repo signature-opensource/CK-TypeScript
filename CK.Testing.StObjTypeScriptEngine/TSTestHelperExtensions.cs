@@ -22,19 +22,39 @@ namespace CK.Testing
         /// A .gitignore file with "*" is automatically generated in this folder.
         /// </para>
         /// </summary>
-        /// <param name="this">This helper.</param>
+        /// <param name="helper">This helper.</param>
         /// <param name="testName">The current test name.</param>
         /// <returns>The TSGeneratedOnly test path.</returns>
-        public static NormalizedPath GetTypeScriptGeneratedOnlyTargetProjectPath( this IMonitorTestHelper @this, [CallerMemberName] string? testName = null )
+        public static NormalizedPath GetTypeScriptGeneratedOnlyTargetProjectPath( this IMonitorTestHelper helper, [CallerMemberName] string? testName = null )
         {
-            var p = @this.TestProjectFolder.AppendPart( "TSGeneratedOnly" );
+            var p = helper.TestProjectFolder.AppendPart( "TSGeneratedOnly" );
+            EnsureGitIgnore( helper, p );
+            return p.AppendPart( RemoveAsyncSuffix( testName ) );
+        }
+
+        /// <summary>
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
+        /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built in <see cref="CKGenIntegrationMode.NpmPackage"/>.
+        /// No VSCode support nor TypeScript test tooling is installed.
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="testName">The current test name.</param>
+        /// <returns>The TSBuildOnly test path.</returns>
+        public static NormalizedPath GetTypeScriptBuildOnlyTargetProjectPath( this IMonitorTestHelper helper, [CallerMemberName] string? testName = null )
+        {
+            var p = helper.TestProjectFolder.AppendPart( "TSBuildOnly" );
+            EnsureGitIgnore( helper, p );
+            return p.AppendPart( RemoveAsyncSuffix( testName ) );
+        }
+
+        static void EnsureGitIgnore( IMonitorTestHelper helper, NormalizedPath p )
+        {
             if( !Directory.Exists( p ) )
             {
-                @this.Monitor.Info( $"Creating folder with .gitignore \"*\": '{p}'." );
+                helper.Monitor.Info( $"Creating folder with .gitignore \"*\": '{p}'." );
                 Directory.CreateDirectory( p );
                 File.WriteAllText( p.AppendPart( ".gitignore" ), "*" );
             }
-            return p.AppendPart( RemoveAsyncSuffix( testName ) );
         }
 
         static string RemoveAsyncSuffix( string? testName )
@@ -45,37 +65,7 @@ namespace CK.Testing
         }
 
         /// <summary>
-        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
-        /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built in <see cref="CKGenIntegrationMode.NpmPackage"/>.
-        /// No VSCode support nor TypeScript test tooling is installed.
-        /// </summary>
-        /// <param name="this">This helper.</param>
-        /// <param name="testName">The current test name.</param>
-        /// <returns>The TSBuildOnly test path.</returns>
-        public static NormalizedPath GetTypeScriptBuildOnlyTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
-        {
-            return @this.TestProjectFolder.AppendPart( "TSBuildOnly" ).AppendPart( RemoveAsyncSuffix( testName ) );
-        }
-
-        /// <summary>
-        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSTests/<paramref name="testName"/>" path
-        /// for real tests. Yarn is installed, "/ck-gen" is built, VSCode support is setup, a script "test" command is
-        /// available and a "src/sample.spec.ts" file is ready to be used.
-        /// <para>
-        /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
-        /// the TypeScript tests.
-        /// </para>
-        /// </summary>
-        /// <param name="this">This helper.</param>
-        /// <param name="testName">The current test name.</param>
-        /// <returns>The TSTests test path.</returns>
-        public static NormalizedPath GetTypeScriptWithTestsSupportTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
-        {
-            return @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
-        }
-
-        /// <summary>
-        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/NpmPackageTests/<paramref name="testName"/>" path
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSNpmPackageTests/<paramref name="testName"/>" path
         /// for real tests. Yarn is installed, VSCode support is setup, "/ck-gen" yarn workspace is built, a script "test" command is
         /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
         /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
@@ -87,28 +77,75 @@ namespace CK.Testing
         /// </summary>
         /// <param name="this">This helper.</param>
         /// <param name="testName">The current test name.</param>
-        /// <returns>The NpmPackageTests test path.</returns>
+        /// <returns>The TSNpmPackageTests test path.</returns>
         public static NormalizedPath GetTypeScriptNpmPackageTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
         {
-            var p = @this.TestProjectFolder.AppendPart( "TSNpmPackageTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
+            var p = GetPath( @this, "TSNpmPackageTests", testName );
             TEMPMigrate( @this, testName, p );
+            MigrateAny( @this, testName, p, "TSInlineTests", "TSBuildOnly", "TSGeneratedOnly" );
             return p;
         }
 
+        /// <summary>
+        /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSInlineTests/<paramref name="testName"/>" path
+        /// for real tests. Yarn is installed, VSCode support is setup, a script "test" command is
+        /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
+        /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
+        /// the modified files.
+        /// <para>
+        /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
+        /// the TypeScript tests.
+        /// </para>
+        /// </summary>
+        /// <param name="this">This helper.</param>
+        /// <param name="testName">The current test name.</param>
+        /// <returns>The NpmPackageTests test path.</returns>
+        public static NormalizedPath GetTypeScriptInlineTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+        {
+            var p = GetPath( @this, "TSInlineTests", testName );
+            TEMPMigrate( @this, testName, p );
+            MigrateAny( @this, testName, p, "TSNpmPackageTests", "TSBuildOnly", "TSGeneratedOnly" );
+            return p;
+        }
+
+        static void MigrateAny( IBasicTestHelper @this, string? testName, NormalizedPath p, params string[] others )
+        {
+            foreach( var o in others )
+            {
+                if( MoveDirectory( GetPath( @this, o, testName ), p ) )
+                {
+
+                    return;
+                }
+            }
+        }
+
+        static NormalizedPath GetPath( IBasicTestHelper @this, string type, string? testName ) => @this.TestProjectFolder.AppendPart( type ).AppendPart( RemoveAsyncSuffix( testName ) );
+
         static void TEMPMigrate( IBasicTestHelper @this, string? testName, NormalizedPath p )
         {
-            var old1 = @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
-            var old2 = @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) );
-            if( Directory.Exists( old1 ) )
+            if( !MoveDirectory( @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) ), p ) )
             {
-                Directory.CreateDirectory( p.RemoveLastPart() );
-                Directory.Move( old1, p );
+                MoveDirectory( @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) ), p );
             }
-            else if( Directory.Exists( old2 ) )
+        }
+
+        static bool MoveDirectory( NormalizedPath old, NormalizedPath p )
+        {
+            if( Directory.Exists( old ) )
             {
-                Directory.CreateDirectory( p.RemoveLastPart() );
-                Directory.Move( old2, p );
+                try
+                {
+                    Directory.CreateDirectory( p.RemoveLastPart() );
+                    Directory.Move( old, p );
+                }
+                catch( Exception ex )
+                {
+                    throw new Exception( $"While moving previous '{old}' to new {p}.", ex );
+                }
+                return true;
             }
+            return false;
         }
 
         enum GenerateMode
@@ -116,6 +153,7 @@ namespace CK.Testing
             GenerateOnly,
             BuildOnly,
             NpmPackage,
+            Inline
         }
 
         /// <summary>

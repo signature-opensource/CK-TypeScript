@@ -1,8 +1,12 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
+using FluentAssertions;
 using NUnit.Framework;
+using System;
 using System.IO;
+using System.Threading.Tasks;
+using static CK.Setup.EngineResult;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TS.Angular.Tests
@@ -11,20 +15,28 @@ namespace CK.TS.Angular.Tests
     public class FromScratchTests
     {
         [Test]
-        public void Test()
+        [Explicit( "Takes around 40 seconds." )]
+        public async Task in_a_TempPath_folder_Async()
         {
-            NormalizedPath root = Path.GetTempPath();
+            NormalizedPath root = FileUtil.CreateUniqueTimedFolder( Path.GetTempPath(), null, DateTime.UtcNow );
             try
             {
-                bool withTest = false;
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.EnsureAspect<TypeScriptAspectConfiguration>();
-                var b = configuration.FirstBinPath;
-                var ts = b.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+                var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+                ts.TargetProjectPath = root;
+                ts.IntegrationMode = CKGenIntegrationMode.Inline;
                 ts.AutoInstallYarn = true;
                 ts.AutoInstallVSCodeSupport = true;
-                ts.EnsureTestSupport = withTest;
-                ts.CKGenBuildMode = false;
+                ts.EnsureTestSupport = true;
+                ts.UseSrcFolder = false;
+                configuration.RunSuccessfully();
+
+                File.Exists( root.Combine( "src/sample.spec.ts" ) ).Should().BeTrue();
+
+                await using var runner = TestHelper.CreateTypeScriptRunner( root );
+                await TestHelper.SuspendAsync( resume => resume );
+                runner.Run();
             }
             finally
             {

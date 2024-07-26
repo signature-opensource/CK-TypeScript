@@ -1,7 +1,12 @@
 <Project>
   <PropertyGroup>
-    <!-- Stop Visual Studio TypeScript compilation. -->
+    <!--
+        Try to stop Visual Studio TypeScript compilation.
+        It's not easy :-(. See here. https://developercommunity.visualstudio.com/t/disable-typescriptjavascript-parsing-on-projectsol/354713
+    -->
     <TypeScriptCompileBlocked>True</TypeScriptCompileBlocked>
+    <TypeScriptNoEmitOnError>true</TypeScriptNoEmitOnError>
+    <TypeScriptNoImplicitReturns>true</TypeScriptNoImplicitReturns>
   </PropertyGroup>
   <!--<BasicDefinitions>: provides simple and useful definitions.-->
   <PropertyGroup>

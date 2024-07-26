@@ -48,8 +48,8 @@ namespace CK.Setup
             set
             {
                 _targetProjectPath = value;
-                _targetCKGenPath = _targetProjectPath;
-                if( _useSrcFolder ) _targetCKGenPath = TargetCKGenPath.AppendPart( "src" );
+                _targetCKGenPath = _targetProjectPath.AppendPart( "ck-gen" );
+                if( _useSrcFolder ) _targetCKGenPath = _targetCKGenPath.AppendPart( "src" );
             }
         }
 
@@ -194,7 +194,7 @@ namespace CK.Setup
             AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
 
             var tsIntegrationMode = (string?)e.Attribute( TypeScriptAspectConfiguration.xIntegrationMode );
-            IntegrationMode = tsIntegrationMode == null ? CKGenIntegrationMode.TSPathInline : Enum.Parse<CKGenIntegrationMode>( tsIntegrationMode, ignoreCase: true );
+            IntegrationMode = tsIntegrationMode == null ? CKGenIntegrationMode.Inline : Enum.Parse<CKGenIntegrationMode>( tsIntegrationMode, ignoreCase: true );
 
             AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
@@ -221,7 +221,7 @@ namespace CK.Setup
                                     Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
                    new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
                    new XAttribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, AutomaticTypeScriptVersion ),
-                   IntegrationMode is not CKGenIntegrationMode.TSPathInline
+                   IntegrationMode is not CKGenIntegrationMode.Inline
                     ? new XAttribute( TypeScriptAspectConfiguration.xIntegrationMode, IntegrationMode.ToString() )
                     : null,
                    EnsureTestSupport

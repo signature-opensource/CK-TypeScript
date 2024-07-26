@@ -24,7 +24,7 @@ namespace CK.Setup
         /// This is the default.
         /// </para>
         /// </summary>
-        TSPathInline,
+        Inline,
 
         /// <summary>
         /// <see cref="UseSrcFolder"/> is necessarily true.
