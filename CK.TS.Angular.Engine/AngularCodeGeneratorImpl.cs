@@ -21,10 +21,7 @@ namespace CK.TS.Angular.Engine
             var angularJsonPath = e.TargetProjectPath.AppendPart( "angular.json" );
             if( !File.Exists( angularJsonPath ) )
             {
-                e.RunProcess( e.Monitor,
-                              "npx",
-                              $"-p @angular/cli@18 ng new {e.TargetProjectPath.LastPart} --style=less --package-manager=yarn --interactive=false --standalone=true",
-                              workingDirectory: e.TargetProjectPath.RemoveLastPart() );
+                // TODO
             }
         }
 
