@@ -26,7 +26,6 @@ namespace CK.Setup
             Types = new List<TypeScriptTypeConfiguration>();
             TypeFilterName = "TypeScript";
             ModuleSystem = TSModuleSystem.Default;
-            UseSrcFolder = true;
         }
 
         /// <summary>
@@ -61,7 +60,17 @@ namespace CK.Setup
         /// <summary>
         /// Gets the '/ck-gen/src' or '/ck-gen' whether <see cref="UseSrcFolder"/> is true or false.
         /// </summary>
-        public NormalizedPath TargetCKGenPath => _targetCKGenPath;
+        public NormalizedPath TargetCKGenPath
+        {
+            get
+            {
+                //if( _targetCKGenPath.IsEmptyPath )
+                //{
+                //    CKGenIntegrationMode
+                //}
+                return _targetCKGenPath;
+            }
+        }
 
         /// <summary>
         /// Gets or sets whether the generated files will be in '/ck-gen/src' instead of '/ck-gen'.

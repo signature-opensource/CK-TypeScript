@@ -87,13 +87,14 @@ namespace CK.Setup
                                                    NormalizedPath ckGenFolder,
                                                    DependencyCollection deps,
                                                    TSModuleSystem moduleSystem,
+                                                   bool useSrcFolder,
                                                    bool enableTSProjectReferences,
                                                    string? filePrefix = null )
         {
             using var gLog = monitor.OpenInfo( $"Saving TypeScript and TypeScript configuration files..." );
 
             return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps, filePrefix )
-                   && GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, enableTSProjectReferences, filePrefix );
+                   && GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, useSrcFolder, enableTSProjectReferences, filePrefix );
 
             static bool GeneratePackageJson( IActivityMonitor monitor,
                                              NormalizedPath ckGenFolder,
@@ -133,7 +134,12 @@ namespace CK.Setup
                 }
             }
 
-            static bool GenerateTSConfigJson( IActivityMonitor monitor, NormalizedPath ckGenFolder, TSModuleSystem moduleSystem, bool enableTSProjectReferences, string? filePrefix )
+            static bool GenerateTSConfigJson( IActivityMonitor monitor,
+                                              NormalizedPath ckGenFolder,
+                                              TSModuleSystem moduleSystem,
+                                              bool useSrcFolder,
+                                              bool enableTSProjectReferences,
+                                              string? filePrefix )
             {
                 var sb = new StringBuilder();
                 var tsConfigFile = Path.Combine( ckGenFolder, filePrefix + "tsconfig.json" );
@@ -175,38 +181,53 @@ namespace CK.Setup
                     }
                     DeleteUnused( monitor, ckGenFolder, unusedDist, unusedConfigFiles );
 
-                    // Allow this project to be "composite" (this is currently badly supported by Jest).
+                    // Allow this project to be "composite" (this is currently not supported by Jest).
                     var tsBuildMode = "";
                     if( enableTSProjectReferences )
                     {
                         tsBuildMode = """
-                                             "composite": true,
-
+                                      ,
+                                          "composite": true
                                       """;
                     }
+                    string closer;
+                    if( useSrcFolder )
+                    {
+                        closer = """
+                            ,
+                                "rootDir": "src",
+                                "baseUrl": "./src"
+                              },
+                              "include": [ "src/**/*" ]
+                            }
 
+                            """;
+                    }
+                    else
+                    {
+                        closer = $$"""
+
+                              },
+                              "exclude": [ "{{filePrefix}}tsconfig*.json", "{{filePrefix}}package.json" ]
+                            }
+                            """;
+
+                    }
                     File.WriteAllText( tsConfigFile, $$"""
-                                                     {
-                                                        "compilerOptions": {
-                                                            "strict": true,
-                                                            "target": "es2022",
-                                                            "moduleResolution": "node",
-                                                            "lib": ["es2022", "dom"],
-                                                            "baseUrl": "./src",
-                                                            "module": "{{module}}",
-                                                            "outDir": "./dist/{{modulePath}}",
-                                                            "sourceMap": true,
-                                                            "declaration": true,
-                                                            "declarationMap": true,
-                                                            "esModuleInterop": true,
-                                                            "resolveJsonModule": true,
-                                                            {{tsBuildMode}}"rootDir": "src"
-                                                        },
-                                                        "include": [
-                                                            "src/**/*"
-                                                        ]
-                                                     }
-                                                     """ );
+                            {
+                              "compilerOptions": {
+                                "strict": true,
+                                "target": "es2022",
+                                "moduleResolution": "node",
+                                "lib": ["es2022", "dom"],
+                                "module": "{{module}}",
+                                "outDir": "./dist/{{modulePath}}",
+                                "sourceMap": true,
+                                "declaration": true,
+                                "declarationMap": true,
+                                "esModuleInterop": true,
+                                "resolveJsonModule": true{{tsBuildMode}}{{closer}}
+                            """ );
                     if( otherModule != null )
                     {
                         var tsConfigOtherFile = Path.Combine( ckGenFolder, $"{filePrefix}tsconfig-{otherModulePath}.json" );

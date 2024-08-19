@@ -12,7 +12,7 @@ namespace CK.TS.Angular.Engine
     {
         public bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
         {
-            initializer.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration; ;
+            initializer.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
             return true;
         }
 

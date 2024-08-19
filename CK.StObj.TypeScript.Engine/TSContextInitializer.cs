@@ -261,14 +261,6 @@ namespace CK.Setup
             integrationContext = null;
             if( binPathConfiguration.IntegrationMode != CKGenIntegrationMode.None )
             {
-                if( binPathConfiguration.IntegrationMode == CKGenIntegrationMode.NpmPackage )
-                {
-                    if( !binPathConfiguration.UseSrcFolder )
-                    {
-                        monitor.Warn( $"IntegrationMode NpmPackage implies UseSrcFolder. Ignoring the false configuration value." );
-                        binPathConfiguration.UseSrcFolder = true;
-                    }
-                }
                 integrationContext = TypeScriptIntegrationContext.Create( monitor, binPathConfiguration );
                 if( integrationContext == null ) return false;
             }

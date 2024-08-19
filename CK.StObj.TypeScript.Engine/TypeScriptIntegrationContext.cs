@@ -150,13 +150,13 @@ namespace CK.Setup
                                   PackageDependency typeScriptDep,
                                   SVersion? typeScriptSdkVersion )
         {
-            Throw.DebugAssert( _configuration.UseSrcFolder );
             // Generates "/ck-gen": "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json" files.
             // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
             if( !YarnHelper.SaveCKGenBuildConfig( monitor,
                                                   _ckGenFolder,
                                                   saver.GeneratedDependencies,
                                                   _configuration.ModuleSystem,
+                                                  _configuration.UseSrcFolder,
                                                   _configuration.EnableTSProjectReferences ) )
             {
                 return false;
@@ -320,16 +320,14 @@ namespace CK.Setup
                                     PackageDependency typeScriptDep,
                                     SVersion? typeScriptSdkVersion )
         {
-            if( _configuration.UseSrcFolder )
-            {
-                // If this fails, we don't care: this is purely informational.
-                YarnHelper.SaveCKGenBuildConfig( monitor,
-                                                 _ckGenFolder,
-                                                 saver.GeneratedDependencies,
-                                                 _configuration.ModuleSystem,
-                                                 _configuration.EnableTSProjectReferences,
-                                                 filePrefix: "CouldBe." );
-            }
+            // If this fails, we don't care: this is purely informational.
+            YarnHelper.SaveCKGenBuildConfig( monitor,
+                                                _ckGenFolder,
+                                                saver.GeneratedDependencies,
+                                                _configuration.ModuleSystem,
+                                                _configuration.UseSrcFolder,
+                                                _configuration.EnableTSProjectReferences,
+                                                filePrefix: "CouldBe." );
             // Chicken & egg issue here:
             // "yarn sdks vscode" or "yarn sdks base" will not install typescript support unless "typescript" appears in the package.json
             // (and "yarn sdks typescript" is not supported).
