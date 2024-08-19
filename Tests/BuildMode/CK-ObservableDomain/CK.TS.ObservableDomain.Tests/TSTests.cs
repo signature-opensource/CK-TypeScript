@@ -14,8 +14,9 @@ namespace CK.TS.ObservableDomain.Tests
             var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
             engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.ObservableDomain" );
+            var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            tsConfig.GitIgnoreCKGenFolder = true;
             engineConfig.RunSuccessfully();
 
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

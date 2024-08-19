@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 
 namespace CK.Setup
 {
@@ -111,6 +112,23 @@ namespace CK.Setup
         /// Gets the "compilerOptions": { "paths": { "key", ["v1","v2"] } } paths mappings.
         /// </summary>
         public Dictionary<string, HashSet<string>> CompilerOptionsPaths => _paths;
+
+        /// <summary>
+        /// Ensures that "compilerOptions": { "paths": { "from", ["to","other"...] } } exists. 
+        /// </summary>
+        /// <param name="from">The key.</param>
+        /// <param name="to">The mapping.</param>
+        /// <returns>True if the mapping has been added, false if it already exists.</returns>
+        public bool CompileOptionsPathEnsureMapping( string from, string to )
+        {
+            if( !_paths.TryGetValue( from, out var mappings ) )
+            {
+                mappings = new HashSet<string> { to };
+                _paths.Add( from, mappings );
+                return true;
+            }
+            return mappings.Add( to );
+        }
 
         /// <summary>
         /// Updates the inner <see cref="JsonFile.Root"/>.

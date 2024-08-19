@@ -16,8 +16,9 @@ namespace CK.TS.JsonGraphSerializer.Tests
 
             // We don't need any C# backend here.
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
             engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.JsonGraphSerializer" );
+            var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            tsConfig.GitIgnoreCKGenFolder = true;
             engineConfig.RunSuccessfully();
             
             // Runs the Jest tests.

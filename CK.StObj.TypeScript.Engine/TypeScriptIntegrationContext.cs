@@ -161,7 +161,7 @@ namespace CK.Setup
             {
                 return false;
             }
-            
+
             // The workspace dependency.
             PackageDependency ckGenDep = new PackageDependency( "@local/ck-gen", SVersionBound.None, DependencyKind.DevDependency );
 
@@ -255,7 +255,11 @@ namespace CK.Setup
             {
                 success = YarnHelper.DoRunYarn( monitor, _ckGenFolder, "run build", _yarnPath );
             }
-
+            // If the tsConfig is empty (it doesn't exist), let's create a default one: a tsConfig.json is 
+            // required by our jest.config.js (and it should almost always exist).
+            // If the tsc --init fails, ignores and continue (there sould be no reason for this to fail as we checked
+            // that no tsConfig.json already exists).
+            EnsureTargetTSConfigJson( monitor );
             if( _configuration.EnsureTestSupport )
             {
                 // If we must ensure test support, we consider that as soon as a "test" script is available
@@ -314,7 +318,6 @@ namespace CK.Setup
             return success;
         }
 
-
         bool TSPathInlineIntegrate( IActivityMonitor monitor,
                                     TypeScriptFileSaveStrategy saver,
                                     PackageDependency typeScriptDep,
@@ -357,7 +360,7 @@ namespace CK.Setup
                     if( success )
                     {
                         Throw.DebugAssert( "The [NotNullWhen(true)] is ignored.", typeScriptSdkVersion != null );
-                        TypeScriptIntegrationContext.WarnDiffTypeScriptSdkVersion( monitor, typeScriptSdkVersion, typeScriptDep.Version.Base );
+                        WarnDiffTypeScriptSdkVersion( monitor, typeScriptSdkVersion, typeScriptDep.Version.Base );
                     }
                 }
             }
@@ -391,38 +394,22 @@ namespace CK.Setup
             // If the tsConfig is empty (it doesn't exist), let's create a default one.
             // If the tsc --init fails, ignores and continue (there sould be no reason for this to fail as we checked
             // that no tsConfig.json already exists).
-            if( _tsConfigJson.IsEmpty )
-            {
-                // No need to log: The "tsc --init" will appear in the logs. 
-                if( YarnHelper.DoRunYarn( monitor, _configuration.TargetProjectPath, "tsc --init", _yarnPath ) )
-                {
-                    // Read it back.
-                    if( !_tsConfigJson.Reload( monitor ) )
-                    {
-                        return false;
-                    }
-                }
-            }
+            EnsureTargetTSConfigJson( monitor );
 
-            // Ensure that the compilerOptions:paths has the "@local/ck-gen/*": ["./ck-gen/src/*"] entry (TSPathInline).
+            // Ensure that the compilerOptions:paths has entries:
+            //   "@local/ck-gen": ["./ck-gen/src"]
+            //   "@local/ck-gen/*": ["./ck-gen/src/*"]
             if( !_tsConfigJson.ResolvedBaseUrl.TryGetRelativePathTo( _configuration.TargetCKGenPath, out NormalizedPath mapping ) )
             {
                 monitor.Error( $"Unable to compute relative path from tsConfig.json baseUrl '{_tsConfigJson.ResolvedBaseUrl}' to {_configuration.TargetCKGenPath}." );
                 return false;
             }
             bool shouldSaveTSConfig = false;
-            mapping = mapping + "/*";
-            if( !_tsConfigJson.CompilerOptionsPaths.TryGetValue( "@local/ck-gen/*", out var mappings )
-                || !mappings.Contains( mapping ) )
+            string to = "./" + mapping;
+            // Only one | here! (We want to do both.)
+            if( _tsConfigJson.CompileOptionsPathEnsureMapping( "@local/ck-gen", to ) | _tsConfigJson.CompileOptionsPathEnsureMapping( "@local/ck-gen/*", to + "/*" ) )
             {
-                _tsConfigJson.CompilerOptionsPaths["@local/ck-gen/*"] = new HashSet<string> { mapping };
-                monitor.Info( $"CompilerOption Paths mapped \"@local/ck-gen/*\" to \"{mapping}\"." );
-                shouldSaveTSConfig = true;
-            }
-            // Remove compilerOptions:paths "@local/ck-gen" entry (TSPath integration mode).
-            if( _tsConfigJson.CompilerOptionsPaths.Remove( "@local/ck-gen" ) )
-            {
-                monitor.Info( $$"""Removed "compilerOptions": { "paths": { "@local/ck-gen": ...} } mapping (TSPath integration mode).""" );
+                monitor.Info( $"CompilerOption Paths mapped \"@local/ck-gen\" to \"{mapping}\"." );
                 shouldSaveTSConfig = true;
             }
             if( shouldSaveTSConfig )
@@ -485,6 +472,26 @@ namespace CK.Setup
                 }
             }
             return success;
+        }
+
+        bool EnsureTargetTSConfigJson( IActivityMonitor monitor )
+        {
+            if( _tsConfigJson.IsEmpty )
+            {
+                // No need to log: The "tsc --init" will appear in the logs. 
+                if( YarnHelper.DoRunYarn( monitor, _configuration.TargetProjectPath, "tsc --init", _yarnPath ) )
+                {
+                    // Read it back...
+                    if( !_tsConfigJson.Reload( monitor ) )
+                    {
+                        return false;
+                    }
+                    // ... and save it again: this removes the comments and you know what?
+                    // jest v29 fails when a comment appears in a tsConfig.json!!! 
+                    _tsConfigJson.Save();
+                }
+            }
+            return true;
         }
 
         internal static void WarnDiffTypeScriptSdkVersion( IActivityMonitor monitor, SVersion typeScriptSdkVersion, SVersion targetTypeScriptVersion )

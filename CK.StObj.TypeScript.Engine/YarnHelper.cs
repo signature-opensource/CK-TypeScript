@@ -26,6 +26,7 @@ namespace CK.Setup
         const string _testRunningKey = "CK_TYPESCRIPT_ENGINE";
         const string _yarnFileName = $"yarn-{TypeScriptAspectConfiguration.AutomaticYarnVersion}.cjs";
         const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
+        const int JestConfigFileVersion = 1;
 
         static YarnHelper()
         {
@@ -556,6 +557,7 @@ namespace CK.Setup
             if( File.Exists( jestConfigPath ) )
             {
                 var current = File.ReadAllText( jestConfigPath );
+                #region Legacy (First versions)
                 if( current.Contains( "testEnvironment: 'node'," ) )
                 {
                     current = current.Replace( "testEnvironment: 'node',", "testEnvironment: 'jsdom'," );
@@ -570,34 +572,75 @@ namespace CK.Setup
                     if( File.Exists( previously ) ) File.Delete( previously );
                     monitor.Warn( $"Updated 'jest.config.js' setup file from 'jest.StObjTypeScriptEngine.js' to '{JestSetupFileName}'." );
                 }
+                #endregion
+                var cSpan = current.AsSpan();
+                if( cSpan.StartsWith( "// Jest is not ESM compliant. Using CJS here." ) )
+                {
+                    monitor.Warn( $"Updating 'jest.config.js' file from version 0." );
+                    WriteJestConfigFile( jestConfigPath );
+                }
                 else
                 {
-                    monitor.Trace( $"The 'jest.config.js' file exists and is up to date. Leaving it unchanged." );
+                    Throw.DebugAssert( "//-Auto-Version:".Length == 16 );
+                    if( cSpan.TryMatch( "//-Auto-Version:" ) )
+                    {
+                        cSpan.SkipWhiteSpaces();
+                        if( !cSpan.TryMatchInt32( out var version, minValue: 1 ) )
+                        {
+                            monitor.Warn( $"Unable to read version number from 'jest.config.js' file:{Environment.NewLine}{current}" );
+                        }
+                        else if( version != JestConfigFileVersion )
+                        {
+                            monitor.Warn( $"Updating 'jest.config.js' file from version {version} to {JestConfigFileVersion}." );
+                            WriteJestConfigFile( jestConfigPath );
+                        }
+                        else
+                        {
+                            monitor.Trace( $"File 'jest.config.js' is up to date." );
+                        }
+                    }
+                    else
+                    {
+                        monitor.Info( $"The 'jest.config.js' file doesn't start with \"//-Auto-Version:\". Leaving it unchanged." );
+                    }
                 }
             }
             else
             {
                 monitor.Info( $"Creating the 'jest.config.js' file (testEnvironment: 'jsdom')." );
+                WriteJestConfigFile( jestConfigPath );
+            }
+            // Always update the JestSetupFileName (jest.CKTypeScriptEngine.ts) so that we can change it
+            // when we want.
+            WriteJestSetupFile( targetProjectPath.AppendPart( JestSetupFileName ), null );
+
+            static void WriteJestConfigFile( NormalizedPath jestConfigPath )
+            {
                 File.WriteAllText( jestConfigPath, $$$"""
-                                                    // Jest is not ESM compliant. Using CJS here.
+                                                    //-Auto-Version: {{{JestConfigFileVersion}}}
+                                                    // Notes:
+                                                    //   - To settle this file, simply remove the first line with the Auto-Version:
+                                                    //     with the Auto-Version it will be updated if CK changes its default.
+                                                    //   - Jest is not ESM compliant. Using CJS here.
+                                                    //
+                                                    const { pathsToModuleNameMapper } = require('ts-jest');
+                                                    const { compilerOptions } = require('./tsconfig');
+
                                                     module.exports = {
                                                         moduleFileExtensions: ['js', 'json', 'ts'],
-                                                        rootDir: 'src',
-                                                        testRegex: '.*\\.spec\\.ts$',
+                                                        testRegex: 'src/.*\\.spec\\.ts$',
                                                         transform: {
                                                             '^.+\\.ts$': ['ts-jest', {
                                                                 // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
                                                                 diagnostics: {ignoreCodes: ['TS151001']}
                                                             }],
                                                         },
+                                                        moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths ?? {}, { prefix: '<rootDir>/' } ),
                                                         testEnvironment: 'jsdom',
-                                                        setupFiles: ["../{{{JestSetupFileName}}}"]
+                                                        setupFiles: ["./{{{JestSetupFileName}}}"]
                                                     };
                                                     """ );
             }
-            // Always update the JestSetupFileName (jest.CKTypeScriptEngine.ts) so that we can change it
-            // when we want.
-            WriteJestSetupFile( targetProjectPath.AppendPart( JestSetupFileName ), null );
         }
 
         static void WriteJestSetupFile( NormalizedPath jestSetupFilePath, Dictionary<string,string>? environmentVariables )
