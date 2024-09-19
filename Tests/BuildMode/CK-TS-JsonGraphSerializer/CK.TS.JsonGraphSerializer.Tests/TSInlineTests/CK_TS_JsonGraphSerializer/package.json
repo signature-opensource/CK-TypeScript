@@ -1,7 +1,6 @@
 {
   "name": "ck_ts_jsongraphserializer",
   "private": true,
-  "workspaces": [],
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.2",
@@ -13,6 +12,5 @@
   "scripts": {
     "test": "jest"
   },
-  "dependencies": {},
-  "peerDependencies": {}
+  "ckVersion": 1
 }

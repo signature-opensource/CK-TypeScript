@@ -29,9 +29,9 @@ namespace CK.StObj.TypeScript.Tests
             var engineConfiguration = CreateConfigurationTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
             engineConfiguration.RunSuccessfully();
 
-            var f1 = targetProjectPath.Combine( "b1/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
-            var f2 = targetProjectPath.Combine( "b2/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
-            var f3 = targetProjectPath.Combine( "b3/ck-gen/src/CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f1 = targetProjectPath.Combine( "b1/ck-gen/CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f2 = targetProjectPath.Combine( "b2/ck-gen/CK/StObj/TypeScript/Tests/Simple.ts" );
+            var f3 = targetProjectPath.Combine( "b3/ck-gen/CK/StObj/TypeScript/Tests/Simple.ts" );
             File.Exists( f1 ).Should().BeTrue();
             File.Exists( f2 ).Should().BeTrue();
             File.Exists( f3 ).Should().BeFalse();
@@ -111,7 +111,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( InAnotherFolder ) );
             engineConfig.RunSuccessfully();
 
-            var f = targetProjectPath.Combine( "ck-gen/src/TheFolder/InAnotherFolder.ts" );
+            var f = targetProjectPath.Combine( "ck-gen/TheFolder/InAnotherFolder.ts" );
             var s = File.ReadAllText( f );
             s.Should().Contain( "export enum InAnotherFolder" );
         }
@@ -144,7 +144,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( AtTheRootFolder ) );
             engineConfig.RunSuccessfully();
 
-            var f1 = targetProjectPath.Combine( "ck-gen/src/AtTheRootFolder.ts" );
+            var f1 = targetProjectPath.Combine( "ck-gen/AtTheRootFolder.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum AtTheRootFolder" );
         }
@@ -183,7 +183,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
             engineConfig.RunSuccessfully();
 
-            var f1 = targetProjectPath.Combine( "ck-gen/src/Folder/EnumFile.ts" );
+            var f1 = targetProjectPath.Combine( "ck-gen/Folder/EnumFile.ts" );
             var s = File.ReadAllText( f1 );
             s.Should().Contain( "export enum InASpecificFile" ).And.Contain( "export enum AInFile" );
         }
@@ -217,7 +217,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( InASpecificFileWithAnExternalName ) );
             engineConfig.RunSuccessfully();
 
-            var f = targetProjectPath.Combine( "ck-gen/src/IAmHere/EnumFile.ts" );
+            var f = targetProjectPath.Combine( "ck-gen/IAmHere/EnumFile.ts" );
             var s = File.ReadAllText( f );
             s.Should().Contain( "export enum Toto" );
         }
@@ -260,7 +260,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( WithAnExternalName ) );
             engineConfig.RunSuccessfully();
 
-            var f = targetProjectPath.Combine( "ck-gen/src/Folder/Toto.ts" );
+            var f = targetProjectPath.Combine( "ck-gen/Folder/Toto.ts" );
             var s = File.ReadAllText( f );
             s.Should().Contain( "export enum Toto" );
         }
@@ -286,7 +286,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
             engineConfig.RunSuccessfully();
 
-            var f = targetProjectPath.Combine( "ck-gen/src/EnumFile.ts" );
+            var f = targetProjectPath.Combine( "ck-gen/EnumFile.ts" );
             var s = File.ReadAllText( f );
             s.Should().Contain( "export enum EnumType" );
         }

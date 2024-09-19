@@ -45,6 +45,10 @@ namespace CK.TypeScript.CodeGen
         /// <para>
         /// The <see cref="SVersionBound.None"/> is used to denote the special "workspace:*". See <see cref="IsWorkspaceDependency"/>.
         /// </para>
+        /// <para>
+        /// <see cref="SVersionBound.All"/> ("0.0.0-0"[None,CI]" or "&gt;=0.0.0-0" for npm) can be used to denote the "latest" version.
+        /// See <see cref="IsLatestDependency"/>.
+        /// </para>
         /// </summary>
         public SVersionBound Version => _version;
 
@@ -56,6 +60,17 @@ namespace CK.TypeScript.CodeGen
         /// </para>
         /// </summary>
         public bool IsWorkspaceDependency => _version == SVersionBound.None;
+
+        /// <summary>
+        /// Gets whether this dependency has a <see cref="SVersionBound.All"/> (&gt;=0.0.0-0) version.
+        /// This dependency should be installed via npm/yarn tooling so that its "current" version is installed and the package.json
+        /// be updated to reflect the resolved version.
+        /// <para>
+        /// Note that using this "&gt;=0.0.0-0" in a package.json and running a "yarn install" will actually install the package but
+        /// without reflecting the resolved version in the package.json.
+        /// </para>
+        /// </summary>
+        public bool IsLatestDependency => _version == SVersionBound.All;
 
         /// <summary>
         /// Dependency kind of the package. Will be used to determine in which list
@@ -84,20 +99,6 @@ namespace CK.TypeScript.CodeGen
         public void UnconditionalSetVersion( SVersionBound version ) => _version = version;
 
         public override string ToString() => $"{_dependencyKind}: {_name} {NpmVersionRange}";
-
-        internal static bool TryParseVersion( IActivityMonitor monitor, string name, string version, DependencyKind dependencyKind, out SVersionBound v )
-        {
-            // These are external libraries. Prerelease versions have not the same semantics as our in the npm
-            // ecosystem. We use the mainstream semantics here.
-            var parseResult = SVersionBound.NpmTryParse( version, includePrerelease: false );
-            v = parseResult.Result;
-            if( !parseResult.IsValid )
-            {
-                monitor.Error( $"Invalid version '{version}' for TypeScript library '{name}' ({dependencyKind}): {parseResult.Error}" );
-                return false;
-            }
-            return true;
-        }
 
         internal bool DoUpdate( SVersionBound newVersion, bool ignoreVersionsBound, [NotNullWhen(false)]out string? error, out string? warn )
         {

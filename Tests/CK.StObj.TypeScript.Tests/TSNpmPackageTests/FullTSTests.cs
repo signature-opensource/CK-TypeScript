@@ -102,7 +102,7 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         }
 
         [Test]
-        public async Task TypeScriptRunner_with_environment_variables_Async()
+        public async Task TypeScriptRunner_with_global_CKTypeScriptEnv_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -200,16 +200,17 @@ namespace CK.StObj.TypeScript.Tests.TSTests
         }
 
         [Test]
-        public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_AutomaticTypeScriptVersion_Async()
+        public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_DefaultTypeScriptVersion_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+
             TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
             System.IO.File.WriteAllText( targetProjectPath.AppendPart(".gitignore"), "*" );
 
             var config = TestHelper.CreateDefaultEngineConfiguration();
             config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
             config.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
-                               .AutomaticTypeScriptVersion = "5.4.5";
+                               .DefaultTypeScriptVersion = "5.4.2";
 
             config.RunSuccessfully();
 

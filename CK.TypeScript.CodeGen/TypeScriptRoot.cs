@@ -283,7 +283,7 @@ namespace CK.TypeScript.CodeGen
         public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
         {
             Throw.CheckNotNullArgument( saver );
-            if( !saver.GeneratedDependencies.UpdateDependencies( monitor, _libraryManager.LibraryImports.Values.Where( i => i.IsUsed ).Select( i => i.PackageDependency ) ) )
+            if( !saver.GeneratedDependencies.AddOrUpdate( monitor, _libraryManager.LibraryImports.Values.Where( i => i.IsUsed ).Select( i => i.PackageDependency ) ) )
             {
                 return null;
             }

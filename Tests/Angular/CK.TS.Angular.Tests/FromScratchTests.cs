@@ -27,9 +27,7 @@ namespace CK.TS.Angular.Tests
                 ts.TargetProjectPath = root;
                 ts.IntegrationMode = CKGenIntegrationMode.Inline;
                 ts.AutoInstallYarn = true;
-                ts.AutoInstallVSCodeSupport = true;
-                ts.EnsureTestSupport = true;
-                ts.UseSrcFolder = false;
+                ts.AutoInstallJest = true;
                 configuration.RunSuccessfully();
 
                 File.Exists( root.Combine( "src/sample.spec.ts" ) ).Should().BeTrue();

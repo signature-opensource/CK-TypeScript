@@ -19,34 +19,22 @@ namespace CK.Setup
     public sealed class PackageJsonFile 
     {
         JsonFile _file;
-        DependencyCollection _dependencies;
-        Dictionary<string, string> _scripts;
-        HashSet<string> _workspaces;
+        readonly DependencyCollection _dependencies;
+        readonly Dictionary<string, string> _scripts;
+        readonly HashSet<string> _workspaces;
         string? _name;
         SVersion? _version;
         string? _module;
         string? _main;
+        int _ckVersion;
         bool? _private;
 
-        PackageJsonFile( JsonFile f,
-                         DependencyCollection dependencies,
-                         Dictionary<string, string>? scripts = null,
-                         HashSet<string>? workspaces = null,
-                         string? name = null,
-                         SVersion? version = null,
-                         string? module = null,
-                         string? main = null,
-                         bool? isPrivate = null )
+        PackageJsonFile( JsonFile f, DependencyCollection dependencies )
         {
             _file = f;
             _dependencies = dependencies;
-            _scripts = scripts ?? new Dictionary<string, string>();
-            _workspaces = workspaces ?? new HashSet<string>();
-            _name = name;
-            _version = version;
-            _module = module;
-            _main = main;
-            _private = isPrivate;
+            _scripts = new Dictionary<string, string>();
+            _workspaces = new HashSet<string>();
         }
 
         /// <summary>
@@ -67,7 +55,8 @@ namespace CK.Setup
         {
             var nf = JsonFile.ReadFile( monitor, filePath, mustExist );
             if( !nf.HasValue ) return null;
-            return DoRead( monitor, ignoreVersionsBound, nf.Value );
+            var f = new PackageJsonFile( nf.Value, new DependencyCollection( ignoreVersionsBound ) );
+            return f.DoRead( monitor ) ? f : null;
         }
 
         /// <summary>
@@ -87,20 +76,35 @@ namespace CK.Setup
             var documentOptions = new JsonDocumentOptions{ AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
             JsonNode? root = JsonNode.Parse( content, nodeOptions: default, documentOptions );
             Throw.CheckArgument( "Invalid content string.", root != null && root is JsonObject );
-            return DoRead( monitor, ignoreVersionsBound, new JsonFile( root.AsObject(), filePath ) );
+            var f = new PackageJsonFile( new JsonFile( (JsonObject)root, filePath ), new DependencyCollection( ignoreVersionsBound ) );
+            return f.DoRead( monitor ) ? f : null;
         }
 
-        static PackageJsonFile? DoRead( IActivityMonitor monitor,  bool ignoreVersionsBound, JsonFile f )
+        /// <summary>
+        /// Reloads the file.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool Reload( IActivityMonitor monitor )
         {
-            var scripts = f.GetStringDictionary( f.Root, monitor, "scripts" );
-            var workspaces = f.GetStringList( f.Root, monitor, "workspaces" );
-            var dependencies = GetDependencies( f, monitor, ignoreVersionsBound );
+            var nf = JsonFile.ReadFile( monitor, _file.FilePath, mustExist: false );
+            if( !nf.HasValue ) return false;
+            _file = nf.Value;
+            return DoRead( monitor );
+        }
+
+        bool DoRead( IActivityMonitor monitor )
+        {
+            var scripts = _file.GetStringDictionary( _file.Root, monitor, "scripts" );
+            var workspaces = _file.GetStringList( _file.Root, monitor, "workspaces" );
+            var dependencies = ReadDependencies( _file, monitor, _dependencies.IgnoreVersionsBound );
             bool success = scripts != null && dependencies != null && workspaces != null;
 
-            success &= f.GetNonNullJsonString( f.Root, monitor, "name", out var name );
+            success &= _file.GetNonNullJsonString( _file.Root, monitor, "name", out var name );
+            success &= _file.GetNonNullJsonNumber( _file.Root, monitor, "ckVersion", out var ckVersion );
 
             SVersion? version = null;
-            if( f.GetNonNullJsonString( f.Root, monitor, "version", out var sVersion ) )
+            if( _file.GetNonNullJsonString( _file.Root, monitor, "version", out var sVersion ) )
             {
                 if( sVersion != null && !SVersion.TryParse( sVersion, out version ) )
                 {
@@ -112,18 +116,96 @@ namespace CK.Setup
             {
                 success = false;
             }
-            success &= f.GetNonNullJsonString( f.Root, monitor, "module", out var module );
-            success &= f.GetNonNullJsonString( f.Root, monitor, "main", out var main );
-            success &= f.GetNonNullJsonBoolean( f.Root, monitor, "private", out bool? isPrivate );
+            success &= _file.GetNonNullJsonString( _file.Root, monitor, "module", out var module );
+            success &= _file.GetNonNullJsonString( _file.Root, monitor, "main", out var main );
+            success &= _file.GetNonNullJsonBoolean( _file.Root, monitor, "private", out bool? isPrivate );
 
             if( !success )
             {
-                monitor.Error( $"Unable to read file '{f.FilePath}'." );
-                return null;
+                monitor.Error( $"Unable to read file '{_file.FilePath}'." );
+                return false;
             }
-            return new PackageJsonFile( f, dependencies!, scripts!, new HashSet<string>( workspaces! ), name, version, module, main, isPrivate );
-        }
+            _scripts.Clear();
+            _scripts.AddRange( scripts! );
+            _workspaces.Clear();
+            _workspaces.AddRange( workspaces! );
+            _dependencies.Clear();
+            _dependencies.AddOrUpdate( monitor, dependencies!.Values );
+            _name = name;
+            _version = version;
+            _module = module;
+            _main = main;
+            _ckVersion = ckVersion.HasValue ? (int)ckVersion : 0;
+            _private = isPrivate;
+            return true;
 
+            static DependencyCollection? ReadDependencies( JsonFile file, IActivityMonitor monitor, bool ignoreVersionsBound )
+            {
+                var collector = new DependencyCollection( ignoreVersionsBound );
+                if( Read( monitor, file, DependencyKind.Dependency, collector )
+                    && Read( monitor, file, DependencyKind.DevDependency, collector )
+                    && Read( monitor, file, DependencyKind.PeerDependency, collector ) )
+                {
+                    return collector;
+                }
+                return null;
+
+                static bool Read( IActivityMonitor monitor, JsonFile file, DependencyKind kind, DependencyCollection collector )
+                {
+                    string sectionName = kind.GetJsonSectionName();
+                    if( !file.GetNonJsonNull( file.Root, monitor, sectionName, out JsonObject? section ) )
+                    {
+                        return false;
+                    }
+                    bool success = true;
+                    if( section != null )
+                    {
+                        foreach( var (name, sV) in section )
+                        {
+                            if( string.IsNullOrWhiteSpace( name ) ) continue;
+                            var v = TryParse( sV, out var error );
+                            if( error != null )
+                            {
+                                monitor.Error( $"Unable to parse version \"{sectionName}.{name}\": {error}" );
+                                success = false;
+                            }
+                            else if( !collector.AddOrUpdate( monitor, new PackageDependency( name, v, kind ) ) )
+                            {
+                                success = false;
+                            }
+                        }
+                    }
+                    return success;
+                }
+
+                static SVersionBound TryParse( JsonNode? sV, out string? error )
+                {
+                    if( sV is JsonValue v && v.TryGetValue( out string? s ) )
+                    {
+                        // These are external libraries. Prerelease versions have not the same semantics as our in the npm
+                        // ecosystem. We use the mainstream semantics here.
+                        if( s.StartsWith( "workspace:", StringComparison.OrdinalIgnoreCase ) )
+                        {
+                            error = null;
+                            return SVersionBound.None;
+                        }
+                        var parseResult = SVersionBound.NpmTryParse( s, includePrerelease: false );
+                        if( parseResult.IsValid )
+                        {
+                            error = null;
+                            return parseResult.Result;
+                        }
+                        Throw.DebugAssert( parseResult.Error != null );
+                        error = parseResult.Error;
+                    }
+                    else
+                    {
+                        error = "is not a string.";
+                    }
+                    return SVersionBound.None;
+                }
+            }
+        }
 
         /// <summary>
         /// Creates a new empty package.json file.
@@ -216,6 +298,12 @@ namespace CK.Setup
         public bool? Private { get => _private; set => _private = value; }
 
         /// <summary>
+        /// Gets or sets the optional "ckVersion".
+        /// This defaults to 0 (i.e. the property is missing).
+        /// </summary>
+        public int CKVersion { get => _ckVersion; set => _ckVersion = value; }
+
+        /// <summary>
         /// Updates the inner <see cref="JsonFile.Root"/>.
         /// </summary>
         /// <param name="peerDependenciesAsDepencies">
@@ -228,113 +316,30 @@ namespace CK.Setup
             _file.SetString( _file.Root, "module", _module );
             _file.SetString( _file.Root, "main", _main );
             _file.SetBoolean( _file.Root, "private", _private );
+            _file.SetNumber( _file.Root, "ckVersion", _ckVersion != 0 ? _ckVersion : null );
             _file.SetStringDictionary( _file.Root, "scripts", _scripts );
             _file.SetStringList( _file.Root, "workspaces", _workspaces );
             SetDependencies( _file.Root, _dependencies, peerDependenciesAsDepencies );
-        }
 
-        /// <summary>
-        /// Gets the all the dependencies from the "devDependencies", "dependencies" and "peerDependencies" properties.
-        /// <para>
-        /// When the same package appear in more than one section, the unique final <see cref="PackageDependency"/> is merged:
-        /// <list type="bullet">
-        ///     <item>Peer dependencies win over regular that win over developpement dependencies.</item>
-        ///     <item>Final version is upgraded.</item>
-        /// </list>
-        /// </para>
-        /// <para>
-        /// This collection can be altered and written back thanks to <see cref="SetDependencies(DependencyCollection, bool)"/>.
-        /// </para>
-        /// </summary>
-        /// <param name="root">The JsonObject to read.</param>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="ignoreVersionsBound">
-        /// There should not be any version discrepancies between section. But if it happens, the greatest wins.
-        /// See <see cref="LibraryManager.IgnoreVersionsBound"/>.
-        /// </param>
-        /// <returns>The dependencies or null on error.</returns>
-        static DependencyCollection? GetDependencies( JsonFile file, IActivityMonitor monitor, bool ignoreVersionsBound = true )
-        {
-            var collector = new DependencyCollection( ignoreVersionsBound );
-            if( Read( monitor, file, DependencyKind.Dependency, collector )
-                && Read( monitor, file, DependencyKind.DevDependency, collector )
-                && Read( monitor, file, DependencyKind.PeerDependency, collector ) )
-            {
-                return collector;
-            }
-            return null;
 
-            static bool Read( IActivityMonitor monitor, JsonFile file, DependencyKind kind, DependencyCollection collector )
+            static void SetDependencies( JsonNode root, DependencyCollection dependencies, bool peerDependenciesAsDepencies = true )
             {
-                string sectionName = kind.GetJsonSectionName();
-                if( !file.GetNonJsonNull( file.Root, monitor, sectionName, out JsonObject? section ) )
+                var deps = new[] { new JsonObject(), new JsonObject(), new JsonObject() };
+                foreach( var d in dependencies.Values )
                 {
-                    return false;
-                }
-                bool success = true;
-                if( section != null )
-                {
-                    foreach( var (name,sV) in section )
+                    var version = d.NpmVersionRange;
+                    deps[(int)d.DependencyKind].Add( d.Name, version );
+                    if( peerDependenciesAsDepencies && d.DependencyKind == DependencyKind.PeerDependency )
                     {
-                        if( string.IsNullOrWhiteSpace( name ) ) continue;
-                        var v = TryParse( sV, out var error );
-                        if( error != null )
-                        {
-                            monitor.Error( $"Unable to parse version \"{sectionName}.{name}\": {error}" );
-                            success = false;
-                        }
-                        else if( !collector.AddOrUpdate( monitor, new PackageDependency( name, v, kind ) ) )
-                        {
-                            success = false;
-                        }
+                        deps[1].Add( d.Name, version );
                     }
                 }
-                return success;
+                root["devDependencies"] = deps[0];
+                root["dependencies"] = deps[1];
+                root["peerDependencies"] = deps[2];
             }
+        }
 
-            static SVersionBound TryParse( JsonNode? sV, out string? error )
-            {
-                if( sV is JsonValue v && v.TryGetValue( out string? s ) )
-                {
-                    // These are external libraries. Prerelease versions have not the same semantics as our in the npm
-                    // ecosystem. We use the mainstream semantics here.
-                    if( s.StartsWith("workspace:", StringComparison.OrdinalIgnoreCase ) )
-                    {
-                        error = null;
-                        return SVersionBound.None;
-                    }
-                    var parseResult = SVersionBound.NpmTryParse( s, includePrerelease: false );
-                    if( parseResult.IsValid )
-                    {
-                        error = null;
-                        return parseResult.Result;
-                    }
-                    Throw.DebugAssert( parseResult.Error != null );
-                    error = parseResult.Error;
-                }
-                else
-                {
-                    error = "is not a string.";
-                }
-                return SVersionBound.None;
-            }
-        }
-        void SetDependencies( JsonNode root, DependencyCollection dependencies, bool peerDependenciesAsDepencies = true )
-        {
-            var deps = new[] { new JsonObject(), new JsonObject(), new JsonObject() };
-            foreach( var d in dependencies.Values )
-            {
-                var version = d.NpmVersionRange;
-                deps[(int)d.DependencyKind].Add( d.Name, version );
-                if( peerDependenciesAsDepencies && d.DependencyKind == DependencyKind.PeerDependency )
-                {
-                    deps[1].Add( d.Name, version );
-                }
-            }
-            root["devDependencies"] = deps[0];
-            root["dependencies"] = deps[1];
-            root["peerDependencies"] = deps[2];
-        }
 
         /// <summary>
         /// Calls <see cref="UpdateFileRoot"/> and saves the <see cref="FilePath"/> file.

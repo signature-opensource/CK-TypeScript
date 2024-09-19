@@ -1,8 +1,10 @@
 using CK.Core;
 using CK.Setup.PocoJson;
+using CSemVer;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -201,8 +203,21 @@ namespace CK.Setup
             var configs = binPath.ConfigurationGroup.SimilarConfigurations
                                         .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
                                                             ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() );
-            foreach( var tsBinPathconfig in configs )
+            // Avoid creating one immutable lib per BinPath.
+            // cachedKey is the last one.
+            TypeScriptAspectConfiguration? cachedKey = null;
+            ImmutableDictionary<string, SVersionBound>? cachedLibVersionsConfig = null;
+
+            foreach( var tsBinPathConfig in configs )
             {
+                Throw.DebugAssert( tsBinPathConfig.AspectConfiguration != null );
+
+                var libVersionsConfig = cachedKey == tsBinPathConfig.AspectConfiguration
+                                            ? cachedLibVersionsConfig
+                                            : cachedLibVersionsConfig = (cachedKey = tsBinPathConfig.AspectConfiguration).LibraryVersions.ToImmutableDictionary();
+
+                Throw.DebugAssert( libVersionsConfig != null );
+
                 // First handles the configured <Types>, types that have [TypeScript] attribute or are decorated by some
                 // ITSCodeGeneratorType and any type that are decorated with "global" ITSCodeGenerator. Then the discovered globals
                 // ITSCodeGenerator.Initialize are called: new registered types can be added by global generators.
@@ -211,9 +226,9 @@ namespace CK.Setup
                 // => Only Poco compliant types that are reachable from a registered Poco type will be in TypeScriptExchangeableSet
                 //    and handled by the PocoCodeGenerator.
                 var initializer = TSContextInitializer.Create( monitor,
-                                                               binPath,
-                                                               _tsConfig,
-                                                               tsBinPathconfig,
+                                                               binPath, 
+                                                               tsBinPathConfig,
+                                                               libVersionsConfig,
                                                                typeSystem.SetManager.AllExchangeable,
                                                                jsonSerialization );
                 if( initializer == null ) return false;
@@ -221,7 +236,7 @@ namespace CK.Setup
                 // We now have the Global code generators initialized, the configured attributes on explicitly registered types,
                 // discovered types or newly added types and a set of "TypeScriptExchangeable" Poco types.
                 IPocoTypeNameMap? exchangeableNames = null;
-                if( jsonSerialization != null && tsBinPathconfig.TypeFilterName != "None" )
+                if( jsonSerialization != null && tsBinPathConfig.TypeFilterName != "None" )
                 {
                     // If Json serialization is available, let's get the name map for them.
                     // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
@@ -237,11 +252,11 @@ namespace CK.Setup
                         exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames.Clone( initializer.TypeScriptExchangeableSet );
                     }
                     // Regardless of whether it is the same as AllExchangeable or a sub set, we register the ExhangeableRuntimeTypeFilter.
-                    jsonSerialization.SerializableLayer.RegisterExchangeableRuntimeFilter( monitor, tsBinPathconfig.TypeFilterName, initializer.TypeScriptExchangeableSet );
+                    jsonSerialization.SerializableLayer.RegisterExchangeableRuntimeFilter( monitor, tsBinPathConfig.TypeFilterName, initializer.TypeScriptExchangeableSet );
                 }
                 // The TypeScriptContext for this configuration can now be initialized.
                 // It will be run by FinalImplement.
-                _runContexts.Add( new TypeScriptContext( codeContext, tsBinPathconfig, initializer, exchangeableNames ) );
+                _runContexts.Add( new TypeScriptContext( codeContext, tsBinPathConfig, initializer, exchangeableNames ) );
             }
             if( _runContexts.Count == 0 )
             {

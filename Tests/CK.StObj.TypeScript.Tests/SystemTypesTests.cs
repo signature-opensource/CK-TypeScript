@@ -29,11 +29,11 @@ namespace CK.StObj.TypeScript.Tests
             var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IWithDateAndGuid));
+            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithDateAndGuid ) );
             engineConfig.FirstBinPath.Types.Add( typeof( IWithDateAndGuid ) );
             engineConfig.RunSuccessfully();
 
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/WithDateAndGuid.ts" ) ).Should().BeTrue();
+            File.Exists( targetProjectPath.Combine( "ck-gen/WithDateAndGuid.ts" ) ).Should().BeTrue();
         }
 
     }

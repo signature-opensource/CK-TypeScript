@@ -1,7 +1,4 @@
 using CK.Core;
-using CK.TypeScript.CodeGen;
-using CSemVer;
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -11,25 +8,50 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading;
 
 namespace CK.Setup
 {
     /// <summary>
     /// tsConfig.json file model.
+    /// <para>
+    /// This totally hide the underlying Json implementation (currently this uses the System.Text.Json.Nodes
+    /// objects that is far from perfect): this may change.
+    /// The major drawback is that only what is exposed can be altered (and this is also not ideal).  
+    /// </para>
     /// </summary>
     public sealed class TSConfigJsonFile
     {
         JsonFile _file;
-        NormalizedPath _folderPath;
-        [AllowNull] Dictionary<string, HashSet<string>> _paths;
+        readonly NormalizedPath _folderPath;
         [AllowNull] JsonObject _compilerOptions;
+        readonly Dictionary<string, HashSet<string>> _coPaths;
+        readonly List<string> _coTypes;
         NormalizedPath _baseUrl;
 
         TSConfigJsonFile( JsonFile f )
         {
             _file = f;
             _folderPath = f.FilePath.RemoveLastPart();
+            _coTypes = new List<string>();
+            _coPaths = new Dictionary<string, HashSet<string>>();
+        }
+
+        /// <summary>
+        /// If <see cref="IsEmpty"/> is true, this sets a really minimal "compilerOptions": { "target": "es2022", "strict": true, "skipLibCheck": true }.
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <returns>True if this was empty and minimal defaults have been set, false otherwise.</returns>
+        public bool EnsureDefault( IActivityMonitor monitor )
+        {
+            if( IsEmpty )
+            {
+                _compilerOptions["target"] = "es2022";
+                _compilerOptions["strict"] = true;
+                _compilerOptions["skipLibCheck"] = true;
+                monitor.Info( $"Ensuring default '{_file.FilePath}'." );
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -76,14 +98,18 @@ namespace CK.Setup
             success &= _file.GetNonNullJsonString( compilerOptions, monitor, "baseUrl", out var baseUrl );
             var paths = ReadPaths( _file, compilerOptions, monitor );
             success &= paths != null;
-            if( !success )
+            var coTypes = _file.GetStringList( compilerOptions, monitor, "types" );
+            if( !success || coTypes == null )
             {
                 monitor.Error( $"Unable to read file '{_file.FilePath}'." );
                 return false;
             }
             _compilerOptions = compilerOptions;
             _baseUrl = baseUrl;
-            _paths = paths!;
+            _coPaths.Clear();
+            _coPaths.AddRange( paths! );
+            _coTypes.Clear();
+            _coTypes.AddRange( coTypes! );
             return true;
         }
 
@@ -111,7 +137,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets the "compilerOptions": { "paths": { "key", ["v1","v2"] } } paths mappings.
         /// </summary>
-        public Dictionary<string, HashSet<string>> CompilerOptionsPaths => _paths;
+        public Dictionary<string, HashSet<string>> CompilerOptionsPaths => _coPaths;
+
+        /// <summary>
+        /// Gets the "compilerOptions": { "types": [ ... ] }.
+        /// </summary>
+        public List<string> CompilerOptionsTypes => _coTypes;
 
         /// <summary>
         /// Ensures that "compilerOptions": { "paths": { "from", ["to","other"...] } } exists. 
@@ -121,10 +152,10 @@ namespace CK.Setup
         /// <returns>True if the mapping has been added, false if it already exists.</returns>
         public bool CompileOptionsPathEnsureMapping( string from, string to )
         {
-            if( !_paths.TryGetValue( from, out var mappings ) )
+            if( !_coPaths.TryGetValue( from, out var mappings ) )
             {
                 mappings = new HashSet<string> { to };
-                _paths.Add( from, mappings );
+                _coPaths.Add( from, mappings );
                 return true;
             }
             return mappings.Add( to );
@@ -136,7 +167,15 @@ namespace CK.Setup
         public void UpdateFileRoot()
         {
             _file.SetString( _compilerOptions, "baseUrl", _baseUrl.IsEmptyPath ? null : _baseUrl.Path );
-            SetPaths( _compilerOptions, _paths );
+            SetPaths( _compilerOptions, _coPaths );
+            if( _coTypes.Count > 0 )
+            {
+                _file.SetStringList( _compilerOptions, "types", _coTypes );
+            }
+            else
+            {
+                _compilerOptions.Remove( "types" );
+            }
         }
 
         /// <summary>

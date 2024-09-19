@@ -27,17 +27,6 @@ namespace CK.Setup
     public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfiguration
     {
         /// <summary>
-        /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
-        /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
-        /// </summary>
-        public const string AutomaticYarnVersion = "4.3.1";
-
-        /// <summary>
-        /// The default <see cref="AutomaticTypeScriptVersion"/> version to install.
-        /// </summary>
-        public const string DefaultTypeScriptVersion = "5.4.5";
-
-        /// <summary>
         /// Initializes a new default configuration.
         /// </summary>
         public TypeScriptAspectConfiguration()
@@ -81,7 +70,9 @@ namespace CK.Setup
         /// declaring an import.
         ///<para>
         /// The code can provide default versions (final version is upgrade, see <see cref="IgnoreVersionsBound"/>)
-        /// or no version at all: in this case the library version must be defined here.
+        /// or no version at all: in this case the library version must be defined here. The code can also
+        /// provide the ">=0.0.0-0" version, that is <see cref="SVersionBound.All"/>.ToString(): the "latest" version of
+        /// the package will eventually be used if no other version are set for the library.
         ///</para>
         /// <para>
         /// Example:
@@ -93,7 +84,8 @@ namespace CK.Setup
         /// </code>
         /// </para>
         /// <para>
-        /// It is empty by default.
+        /// It is empty by default. This can contain any kind of library: whether it will be used as a regular, development or even
+        /// peer dependency, versions configured here will be used.
         /// </para>
         /// </summary>
         public Dictionary<string, SVersionBound> LibraryVersions { get; }

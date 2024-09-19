@@ -190,7 +190,7 @@ namespace CK.Testing
                                                      Dictionary<string, string>? environmentVariables = null,
                                                      string command = "test" )
         {
-            YarnHelper.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
+            TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
             return new Runner( @this, targetProjectPath, environmentVariables, command, afterRun );
         }
 

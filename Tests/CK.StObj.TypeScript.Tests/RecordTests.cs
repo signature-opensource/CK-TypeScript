@@ -330,7 +330,7 @@ namespace CK.StObj.TypeScript.Tests
 
         static void CheckFile( string targetProjectPath, string name, string expected )
         {
-            File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", "src", name ) )
+            File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", name ) )
                 .ReplaceLineEndings()
                 .Should().Contain( expected.ReplaceLineEndings() );
         }

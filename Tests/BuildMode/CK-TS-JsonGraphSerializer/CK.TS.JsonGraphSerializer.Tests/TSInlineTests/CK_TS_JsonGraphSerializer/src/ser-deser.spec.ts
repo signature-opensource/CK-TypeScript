@@ -3,7 +3,7 @@ import { testWithIdempotence } from './util';
 import { inspect } from "util";
 import assert from 'assert';
 
-if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
 describe('serialize() and deserialize()', function () {
     it('should work with embedded graphs', function () {

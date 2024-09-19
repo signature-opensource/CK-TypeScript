@@ -47,7 +47,7 @@ namespace CK.TypeScript.CodeGen
 
         /// <summary>
         /// Gets the configured versions for external npm packages. These configurations take precedence over the
-        /// library versions declared by code via <see cref="LibraryManager.RegisterLibrary"/>.
+        /// library versions declared by code via <see cref="RegisterLibrary"/>.
         /// <para>
         /// Only libraries that are used by code will be used from this configuration.
         /// </para>
@@ -62,15 +62,23 @@ namespace CK.TypeScript.CodeGen
         /// The library name. Must not be empty but can be null: the code wants the library version
         /// to be configured.
         /// </param>
+        /// <param name="versionBound">
+        /// When null, the library version must be registered in the <see cref="LibraryVersionConfiguration"/> (or be already provided
+        /// by another call to this RegisterLibrary).
+        /// <para>
+        /// To allow any version (the "latest" should ultimately be used), use ">=0.0.0-0" that is <see cref="SVersionBound.All"/>.ToString().
+        /// </para>
+        /// </param>
         /// <param name="dependencyKind">
         /// The kind of dependencies. This always boost an existing kind: <see cref="DependencyKind.PeerDependency"/>
         /// always wins over <see cref="DependencyKind.Dependency"/> that always wins over <see cref="DependencyKind.DevDependency"/>.
         /// </param>
+        /// <param name="definitionSource">Definition of the caller that register this library (used to log info, errors or warnings).</param>
         /// <param name="impliedDependencies">Optional libraries that must also be imported when this one is imported in a <see cref="ITSFileImportSection"/>.</param>
         /// <returns>The library imort or null on error.</returns>
         public LibraryImport? RegisterLibrary( IActivityMonitor monitor,
                                                string name,
-                                               string? version,
+                                               string? versionBound,
                                                DependencyKind dependencyKind,
                                                [CallerFilePath]string? definitionSource = null,
                                                params LibraryImport[] impliedDependencies )
@@ -81,11 +89,11 @@ namespace CK.TypeScript.CodeGen
                 monitor.Error( $"Invalid TypeScript library name '{name}'." );
                 return null;
             }
-            if( version == null )
+            if( versionBound == null )
             {
                 return RegisterNoVersionLibrary( monitor, name, dependencyKind, definitionSource, impliedDependencies );
             }
-            if( !LibraryImport.TryParseVersion( monitor, name, version, dependencyKind, out var v ) )
+            if( !TryParseVersionBound( monitor, name, versionBound, dependencyKind, out var v ) )
             {
                 return null;
             }
@@ -114,6 +122,30 @@ namespace CK.TypeScript.CodeGen
                 lib.Update( impliedDependencies );
             }
             return lib;
+        }
+
+        /// <summary>
+        /// Tries to parse a Npm version string. If the version cannot be parsed an error (with a detailed reason)
+        /// is logged in the <paramref name="monitor"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="name">The dependency name.</param>
+        /// <param name="version">The version to parse.</param>
+        /// <param name="dependencyKind">The dependency kind of the </param>
+        /// <param name="v">The resulting version bound on success.</param>
+        /// <returns></returns>
+        public static bool TryParseVersionBound( IActivityMonitor monitor, string name, string version, DependencyKind dependencyKind, out SVersionBound v )
+        {
+            // These are external libraries. Prerelease versions have not the same semantics as our in the npm
+            // ecosystem. We use the mainstream semantics here.
+            var parseResult = SVersionBound.NpmTryParse( version, includePrerelease: false );
+            v = parseResult.Result;
+            if( !parseResult.IsValid )
+            {
+                monitor.Error( $"Invalid version '{version}' for TypeScript library '{name}' ({dependencyKind}): {parseResult.Error}" );
+                return false;
+            }
+            return true;
         }
 
         LibraryImport? RegisterNoVersionLibrary( IActivityMonitor monitor,

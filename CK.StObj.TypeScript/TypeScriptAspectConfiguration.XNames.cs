@@ -35,9 +35,9 @@ namespace CK.Setup
         public static readonly XName xIntegrationMode = XNamespace.None + "IntegrationMode";
 
         /// <summary>
-        /// The <see cref="TypeScriptBinPathAspectConfiguration.EnsureTestSupport"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallJest"/> attribute name.
         /// </summary>
-        public static readonly XName xEnsureTestSupport = XNamespace.None + "EnsureTestSupport";
+        public static readonly XName xAutoInstallJest = XNamespace.None + "AutoInstallJest";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> attribute name.
@@ -60,9 +60,9 @@ namespace CK.Setup
         public static readonly XName xEnableTSProjectReferences = XNamespace.None + "EnableTSProjectReferences";
 
         /// <summary>
-        /// The <see cref="TypeScriptBinPathAspectConfiguration.AutomaticTypeScriptVersion"/> attribute name.
+        /// The <see cref="TypeScriptBinPathAspectConfiguration.DefaultTypeScriptVersion"/> attribute name.
         /// </summary>
-        public static readonly XName xAutomaticTypeScriptVersion = XNamespace.None + "AutomaticTypeScriptVersion";
+        public static readonly XName xDefaultTypeScriptVersion = XNamespace.None + "DefaultTypeScriptVersion";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration.TypeFilterName"/> attribute name.
@@ -78,11 +78,6 @@ namespace CK.Setup
         /// The <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> attribute name.
         /// </summary>
         public static readonly XName xGitIgnoreCKGenFolder = XNamespace.None + "GitIgnoreCKGenFolder";
-
-        /// <summary>
-        /// The <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallVSCodeSupport"/> attribute name.
-        /// </summary>
-        public static readonly XName xAutoInstallVSCodeSupport = XNamespace.None + "AutoInstallVSCodeSupport";
 
         /// <summary>
         /// The <see cref="TypeScriptBinPathAspectConfiguration"/> element name.

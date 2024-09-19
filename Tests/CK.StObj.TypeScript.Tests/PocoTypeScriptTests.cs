@@ -57,7 +57,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
             engineConfig.RunSuccessfully();
 
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+            File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
         }
 
         [Test]
@@ -71,7 +71,7 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.FirstBinPath.Types.Add( typeof( INotGeneratedByDefault ) );
             engineConfig.RunSuccessfully();
 
-            File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
+            File.ReadAllText( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
                 .Should().Contain( "export class NotGeneratedByDefault" );
         }
     }

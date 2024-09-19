@@ -1,7 +1,7 @@
 import { IAuthServiceConfiguration } from '@local/ck-gen';
 import { AuthServiceConfiguration } from '@local/ck-gen/src/CK/AspNet/Auth/index.private';
 
-if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
 describe('AuthServiceConfiguration', function () {
 

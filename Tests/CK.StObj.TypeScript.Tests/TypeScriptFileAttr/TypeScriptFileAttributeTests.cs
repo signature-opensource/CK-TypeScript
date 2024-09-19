@@ -35,12 +35,12 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
             configuration.RunSuccessfully();
 
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
+            File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
                 .Should().BeTrue();
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
+            File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
                 .Should().BeFalse();
 
-            var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/index.ts" ) );
+            var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/index.ts" ) );
             barrel.Should().Contain( "export * from './CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere';" );
         }
 
@@ -55,14 +55,15 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr
             // the "build" only builds the single tsconfig.json.
             //
             var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath )
-                                     .ModuleSystem = TSModuleSystem.CJS;
+            var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+            tsConfig.ModuleSystem = TSModuleSystem.CJS;
+            tsConfig.UseSrcFolder = true;
             engineConfig.FirstBinPath.Types.Add( typeof( Embedded ), typeof( OtherEmbedded ) );
             engineConfig.RunSuccessfully();
 
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
+            File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
                 .Should().BeTrue();
-            File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
+            File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
                 .Should().BeTrue();
 
             var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/index.ts" ) );

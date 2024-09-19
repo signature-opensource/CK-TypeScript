@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { AuthService, PopupDescriptor } from '@local/ck-gen';
 
-if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
 describe('PopupDescriptor', function () {
     const axiosInstance = axios.create({ timeout: 0.1 });

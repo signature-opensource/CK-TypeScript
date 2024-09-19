@@ -10,9 +10,9 @@ import {
 } from '@local/ck-gen';
 import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-helpers';
 
-if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
-const serverAddress = process.env.SERVER_ADDRESS ?? "";
+const serverAddress = CKTypeScriptEnv.SERVER_ADDRESS ?? "";
 const describeWithServer = serverAddress ? describe : describe.skip;
 
 /*

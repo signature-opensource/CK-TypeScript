@@ -7,9 +7,8 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
-      "@local/ck-gen/*": [
-        "ck-gen/*"
-      ]
+      "@local/ck-gen": [ "./ck-gen" ],
+      "@local/ck-gen/*": [ "./ck-gen/*" ]
     }
   }
 }

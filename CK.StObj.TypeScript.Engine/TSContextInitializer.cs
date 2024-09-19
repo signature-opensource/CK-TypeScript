@@ -2,9 +2,11 @@ using CK.Core;
 using CK.Setup.PocoJson;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
+using CSemVer;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
@@ -16,6 +18,7 @@ namespace CK.Setup
         readonly List<ITSCodeGenerator> _globals;
         readonly IPocoTypeSet _typeScriptExchangeableSet;
         readonly TypeScriptIntegrationContext? _integrationContext;
+        readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
 
         /// <summary>
         /// Gets the types that have been explictely registered.
@@ -32,12 +35,20 @@ namespace CK.Setup
         /// </summary>
         public IPocoTypeSet TypeScriptExchangeableSet => _typeScriptExchangeableSet;
 
+        /// <summary>
+        /// Gets the intergration context if integration mode is not null.
+        /// </summary>
         public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
+        /// <summary>
+        /// Gets the library configured versions.
+        /// </summary>
+        public ImmutableDictionary<string, SVersionBound> LibVersionsConfig => _libVersionsConfig;
 
         public static TSContextInitializer? Create( IActivityMonitor monitor,
                                                     IGeneratedBinPath genBinPath,
-                                                    TypeScriptAspectConfiguration configuration,
                                                     TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                                    ImmutableDictionary<string, SVersionBound> libVersionsConfig,
                                                     IPocoTypeSet allExchangeableSet,
                                                     IPocoJsonSerializationServiceEngine? jsonSerialization )
         {
@@ -47,7 +58,7 @@ namespace CK.Setup
                                                                      genBinPath.EngineMap.AllTypesAttributesCache.Values,
                                                                      allExchangeableSet,
                                                                      out var globals )
-                && InitializeIntegrationContext( monitor, binPathConfiguration, out var integrationContext )
+                && InitializeIntegrationContext( monitor, binPathConfiguration, libVersionsConfig, out var integrationContext )
                 && InitializeGlobalGenerators( monitor,
                                                binPathConfiguration,
                                                integrationContext,
@@ -79,17 +90,22 @@ namespace CK.Setup
                     monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
                     tsExchangeable = emptyExchangeableSet;
                 }
-                return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext );
+                return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig );
             }
             return null;
         }
 
-        TSContextInitializer( Dictionary<Type, RegisteredType> r, List<ITSCodeGenerator> g, IPocoTypeSet s, TypeScriptIntegrationContext? integrationContext )
+        TSContextInitializer( Dictionary<Type, RegisteredType> r,
+                              List<ITSCodeGenerator> g,
+                              IPocoTypeSet s,
+                              TypeScriptIntegrationContext? integrationContext,
+                              ImmutableDictionary<string, SVersionBound> libVersionsConfig )
         {
             _registeredTypes = r;
             _globals = g;
             _typeScriptExchangeableSet = s;
             _integrationContext = integrationContext;
+            _libVersionsConfig = libVersionsConfig;
         }
 
         // Step 1.
@@ -256,12 +272,13 @@ namespace CK.Setup
         // Step 3
         static bool InitializeIntegrationContext( IActivityMonitor monitor,
                                                   TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                                  ImmutableDictionary<string, SVersionBound> libVersionsConfig,
                                                   out TypeScriptIntegrationContext? integrationContext )
         {
             integrationContext = null;
             if( binPathConfiguration.IntegrationMode != CKGenIntegrationMode.None )
             {
-                integrationContext = TypeScriptIntegrationContext.Create( monitor, binPathConfiguration );
+                integrationContext = TypeScriptIntegrationContext.Create( monitor, binPathConfiguration, libVersionsConfig );
                 if( integrationContext == null ) return false;
             }
             return true;

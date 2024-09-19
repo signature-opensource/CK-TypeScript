@@ -61,10 +61,10 @@ namespace CK.StObj.TypeScript.Tests
             engineConfig.RunSuccessfully();
 
 
-            var e = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/EnumThatWillBeEmpty.ts" ) );
-            var i = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/IWillBeEmpty.ts" ) );
-            var c = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/WillBeEmptyClass.ts" ) );
-            var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/WillBeEmptyStruct.ts" ) );
+            var e = File.ReadAllText( targetProjectPath.Combine( "ck-gen/EnumThatWillBeEmpty.ts" ) );
+            var i = File.ReadAllText( targetProjectPath.Combine( "ck-gen/IWillBeEmpty.ts" ) );
+            var c = File.ReadAllText( targetProjectPath.Combine( "ck-gen/WillBeEmptyClass.ts" ) );
+            var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/WillBeEmptyStruct.ts" ) );
 
             e.Should().Be( "export enum EnumThatWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
             i.Should().Be( "export interface IWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );

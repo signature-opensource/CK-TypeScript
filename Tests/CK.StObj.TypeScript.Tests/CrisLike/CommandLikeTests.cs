@@ -137,7 +137,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
             engineConfig.RunSuccessfully();
 
 
-            var p = targetProjectPath.Combine( "ck-gen/src" );
+            var p = targetProjectPath.Combine( "ck-gen" );
             File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).Should().Contain( "export enum Power" );
 
             var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) ).ReplaceLineEndings();
@@ -299,7 +299,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike
                                                  typeof( FakeTypeScriptCrisCommandGenerator ) );
             engineConfig.RunSuccessfully();
 
-            var p = targetProjectPath.Combine( "ck-gen/src" );
+            var p = targetProjectPath.Combine( "ck-gen" );
             var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) ).ReplaceLineEndings();
             tS.Should().StartWith( """
                 import { ICommandModel, ICommand } from "../../../../Cris/Model";

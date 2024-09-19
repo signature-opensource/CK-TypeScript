@@ -33,20 +33,6 @@ namespace CK.TypeScript.CodeGen
             _definitionSource = definitionSource;
         }
 
-        internal static bool TryParseVersion( IActivityMonitor monitor, string name, string version, DependencyKind dependencyKind, out SVersionBound v )
-        {
-            // These are external libraries. Prerelease versions have not the same semantics as our in the npm
-            // ecosystem. We use the mainstream semantics here.
-            var parseResult = SVersionBound.NpmTryParse( version, includePrerelease: false );
-            v = parseResult.Result;
-            if( !parseResult.IsValid )
-            {
-                monitor.Error( $"Invalid version '{version}' for TypeScript library '{name}' ({dependencyKind}): {parseResult.Error}" );
-                return false;
-            }
-            return true;
-        }
-
         internal static LibraryImport Create( IActivityMonitor monitor,
                                               string name,
                                               SVersionBound v,

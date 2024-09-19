@@ -68,18 +68,16 @@ namespace CK.Testing
             else
             {
                 tsBinPathAspect.AutoInstallYarn = true;
-                tsBinPathAspect.AutoInstallVSCodeSupport = true;
                 if( testMode == GenerateMode.BuildOnly )
                 {
                     tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
                 }
                 else
                 {
-                    tsBinPathAspect.EnsureTestSupport = true;
+                    tsBinPathAspect.AutoInstallJest = true;
                     if( testMode == GenerateMode.Inline )
                     {
                         tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.Inline;
-                        tsBinPathAspect.UseSrcFolder = false;
                     }
                     else if( testMode == GenerateMode.NpmPackage )
                     {

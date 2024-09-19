@@ -18,8 +18,7 @@ namespace CK.Setup
         /// If <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/> is empty, configures it to target the
         /// conventional "<see cref="ICKomposableAppBuilder.GetHostFolderPath"/>/Client" path.
         /// <para>
-        /// Sets <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/>, <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallVSCodeSupport"/>
-        /// and <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> to true.
+        /// Sets <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/> and <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> to true.
         /// </para>
         /// </summary>
         /// <param name="builder">This builder.</param>
@@ -30,7 +29,6 @@ namespace CK.Setup
             var binPath = builder.EngineConfiguration.FindRequiredBinPath( binPathName );
             var tsAspect = builder.EngineConfiguration.EnsureAspect<TypeScriptAspectConfiguration>();
             var tsBinPathAspect = builder.EngineConfiguration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
-            tsBinPathAspect.AutoInstallVSCodeSupport = true;
             tsBinPathAspect.AutoInstallYarn = true;
             tsBinPathAspect.GitIgnoreCKGenFolder = true;
             if( tsBinPathAspect.TargetProjectPath.IsEmptyPath )

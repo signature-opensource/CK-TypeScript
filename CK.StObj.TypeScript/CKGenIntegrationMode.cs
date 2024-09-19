@@ -11,12 +11,12 @@ namespace CK.Setup
     public enum CKGenIntegrationMode
     {
         /// <summary>
-        /// The "@local/ck-gen" is an alias to the /ck-gen/src (or to /ck-gen if <see cref="TypeScriptBinPathAspectConfiguration.UseSrcFolder"/> is false)
-        /// folder defined in the parent's <c>tsConfig.json</c>:
+        /// The "@local/ck-gen" is an alias to the ck-gen/ folder:
         /// <code>
         /// "compilerOptions": {
         ///     "paths": {
-        ///        "@local/ck-gen/*": ["./ck-gen/src/*"]
+        ///        "@local/ck-gen": ["./ck-gen"],
+        ///        "@local/ck-gen/*": ["./ck-gen/*"]
         ///     },
         /// </code>
         /// In this mode no /ck-gen/tsConfig.json is created, the /ck-gen doesn't need to be built.
@@ -27,22 +27,7 @@ namespace CK.Setup
         Inline,
 
         /// <summary>
-        /// <see cref="UseSrcFolder"/> is necessarily true.
-        /// The "@local/ck-gen" is an alias to the /ck-gen/dist folder defined in the parent's <c>tsConfig.json</c>:
-        /// <code>
-        /// "compilerOptions": {
-        ///     "paths": {
-        ///        "@local/ck-gen": ["./ck-gen/dist"]
-        ///     },
-        /// </code>
-        /// In this mode, the /ck-gen/tsConfig.json only emits declarations (the *.d.ts files) and their maps (the *.d.ts.map files).
-        /// The /ck-gen folder MUST be built to be usable. 
-        /// </summary>
-        TSPath,
-
-        /// <summary>
-        /// <see cref="UseSrcFolder"/> is necessarily true.
-        /// The "@local/ck-gen" is a yarn workspace inside its parent application with its package.json and its tsConfig.json
+        /// The "@local/ck-gen" is a yarn workspace inside its parent application with its package.json and its tsConfig.json files.
         /// (see <see cref="TypeScriptBinPathAspectConfiguration.ModuleSystem"/>).
         /// </summary>
         NpmPackage,

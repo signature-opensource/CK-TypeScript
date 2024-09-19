@@ -186,6 +186,26 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Tries to read a number that must not be null but may be missing.
+        /// </summary>
+        /// <param name="o">The parent object.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="propertyName">The property name to consider.</param>
+        /// <param name="result">The property value. Null if the property doesn't exist.</param>
+        /// <returns>True on success (the <paramref name="propertyName"/> may not exist), or false if the property was "null" or not a number.</returns>
+        public bool GetNonNullJsonNumber( JsonObject o, IActivityMonitor monitor, string propertyName, out double? result )
+        {
+            result = null;
+            if( !GetNonJsonNull( o, monitor, propertyName, out JsonValue? jv ) ) return false;
+            if( jv != null && !jv.TryGetValue( out result ) )
+            {
+                monitor.Error( $"Unable to read \"{o.GetPath()}.{propertyName}\" as a number (double)." );
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Tries to read a boolean property that must not be null but may be missing.
         /// </summary>
         /// <param name="o">The parent object.</param>
@@ -224,6 +244,18 @@ namespace CK.Setup
         /// <param name="propertyName">The property name to set.</param>
         /// <param name="value">The value. Null to remove it.</param>
         public void SetBoolean( JsonObject o, string propertyName, bool? value )
+        {
+            if( value == null ) o.Remove( propertyName );
+            else o[propertyName] = value.Value;
+        }
+
+        /// <summary>
+        /// Inserts, updates or deletes the property.
+        /// </summary>
+        /// <param name="o">The parent object.</param>
+        /// <param name="propertyName">The property name to set.</param>
+        /// <param name="value">The value. Null to remove it.</param>
+        public void SetNumber( JsonObject o, string propertyName, double? value )
         {
             if( value == null ) o.Remove( propertyName );
             else o[propertyName] = value.Value;

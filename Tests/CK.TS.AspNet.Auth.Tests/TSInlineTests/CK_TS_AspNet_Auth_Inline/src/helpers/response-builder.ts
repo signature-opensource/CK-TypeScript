@@ -1,4 +1,4 @@
-import { IResponseInfo, IWebFrontAuthResponse, IResponseUserInfo } from "@local/ck-gen/src/CK/AspNet/Auth/index.private";
+import { IResponseInfo, IWebFrontAuthResponse, IResponseUserInfo } from "@local/ck-gen/CK/AspNet/Auth/index.private";
 
 interface ILoginFailure {
     loginFailureCode: number;

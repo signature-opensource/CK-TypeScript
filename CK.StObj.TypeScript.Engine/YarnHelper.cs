@@ -23,8 +23,15 @@ namespace CK.Setup
         /// The Jest's setupFile name.
         /// </summary>
         public const string JestSetupFileName = "jest.CKTypeScriptEngine.ts";
+
+        /// <summary>
+        /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
+        /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
+        /// </summary>
+        public const string AutomaticYarnVersion = "4.3.1";
+
         const string _testRunningKey = "CK_TYPESCRIPT_ENGINE";
-        const string _yarnFileName = $"yarn-{TypeScriptAspectConfiguration.AutomaticYarnVersion}.cjs";
+        const string _yarnFileName = $"yarn-{AutomaticYarnVersion}.cjs";
         const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
         const int JestConfigFileVersion = 1;
 
@@ -75,217 +82,10 @@ namespace CK.Setup
             }
             if( !packageJson.Version.Prerelease.Equals( "sdk", StringComparison.OrdinalIgnoreCase ) )
             {
-                monitor.Error( $"Invalid Yarn sdks typescript version '{packageJson.Version}'. It should end with '-sdk'.{Environment.NewLine}File: '{sdkTypeScriptPath}'." );
+                monitor.Warn( $"Invalid Yarn sdks typescript version '{packageJson.Version}'. It should end with '-sdk'.{Environment.NewLine}File: '{sdkTypeScriptPath}'." );
                 return null;
             }
             return SVersion.Create( packageJson.Version.Major, packageJson.Version.Minor, packageJson.Version.Patch );
-        }
-
-        /// <summary>
-        /// Generates "/ck-gen/package.json", "/ck-gen/tsconfig.json" and potentially "/ck-gen/tsconfig-cjs.json" and "/ck-gen/tsconfig-es6.json".
-        /// </summary>
-        internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor,
-                                                   NormalizedPath ckGenFolder,
-                                                   DependencyCollection deps,
-                                                   TSModuleSystem moduleSystem,
-                                                   bool useSrcFolder,
-                                                   bool enableTSProjectReferences,
-                                                   string? filePrefix = null )
-        {
-            using var gLog = monitor.OpenInfo( $"Saving TypeScript and TypeScript configuration files..." );
-
-            return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps, filePrefix )
-                   && GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, useSrcFolder, enableTSProjectReferences, filePrefix );
-
-            static bool GeneratePackageJson( IActivityMonitor monitor,
-                                             NormalizedPath ckGenFolder,
-                                             TSModuleSystem moduleSystem,
-                                             DependencyCollection deps,
-                                             string? filePrefix )
-            {
-                var packageJsonPath = Path.Combine( ckGenFolder, filePrefix + "package.json" );
-                using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
-                {
-                    // The /ck-gen/package.json dependencies is bound to the generated one (into wich
-                    // typescript has been added).
-                    var p = PackageJsonFile.Create( packageJsonPath, deps );
-                    p.Name = "@local/ck-gen";
-
-                    if( moduleSystem is TSModuleSystem.ES6 or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )
-                    {
-                        p.Module = "./dist/es6/index.js";
-                    }
-                    if( moduleSystem is TSModuleSystem.CJS or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )
-                    {
-                        p.Main = "./dist/cjs/index.js";
-                    }
-                    var buildScript = "tsc -p tsconfig.json";
-                    if( moduleSystem == TSModuleSystem.ES6AndCJS )
-                    {
-                        buildScript += " && tsc -p tsconfig-cjs.json";
-                    }
-                    else if( moduleSystem == TSModuleSystem.CJSAndES6 )
-                    {
-                        buildScript += " && tsc -p tsconfig-es6.json";
-                    }
-                    p.Scripts.Add( "build", buildScript );
-                    p.Private = true;
-                    p.Save();
-                    return true;
-                }
-            }
-
-            static bool GenerateTSConfigJson( IActivityMonitor monitor,
-                                              NormalizedPath ckGenFolder,
-                                              TSModuleSystem moduleSystem,
-                                              bool useSrcFolder,
-                                              bool enableTSProjectReferences,
-                                              string? filePrefix )
-            {
-                var sb = new StringBuilder();
-                var tsConfigFile = Path.Combine( ckGenFolder, filePrefix + "tsconfig.json" );
-                using( monitor.OpenTrace( $"Creating '{tsConfigFile}'." ) )
-                {
-                    string module, modulePath;
-                    string? otherModule = null, otherModulePath = null;
-                    string? unusedDist = null;
-                    var unusedConfigFiles = new List<string>();
-                    switch( moduleSystem )
-                    {
-                        case TSModuleSystem.ES6:
-                            module = "ES6";
-                            modulePath = "es6";
-                            unusedDist = "dist/cjs";
-                            unusedConfigFiles.AddRangeArray( "tsconfig-cjs.json", "tsconfig-es6.json" );
-                            break;
-                        case TSModuleSystem.ES6AndCJS:
-                            module = "ES6";
-                            modulePath = "es6";
-                            otherModule = "CommonJS";
-                            otherModulePath = "cjs";
-                            unusedConfigFiles.Add( "tsconfig-es6.json" );
-                            break;
-                        case TSModuleSystem.CJS:
-                            module = "CommonJS";
-                            modulePath = "cjs";
-                            unusedDist = "dist/es6";
-                            unusedConfigFiles.AddRangeArray( "tsconfig-cjs.json", "tsconfig-es6.json" );
-                            break;
-                        case TSModuleSystem.CJSAndES6:
-                            module = "CommonJS";
-                            modulePath = "cjs";
-                            otherModule = "ES6";
-                            otherModulePath = "es6";
-                            unusedConfigFiles.Add( "tsconfig-cjs.json" );
-                            break;
-                        default: throw new CKException( "" );
-                    }
-                    DeleteUnused( monitor, ckGenFolder, unusedDist, unusedConfigFiles );
-
-                    // Allow this project to be "composite" (this is currently not supported by Jest).
-                    var tsBuildMode = "";
-                    if( enableTSProjectReferences )
-                    {
-                        tsBuildMode = """
-                                      ,
-                                          "composite": true
-                                      """;
-                    }
-                    string closer;
-                    if( useSrcFolder )
-                    {
-                        closer = """
-                            ,
-                                "rootDir": "src",
-                                "baseUrl": "./src"
-                              },
-                              "include": [ "src/**/*" ]
-                            }
-
-                            """;
-                    }
-                    else
-                    {
-                        closer = $$"""
-
-                              },
-                              "exclude": [ "{{filePrefix}}tsconfig*.json", "{{filePrefix}}package.json" ]
-                            }
-                            """;
-
-                    }
-                    File.WriteAllText( tsConfigFile, $$"""
-                            {
-                              "compilerOptions": {
-                                "strict": true,
-                                "target": "es2022",
-                                "moduleResolution": "node",
-                                "lib": ["es2022", "dom"],
-                                "module": "{{module}}",
-                                "outDir": "./dist/{{modulePath}}",
-                                "sourceMap": true,
-                                "declaration": true,
-                                "declarationMap": true,
-                                "esModuleInterop": true,
-                                "resolveJsonModule": true{{tsBuildMode}}{{closer}}
-                            """ );
-                    if( otherModule != null )
-                    {
-                        var tsConfigOtherFile = Path.Combine( ckGenFolder, $"{filePrefix}tsconfig-{otherModulePath}.json" );
-                        monitor.Trace( $"Creating '{tsConfigOtherFile}'." );
-                        File.WriteAllText( tsConfigOtherFile, $$"""
-                                                    {
-                                                      "extends": "./tsconfig.json",
-                                                      "compilerOptions": {
-                                                        "module": "{{otherModule}}",
-                                                        "outDir": "./dist/{{otherModulePath}}"
-                                                      },
-                                                    }
-                                                    """ );
-                    }
-                }
-                return true;
-
-                static void DeleteUnused( IActivityMonitor monitor, NormalizedPath outputPath, string? unusedDist, List<string> unusedConfigFiles )
-                {
-                    if( unusedDist != null )
-                    {
-                        var p = Path.Combine( outputPath, unusedDist );
-                        if( Directory.Exists( p ) )
-                        {
-                            using( monitor.OpenInfo( $"Deleting no more used folder '{unusedDist}'." ) )
-                            {
-                                try
-                                {
-                                    Directory.Delete( p, true );
-                                }
-                                catch( Exception ex )
-                                {
-                                    monitor.Warn( $"Unable to delete directory '{p}'. Ignoring.", ex );
-                                }
-                            }
-                        }
-                    }
-                    foreach( var f in unusedConfigFiles )
-                    {
-                        var p = Path.Combine( outputPath, f );
-                        if( File.Exists( p ) )
-                        {
-                            using( monitor.OpenInfo( $"Deleting useless file '{f}'." ) )
-                            {
-                                try
-                                {
-                                    File.Delete( p );
-                                }
-                                catch( Exception ex )
-                                {
-                                    monitor.Warn( $"Unable to delete file '{p}'. Ignoring.", ex );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, bool autoInstall )
@@ -301,7 +101,7 @@ namespace CK.Setup
                     if( version.Major < 4 )
                     {
                         monitor.Warn( $"Yarn found at '{yarnPath}' but expected version is Yarn 4. " +
-                                      $"Please upgrade to Yarn 4: yarn set version {TypeScriptAspectConfiguration.AutomaticYarnVersion}." );
+                                      $"Please upgrade to Yarn 4: yarn set version {AutomaticYarnVersion}." );
 
                     }
                     else
@@ -435,41 +235,11 @@ namespace CK.Setup
             }
         }
 
-        internal static bool HasVSCodeSupport( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+        internal static bool HasVSCodeSupport( NormalizedPath targetProjectPath )
         {
             var integrationsFile = targetProjectPath.Combine( ".yarn/sdks/integrations.yml" );
             if( !File.Exists( integrationsFile ) ) return false;
             return File.ReadAllText( integrationsFile ).Contains( "- vscode" );
-        }
-
-        /// <summary>
-        /// Executes "yarn add --dev @yarnpkg/sdks".
-        /// TypeScript package MUST already be added for the TypeScript sdk to be installed.
-        /// </summary>
-        /// <param name="monitor">Required monitor.</param>
-        /// <param name="targetProjectPath">The project path.</param>
-        /// <param name="installVSCodeSupport">True to install the VSCode support.</param>
-        /// <param name="yarnPath">The yarn path.</param>
-        /// <param name="typeScriptSdkVersion">Updated sdk version that is read again.</param>
-        /// <returns>True on success, false on error.</returns>
-        internal static bool InstallYarnSdkSupport( IActivityMonitor monitor,
-                                                    NormalizedPath targetProjectPath,
-                                                    bool installVSCodeSupport,
-                                                    NormalizedPath yarnPath,
-                                                    [NotNullWhen(true)]ref SVersion? typeScriptSdkVersion )
-        {
-            if( DoRunYarn( monitor, targetProjectPath, "add --dev @yarnpkg/sdks", yarnPath )
-                && DoRunYarn( monitor, targetProjectPath, installVSCodeSupport ? "sdks vscode" : "sdks base", yarnPath ) )
-            {
-                typeScriptSdkVersion = YarnHelper.GetYarnSdkTypeScriptVersion( monitor, targetProjectPath );
-                if( typeScriptSdkVersion == null )
-                {
-                    monitor.Error( $"Unable to read back the TypeScript version used by the Yarn sdk." );
-                    return false;
-                }
-                return true;
-            }
-            return false;
         }
 
         static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
@@ -520,207 +290,6 @@ namespace CK.Setup
             return true;
         }
 
-        /// <summary>
-        /// Prepares the project to run Jest by setting the <see cref="JestSetupFileName"/> file with
-        /// the provided <paramref name="environmentVariables"/> and (at least) the "CK_TYPESCRIPT_ENGINE = true".
-        /// </summary>
-        /// <param name="monitor">Required monitor.</param>
-        /// <param name="targetProjectPath">The project path.</param>
-        /// <param name="environmentVariables">Optional environment variables.</param>
-        /// <param name="afterRun">
-        /// A cleanup action that must be run once the test is over.
-        /// This is null if the target package.json file has no "test" script or if the "test" is
-        /// not "jest".
-        /// </param>
-        /// <returns>True on success, false on error.</returns>
-        public static bool PrepareJestRun( IActivityMonitor monitor,
-                                           NormalizedPath targetProjectPath,
-                                           Dictionary<string, string>? environmentVariables,
-                                           out Action? afterRun )
-        {
-            afterRun = null;
-            var o = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), ignoreVersionsBound: true );
-            if( o == null ) return false;
-            if( o.Scripts.TryGetValue( "test", out var command ) && command == "jest" )
-            {
-                var jestSetupFilePath = targetProjectPath.AppendPart( JestSetupFileName );
-                environmentVariables ??= new Dictionary<string, string>() { { _testRunningKey, "true" } };
-                WriteJestSetupFile( jestSetupFilePath, environmentVariables );
-                afterRun = () => WriteJestSetupFile( jestSetupFilePath, null );
-            }
-            return true;
-        }
-
-        internal static void SetupJestConfigFile( IActivityMonitor monitor, NormalizedPath targetProjectPath )
-        {
-            var jestConfigPath = targetProjectPath.AppendPart( "jest.config.js" );
-            if( File.Exists( jestConfigPath ) )
-            {
-                var current = File.ReadAllText( jestConfigPath );
-                #region Legacy (First versions)
-                if( current.Contains( "testEnvironment: 'node'," ) )
-                {
-                    current = current.Replace( "testEnvironment: 'node',", "testEnvironment: 'jsdom'," );
-                    File.WriteAllText( jestConfigPath, current );
-                    monitor.Warn( $"The 'jest.config.js' used testEnvironment: 'node', it has been changed to testEnvironment: 'jsdom'." );
-                }
-                if( current.Contains( "jest.StObjTypeScriptEngine.js" ) )
-                {
-                    current = current.Replace( "jest.StObjTypeScriptEngine.js", JestSetupFileName );
-                    File.WriteAllText( jestConfigPath, current );
-                    var previously = targetProjectPath.AppendPart( "jest.StObjTypeScriptEngine.js" );
-                    if( File.Exists( previously ) ) File.Delete( previously );
-                    monitor.Warn( $"Updated 'jest.config.js' setup file from 'jest.StObjTypeScriptEngine.js' to '{JestSetupFileName}'." );
-                }
-                #endregion
-                var cSpan = current.AsSpan();
-                if( cSpan.StartsWith( "// Jest is not ESM compliant. Using CJS here." ) )
-                {
-                    monitor.Warn( $"Updating 'jest.config.js' file from version 0." );
-                    WriteJestConfigFile( jestConfigPath );
-                }
-                else
-                {
-                    Throw.DebugAssert( "//-Auto-Version:".Length == 16 );
-                    if( cSpan.TryMatch( "//-Auto-Version:" ) )
-                    {
-                        cSpan.SkipWhiteSpaces();
-                        if( !cSpan.TryMatchInt32( out var version, minValue: 1 ) )
-                        {
-                            monitor.Warn( $"Unable to read version number from 'jest.config.js' file:{Environment.NewLine}{current}" );
-                        }
-                        else if( version != JestConfigFileVersion )
-                        {
-                            monitor.Warn( $"Updating 'jest.config.js' file from version {version} to {JestConfigFileVersion}." );
-                            WriteJestConfigFile( jestConfigPath );
-                        }
-                        else
-                        {
-                            monitor.Trace( $"File 'jest.config.js' is up to date." );
-                        }
-                    }
-                    else
-                    {
-                        monitor.Info( $"The 'jest.config.js' file doesn't start with \"//-Auto-Version:\". Leaving it unchanged." );
-                    }
-                }
-            }
-            else
-            {
-                monitor.Info( $"Creating the 'jest.config.js' file (testEnvironment: 'jsdom')." );
-                WriteJestConfigFile( jestConfigPath );
-            }
-            // Always update the JestSetupFileName (jest.CKTypeScriptEngine.ts) so that we can change it
-            // when we want.
-            WriteJestSetupFile( targetProjectPath.AppendPart( JestSetupFileName ), null );
-
-            static void WriteJestConfigFile( NormalizedPath jestConfigPath )
-            {
-                File.WriteAllText( jestConfigPath, $$$"""
-                                                    //-Auto-Version: {{{JestConfigFileVersion}}}
-                                                    // Notes:
-                                                    //   - To settle this file, simply remove the first line with the Auto-Version:
-                                                    //     with the Auto-Version it will be updated if CK changes its default.
-                                                    //   - Jest is not ESM compliant. Using CJS here.
-                                                    //
-                                                    const { pathsToModuleNameMapper } = require('ts-jest');
-                                                    const { compilerOptions } = require('./tsconfig');
-
-                                                    module.exports = {
-                                                        moduleFileExtensions: ['js', 'json', 'ts'],
-                                                        testRegex: 'src/.*\\.spec\\.ts$',
-                                                        transform: {
-                                                            '^.+\\.ts$': ['ts-jest', {
-                                                                // Removes annoying ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider...
-                                                                diagnostics: {ignoreCodes: ['TS151001']}
-                                                            }],
-                                                        },
-                                                        moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths ?? {}, { prefix: '<rootDir>/' } ),
-                                                        testEnvironment: 'jsdom',
-                                                        setupFiles: ["./{{{JestSetupFileName}}}"]
-                                                    };
-                                                    """ );
-            }
-        }
-
-        static void WriteJestSetupFile( NormalizedPath jestSetupFilePath, Dictionary<string,string>? environmentVariables )
-        {
-            Throw.DebugAssert( jestSetupFilePath.LastPart == JestSetupFileName );
-            const string header = """
-                                  // This will run once before each test file and before the testing framework is installed.
-                                  // This is used by TestHelper.CreateTypeScriptTestRunner to duplicate environment variables settings
-                                  // in a "persistent" way: these environment variables will be available until the Runner
-                                  // returned by TestHelper.CreateTypeScriptTestRunner is disposed.
-                                  //
-                                  // This part fixes a bug in testEnvionment: 'jsdom':
-                                  // <fix href="https://stackoverflow.com/questions/68468203/why-am-i-getting-textencoder-is-not-defined-in-jest">
-                                  import { TextDecoder as ImportedTextDecoder, TextEncoder as ImportedTextEncoder, } from "util";
-                                  Object.assign(global, { TextDecoder: ImportedTextDecoder, TextEncoder: ImportedTextEncoder, })
-                                  // </fix>
-
-                                  """;
-            if( environmentVariables == null )
-            {
-                File.WriteAllText( jestSetupFilePath, header );
-            }
-            else
-            {
-                using var f = File.Create( jestSetupFilePath );
-                using var text = new StreamWriter( f );
-                text.WriteLine( header );
-                text.Write( "Object.assign( process.env, " );
-                text.Flush();
-                using( var w = new Utf8JsonWriter( f ) )
-                {
-                    w.WriteStartObject();
-                    bool hasTestKey = false;
-                    foreach( var kv in environmentVariables )
-                    {
-                        hasTestKey |= kv.Key == _testRunningKey;
-                        w.WriteString( kv.Key, kv.Value );
-                    }
-                    if( !hasTestKey )
-                    {
-                        w.WriteString( _testRunningKey, "true" );
-                    }
-                    w.WriteEndObject();
-                    w.Flush();
-                }
-                text.WriteLine( ");" );
-                text.Flush();
-            }
-        }
-
-        internal static void EnsureSampleJestTestInSrcFolder( IActivityMonitor monitor, NormalizedPath targetProjectPath )
-        {
-            var srcFolder = targetProjectPath.AppendPart( "src" );
-            Directory.CreateDirectory( srcFolder );
-            var existingTestFile = Directory.EnumerateFiles( srcFolder, "*.spec.ts", SearchOption.AllDirectories ).FirstOrDefault();
-            if( existingTestFile != null )
-            {
-                monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation (found '{existingTestFile}')." );
-                return;
-            }
-            else
-            {
-                var sampleTestPath = srcFolder.AppendPart( "sample.spec.ts" );
-                monitor.Info( $"Creating 'src/sample.spec.ts' test file." );
-                Directory.CreateDirectory( srcFolder );
-                File.WriteAllText( sampleTestPath, """
-                    // Trick from https://stackoverflow.com/a/77047461/190380
-                    // When debugging ("Debug Test at Cursor" in menu), this cancels jest timeout.
-                    if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
-
-                    // Sample test.
-                    describe('Sample test', () => {
-                        it('should be true', () => {
-                          expect(true).toBeTruthy();
-                        });
-                      });
-                    """ );
-            }
-        }
-
         #region ProcessRunner for NodeBuild
 
         static CKTrait StdErrTag = ActivityMonitor.Tags.Register( "StdErr" );
@@ -737,7 +306,8 @@ namespace CK.Setup
                 WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
             };
             if( environmentVariables != null && environmentVariables.Count > 0 )
             {

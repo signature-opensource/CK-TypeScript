@@ -6,7 +6,7 @@ import { SimpleUserMessage } from "@local/ck-gen";
 
 // Trick from https://stackoverflow.com/a/77047461/190380
 // When debugging ("Debug Test at Cursor" in menu), this cancels jest timeout.
-if( process.env.VSCODE_INSPECTOR_OPTIONS ) {
+if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) {
   jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 }
 
@@ -39,7 +39,7 @@ it('Map builds the array when projection must be done.', () => {
 
   function f(o:any) { return o + o; }
 
-  const a = new Array<[any,any]>;
+  const a = new Array<[any,any]>();
   for (const i of map) {
     a.push([f(i[0]),f(i[1])]);
   }
@@ -61,7 +61,7 @@ it('O map with projection can use 2 methods.', () => {
   
   function f(o:any) { return o*2; }
   
-  const a = new Array<[string,any]>;
+  const a = new Array<[string,any]>();
   for (const i of map) {
     a.push([i[0],f(i[1])]);
   }

@@ -718,14 +718,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@local/ck-gen@workspace:*, @local/ck-gen@workspace:ck-gen":
-  version: 0.0.0-use.local
-  resolution: "@local/ck-gen@workspace:ck-gen"
-  dependencies:
-    typescript: "npm:=5.4.5"
-  languageName: unknown
-  linkType: soft
-
 "@npmcli/agent@npm:^2.0.0":
   version: 2.2.2
   resolution: "@npmcli/agent@npm:2.2.2"
@@ -1324,7 +1316,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ck_ts_jsongraphserializer@workspace:."
   dependencies:
-    "@local/ck-gen": "workspace:*"
     "@types/jest": "npm:^29.5.12"
     "@types/node": "npm:^20.14.2"
     jest: "npm:^29.7"

@@ -13,9 +13,9 @@ namespace CK.Setup
     /// </summary>
     public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspectConfiguration<TypeScriptBinPathAspectConfiguration>
     {
-        private NormalizedPath _targetProjectPath;
-        private NormalizedPath _targetCKGenPath;
-        private bool _useSrcFolder;
+        NormalizedPath _targetProjectPath;
+        NormalizedPath _targetCKGenPath;
+        bool _useSrcFolder;
 
         /// <summary>
         /// Initializes a new empty configuration.
@@ -26,6 +26,7 @@ namespace CK.Setup
             Types = new List<TypeScriptTypeConfiguration>();
             TypeFilterName = "TypeScript";
             ModuleSystem = TSModuleSystem.Default;
+            GitIgnoreCKGenFolder = true;
         }
 
         /// <summary>
@@ -60,22 +61,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets the '/ck-gen/src' or '/ck-gen' whether <see cref="UseSrcFolder"/> is true or false.
         /// </summary>
-        public NormalizedPath TargetCKGenPath
-        {
-            get
-            {
-                //if( _targetCKGenPath.IsEmptyPath )
-                //{
-                //    CKGenIntegrationMode
-                //}
-                return _targetCKGenPath;
-            }
-        }
+        public NormalizedPath TargetCKGenPath => _targetCKGenPath;
 
         /// <summary>
         /// Gets or sets whether the generated files will be in '/ck-gen/src' instead of '/ck-gen'.
         /// <para>
-        /// Defaults to true.
+        /// Defaults to false.
         /// </para>
         /// </summary>
         public bool UseSrcFolder { get => _useSrcFolder; set => _useSrcFolder = value; }
@@ -116,17 +107,20 @@ namespace CK.Setup
         public bool CKGenBuildMode { get; set; }
 
         /// <summary>
-        /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>".
-        /// Defaults to <see cref="TypeScriptAspectConfiguration.DefaultTypeScriptVersion"/>.
+        /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>",
+        /// no Yarn sdk is installed and no dependency to TypeScript is declared by the code.
+        /// <para>
+        /// When missing or invalid, the engine uses a version it knows.
+        /// </para>
         /// </summary>
-        public string AutomaticTypeScriptVersion { get; set; } = TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
+        public string? DefaultTypeScriptVersion { get; set; }
 
         /// <summary>
         /// Gets or sets whether yarn will be automatically installed (in version <see cref="AutomaticYarnVersion"/>)
         /// if not found in <see cref="TargetProjectPath"/> or above.
         /// <para>
         /// if no yarn can be found in <see cref="TargetProjectPath"/> or above and this is set to false, no TypeScript build will
-        /// be done (as if <see cref="SkipTypeScriptTooling"/> was set to true).
+        /// be done (as if <see cref="IntegrationMode"/> was set to <see cref="CKGenIntegrationMode.None"/>).
         /// </para>
         /// <para>
         /// Defaults to false.
@@ -135,37 +129,16 @@ namespace CK.Setup
         public bool AutoInstallYarn { get; set; }
 
         /// <summary>
-        /// Gets or sets whether VSCode support must be initialized in <see cref="TargetProjectPath"/>.
-        /// <para>
-        /// If "<see cref="TargetProjectPath"/>/.vscode" folder or "<see cref="TargetProjectPath"/>/.yarn/sdks" is missing,
-        /// the commands "add --dev @yarnpkg/sdks" and "sdks vscode" are executed.
-        /// </para>
-        /// <para>
-        /// This installs the package locally instead of "yarn dlx @yarnpkg/sdks vscode" that does a one-shot install from a temporary
-        /// folder: when using zero-install, the vscode support is available directly.
-        /// </para>
+        /// Gets or sets whether Jest must be installed.
         /// <para>
         /// Defaults to false.
         /// </para>
         /// </summary>
-        public bool AutoInstallVSCodeSupport { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether a test command (<c>"scripts": { "test": "..." }</c>) must be available in <see cref="TargetProjectPath"/>'s
-        /// package.json. When no "test" command exists in target project package.json, this installs also install jest, ts-jest, @types/jest
-        /// and jest-environment-jsdom (as we use <c>testEnvironment: 'jsdom'</c> in jest.config.js).
-        /// <para>
-        /// Defaults to false.
-        /// </para>
-        /// </summary>
-        /// <remarks>
-        /// When set to true, <see cref="AutoInstallVSCodeSupport"/> is also considered true.
-        /// </remarks>
-        public bool EnsureTestSupport { get; set; }
+        public bool AutoInstallJest { get; set; }
 
         /// <summary>
         /// Gets or sets whether a "/ck-gen/.gitignore" file wih "*" must be created.
-        /// Defaults to false.
+        /// Defaults to true.
         /// </summary>
         public bool GitIgnoreCKGenFolder { get; set; }
 
@@ -205,17 +178,20 @@ namespace CK.Setup
             Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                     .Elements( TypeScriptAspectConfiguration.xBarrel )
                                                         .Select( c => new NormalizedPath( (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) ) );
-            AutomaticTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion ) ?? TypeScriptAspectConfiguration.DefaultTypeScriptVersion;
+            DefaultTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xDefaultTypeScriptVersion );
 
             var tsIntegrationMode = (string?)e.Attribute( TypeScriptAspectConfiguration.xIntegrationMode );
             IntegrationMode = tsIntegrationMode == null ? CKGenIntegrationMode.Inline : Enum.Parse<CKGenIntegrationMode>( tsIntegrationMode, ignoreCase: true );
 
-            AutoInstallVSCodeSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport ) ?? false;
             AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
-            GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? false;
-            EnsureTestSupport = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnsureTestSupport ) ?? false;
+            GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? true;
+
+            AutoInstallJest = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallJest )
+                              ?? (bool?)e.Attribute( "EnsureTestSupport" ) // Legacy.
+                              ?? false;
+
             CKGenBuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xCKGenBuildMode ) ?? false;
-            UseSrcFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseSrcFolder ) ?? true;
+            UseSrcFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseSrcFolder ) ?? false;
             var tsModuleSystem = (string?)e.Attribute( TypeScriptAspectConfiguration.xModuleSystem );
             ModuleSystem = tsModuleSystem == null ? TSModuleSystem.Default : Enum.Parse<TSModuleSystem>( tsModuleSystem, ignoreCase: true );
             EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
@@ -234,27 +210,26 @@ namespace CK.Setup
                    new XElement( TypeScriptAspectConfiguration.xBarrels,
                                     Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
                    new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
-                   new XAttribute( TypeScriptAspectConfiguration.xAutomaticTypeScriptVersion, AutomaticTypeScriptVersion ),
+                   DefaultTypeScriptVersion != null 
+                    ? new XAttribute( TypeScriptAspectConfiguration.xDefaultTypeScriptVersion, DefaultTypeScriptVersion )
+                    : null,
                    IntegrationMode is not CKGenIntegrationMode.Inline
                     ? new XAttribute( TypeScriptAspectConfiguration.xIntegrationMode, IntegrationMode.ToString() )
                     : null,
-                   EnsureTestSupport
-                    ? new XAttribute( TypeScriptAspectConfiguration.xEnsureTestSupport, true )
+                   AutoInstallJest
+                    ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallJest, true )
                     : null,
                    AutoInstallYarn
                     ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallYarn, true )
                     : null,
-                   GitIgnoreCKGenFolder
-                    ? new XAttribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder, true )
-                    : null,
-                   AutoInstallVSCodeSupport
-                    ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallVSCodeSupport, true )
+                   GitIgnoreCKGenFolder is false
+                    ? new XAttribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder, false )
                     : null,
                    CKGenBuildMode
                     ? new XAttribute( TypeScriptAspectConfiguration.xCKGenBuildMode, true )
                     : null,
-                   !UseSrcFolder
-                    ? new XAttribute( TypeScriptAspectConfiguration.xUseSrcFolder, false )
+                   UseSrcFolder
+                    ? new XAttribute( TypeScriptAspectConfiguration.xUseSrcFolder, true )
                     : null,
                    ModuleSystem != TSModuleSystem.Default
                     ? new XAttribute( TypeScriptAspectConfiguration.xModuleSystem, ModuleSystem.ToString() )

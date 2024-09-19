@@ -12,7 +12,7 @@ import { IWebFrontAuthResponse } from '@local/ck-gen/CK/AspNet/Auth/index.privat
 import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
 import ResponseBuilder from '../helpers/response-builder';
 
-if( process.env.VSCODE_INSPECTOR_OPTIONS ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
 describe('AuthService', function () {
     const axiosInstance = axios.create({ timeout: 1 });
