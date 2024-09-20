@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="DemoTests\" />
     <Folder Include="TSInlineTests\" />
   </ItemGroup>
 </Project>

@@ -13,6 +13,7 @@ namespace CK.TS.Angular.Tests
         public async Task Demo_Async()
         {
             var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
+
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
             configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );

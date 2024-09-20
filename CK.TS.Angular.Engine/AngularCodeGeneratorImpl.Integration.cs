@@ -348,19 +348,7 @@ namespace CK.TS.Angular.Engine
                 {
                     using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
                     {
-                        bool success = true;
-                        int idx = app.IndexOf( "imports: [RouterOutlet" );
-                        if( idx < 0 )
-                        {
-                            monitor.Warn( "Unable to find an 'imports: [RouterOutlet' substring." );
-                            success = false;
-                        }
-                        else
-                        {
-                            Throw.DebugAssert( "imports: [RouterOutlet".Length == 22 );
-                            app = app.Insert( idx + 22, ", CKGenAppModule" );
-                            monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
-                        }
+                        bool success = AddInImports( monitor, ref app );
                         app = app.ReplaceLineEndings();
                         var lines = app.Split( Environment.NewLine ).ToList();
                         success = AddImportStatement( monitor, lines );
@@ -376,6 +364,36 @@ namespace CK.TS.Angular.Engine
                     }
                 }
 
+                static bool AddInImports( IActivityMonitor monitor, ref string app )
+                {
+                    int idx = app.IndexOf( "imports: [" );
+                    if( idx > 0 )
+                    {
+                        idx = app.IndexOf( "RouterOutlet", idx );
+                        if( idx > 0 )
+                        {
+                            Throw.DebugAssert( "RouterOutlet".Length == 12 );
+                            int idxEnd = idx + 12;
+                            while( app[idxEnd] != ',' && app[idxEnd] != ']' && idxEnd < app.Length ) ++idxEnd;
+                            if( idxEnd < app.Length )
+                            {
+                                if( app[idxEnd] == ',' )
+                                {
+                                    app = app.Insert( idxEnd, " CKGenAppModule," );
+                                }
+                                else
+                                {
+                                    Throw.DebugAssert( app[idxEnd] == ']' );
+                                    app = app.Insert( idx + 12, ", CKGenAppModule" );
+                                }
+                                monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
+                                return true;
+                            }
+                        }
+                    }
+                    monitor.Warn( "Unable to find an 'imports: [ ... RouterOutlet ...]' substring." );
+                    return false;
+                }
             }
 
             static void TransformAppConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
@@ -399,7 +417,7 @@ namespace CK.TS.Angular.Engine
                         else
                         {
                             Throw.DebugAssert( "provideRouter(routes)".Length == 21 );
-                            app = app.Insert( idx + 21, ", ...CKGenAppModule.Providers" );
+                            app = app.Insert( idx + 21, ", ...CKGenAppModule.Providers," );
                             monitor.Info( "Added '...CKGenAppModule.Providers' in providers." );
                         }
                         app = app.ReplaceLineEndings();

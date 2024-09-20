@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Demo;
 using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
@@ -22,6 +23,9 @@ namespace CK.TS.Angular.Tests
             try
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
+                configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ) );
+
                 configuration.EnsureAspect<TypeScriptAspectConfiguration>();
                 var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
                 ts.TargetProjectPath = root;
