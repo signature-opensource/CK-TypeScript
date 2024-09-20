@@ -177,6 +177,7 @@ namespace CK.Setup
         /// </summary>
         public sealed class AfterEventArgs : BaseEventArgs
         {
+
             internal AfterEventArgs( IActivityMonitor monitor, TypeScriptIntegrationContext integrationContext, NormalizedPath yarnPath, bool success )
                 : base( monitor, integrationContext, yarnPath )
             {
@@ -187,6 +188,11 @@ namespace CK.Setup
             /// Gets whether the integration succeeded.
             /// </summary>
             public bool Success { get; }
+
+            /// <summary>
+            /// Gets the /src folder. It necessarily exists.
+            /// </summary>
+            public NormalizedPath SrcFolderPath => IntegrationContext.SrcFolderPath;
         }
 
     }

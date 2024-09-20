@@ -1,6 +1,7 @@
 using CK.Core;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 
 namespace CK.Setup
@@ -33,27 +34,29 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Creates a dictionary from a Json object property that must be a Json object.
+        /// Reads a dictionary from a Json object property that is missing or must be a Json object.
         /// Empty or whitespace keys are ignored by default.
-        /// Null values are ignored.
         /// </summary>
         /// <param name="o">This object.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="propertyName">The property to read.</param>
+        /// <param name="result">The dictionary or null if it is missing.</param>
         /// <param name="skipEmptyOrWhitespaceKey">False to allow an empty or whitespace key.</param>
-        /// <returns>The dictionary or null on error.</returns>
-        public Dictionary<string, string>? GetStringDictionary( JsonObject o,
-                                                                IActivityMonitor monitor,
-                                                                string propertyName,
-                                                                bool skipEmptyOrWhitespaceKey = true )
+        /// <returns>True on success, false on error.</returns>
+        public bool ReadStringDictionary( JsonObject o,
+                                          IActivityMonitor monitor,
+                                          string propertyName,
+                                          out Dictionary<string, string>? result,
+                                          bool skipEmptyOrWhitespaceKey = true )
         {
+            result = null;
             if( !GetNonJsonNull<JsonObject>( o, monitor, propertyName, out var section ) )
             {
-                return null;
+                return false;
             }
-            var result = new Dictionary<string, string>();
             if( section != null )
             {
+                result = new Dictionary<string, string>();
                 foreach( var (name, content) in section )
                 {
                     if( (!skipEmptyOrWhitespaceKey || !string.IsNullOrWhiteSpace( name ))
@@ -64,44 +67,52 @@ namespace CK.Setup
                     }
                 }
             }
-            return result;
+            return true;
         }
 
         /// <summary>
-        /// Sets the whole "<paramref name="propertyName"/>" property content.
+        /// Sets the whole "<paramref name="propertyName"/>" property content or removes it.
         /// </summary>
         /// <param name="o">The parent object.</param>
         /// <param name="propertyName">The property to read.</param>
-        /// <param name="dictionary">The property names and their values.</param>
-        public void SetStringDictionary( JsonObject o, string propertyName, IEnumerable<KeyValuePair<string, string>> dictionary )
+        /// <param name="dictionary">The property names and their values. Null to remove it.</param>
+        public void SetStringDictionary( JsonObject o, string propertyName, IEnumerable<KeyValuePair<string, string>>? dictionary )
         {
             Throw.CheckArgument( o is not null && o.Root == Root );
             Throw.CheckNotNullArgument( propertyName );
-            Throw.CheckNotNullArgument( dictionary );
-            var newOne = new JsonObject();
-            foreach( var (name, content) in dictionary )
+            if( dictionary == null )
             {
-                newOne[name] = content;
+                o.Remove( propertyName );
             }
-            o[propertyName] = newOne;
+            else
+            {
+                var newOne = new JsonObject();
+                foreach( var (name, content) in dictionary )
+                {
+                    newOne[name] = content;
+                }
+                o[propertyName] = newOne;
+            }
         }
 
         /// <summary>
-        /// Creates a list of non nullable strings from a Json object property that must be an array.
+        /// Reads a list of non nullable strings from a Json object property that is missing or must be an array.
         /// </summary>
         /// <param name="o">The parent object.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="propertyName">The property to read.</param>
-        /// <returns>The list or null on error.</returns>
-        public List<string>? GetStringList( JsonObject o, IActivityMonitor monitor, string propertyName )
+        /// <param name="result">The list of strings or null if it is missing.</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool ReadStringList( JsonObject o, IActivityMonitor monitor, string propertyName, out List<string>? result )
         {
+            result = null;
             if( !GetNonJsonNull<JsonArray>( o, monitor, propertyName, out var array ) )
             {
-                return null;
+                return false;
             }
-            var result = new List<string>();
             if( array != null )
             {
+                result = new List<string>();
                 bool success = true;
                 int i = 0;
                 foreach( var node in array )
@@ -116,28 +127,34 @@ namespace CK.Setup
                     }
                     ++i;
                 }
-                if( !success ) result = null;
+                return success;
             }
-            return result;
+            return true;
         }
 
         /// <summary>
-        /// Sets an array of string.
+        /// Sets an array of string or removes it.
         /// </summary>
         /// <param name="o">The parent object.</param>
         /// <param name="propertyName">The property to read.</param>
         /// <param name="strings">The strings.</param>
-        public void SetStringList( JsonObject o, string propertyName, IEnumerable<string> strings )
+        public void SetStringList( JsonObject o, string propertyName, IEnumerable<string>? strings )
         {
             Throw.CheckArgument( o is not null && o.Root == Root );
             Throw.CheckNotNullArgument( propertyName );
-            Throw.CheckNotNullArgument( strings );
-            var newOne = new JsonArray();
-            foreach( var s in strings )
+            if( strings == null )
             {
-                newOne.Add( JsonValue.Create( s ) );
+                o.Remove( propertyName );
             }
-            o[propertyName] = newOne;
+            else
+            {
+                var newOne = new JsonArray();
+                foreach( var s in strings )
+                {
+                    newOne.Add( JsonValue.Create( s ) );
+                }
+                o[propertyName] = newOne;
+            }
         }
 
         /// <summary>

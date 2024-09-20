@@ -66,7 +66,7 @@ namespace CK.Setup
         TypeScriptBinPathAspectConfiguration BinPathConfiguration { get; }
 
         /// <inheritdoc cref="TypeScriptContext.IntegrationContext"/>
-        TypeScriptIntegrationContext IntegrationContext { get; }
+        TypeScriptIntegrationContext? IntegrationContext { get; }
 
     }
 }

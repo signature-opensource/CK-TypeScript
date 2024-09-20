@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -24,16 +25,16 @@ namespace CK.Setup
         JsonFile _file;
         readonly NormalizedPath _folderPath;
         [AllowNull] JsonObject _compilerOptions;
-        readonly Dictionary<string, HashSet<string>> _coPaths;
-        readonly List<string> _coTypes;
+        // A missing CompilerOptions.types is not the same as an empty one.
+        List<string>? _coTypes;
+        // A missing CompilerOptions.path is not the same as an empty one.
+        Dictionary<string, HashSet<string>>? _coPaths;
         NormalizedPath _baseUrl;
 
         TSConfigJsonFile( JsonFile f )
         {
             _file = f;
             _folderPath = f.FilePath.RemoveLastPart();
-            _coTypes = new List<string>();
-            _coPaths = new Dictionary<string, HashSet<string>>();
         }
 
         /// <summary>
@@ -96,20 +97,17 @@ namespace CK.Setup
                 _file.Root.Add( "compilerOptions", compilerOptions );
             }
             success &= _file.GetNonNullJsonString( compilerOptions, monitor, "baseUrl", out var baseUrl );
-            var paths = ReadPaths( _file, compilerOptions, monitor );
-            success &= paths != null;
-            var coTypes = _file.GetStringList( compilerOptions, monitor, "types" );
-            if( !success || coTypes == null )
+            success &= ReadPaths( _file, compilerOptions, monitor, out var paths );
+            success &= _file.ReadStringList( compilerOptions, monitor, "types", out var coTypes );
+            if( !success )
             {
                 monitor.Error( $"Unable to read file '{_file.FilePath}'." );
                 return false;
             }
             _compilerOptions = compilerOptions;
             _baseUrl = baseUrl;
-            _coPaths.Clear();
-            _coPaths.AddRange( paths! );
-            _coTypes.Clear();
-            _coTypes.AddRange( coTypes! );
+            _coPaths = paths;
+            _coTypes = coTypes;
             return true;
         }
 
@@ -135,14 +133,26 @@ namespace CK.Setup
         public NormalizedPath ResolvedBaseUrl => _folderPath.Combine( _baseUrl ).ResolveDots();
 
         /// <summary>
-        /// Gets the "compilerOptions": { "paths": { "key", ["v1","v2"] } } paths mappings.
+        /// Gets or sets the "compilerOptions": { "types": [ ... ] }.
+        /// Null when types property is missing.
         /// </summary>
-        public Dictionary<string, HashSet<string>> CompilerOptionsPaths => _coPaths;
+        public List<string>? CompilerOptionsTypes
+        {
+            get => _coTypes;
+            set => _coTypes = value;
+        }
 
         /// <summary>
-        /// Gets the "compilerOptions": { "types": [ ... ] }.
+        /// Gets or sets the "compilerOptions": { "paths": { "key", ["v1","v2"] } } paths mappings.
+        /// Null when paths property is missing.
+        /// Uses <see cref="CompileOptionsPathEnsureMapping(string, string)"/> to easily add entries
+        /// to it.
         /// </summary>
-        public List<string> CompilerOptionsTypes => _coTypes;
+        public Dictionary<string, HashSet<string>>? CompilerOptionsPaths
+        {
+            get => _coPaths;
+            set => _coPaths = value;
+        }
 
         /// <summary>
         /// Ensures that "compilerOptions": { "paths": { "from", ["to","other"...] } } exists. 
@@ -152,6 +162,7 @@ namespace CK.Setup
         /// <returns>True if the mapping has been added, false if it already exists.</returns>
         public bool CompileOptionsPathEnsureMapping( string from, string to )
         {
+            _coPaths ??= new Dictionary<string, HashSet<string>>();
             if( !_coPaths.TryGetValue( from, out var mappings ) )
             {
                 mappings = new HashSet<string> { to };
@@ -168,14 +179,7 @@ namespace CK.Setup
         {
             _file.SetString( _compilerOptions, "baseUrl", _baseUrl.IsEmptyPath ? null : _baseUrl.Path );
             SetPaths( _compilerOptions, _coPaths );
-            if( _coTypes.Count > 0 )
-            {
-                _file.SetStringList( _compilerOptions, "types", _coTypes );
-            }
-            else
-            {
-                _compilerOptions.Remove( "types" );
-            }
+            _file.SetStringList( _compilerOptions, "types", _coTypes );
         }
 
         /// <summary>
@@ -214,15 +218,16 @@ namespace CK.Setup
             return Encoding.UTF8.GetString( a.WrittenSpan );
         }
 
-        static Dictionary<string, HashSet<string>>? ReadPaths( JsonFile f, JsonObject compilerOptions, IActivityMonitor monitor )
+        static bool ReadPaths( JsonFile f, JsonObject compilerOptions, IActivityMonitor monitor, out Dictionary<string, HashSet<string>>? result )
         {
-            if( !f.GetNonJsonNull<JsonObject>( compilerOptions, monitor, "paths", out JsonObject? paths ) )
+            result = null;
+            if( !f.GetNonJsonNull( compilerOptions, monitor, "paths", out JsonObject? paths ) )
             {
-                return null;
+                return false;
             }
-            var result = new Dictionary<string, HashSet<string>>();
             if( paths != null )
             {
+                result = new Dictionary<string, HashSet<string>>();
                 foreach( var (name, array) in paths )
                 {
                     if( array == null ) continue;
@@ -236,7 +241,7 @@ namespace CK.Setup
                             if( item is not JsonValue v || !v.TryGetValue( out mapping ) )
                             {
                                 monitor.Error( $"Unable to read \"{item.GetPath()}\" as a string." );
-                                return null;
+                                return false;
                             }
                             content.Add( mapping );
                         }
@@ -245,22 +250,28 @@ namespace CK.Setup
                     else
                     {
                         monitor.Error( $"Unable to read \"{array.GetPath()}\" as an array." );
-                        return null;
+                        return false;
                     }
                 }
             }
-            return result;
+            return true;
         }
 
-
-        static void SetPaths( JsonObject compilerOptions, Dictionary<string, HashSet<string>> paths )
+        static void SetPaths( JsonObject compilerOptions, Dictionary<string, HashSet<string>>? paths )
         {
-            var newOne = new JsonObject();
-            foreach( var (name, content) in paths )
+            if( paths == null )
             {
-                newOne[name] = new JsonArray( content.Select( s => JsonValue.Create( s ) ).ToArray() );
+                compilerOptions.Remove("paths");
             }
-            compilerOptions["paths"] = newOne;
+            else
+            {
+                var newOne = new JsonObject();
+                foreach( var (name, content) in paths )
+                {
+                    newOne[name] = new JsonArray( content.Select( s => JsonValue.Create( s ) ).ToArray() );
+                }
+                compilerOptions["paths"] = newOne;
+            }
         }
 
 

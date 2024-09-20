@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using CSemVer;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -11,316 +12,22 @@ using System.Threading;
 
 namespace CK.TS.Angular.Engine
 {
-    public class AngularCodeGeneratorImpl : ITSCodeGenerator
+    public partial class AngularCodeGeneratorImpl : ITSCodeGenerator
     {
         const string _defaultAngularCliVersion = "^18.2.0";
         const string _conflictFolderName = "_ckConflict_";
 
         public bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
         {
+            if( initializer.BinPathConfiguration.IntegrationMode != CKGenIntegrationMode.Inline )
+            {
+                monitor.Error( $"Angular application requires Inline IntegrationMode. '{initializer.BinPathConfiguration}' mode is not supported." );
+                return false;
+            }
+            Throw.DebugAssert( "Inline mode => IntegrationContext.", initializer.IntegrationContext != null );
             initializer.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
             initializer.IntegrationContext.OnAfterIntegration += OnAfterIntegration;
             return true;
-        }
-
-        void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
-        {
-            if( ValidateConfiguration( e.Monitor, e.IntegrationContext.Configuration ) )
-            {
-                var angularJsonPath = e.TargetProjectPath.AppendPart( "angular.json" );
-                if( File.Exists( angularJsonPath ) )
-                {
-                    e.Monitor.Info( "Found existing 'angular.json' file." );
-                }
-                else
-                {
-                    CreateAngularApp( e.Monitor, e );
-                }
-                // Adds the jest-preset-angular if not alreay here.
-                e.AddOrUpdateTargetProjectDependency( "jest-preset-angular", SVersionBound.All, DependencyKind.DevDependency );
-                e.JestSetup = new AngularJestSetupHandler( e.IntegrationContext );
-            }
-
-            static bool ValidateConfiguration( IActivityMonitor monitor, TypeScriptBinPathAspectConfiguration configuration )
-            {
-                bool success = true;
-                if( configuration.IntegrationMode != CKGenIntegrationMode.Inline )
-                {
-                    monitor.Error( $"Angular application requires Inline IntegrationMode. '{configuration.IntegrationMode}' mode is not supported." );
-                    success = false;
-                }
-                if( !configuration.AutoInstallJest )
-                {
-                    monitor.Warn( $"Setting AutoInstallJest to true (Angular application must always have test support)." );
-                    configuration.AutoInstallJest = true;
-                }
-                return success;
-            }
-
-            static bool CreateAngularApp( IActivityMonitor monitor, TypeScriptIntegrationContext.BeforeEventArgs e )
-            {
-                using( monitor.OpenInfo( "No 'angular.json' found, creating a default Angular application." ) )
-                {
-                    // This doesn't work: the npx.cmd looks for a npx-cli.js in the nodemodules/ of the workingDirectory instead
-                    // of the nodemodules/ of the nodes/ or npm/ folder (the %~dp0 variable).
-                    //
-                    // e.RunProcess( "npx.cmd",
-                    //               $"--package @angular/cli@18 ng new {e.TargetProjectPath.LastPart} --style=less --package-manager=yarn --interactive=false --standalone=true --minimal=true --skip-install=true --skip-git=true",
-                    //               workingDirectory: e.TargetProjectPath.RemoveLastPart() );
-                    //
-
-                    NormalizedPath targetProjectPath = e.TargetProjectPath;
-                    NormalizedPath tempFolderPath = targetProjectPath.AppendPart( "_ckNew_" );
-                    NormalizedPath newFolderPath = tempFolderPath.AppendPart( targetProjectPath.LastPart.Replace( ' ', '_' ) );
-                    NormalizedPath tempPackageJsonPath = tempFolderPath.AppendPart( "package.json" );
-                    PackageJsonFile targetPackageJson = e.IntegrationContext.TargetPackageJson;
-
-                    // We setup a package.json with angular/cli and calls 'ng new' on a sub folder and then
-                    // we lift the folder's content.
-                    //
-                    // This is "safe": when lifting, if a file or a directory exists in the target project, the move
-                    // will throw. This guaranties that no existing files will be lost: in practice, the target project
-                    // folder must be empty (any existing target package.json is deleted before lifting).
-                    //
-                    // Instead of updating the target package.json with the angular one, we do it in the reverse way:
-                    // the /_new_/xxx/package.json is updated with the content of the in memory (with its configured dependency),
-                    // saved and lifted. Then the target package.json is reloaded from its "angular aware" file.
-
-                    if( Directory.Exists( tempFolderPath ) )
-                    {
-                        monitor.Warn( $"An existing '_ckNew_' folder exists. Deleting it." );
-                        DeleteFolder( monitor, newFolderPath, recursive: true );
-                    }
-
-                    return CreateNewAngular( monitor, e, tempFolderPath, newFolderPath, tempPackageJsonPath )
-                           && UpdateNewPackageJson( monitor, newFolderPath, targetPackageJson, out IList<PackageDependency> savedLatestDependencies )
-                           && LiftContent( monitor, targetProjectPath, newFolderPath )
-                           && ReloadTargetTSConfigAndPackageJson( monitor, e.IntegrationContext.TSConfigJson, targetPackageJson, savedLatestDependencies )
-                           && DeleteNewFolder( monitor, tempFolderPath, newFolderPath, tempPackageJsonPath );
-                }
-
-                static bool CreateNewAngular( IActivityMonitor monitor,
-                                              TypeScriptIntegrationContext.BeforeEventArgs e,
-                                              NormalizedPath tempFolderPath,
-                                              NormalizedPath newFolderPath,
-                                              NormalizedPath tempPackageJsonPath )
-                {
-                    using( monitor.OpenInfo( $"Initialize a new Angular '{newFolderPath.LastPart}' project in the folder '{newFolderPath}'." ) )
-                    {
-                        Directory.CreateDirectory( tempFolderPath );
-                        if( !e.ConfiguredLibraries.TryGetValue( "@angular/cli", out var angularCliVersion ) )
-                        {
-                            var parseResult = SVersionBound.NpmTryParse( _defaultAngularCliVersion );
-                            Throw.DebugAssert( "The version defined in code is necessarily valid.", parseResult.IsValid );
-                            angularCliVersion = parseResult.Result;
-                            monitor.Info( $"Using @angular/cli default version '{_defaultAngularCliVersion}'." );
-                        }
-                        else
-                        {
-                            monitor.Info( $"Using @angular/cli version '{angularCliVersion}' from configured LibraryVersions." );
-                        }
-                        monitor.Info( $"Creating a temporary package.json." );
-                        File.WriteAllText( tempPackageJsonPath, "{}" );
-                        // Required by Yarn, otherwise the _new_ project must be a workspace in the parent project.
-                        File.WriteAllText( tempFolderPath.AppendPart( "yarn.lock" ), "" );
-                        if( !e.RunYarn( $"add @angular/cli@{angularCliVersion.ToNpmString()}",
-                                        workingDirectory: tempFolderPath ) )
-                        {
-                            return false;
-                        }
-                        if( !e.RunYarn( $"ng new {newFolderPath.LastPart} --style=less --package-manager=yarn --interactive=false --standalone=true --skip-install=true --skip-git=true",
-                                        workingDirectory: tempFolderPath ) )
-                        {
-                            return false;
-                        }
-                        return true;
-                    }
-                }
-
-                static bool UpdateNewPackageJson( IActivityMonitor monitor,
-                                                  NormalizedPath newFolderPath,
-                                                  PackageJsonFile targetPackageJson,
-                                                  out IList<PackageDependency> savedLatestDependencies )
-                {
-                    savedLatestDependencies = ImmutableArray<PackageDependency>.Empty;
-                    var newPackageJson = PackageJsonFile.ReadFile( monitor,
-                                                                   newFolderPath.AppendPart( "package.json" ),
-                                                                   targetPackageJson.Dependencies.IgnoreVersionsBound,
-                                                                   mustExist: true );
-                    if( newPackageJson == null )
-                    {
-                        return false;
-                    }
-
-                    var toRemove = newPackageJson.Dependencies.Keys.Where( name => name.Contains( "jasmine" ) || name.Contains( "karma" ) ).ToList();
-                    monitor.Info( $"Removing karma and jasmine packages: {toRemove.Concatenate()}." );
-                    foreach( var name in toRemove ) newPackageJson.Dependencies.Remove( name );
-
-                    // Running tests must be done via Jest, not anymore with "ng test" (that uses karma). 
-                    newPackageJson.CKVersion = targetPackageJson.CKVersion;
-                    newPackageJson.Scripts["test"] = "jest";
-
-                    savedLatestDependencies = targetPackageJson.Dependencies.RemoveLatestDependencies();
-                    if( !newPackageJson.Dependencies.AddOrUpdate( monitor, targetPackageJson.Dependencies.Values, false ) )
-                    {
-                        return false;
-                    }
-                    newPackageJson.Save();
-                    return true;
-                }
-
-                static bool LiftContent( IActivityMonitor monitor,
-                                         NormalizedPath targetProjectPath,
-                                         NormalizedPath newFolderPath )
-                {
-                    var conflictFolderPath = targetProjectPath.AppendPart( _conflictFolderName );
-
-                    using( monitor.OpenInfo( "Lifts the new project content." ) )
-                    {
-                        var hasConflict = false;
-                        if( Directory.Exists( conflictFolderPath ) )
-                        {
-                            monitor.Warn( $"Deleting previous '{_conflictFolderName}' folder." );
-                            if( !DeleteFolder( monitor, conflictFolderPath, recursive: true ) )
-                            {
-                                return false;
-                            }
-                        }
-                        int idxRemove = targetProjectPath.Path.Length;
-                        int lenRemove = newFolderPath.Path.Length - idxRemove;
-                        string? currentTarget = null;
-                        try
-                        {
-                            // This is idempotent (as long as the comment is not removed in the lifted file).
-                            MoveGitIgnore( newFolderPath, targetProjectPath );
-                            // Consider the root _new_/XXX/ level by using Directory.Move that handles
-                            // folders and files.
-                            // On conflict, the /_ckConflict_ will contain the whole sub folder ("/src" for example).
-                            foreach( var entry in Directory.EnumerateFileSystemEntries( newFolderPath ) )
-                            {
-                                currentTarget = entry.Remove( idxRemove, lenRemove );
-                                if( Path.Exists( currentTarget ) )
-                                {
-                                    MoveToConflicts( monitor, ref hasConflict, targetProjectPath.Path.Length, currentTarget, conflictFolderPath );
-                                }
-                                Directory.Move( entry, currentTarget );
-                            }
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( $"While updating '{currentTarget}'.", ex );
-                            return false;
-                        }
-                        return true;
-                    }
-
-                    static bool MoveToConflicts( IActivityMonitor monitor, ref bool hasConflict, int targetProjectPathLength, string currentTarget, NormalizedPath conflictFolderPath )
-                    {
-                        if( !hasConflict )
-                        {
-                            hasConflict = true;
-                            Directory.CreateDirectory( conflictFolderPath );
-                            File.WriteAllText( conflictFolderPath + "/.gitignore", "*" );
-                        }
-                        try
-                        {
-                            Throw.DebugAssert( _conflictFolderName == "_ckConflict_" );
-                            Directory.Move( currentTarget, currentTarget.Insert( targetProjectPathLength, "/_ckConflict_" ) );
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( $"While moving '{currentTarget.Substring( targetProjectPathLength )}' to '{_conflictFolderName}' folder.", ex );
-                            return false;
-                        }
-                        return true;
-                    }
-
-                    static void MoveGitIgnore( NormalizedPath newFolder, NormalizedPath targetProjectPath )
-                    {
-                        var source = newFolder.AppendPart( ".gitignore" );
-                        var target = targetProjectPath.AppendPart( ".gitignore" );
-                        if( File.Exists( target ) )
-                        {
-                            var content = File.ReadAllText( target );
-                            if( !content.Contains( "# From Angular initialization:" ) )
-                            {
-                                content += Environment.NewLine + "# From Angular initialization:" + Environment.NewLine;
-                                content += File.ReadAllText( source );
-                                File.WriteAllText( target, content );
-                                File.Delete( source );
-                            }
-                        }
-                        else
-                        {
-                            Directory.Move( source, target );
-                        }
-                    }
-                }
-
-                static bool ReloadTargetTSConfigAndPackageJson( IActivityMonitor monitor,
-                                                                TSConfigJsonFile tSConfigJson,
-                                                                PackageJsonFile targetPackageJson,
-                                                                IList<PackageDependency> savedLatestDependencies )
-                {
-                    monitor.Info( "Reloads the now Angular aware target package.json and tsconfig.json files." );
-                    targetPackageJson.Reload( monitor );
-                    if( savedLatestDependencies.Count > 0 )
-                    {
-                        if( !targetPackageJson.Dependencies.AddOrUpdate( monitor, savedLatestDependencies, false ) )
-                        {
-                            return false;
-                        }
-                    }
-                    tSConfigJson.Reload( monitor );
-                    return true;
-                }
-
-                static bool DeleteNewFolder( IActivityMonitor monitor, NormalizedPath tempFolderPath, NormalizedPath newFolderPath, NormalizedPath tempPackageJsonPath )
-                {
-                    // This is deliberately explicit about what SHOULD be left in the folders: we don't use a recursive blind deletion.
-                    // If something change here, we need to know and fully handle the issue.
-                    monitor.Info( "Deleting the 'package.json', 'yarn.lock', '.pnp.cjs' and '.pnp.loader.mjs' files and '.yarn' folder that has been used to install the @angular/cli." );
-                    File.Delete( tempPackageJsonPath );
-                    File.Delete( tempFolderPath + "/yarn.lock" );
-                    File.Delete( tempFolderPath + "/.pnp.cjs" );
-                    File.Delete( tempFolderPath + "/.pnp.loader.mjs" );
-                    DeleteFolder( monitor, tempFolderPath + "/.yarn", recursive: true );
-                    monitor.Info( "Removing the now empty folder." );
-                    return DeleteFolder( monitor, newFolderPath )
-                           && DeleteFolder( monitor, tempFolderPath );
-                }
-
-                static bool DeleteFolder( IActivityMonitor monitor, NormalizedPath existingFolderPath, bool recursive = false )
-                {
-                    int retryCount = 0;
-                    retry:
-                    try
-                    {
-                        if( Directory.Exists( existingFolderPath ) )
-                        {
-                            Directory.Delete( existingFolderPath, recursive );
-                        }
-
-                        return true;
-                    }
-                    catch( Exception ex )
-                    {
-                        if( retryCount++ > 5 )
-                        {
-                            monitor.Error( $"Unable to delete folder '{existingFolderPath}'.", ex );
-                            return false;
-                        }
-                        if( retryCount == 1 ) monitor.Warn( $"Deleting folder '{existingFolderPath}' failed. Retrying up tp 5 times." );
-                        Thread.Sleep( retryCount * 50 );
-                        goto retry;
-                    }
-                }
-            }
-
-        }
-
-        void OnAfterIntegration( object? sender, TypeScriptIntegrationContext.AfterEventArgs e )
-        {
         }
 
         bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
@@ -329,6 +36,24 @@ namespace CK.TS.Angular.Engine
 
         public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
+            var f = context.Root.Root.FindOrCreateManualFile( "CK/Angular/CKGenAppModule.ts" );
+            f.File.Body.Append( """
+                import { NgModule, Provider } from '@angular/core';
+
+                @NgModule({
+                    imports: [
+                    // Registered NgModules come here.
+                    ],
+                    exports: [
+                    // Registered NgModules also come here.
+                ]
+                  })
+                export class CKGenAppModule {
+                   static Providers : Provider[] = [
+                    // Registered providers come here.
+                   ];
+                }
+                """ );
             return true;
         }
     }

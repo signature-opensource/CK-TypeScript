@@ -41,7 +41,6 @@ namespace CK.Setup
 
             readonly TypeScriptIntegrationContext _context;
             readonly NormalizedPath _jestConfigFilePath;
-            readonly NormalizedPath _srcFolderPath;
             readonly NormalizedPath _jestSetupTSFilePath;
 
             public JestSetupHandler( TypeScriptIntegrationContext context )
@@ -52,14 +51,16 @@ namespace CK.Setup
 
                 _jestConfigFilePath = targetProjectPath.AppendPart( JestConfigFileName );
                 _jestSetupTSFilePath = targetProjectPath.AppendPart( JestSetupTSFileName );
-                _srcFolderPath = targetProjectPath.AppendPart( "src" );
             }
 
             public TypeScriptIntegrationContext Context => _context;
 
             public NormalizedPath TargetProjectPath => _context.Configuration.TargetProjectPath;
 
-            public NormalizedPath SrcFolderPath => _srcFolderPath;
+            /// <summary>
+            /// Gets the /src folder. It necessarily exists.
+            /// </summary>
+            public NormalizedPath SrcFolderPath => _context.SrcFolderPath;
 
             public NormalizedPath JestConfigFilePath => _jestConfigFilePath;
 
@@ -68,7 +69,6 @@ namespace CK.Setup
             internal bool DoRun( IActivityMonitor monitor )
             {
                 using var _ = monitor.OpenInfo( $"Running {GetType().Name}." );
-                Directory.CreateDirectory( _srcFolderPath );
                 return Run( monitor );
             }
 
@@ -97,13 +97,13 @@ namespace CK.Setup
             /// <returns>True on success, false otherwise (error should be logged). At this level, always true.</returns>
             protected virtual bool EnsureSampleJestTestInSrcFolder( IActivityMonitor monitor )
             {
-                var existingTestFile = Directory.EnumerateFiles( _srcFolderPath, "*.spec.ts", SearchOption.AllDirectories ).FirstOrDefault();
+                var existingTestFile = Directory.EnumerateFiles( SrcFolderPath, "*.spec.ts", SearchOption.AllDirectories ).FirstOrDefault();
                 if( existingTestFile != null )
                 {
                     monitor.Info( $"At least a test file exists in 'src' folder: skipping 'src/sample.spec.ts' creation (found '{existingTestFile}')." );
                     return true;
                 }
-                var sampleTestPath = _srcFolderPath.AppendPart( "sample.spec.ts" );
+                var sampleTestPath = SrcFolderPath.AppendPart( "sample.spec.ts" );
                 monitor.Info( $"Creating 'src/sample.spec.ts' test file." );
                 File.WriteAllText( sampleTestPath, """
                 // Trick from https://stackoverflow.com/a/77047461/190380

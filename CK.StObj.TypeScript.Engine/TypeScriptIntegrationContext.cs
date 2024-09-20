@@ -28,6 +28,7 @@ namespace CK.Setup
         readonly bool _initialEmptyTargetPackage;
         readonly ImmutableDictionary<string,SVersionBound> _libVersionsConfig;
         NormalizedPath _yarnPath;
+        NormalizedPath _srcFolderPath;
         SVersion? _typeScriptSdkVersion;
         // Computed once by SettleTypeScriptDependency.
         PackageDependency? _settledTypeScriptDep;
@@ -44,15 +45,16 @@ namespace CK.Setup
                                       TSConfigJsonFile tSConfigJson,
                                       ImmutableDictionary<string, SVersionBound> libVersionsConfig )
         {
+            _initialCKVersion = targetPackageJson.CKVersion;
+            _initialEmptyTargetPackage = targetPackageJson.IsEmpty;
             _lastInstalledTargetPackageJsonContent = targetPackageJson.WriteAsString();
+            targetPackageJson.CKVersion = TypeScriptContext.CKTypeScriptCurrentVersion;
             _configuration = configuration;
             _ckGenFolder = configuration.TargetProjectPath.AppendPart( "ck-gen" );
             _targetPackageJson = targetPackageJson;
-            _initialCKVersion = targetPackageJson.CKVersion;
-            _initialEmptyTargetPackage = targetPackageJson.IsEmpty;
-            targetPackageJson.CKVersion = TypeScriptContext.CKTypeScriptCurrentVersion;
             _tsConfigJson = tSConfigJson;
             _libVersionsConfig = libVersionsConfig;
+            _srcFolderPath = configuration.TargetProjectPath.AppendPart( "src" );
             if( configuration.AutoInstallJest )
             {
                 _jestSetup = new JestSetupHandler( this );
@@ -75,6 +77,13 @@ namespace CK.Setup
         /// Gets the project target <see cref="TSConfigJsonFile"/>.
         /// </summary>
         public TSConfigJsonFile TSConfigJson => _tsConfigJson;
+
+        /// <summary>
+        /// Gets the /src folder.
+        /// When starting from scratch, this direcory is guaranteed to exists after
+        /// the <see cref="OnBeforeIntegration"/> step. Otherwise it should always exist.
+        /// </summary>
+        public NormalizedPath SrcFolderPath => _srcFolderPath;
 
         /// <summary>
         /// Gets the initial "ckVersion" from the <see cref="TargetPackageJson"/>.
@@ -404,6 +413,8 @@ namespace CK.Setup
                 CKGenIntegrationMode.Inline => TSPathInlineIntegrate( monitor, saver, typeScriptDep ),
                 _ => Throw.NotSupportedException<bool>()
             };
+            // Assumes that the /src folder exists.
+            Directory.CreateDirectory( _srcFolderPath );
             // Raise the AfterIntegrationEvent
             var hAfter = OnAfterIntegration;
             if( hAfter != null
@@ -498,7 +509,7 @@ namespace CK.Setup
 
             if( _initialEmptyTargetPackage )
             {
-                _targetPackageJson.Name = _targetPackageJson.SafeName;
+                _targetPackageJson.Name ??= _targetPackageJson.SafeName;
                 _targetPackageJson.Private = true;
                 _targetPackageJson.Workspaces.Add( "ck-gen" );
                 _targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, cloneAddedDependency: false );
@@ -546,7 +557,7 @@ namespace CK.Setup
                                   filePrefix: "CouldBe." );
             if( _initialEmptyTargetPackage )
             {
-                _targetPackageJson.Name = _targetPackageJson.SafeName;
+                _targetPackageJson.Name ??= _targetPackageJson.SafeName;
                 _targetPackageJson.Private = true;
             }
             else

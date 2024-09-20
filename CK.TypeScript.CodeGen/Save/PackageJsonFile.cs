@@ -5,7 +5,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -95,10 +94,10 @@ namespace CK.Setup
 
         bool DoRead( IActivityMonitor monitor )
         {
-            var scripts = _file.GetStringDictionary( _file.Root, monitor, "scripts" );
-            var workspaces = _file.GetStringList( _file.Root, monitor, "workspaces" );
+            var success = _file.ReadStringDictionary( _file.Root, monitor, "scripts", out var scripts );
+            success &= _file.ReadStringList( _file.Root, monitor, "workspaces", out var workspaces );
             var dependencies = ReadDependencies( _file, monitor, _dependencies.IgnoreVersionsBound );
-            bool success = scripts != null && dependencies != null && workspaces != null;
+            success &= dependencies != null;
 
             success &= _file.GetNonNullJsonString( _file.Root, monitor, "name", out var name );
             success &= _file.GetNonNullJsonNumber( _file.Root, monitor, "ckVersion", out var ckVersion );
@@ -126,9 +125,9 @@ namespace CK.Setup
                 return false;
             }
             _scripts.Clear();
-            _scripts.AddRange( scripts! );
+            if( scripts != null ) _scripts.AddRange( scripts );
             _workspaces.Clear();
-            _workspaces.AddRange( workspaces! );
+            if( workspaces != null ) _workspaces.AddRange( workspaces );
             _dependencies.Clear();
             _dependencies.AddOrUpdate( monitor, dependencies!.Values );
             _name = name;
