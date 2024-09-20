@@ -23,7 +23,7 @@ namespace CK.TypeScript.CodeGen
     /// This class can be used as-is or can be specialized in order to offer a more powerful API.
     /// </para>
     /// </summary>
-    public class TypeScriptRoot
+    public sealed class TypeScriptRoot
     {
         /// <summary>
         /// Default "@types/luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
@@ -94,17 +94,7 @@ namespace CK.TypeScript.CodeGen
             _pascalCase = pascalCase;
             _reflectTS = reflectTS;
             _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
-            if( GetType() == typeof( TypeScriptRoot ) )
-            {
-                Root = new TypeScriptFolder( this );
-            }
-            else
-            {
-                // Optional generic Root strong typing.
-                var rootType = typeof( TypeScriptFolder<> ).MakeGenericType( GetType() );
-                Root = (TypeScriptFolder)rootType.GetMethod( "Create", BindingFlags.NonPublic | BindingFlags.Static )!
-                                                 .Invoke( null, new object[] { this } )!;
-            }
+            Root = new TypeScriptFolder( this );
             _tsTypes = new TSTypeManager( this );
         }
 
@@ -145,25 +135,9 @@ namespace CK.TypeScript.CodeGen
         /// </summary>
         public event Action<TypeScriptFile>? FileCreated;
 
-        /// <summary>
-        /// Optional extension point called whenever a new folder appears.
-        /// Invokes <see cref="FolderCreated"/> by default.
-        /// </summary>
-        /// <param name="f">The newly created folder.</param>
-        internal protected virtual void OnFolderCreated( TypeScriptFolder f )
-        {
-            FolderCreated?.Invoke( f );
-        }
+        internal void OnFolderCreated( TypeScriptFolder f ) => FolderCreated?.Invoke( f );
 
-        /// <summary>
-        /// Optional extension point called whenever a new file appears.
-        /// Invokes <see cref="FileCreated"/> by default.
-        /// </summary>
-        /// <param name="f">The newly created file.</param>
-        internal protected virtual void OnFileCreated( TypeScriptFile f )
-        {
-            FileCreated?.Invoke( f );
-        }
+        internal void OnFileCreated( TypeScriptFile f ) => FileCreated?.Invoke( f );
 
         /// <summary>
         /// Gets the TypeScript types manager.

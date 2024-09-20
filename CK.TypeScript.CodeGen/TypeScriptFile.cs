@@ -13,7 +13,7 @@ namespace CK.TypeScript.CodeGen
     /// This is the base class and non generic version of <see cref="TypeScriptFile{TRoot}"/>.
     /// </para>
     /// </summary>
-    public class TypeScriptFile
+    public sealed class TypeScriptFile
     {
         internal const string _hiddenFileName = ".hidden-file.ts";
 

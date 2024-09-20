@@ -16,7 +16,7 @@ namespace CK.TypeScript.CodeGen
     /// This is the base class and non generic version of <see cref="TypeScriptFolder{TRoot}"/>.
     /// </para>
     /// </summary>
-    public class TypeScriptFolder
+    public sealed class TypeScriptFolder
     {
         readonly TypeScriptRoot _root;
         TypeScriptFolder? _firstChild;
@@ -97,7 +97,7 @@ namespace CK.TypeScript.CodeGen
             return null;
         }
 
-        private protected virtual TypeScriptFolder CreateLocalFolder( string name )
+        TypeScriptFolder CreateLocalFolder( string name )
         {
             // No need to CheckName here: FindFolder did the job.
             var f = new TypeScriptFolder( this, name );
@@ -197,7 +197,7 @@ namespace CK.TypeScript.CodeGen
             return null;
         }
 
-        private protected virtual TypeScriptFile CreateLocalFile( string name )
+        TypeScriptFile CreateLocalFile( string name )
         {
             Throw.CheckArgument( "Cannot create a 'index.ts' at the root (this is the default barrel).",
                                  !IsRoot || !name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) );

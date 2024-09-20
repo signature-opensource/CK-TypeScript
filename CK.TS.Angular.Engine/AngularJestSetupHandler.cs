@@ -112,7 +112,7 @@ namespace CK.TS.Angular.Engine
         {
             var specConfigPath = TargetProjectPath.AppendPart( "tsconfig.spec.json" );
             var specConfig = TSConfigJsonFile.ReadFile( monitor, specConfigPath, mustExist: true );
-            if( specConfig != null && specConfig.CompilerOptionsTypes.Contains( "jasmine" ) )
+            if( specConfig?.CompilerOptionsTypes != null && specConfig.CompilerOptionsTypes.Contains( "jasmine" ) )
             {
                 monitor.Info( "Replacing 'jasmine' with 'jest' in tsconfig.spec.json file." );
                 specConfig.CompilerOptionsTypes.Remove( "jasmine" );

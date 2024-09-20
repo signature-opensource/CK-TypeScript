@@ -339,7 +339,6 @@ namespace CK.Setup
             }
         }
 
-
         /// <summary>
         /// Calls <see cref="UpdateFileRoot"/> and saves the <see cref="FilePath"/> file.
         /// </summary>
