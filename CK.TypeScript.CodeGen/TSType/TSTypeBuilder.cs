@@ -1,47 +1,54 @@
 using CK.Core;
 using System.Text;
 
-namespace CK.TypeScript.CodeGen
+namespace CK.TypeScript.CodeGen;
+
+sealed class TSTypeBuilder : ITSTypeSignatureBuilder
 {
-    sealed class TSTypeBuilder : ITSTypeSignatureBuilder
+    readonly RawCodePart _typeName;
+    readonly RawCodePart _defaultValue;
+    readonly TypeScriptRoot _root;
+    internal TSTypeBuilder? _nextFree;
+
+    internal TSTypeBuilder( TypeScriptFolder hiddenRoot, int tsBuilderCount )
     {
-        readonly TypeScriptFile _virtualFile;
-        readonly RawCodePart _typeName;
-        readonly RawCodePart _defaultValue;
-        readonly TypeScriptRoot _root;
-        internal TSTypeBuilder? _nextFree;
+        var workFile = new TypeScriptFile( hiddenRoot, $"builder{tsBuilderCount}.ts" );
+        _root = hiddenRoot.Root;
+        _typeName = new RawCodePart( workFile, string.Empty );
+        _defaultValue = new RawCodePart( workFile, string.Empty );
+    }
 
-        internal TSTypeBuilder( TypeScriptRoot root )
+    public bool BuiltDone => _root.IsInPool( this );
+
+    public ITSCodePart TypeName => _typeName;
+
+    public ITSCodePart DefaultValue => _defaultValue;
+
+    public ITSType Build( bool typeNameIsDefaultValueSource = false )
+    {
+        Throw.CheckState( !BuiltDone );
+        var b = new SmarterStringBuilder( new StringBuilder() );
+        _typeName.Build( ref b, false );
+        var tName = b.ToString().Trim();
+        var ts = _root.TSTypes.FindByTypeName( tName );
+        if( ts == null )
         {
-            _root = root;
-            _virtualFile = _root.Root.FindOrCreateFile( TypeScriptFile._hiddenFileName );
-            _typeName = new RawCodePart( _virtualFile, string.Empty );
-            _defaultValue = new RawCodePart( _virtualFile, string.Empty );
+            string? defaultValueSource = tName;
+            if( !typeNameIsDefaultValueSource )
+            {
+                b.Reset();
+                _defaultValue.Build( ref b, false );
+                defaultValueSource = b.ToString().Trim();
+                if( defaultValueSource.Length == 0 ) defaultValueSource = null;
+            }
+            var imports = _typeName.File._imports.CreateImportSnapshot();
+            ts = new TSBasicType( _root.TSTypes, tName, imports, defaultValueSource );
         }
-
-        public bool BuiltDone => _root.IsInPool( this );
-
-        public ITSCodePart TypeName => _typeName;
-
-        public ITSCodePart DefaultValue => _defaultValue;
-
-        public ITSType Build( bool typeNameIsDefaultValueSource = false )
-        {
-            Throw.CheckState( !BuiltDone );
-            var b = new SmarterStringBuilder( new StringBuilder() );
-            var tName = _typeName.Build( b, false ).ToString().Trim();
-            var ts = _root.TSTypes.FindByTypeName( tName );
-            if( ts != null ) return ts;
-            b.Reset();
-            var defaultValueSource = typeNameIsDefaultValueSource ? tName : _defaultValue.Build( b, false ).ToString().Trim();
-            if( defaultValueSource.Length == 0 ) defaultValueSource = null;
-            b.Reset();
-            var imports = _virtualFile._imports.CreateImportSnapshotAndClear();
-            _typeName.Clear();
-            _defaultValue.Clear();
-            _root.Return( this );
-            return new TSBasicType( _root.TSTypes, tName, imports, defaultValueSource );
-        }
+        _typeName.File._imports.ClearImports();
+        _typeName.Clear();
+        _defaultValue.Clear();
+        _root.Return( this );
+        return ts;
     }
 }
 

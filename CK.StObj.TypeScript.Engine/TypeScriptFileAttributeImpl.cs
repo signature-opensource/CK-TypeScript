@@ -7,66 +7,56 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CK.StObj.TypeScript.Engine
+namespace CK.StObj.TypeScript.Engine;
+
+public sealed class TypeScriptFileAttributeImpl : ITSCodeGenerator, IAttributeContextBoundInitializer
 {
-    public sealed class TypeScriptFileAttributeImpl : ITSCodeGenerator, IAttributeContextBoundInitializer
+    readonly TypeScriptFileAttribute _attr;
+    readonly Type _target;
+    ResourceTypeLocator _resource;
+    NormalizedPath _targetPath;
+
+    public TypeScriptFileAttributeImpl( TypeScriptFileAttribute attr, Type target )
     {
-        readonly TypeScriptFileAttribute _attr;
-        readonly Type _target;
-        string? _content;
-        OriginResource? _originResource;
-        NormalizedPath _targetPath;
+        _attr = attr;
+        _target = target;
+    }
 
-        public TypeScriptFileAttributeImpl( TypeScriptFileAttribute attr, Type target )
+    public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
+    {
+        if( _attr.ResourcePath == null
+            || !_attr.ResourcePath.EndsWith( ".ts" )
+            || _attr.ResourcePath.Contains( '\\' ) )
         {
-            _attr = attr;
-            _target = target;
+            monitor.Error( $"[TypeScriptFile( \"{_attr.ResourcePath}\" )] on '{_target}': invalid resource path. It must end with \".ts\" and not contain '\\'." );
         }
-
-        public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
+        else
         {
-            if( _attr.ResourcePath == null
-                || !_attr.ResourcePath.EndsWith( ".ts" )
-                || _attr.ResourcePath.Contains( '\\' ) )
-            {
-                monitor.Error( $"[TypeScriptFile( \"{_attr.ResourcePath}\" )] on '{_target}': invalid resource path. It must end with \".ts\" and not contain '\\'." );
-            }
-            else
-            {
-                try
-                {
-                    _content = _target.Assembly.TryGetCKResourceString( monitor, "ck@" + _attr.ResourcePath );
-                    _originResource = new OriginResource( _target.Assembly, _attr.ResourcePath );
-                }
-                catch( Exception ex )
-                {
-                    monitor.Error( $"Unable to initialize [TypeScriptFile] on '{_target}'.", ex );
-                }
-            }
+            _resource = new ResourceTypeLocator( _target, "ck@" + _attr.ResourcePath );
             _targetPath = _attr.TargetFolderName ?? _target.Namespace!.Replace( '.', '/' );
-            _targetPath = _targetPath.ResolveDots();
+            _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( _attr.ResourcePath ) );
         }
+    }
 
-        public bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer ) => true;
+    public bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer ) => true;
 
-        public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
+    public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
-        public bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
+    public bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
 
-        public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+    public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+    {
+        var file = context.Root.Root.CreateResourceFile( in _resource, _targetPath );
+        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+        foreach( var tsType in _attr.TypeNames )
         {
-            TSManualFile file = context.Root.Root.FindOrCreateManualFile( _targetPath.AppendPart( Path.GetFileName( _attr.ResourcePath ) ) );
-            file.File.Origin = _originResource;
-            file.File.Body.Append( _content );
-            foreach( var tsType in _attr.TypeNames )
-            {
-                if( string.IsNullOrWhiteSpace( tsType ) ) continue;
-                file.DeclareType( tsType );
-            }
-            return true;
+            if( string.IsNullOrWhiteSpace( tsType ) ) continue;
+            Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( tsType );
         }
+        return true;
     }
 }

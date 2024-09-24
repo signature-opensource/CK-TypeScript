@@ -1,26 +1,25 @@
 using System;
 using CK.Core;
 
-namespace CK.TypeScript.CodeGen
+namespace CK.TypeScript.CodeGen;
+
+/// <summary>
+/// Extends <see cref="TSType"/>.
+/// </summary>
+public static class TSTypeExtension
 {
     /// <summary>
-    /// Extends <see cref="TSType"/>.
+    /// Calls <see cref="ITSType.TryWriteValue(ITSCodeWriter, object?)"/> and thows an <see cref="InvalidOperationException"/>
+    /// if the <paramref name="value"/> cannot be written.
     /// </summary>
-    public static class TSTypeExtension
+    /// <param name="type">This TypeScript type.</param>
+    /// <param name="writer">The target writer.</param>
+    /// <param name="value">The value to write.</param>
+    public static void WriteValue( this ITSType type, ITSCodeWriter writer, object? value )
     {
-        /// <summary>
-        /// Calls <see cref="ITSType.TryWriteValue(ITSCodeWriter, object?)"/> and thows an <see cref="InvalidOperationException"/>
-        /// if the <paramref name="value"/> cannot be written.
-        /// </summary>
-        /// <param name="type">This TypeScript type.</param>
-        /// <param name="writer">The target writer.</param>
-        /// <param name="value">The value to write.</param>
-        public static void WriteValue( this ITSType type, ITSCodeWriter writer, object? value )
+        if( !type.TryWriteValue( writer, value ) )
         {
-            if( !type.TryWriteValue( writer, value ) )
-            {
-                Throw.InvalidOperationException( $"Type '{type.TypeName}' cannot write the value object '{value}'." );
-            }
+            Throw.InvalidOperationException( $"Type '{type.TypeName}' cannot write the value object '{value}'." );
         }
     }
 }

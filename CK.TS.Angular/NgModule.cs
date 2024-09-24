@@ -1,10 +1,9 @@
 using CK.Core;
 using CK.StObj.TypeScript;
 
-namespace CK.TS.Angular
+namespace CK.TS.Angular;
+
+[CKTypeDefiner]
+public abstract class NgModule : TypeScriptPackage
 {
-    [CKTypeDefiner]
-    public abstract class NgModule : TypeScriptPackage
-    {
-    }
 }

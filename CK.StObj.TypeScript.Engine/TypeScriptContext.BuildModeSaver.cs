@@ -1,81 +1,113 @@
-﻿using CK.Core;
+using CK.Core;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CK.TypeScript.CodeGen;
 using System.Text;
+using System;
+using System.Runtime.CompilerServices;
+using Microsoft.IO;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+public sealed partial class TypeScriptContext
 {
-    public sealed partial class TypeScriptContext
+    sealed class BuildModeSaver : TypeScriptFileSaveStrategy
     {
-        sealed class BuildModeSaver : TypeScriptFileSaveStrategy
+        List<(NormalizedPath Gen, ResourceTypeLocator Origin)>? _clashes;
+
+        public BuildModeSaver( TypeScriptRoot root, NormalizedPath targetPath )
+            : base( root, targetPath )
         {
-            List<(NormalizedPath Gen, OriginResource? Origin)>? _clashes;
-
-            public BuildModeSaver( TypeScriptRoot root, NormalizedPath targetPath )
-                : base( root, targetPath, withCleanupFiles: true )
-            {
-            }
-
-            public override void SaveFile( IActivityMonitor monitor, TypeScriptFile file, NormalizedPath filePath )
-            {
-                var fInfo = new FileInfo( filePath );
-                if( fInfo.Exists )
-                {
-                    using var fTxt = fInfo.OpenText();
-                    var existing = fTxt.ReadToEnd();
-                    var newOne = file.GetCurrentText();
-                    if( existing != newOne )
-                    {
-                        _clashes ??= new List<(NormalizedPath,OriginResource?)>();
-                        _clashes.Add( (file.Folder.Path.AppendPart( file.Name ), file.Origin) );
-                        var filePathGen = filePath.Path + ".G.ts";
-                        monitor.Trace( $"Saving '{file.Name}.G.ts'." );
-                        File.WriteAllText( filePathGen, file.GetCurrentText() );
-                        CleanupFiles?.Remove( filePath );
-                        // Avoid deleting the generated file if it already exists.
-                        CleanupFiles?.Remove( filePathGen );
-                        return;
-                    }
-                }
-                base.SaveFile( monitor, file, filePath );
-            }
-
-            public override int? Finalize( IActivityMonitor monitor, int? savedCount )
-            {
-                if( _clashes != null )
-                {
-                    using( monitor.OpenError( $"BuildMode: {_clashes.Count} files have been generated differently than the existing one:" ) )
-                    {
-                        var b = new StringBuilder();
-                        foreach( var clash in _clashes.GroupBy( c => c.Origin?.Assembly ) )
-                        {
-                            if( clash.Key == null )
-                            {
-                                b.AppendLine( "> (unknwon assembly):" );
-                                foreach( var c in clash )
-                                {
-                                    b.Append( "   " ).AppendLine( c.Gen );
-                                }
-                            }
-                            else
-                            {
-                                b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append(':').AppendLine();
-                                foreach( var c in clash )
-                                {
-                                    b.Append( "   " ).Append( c.Gen ).Append( " <= " ).AppendLine( c.Origin!.ResourceName );
-                                }
-                            }
-                        }
-                        monitor.Trace( b.ToString() );
-                    }
-                    base.Finalize( monitor, savedCount );
-                    return null;
-                }
-                return base.Finalize( monitor, savedCount );
-            }
         }
 
+        public override void SaveFile( IActivityMonitor monitor, BaseFile file, NormalizedPath filePath )
+        {
+            if( !File.Exists( filePath ) )
+            {
+                base.SaveFile( monitor, file, filePath );
+                return;
+            }
+            using var stream = file.TryGetContentStream();
+            if( stream != null )
+            {
+                using var fMem = (RecyclableMemoryStream)Util.RecyclableStreamManager.GetStream();
+                stream.CopyTo( fMem );
+                if( !CheckEqual( filePath, fMem ) )
+                {
+                    fMem.Position = 0;
+                    using var fDisk = File.OpenWrite( OnClashPath( monitor, file, filePath ) );
+                    fMem.CopyTo( fDisk );
+                }
+            }
+            else
+            {
+                Throw.DebugAssert( "Files are either pure stream or text based.", file is TextFileBase );
+                var existing = File.ReadAllText( filePath );
+                var newOne = Unsafe.As<TextFileBase>( file ).GetCurrentText();
+                if( existing != newOne )
+                {
+                    File.WriteAllText( OnClashPath( monitor, file, filePath ), newOne );
+                }
+            }
+            CleanupFiles?.Remove( filePath );
+
+            static bool CheckEqual( NormalizedPath filePath, RecyclableMemoryStream fMem )
+            {
+                using var checker = CheckedWriteStream.Create( fMem );
+                using var fDisk = File.OpenRead( filePath );
+                fDisk.CopyTo( checker );
+                return checker.GetResult() == CheckedWriteStream.Result.None;
+            }
+
+        }
+
+        string OnClashPath( IActivityMonitor monitor, BaseFile file, NormalizedPath filePath )
+        {
+            string savedFilePath;
+            _clashes ??= new List<(NormalizedPath, ResourceTypeLocator)>();
+            _clashes.Add( (file.Folder.Path.AppendPart( file.Name ), file is IResourceFile rF ? rF.Locator : default) );
+            savedFilePath = $"{filePath.Path}.G{file.Extension}";
+            monitor.Trace( $"Saving '{Path.GetFileName( savedFilePath.AsSpan() )}'." );
+            // Avoid deleting the generated file if it already exists.
+            CleanupFiles?.Remove( savedFilePath );
+            return savedFilePath;
+        }
+
+        public override int? Finalize( IActivityMonitor monitor, int? savedCount )
+        {
+            if( _clashes != null )
+            {
+                using( monitor.OpenError( $"BuildMode: {_clashes.Count} files have been generated differently than the existing one:" ) )
+                {
+                    var b = new StringBuilder();
+                    foreach( var clash in _clashes.GroupBy( c => c.Origin.Declarer?.Assembly ) )
+                    {
+                        if( clash.Key == null )
+                        {
+                            b.AppendLine( "> (generated file):" );
+                            foreach( var c in clash )
+                            {
+                                b.Append( "   " ).AppendLine( c.Gen );
+                            }
+                        }
+                        else
+                        {
+                            b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append(':').AppendLine();
+                            foreach( var c in clash )
+                            {
+                                b.Append( "   " ).Append( c.Gen ).Append( " <= " ).Append( c.Origin.ResourceName )
+                                 .Append( ", declared by " ).AppendLine( c.Origin.Declarer.ToCSharpName() );
+                            }
+                        }
+                    }
+                    monitor.Trace( b.ToString() );
+                }
+                base.Finalize( monitor, savedCount );
+                return null;
+            }
+            return base.Finalize( monitor, savedCount );
+        }
     }
+
 }

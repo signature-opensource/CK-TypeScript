@@ -1,11 +1,10 @@
 using CK.StObj.TypeScript;
 using CK.TS.Angular;
 
-namespace CK.Demo
+namespace CK.Demo;
+
+[NgModule]
+[TypeScriptContentFiles( "Demo/Res" )]
+public class DemoNgModule : NgModule
 {
-    [NgModule]
-    [TypeScriptContentFiles( "Demo/Res" )]
-    public class DemoNgModule : NgModule
-    {
-    }
 }

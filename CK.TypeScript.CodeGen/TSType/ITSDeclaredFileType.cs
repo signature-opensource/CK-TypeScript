@@ -1,15 +1,13 @@
-﻿namespace CK.TypeScript.CodeGen
+namespace CK.TypeScript.CodeGen;
+
+/// <summary>
+/// Defines a type that is implemented in a <see cref="File"/>.
+/// </summary>
+public interface ITSDeclaredFileType : ITSType
 {
     /// <summary>
-    /// Defines a type that is implemented in a <see cref="File"/>.
+    /// Gets the file that declares this type.
     /// </summary>
-    public interface ITSDeclaredFileType : ITSType
-    {
-        /// <summary>
-        /// Gets the file that implements this type.
-        /// </summary>
-        TypeScriptFile File { get; }
-    }
-
+    IMinimalTypeScriptFile File { get; }
 }
 

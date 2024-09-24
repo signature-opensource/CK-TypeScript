@@ -1,24 +1,22 @@
-﻿namespace CK.StObj.TypeScript
+﻿namespace CK.StObj.TypeScript;
+
+/// <summary>
+/// Represent one of the dependencies list of the package.json.
+/// </summary>
+public enum DependencyKind
 {
     /// <summary>
-    /// Represent one of the dependencies list of the package.json.
+    /// The dependency will be put in the package.json devDependencies list.
     /// </summary>
-    public enum DependencyKind
-    {
-        /// <summary>
-        /// The dependency will be put in the package.json devDependencies list.
-        /// </summary>
-        DevDependency,
+    DevDependency,
 
-        /// <summary>
-        /// The dependency will be put in the package.json dependencies list.
-        /// </summary>
-        Dependency,
+    /// <summary>
+    /// The dependency will be put in the package.json dependencies list.
+    /// </summary>
+    Dependency,
 
-        /// <summary>
-        /// The dependency will be put in the package.json peerDependencies list.
-        /// </summary>
-        PeerDependency
-    }
-
+    /// <summary>
+    /// The dependency will be put in the package.json peerDependencies list.
+    /// </summary>
+    PeerDependency
 }

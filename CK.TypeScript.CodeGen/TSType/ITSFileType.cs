@@ -1,15 +1,18 @@
-namespace CK.TypeScript.CodeGen
+namespace CK.TypeScript.CodeGen;
+
+/// <summary>
+/// Defines a type that is implemented in a <see cref="File"/> by a <see cref="TypePart"/>.
+/// </summary>
+public interface ITSFileType : ITSDeclaredFileType
 {
     /// <summary>
-    /// Defines a type that is implemented in a <see cref="File"/> by a <see cref="TypePart"/>.
+    /// Gets the file that declares and implements this type.
     /// </summary>
-    public interface ITSFileType : ITSDeclaredFileType
-    {
-        /// <summary>
-        /// Gets the code part. 
-        /// </summary>
-        ITSCodePart TypePart { get; }
-    }
+    new TypeScriptFile File { get; }
 
+    /// <summary>
+    /// Gets the code part. 
+    /// </summary>
+    ITSCodePart TypePart { get; }
 }
 
