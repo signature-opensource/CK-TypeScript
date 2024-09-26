@@ -10,7 +10,7 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr;
 
 [TypeScriptPackage]
-[TypeScriptFile( "TypeScriptFileAttr/Res/IAmHere.ts", "IAmHere" )]
+[TypeScriptFile( "IAmHere.ts", typeName: "IAmHere" )]
 [ImportTypeScriptLibrary( "tslib", "^2.6.0", DependencyKind.Dependency, ForceUse = true )]
 public sealed class Embedded : TypeScriptPackage { }
 
@@ -18,7 +18,7 @@ public sealed class Embedded : TypeScriptPackage { }
 [ImportTypeScriptLibrary( "tslib", "2.7.0", DependencyKind.Dependency, ForceUse = true )]
 [ImportTypeScriptLibrary( "@stdlib/number-ctor", "^0.1.0", DependencyKind.DevDependency, ForceUse = true )]
 [ImportTypeScriptLibrary( "@stdlib/symbol-ctor", "~0.2.2", DependencyKind.PeerDependency, ForceUse = true )]
-[TypeScriptFile( "TypeScriptFileAttr/Res/IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo" )]
+[TypeScriptFile( "IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo" )]
 public sealed class OtherEmbedded : TypeScriptPackage { }
 
 

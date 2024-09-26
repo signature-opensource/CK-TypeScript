@@ -14,11 +14,15 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="DemoTests\**" />
+    <EmbeddedResource Remove="DemoTests\**" />
+    <None Remove="DemoTests\**" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="DemoTests\" />
     <Folder Include="TSInlineTests\" />
   </ItemGroup>
 </Project>

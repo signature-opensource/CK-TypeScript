@@ -4,7 +4,7 @@ using CK.TS.Angular;
 namespace CK.Demo;
 
 [NgModule]
-[TypeScriptContentFiles( "Demo/Res" )]
+[TypeScriptResourceFiles]
 public class DemoNgModule : NgModule
 {
 }
