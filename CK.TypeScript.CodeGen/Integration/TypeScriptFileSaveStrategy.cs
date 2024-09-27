@@ -140,18 +140,18 @@ public class TypeScriptFileSaveStrategy
     /// all the files.
     /// <para>
     /// At this level, deletes the files that remain in <see cref="CleanupFiles"/> on success (<paramref name="savedCount"/>
-    /// is not null).
+    /// is not null). On error, no files are deleted.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The <paramref name="savedCount"/>, null on error (errors must be logged).</returns>
     public virtual int? Finalize( IActivityMonitor monitor, int? savedCount )
     {
-        if( savedCount.HasValue && _cleanupFiles != null )
+        if( savedCount.HasValue )
         {
             if( _cleanupFiles.Count == 0 )
             {
-                monitor.Info( "No previous file exist that have not been regenerated." );
+                monitor.Info( "No previous file exist that have not been regenerated. Nothing to delete." );
             }
             else
             {
@@ -170,6 +170,13 @@ public class TypeScriptFileSaveStrategy
                         }
                     }
                 }
+            }
+        }
+        else
+        {
+            if( _cleanupFiles.Count > 0 )
+            {
+                monitor.Info( $"Skipping deletion of {_cleanupFiles.Count} previous files." );
             }
         }
         return savedCount;

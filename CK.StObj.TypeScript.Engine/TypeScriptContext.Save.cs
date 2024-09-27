@@ -56,7 +56,7 @@ public sealed partial class TypeScriptContext
                     saver.CleanupIgnoreFiles.Add( prefix + "tsconfig-es6.json" );
                 }
             }
-            // Saving the root. Removes 
+            // Saving the root.  
             int? savedCount = Root.Save( monitor, saver );
             if( !savedCount.HasValue )
             {

@@ -86,25 +86,24 @@ public sealed partial class TypeScriptContext
                         if( clash.Key == null )
                         {
                             b.AppendLine( "> (generated file):" );
-                            foreach( var c in clash )
+                            foreach( var (f, _) in clash )
                             {
-                                b.Append( "   " ).AppendLine( c.Gen );
+                                b.Append( "   " ).AppendLine( f );
                             }
                         }
                         else
                         {
                             b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append(':').AppendLine();
-                            foreach( var c in clash )
+                            foreach( var (f, origin) in clash )
                             {
-                                b.Append( "   " ).Append( c.Gen ).Append( " <= " ).Append( c.Origin.ResourceName )
-                                 .Append( ", declared by " ).AppendLine( c.Origin.Declarer.ToCSharpName() );
+                                b.Append( "   " ).Append( f ).Append( " <= " ).Append( origin.ResourceName )
+                                 .Append( ", declared by " ).AppendLine( origin.Declarer.ToCSharpName() );
                             }
                         }
                     }
                     monitor.Trace( b.ToString() );
                 }
-                base.Finalize( monitor, savedCount );
-                return null;
+                savedCount = null;
             }
             return base.Finalize( monitor, savedCount );
         }

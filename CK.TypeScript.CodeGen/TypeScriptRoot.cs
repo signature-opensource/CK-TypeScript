@@ -227,8 +227,7 @@ public sealed class TypeScriptRoot
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
     /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
-    public int? Save( IActivityMonitor monitor,
-                      TypeScriptFileSaveStrategy saver )
+    public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
     {
         Throw.CheckNotNullArgument( saver );
         if( !saver.GeneratedDependencies.AddOrUpdate( monitor, _libraryManager.LibraryImports.Values.Where( i => i.IsUsed ).Select( i => i.PackageDependency ) ) )
