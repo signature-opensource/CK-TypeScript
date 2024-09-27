@@ -129,7 +129,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
                 else
                 {
                     // TODO: miss a NormalizedPath.SubPath( int start, int len )...
-                    p = p.RemoveFirstPart( idx + 1 ).RemoveLastPart();
+                    p = p.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
                     _resourceTypeFolder = p.Combine( subPath ).ResolveDots();
                     _resourceTypeFolderComputed = true;
                 }
