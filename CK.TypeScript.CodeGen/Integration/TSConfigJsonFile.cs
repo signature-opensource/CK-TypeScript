@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -22,6 +21,22 @@ namespace CK.Setup;
 /// </summary>
 public sealed class TSConfigJsonFile
 {
+    public const bool DefaultStrict = true;
+    public const bool DefaultNoImplicitOverride = true;
+    public const bool DefaultNoPropertyAccessFromIndexSignature = true;
+    public const bool DefaultNoImplicitReturns = true;
+    public const bool DefaultNoFallthroughCasesInSwitch = true;
+
+    public const bool DefaultSkipLibCheck = true;
+    public const bool DefaultAllowSyntheticDefaultImports = true;
+    public const bool DefaultDeclaration = false;
+    public const bool DefaultESModuleInterop = true;
+    public const bool DefaultSourceMap = false;
+
+    public const string DefaultTarget = "es2022";
+    public const string DefaultModule = "NodeNext";
+    public const string DefaultModuleResolution = "NodeNext";
+
     JsonFile _file;
     readonly NormalizedPath _folderPath;
     [AllowNull] JsonObject _compilerOptions;
@@ -30,15 +45,64 @@ public sealed class TSConfigJsonFile
     // A missing CompilerOptions.path is not the same as an empty one.
     Dictionary<string, HashSet<string>>? _coPaths;
     NormalizedPath _baseUrl;
+    // These are compiler options.
+    string _target;
+    string _module;
+    string _moduleResolution;
+    bool _strict;
+    bool _noImplicitOverride;
+    bool _noPropertyAccessFromIndexSignature;
+    bool _noImplicitReturns;
+    bool _noFallthroughCasesInSwitch;
+    bool _skipLibCheck;
+    bool _allowSyntheticDefaultImports;
+    bool _declaration;
+    bool _esModuleInterop;
+    bool _sourceMap;
 
     TSConfigJsonFile( JsonFile f )
     {
         _file = f;
         _folderPath = f.FilePath.RemoveLastPart();
+        _strict = DefaultStrict;
+        _noImplicitOverride = DefaultNoImplicitOverride;
+        _noFallthroughCasesInSwitch = DefaultNoFallthroughCasesInSwitch;
+        _noImplicitReturns = DefaultNoImplicitReturns;
+        _noPropertyAccessFromIndexSignature = DefaultNoPropertyAccessFromIndexSignature;
+        _skipLibCheck = DefaultSkipLibCheck;
+        _allowSyntheticDefaultImports = DefaultAllowSyntheticDefaultImports;
+        _declaration = DefaultDeclaration;
+        _esModuleInterop = DefaultESModuleInterop;
+        _sourceMap = DefaultSourceMap;
+        _target = DefaultTarget;
+        _module = DefaultModule;
+        _moduleResolution = DefaultModuleResolution;
     }
 
     /// <summary>
-    /// If <see cref="IsEmpty"/> is true, this sets a really minimal "compilerOptions": { "target": "es2022", "strict": true, "skipLibCheck": true }.
+    /// If <see cref="IsEmpty"/> is true, this updates the underlying Json with:
+    /// <code>
+    /// {
+    ///     "compilerOptions": {
+    ///         "strict": true,
+    ///         "noFallthroughCasesInSwitch": true,
+    ///         "noFallthroughCasesInSwitch": true,
+    ///         "noImplicitOverride": true,
+    ///         "noImplicitReturns": true,
+    ///         "noPropertyAccessFromIndexSignature": true,
+    ///         "skipLibCheck": true,
+    ///         "allowSyntheticDefaultImports": true,
+    ///         "declaration": false,
+    ///         "esModuleInterop": true,
+    ///         "sourceMap": false,
+    ///         "target": "es2022",
+    ///         "module": "NodeNext",
+    ///         "moduleResolution": "NodeNext"
+    ///     }
+    /// }
+    /// </code>
+    /// Note that the actual values update in the underlying Json are the <see cref="CompileOptionsStrict"/>,
+    /// <see cref="CompileOptionsNoFallthroughCasesInSwitch"/> etc. current values.
     /// </summary>
     /// <param name="monitor">The monitor.</param>
     /// <returns>True if this was empty and minimal defaults have been set, false otherwise.</returns>
@@ -46,9 +110,7 @@ public sealed class TSConfigJsonFile
     {
         if( IsEmpty )
         {
-            _compilerOptions["target"] = "es2022";
-            _compilerOptions["strict"] = true;
-            _compilerOptions["skipLibCheck"] = true;
+            UpdateSimpleCompilerOptions();
             monitor.Info( $"Ensuring default '{_file.FilePath}'." );
             return true;
         }
@@ -96,6 +158,22 @@ public sealed class TSConfigJsonFile
             compilerOptions = new JsonObject();
             _file.Root.Add( "compilerOptions", compilerOptions );
         }
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "strict", out var strict );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "noFallthroughCasesInSwitch", out var noFallthroughCasesInSwitch );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "noImplicitOverride", out var noImplicitOverride );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "noPropertyAccessFromIndexSignature", out var noPropertyAccessFromIndexSignature );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "noImplicitReturns", out var noImplicitReturns );
+
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "skipLibCheck", out var skipLibCheck );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "allowSyntheticDefaultImports", out var allowSyntheticDefaultImports );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "declaration", out var declaration );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "esModuleInterop", out var esModuleInterop );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "sourceMap", out var sourceMap );
+
+        success &= _file.GetNonNullJsonString( compilerOptions, monitor, "target", out var target );
+        success &= _file.GetNonNullJsonString( compilerOptions, monitor, "module", out var module );
+        success &= _file.GetNonNullJsonString( compilerOptions, monitor, "moduleResolution", out var moduleResolution );
+
         success &= _file.GetNonNullJsonString( compilerOptions, monitor, "baseUrl", out var baseUrl );
         success &= ReadPaths( _file, compilerOptions, monitor, out var paths );
         success &= _file.ReadStringList( compilerOptions, monitor, "types", out var coTypes );
@@ -104,6 +182,22 @@ public sealed class TSConfigJsonFile
             monitor.Error( $"Unable to read file '{_file.FilePath}'." );
             return false;
         }
+        _strict = strict ?? DefaultStrict;
+        _noFallthroughCasesInSwitch = noFallthroughCasesInSwitch ?? DefaultNoFallthroughCasesInSwitch;
+        _noImplicitOverride = noImplicitOverride ?? DefaultNoImplicitOverride;
+        _noPropertyAccessFromIndexSignature = noPropertyAccessFromIndexSignature ?? DefaultNoPropertyAccessFromIndexSignature;
+        _noImplicitReturns = noImplicitReturns ?? DefaultNoImplicitReturns;
+
+        _skipLibCheck = skipLibCheck ?? DefaultSkipLibCheck;
+        _allowSyntheticDefaultImports = allowSyntheticDefaultImports ?? DefaultAllowSyntheticDefaultImports;
+        _declaration = declaration ?? DefaultDeclaration;
+        _esModuleInterop = esModuleInterop ?? DefaultESModuleInterop;
+        _sourceMap = sourceMap ?? DefaultSourceMap;
+
+        _target = target ?? DefaultTarget;
+        _module = module ?? DefaultModule;
+        _moduleResolution = moduleResolution ?? DefaultModuleResolution;
+
         _compilerOptions = compilerOptions;
         _baseUrl = baseUrl;
         _coPaths = paths;
@@ -173,10 +267,162 @@ public sealed class TSConfigJsonFile
     }
 
     /// <summary>
+    /// Defaults to <see cref="DefaultStrict"/>.
+    /// </summary>
+    public bool CompileOptionsStrict
+    {
+        get => _strict;
+        set => _strict = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultNoFallthroughCasesInSwitch"/>.
+    /// </summary>
+    public bool CompileOptionsNoFallthroughCasesInSwitch
+    {
+        get => _noFallthroughCasesInSwitch;
+        set => _noFallthroughCasesInSwitch = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultNoImplicitOverride"/>.
+    /// </summary>
+    public bool CompileOptionsNoImplicitOverride
+    {
+        get => _noImplicitOverride;
+        set => _noImplicitOverride = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultNoImplicitReturns"/>.
+    /// </summary>
+    public bool CompileOptionsNoImplicitReturns
+    {
+        get => _noImplicitReturns;
+        set => _noImplicitReturns = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultNoPropertyAccessFromIndexSignature"/>.
+    /// </summary>
+    public bool CompileOptionsNoPropertyAccessFromIndexSignature
+    {
+        get => _noPropertyAccessFromIndexSignature;
+        set => _noPropertyAccessFromIndexSignature = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultSkipLibCheck"/>.
+    /// </summary>
+    public bool CompileOptionsSkipLibCheck
+    {
+        get => _skipLibCheck;
+        set => _skipLibCheck = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultAllowSyntheticDefaultImports"/>.
+    /// </summary>
+    public bool CompileOptionsAllowSyntheticDefaultImports
+    {
+        get => _allowSyntheticDefaultImports;
+        set => _allowSyntheticDefaultImports = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultDeclaration"/>.
+    /// </summary>
+    public bool CompileOptionsDeclaration
+    {
+        get => _declaration;
+        set => _declaration = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultESModuleInterop"/>.
+    /// </summary>
+    public bool CompileOptionsESModuleInterop
+    {
+        get => _esModuleInterop;
+        set => _esModuleInterop = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultSourceMap"/>.
+    /// </summary>
+    public bool CompileOptionsSourceMap
+    {
+        get => _sourceMap;
+        set => _sourceMap = value;
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultTarget"/>.
+    /// </summary>
+    public string CompileOptionsTarget
+    {
+        get => _target;
+        set
+        {
+            Throw.CheckNotNullOrWhiteSpaceArgument( value );
+            _target = value;
+        }
+    }
+
+    /// <summary>
+    /// Defaults to <see cref="DefaultModule"/>.
+    /// </summary>
+    public string CompileOptionsModule
+    {
+        get => _module;
+        set
+        {
+            Throw.CheckNotNullOrWhiteSpaceArgument( value );
+            _module = value;
+        }
+    }
+
+    /// <summary>
+    /// See https://stackoverflow.com/a/71473145/190380.
+    /// Defaults to <see cref="DefaultModuleResolution"/>.
+    /// </summary>
+    public string CompileOptionsModuleResolution
+    {
+        get => _moduleResolution;
+        set
+        {
+            Throw.CheckNotNullOrWhiteSpaceArgument( value );
+            _moduleResolution = value;
+        }
+    }
+
+
+    void UpdateSimpleCompilerOptions()
+    {
+        _compilerOptions["strict"] = _strict;
+        _compilerOptions["noFallthroughCasesInSwitch"] = _noFallthroughCasesInSwitch;
+        _compilerOptions["noImplicitOverride"] = _noImplicitOverride;
+        _compilerOptions["noImplicitReturns"] = _noImplicitReturns;
+        _compilerOptions["noPropertyAccessFromIndexSignature"] = _noPropertyAccessFromIndexSignature;
+
+        _compilerOptions["skipLibCheck"] = _skipLibCheck;
+        _compilerOptions["allowSyntheticDefaultImports"] = _allowSyntheticDefaultImports;
+        _compilerOptions["declaration"] = _declaration;
+        _compilerOptions["esModuleInterop"] = _esModuleInterop;
+        _compilerOptions["sourceMap"] = _sourceMap;
+
+        _compilerOptions["target"] = _target;
+        _compilerOptions["module"] = _module;
+        _compilerOptions["moduleResolution"] = _moduleResolution;
+    }
+
+
+    /// <summary>
     /// Updates the inner <see cref="JsonFile.Root"/>.
     /// </summary>
     public void UpdateFileRoot()
     {
+        UpdateSimpleCompilerOptions();
         _file.SetString( _compilerOptions, "baseUrl", _baseUrl.IsEmptyPath ? null : _baseUrl.Path );
         SetPaths( _compilerOptions, _coPaths );
         _file.SetStringList( _compilerOptions, "types", _coTypes );

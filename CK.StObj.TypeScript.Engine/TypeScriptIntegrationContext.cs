@@ -120,7 +120,7 @@ public sealed partial class TypeScriptIntegrationContext
         // The Json files are null if they cannot be read and empty for an unexisting one.
         Throw.DebugAssert( configuration.AspectConfiguration != null );
         var packageJson = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), configuration.AspectConfiguration.IgnoreVersionsBound );
-        var tsConfigJson = TSConfigJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "tsConfig.json" ) );
+        var tsConfigJson = TSConfigJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "tsconfig.json" ) );
 
         if( packageJson == null || tsConfigJson == null )
         {
@@ -128,7 +128,7 @@ public sealed partial class TypeScriptIntegrationContext
             if( tsConfigJson == null )
             {
                 if( what != null ) what += " and ";
-                what += "tsConfig.json";
+                what += "tsconfig.json";
             }
             monitor.Error( $"The target {what} cannot be read. This needs to be manually fixed." );
             return null;
@@ -500,9 +500,15 @@ public sealed partial class TypeScriptIntegrationContext
             return false;
         }
 
-        // If the tsConfig is empty (it doesn't exist), let's create a default one: a tsConfig.json is 
+        // If the tsConfig is empty (it doesn't exist), let's create a default one: a tsconfig.json is 
         // required by our jest.config.js (and it should always exist).
-        if( _tsConfigJson.EnsureDefault( monitor ) ) _tsConfigJson.Save();
+        if( _tsConfigJson.IsEmpty )
+        {
+            _tsConfigJson.CompileOptionsSourceMap = true;
+            _tsConfigJson.CompileOptionsDeclaration = true;
+            _tsConfigJson.EnsureDefault( monitor );
+            _tsConfigJson.Save();
+        }
 
         // The workspace dependency.
         PackageDependency ckGenDep = new PackageDependency( "@local/ck-gen", SVersionBound.None, DependencyKind.DevDependency );
