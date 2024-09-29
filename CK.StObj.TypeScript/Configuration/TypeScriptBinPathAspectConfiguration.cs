@@ -52,24 +52,48 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         get => _targetProjectPath;
         set
         {
-            _targetProjectPath = value;
-            _targetCKGenPath = _targetProjectPath.AppendPart( "ck-gen" );
-            if( _useSrcFolder ) _targetCKGenPath = _targetCKGenPath.AppendPart( "src" );
+            if( _targetProjectPath != value )
+            {
+                _targetProjectPath = value;
+                _targetCKGenPath = default;
+            }
         }
     }
 
     /// <summary>
     /// Gets the '/ck-gen/src' or '/ck-gen' whether <see cref="UseSrcFolder"/> is true or false.
     /// </summary>
-    public NormalizedPath TargetCKGenPath => _targetCKGenPath;
+    public NormalizedPath TargetCKGenPath
+    {
+        get
+        {
+            if( _targetCKGenPath.IsEmptyPath )
+            {
+                _targetCKGenPath = _targetProjectPath.AppendPart( "ck-gen" );
+                if( _useSrcFolder ) _targetCKGenPath = _targetCKGenPath.AppendPart( "src" );
+            }
+            return _targetCKGenPath;
+        }
+    }
 
     /// <summary>
     /// Gets or sets whether the generated files will be in '/ck-gen/src' instead of '/ck-gen'.
     /// <para>
-    /// Defaults to false.
+    /// Defaults to false. Automatically sets to true when <see cref="IntegrationMode"/> is <see cref="CKGenIntegrationMode.NpmPackage"/>.
     /// </para>
     /// </summary>
-    public bool UseSrcFolder { get => _useSrcFolder; set => _useSrcFolder = value; }
+    public bool UseSrcFolder
+    {
+        get => _useSrcFolder;
+        set
+        {
+            if( _useSrcFolder != value )
+            {
+                _targetCKGenPath = default;
+                _useSrcFolder = value;
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.

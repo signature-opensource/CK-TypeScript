@@ -133,6 +133,14 @@ public sealed partial class TypeScriptIntegrationContext
             monitor.Error( $"The target {what} cannot be read. This needs to be manually fixed." );
             return null;
         }
+        if( configuration.IntegrationMode == CKGenIntegrationMode.NpmPackage )
+        {
+            if( !configuration.UseSrcFolder )
+            {
+                monitor.Warn( $"Using UseSrcFolder = true because IntegrationMode is NpmPackage." );
+                configuration.UseSrcFolder = true;
+            }
+        }
         return new TypeScriptIntegrationContext( configuration, packageJson, tsConfigJson, libVersionsConfig );
     }
 
@@ -162,6 +170,7 @@ public sealed partial class TypeScriptIntegrationContext
 
     bool SettleTypeScriptVersion( IActivityMonitor monitor, [NotNullWhen(true)]out PackageDependency? typeScriptDep )
     {
+        using var _ = monitor.OpenInfo( "Analyzing TypeScript versions." );
         Throw.DebugAssert( _saver != null && _targetPackageJson != null );
 
         if( _settledTypeScriptDep != null )
@@ -239,6 +248,7 @@ public sealed partial class TypeScriptIntegrationContext
         }
 
         _settledTypeScriptDep = typeScriptDep;
+        monitor.CloseGroup( typeScriptDep.ToString() );
         return true;
 
         static PackageDependency FindBestTypeScriptVersion( IActivityMonitor monitor,
@@ -488,6 +498,7 @@ public sealed partial class TypeScriptIntegrationContext
                               TypeScriptFileSaveStrategy saver,
                               PackageDependency typeScriptDep )
     {
+        using var _ = monitor.OpenInfo( "NpmPackage integration mode." );
         // Generates "/ck-gen": "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json" files.
         // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
         if( !SaveCKGenBuildConfig( monitor,
@@ -553,6 +564,7 @@ public sealed partial class TypeScriptIntegrationContext
                                 TypeScriptFileSaveStrategy saver,
                                 PackageDependency typeScriptDep )
     {
+        using var _ = monitor.OpenInfo( "Inline integration mode." );
         // If this fails, we don't care: this is purely informational.
         SaveCKGenBuildConfig( monitor,
                               _ckGenFolder,
@@ -812,16 +824,6 @@ public sealed partial class TypeScriptIntegrationContext
                     }
                 }
             }
-        }
-    }
-
-
-    internal static void WarnDiffTypeScriptSdkVersion( IActivityMonitor monitor, SVersion typeScriptSdkVersion, SVersion targetTypeScriptVersion )
-    {
-        if( typeScriptSdkVersion != targetTypeScriptVersion )
-        {
-            monitor.Warn( $"The TypeScript version used by the Yarn sdk '{typeScriptSdkVersion}' differs from the selected one '{targetTypeScriptVersion}'.{Environment.NewLine}" +
-                          $"This can lead to (very) annoying issues such as import resolution failures." );
         }
     }
 

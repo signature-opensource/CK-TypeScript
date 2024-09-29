@@ -113,7 +113,8 @@ public class FullTSTests
             typeof( IWithTyped )
         };
         configuration.FirstBinPath.Types.Add( types );
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
+        var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
+        tsConfig.UseSrcFolder = true;
         configuration.RunSuccessfully();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,

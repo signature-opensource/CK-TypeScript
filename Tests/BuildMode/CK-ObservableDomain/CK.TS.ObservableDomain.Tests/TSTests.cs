@@ -16,7 +16,7 @@ public class TSTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.ObservableDomain" );
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        tsConfig.GitIgnoreCKGenFolder = true;
+
         engineConfig.RunSuccessfully();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

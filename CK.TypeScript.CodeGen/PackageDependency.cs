@@ -98,6 +98,10 @@ public sealed class PackageDependency
     /// <param name="version">The version bound to set.</param>
     public void UnconditionalSetVersion( SVersionBound version ) => _version = version;
 
+    /// <summary>
+    /// Overridden to return the kind, name and the <see cref="NpmVersionRange"/>.
+    /// </summary>
+    /// <returns></returns>
     public override string ToString() => $"{_dependencyKind}: {_name} {NpmVersionRange}";
 
     internal bool DoUpdate( SVersionBound newVersion, bool ignoreVersionsBound, [NotNullWhen(false)]out string? error, out string? warn )

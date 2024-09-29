@@ -30,6 +30,7 @@ public sealed class TSConfigJsonFile
     public const bool DefaultSkipLibCheck = true;
     public const bool DefaultAllowSyntheticDefaultImports = true;
     public const bool DefaultDeclaration = false;
+    public const bool DefaultDeclarationMap = false;
     public const bool DefaultESModuleInterop = true;
     public const bool DefaultSourceMap = false;
 
@@ -57,6 +58,7 @@ public sealed class TSConfigJsonFile
     bool _skipLibCheck;
     bool _allowSyntheticDefaultImports;
     bool _declaration;
+    bool _declarationMap;
     bool _esModuleInterop;
     bool _sourceMap;
 
@@ -72,6 +74,7 @@ public sealed class TSConfigJsonFile
         _skipLibCheck = DefaultSkipLibCheck;
         _allowSyntheticDefaultImports = DefaultAllowSyntheticDefaultImports;
         _declaration = DefaultDeclaration;
+        _declarationMap = DefaultDeclarationMap;
         _esModuleInterop = DefaultESModuleInterop;
         _sourceMap = DefaultSourceMap;
         _target = DefaultTarget;
@@ -111,7 +114,7 @@ public sealed class TSConfigJsonFile
         if( IsEmpty )
         {
             UpdateSimpleCompilerOptions();
-            monitor.Info( $"Ensuring default '{_file.FilePath}'." );
+            monitor.Trace( $"Ensuring tsconfig.json default '{_file.FilePath}'." );
             return true;
         }
         return false;
@@ -167,6 +170,7 @@ public sealed class TSConfigJsonFile
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "skipLibCheck", out var skipLibCheck );
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "allowSyntheticDefaultImports", out var allowSyntheticDefaultImports );
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "declaration", out var declaration );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "declarationMap", out var declarationMap );
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "esModuleInterop", out var esModuleInterop );
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "sourceMap", out var sourceMap );
 
@@ -191,6 +195,7 @@ public sealed class TSConfigJsonFile
         _skipLibCheck = skipLibCheck ?? DefaultSkipLibCheck;
         _allowSyntheticDefaultImports = allowSyntheticDefaultImports ?? DefaultAllowSyntheticDefaultImports;
         _declaration = declaration ?? DefaultDeclaration;
+        _declarationMap = declarationMap ?? DefaultDeclarationMap;
         _esModuleInterop = esModuleInterop ?? DefaultESModuleInterop;
         _sourceMap = sourceMap ?? DefaultSourceMap;
 
@@ -339,6 +344,15 @@ public sealed class TSConfigJsonFile
     }
 
     /// <summary>
+    /// Defaults to <see cref="DefaultDeclarationMap"/>.
+    /// </summary>
+    public bool CompileOptionsDeclarationMap
+    {
+        get => _declarationMap;
+        set => _declarationMap = value;
+    }
+
+    /// <summary>
     /// Defaults to <see cref="DefaultESModuleInterop"/>.
     /// </summary>
     public bool CompileOptionsESModuleInterop
@@ -408,6 +422,7 @@ public sealed class TSConfigJsonFile
         _compilerOptions["skipLibCheck"] = _skipLibCheck;
         _compilerOptions["allowSyntheticDefaultImports"] = _allowSyntheticDefaultImports;
         _compilerOptions["declaration"] = _declaration;
+        _compilerOptions["declarationMap"] = _declarationMap;
         _compilerOptions["esModuleInterop"] = _esModuleInterop;
         _compilerOptions["sourceMap"] = _sourceMap;
 
