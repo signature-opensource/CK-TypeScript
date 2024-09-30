@@ -227,7 +227,7 @@ describe('serialize() and deserialize()', function () {
 
         const e2 = deserialize(e, { prefix: '' });
 
-        console.log(inspect(e2, true, null, true));
+        // console.log(inspect(e2, true, null, true));
 
         expect(e2.N ).toBe( 2 );
         expect(e2.E.length ).toBe( 3 );

@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Setup;
 using CK.Testing;
 using NUnit.Framework;
@@ -7,23 +8,56 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.TS.JsonGraphSerializer.Tests;
 
 [TestFixture]
-public class TSTests
+public class MultipleTypeScriptTests
 {
-    [Test]
-    public async Task CK_TS_JsonGraphSerializer_Async()
+    public interface ISamplePoco : IPoco
     {
-        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
+        string Data { get; set; }
+    }
 
+    [Test]
+    public async Task Multiple_TypeScript_Async()
+    {
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.JsonGraphSerializer" );
-        var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        tsConfig.GitIgnoreCKGenFolder = true;
+        engineConfig.BasePath = TestHelper.TestProjectFolder;
+        var binPath = engineConfig.FirstBinPath;
+        binPath.Assemblies.Add( "CK.TS.JsonGraphSerializer" );
+        binPath.Types.Add( typeof( ISamplePoco ) );
+        var ts1 = new TypeScriptBinPathAspectConfiguration()
+        {
+            TargetProjectPath = "Clients/NpmPackage",
+            IntegrationMode = CKGenIntegrationMode.NpmPackage,
+            AutoInstallYarn = true,
+            AutoInstallJest = true,
+            TypeFilterName = "TypeScriptN",
+        };
+        ts1.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
+
+        var ts2 = new TypeScriptBinPathAspectConfiguration()
+        {
+            TargetProjectPath = "Clients/Inline",
+            IntegrationMode = CKGenIntegrationMode.Inline,
+            AutoInstallYarn = true,
+            AutoInstallJest = true,
+            TypeFilterName = "TypeScriptI"
+        };
+        ts2.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
+
+        engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
+        binPath.AddAspect( ts1 );
+        ts1.AddOtherConfiguration( ts2 );
+
         engineConfig.RunSuccessfully();
-        
+
         // Runs the Jest tests.
-        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
-        runner.Run();
+        var t1 = TestHelper.TestProjectFolder.Combine( "Clients/NpmPackage" );
+        await using var r1 = TestHelper.CreateTypeScriptRunner( t1 );
+        r1.Run();
+
+        var t2 = TestHelper.TestProjectFolder.Combine( "Clients/Inline" );
+        await using var r2 = TestHelper.CreateTypeScriptRunner( t2 );
+        r2.Run();
     }
 
 }

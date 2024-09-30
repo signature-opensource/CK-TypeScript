@@ -8,6 +8,7 @@ const {pathToFileURL} = require(`url`);
 const relPnpApiPath = "../../../../.pnp.cjs";
 
 const absPnpApiPath = resolve(__dirname, relPnpApiPath);
+const absUserWrapperPath = resolve(__dirname, `./sdk.user.cjs`);
 const absRequire = createRequire(absPnpApiPath);
 
 const absPnpLoaderPath = resolve(absPnpApiPath, `../.pnp.loader.mjs`);
@@ -15,7 +16,7 @@ const isPnpLoaderEnabled = existsSync(absPnpLoaderPath);
 
 if (existsSync(absPnpApiPath)) {
   if (!process.versions.pnp) {
-    // Setup the environment to be able to require typescript/lib/tsserver.js
+    // Setup the environment to be able to require typescript/lib/tsserverlibrary.js
     require(absPnpApiPath).setup();
     if (isPnpLoaderEnabled && register) {
       register(pathToFileURL(absPnpLoaderPath));
@@ -23,7 +24,15 @@ if (existsSync(absPnpApiPath)) {
   }
 }
 
-const moduleWrapper = tsserver => {
+const wrapWithUserWrapper = existsSync(absUserWrapperPath)
+  ? exports => absRequire(absUserWrapperPath)(exports)
+  : exports => exports;
+
+const moduleWrapper = exports => {
+  return wrapWithUserWrapper(moduleWrapperFn(exports));
+};
+
+const moduleWrapperFn = tsserver => {
   if (!process.versions.pnp) {
     return tsserver;
   }
@@ -235,5 +244,5 @@ if (major > 5 || (major === 5 && minor >= 5)) {
   moduleWrapper(absRequire(`typescript`));
 }
 
-// Defer to the real typescript/lib/tsserver.js your application uses
-module.exports = moduleWrapper(absRequire(`typescript/lib/tsserver.js`));
+// Defer to the real typescript/lib/tsserverlibrary.js your application uses
+module.exports = moduleWrapper(absRequire(`typescript/lib/tsserverlibrary.js`));

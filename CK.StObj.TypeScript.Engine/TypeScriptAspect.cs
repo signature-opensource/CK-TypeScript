@@ -169,7 +169,9 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
         //
         Throw.DebugAssert( typeof( CommonPocoJsonSupport ).Assembly.GetName().Name == "CK.Poco.Exc.Json" );
         bool isJsonHere = c.CurrentRun.EngineMap.Features.Any( f => f.Name == "CK.Poco.Exc.Json" );
-        return new CSCodeGenerationResult( isJsonHere ? nameof( WaitForJsonSerialization ) : nameof( WaitForLockedTypeSystem ) );
+        return new CSCodeGenerationResult( isJsonHere
+                                            ? nameof( WaitForJsonSerialization )
+                                            : nameof( WaitForLockedTypeSystem ) );
     }
 
     CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoTypeSystem typeSystem )
@@ -202,7 +204,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
         // one configuration among the others in the same BinPath.
         var configs = binPath.ConfigurationGroup.SimilarConfigurations
                                     .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
-                                                        ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() );
+                                                        ?? [] );
         // Avoid creating one immutable lib per BinPath.
         // cachedKey is the last one.
         TypeScriptAspectConfiguration? cachedKey = null;
