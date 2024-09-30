@@ -3,11 +3,9 @@ using CK.Setup.PocoJson;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
 using CSemVer;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 
 namespace CK.Setup;

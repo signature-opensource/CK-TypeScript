@@ -18,7 +18,7 @@ public sealed partial class TypeScriptContext
     internal bool Save( IActivityMonitor monitor )
     {
         bool success = true;
-        using( monitor.OpenInfo( $"Saving generated TypeScript for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
+        using( monitor.OpenInfo( $"Saving generated TypeScript for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
             var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
             var targetCKGenFolder = BinPathConfiguration.TargetCKGenPath;

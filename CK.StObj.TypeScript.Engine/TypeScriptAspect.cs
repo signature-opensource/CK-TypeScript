@@ -81,7 +81,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
                     }
                     else
                     {
-                        monitor.Warn( $"Removing TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToXml()}" );
+                        monitor.Warn( $"Removing TypeScript configuration from BinPath '{owner.Name}' since its TargetProjectPath is empty:{Environment.NewLine}{ts.ToOnlyThisXml()}" );
                         owner.RemoveAspect( ts );
                         return false;
                     }

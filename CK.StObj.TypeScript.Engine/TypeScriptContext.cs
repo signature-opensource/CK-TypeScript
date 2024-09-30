@@ -171,7 +171,7 @@ public sealed partial class TypeScriptContext
     internal bool Run( IActivityMonitor monitor )
     {
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
-        using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToXml()}" ) )
+        using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
             return  // Initializes the global generators.
                     TSContextInitializer.CallGlobalCodeGenerators( monitor, _initializer.GlobalCodeGenerators, null, this )

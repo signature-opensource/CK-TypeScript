@@ -195,7 +195,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public HashSet<NormalizedPath> Barrels { get; }
 
     /// <inheritdoc />
-    protected override void InitializeOneFrom( XElement e )
+    protected override void InitializeOnlyThisFrom( XElement e )
     {
         TargetProjectPath = e.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value;
         Barrels.Clear();
@@ -228,7 +228,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     }
 
     /// <inheritdoc />
-    protected override void WriteOneXml( XElement e )
+    protected override void WriteOnlyThisXml( XElement e )
     {
         e.Add( new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                new XElement( TypeScriptAspectConfiguration.xBarrels,
