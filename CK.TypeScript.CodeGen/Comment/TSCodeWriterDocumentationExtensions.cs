@@ -131,7 +131,7 @@ public static class TSCodeWriterDocumentationExtensions
     /// <returns>This code writer to enable fluent syntax.</returns>
     public static T AppendDocumentation<T>( this T @this, IActivityMonitor monitor, IEnumerable<MemberInfo> members, Action<DocumentationBuilder>? extension = null ) where T : ITSCodeWriter
     {
-        var elements = XmlDocumentationReader.GetDocumentationFor( monitor, members );
+        var elements = XmlDocumentationReader.GetDocumentationFor( monitor, members, @this.File.Folder.Root.Memory );
         return AppendDocumentation( @this, elements, extension );
     }
 
