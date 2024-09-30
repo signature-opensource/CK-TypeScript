@@ -176,7 +176,10 @@ public class TypeScriptFileSaveStrategy
         {
             if( _cleanupFiles.Count > 0 )
             {
-                monitor.Info( $"Skipping deletion of {_cleanupFiles.Count} previous files." );
+                monitor.Info( $"""
+                              Skipping deletion of {_cleanupFiles.Count} previous files:
+                              {_cleanupFiles.Order().Concatenate(" > " + Environment.NewLine)}They will be deleted on the the next successful run.
+                              """ );
             }
         }
         return savedCount;
