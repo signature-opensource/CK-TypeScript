@@ -2,14 +2,16 @@ using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Reflection;
 
 namespace CK.StObj.TypeScript.Engine;
 
-public sealed class TypeScriptResourceFilesAttributeImpl : ITSCodeGenerator, IAttributeContextBoundInitializer
+/// <summary>
+/// Creates multiple resources file (from embedded resources) in the TypeScriptContext's Root folder.
+/// This is stateless: the factory is the code generator.
+/// </summary>
+public sealed class TypeScriptResourceFilesAttributeImpl : IAttributeContextBoundInitializer, ITSCodeGeneratorFactory, ITSCodeGenerator
 {
     readonly TypeScriptResourceFilesAttribute _attr;
     readonly Type _target;
@@ -23,7 +25,7 @@ public sealed class TypeScriptResourceFilesAttributeImpl : ITSCodeGenerator, IAt
         _target = target;
     }
 
-    public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
+    void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
     {
         var packageAttributesImpl = TypeScriptFileAttributeImpl.GetPackageAttributesImpl( monitor, owner );
         if( packageAttributesImpl != null
@@ -51,13 +53,16 @@ public sealed class TypeScriptResourceFilesAttributeImpl : ITSCodeGenerator, IAt
         }
     }
 
-    public bool Initialize( IActivityMonitor monitor, ITypeScriptContextInitializer initializer ) => true;
+    ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    {
+        return this;
+    }
 
-    public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
+    bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
-    public bool OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
+    bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
 
-    public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+    bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
     {
         Throw.DebugAssert( "If Initialize failed, we cannot reach this point.", !_allRes.IsDefault );
         foreach( ResourceTypeLocator o in _allRes )

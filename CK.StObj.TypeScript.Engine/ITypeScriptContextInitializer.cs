@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace CK.Setup;
 
 /// <summary>
-/// Initialization context provided to global <see cref="ITSCodeGenerator.Initialize(IActivityMonitor, ITypeScriptContextInitializer)"/>.
+/// Initialization context provided to global <see cref="ITSCodeGeneratorFactory.CreateTypeScriptGenerator(IActivityMonitor, ITypeScriptContextInitializer)"/>.
 /// This enables code generators to register new types (including types that happens to be <see cref="IPocoType"/>) that must be mapped
 /// to TypeScript.
 /// </summary>
@@ -19,12 +19,7 @@ public interface ITypeScriptContextInitializer
     IPocoTypeSet AllExchangeableSet { get; }
 
     /// <summary>
-    /// Gets the discovered global generators.
-    /// </summary>
-    IReadOnlyList<ITSCodeGenerator> GlobalGenerators { get; }
-
-    /// <summary>
-    /// Gets the Json serialization service it Json serialization is available.
+    /// Gets the Json serialization service if Json serialization is available.
     /// </summary>
     IPocoJsonSerializationServiceEngine? JsonSerialization { get; }
 
@@ -39,13 +34,13 @@ public interface ITypeScriptContextInitializer
     IReadOnlyDictionary<Type, RegisteredType> RegisteredTypes { get; }
 
     /// <summary>
-    /// Ensures that a type is registered. If the type is a registered <see cref="IPocoType"/> it
+    /// Ensures that a type is registered. If the type is a <see cref="IPocoType"/> it
     /// must be in the <see cref="IPocoTypeSetManager.AllExchangeable"/> set to be considered
-    /// and added to the <see cref="ITSPocoCodeGenerator.TypeScriptSet"/>.
+    /// (it will be added to the <see cref="ITSPocoCodeGenerator.TypeScriptSet"/>).
     /// <list type="bullet">
-    ///     <item>If it is not exchangeable and <paramref name="mustBePocoType"/> is true an error is logged and false is return.</item>
+    ///     <item>If it is not exchangeable and <paramref name="mustBePocoType"/> is true an error is logged and false is returned.</item>
     ///     <item>
-    ///     If it is not exchangeable and <paramref name="mustBePocoType"/> is false a warning is logged and the type is regsitered
+    ///     If it is not exchangeable and <paramref name="mustBePocoType"/> is false a warning is logged and the type is registered
     ///     as a C# type: a <see cref="ITSCodeGenerator"/> must be able to handle its TypeScript code generation.
     ///     </item>
     /// </list>

@@ -19,6 +19,11 @@ public interface ITSCodeGeneratorType : ITSCodeGeneratorAutoDiscovery
     /// <summary>
     /// Configures the <see cref="RequireTSFromTypeEventArgs"/>.
     /// If a <see cref="TypeScriptAttribute"/> decorates the type, its properties have been applied to the builder.
+    /// <para>
+    /// This can be called multiple times, once for each <see cref="TypeScriptContext"/>: implementations must be stateless.
+    /// If the <see cref="RequireTSFromTypeEventArgs.Type"/> must not (or cannot) be handled (for any reason) by this generator,
+    /// implementation can simply let the <paramref name="builder"/> as-is. 
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The global TypeScript context.</param>

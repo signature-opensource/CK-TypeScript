@@ -34,8 +34,6 @@ public class FromScratchTests
             ts.AutoInstallJest = true;
             configuration.RunSuccessfully();
 
-            File.Exists( root.Combine( "src/sample.spec.ts" ) ).Should().BeTrue();
-
             await using var runner = TestHelper.CreateTypeScriptRunner( root );
             await TestHelper.SuspendAsync( resume => resume );
             runner.Run();

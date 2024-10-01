@@ -23,6 +23,8 @@
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="CK.NG.AspNet\Login\Res\" />
+    <Folder Include="CK.NG.AspNet\PasswordLost\Res\" />
     <Folder Include="TSInlineTests\" />
   </ItemGroup>
 </Project>

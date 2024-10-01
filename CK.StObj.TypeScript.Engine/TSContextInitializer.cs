@@ -13,7 +13,7 @@ namespace CK.Setup;
 sealed class TSContextInitializer
 {
     readonly Dictionary<Type, RegisteredType> _registeredTypes;
-    readonly List<ITSCodeGenerator> _globals;
+    readonly ImmutableArray<ITSCodeGenerator> _globals;
     readonly IPocoTypeSet _typeScriptExchangeableSet;
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
@@ -24,9 +24,9 @@ sealed class TSContextInitializer
     public IReadOnlyDictionary<Type, RegisteredType> RegisteredTypes => _registeredTypes;
 
     /// <summary>
-    /// Gets the list of the global TypeScript generators.
+    /// Gets the global TypeScript generators.
     /// </summary>
-    public IReadOnlyList<ITSCodeGenerator> GlobalCodeGenerators => _globals;
+    public ImmutableArray<ITSCodeGenerator> GlobalCodeGenerators => _globals;
 
     /// <summary>
     /// Gets the set of Poco compliant types that must be handled in TypeScript.
@@ -55,15 +55,16 @@ sealed class TSContextInitializer
                                                                  regTypes,
                                                                  genBinPath.EngineMap.AllTypesAttributesCache.Values,
                                                                  allExchangeableSet,
-                                                                 out var globals )
+                                                                 out var globalFactories )
             && InitializeIntegrationContext( monitor, binPathConfiguration, libVersionsConfig, out var integrationContext )
             && InitializeGlobalGenerators( monitor,
                                            binPathConfiguration,
                                            integrationContext,
-                                           globals,
                                            regTypes,
                                            allExchangeableSet,
-                                           jsonSerialization ) )
+                                           jsonSerialization,
+                                           globalFactories,
+                                           out var globals ) )
         {
             IPocoTypeSystem typeSystem = allExchangeableSet.TypeSystem;
             var emptyExchangeableSet = typeSystem.SetManager.EmptyExchangeable;
@@ -94,7 +95,7 @@ sealed class TSContextInitializer
     }
 
     TSContextInitializer( Dictionary<Type, RegisteredType> r,
-                          List<ITSCodeGenerator> g,
+                          ImmutableArray<ITSCodeGenerator> g,
                           IPocoTypeSet s,
                           TypeScriptIntegrationContext? integrationContext,
                           ImmutableDictionary<string, SVersionBound> libVersionsConfig )
@@ -174,10 +175,10 @@ sealed class TSContextInitializer
                                                                   Dictionary<Type, RegisteredType> registeredTypes,
                                                                   IEnumerable<ITypeAttributesCache> attributes,
                                                                   IPocoTypeSet allExchangeableSet,
-                                                                  out List<ITSCodeGenerator> globals )
+                                                                  out List<ITSCodeGeneratorFactory> globals )
     {
-        globals = new List<ITSCodeGenerator>();
-        using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGenerator attributes." ) )
+        globals = new List<ITSCodeGeneratorFactory>();
+        using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
         {
             // These variables are reused per type.
             TypeScriptAttributeImpl? tsAttrImpl;
@@ -191,7 +192,7 @@ sealed class TSContextInitializer
 
                 foreach( var m in attributeCache.GetTypeCustomAttributes<ITSCodeGeneratorAutoDiscovery>() )
                 {
-                    if( m is ITSCodeGenerator g )
+                    if( m is ITSCodeGeneratorFactory g )
                     {
                         globals.Add( g );
                     }
@@ -220,16 +221,16 @@ sealed class TSContextInitializer
                     IPocoType? pocoType = reg.PocoType;
                     // If the type is configured then its configuredAttr is not null: the work on whether it is
                     // a IPocoType has been done by step 1.
-                    // But if the type was not in the configuration (it has only a [TypeScript] or has a TSGeneratorType attribute),
+                    // But if the type was not in the configuration (it has only a [TypeScript] or has a ITSGeneratorType attribute),
                     // then we check whether it is a IPocoType or not.
                     // If it is, we associate its IPocoType only it it belongs to the exhangeable set.
                     // If it doesn't belong to the exchangeable set, we have to decide if:
-                    // - We accept it: by setting the RegType.PocoType, we will add it to the final TypeScript Poco set... This is not an option: the 
+                    // - We accept it: by setting the RegType.PocoType, we will add it to the final TypeScript Poco set... This is not possible: the 
                     //   TypeScript Poco set will no more be a subset of the Poco exchangeable set. This breaks an invariant and we cannot anymore reason
                     //   about the System.
-                    // - We raise an error: a PocoType that has been marked as NonExchangeable and has a [TypeScript] or has a TSGeneratorType attribute
+                    // - We raise an error: a PocoType that has been marked as NonExchangeable and has a [TypeScript] or has a ITSGeneratorType attribute
                     //   is invalid and breaks the system.
-                    // - Or we don't assign the RegType.PocoType and let the type be considered a simple C# type. If a TSCodeGenerator can handle it, then
+                    // - Or we don't assign the RegType.PocoType and let the type be a simple C# type. If a TSCodeGenerator can handle it, then
                     //   everything is fine but the PocoCodeGenerator will simply ignore it. If no code generator handle it, this will be an error.
                     //
                     // The last option is definitely the best. This leaves room for edge cases and keeps the TypeScript Poco set logically sound.
@@ -287,27 +288,22 @@ sealed class TSContextInitializer
     {
         readonly TypeScriptBinPathAspectConfiguration _binPathConfiguration;
         readonly TypeScriptIntegrationContext? _integrationContext;
-        readonly IReadOnlyList<ITSCodeGenerator> _globals;
         readonly Dictionary<Type, RegisteredType> _regTypes;
         readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
         readonly IPocoTypeSet _allExchangeableSet;
 
         public Initializer( TypeScriptBinPathAspectConfiguration binPathConfiguration,
                             TypeScriptIntegrationContext? integrationContext,
-                            IReadOnlyList<ITSCodeGenerator> globals,
                             Dictionary<Type, RegisteredType> regTypes,
                             IPocoJsonSerializationServiceEngine? jsonSerialization,
                             IPocoTypeSet allExchangeableSet )
         {
             _binPathConfiguration = binPathConfiguration;
             _integrationContext = integrationContext;
-            _globals = globals;
             _regTypes = regTypes;
             _jsonSerialization = jsonSerialization;
             _allExchangeableSet = allExchangeableSet;
         }
-
-        public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _globals;
 
         public IReadOnlyDictionary<Type, RegisteredType> RegisteredTypes => _regTypes;
 
@@ -326,15 +322,20 @@ sealed class TSContextInitializer
                                     bool mustBePocoType,
                                     Func<TypeScriptAttribute?, TypeScriptAttribute?>? attributeConfigurator = null )
         {
+            // If the type is already registered, applies the attributeConfigurator and updates the registration.
             if( _regTypes.TryGetValue( t, out RegisteredType regType ) )
             {
-                var a = attributeConfigurator?.Invoke( regType.Attribute );
-                if( a != regType.Attribute )
+                if( attributeConfigurator != null )
                 {
-                    _regTypes[t] = new RegisteredType( regType.Generators, regType.PocoType, a );
+                    var a = attributeConfigurator?.Invoke( regType.Attribute );
+                    if( a != regType.Attribute )
+                    {
+                        _regTypes[t] = new RegisteredType( regType.Generators, regType.PocoType, a );
+                    }
                 }
                 return true;
             }
+            // Not yet registered: checks its IPoco status.
             var pocoType = CheckPocoType( monitor, _allExchangeableSet, t, out bool isPocoType );
             if( mustBePocoType && pocoType == null )
             {
@@ -358,49 +359,29 @@ sealed class TSContextInitializer
     static bool InitializeGlobalGenerators( IActivityMonitor monitor,
                                             TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                             TypeScriptIntegrationContext? integrationContext,
-                                            List<ITSCodeGenerator> globals,
                                             Dictionary<Type, RegisteredType> regTypes,
                                             IPocoTypeSet allExchangeableSet,
-                                            IPocoJsonSerializationServiceEngine? jsonSerialization )
+                                            IPocoJsonSerializationServiceEngine? jsonSerialization,
+                                            List<ITSCodeGeneratorFactory> globalFactories,
+                                            out ImmutableArray<ITSCodeGenerator> globals )
     {
-        var i = new Initializer( binPathConfiguration, integrationContext, globals, regTypes, jsonSerialization, allExchangeableSet );
-        return CallGlobalCodeGenerators( monitor, globals, i, null );
-    }
-
-    internal static bool CallGlobalCodeGenerators( IActivityMonitor monitor,
-                                                   IReadOnlyList<ITSCodeGenerator> globals,
-                                                   ITypeScriptContextInitializer? initializer,
-                                                   TypeScriptContext? context )
-    {
-        Throw.DebugAssert( (initializer == null) != (context == null) );
-        string action = initializer != null ? "Initializing" : "StartCodeGeneration for";
-        using( monitor.OpenInfo( $"{action} the {globals.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
+        var i = new Initializer( binPathConfiguration, integrationContext, regTypes, jsonSerialization, allExchangeableSet );
+        using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
         {
-            var success = true;
-            foreach( var global in globals )
+            var b = ImmutableArray.CreateBuilder<ITSCodeGenerator>( globalFactories.Count );
+            foreach( var f in globalFactories )
             {
-                using( monitor.OpenTrace( $"{action} '{global.GetType():N}' global TypeScript generator." ) )
+                var g = f.CreateTypeScriptGenerator( monitor, i );
+                if( g == null )
                 {
-                    try
-                    {
-                        success &= initializer != null
-                                    ? global.Initialize( monitor, initializer )
-                                    : global.StartCodeGeneration( monitor, context! );
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Error( ex );
-                        success = false;
-                    }
+                    globals = ImmutableArray<ITSCodeGenerator>.Empty;
+                    return false;
                 }
+                b.Add( g );
             }
-            if( !success )
-            {
-                monitor.CloseGroup( "Failed." );
-                return false;
-            }
+            globals = b.MoveToImmutable(); 
+            return true;
         }
-        return true;
     }
 
 }

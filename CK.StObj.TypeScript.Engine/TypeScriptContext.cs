@@ -174,7 +174,7 @@ public sealed partial class TypeScriptContext
         using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
             return  // Initializes the global generators.
-                    TSContextInitializer.CallGlobalCodeGenerators( monitor, _initializer.GlobalCodeGenerators, null, this )
+                    StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, this )
                     // Calls Root.TSTypes.ResolveType for each RegisteredType:
                     // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
                     // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
@@ -182,6 +182,38 @@ public sealed partial class TypeScriptContext
                     // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                     && _tsRoot.GenerateCode( monitor );
         }
+
+        static bool StartGlobalCodeGeneration( IActivityMonitor monitor,
+                                               ImmutableArray<ITSCodeGenerator> globals,
+                                               TypeScriptContext? context )
+        {
+            using( monitor.OpenInfo( $"Starting global code generation for the {globals.Length} {nameof( ITSCodeGenerator )} TypeScript generators." ) )
+            {
+                var success = true;
+                foreach( var global in globals )
+                {
+                    using( monitor.OpenTrace( $"StartCodeGeneration for '{global.GetType():N}' global TypeScript generator." ) )
+                    {
+                        try
+                        {
+                            success &= global.StartCodeGeneration( monitor, context! );
+                        }
+                        catch( Exception ex )
+                        {
+                            monitor.Error( ex );
+                            success = false;
+                        }
+                    }
+                }
+                if( !success )
+                {
+                    monitor.CloseGroup( "Failed." );
+                    return false;
+                }
+            }
+            return true;
+        }
+
     }
 
     bool ResolveRegisteredTypes( IActivityMonitor monitor )

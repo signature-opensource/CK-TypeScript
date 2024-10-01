@@ -147,13 +147,13 @@ public class TypeScriptFileSaveStrategy
     /// <returns>The <paramref name="savedCount"/>, null on error (errors must be logged).</returns>
     public virtual int? Finalize( IActivityMonitor monitor, int? savedCount )
     {
-        if( savedCount.HasValue )
+        if( _cleanupFiles.Count == 0 )
         {
-            if( _cleanupFiles.Count == 0 )
-            {
-                monitor.Info( "No previous file exist that have not been regenerated. Nothing to delete." );
-            }
-            else
+            monitor.Info( "No previous file exist that have not been regenerated. Nothing to delete." );
+        }
+        else
+        {
+            if( savedCount.HasValue )
             {
                 using( monitor.OpenInfo( $"Deleting {_cleanupFiles.Count} previous files." ) )
                 {
@@ -171,15 +171,12 @@ public class TypeScriptFileSaveStrategy
                     }
                 }
             }
-        }
-        else
-        {
-            if( _cleanupFiles.Count > 0 )
+            else
             {
                 monitor.Info( $"""
-                              Skipping deletion of {_cleanupFiles.Count} previous files:
-                              {_cleanupFiles.Order().Concatenate(" > " + Environment.NewLine)}They will be deleted on the the next successful run.
-                              """ );
+                                Skipping deletion of {_cleanupFiles.Count} previous files:
+                                {_cleanupFiles.Order().Concatenate( " > " + Environment.NewLine )}They will be deleted on the the next successful run.
+                                """ );
             }
         }
         return savedCount;
