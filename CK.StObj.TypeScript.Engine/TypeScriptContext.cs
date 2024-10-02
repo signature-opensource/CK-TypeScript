@@ -41,6 +41,7 @@ public sealed partial class TypeScriptContext
         _tsRoot.TSTypes.TSFromTypeRequired += OnTSFromTypeRequired;
         _tsRoot.TSTypes.TSFromObjectRequired += OnTSFromObjectRequired;
         _tsRoot.BeforeCodeGeneration += OnBeforeCodeGeneration;
+        _tsRoot.AfterDeferredCodeGeneration += OnAfterDeferredCodeGeneration;
         _tsRoot.AfterCodeGeneration += OnAfterCodeGeneration;
         Root.Root.EnsureBarrel();
         _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
@@ -117,6 +118,8 @@ public sealed partial class TypeScriptContext
 
     void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e ) => AfterCodeGeneration?.Invoke( this, e );
 
+    void OnAfterDeferredCodeGeneration( object? sender, EventMonitoredArgs e ) => AfterDeferredCodeGeneration?.Invoke( this, e );
+
     /// <summary>
     /// Gets the non null <see cref="TypeScriptIntegrationContext"/> if <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/>
     /// is not <see cref="CKGenIntegrationMode.None"/>.
@@ -157,6 +160,16 @@ public sealed partial class TypeScriptContext
     /// </para>
     /// </summary>
     public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
+
+    /// <summary>
+    /// Relays the <see cref="TypeScriptRoot.AfterDeferredCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
+    /// as the sender.
+    /// <para>
+    /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
+    /// and will fail the code generation.
+    /// </para>
+    /// </summary>
+    public event EventHandler<EventMonitoredArgs>? AfterDeferredCodeGeneration;
 
     /// <summary>
     /// Relays the <see cref="TypeScriptRoot.AfterCodeGeneration"/> but with this <see cref="TypeScriptContext"/>

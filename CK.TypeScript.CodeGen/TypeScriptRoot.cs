@@ -153,9 +153,25 @@ public sealed class TypeScriptRoot
     public event EventHandler<EventMonitoredArgs>? BeforeCodeGeneration;
 
     /// <summary>
-    /// Raised after the deferred implementors have successfully run on all types to implement.
-    /// This can be used to generate pure TS support files (registering new types will throw an
-    /// <see cref="InvalidOperationException"/>).
+    /// Raised by <see cref="GenerateCode(IActivityMonitor)"/> once deferred implementors have ran.
+    /// <para>
+    /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
+    /// and will fail the code generation.
+    /// </para>
+    /// </summary>
+    public event EventHandler<EventMonitoredArgs>? AfterDeferredCodeGeneration;
+
+    /// <summary>
+    /// Raised after the deferred implementors have successfully run on all types to implement and
+    /// <see cref="AfterDeferredCodeGeneration"/> has been raised.
+    /// <para>
+    /// This can be used to generate pure TS support files or altering exsitng code but registering
+    /// new types will throw an <see cref="InvalidOperationException"/>).
+    /// </para>
+    /// <para>
+    /// If new type must be registered, use the <see cref="AfterDeferredCodeGeneration"/> event that is raised
+    /// before <see cref="TSTypeManager.GenerateCodeDone"/> is set to true.
+    /// </para>
     /// <para>
     /// Any error or fatal emitted into <see cref="EventMonitoredArgs.Monitor"/> will be detected
     /// and will fail the code generation.
@@ -175,21 +191,28 @@ public sealed class TypeScriptRoot
         Throw.CheckState( TSTypes.GenerateCodeDone is false );
         bool success = true;
         // If BeforeCodeGeneration emits an error, we skip the whole code generation.
-        // If CodeGenerator emits an error, we skip the call to AfterCodeGeneration.
         // If a TSGeneratedType.HasError is true, CodeGenerator will fail.
+        // If CodeGenerator emits an error, we skip the call to OnDeferredCodeGenerated and AfterCodeGeneration.
+        // If OnDeferredCodeGenerated emits an error, we skip the call to AfterCodeGeneration.
         using( monitor.OnError( () => success = false ) )
         {
             try
             {
-                BeforeCodeGeneration?.Invoke( this, new EventMonitoredArgs( monitor ) );
+                EventMonitoredArgs? sameEvent = null;
+                RaiseEvent( monitor, this, BeforeCodeGeneration, nameof( BeforeCodeGeneration ), ref sameEvent );
                 if( success )
                 {
                     var count = _tsTypes.GenerateCode( monitor );
                     if( success )
                     {
-                        using( monitor.OpenInfo( $"All {count} TypeScript types that require an implementation files have been generated." ) )
+                        using( monitor.OpenInfo( $"All {count} deferred TypeScript types have been generated." ) )
                         {
-                            AfterCodeGeneration?.Invoke( this, new EventMonitoredArgs( monitor ) );
+                            RaiseEvent( monitor, this, AfterDeferredCodeGeneration, nameof( AfterDeferredCodeGeneration ), ref sameEvent );
+                            _tsTypes.SetGeneratedCodeDone( monitor );
+                            if( success )
+                            {
+                                RaiseEvent( monitor, this, AfterCodeGeneration, nameof( AfterCodeGeneration ), ref sameEvent );
+                            }
                         }
                     }
                 }
@@ -199,6 +222,28 @@ public sealed class TypeScriptRoot
             {
                 monitor.Error( $"While generating TypeScript code.", ex );
                 return false;
+            }
+        }
+
+        static void RaiseEvent( IActivityMonitor monitor,
+                                TypeScriptRoot sender,
+                                EventHandler<EventMonitoredArgs>? handler,
+                                string name,
+                                ref EventMonitoredArgs? sameEvent )
+        {
+            if( handler != null )
+            {
+                using( monitor.OpenTrace( "Raising BeforeCodeGeneration event." ) )
+                {
+                    try
+                    {
+                        handler.Invoke( sender, sameEvent ??= new EventMonitoredArgs( monitor ) );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( $"While raising BeforeCodeGeneration event.", ex );
+                    }
+                }
             }
         }
     }

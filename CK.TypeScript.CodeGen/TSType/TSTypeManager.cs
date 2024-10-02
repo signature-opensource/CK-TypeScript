@@ -547,8 +547,13 @@ public sealed partial class TSTypeManager
                 }
             }
         }
-        _generateCodeDone = true;
         return _processList.Count;
+    }
+
+    internal void SetGeneratedCodeDone( IActivityMonitor monitor )
+    {
+        monitor.Trace( "Closing type registration. No more types can be registered." );
+        _generateCodeDone = true;
     }
 }
 
