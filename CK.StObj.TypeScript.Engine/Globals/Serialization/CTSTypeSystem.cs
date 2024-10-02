@@ -15,44 +15,42 @@ public sealed partial class CTSTypeSystem
 {
     readonly TypeScriptContext _typeScriptContext;
     readonly IPocoTypeNameMap _jsonExhangeableNames;
-    readonly TypeScriptFile _manualFile;
+    readonly TypeScriptFile _ctsTypeFile;
     readonly ITSDeclaredFileType _symCTS;
     readonly ITSCodePart _initPart;
     readonly ITSFileType _ctsType;
     readonly JsonRequiresHandlingMap _requiresHandlingMap;
 
-    internal CTSTypeSystem( TypeScriptContext typeScriptContext, IPocoTypeNameMap jsonExhangeableNames )
+    internal CTSTypeSystem( TypeScriptContext context, IPocoTypeNameMap jsonExhangeableNames )
     {
-        _typeScriptContext = typeScriptContext;
+        _typeScriptContext = context;
         _jsonExhangeableNames = jsonExhangeableNames;
         _requiresHandlingMap = new JsonRequiresHandlingMap( jsonExhangeableNames.TypeSet );
-        _manualFile = _typeScriptContext.Root.Root.FindOrCreateTypeScriptFile( "CK/Core/CTSType.ts" );
-        _ctsType = _manualFile.CreateType( "CTSType", null, null );
+        _ctsTypeFile = _typeScriptContext.Root.Root.FindOrCreateTypeScriptFile( "CK/Core/CTSType.ts" );
 
-        _initPart = _manualFile.Body.CreatePart();
+        _symCTS = _ctsTypeFile.DeclareType( "SymCTS" );
+        _ctsTypeFile.Body.Append( "export const SymCTS = Symbol.for(\"CK.CTSType\");" ).NewLine();
+        _ctsType = _ctsTypeFile.CreateType( "CTSType", null, null );
+        _initPart = _ctsTypeFile.Body.CreatePart();
 
-        _symCTS = _manualFile.DeclareType( "SymCTS" );
-        _manualFile.Body.Append( "export const SymCTS = Symbol.for(\"CK.CTSType\");" ).NewLine();
-
-        _ctsType.TypePart.Append( """
-            export const CTSType: any  = {
-                toTypedJson( o: any ) : unknown {
-                    if( o == null ) return null;
+        _ctsType.TypePart.Append( $$"""
+            export const CTSType = {
+                get typeFilterName(): string {return "{{context.BinPathConfiguration.TypeFilterName}}"; },
+                toTypedJson( o: any ) : [string,unknown] {
                     const t = o[SymCTS];
                     if( !t ) throw new Error( "Untyped object. A type must be specified with CTSType." );
                     return [t.name, t.json( o )];
                 },
                 fromTypedJson( o: any ) : unknown {
-                    if( o == null ) return undefined;
                     if( !(o instanceof Array && o.length === 2) ) throw new Error( "Expected 2-cells array." );
-                    var t = CTSType[o[0]];
+                    const t = (<any>CTSType)[o[0]];
                     if( !t ) throw new Error( `Invalid type name: ${o[0]}.` );
                     if( !t.set ) throw new Error( `Type name '${o[0]}' is not serializable.` );
                     const j = t.nosj( o[1] );
                     return j !== null && typeof j === 'object' ? t.set( j ) : j;
                },
                stringify( o: any, withType: boolean = true ) : string {
-                   var t = CTSType.toTypedJson( o );
+                   const t = CTSType.toTypedJson( o );
                    return JSON.stringify( withType ? t : t[1] );
                },
                parse( s: string ) : unknown {
@@ -61,13 +59,13 @@ public sealed partial class CTSTypeSystem
             
             """ );
 
-        if( typeScriptContext.Root.ReflectTS )
+        if( context.Root.ReflectTS )
         {
-            Throw.DebugAssert( "ReflectTS is true.", typeScriptContext.Root.TSTypes.ReflectTSTypeFile != null );
-            _manualFile.Imports.EnsureImport( typeScriptContext.Root.TSTypes.ReflectTSTypeFile, "TSType" );
+            Throw.DebugAssert( "ReflectTS is true.", context.Root.TSTypes.ReflectTSTypeFile != null );
+            _ctsTypeFile.Imports.EnsureImport( context.Root.TSTypes.ReflectTSTypeFile, "TSType" );
         }
 
-        typeScriptContext.Root.AfterCodeGeneration += OnAfterCodeGeneration;
+        context.Root.AfterCodeGeneration += OnAfterCodeGeneration;
     }
 
     void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e )
@@ -102,7 +100,7 @@ public sealed partial class CTSTypeSystem
     /// <summary>
     /// Gets the CTSType file that defines the static <see cref="CTSType"/> and <see cref="SymCTS"/> types.
     /// </summary>
-    public TypeScriptFile CTSTypeFile => _manualFile;
+    public TypeScriptFile CTSTypeFile => _ctsTypeFile;
 
     /// <summary>
     /// Gets the symbol used to type objects with their associated CTSType.

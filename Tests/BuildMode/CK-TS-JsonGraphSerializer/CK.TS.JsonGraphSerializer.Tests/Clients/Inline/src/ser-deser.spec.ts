@@ -1,9 +1,8 @@
-import { serialize, deserialize, ISerializeOptions, IDeserializeOptions } from '@local/ck-gen';
+import { serialize, deserialize, ISerializeOptions, IDeserializeOptions, SamplePoco, CTSType, SymCTS } from '@local/ck-gen';
 import { testWithIdempotence } from './util';
-import { inspect } from "util";
 import assert from 'assert';
 
-if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
+if (process.env["VSCODE_INSPECTOR_OPTIONS"]) jest.setTimeout(30 * 60 * 1000); // 30 minutes
 
 describe('serialize() and deserialize()', function () {
     it('should work with embedded graphs', function () {
@@ -13,9 +12,9 @@ describe('serialize() and deserialize()', function () {
         const s = '{"N":2,"G":' + serialize(a) + '}';
         const d = deserialize(s);
 
-        expect( d.N ).toBe( 2 );
-        expect( d.G.v ).toBe( 1 );
-        expect( d.G.an[0] ).toBe( d.G );
+        expect(d.N).toBe(2);
+        expect(d.G.v).toBe(1);
+        expect(d.G.an[0]).toBe(d.G);
     });
 
     it('should work with null references', function () {
@@ -23,11 +22,11 @@ describe('serialize() and deserialize()', function () {
         const a = { v: 1, n: null, an: [null, 2, null] };
 
         testWithIdempotence(a, undefined, d => {
-            expect( d.n ).toBe( null );
-            expect( d.an[0] ).toBe( null );
-            expect( d.an[1] ).toBe( 2 );
-            expect( d.an[2] ).toBe( null );
-            expect( d.v ).toBe( 1 );
+            expect(d.n).toBe(null);
+            expect(d.an[0]).toBe(null);
+            expect(d.an[1]).toBe(2);
+            expect(d.an[2]).toBe(null);
+            expect(d.v).toBe(1);
         });
 
     });
@@ -36,7 +35,7 @@ describe('serialize() and deserialize()', function () {
 
         const a = [{ "v": 1 }, "A"];
         a.push(a[0]);
-        testWithIdempotence( a );
+        testWithIdempotence(a);
     });
 
     it('should work with self reference', function () {
@@ -44,9 +43,9 @@ describe('serialize() and deserialize()', function () {
         const a = { v: 1 };
         (<any>a).rA = a;
 
-        testWithIdempotence(a,undefined, d => {
-            expect( d.rA ).toBe( d );
-            expect( d.v ).toBe( 1 );
+        testWithIdempotence(a, undefined, d => {
+            expect(d.rA).toBe(d);
+            expect(d.v).toBe(1);
         });
 
     });
@@ -57,9 +56,9 @@ describe('serialize() and deserialize()', function () {
         a.arr.push(a);
 
         testWithIdempotence(a, undefined, d => {
-            expect( d.arr.length ).toBe( 2 );
-            expect( d.arr[0] ).toBe( 'Test' );
-            expect( d.arr[1] ).toBe( d );
+            expect(d.arr.length).toBe(2);
+            expect(d.arr[0]).toBe('Test');
+            expect(d.arr[1]).toBe(d);
         });
 
     });
@@ -70,9 +69,9 @@ describe('serialize() and deserialize()', function () {
         a.arr.push(a);
 
         testWithIdempotence(a, { prefix: "-" }, d => {
-            expect( d.arr.length ).toBe( 2 );
-            expect( d.arr[0] ).toBe( 'Test' );
-            expect( d.arr[1] ).toBe( d );
+            expect(d.arr.length).toBe(2);
+            expect(d.arr[0]).toBe('Test');
+            expect(d.arr[1]).toBe(d);
         });
 
     });
@@ -83,11 +82,11 @@ describe('serialize() and deserialize()', function () {
         a[1].push(a, a[0], a[1]);
 
         testWithIdempotence(a, undefined, d => {
-            expect(d.length ).toBe( 2);
-            expect(d[0][0] ).toBe( d);
-            expect(d[1][0] ).toBe( d);
-            expect(d[1][1] ).toBe( d[0]);
-            expect(d[1][2] ).toBe( d[1]);
+            expect(d.length).toBe(2);
+            expect(d[0][0]).toBe(d);
+            expect(d[1][0]).toBe(d);
+            expect(d[1][1]).toBe(d[0]);
+            expect(d[1][2]).toBe(d[1]);
         });
     });
 
@@ -102,7 +101,7 @@ describe('serialize() and deserialize()', function () {
         testWithIdempotence(a, { prefix: "" });
     });
 
-    it('should work with external objects (1)', function (this:any) {
+    it('should work with external objects (1)', function (this: any) {
         const ext = this;
         const a = [ext];
 
@@ -118,11 +117,11 @@ describe('serialize() and deserialize()', function () {
         };
 
         testWithIdempotence(a, options, d => {
-            expect(d[0] ).toBe( ext);
+            expect(d[0]).toBe(ext);
         });
     });
 
-    it('should work with external objects (2)', function (this:any) {
+    it('should work with external objects (2)', function (this: any) {
         // a is graph with awful cycles in it.
         // and with references to srv1 and srv2.
         const srv1 = { host: this, addr: "an ip address" };
@@ -165,7 +164,7 @@ describe('serialize() and deserialize()', function () {
         const conflictDemo2 = { i: 2, Y: [{ ">": 9 }] };
         const conflictDemo3 = { i: 3, Y: [{ "~þ": 9 }] };
 
-        const checkConflict = function (o:any, options?:ISerializeOptions & IDeserializeOptions) {
+        const checkConflict = function (o: any, options?: ISerializeOptions & IDeserializeOptions) {
             try {
                 serialize(o, options);
                 assert.fail('', '', "Conflict not detected:" + o);
@@ -196,9 +195,9 @@ describe('serialize() and deserialize()', function () {
             .set(null, 'nullKey');
 
         testWithIdempotence(a, undefined, d => {
-            expect( d.get('key') ).toBe( 'value' );
-            expect( d.get(null) ).toBe( 'nullKey' );
-            expect( d.get('nullValue') ).toBe( null );
+            expect(d.get('key')).toBe('value');
+            expect(d.get(null)).toBe('nullKey');
+            expect(d.get('nullValue')).toBe(null);
         })
     });
 
@@ -209,9 +208,9 @@ describe('serialize() and deserialize()', function () {
             .add(2);
 
         testWithIdempotence(a, { prefix: "" }, d => {
-            expect( d.has(1) ).toBe( true );
-            expect( d.has(d) ).toBe( true );
-            expect( d.has(2) ).toBe( true );
+            expect(d.has(1)).toBe(true);
+            expect(d.has(d)).toBe(true);
+            expect(d.has(2)).toBe(true);
         });
     });
 
@@ -224,19 +223,40 @@ describe('serialize() and deserialize()', function () {
                 ["C", 42, 50, { ">": 53 }]
             ]
         }
-
         const e2 = deserialize(e, { prefix: '' });
 
-        //console.log(inspect(e2, true, null, true));
+        // console.log(inspect(e2, true, null, true));
 
-        expect(e2.N ).toBe( 2 );
-        expect(e2.E.length ).toBe( 3 );
-        expect(e2.E[0].length ).toBe( 4 );
+        expect(e2.N).toBe(2);
+        expect(e2.E.length).toBe(3);
+        expect(e2.E[0].length).toBe(4);
         expect(e2.E[0][3]).not.toBeUndefined;
         expect(e2.E[0][3]['°']).toBeUndefined;
-        expect(e2.E[2].length ).toBe( 4 );
+        expect(e2.E[2].length).toBe(4);
         expect(e2.E[2][3]).not.toBeUndefined;
         expect(e2.E[2][3]['>']).toBeUndefined;
         expect(e2.E[2][3]).toBe(e2.E[0][3]);
     });
+
+    it('should work withIPoco', function () {
+        const p = new SamplePoco("Hop", 3712);
+
+        // Check regular (via CTSType).
+        const regular = CTSType.stringify(p, true);
+        const back = CTSType.parse(regular);
+        expect(back).toEqual(p);
+        expect(back).toBeInstanceOf(SamplePoco);
+
+        testWithIdempotence(p, { prefix: "" }, d => {
+            expect(d).not.toEqual(p);
+            // d is not typed.
+            expect(d[SymCTS]).toBeUndefined();
+            // ... at all!
+            expect(d).not.toBeInstanceOf(SamplePoco);
+            // Buth the Object values are preserved.
+            expect(d.data).toBe(p.data);
+            expect(d.value).toBe(p.value);
+        });
+    });
+
 });

@@ -13,6 +13,7 @@ public class MultipleTypeScriptTests
     public interface ISamplePoco : IPoco
     {
         string Data { get; set; }
+        float Value { get; set; }
     }
 
     [Test]

@@ -1,6 +1,5 @@
-import { serialize, deserialize, ISerializeOptions, IDeserializeOptions } from '@local/ck-gen';
+import { serialize, deserialize, ISerializeOptions, IDeserializeOptions, SamplePoco, CTSType, SymCTS } from '@local/ck-gen';
 import { testWithIdempotence } from './util';
-import { inspect } from "util";
 import assert from 'assert';
 
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
@@ -224,7 +223,6 @@ describe('serialize() and deserialize()', function () {
                 ["C", 42, 50, { ">": 53 }]
             ]
         }
-
         const e2 = deserialize(e, { prefix: '' });
 
         // console.log(inspect(e2, true, null, true));
@@ -239,4 +237,26 @@ describe('serialize() and deserialize()', function () {
         expect(e2.E[2][3]['>']).toBeUndefined;
         expect(e2.E[2][3]).toBe(e2.E[0][3]);
     });
+
+    it('should work withIPoco', function () {
+        const p = new SamplePoco( "Hop", 3712 );
+
+        // Check regular (via CTSType).
+        const regular = CTSType.stringify( p, true );
+        const back = CTSType.parse( regular );
+        expect( back ).toEqual( p );
+        expect( back ).toBeInstanceOf( SamplePoco);
+
+        testWithIdempotence(p, { prefix: "" }, d => {
+            expect( d ).not.toEqual( p );
+            // d is not typed.
+            expect( d[SymCTS] ).toBeUndefined();
+            // ... at all!
+            expect( d ).not.toBeInstanceOf( SamplePoco );
+            // Buth the Object values are preserved.
+            expect( d.data ).toBe( p.data);
+            expect( d.value ).toBe( p.value );
+        });
+    });
+
 });

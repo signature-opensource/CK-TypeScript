@@ -8,7 +8,7 @@ import {
     SchemeUsageStatus,
     WebFrontAuthError
 } from '@local/ck-gen';
-import { IWebFrontAuthResponse } from '@local/ck-gen/CK/AspNet/Auth/index.private';
+import { IWebFrontAuthResponse } from '@local/ck-gen/src/CK/AspNet/Auth/index.private';
 import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
 import ResponseBuilder from '../helpers/response-builder';
 
