@@ -89,14 +89,14 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     /// in this <see cref="File"/>.
     /// </summary>
     public IEnumerable<ITSFileType> AllTypesWithPart => _body.Parts.OfType<ITSKeyedCodePart>()
-                                                                   .Select( p => p.Key as TSFileType )
+                                                                   .Select( p => p.Key as ITSFileType )
                                                                    .Where( k => k != null )!;
 
     /// <summary>
     /// Gets the TypeScript types bound to a C# type that are defined in this <see cref="File"/>.
     /// </summary>
     public IEnumerable<ITSFileCSharpType> CSharpTypes => _body.Parts.OfType<ITSKeyedCodePart>()
-                                                                    .Select( p => p.Key as TSCSharpType )
+                                                                    .Select( p => p.Key as ITSFileCSharpType )
                                                                     .Where( k => k != null )!;
 
     /// <summary>

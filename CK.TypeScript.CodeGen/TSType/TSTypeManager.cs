@@ -31,7 +31,7 @@ public sealed partial class TSTypeManager
     // Not null when TypeScriptRoot.ReflectTS is true.
     readonly ITSCodePart? _reflectTSTypes;
     // New TSGeneratedType are appended to this list: GenerateCode loops until no new type appears in this list.
-    readonly List<TSGeneratedType> _processList;
+    readonly List<TSDeferredType> _processList;
     bool _generateCodeDone;
 
     internal TSTypeManager( TypeScriptRoot root )
@@ -40,7 +40,7 @@ public sealed partial class TSTypeManager
         _root = root;
         _libraries = new Dictionary<string, LibraryImport>();
         _types = new Dictionary<object, ITSType?>();
-        _processList = new List<TSGeneratedType>();
+        _processList = new List<TSDeferredType>();
         if( root.ReflectTS )
         {
             _reflectTSTypes = root.Root.FindOrCreateTypeScriptFile( "CK/Core/TSType.ts" )
@@ -360,7 +360,7 @@ public sealed partial class TSTypeManager
                 e.Implementor = ImplementDefaultGuid;
             }
         }
-        var newOne = new TSGeneratedType( this,
+        var newOne = new TSDeferredType( this,
                                           t,
                                           e.TypeName,
                                           file,
@@ -525,7 +525,7 @@ public sealed partial class TSTypeManager
         Throw.DebugAssert( !_generateCodeDone );
         for( int i = 0; i < _processList.Count; i++ )
         {
-            TSGeneratedType? type = _processList[i];
+            TSDeferredType? type = _processList[i];
             if( type.HasError )
             {
                 monitor.Error( $"Skipping TS code generation for '{type.TypeName}' that is on error." );

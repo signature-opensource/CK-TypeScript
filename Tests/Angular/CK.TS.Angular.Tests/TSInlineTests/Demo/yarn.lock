@@ -356,7 +356,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/core@npm:^18.2":
+"@angular/core@npm:^18.2.6":
   version: 18.2.6
   resolution: "@angular/core@npm:18.2.6"
   dependencies:
@@ -5499,7 +5499,7 @@ __metadata:
     "@angular/common": "npm:^18.2"
     "@angular/compiler": "npm:^18.2"
     "@angular/compiler-cli": "npm:^18.2"
-    "@angular/core": "npm:^18.2"
+    "@angular/core": "npm:^18.2.6"
     "@angular/forms": "npm:^18.2"
     "@angular/platform-browser": "npm:^18.2"
     "@angular/platform-browser-dynamic": "npm:^18.2"

@@ -330,7 +330,10 @@ public sealed partial class TypeScriptFolder
             var file = _firstFile;
             while( file != null )
             {
-                AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
+                if( file is IMinimalTypeScriptFile ts && ts.AllTypes.Any() )
+                {
+                    AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
+                }
                 file = file._next;
             }
             var folder = _firstChild;

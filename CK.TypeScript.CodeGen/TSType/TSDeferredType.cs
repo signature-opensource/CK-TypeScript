@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen;
 /// <summary>
 /// This class is internal: only the ITSFileCSharpType is exposed.
 /// </summary>
-sealed class TSGeneratedType : TSType, ITSFileCSharpType
+sealed class TSDeferredType : TSType, ITSFileCSharpType
 {
     readonly TSValueWriter? _tryWriteValue;
     internal readonly TSCodeGenerator? _codeGenerator;
@@ -18,7 +18,7 @@ sealed class TSGeneratedType : TSType, ITSFileCSharpType
     string? _defaultValueSource;
     readonly bool _hasError;
 
-    internal TSGeneratedType( TSTypeManager typeManager,
+    internal TSDeferredType( TSTypeManager typeManager,
                               Type t,
                               string typeName,
                               TypeScriptFile file,
@@ -36,7 +36,7 @@ sealed class TSGeneratedType : TSType, ITSFileCSharpType
         _tryWriteValue = tryWriteValue;
         _codeGenerator = codeGenerator;
         _defaultValueSource = defaultValue;
-        _part = file.Body.FindOrCreateKeyedPart( Type, partCloser );
+        _part = file.Body.FindOrCreateKeyedPart( this, partCloser );
         _hasError = hasError;
     }
 
