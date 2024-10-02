@@ -22,34 +22,15 @@ public sealed class LibraryImport
     IReadOnlyCollection<LibraryImport> _impliedDependencies;
     bool _isUsed;
 
-    LibraryImport( string name,
-                   SVersionBound version,
-                   DependencyKind dependencyKind,
-                   IReadOnlyCollection<LibraryImport> impliedDependencies,
-                   string definitionSource )
+    internal LibraryImport( string name,
+                            SVersionBound version,
+                            DependencyKind dependencyKind,
+                            IReadOnlyCollection<LibraryImport> impliedDependencies,
+                            string definitionSource )
     {
         _packageDependency = new PackageDependency( name, version, dependencyKind );
         _impliedDependencies = impliedDependencies;
         _definitionSource = definitionSource;
-    }
-
-    internal static LibraryImport Create( IActivityMonitor monitor,
-                                          string name,
-                                          SVersionBound v,
-                                          DependencyKind dependencyKind,
-                                          string definitionSource,
-                                          LibraryImport[] impliedDependencies )
-    {
-        if( impliedDependencies.GroupBy( d => d.Name ).Count() != impliedDependencies.Length )
-        {
-            var dup = impliedDependencies.Select( d => d.Name ).GroupBy( Util.FuncIdentity ).Where( d => d.Count() > 1 ).Select( d => d.Key );
-            monitor.Warn( $"""
-                        Duplicate found in implied TypeScript libraries of library '{name}': {dup.Concatenate()}.
-                        Source: {definitionSource}
-                        """ );
-            impliedDependencies = impliedDependencies.Distinct().ToArray();
-        }
-        return new LibraryImport( name, v, dependencyKind, impliedDependencies, definitionSource );
     }
 
     /// <summary>

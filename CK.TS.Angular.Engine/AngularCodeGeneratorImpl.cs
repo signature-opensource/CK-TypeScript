@@ -28,33 +28,56 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
     sealed class CodeGen : ITSCodeGenerator
     {
+        [AllowNull] LibraryImport _angularCore;
+        [AllowNull] ITSFileType _ckGenAppModule;
+        [AllowNull] ITSCodePart _importModulePart;
+        [AllowNull] ITSCodePart _exportModulePart;
+        [AllowNull] ITSCodePart _providerPart;
+        [AllowNull] ITSCodePart _routesPart;
+
         public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
-            var f = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
-            f.Body.Append( """
-                import { NgModule, Provider } from '@angular/core';
+            _angularCore = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/core", DependencyKind.Dependency );
 
+            var f = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
+            f.Imports.EnsureImportFromLibrary( _angularCore, "NgModule", "Provider" );
+            _ckGenAppModule = f.CreateType( "CKGenAppModule", null, null );
+            _ckGenAppModule.TypePart.Append( """
                 @NgModule({
                     imports: [
-                    // Registered NgModules come here.
+
+                """ )
+                .InsertPart( out _importModulePart )
+                .Append( """
+
                     ],
                     exports: [
-                    // Registered NgModules also come here.
-                ]
-                  })
+
+                """ )
+                .InsertPart( out _exportModulePart )
+                .Append( """
+
+                    ] })
                 export class CKGenAppModule {
-                   static Providers : Provider[] = [
-                    // Registered providers come here.
-                   ];
-                }
+                    static Providers : Provider[] = [
+
+                """ )
+                .InsertPart( out _providerPart )
+                .Append( """
+
+                    ];
                 """ );
             
             var r = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/routes.ts" );
             r.Body.Append( """
-                           export default [
-                                // RoutedComponents' routes come here.
-                           ];
-                           """ );
+                export default [
+
+                """ )
+                .InsertPart( out _routesPart )
+                .Append( """
+
+                ];
+                """ );
 
             Throw.DebugAssert( "Inline mode => IntegrationContext.", context.IntegrationContext != null );
             context.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
