@@ -119,7 +119,7 @@ public sealed partial class TypeScriptIntegrationContext
         var targetProjectPath = configuration.TargetProjectPath;
         // The Json files are null if they cannot be read and empty for an unexisting one.
         Throw.DebugAssert( configuration.AspectConfiguration != null );
-        var packageJson = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), configuration.AspectConfiguration.IgnoreVersionsBound );
+        var packageJson = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), "Target package.json", configuration.AspectConfiguration.IgnoreVersionsBound );
         var tsConfigJson = TSConfigJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "tsconfig.json" ) );
 
         if( packageJson == null || tsConfigJson == null )
@@ -144,28 +144,11 @@ public sealed partial class TypeScriptIntegrationContext
         return new TypeScriptIntegrationContext( configuration, packageJson, tsConfigJson, libVersionsConfig );
     }
 
-    bool AddOrUpdateTargetProjectDependency( IActivityMonitor monitor, string name, SVersionBound? version, DependencyKind kind )
+    bool AddOrUpdateTargetProjectDependency( IActivityMonitor monitor, string name, SVersionBound? version, DependencyKind kind, string? packageDefinitionSource )
     {
-        bool isConfigured = _libVersionsConfig.TryGetValue( name, out var configured );
-        if( version == null )
-        {
-            if( !isConfigured )
-            {
-                monitor.Error( $"TypeScript library '{name}' version must be configured in TypeScript aspect LibraryVersions." );
-                return false;
-            }
-            version = configured;
-        }
-        else
-        {
-            if( isConfigured && version != configured )
-            {
-                monitor.Info( $"TypeScript library '{name}' will use the configured version '{configured}'. Ignoring version '{version}'." );
-                version = configured;
-            }
-        }
-        var dependency = new PackageDependency( name, version.Value, kind );
-        return _targetPackageJson.Dependencies.AddOrUpdate( monitor, dependency, cloneAddedDependency: false );
+        var p = LibraryManager.CreatePackageDependency( monitor, _libVersionsConfig, name, version, kind, packageDefinitionSource );
+        if( p == null ) return false;
+        return _targetPackageJson.Dependencies.AddOrUpdate( monitor, p, cloneAddedDependency: false );
     }
 
     bool SettleTypeScriptVersion( IActivityMonitor monitor, [NotNullWhen(true)]out PackageDependency? typeScriptDep )
@@ -191,12 +174,9 @@ public sealed partial class TypeScriptIntegrationContext
         PackageDependency? fromCodeDeclared = _saver.GeneratedDependencies.GetValueOrDefault( "typescript" );
 
         // If we have a configured version for TypeScript, this is the one that should be used, no matter what.
-        // But here, we miss a "Force = true" option in the LibraryVersions that will trigger a AddOrReplace.
-        // For the moment, we only use AddOrUpdate: IgnoreVersionBound is honored, if the version cannot be merged,
-        // then TypeScriptAspect.IgnoreVersionsBound should be set to true.
         if( _libVersionsConfig.TryGetValue( "typescript", out SVersionBound fromConfiguration ) )
         {
-            typeScriptDep = new PackageDependency( "typescript", fromConfiguration, DependencyKind.DevDependency );
+            typeScriptDep = new PackageDependency( "typescript", fromConfiguration, DependencyKind.DevDependency, PackageDependency.ConfigurationSourceName );
             if( !_targetPackageJson.Dependencies.AddOrUpdate( monitor, typeScriptDep, cloneAddedDependency: false ) )
             {
                 return false;
@@ -294,14 +274,14 @@ public sealed partial class TypeScriptIntegrationContext
                 {
                     FromCodeDefault( out vResult, out source );
                 }
-                result = new PackageDependency( "typescript", vResult, DependencyKind.DevDependency );
+                result = new PackageDependency( "typescript", vResult, DependencyKind.DevDependency, source );
             }
             monitor.Info( $"Considering TypeScript version '{result.Version}' from {source}." );
             return result;
 
             static void FromCodeDefault( out SVersionBound result, out string source )
             {
-                source = "code default";
+                source = "Code default";
                 var parseResult = SVersionBound.NpmTryParse( DefaultTypeScriptVersion );
                 Throw.DebugAssert( "The version defined in code is necessarily valid.", parseResult.IsValid );
                 result = parseResult.Result;
@@ -311,7 +291,7 @@ public sealed partial class TypeScriptIntegrationContext
 
     bool SaveTargetPackageJsonAndYarnInstall( IActivityMonitor monitor )
     {
-        using var _ = monitor.OpenInfo( "Running Yarn install." );
+        using var _ = monitor.OpenInfo( "Saving target package.json, running Yarn install if needed." );
         if( !SettleTypeScriptVersion( monitor, out var _ ) )
         {
             return false;
@@ -376,6 +356,8 @@ public sealed partial class TypeScriptIntegrationContext
 
     internal bool Run( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
     {
+        Throw.DebugAssert( _configuration.IntegrationMode is CKGenIntegrationMode.Inline or CKGenIntegrationMode.NpmPackage );
+
         // Obtains the yarn path or error.
         var yarnPath = YarnHelper.GetYarnInstallPath( monitor,
                                                       _configuration.TargetProjectPath,
@@ -384,23 +366,25 @@ public sealed partial class TypeScriptIntegrationContext
         _yarnPath = yarnPath.Value;
 
         // Setup the target project dependencies according to the integration mode.
-        if( _configuration.IntegrationMode == CKGenIntegrationMode.Inline )
+
+        using( monitor.OpenInfo( $"Updating target package.json dependencies from code generated ones." ) )
         {
-            MergeGeneratedDependencies( monitor, _targetPackageJson.Dependencies, saver.GeneratedDependencies.Values );
-        }
-        else
-        {
-            Throw.DebugAssert( _configuration.IntegrationMode == CKGenIntegrationMode.NpmPackage );
-            MergeGeneratedDependencies( monitor, _targetPackageJson.Dependencies, saver.GeneratedDependencies.Values.Where( d => d.DependencyKind == DependencyKind.PeerDependency ) );
-        }
-        if( _configuration.AutoInstallJest )
-        {
-            _targetPackageJson.Scripts.TryAdd( "test", "jest" );
-            AddOrUpdateTargetProjectDependency( monitor, "jest", SVersionBound.All, DependencyKind.DevDependency );
-            AddOrUpdateTargetProjectDependency( monitor, "ts-jest", SVersionBound.All, DependencyKind.DevDependency );
-            AddOrUpdateTargetProjectDependency( monitor, "@types/jest", SVersionBound.All, DependencyKind.DevDependency );
-            AddOrUpdateTargetProjectDependency( monitor, "@types/node", SVersionBound.All, DependencyKind.DevDependency );
-            AddOrUpdateTargetProjectDependency( monitor, "jest-environment-jsdom", SVersionBound.All, DependencyKind.DevDependency );
+            var updates = _configuration.IntegrationMode is CKGenIntegrationMode.NpmPackage
+                            ? saver.GeneratedDependencies.Values.Where( d => d.DependencyKind == DependencyKind.PeerDependency )
+                            : saver.GeneratedDependencies.Values;
+            if( !_targetPackageJson.Dependencies.AddOrUpdate( monitor, updates, LogLevel.Info, cloneDependencies: false ) )
+            {
+                return false;
+            }
+            if( _configuration.AutoInstallJest )
+            {
+                _targetPackageJson.Scripts.TryAdd( "test", "jest" );
+                AddOrUpdateTargetProjectDependency( monitor, "jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
+                AddOrUpdateTargetProjectDependency( monitor, "ts-jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
+                AddOrUpdateTargetProjectDependency( monitor, "@types/jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
+                AddOrUpdateTargetProjectDependency( monitor, "@types/node", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
+                AddOrUpdateTargetProjectDependency( monitor, "jest-environment-jsdom", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
+            }
         }
         // Raising OnBeforeIntegration.
         _saver = saver;
@@ -460,38 +444,6 @@ public sealed partial class TypeScriptIntegrationContext
             }
             return !error;
         }
-
-        static void MergeGeneratedDependencies( IActivityMonitor monitor, DependencyCollection c, IEnumerable<PackageDependency> dependencies )
-        {
-            int count = 0;
-            var b = new StringBuilder();
-            foreach( var d in dependencies )
-            {
-                if( c.TryGetValue( d.Name, out var exists ) )
-                {
-                    if( exists.Version != d.Version || exists.DependencyKind != d.DependencyKind )
-                    {
-                        if( count++ == 0 ) b.Append( ", " );
-                        b.Append( exists ).Append( " to " ).Append( d );
-                        c.AddOrReplace( d, false );
-                    }
-                }
-                else
-                {
-                    if( count++ == 0 ) b.Append( ", " );
-                    b.Append( " added ").Append( d );
-                    c.AddOrReplace( d, false );
-                }
-            }
-            if( count != 0 )
-            {
-                monitor.Info( $"Updated {count} dependencies in package.json from code generated dependencies:{Environment.NewLine}{b.ToString()}" );
-            }
-            else
-            {
-                monitor.Trace( "No dependencies in package.json to update from code generated dependencies." );
-            }
-        }
     }
 
     bool NpmPackageIntegrate( IActivityMonitor monitor,
@@ -522,7 +474,7 @@ public sealed partial class TypeScriptIntegrationContext
         }
 
         // The workspace dependency.
-        PackageDependency ckGenDep = new PackageDependency( "@local/ck-gen", SVersionBound.None, DependencyKind.DevDependency );
+        PackageDependency ckGenDep = new PackageDependency( "@local/ck-gen", SVersionBound.None, DependencyKind.DevDependency, "NpmPackage mode" );
 
         if( _initialEmptyTargetPackage )
         {
@@ -544,7 +496,7 @@ public sealed partial class TypeScriptIntegrationContext
             {
                 if( ck == null )
                 {
-                    _targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, false );
+                    _targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, LogLevel.None, false );
                     monitor.Info( $"Added \"@local/ck-gen\" as a workspace development dependency." );
                 }
                 else
@@ -646,7 +598,7 @@ public sealed partial class TypeScriptIntegrationContext
             {
                 // The /ck-gen/package.json dependencies is bound to the generated one (into wich
                 // typescript has been added).
-                var p = PackageJsonFile.Create( packageJsonPath, deps );
+                var p = PackageJsonFile.Create( packageJsonPath, deps, "ck-gen package.json" );
                 p.Name = "@local/ck-gen";
 
                 if( moduleSystem is TSModuleSystem.ES6 or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )

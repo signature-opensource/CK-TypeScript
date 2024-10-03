@@ -5,6 +5,7 @@ using CSemVer;
 using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup;
 
@@ -126,13 +127,17 @@ public sealed partial class TypeScriptIntegrationContext
         /// <param name="name">The dependency name.</param>
         /// <param name="versionBound">The dependency version bound.</param>
         /// <param name="kind">The dependency kind.</param>
+        /// <param name="packageDefinitionSource">The source definition of the package.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool AddOrUpdateTargetProjectDependency( string name, string versionBound, DependencyKind kind )
+        public bool AddOrUpdateTargetProjectDependency( string name,
+                                                        string versionBound,
+                                                        DependencyKind kind,
+                                                        [CallerFilePath] string? packageDefinitionSource = null )
         {
             Throw.CheckNotNullArgument( name );
             Throw.CheckNotNullArgument( versionBound );
             return LibraryManager.TryParseVersionBound( Monitor, name, versionBound, kind, out var v )
-                   && IntegrationContext.AddOrUpdateTargetProjectDependency( Monitor, name, v, kind );
+                   && IntegrationContext.AddOrUpdateTargetProjectDependency( Monitor, name, v, kind, packageDefinitionSource );
         }
 
         /// <summary>
@@ -142,33 +147,39 @@ public sealed partial class TypeScriptIntegrationContext
         /// <param name="name">The dependency name.</param>
         /// <param name="version">The dependency version.</param>
         /// <param name="kind">The dependency kind.</param>
+        /// <param name="packageDefinitionSource">The source definition of the package.</param>
         /// <returns>True on success, false otherwise.</returns>
-        public bool AddOrUpdateTargetProjectDependency( string name, SVersionBound version, DependencyKind kind ) => IntegrationContext.AddOrUpdateTargetProjectDependency( Monitor, name, version, kind );
+        public bool AddOrUpdateTargetProjectDependency( string name,
+                                                        SVersionBound version,
+                                                        DependencyKind kind,
+                                                        [CallerFilePath] string? packageDefinitionSource = null )
+        {
+            return IntegrationContext.AddOrUpdateTargetProjectDependency( Monitor, name, version, kind, packageDefinitionSource );
+        }
 
         /// <summary>
         /// Adds or updates a <see cref="PackageJsonFile.Dependencies"/> in the <see cref="TargetPackageJson"/> that 
         /// must be configured in <see cref="TypeScriptAspectConfiguration.LibraryVersions"/>.
         /// <para>
-        /// This overload requires that the package and its version is explicitly configured in the Library versions.
+        /// This requires that the package and its version is explicitly configured in the Library versions.
         /// </para>
         /// </summary>
         /// <param name="name">The dependency name.</param>
         /// <param name="kind">The dependency kind.</param>
+        /// <param name="packageDefinitionSource">The source definition of the package.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool AddOrUpdateConfiguredTargetProjectDependency( string name, DependencyKind kind ) => IntegrationContext.AddOrUpdateTargetProjectDependency( Monitor, name, null, kind );
+        public bool AddOrUpdateConfiguredTargetProjectDependency( string name, DependencyKind kind, [CallerFilePath] string? packageDefinitionSource = null )
+        {
+            return IntegrationContext.AddOrUpdateTargetProjectDependency( Monitor, name, null, kind, packageDefinitionSource );
+        }
 
         /// <summary>
         /// Ensures that <see cref="TargetPackageJson"/> dependencies are installed. Calls <see cref="SettleTypeScriptVersion(out PackageDependency?)"/>,
         /// saves the package.json and runs the installation of the packages.
         /// </summary>
         /// <returns>True on success, false otherwise.</returns>
-        bool RunYarnInstall() => IntegrationContext.SaveTargetPackageJsonAndYarnInstall( Monitor );
+        public bool RunYarnInstall() => IntegrationContext.SaveTargetPackageJsonAndYarnInstall( Monitor );
 
-    }
-
-    private bool AddOrUpdateTargetProjectDependency( IActivityMonitor monitor, string name, object version, DependencyKind kind )
-    {
-        throw new NotImplementedException();
     }
 
     /// <summary>

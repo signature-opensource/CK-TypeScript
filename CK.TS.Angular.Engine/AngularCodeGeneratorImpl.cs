@@ -233,6 +233,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     savedLatestDependencies = ImmutableArray<PackageDependency>.Empty;
                     newPackageJson = PackageJsonFile.ReadFile( monitor,
                                                                newFolderPath.AppendPart( "package.json" ),
+                                                               "@angular/cli created package.json",
                                                                targetPackageJson.Dependencies.IgnoreVersionsBound,
                                                                mustExist: true );
                     if( newPackageJson == null )
@@ -249,7 +250,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     newPackageJson.Scripts["test"] = "jest";
 
                     savedLatestDependencies = targetPackageJson.Dependencies.RemoveLatestDependencies();
-                    if( !newPackageJson.Dependencies.AddOrUpdate( monitor, targetPackageJson.Dependencies.Values, false ) )
+                    if( !newPackageJson.Dependencies.AddOrUpdate( monitor, targetPackageJson.Dependencies.Values, cloneDependencies: false ) )
                     {
                         return false;
                     }
@@ -354,7 +355,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     targetPackageJson.Reload( monitor );
                     if( savedLatestDependencies.Count > 0 )
                     {
-                        if( !targetPackageJson.Dependencies.AddOrUpdate( monitor, savedLatestDependencies, false ) )
+                        if( !targetPackageJson.Dependencies.AddOrUpdate( monitor, savedLatestDependencies, cloneDependencies: false ) )
                         {
                             return false;
                         }

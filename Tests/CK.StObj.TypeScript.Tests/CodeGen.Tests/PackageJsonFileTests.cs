@@ -4,6 +4,7 @@ using CK.TypeScript.CodeGen;
 using CSemVer;
 using FluentAssertions;
 using NUnit.Framework;
+using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -17,7 +18,7 @@ public class PackageJsonFileTests
     [Test]
     public void parsing_empty_package_json()
     {
-        var p = PackageJsonFile.Parse( TestHelper.Monitor, "{}", "/A_B/package.json", ignoreVersionsBound: true );
+        var p = PackageJsonFile.Parse( TestHelper.Monitor, "{}", "/A_B/package.json", "Empty package.json", ignoreVersionsBound: true );
         Throw.DebugAssert( p != null );
         p.FilePath.Should().Be( "/A_B/package.json" );
         p.SafeName.Should().Be( "a_b" );
@@ -53,7 +54,7 @@ public class PackageJsonFileTests
             }
             """;
 
-        var p = PackageJsonFile.Parse( TestHelper.Monitor, c, "some://path/package.json", ignoreVersionsBound: true );
+        var p = PackageJsonFile.Parse( TestHelper.Monitor, c, "some://path/package.json", "Test content", ignoreVersionsBound: true );
         Throw.DebugAssert( p != null );
         p.FilePath.Should().Be( "some://path/package.json" );
 
@@ -66,6 +67,7 @@ public class PackageJsonFileTests
         p.Private.Should().BeTrue();
 
         p.Dependencies.Should().HaveCount( 10 );
+        p.Dependencies.Values.All( d => d.DefinitionSource == "Test content" ).Should().BeTrue();
         p.Scripts.Should().HaveCount( 1 );
         p.Workspaces.Should().HaveCount( 1 );
 
@@ -120,7 +122,7 @@ public class PackageJsonFileTests
         p.Dependencies.Remove( "luxon" ).Should().BeTrue();
         p.EnsureWorkspace( "new-w" ).Should().BeTrue();
 
-        p.Dependencies.AddOrUpdate( TestHelper.Monitor, new PackageDependency( "HelloPeer", SVersionBound.All, CK.TypeScript.CodeGen.DependencyKind.PeerDependency ) );
+        p.Dependencies.AddOrUpdate( TestHelper.Monitor, new PackageDependency( "HelloPeer", SVersionBound.All, CK.TypeScript.CodeGen.DependencyKind.PeerDependency, "Code" ) );
 
         p.Name = "new-name";
         p.Version = null;

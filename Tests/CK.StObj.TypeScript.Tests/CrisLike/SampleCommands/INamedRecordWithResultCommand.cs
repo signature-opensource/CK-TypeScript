@@ -28,4 +28,10 @@ public interface INamedRecordWithResultCommand : ICommand, ICommandAbsWithResult
     /// Gets the mutable dictionary of record.
     /// </summary>
     new IDictionary<string, NamedRecord> KeyDictionary { get; }
+
+    /// <summary>
+    /// Gets the mutable list of record.
+    /// </summary>
+    IList<NamedRecord?> KeyListOfNullable { get; }
+
 }

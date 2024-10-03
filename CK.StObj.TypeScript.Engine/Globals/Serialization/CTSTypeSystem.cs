@@ -34,14 +34,22 @@ public sealed partial class CTSTypeSystem
         _initPart = _ctsTypeFile.Body.CreatePart();
 
         _ctsType.TypePart.Append( $$"""
-            export const CTSType = {
+            /**
+             * CTSType is currently <any>. Strongly typing it involves to handle null
+             * (detect and raise error) in depth.
+             * This is not a validator (the backend is up to date by design) and null handling
+             * is a (basic) part of validation.
+             */
+            export const CTSType : any = {
                 get typeFilterName(): string {return "{{context.BinPathConfiguration.TypeFilterName}}"; },
-                toTypedJson( o: any ) : [string,unknown] {
+                toTypedJson( o: any ) : [string,unknown]|null {
+                    if( o == null ) return null;
                     const t = o[SymCTS];
                     if( !t ) throw new Error( "Untyped object. A type must be specified with CTSType." );
                     return [t.name, t.json( o )];
                 },
                 fromTypedJson( o: any ) : unknown {
+                    if( o == null ) return undefined;
                     if( !(o instanceof Array && o.length === 2) ) throw new Error( "Expected 2-cells array." );
                     const t = (<any>CTSType)[o[0]];
                     if( !t ) throw new Error( `Invalid type name: ${o[0]}.` );

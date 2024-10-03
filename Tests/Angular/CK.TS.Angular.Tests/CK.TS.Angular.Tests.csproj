@@ -27,5 +27,6 @@
     <Folder Include="CK.NG.AspNet\PasswordLost\Res\" />
     <Folder Include="TSInlineTests\" />
     <Folder Include="TSInlineTests\Demo\ck-gen\CK\Angular\" />
+    <Folder Include="TSInlineTests\Demo\ck-gen\CK\Core\" />
   </ItemGroup>
 </Project>

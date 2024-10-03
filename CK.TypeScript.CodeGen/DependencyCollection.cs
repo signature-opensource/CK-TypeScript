@@ -21,7 +21,6 @@ public sealed class DependencyCollection : IDependencyCollection
 {
     readonly Dictionary<string, PackageDependency> _dependencies;
     readonly bool _ignoreVersionsBound;
-    int _changeTracker;
 
     /// <summary>
     /// Initializes a new empty dependency collection.
@@ -45,7 +44,7 @@ public sealed class DependencyCollection : IDependencyCollection
         _ignoreVersionsBound = from.IgnoreVersionsBound;
         var source = from.Values;
         if( filter != null ) source = source.Where( filter );
-        if( cloneDependencies ) source = source.Select( d => new PackageDependency( d.Name, d.Version, d.DependencyKind ) );
+        if( cloneDependencies ) source = source.Select( d => new PackageDependency( d.Name, d.Version, d.DependencyKind, d.DefinitionSource ) );
         foreach( var d in source )
         {
             _dependencies.Add( d.Name, d );
@@ -55,25 +54,8 @@ public sealed class DependencyCollection : IDependencyCollection
     /// <inheritdoc />
     public bool IgnoreVersionsBound => _ignoreVersionsBound;
 
-    /// <summary>
-    /// Incremented whenever a dependency is updated, added or deleted.
-    /// <para>
-    /// Caution: this cannot track direct calls to a <see cref="PackageDependency.UnconditionalSetDependencyKind(DependencyKind)"/>
-    /// or a <see cref="PackageDependency.UnconditionalSetVersion(CSemVer.SVersionBound)"/>.
-    /// </para>
-    /// </summary>
-    public int ChangeTracker => _changeTracker;
-
     /// <inheritdoc />
-    public bool Remove( string name )
-    {
-        if( _dependencies.Remove( name ) )
-        {
-            _changeTracker++;
-            return true;
-        }
-        return false;
-    }
+    public bool Remove( string name ) => _dependencies.Remove( name );
 
     /// <inheritdoc />
     public IList<PackageDependency> RemoveLatestDependencies()
@@ -81,7 +63,6 @@ public sealed class DependencyCollection : IDependencyCollection
         var l = _dependencies.Values.Where( d => d.Version == SVersionBound.All ).ToList();
         if( l.Count > 0 )
         {
-            _changeTracker++;
             foreach( var d in l ) _dependencies.Remove( d.Name );
         }
         return l;
@@ -91,49 +72,46 @@ public sealed class DependencyCollection : IDependencyCollection
     public void AddOrReplace( PackageDependency dependency, bool cloneAddedDependency = true )
     {
         _dependencies[dependency.Name] = cloneAddedDependency
-                                            ? new PackageDependency( dependency.Name, dependency.Version, dependency.DependencyKind )
+                                            ? new PackageDependency( dependency.Name, dependency.Version, dependency.DependencyKind, dependency.DefinitionSource )
                                             : dependency;
-        _changeTracker++;
     }
 
     /// <inheritdoc />
-    public bool AddOrUpdate( IActivityMonitor monitor, PackageDependency dependency, bool cloneAddedDependency = true )
+    public bool AddOrUpdate( IActivityMonitor monitor,
+                             PackageDependency dependency,
+                             LogLevel detailedLogLevel = LogLevel.Trace,
+                             bool cloneAddedDependency = true )
     {
         if( _dependencies.TryGetValue( dependency.Name, out var our ) )
         {
-            if( our.Version != dependency.Version )
+            if( !our.Update( monitor, dependency, _ignoreVersionsBound, detailedLogLevel ) )
             {
-                if( !our.DoUpdate( dependency.Version, _ignoreVersionsBound, out var error, out var _ ) )
-                {
-                    monitor.Error( error );
-                    return false;
-                }
-                _changeTracker++;
-            }
-            if( our.DependencyKind != dependency.DependencyKind )
-            {
-                our.Update( dependency.DependencyKind );
-                _changeTracker++;
+                return false;
             }
         }
         else
         {
             _dependencies.Add( dependency.Name,
                                cloneAddedDependency
-                                ? new PackageDependency( dependency.Name, dependency.Version, dependency.DependencyKind )
+                                ? new PackageDependency( dependency.Name, dependency.Version, dependency.DependencyKind, dependency.DefinitionSource )
                                 : dependency );
-            ++_changeTracker;
         }
         return true;
     }
 
     /// <inheritdoc />
-    public bool AddOrUpdate( IActivityMonitor monitor, IEnumerable<PackageDependency> dependencies, bool cloneDependencies = true )
+    public bool AddOrUpdate( IActivityMonitor monitor,
+                             IEnumerable<PackageDependency> dependencies,
+                             LogLevel detailedLogLevel = LogLevel.Trace,
+                             bool cloneDependencies = true )
     {
         bool success = true;
         foreach( var d in dependencies )
         {
-            success &= AddOrUpdate( monitor, d, cloneDependencies );
+            if( !AddOrUpdate( monitor, d, detailedLogLevel, cloneDependencies ) )
+            {
+                success = false;
+            }
         }
         return success;
     }
@@ -151,11 +129,7 @@ public sealed class DependencyCollection : IDependencyCollection
     public PackageDependency this[string key] => _dependencies[key];
 
     /// <inheritdoc />
-    public void Clear()
-    {
-        _dependencies.Clear();
-        ++_changeTracker;
-    }
+    public void Clear() => _dependencies.Clear();
 
     /// <inheritdoc />
     public bool ContainsKey( string key ) => _dependencies.ContainsKey( key );

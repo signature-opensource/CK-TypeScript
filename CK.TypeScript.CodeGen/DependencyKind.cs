@@ -6,17 +6,17 @@ namespace CK.TypeScript.CodeGen;
 public enum DependencyKind
 {
     /// <summary>
-    /// The dependency will be put in the package.json devDependencies list.
+    /// The dependency is in the package.json devDependencies list.
     /// </summary>
     DevDependency = 0,
 
     /// <summary>
-    /// The dependency will be put in the package.json dependencies list.
+    /// The dependency is in the package.json dependencies list.
     /// </summary>
     Dependency = 1,
 
     /// <summary>
-    /// The dependency will be put in the package.json peerDependencies list.
+    /// The dependency is in the package.json peerDependencies list.
     /// </summary>
     PeerDependency = 2
 }

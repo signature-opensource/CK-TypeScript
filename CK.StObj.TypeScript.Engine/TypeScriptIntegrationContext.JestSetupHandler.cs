@@ -323,7 +323,7 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
                                            out Action? afterRun )
         {
             afterRun = null;
-            var o = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), ignoreVersionsBound: true );
+            var o = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), "Target project package.json", ignoreVersionsBound: true );
             if( o == null ) return false;
             if( o.Scripts.TryGetValue( "test", out var command ) && (command == "jest" || command.StartsWith( "jest " )) )
             {

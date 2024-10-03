@@ -18,19 +18,14 @@ namespace CK.TypeScript.CodeGen;
 public sealed class LibraryImport
 {
     readonly PackageDependency _packageDependency;
-    string _definitionSource;
     IReadOnlyCollection<LibraryImport> _impliedDependencies;
     bool _isUsed;
 
-    internal LibraryImport( string name,
-                            SVersionBound version,
-                            DependencyKind dependencyKind,
-                            IReadOnlyCollection<LibraryImport> impliedDependencies,
-                            string definitionSource )
+    internal LibraryImport( PackageDependency dependency,
+                            IReadOnlyCollection<LibraryImport> impliedDependencies )
     {
-        _packageDependency = new PackageDependency( name, version, dependencyKind );
+        _packageDependency = dependency;
         _impliedDependencies = impliedDependencies;
-        _definitionSource = definitionSource;
     }
 
     /// <summary>
@@ -40,7 +35,7 @@ public sealed class LibraryImport
 
     /// <summary>
     /// Version of the package, which will be used in the package.json.
-    /// This version can be fixed by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
+    /// This version can be settled by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
     /// </summary>
     public SVersionBound Version => _packageDependency.Version;
 
@@ -82,36 +77,6 @@ public sealed class LibraryImport
     }
 
     internal PackageDependency PackageDependency => _packageDependency;
-
-    internal bool Update( IActivityMonitor monitor, SVersionBound newVersion, bool ignoreVersionsBound, string definitionSource )
-    {
-        if( newVersion != _packageDependency.Version )
-        {
-            var current = _packageDependency.Version;
-            if( !_packageDependency.DoUpdate( newVersion, ignoreVersionsBound, out var error, out var warn ) )
-            {
-                monitor.Error( AppendDefinitionSources( _definitionSource, definitionSource, error ) );
-                return false;
-            }
-            if( warn != null ) monitor.Warn( AppendDefinitionSources( _definitionSource, definitionSource, warn ) );
-            if( _packageDependency.Version != current )
-            {
-                monitor.Trace( $"TypeScript library '{_packageDependency.Name}': version upgrade from '{current}' to '{_packageDependency.Version}' (source: {definitionSource})." );
-                _definitionSource = definitionSource;
-            }
-        }
-        return true;
-
-        static string AppendDefinitionSources( string currentSource, string definitionSource, string s )
-        {
-            return $"""
-                    {s}
-                    Defining conficting sources are: '{currentSource}' and '{definitionSource}'. 
-                    """;
-        }
-    }
-
-    internal void Update( DependencyKind kind ) => _packageDependency.Update( kind );
 
     internal void Update( IEnumerable<LibraryImport> implied )
     {

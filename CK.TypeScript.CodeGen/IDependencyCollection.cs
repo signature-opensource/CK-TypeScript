@@ -32,22 +32,23 @@ public interface IDependencyCollection : IReadOnlyDictionary<string, PackageDepe
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="dependency">The dependency to merge.</param>
+    /// <param name="detailedLogLevel">Log level for upgrades of version or kind. Use <see cref="LogLevel.None"/> to silent them.</param>
     /// <param name="cloneAddedDependency">
     /// By default, when the <paramref name="dependency"/> doesn't exist a clone is added in this collection.
     /// Sets this to false to reference the provided instance.
     /// </param>
     /// <returns>True on success, false otherwise.</returns>
-    bool AddOrUpdate( IActivityMonitor monitor, PackageDependency dependency, bool cloneAddedDependency = true );
+    bool AddOrUpdate( IActivityMonitor monitor, PackageDependency dependency, LogLevel detailedLogLevel = LogLevel.Trace, bool cloneAddedDependency = true );
 
     /// <summary>
-    /// Merges the <paramref name="dependencies"/> (upgrade existing ones or creates new independent ones) in
-    /// this collection.
+    /// Merges the <paramref name="dependencies"/> (upgrade existing ones or creates new ones) in this collection).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="dependencies">The dependencies to merge.</param>
+    /// <param name="detailedLogLevel">Log level for upgrades of version or kind. Use <see cref="LogLevel.None"/> to silent them.</param>
     /// <param name="cloneDependencies">False to not clone an added dependency.</param>
     /// <returns>True on success, false otherwise.</returns>
-    bool AddOrUpdate( IActivityMonitor monitor, IEnumerable<PackageDependency> dependencies, bool cloneDependencies = true );
+    bool AddOrUpdate( IActivityMonitor monitor, IEnumerable<PackageDependency> dependencies, LogLevel detailedLogLevel = LogLevel.Trace, bool cloneDependencies = true );
 
     /// <summary>
     /// Removes all dependencies from this collection.

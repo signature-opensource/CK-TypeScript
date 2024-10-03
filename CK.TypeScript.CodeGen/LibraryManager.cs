@@ -90,6 +90,51 @@ public sealed class LibraryManager
     public IReadOnlyDictionary<string, SVersionBound> LibraryVersionConfiguration => _libVersionsConfig;
 
     /// <summary>
+    /// Creates a <see cref="PackageDependency"/> under control of the <paramref name="libVersionsConfig"/>.
+    /// </summary>
+    /// <param name="monitor">The monitpr to use.</param>
+    /// <param name="libVersionsConfig">The configured package versions.</param>
+    /// <param name="name">The package name.</param>
+    /// <param name="versionBound">
+    /// When null, the library version must be registered in the <see cref="LibraryVersionConfiguration"/>.
+    /// This allows code to require an explicitly configured version for a library.
+    /// </param>
+    /// <param name="dependencyKind">The dependency kind.</param>
+    /// <param name="packageDefinitionSource">The source definition of the package. Defaults to "&lt;no source&gt;".</param>
+    /// <returns>The package or null on error.</returns>
+    public static PackageDependency? CreatePackageDependency( IActivityMonitor monitor,
+                                                              ImmutableDictionary<string, SVersionBound> libVersionsConfig,
+                                                              string name,
+                                                              SVersionBound? versionBound,
+                                                              DependencyKind dependencyKind,
+                                                              string? packageDefinitionSource )
+    {
+        packageDefinitionSource ??= "<no source>";
+        bool isConfigured;
+        SVersionBound configured;
+        if( versionBound is null )
+        {
+            if( !libVersionsConfig.TryGetValue( name, out configured ) )
+            {
+                monitor.Error( $"TypeScript library '{name}' requires its version to be configured by '{packageDefinitionSource}'." );
+                return null;
+            }
+            versionBound = configured;
+            isConfigured = true;
+        }
+        else
+        {
+            isConfigured = libVersionsConfig.TryGetValue( name, out configured );
+        }
+        if( isConfigured && versionBound != configured )
+        {
+            monitor.Info( $"TypeScript library '{name}' will use the configured version '{configured}'. Ignoring version '{versionBound}' from '{packageDefinitionSource}'." );
+            versionBound = configured;
+        }
+        return new PackageDependency( name, versionBound.Value, dependencyKind, isConfigured ? PackageDependency.ConfigurationSourceName : packageDefinitionSource );
+    }
+
+    /// <summary>
     /// Tries to parse a Npm version string. If the version cannot be parsed an error (with a detailed reason)
     /// is logged in the <paramref name="monitor"/>.
     /// </summary>
@@ -127,7 +172,7 @@ public sealed class LibraryManager
     /// The kind of dependencies. This always boost an existing kind: <see cref="DependencyKind.PeerDependency"/>
     /// always wins over <see cref="DependencyKind.Dependency"/> that always wins over <see cref="DependencyKind.DevDependency"/>.
     /// </param>
-    /// <param name="definitionSource">Definition of the caller that register this library (used to log info, errors or warnings).</param>
+    /// <param name="definitionSource">Definition of the caller that register this library (used to log info, errors or warnings). Defaults to "&lt;no source&gt;".</param>
     /// <param name="impliedDependencies">Optional libraries that must also be imported when this one is imported in a <see cref="ITSFileImportSection"/>.</param>
     /// <returns>The library import or null on error.</returns>
     public LibraryImport? RegisterLibrary( IActivityMonitor monitor,
@@ -140,51 +185,39 @@ public sealed class LibraryManager
         definitionSource ??= "<no source>";
         if( string.IsNullOrWhiteSpace( name ) )
         {
-            monitor.Error( $"Invalid TypeScript library name '{name}'." );
+            monitor.Error( $"Invalid TypeScript library name '{name}' from '{definitionSource}'." );
             return null;
         }
-        bool isConfigured;
-        SVersionBound configured;
-        SVersionBound v;
+        SVersionBound? v;
         if( versionBound == null )
         {
-            if( !_libVersionsConfig.TryGetValue( name, out configured ) )
-            {
-                monitor.Error( $"TypeScript library '{name}' requires its version to be configured." );
-                return null;
-            }
-            v = configured;
-            isConfigured = true;
+            v = null;
         }
         else
         {
-            if( !TryParseVersionBound( monitor, name, versionBound, dependencyKind, out v ) )
+            if( !TryParseVersionBound( monitor, name, versionBound, dependencyKind, out var vParsed ) )
             {
                 return null;
             }
-            isConfigured = _libVersionsConfig.TryGetValue( name, out configured );
+            v = vParsed;
         }
-        if( isConfigured && v != configured )
-        {
-            monitor.Info( $"TypeScript library '{name}' will use the configured version '{configured}'. Ignoring code provided version '{v}' (source: {definitionSource})." );
-            v = configured;
-        }
+        var p = CreatePackageDependency( monitor, _libVersionsConfig, name, v, dependencyKind, definitionSource );
+        if( p == null ) return null;
+
         impliedDependencies = WarnOnDuplicateImpliedDependencies( monitor, name, definitionSource, impliedDependencies );
         if( _libraries.TryGetValue( name, out var lib ) )
         {
-            // It exists.
-            // If it comes from the configuration, don't try to upgrade the version
-            // but always boost the dependency kind and merge the implied dependencies.
-            if( !isConfigured && !lib.Update( monitor, v, _ignoreVersionsBound, definitionSource ) )
+            // It exists: use the central Update.
+            if( !lib.PackageDependency.Update( monitor, p, _ignoreVersionsBound, LogLevel.Trace ) )
             {
                 return null;
             }
-            lib.Update( dependencyKind );
+            // Don't forget to merge the implied dependencies.
             lib.Update( impliedDependencies );
         }
         else
         {
-            lib = new LibraryImport( name, v, dependencyKind, impliedDependencies, definitionSource );
+            lib = new LibraryImport( p, impliedDependencies );
             _libraries.Add( name, lib );
         }
         return lib;
@@ -201,7 +234,7 @@ public sealed class LibraryManager
     /// The kind of dependencies. This always boost an existing kind: <see cref="DependencyKind.PeerDependency"/>
     /// always wins over <see cref="DependencyKind.Dependency"/> that always wins over <see cref="DependencyKind.DevDependency"/>.
     /// </param>
-    /// <param name="definitionSource">Definition of the caller that register this library (used to log info, errors or warnings).</param>
+    /// <param name="definitionSource">Definition of the caller that register this library (used to log info, errors or warnings). Defaults to "&lt;no source&gt;".</param>
     /// <param name="impliedDependencies">Optional libraries that must also be imported when this one is imported in a <see cref="ITSFileImportSection"/>.</param>
     /// <returns>The library import.</returns>
     public LibraryImport RegisterLibrary( IActivityMonitor monitor,
@@ -215,7 +248,7 @@ public sealed class LibraryManager
         // If the library is already registered, simply updates its kind and implied dependencies.
         if( _libraries.TryGetValue( name, out var lib ) )
         {
-            lib.Update( dependencyKind );
+            lib.PackageDependency.Update( monitor, LogLevel.Trace, dependencyKind, definitionSource );
             lib.Update( impliedDependencies );
             return lib;
         }
@@ -223,12 +256,14 @@ public sealed class LibraryManager
         if( _libVersionsConfig.TryGetValue( name, out var configured ) )
         {
             monitor.Info( $"TypeScript library '{name}' will use the configured version '{configured}'." );
+            definitionSource = PackageDependency.ConfigurationSourceName;
         }
         else
         {
             configured = SVersionBound.All;
         }
-        lib = new LibraryImport( name, configured, dependencyKind, impliedDependencies, definitionSource );
+        var p = new PackageDependency( name, configured, dependencyKind, definitionSource );
+        lib = new LibraryImport( p, impliedDependencies );
         _libraries.Add( name, lib );
         return lib;
     }
@@ -249,8 +284,6 @@ public sealed class LibraryManager
         }
         return impliedDependencies;
     }
-
-
 
     internal LibraryImport RegisterDefaultOrConfiguredDecimalLibrary( IActivityMonitor monitor )
     {

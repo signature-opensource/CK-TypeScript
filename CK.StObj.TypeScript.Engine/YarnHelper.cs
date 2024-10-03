@@ -68,7 +68,7 @@ public static class YarnHelper
     {
         var sdkTypeScriptPath = targetProjectPath.Combine( ".yarn/sdks/typescript/package.json" );
         // We don't care of the ignoreVersionsBound (we'll never merge the versions).
-        var packageJson = PackageJsonFile.ReadFile( monitor, sdkTypeScriptPath, ignoreVersionsBound: true );
+        var packageJson = PackageJsonFile.ReadFile( monitor, sdkTypeScriptPath, "Yarn sdk package.json", ignoreVersionsBound: true );
         if( packageJson == null ) return null;
         if( packageJson.IsEmpty )
         {
