@@ -172,7 +172,7 @@ public sealed class PackageJsonFile
                             monitor.Error( $"Unable to parse version \"{sectionName}.{name}\": {error}" );
                             success = false;
                         }
-                        else if( !collector.AddOrUpdate( monitor, new PackageDependency( name, v, kind, packageDefinitionSource ) ) )
+                        else if( !collector.AddOrUpdate( monitor, new PackageDependency( name, v, kind, packageDefinitionSource ), LogLevel.None ) )
                         {
                             success = false;
                         }
@@ -331,10 +331,10 @@ public sealed class PackageJsonFile
     /// <summary>
     /// Updates the inner <see cref="JsonFile.Root"/>.
     /// </summary>
-    /// <param name="peerDependenciesAsDepencies">
-    /// True to also add <see cref="DependencyKind.PeerDependency"/> to the regular "dependecies" section.
+    /// <param name="peerDependenciesAsDevDependencies">
+    /// True to also add <see cref="DependencyKind.PeerDependency"/> to the "devDependencies" section.
     /// </param>
-    public void UpdateFileRoot( bool peerDependenciesAsDepencies = true )
+    public void UpdateFileRoot( bool peerDependenciesAsDevDependencies = true )
     {
         _file.SetString( _file.Root, "name", _name );
         _file.SetString( _file.Root, "version", _version?.ToString() );
@@ -344,19 +344,19 @@ public sealed class PackageJsonFile
         _file.SetNumber( _file.Root, "ckVersion", _ckVersion != 0 ? _ckVersion : null );
         _file.SetStringDictionary( _file.Root, "scripts", _scripts );
         _file.SetStringList( _file.Root, "workspaces", _workspaces );
-        SetDependencies( _file.Root, _dependencies, peerDependenciesAsDepencies );
+        SetDependencies( _file.Root, _dependencies, peerDependenciesAsDevDependencies );
 
 
-        static void SetDependencies( JsonNode root, DependencyCollection dependencies, bool peerDependenciesAsDepencies = true )
+        static void SetDependencies( JsonNode root, DependencyCollection dependencies, bool peerDependenciesAsDevDependencies )
         {
             var deps = new[] { new JsonObject(), new JsonObject(), new JsonObject() };
             foreach( var d in dependencies.Values )
             {
                 var version = d.NpmVersionRange;
                 deps[(int)d.DependencyKind].Add( d.Name, version );
-                if( peerDependenciesAsDepencies && d.DependencyKind == DependencyKind.PeerDependency )
+                if( peerDependenciesAsDevDependencies && d.DependencyKind == DependencyKind.PeerDependency )
                 {
-                    deps[1].Add( d.Name, version );
+                    deps[0].Add( d.Name, version );
                 }
             }
             root["devDependencies"] = deps[0];
@@ -368,25 +368,25 @@ public sealed class PackageJsonFile
     /// <summary>
     /// Calls <see cref="UpdateFileRoot"/> and saves the <see cref="FilePath"/> file.
     /// </summary>
-    /// <param name="peerDependenciesAsDepencies">
-    /// True to also add <see cref="DependencyKind.PeerDependency"/> to the regular "dependecies" section.
+    /// <param name="peerDependenciesAsDevDepencies">
+    /// True to also add <see cref="DependencyKind.PeerDependency"/> to the "devDependencies" section.
     /// </param>
-    public void Save( bool peerDependenciesAsDepencies = true )
+    public void Save( bool peerDependenciesAsDevDepencies = true )
     {
         using var f = File.Create( _file.FilePath );
-        Write( f, peerDependenciesAsDepencies );
+        Write( f, peerDependenciesAsDevDepencies );
     }
 
     /// <summary>
     /// Calls <see cref="UpdateFileRoot"/> and writes this package.json to the output.
     /// </summary>
     /// <param name="output">Target outpout.</param>
-    /// <param name="peerDependenciesAsDepencies">
-    /// True to also add <see cref="DependencyKind.PeerDependency"/> to the regular "dependecies" section.
+    /// <param name="peerDependenciesAsDevDepencies">
+    /// True to also add <see cref="DependencyKind.PeerDependency"/> to the "devDependencies" section.
     /// </param>
-    public void Write( Stream output, bool peerDependenciesAsDepencies = true )
+    public void Write( Stream output, bool peerDependenciesAsDevDepencies = true )
     {
-        UpdateFileRoot( peerDependenciesAsDepencies );
+        UpdateFileRoot( peerDependenciesAsDevDepencies );
         using var writer = new Utf8JsonWriter( output, new JsonWriterOptions { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } );
         _file.Root.WriteTo( writer );
     }

@@ -297,7 +297,7 @@ public sealed partial class TypeScriptIntegrationContext
             return false;
         }
         // We try to skip the run by default but if Yarn TypeScript sdk must be handled
-        // or there are "latest" versions to install, this sill not be possible.
+        // or there are "latest" versions to install, this will not be possible.
         bool canSkipRun = true;
         var finalCommand = new StringBuilder();
         if( _shouldAlignYarnSdkVersion )
@@ -311,15 +311,15 @@ public sealed partial class TypeScriptIntegrationContext
             finalCommand.Append( "/C yarn install" );
         }
         var manual = _targetPackageJson.Dependencies.RemoveLatestDependencies();
+        PackageDependency[] manualPeerDeps = Array.Empty<PackageDependency>();
         if( manual.Count > 0 )
         {
             canSkipRun = false;
-            var regDeps = manual.Where( d => d.DependencyKind is DependencyKind.Dependency or DependencyKind.PeerDependency );
-            var devDeps = manual.Where( d => d.DependencyKind is DependencyKind.DevDependency );
-            var peerDeps = manual.Where( d => d.DependencyKind is DependencyKind.PeerDependency );
+            var regDeps = manual.Where( d => d.DependencyKind is DependencyKind.Dependency );
+            var devDeps = manual.Where( d => d.DependencyKind is DependencyKind.DevDependency or DependencyKind.PeerDependency );
+            manualPeerDeps = manual.Where( d => d.DependencyKind is DependencyKind.PeerDependency ).ToArray();
             if( regDeps.Any() ) finalCommand.Append( $" && yarn add {regDeps.Select( d => d.Name ).Concatenate( " " )}" );
-            if( devDeps.Any() ) finalCommand.Append( $" && yarn add --prefer-dev {devDeps.Select( d => d.Name ).Concatenate( " " )}" );
-            if( peerDeps.Any() ) finalCommand.Append( $" && yarn add -P {peerDeps.Select( d => d.Name ).Concatenate( " " )}" );
+            if( devDeps.Any() ) finalCommand.Append( $" && yarn add -D {devDeps.Select( d => d.Name ).Concatenate( " " )}" );
         }
         if( canSkipRun )
         {
@@ -340,6 +340,25 @@ public sealed partial class TypeScriptIntegrationContext
             return false;
         }
         _targetPackageJson.Reload( monitor );
+        if( manualPeerDeps.Length > 0 )
+        {
+            using( monitor.OpenInfo( $"Updating package.json \"peerDepencies\" section for '{manualPeerDeps.Select( d => d.Name ).Concatenate( "', " )}'." ) )
+            {
+                foreach( var peer in manualPeerDeps )
+                {
+                    if( !_targetPackageJson.Dependencies.TryGetValue( peer.Name, out var p )
+                        || p.DependencyKind != DependencyKind.DevDependency )
+                    {
+                        monitor.Warn( $"Unable to find dependency '{peer.Name}' in \"devDependencies\". Skipping insertion in the \"peerDependency\" section." );
+                    }
+                    else
+                    {
+                        p.UnconditionalSetDependencyKind( DependencyKind.PeerDependency );
+                    }
+                }
+                _targetPackageJson.Save();
+            }
+        }
         _lastInstalledTargetPackageJsonContent = _targetPackageJson.WriteAsString();
         return true;
 
@@ -349,8 +368,14 @@ public sealed partial class TypeScriptIntegrationContext
             var displayCmd = cmd.Substring( 3 ).Replace( " && ", Environment.NewLine );
             using( monitor.OpenInfo( $"Running:{Environment.NewLine}{displayCmd}" ) )
             {
-                return YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null ) == 0;
+                int code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null );
+                if( code != 0 )
+                {
+                    monitor.Error( $"Command:{Environment.NewLine}{displayCmd}{Environment.NewLine}Failed with code {code}." );
+                    return false;
+                }
             }
+            return true;
         }
     }
 

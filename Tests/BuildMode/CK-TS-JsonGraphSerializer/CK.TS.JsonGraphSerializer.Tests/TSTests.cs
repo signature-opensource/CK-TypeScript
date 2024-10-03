@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.StObj.TypeScript;
 using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -16,6 +17,18 @@ public class MultipleTypeScriptTests
         float Value { get; set; }
     }
 
+    [TypeScriptPackage]
+    [ImportTypeScriptLibrary( "axios", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
+    public sealed class BringAxiosPackageAsDependency : TypeScriptPackage
+    {
+    }
+
+    [TypeScriptPackage]
+    [ImportTypeScriptLibrary( "rxjs", ">=0.0.0-0", DependencyKind.PeerDependency, ForceUse = true )]
+    public sealed class BringRxJSPackageAsPeerDependency : TypeScriptPackage
+    {
+    }
+
     [Test]
     public async Task Multiple_TypeScript_Async()
     {
@@ -24,7 +37,7 @@ public class MultipleTypeScriptTests
         engineConfig.BasePath = TestHelper.TestProjectFolder;
         var binPath = engineConfig.FirstBinPath;
         binPath.Assemblies.Add( "CK.TS.JsonGraphSerializer" );
-        binPath.Types.Add( typeof( ISamplePoco ) );
+        binPath.Types.Add( typeof( ISamplePoco ), typeof( BringAxiosPackageAsDependency ), typeof( BringRxJSPackageAsPeerDependency ) );
         var ts1 = new TypeScriptBinPathAspectConfiguration()
         {
             TargetProjectPath = "Clients/NpmPackage",

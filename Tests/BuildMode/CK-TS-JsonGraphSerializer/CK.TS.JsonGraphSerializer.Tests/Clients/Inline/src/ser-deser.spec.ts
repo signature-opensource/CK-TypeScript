@@ -1,6 +1,7 @@
 import { serialize, deserialize, ISerializeOptions, IDeserializeOptions, SamplePoco, CTSType, SymCTS } from '@local/ck-gen';
 import { testWithIdempotence } from './util';
 import assert from 'assert';
+import {BehaviorSubject} from 'rxjs';
 
 if (process.env["VSCODE_INSPECTOR_OPTIONS"]) jest.setTimeout(30 * 60 * 1000); // 30 minutes
 
