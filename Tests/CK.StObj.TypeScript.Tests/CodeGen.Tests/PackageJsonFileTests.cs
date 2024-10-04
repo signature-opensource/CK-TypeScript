@@ -130,44 +130,44 @@ public class PackageJsonFileTests
         p.Module = null;
 
         p.WriteAsString().Should().Be( """
-            {
-              "name": "new-name",
-              "private": true,
-              "alien1": "OTHER",
-              "alien2": {
-                "unknown": true
-              },
-              "main": "./dist/o/cjs",
-              "workspaces": [
-                "ck-gen",
-                "new-w"
-              ],
-              "dependencies": {
-                "decimal.js-light": ">=2.5.1",
-                "HelloPeer": "^0.0.0-0",
-                "some-peer": ">=1.2.3"
-              },
-              "devDependencies": {
-                "@local/ck-gen": "workspace:*",
-                "@types/node": "^20.14.2",
-                "typescript": ">=5.4.5"
-              },
-              "peerDependencies": {
-                "HelloPeer": "^0.0.0-0",
-                "some-peer": ">=1.2.3"
-              },
-              "scripts": {
-                "test": "jest",
-                "build": "tsc"
-              },
-              "alien3": {
-                "some": [
-                  "exotic",
-                  "data"
-                ]
-              }
-            }
-            """ );
+           {
+             "name": "new-name",
+             "private": true,
+             "alien1": "OTHER",
+             "alien2": {
+               "unknown": true
+             },
+             "main": "./dist/o/cjs",
+             "workspaces": [
+               "ck-gen",
+               "new-w"
+             ],
+             "dependencies": {
+               "decimal.js-light": ">=2.5.1"
+             },
+             "devDependencies": {
+               "HelloPeer": ">=0.0.0-0",
+               "@local/ck-gen": "workspace:*",
+               "@types/node": "^20.14.2",
+               "typescript": ">=5.4.5",
+               "some-peer": ">=1.2.3"
+             },
+             "peerDependencies": {
+               "HelloPeer": ">=0.0.0-0",
+               "some-peer": ">=1.2.3"
+             },
+             "scripts": {
+               "test": "jest",
+               "build": "tsc"
+             },
+             "alien3": {
+               "some": [
+                 "exotic",
+                 "data"
+               ]
+             }
+           }
+           """ );
 
     }
 

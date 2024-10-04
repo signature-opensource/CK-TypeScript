@@ -47,7 +47,12 @@ public sealed partial class TypeScriptIntegrationContext
     {
         _initialCKVersion = targetPackageJson.CKVersion;
         _initialEmptyTargetPackage = targetPackageJson.IsEmpty;
-        _lastInstalledTargetPackageJsonContent = targetPackageJson.WriteAsString();
+        _lastInstalledTargetPackageJsonContent = "";
+        // Avoids a write that inserts the required fields at the top of the file,
+        // making the name and other properties appear at the bottom once set.
+        _lastInstalledTargetPackageJsonContent = targetPackageJson.IsEmpty
+                                                    ? "{}"
+                                                    : targetPackageJson.WriteAsString();
         targetPackageJson.CKVersion = TypeScriptContext.CKTypeScriptCurrentVersion;
         _configuration = configuration;
         _ckGenFolder = configuration.TargetProjectPath.AppendPart( "ck-gen" );
@@ -140,6 +145,17 @@ public sealed partial class TypeScriptIntegrationContext
                 monitor.Warn( $"Using UseSrcFolder = true because IntegrationMode is NpmPackage." );
                 configuration.UseSrcFolder = true;
             }
+        }
+        var boundLessPackages = packageJson.Dependencies.Values.Where( d => d.IsLatestDependency );
+        if( boundLessPackages.Any() )
+        {
+            monitor.Warn( $"""
+                    Detected {boundLessPackages.Count()} packages without version bound in target package.json:
+                    '{boundLessPackages.Select( d => d.ToString() ).Concatenate( "', '" )}'.
+                    IntegrationMode is '{configuration.IntegrationMode}': {(configuration.IntegrationMode == CKGenIntegrationMode.Inline
+                                                                            ? "nothing will be done"
+                                                                            : "the latest version will be installed (unless configuration or code specify them)" )}.
+                    """ );
         }
         return new TypeScriptIntegrationContext( configuration, packageJson, tsConfigJson, libVersionsConfig );
     }
@@ -310,18 +326,8 @@ public sealed partial class TypeScriptIntegrationContext
         {
             finalCommand.Append( "/C yarn install" );
         }
-        var manual = _targetPackageJson.Dependencies.RemoveLatestDependencies();
-        PackageDependency[] manualPeerDeps = Array.Empty<PackageDependency>();
-        if( manual.Count > 0 )
-        {
-            canSkipRun = false;
-            var regDeps = manual.Where( d => d.DependencyKind is DependencyKind.Dependency );
-            var devDeps = manual.Where( d => d.DependencyKind is DependencyKind.DevDependency or DependencyKind.PeerDependency );
-            manualPeerDeps = manual.Where( d => d.DependencyKind is DependencyKind.PeerDependency ).ToArray();
-            if( regDeps.Any() ) finalCommand.Append( $" && yarn add {regDeps.Select( d => d.Name ).Concatenate( " " )}" );
-            if( devDeps.Any() ) finalCommand.Append( $" && yarn add -D {devDeps.Select( d => d.Name ).Concatenate( " " )}" );
-        }
-        if( canSkipRun )
+        PackageDependency[] manualPeerDeps = ExtractLatestDependencies( _targetPackageJson, finalCommand );
+        if( canSkipRun && manualPeerDeps.Length == 0 )
         {
             var text = _targetPackageJson.WriteAsString();
             if( text == _lastInstalledTargetPackageJsonContent )
@@ -335,48 +341,68 @@ public sealed partial class TypeScriptIntegrationContext
         {
             _targetPackageJson.Save();
         }
-        if( !Run( monitor, finalCommand, _configuration.TargetProjectPath ) )
+        if( !RunSavePackageJsonFinalCommand( monitor, finalCommand, _configuration.TargetProjectPath ) )
         {
             return false;
         }
-        _targetPackageJson.Reload( monitor );
+        ReloadAndUpdateLatestDependencies( monitor, _targetPackageJson, manualPeerDeps );
+        _lastInstalledTargetPackageJsonContent = _targetPackageJson.WriteAsString();
+        return true;
+    }
+
+    static PackageDependency[] ExtractLatestDependencies( PackageJsonFile packageJson, StringBuilder finalCommand )
+    {
+        var manual = packageJson.Dependencies.RemoveLatestDependencies();
+        PackageDependency[] manualPeerDeps = [];
+        if( manual.Count > 0 )
+        {
+            var regDeps = manual.Where( d => d.DependencyKind is DependencyKind.Dependency );
+            var devDeps = manual.Where( d => d.DependencyKind is DependencyKind.DevDependency or DependencyKind.PeerDependency );
+            manualPeerDeps = manual.Where( d => d.DependencyKind is DependencyKind.PeerDependency ).ToArray();
+            if( regDeps.Any() ) finalCommand.Append( $" && yarn add {regDeps.Select( d => d.Name ).Concatenate( " " )}" );
+            if( devDeps.Any() ) finalCommand.Append( $" && yarn add -D {devDeps.Select( d => d.Name ).Concatenate( " " )}" );
+        }
+        return manualPeerDeps;
+    }
+
+    static void ReloadAndUpdateLatestDependencies( IActivityMonitor monitor, PackageJsonFile packageJson, PackageDependency[] manualPeerDeps )
+    {
+        packageJson.Reload( monitor );
         if( manualPeerDeps.Length > 0 )
         {
-            using( monitor.OpenInfo( $"Updating package.json \"peerDepencies\" section for '{manualPeerDeps.Select( d => d.Name ).Concatenate( "', " )}'." ) )
+            using( monitor.OpenInfo( $"Updating \"peerDependencies\" section for '{manualPeerDeps.Select( d => d.Name ).Concatenate( "', " )}'." ) )
             {
                 foreach( var peer in manualPeerDeps )
                 {
-                    if( !_targetPackageJson.Dependencies.TryGetValue( peer.Name, out var p )
+                    if( !packageJson.Dependencies.TryGetValue( peer.Name, out var p )
                         || p.DependencyKind != DependencyKind.DevDependency )
                     {
-                        monitor.Warn( $"Unable to find dependency '{peer.Name}' in \"devDependencies\". Skipping insertion in the \"peerDependency\" section." );
+                        monitor.Warn( $"Unable to find dependency '{peer.Name}' in \"devDependencies\". Skipping insertion in the \"peerDependencies\" section." );
                     }
                     else
                     {
                         p.UnconditionalSetDependencyKind( DependencyKind.PeerDependency );
                     }
                 }
-                _targetPackageJson.Save();
+                packageJson.Save();
             }
         }
-        _lastInstalledTargetPackageJsonContent = _targetPackageJson.WriteAsString();
-        return true;
+    }
 
-        static bool Run( IActivityMonitor monitor, StringBuilder finalCommand, NormalizedPath targetProjectPath )
+    static bool RunSavePackageJsonFinalCommand( IActivityMonitor monitor, StringBuilder finalCommand, NormalizedPath targetProjectPath )
+    {
+        var cmd = finalCommand.ToString();
+        var displayCmd = cmd.Substring( 3 ).Replace( " && ", Environment.NewLine );
+        using( monitor.OpenInfo( $"Running:{Environment.NewLine}{displayCmd}" ) )
         {
-            var cmd = finalCommand.ToString();
-            var displayCmd = cmd.Substring( 3 ).Replace( " && ", Environment.NewLine );
-            using( monitor.OpenInfo( $"Running:{Environment.NewLine}{displayCmd}" ) )
+            int code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null );
+            if( code != 0 )
             {
-                int code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null );
-                if( code != 0 )
-                {
-                    monitor.Error( $"Command:{Environment.NewLine}{displayCmd}{Environment.NewLine}Failed with code {code}." );
-                    return false;
-                }
+                monitor.Error( $"Command:{Environment.NewLine}{displayCmd}{Environment.NewLine}Failed with code {code}." );
+                return false;
             }
-            return true;
         }
+        return true;
     }
 
     internal bool Run( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
@@ -404,11 +430,14 @@ public sealed partial class TypeScriptIntegrationContext
             if( _configuration.AutoInstallJest )
             {
                 _targetPackageJson.Scripts.TryAdd( "test", "jest" );
-                AddOrUpdateTargetProjectDependency( monitor, "jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
-                AddOrUpdateTargetProjectDependency( monitor, "ts-jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
-                AddOrUpdateTargetProjectDependency( monitor, "@types/jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
-                AddOrUpdateTargetProjectDependency( monitor, "@types/node", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
-                AddOrUpdateTargetProjectDependency( monitor, "jest-environment-jsdom", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" );
+                if( !AddOrUpdateTargetProjectDependency( monitor, "jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
+                    || !AddOrUpdateTargetProjectDependency( monitor, "ts-jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
+                    || !AddOrUpdateTargetProjectDependency( monitor, "@types/jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
+                    || !AddOrUpdateTargetProjectDependency( monitor, "@types/node", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
+                    || !AddOrUpdateTargetProjectDependency( monitor, "jest-environment-jsdom", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" ) )
+                {
+                    return false;
+                }
             }
         }
         // Raising OnBeforeIntegration.
@@ -428,8 +457,8 @@ public sealed partial class TypeScriptIntegrationContext
         }
         var success = _configuration.IntegrationMode switch
         {
-            CKGenIntegrationMode.NpmPackage => NpmPackageIntegrate( monitor, saver, typeScriptDep ),
-            CKGenIntegrationMode.Inline => TSPathInlineIntegrate( monitor, saver, typeScriptDep ),
+            CKGenIntegrationMode.NpmPackage => NpmPackageIntegrate( monitor, saver ),
+            CKGenIntegrationMode.Inline => TSPathInlineIntegrate( monitor, saver ),
             _ => Throw.NotSupportedException<bool>()
         };
         // Assumes that the /src folder exists.
@@ -471,23 +500,22 @@ public sealed partial class TypeScriptIntegrationContext
         }
     }
 
-    bool NpmPackageIntegrate( IActivityMonitor monitor,
-                              TypeScriptFileSaveStrategy saver,
-                              PackageDependency typeScriptDep )
+    bool NpmPackageIntegrate( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
     {
         using var _ = monitor.OpenInfo( "NpmPackage integration mode." );
         // Generates "/ck-gen": "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json" files.
         // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
-        if( !SaveCKGenBuildConfig( monitor,
-                                   _ckGenFolder,
-                                   saver.GeneratedDependencies,
-                                   _configuration.ModuleSystem,
-                                   _configuration.UseSrcFolder,
-                                   _configuration.EnableTSProjectReferences ) )
+        var ckGenPackageJson = SaveCKGenBuildConfig( monitor,
+                                                     _ckGenFolder,
+                                                     saver.GeneratedDependencies,
+                                                     _configuration.ModuleSystem,
+                                                     _configuration.UseSrcFolder,
+                                                     _configuration.EnableTSProjectReferences );
+        if( ckGenPackageJson == null )
         {
             return false;
         }
-
+        Throw.DebugAssert( ckGenPackageJson.FilePath.RemoveLastPart() == _ckGenFolder );
         // If the tsConfig is empty (it doesn't exist), let's create a default one: a tsconfig.json is 
         // required by our jest.config.js (and it should always exist).
         if( _tsConfigJson.IsEmpty )
@@ -510,7 +538,7 @@ public sealed partial class TypeScriptIntegrationContext
         }
         else
         {
-            // We always ensure that the workspaces:["ck-gen"] and the "@local/ck-gen" dependency are here
+            // We always ensure that the workspaces:["ck-gen"] and the "@local/ck-gen" dependency are here.
             if( _targetPackageJson.Workspaces?.Contains( "*" ) is not true && _targetPackageJson.EnsureWorkspace( "ck-gen" ) )
             {
                 monitor.Info( $"Added \"ck-gen\" workspace." );
@@ -532,14 +560,33 @@ public sealed partial class TypeScriptIntegrationContext
                 }
             }
         }
-        // Tries to build the ck-gen/ folder even if an error occurred.
-        return SaveTargetPackageJsonAndYarnInstall( monitor )
-               & YarnHelper.DoRunYarn( monitor, _ckGenFolder, "run build", _yarnPath );
+        // We must first save the target package.json to ensure that the Yarn TypeScript sdk is here.
+        // Then we save the ck-gen/package.
+        if( !SaveTargetPackageJsonAndYarnInstall( monitor )
+            || !SaveCKGenPackageJsonAndYarnInstall( monitor, ckGenPackageJson, _ckGenFolder ) )
+        {
+            return false;
+        }
+
+        // Tries to build the ck-gen/ folder. We ar done.
+        return YarnHelper.DoRunYarn( monitor, _ckGenFolder, "run build", _yarnPath );
+
+        static bool SaveCKGenPackageJsonAndYarnInstall( IActivityMonitor monitor, PackageJsonFile packageJson, NormalizedPath ckGenFolder )
+        {
+            using var _ = monitor.OpenInfo( "Saving ck-gen/package.json, running Yarn install if needed." );
+            var finalCommand = new StringBuilder( "/C yarn install" );
+            PackageDependency[] manualPeerDeps = ExtractLatestDependencies( packageJson, finalCommand );
+            packageJson.Save();
+            if( !RunSavePackageJsonFinalCommand( monitor, finalCommand, ckGenFolder ) )
+            {
+                return false;
+            }
+            ReloadAndUpdateLatestDependencies( monitor, packageJson, manualPeerDeps );
+            return true;
+        }
     }
 
-    bool TSPathInlineIntegrate( IActivityMonitor monitor,
-                                TypeScriptFileSaveStrategy saver,
-                                PackageDependency typeScriptDep )
+    bool TSPathInlineIntegrate( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
     {
         using var _ = monitor.OpenInfo( "Inline integration mode." );
         // If this fails, we don't care: this is purely informational.
@@ -599,29 +646,31 @@ public sealed partial class TypeScriptIntegrationContext
     /// <summary>
     /// Generates "/ck-gen/package.json", "/ck-gen/tsconfig.json" and potentially "/ck-gen/tsconfig-cjs.json" and "/ck-gen/tsconfig-es6.json".
     /// </summary>
-    internal static bool SaveCKGenBuildConfig( IActivityMonitor monitor,
-                                               NormalizedPath ckGenFolder,
-                                               DependencyCollection deps,
-                                               TSModuleSystem moduleSystem,
-                                               bool useSrcFolder,
-                                               bool enableTSProjectReferences,
-                                               string? filePrefix = null )
+    internal static PackageJsonFile? SaveCKGenBuildConfig( IActivityMonitor monitor,
+                                                           NormalizedPath ckGenFolder,
+                                                           DependencyCollection deps,
+                                                           TSModuleSystem moduleSystem,
+                                                           bool useSrcFolder,
+                                                           bool enableTSProjectReferences,
+                                                           string? filePrefix = null )
     {
         using var gLog = monitor.OpenInfo( $"Saving TypeScript and TypeScript configuration files..." );
+        if( !GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, useSrcFolder, enableTSProjectReferences, filePrefix ) )
+        {
+            return null;
+        }
+        return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps, filePrefix );
 
-        return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps, filePrefix )
-               && GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, useSrcFolder, enableTSProjectReferences, filePrefix );
-
-        static bool GeneratePackageJson( IActivityMonitor monitor,
-                                         NormalizedPath ckGenFolder,
-                                         TSModuleSystem moduleSystem,
-                                         DependencyCollection deps,
-                                         string? filePrefix )
+        static PackageJsonFile? GeneratePackageJson( IActivityMonitor monitor,
+                                                     NormalizedPath ckGenFolder,
+                                                     TSModuleSystem moduleSystem,
+                                                     DependencyCollection deps,
+                                                     string? filePrefix )
         {
             var packageJsonPath = Path.Combine( ckGenFolder, filePrefix + "package.json" );
             using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
             {
-                // The /ck-gen/package.json dependencies is bound to the generated one (into wich
+                // The /ck-gen/package.json dependencies is bound to the generated one (into which
                 // typescript has been added).
                 var p = PackageJsonFile.Create( packageJsonPath, deps, "ck-gen package.json" );
                 p.Name = "@local/ck-gen";
@@ -646,7 +695,7 @@ public sealed partial class TypeScriptIntegrationContext
                 p.Scripts.Add( "build", buildScript );
                 p.Private = true;
                 p.Save();
-                return true;
+                return p;
             }
         }
 

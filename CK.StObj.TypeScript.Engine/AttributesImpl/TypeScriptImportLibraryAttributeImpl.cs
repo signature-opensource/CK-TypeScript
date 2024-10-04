@@ -9,12 +9,12 @@ namespace CK.StObj.TypeScript.Engine;
 /// Registers the TypeScript library in the TypeScriptContext's LibraryManager.
 /// This is stateless: the factory is the code generator.
 /// </summary>
-public sealed class ImportTypeScriptLibraryAttributeImpl : ITSCodeGeneratorFactory, ITSCodeGenerator
+public sealed class TypeScriptImportLibraryAttributeImpl : ITSCodeGeneratorFactory, ITSCodeGenerator
 {
-    readonly ImportTypeScriptLibraryAttribute _attr;
+    readonly TypeScriptImportLibraryAttribute _attr;
     readonly Type _target;
 
-    public ImportTypeScriptLibraryAttributeImpl( ImportTypeScriptLibraryAttribute attr, Type target )
+    public TypeScriptImportLibraryAttributeImpl( TypeScriptImportLibraryAttribute attr, Type target )
     {
         _attr = attr;
         _target = target;

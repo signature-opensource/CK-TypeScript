@@ -16,7 +16,7 @@ Resources are declared with the [TypeScriptResourceFilesAttribute](TypeScriptRes
 files with any extension at once from a folder and [TypeScriptFileAttribute](TypeScriptFileAttribute.cs) that declare a single
 `.ts` file and its optionnal exported TypeScript type names.
 
-The [ImportTypeScriptLibraryAttribute](ImportTypeScriptLibraryAttribute.cs) is used to declare dependencies on npm packages.
+The [TypeScriptImportLibraryAttribute](TypeScriptImportLibraryAttribute.cs) is used to declare dependencies on npm packages.
 
 This is enough to drive the generation: the heavy stuff is in the [CK.StObj.TypeScript.Engine](..\CK.StObj.TypeScript.Engine).
 

@@ -10,14 +10,14 @@ namespace CK.StObj.TypeScript;
 /// included in the /ck-gen/package.json file.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-public sealed class ImportTypeScriptLibraryAttribute : ContextBoundDelegationAttribute
+public sealed class TypeScriptImportLibraryAttribute : ContextBoundDelegationAttribute
 {
     /// <summary>
-    /// Initializes a new ImportTypeScriptLibrary attribute.
+    /// Initializes a new TypeScriptImportLibrary attribute.
     /// </summary>
     /// <param name="import">One or more library to import.</param>
-    public ImportTypeScriptLibraryAttribute( string name, string version, DependencyKind dependencyKind )
-        : base( "CK.StObj.TypeScript.Engine.ImportTypeScriptLibraryAttributeImpl, CK.StObj.TypeScript.Engine" )
+    public TypeScriptImportLibraryAttribute( string name, string version, DependencyKind dependencyKind )
+        : base( "CK.StObj.TypeScript.Engine.TypeScriptImportLibraryAttributeImpl, CK.StObj.TypeScript.Engine" )
     {
         Name = name;
         Version = version;

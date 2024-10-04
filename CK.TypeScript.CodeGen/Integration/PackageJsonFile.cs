@@ -17,17 +17,17 @@ namespace CK.Setup;
 /// </summary>
 public sealed class PackageJsonFile 
 {
-    JsonFile _file;
-    readonly DependencyCollection _dependencies;
     readonly string _packageDefinitionSource;
-    readonly Dictionary<string, string> _scripts;
-    HashSet<string>? _workspaces;
+    JsonFile _file;
     string? _name;
     SVersion? _version;
-    string? _module;
-    string? _main;
-    int _ckVersion;
     bool? _private;
+    string? _main;
+    string? _module;
+    readonly Dictionary<string, string> _scripts;
+    HashSet<string>? _workspaces;
+    readonly DependencyCollection _dependencies;
+    int _ckVersion;
 
     PackageJsonFile( JsonFile f, DependencyCollection dependencies, string packageDefinitionSource )
     {
@@ -99,14 +99,7 @@ public sealed class PackageJsonFile
 
     bool DoRead( IActivityMonitor monitor )
     {
-        var success = _file.ReadStringDictionary( _file.Root, monitor, "scripts", out var scripts );
-        success &= _file.ReadStringList( _file.Root, monitor, "workspaces", out var workspaces );
-        var dependencies = ReadDependencies( _file, monitor, _dependencies.IgnoreVersionsBound, _packageDefinitionSource );
-        success &= dependencies != null;
-
-        success &= _file.GetNonNullJsonString( _file.Root, monitor, "name", out var name );
-        success &= _file.GetNonNullJsonNumber( _file.Root, monitor, "ckVersion", out var ckVersion );
-
+        var success = _file.GetNonNullJsonString( _file.Root, monitor, "name", out var name );
         SVersion? version = null;
         if( _file.GetNonNullJsonString( _file.Root, monitor, "version", out var sVersion ) )
         {
@@ -120,9 +113,17 @@ public sealed class PackageJsonFile
         {
             success = false;
         }
-        success &= _file.GetNonNullJsonString( _file.Root, monitor, "module", out var module );
-        success &= _file.GetNonNullJsonString( _file.Root, monitor, "main", out var main );
         success &= _file.GetNonNullJsonBoolean( _file.Root, monitor, "private", out bool? isPrivate );
+        success &= _file.GetNonNullJsonString( _file.Root, monitor, "main", out var main );
+        success &= _file.GetNonNullJsonString( _file.Root, monitor, "module", out var module );
+        success &= _file.ReadStringDictionary( _file.Root, monitor, "scripts", out var scripts );
+        success &= _file.ReadStringList( _file.Root, monitor, "workspaces", out var workspaces );
+
+        var dependencies = ReadDependencies( _file, monitor, _dependencies.IgnoreVersionsBound, _packageDefinitionSource );
+        success &= dependencies != null;
+
+        success &= _file.GetNonNullJsonNumber( _file.Root, monitor, "ckVersion", out var ckVersion );
+
 
         if( !success )
         {
@@ -244,7 +245,10 @@ public sealed class PackageJsonFile
     public NormalizedPath FilePath => _file.FilePath;
 
     /// <summary>
-    /// Gets whether this package.json is empty.
+    /// Gets whether the internal Json object is empty.
+    /// <para>
+    /// This doesn't mean that the in-memory data is empty.
+    /// </para>
     /// </summary>
     public bool IsEmpty => _file.Root.Count == 0;
 
@@ -260,17 +264,6 @@ public sealed class PackageJsonFile
     public string SafeName => string.IsNullOrWhiteSpace( _name )
                                 ? _file.FilePath.Parts[^2].ToLowerInvariant()
                                 : _name;
-
-    /// <summary>
-    /// Gets the all the dependencies from the "devDependencies", "dependencies" and "peerDependencies" properties.
-    /// <para>
-    /// When the same package appear in more than one section, the unique final <see cref="PackageDependency"/> is merged:
-    /// <list type="bullet">
-    ///     <item>Peer dependencies win over regular that win over developpement dependencies.</item>
-    ///     <item>Final version is upgraded.</item>
-    /// </list>
-    /// </para>
-    public DependencyCollection Dependencies => _dependencies;
 
     /// <summary>
     /// Gets the mutable "scripts".
@@ -308,9 +301,9 @@ public sealed class PackageJsonFile
     public SVersion? Version { get => _version; set => _version = value; }
 
     /// <summary>
-    /// Gets or sets the "module" (ESM).
+    /// Gets or sets the "private".
     /// </summary>
-    public string? Module { get => _module; set => _module = value; }
+    public bool? Private { get => _private; set => _private = value; }
 
     /// <summary>
     /// Gets or sets the "main" (CJS).
@@ -318,9 +311,20 @@ public sealed class PackageJsonFile
     public string? Main { get => _main; set => _main = value; }
 
     /// <summary>
-    /// Gets or sets the "private".
+    /// Gets or sets the "module" (ESM).
     /// </summary>
-    public bool? Private { get => _private; set => _private = value; }
+    public string? Module { get => _module; set => _module = value; }
+
+    /// <summary>
+    /// Gets the all the dependencies from the "devDependencies", "dependencies" and "peerDependencies" properties.
+    /// <para>
+    /// When the same package appear in more than one section, the unique final <see cref="PackageDependency"/> is merged:
+    /// <list type="bullet">
+    ///     <item>Peer dependencies win over regular that win over developpement dependencies.</item>
+    ///     <item>Final version is upgraded.</item>
+    /// </list>
+    /// </para>
+    public DependencyCollection Dependencies => _dependencies;
 
     /// <summary>
     /// Gets or sets the optional "ckVersion".
@@ -338,14 +342,13 @@ public sealed class PackageJsonFile
     {
         _file.SetString( _file.Root, "name", _name );
         _file.SetString( _file.Root, "version", _version?.ToString() );
-        _file.SetString( _file.Root, "module", _module );
-        _file.SetString( _file.Root, "main", _main );
         _file.SetBoolean( _file.Root, "private", _private );
-        _file.SetNumber( _file.Root, "ckVersion", _ckVersion != 0 ? _ckVersion : null );
+        _file.SetString( _file.Root, "main", _main );
+        _file.SetString( _file.Root, "module", _module );
         _file.SetStringDictionary( _file.Root, "scripts", _scripts );
         _file.SetStringList( _file.Root, "workspaces", _workspaces );
         SetDependencies( _file.Root, _dependencies, peerDependenciesAsDevDependencies );
-
+        _file.SetNumber( _file.Root, "ckVersion", _ckVersion != 0 ? _ckVersion : null );
 
         static void SetDependencies( JsonNode root, DependencyCollection dependencies, bool peerDependenciesAsDevDependencies )
         {
