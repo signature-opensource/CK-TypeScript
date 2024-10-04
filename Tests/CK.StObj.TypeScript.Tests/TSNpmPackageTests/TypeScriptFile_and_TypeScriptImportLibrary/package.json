@@ -1,0 +1,20 @@
+{
+  "name": "typescriptfile_and_typescriptimportlibrary",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "workspaces": [
+    "ck-gen"
+  ],
+  "devDependencies": {
+    "@stdlib/symbol-ctor": ">=0.0.0",
+    "typescript": "=5.4.5",
+    "@local/ck-gen": "workspace:*"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@stdlib/symbol-ctor": ">=0.0.0"
+  },
+  "ckVersion": 1
+}
