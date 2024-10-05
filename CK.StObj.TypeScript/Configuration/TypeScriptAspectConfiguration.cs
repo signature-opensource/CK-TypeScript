@@ -60,6 +60,9 @@ public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfigur
             {
                 Throw.XmlException( $"Invalid version '{version}' for library '{name}': {parseResult.Error}" );
             }
+            // Don't call NormalizeNpmVersionBoundAll() to normalize "*" and "" to ">=0.0.0-0" here as the list
+            // may be manually modified.
+            // The normalization will be done by the engine.
             return parseResult.Result;
         }
     }

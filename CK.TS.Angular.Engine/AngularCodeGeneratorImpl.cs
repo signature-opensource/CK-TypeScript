@@ -172,7 +172,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         if( !e.ConfiguredLibraries.TryGetValue( "@angular/cli", out var angularCliVersion ) )
                         {
                             var parseResult = SVersionBound.NpmTryParse( _defaultAngularCliVersion );
-                            Throw.DebugAssert( "The version defined in code is necessarily valid.", parseResult.IsValid );
+                            Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", parseResult.IsValid && parseResult.Result != SVersionBound.All );
                             angularCliVersion = parseResult.Result;
                             monitor.Info( $"Using @angular/cli default version '{_defaultAngularCliVersion}'." );
                         }

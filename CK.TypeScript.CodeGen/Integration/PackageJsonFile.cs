@@ -197,7 +197,8 @@ public sealed class PackageJsonFile
                     if( parseResult.IsValid )
                     {
                         error = null;
-                        return parseResult.Result;
+                        // Normalize "*" and "" to ">=0.0.0-0".
+                        return parseResult.Result.NormalizeNpmVersionBoundAll();
                     }
                     Throw.DebugAssert( parseResult.Error != null );
                     error = parseResult.Error;

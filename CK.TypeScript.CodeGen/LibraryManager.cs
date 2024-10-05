@@ -155,6 +155,8 @@ public sealed class LibraryManager
             monitor.Error( $"Invalid version '{version}' for TypeScript library '{name}' ({dependencyKind}): {parseResult.Error}" );
             return false;
         }
+        // Normalize "*" and "" to ">=0.0.0-0".
+        v = v.NormalizeNpmVersionBoundAll();
         return true;
     }
 

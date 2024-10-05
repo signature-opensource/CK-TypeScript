@@ -278,7 +278,8 @@ public sealed partial class TypeScriptIntegrationContext
                     if( parseResult.IsValid )
                     {
                         source = "BinPathConfiguration.DefaultTypeScriptVersion property";
-                        vResult = parseResult.Result;
+                        // Normalize "*" and "" to ">=0.0.0-0".
+                        vResult = parseResult.Result.NormalizeNpmVersionBoundAll();
                     }
                     else
                     {
@@ -299,7 +300,7 @@ public sealed partial class TypeScriptIntegrationContext
             {
                 source = "Code default";
                 var parseResult = SVersionBound.NpmTryParse( DefaultTypeScriptVersion );
-                Throw.DebugAssert( "The version defined in code is necessarily valid.", parseResult.IsValid );
+                Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", parseResult.IsValid && parseResult.Result != SVersionBound.All );
                 result = parseResult.Result;
             }
         }

@@ -104,7 +104,7 @@ public class TypeScriptFileAttributeTests
         var targetPackage = File.ReadAllText( targetProjectPath.AppendPart( "package.json" ) );
         targetPackage.ReplaceLineEndings().Should().Be( """
             {
-              "name": "typescriptfile_and_importtypescriptlibrary",
+              "name": "typescriptfile_and_typescriptimportlibrary",
               "private": true,
               "scripts": {
                 "test": "jest"
@@ -117,6 +117,7 @@ public class TypeScriptFileAttributeTests
                 "@stdlib/symbol-ctor": "~0.2.2",
                 "@types/jest": "^29.5.13",
                 "@types/node": "^22.7.4",
+                "@yarnpkg/sdks": "^3.2",
                 "jest": "^29.7",
                 "jest-environment-jsdom": "^29.7",
                 "ts-jest": "^29.2.5",
