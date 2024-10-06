@@ -6,6 +6,9 @@ using System.Reflection;
 
 namespace CK.Core;
 
+/// <summary>
+/// Extends <see cref="Assembly"/>.
+/// </summary>
 public static class AssemblyExtensions
 {
     static readonly ConcurrentDictionary<Assembly, ImmutableOrdinalSortedStrings> _cache = new();

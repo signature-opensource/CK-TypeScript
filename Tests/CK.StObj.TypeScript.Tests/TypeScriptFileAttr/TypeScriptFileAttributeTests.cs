@@ -13,6 +13,7 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr;
 [TypeScriptFile( "IAmHere.ts", typeName: "IAmHere", TargetFolderName = "" )]
 [TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/utils-native-class", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
+[TypeScriptFile("Some.private.ts")]
 public sealed class Embedded : TypeScriptPackage { }
 
 [TypeScriptPackage]
@@ -23,7 +24,7 @@ public sealed class Embedded : TypeScriptPackage { }
 public sealed class OtherEmbedded : TypeScriptPackage { }
 
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "axios", "*", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "axios", "*", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptFile( "HttpCrisEndpoint.ts", "HttpCrisEndpoint", TargetFolderName = "" )]
 public sealed class WithAxios : TypeScriptPackage { }
 
@@ -41,13 +42,13 @@ public class TypeScriptFileAttributeTests
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         configuration.RunSuccessfully();
 
-        File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
+        File.Exists( targetProjectPath.Combine( "ck-gen/IAmHere.ts" ) )
             .Should().BeTrue();
-        File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
+        File.Exists( targetProjectPath.Combine( "ck-gen/IAmAlsoHere.ts" ) )
             .Should().BeFalse();
 
         var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/index.ts" ) );
-        barrel.Should().Contain( "export * from './CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere';" );
+        barrel.Should().Contain( "export * from './IAmHere';" );
     }
 
     // This test uses NpmPackage integration.
@@ -64,18 +65,19 @@ public class TypeScriptFileAttributeTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         tsConfig.ModuleSystem = TSModuleSystem.CJS;
-        tsConfig.UseSrcFolder = true;
+        // tsConfig.UseSrcFolder = true NpmPackage => UseSrcFolder = true (a warinig is emitted).
         engineConfig.FirstBinPath.Types.Add( typeof( Embedded ), typeof( OtherEmbedded ), typeof( WithAxios ) );
         engineConfig.RunSuccessfully();
 
-        File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )
+        File.Exists( targetProjectPath.Combine( "ck-gen/src/IAmHere.ts" ) )
             .Should().BeTrue();
-        File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere.ts" ) )
+        File.Exists( targetProjectPath.Combine( "ck-gen/src/IAmAlsoHere.ts" ) )
             .Should().BeTrue();
 
         var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/index.ts" ) );
-        barrel.Should().Contain( "export * from './CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere';" )
-                   .And.Contain( "export * from './CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmAlsoHere';" );
+        barrel.Should().Contain( "export * from './IAmHere';" )
+                   .And.Contain( "export * from './IAmAlsoHere';" )
+                   .And.NotContain( "private" );
 
         // Note that a PeerDependency is also a DevDependency (otherwise nothing works: this trick makes
         // our PeerDependencies de facto transitive dependencies).
@@ -97,6 +99,7 @@ public class TypeScriptFileAttributeTests
               },
               "dependencies": {
                 "@stdlib/utils-native-class": "~0.2.2",
+                "axios": "^1.7.7",
                 "tslib": "=2.7.0"
               },
               "peerDependencies": {

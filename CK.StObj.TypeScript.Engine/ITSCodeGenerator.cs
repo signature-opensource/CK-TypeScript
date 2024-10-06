@@ -18,9 +18,9 @@ namespace CK.Setup;
 /// </summary>
 public interface ITSCodeGenerator
 {
-    static readonly ITSCodeGenerator _empty = new EmptyCodeGenerator();
+    private static readonly ITSCodeGenerator _empty = new EmptyCodeGenerator();
 
-    sealed class EmptyCodeGenerator : ITSCodeGenerator
+    private sealed class EmptyCodeGenerator : ITSCodeGenerator
     {
         public bool OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 

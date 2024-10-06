@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="TypeScriptFileAttr\Res\IAmHere.ts" />
+    <None Remove="TypeScriptFileAttr\Res\Some.private.ts" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--053czwo-develop" />
@@ -22,6 +23,9 @@
     <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Update="TypeScriptFileAttr\Res\Some.private.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Update="TypeScriptFileAttr\Res\IAmHere.ts">
       <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>

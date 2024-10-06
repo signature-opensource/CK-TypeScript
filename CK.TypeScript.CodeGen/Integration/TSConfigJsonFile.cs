@@ -21,6 +21,7 @@ namespace CK.Setup;
 /// </summary>
 public sealed class TSConfigJsonFile
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public const bool DefaultStrict = true;
     public const bool DefaultNoImplicitOverride = true;
     public const bool DefaultNoPropertyAccessFromIndexSignature = true;
@@ -37,6 +38,7 @@ public sealed class TSConfigJsonFile
     public const string DefaultTarget = "es2022";
     public const string DefaultModule = "NodeNext";
     public const string DefaultModuleResolution = "NodeNext";
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
     JsonFile _file;
     readonly NormalizedPath _folderPath;
@@ -499,8 +501,7 @@ public sealed class TSConfigJsonFile
                     foreach( var item in c )
                     {
                         if( item == null ) continue;
-                        string? mapping = null;
-                        if( item is not JsonValue v || !v.TryGetValue( out mapping ) )
+                        if( item is not JsonValue v || !v.TryGetValue( out string? mapping ) )
                         {
                             monitor.Error( $"Unable to read \"{item.GetPath()}\" as a string." );
                             return false;

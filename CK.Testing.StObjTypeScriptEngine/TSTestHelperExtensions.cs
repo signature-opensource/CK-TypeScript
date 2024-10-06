@@ -179,7 +179,7 @@ public static partial class TSTestHelperExtensions
     /// <param name="targetProjectPath">
     /// The test target project path. Usually obtained by:
     /// <list type="bullet">
-    ///     <item><see cref="GetTypeScriptWithTestsSupportTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptWithTestsSupportTargetProjectPath()</see></item>
+    ///     <item><see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptInlineTargetProjectPath()</see></item>
     ///     <item>or <see cref="GetTypeScriptNpmPackageTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptBuildModeTargetProjectPath()</see></item>
     /// </list>
     /// </param>

@@ -3,6 +3,9 @@ using System.IO;
 
 namespace CK.TypeScript.CodeGen;
 
+/// <summary>
+/// Base class for all textual resources.
+/// </summary>
 public abstract class ResourceTextFileBase : TextFileBase, IResourceFile
 {
     readonly ResourceTypeLocator _locator;

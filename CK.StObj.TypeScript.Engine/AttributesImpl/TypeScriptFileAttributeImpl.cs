@@ -21,6 +21,12 @@ public sealed class TypeScriptFileAttributeImpl : IAttributeContextBoundInitiali
     ResourceTypeLocator _resource;
     NormalizedPath _targetPath;
 
+    /// <summary>
+    /// Initializes a new <see cref="TypeScriptFileAttributeImpl"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
     public TypeScriptFileAttributeImpl( IActivityMonitor monitor, TypeScriptFileAttribute attr, Type type )
     {
         _attr = attr;

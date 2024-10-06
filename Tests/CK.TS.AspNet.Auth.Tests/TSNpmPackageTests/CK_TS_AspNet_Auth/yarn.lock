@@ -722,10 +722,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
-    axios: "npm:=1.7.2"
+    axios: "npm:^1.7.2"
     typescript: "npm:=5.4.5"
   peerDependencies:
-    axios: =1.7.2
+    axios: ^1.7.2
   languageName: unknown
   linkType: soft
 
@@ -1096,6 +1096,17 @@ __metadata:
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
   checksum: 10/6ae80dda9736bb4762ce717f1a26ff997d94672d3a5799ad9941c24d4fb019c1dff45be8272f08d1975d7950bac281f3ba24aff5ecd49ef5a04d872ec428782f
+  languageName: node
+  linkType: hard
+
+"axios@npm:^1.7.2":
+  version: 1.7.7
+  resolution: "axios@npm:1.7.7"
+  dependencies:
+    follow-redirects: "npm:^1.15.6"
+    form-data: "npm:^4.0.0"
+    proxy-from-env: "npm:^1.1.0"
+  checksum: 10/7f875ea13b9298cd7b40fd09985209f7a38d38321f1118c701520939de2f113c4ba137832fe8e3f811f99a38e12c8225481011023209a77b0c0641270e20cde1
   languageName: node
   linkType: hard
 

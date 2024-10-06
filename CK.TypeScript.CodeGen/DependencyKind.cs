@@ -21,9 +21,17 @@ public enum DependencyKind
     PeerDependency = 2
 }
 
+/// <summary>
+/// Extends <see cref="DependencyKind"/>.
+/// </summary>
 public static class DependencyKindExtensions
 {
     static readonly string[] _names = new[] { "devDependencies", "dependencies", "peerDependencies" };
 
+    /// <summary>
+    /// Gets the package.json section name.
+    /// </summary>
+    /// <param name="kind">This kind.</param>
+    /// <returns>The section name.</returns>
     public static string GetJsonSectionName( this DependencyKind kind ) => _names[(int)kind];
 }

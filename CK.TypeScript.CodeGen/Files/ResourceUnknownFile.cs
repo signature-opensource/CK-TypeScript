@@ -20,7 +20,11 @@ public sealed class ResourceUnknownFile : BaseFile, IResourceFile
     /// <inheritdoc />
     public ResourceTypeLocator Locator => _locator;
 
-    public override Stream? TryGetContentStream() => GetContentStream();
+    /// <summary>
+    /// Returns <see cref="GetContentStream()"/>.
+    /// </summary>
+    /// <returns>The stream.</returns>
+    public override Stream TryGetContentStream() => GetContentStream();
 
     /// <summary>
     /// Provides the content of this file as a stream (that must be disposed once done with it).

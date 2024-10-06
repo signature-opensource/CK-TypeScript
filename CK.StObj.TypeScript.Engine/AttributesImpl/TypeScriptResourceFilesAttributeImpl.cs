@@ -9,8 +9,10 @@ namespace CK.StObj.TypeScript.Engine;
 
 /// <summary>
 /// Creates multiple resources file (from embedded resources) in the TypeScriptContext's Root folder.
-/// This is stateless: the factory is the code generator.
 /// </summary>
+/// <remarks>
+/// This is stateless: the factory is the code generator.
+/// </remarks>
 public sealed class TypeScriptResourceFilesAttributeImpl : IAttributeContextBoundInitializer, ITSCodeGeneratorFactory, ITSCodeGenerator
 {
     readonly TypeScriptResourceFilesAttribute _attr;
@@ -19,6 +21,11 @@ public sealed class TypeScriptResourceFilesAttributeImpl : IAttributeContextBoun
     int _prefixLength;
     NormalizedPath _targetPath;
 
+    /// <summary>
+    /// Initializes a new <see cref="TypeScriptResourceFilesAttributeImpl"/>.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="target">The decorated type.</param>
     public TypeScriptResourceFilesAttributeImpl( TypeScriptResourceFilesAttribute attr, Type target )
     {
         _attr = attr;

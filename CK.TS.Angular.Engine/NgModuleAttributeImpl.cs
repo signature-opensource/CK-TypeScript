@@ -6,10 +6,19 @@ using System;
 
 namespace CK.TS.Angular.Engine;
 
+/// <summary>
+/// Implements <see cref="NgModuleAttribute"/>.
+/// </summary>
 public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
 {
-    public NgModuleAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type, TypeScriptAspect aspect )
-        : base( monitor, attr, type, aspect )
+    /// <summary>
+    /// Initializes a new <see cref="NgModuleAttributeImpl"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
+    public NgModuleAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type )
+        : base( monitor, attr, type )
     {
         if( !typeof( NgModule ).IsAssignableFrom( type ) )
         {

@@ -15,30 +15,48 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
-    readonly TypeScriptAspect _aspect;
 
     static readonly NormalizedPath _defaultTypeFolderSubPath = "Res";
 
     NormalizedPath _resourceTypeFolder;
     bool? _resourceTypeFolderComputed;
 
-    public TypeScriptPackageAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type, TypeScriptAspect aspect )
+    /// <summary>
+    /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor.</param>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
+    public TypeScriptPackageAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type )
     {
         _attr = attr;
         _type = type;
-        _aspect = aspect;
         if( !typeof( TypeScriptPackage ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[TypeScriptPackage] can only decorate a TypeScriptPackage: '{type:N}' is not a TypeScriptPackage." );
         }
     }
 
+    /// <summary>
+    /// Implements <see cref="IAttributeContextBoundInitializer.Initialize(IActivityMonitor, ITypeAttributesCache, MemberInfo, Action{Type})"/>.
+    /// Does nothing at this level.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="owner">The attribute cache of the decorated type.</param>
+    /// <param name="m">The decorated type.</param>
+    /// <param name="alsoRegister">Enables this method to register types.</param>
     public virtual void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
     {
         //var transformers = owner.GetTypeCustomAttributes<TypeScriptTransformerAttributeImpl>().ToList();
         //_aspect.RegisterTransfomers( _type, transformers );
     }
 
+    /// <summary>
+    /// Implements <see cref="IStObjStructuralConfigurator.Configure(IActivityMonitor, IStObjMutableItem)"/>.
+    /// Sets the <see cref="IStObjMutableItem.Container"/> to be the <see cref="TypeScriptPackage.TypeScriptPackage"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="o">The mutable item for this package.</param>
     public virtual void Configure( IActivityMonitor monitor, IStObjMutableItem o )
     {
         if( _attr.Package != null )

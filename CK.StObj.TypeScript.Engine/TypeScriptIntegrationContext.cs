@@ -13,6 +13,9 @@ using DependencyKind = CK.TypeScript.CodeGen.DependencyKind;
 
 namespace CK.Setup;
 
+/// <summary>
+/// Supports integration for <see cref="CKGenIntegrationMode.Inline"/> and <see cref="CKGenIntegrationMode.NpmPackage"/>.
+/// </summary>
 public sealed partial class TypeScriptIntegrationContext
 {
     /// <summary>
@@ -66,6 +69,9 @@ public sealed partial class TypeScriptIntegrationContext
         }
     }
 
+    /// <summary>
+    /// Gets the TypeScript configuration for the current BinPath.
+    /// </summary>
     public TypeScriptBinPathAspectConfiguration Configuration => _configuration;
 
     /// <summary>

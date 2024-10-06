@@ -11,6 +11,9 @@ using System.Linq;
 
 namespace CK.TS.Angular.Engine;
 
+/// <summary>
+/// Implements support for Angular projects.
+/// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 {
     const string _defaultAngularCliVersion = "^18.2.0";

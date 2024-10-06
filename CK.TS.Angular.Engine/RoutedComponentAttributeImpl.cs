@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Setup;
 using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
@@ -6,10 +6,19 @@ using System;
 
 namespace CK.TS.Angular.Engine;
 
+/// <summary>
+/// Implements <see cref="RoutedComponentAttribute"/>.
+/// </summary>
 public class RoutedComponentAttributeImpl : TypeScriptPackageAttributeImpl
 {
-    public RoutedComponentAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type, TypeScriptAspect aspect )
-        : base( monitor, attr, type, aspect )
+    /// <summary>
+    /// Initializes a new <see cref="RoutedComponentAttributeImpl"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
+    public RoutedComponentAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type )
+        : base( monitor, attr, type )
     {
         if( !typeof( RoutedComponent ).IsAssignableFrom( type ) )
         {
