@@ -128,9 +128,8 @@ public sealed partial class TSTypeManager
     /// Registers a new mapping from C# type to <see cref="ITSType"/> mapping.
     /// This throws a <see cref="ArgumentException"/> if the key is already mapped.
     /// <para>
-    /// It is often easier to use <see cref="TypeScriptFolder.FindOrCreateTSManualFile(NormalizedPath)"/> and then
-    /// <see cref="TSManualFile.CreateType(string, Action{ITSFileImportSection}?, string?, string)"/> to manually
-    /// manage types.
+    /// It is often easier to use <see cref="TypeScriptFolder.FindOrCreateTypeScriptFile(NormalizedPath)"/> and then
+    /// <see cref="TypeScriptFile.CreateCSharpType(string, Type, Action{ITSFileImportSection}?, string?, string)"/>.
     /// </para>
     /// </summary>
     /// <param name="type">The C# reference type.</param>

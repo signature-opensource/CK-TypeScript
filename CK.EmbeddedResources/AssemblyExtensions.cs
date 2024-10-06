@@ -32,6 +32,7 @@ public static class AssemblyExtensions
     /// <param name="assembly">This assembly.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="resourceName">The resource name with the "ck@" prefix.</param>
+    /// <param name="logLevel">The log level when the resource cannot be found or loaded.</param>
     /// <returns>The string or null on error.</returns>
     public static string? TryGetCKResourceString( this Assembly assembly, IActivityMonitor monitor, string resourceName, LogLevel logLevel = LogLevel.Error )
     {
@@ -55,6 +56,7 @@ public static class AssemblyExtensions
     /// <param name="assembly">This assembly.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="resourceName">The resource name with the "ck@" prefix.</param>
+    /// <param name="logLevel">The log level when the resource cannot be found or loaded.</param>
     /// <returns>The Stream or null on error.</returns>
     public static Stream? TryOpenCKResourceStream( this Assembly assembly, IActivityMonitor monitor, string resourceName, LogLevel logLevel = LogLevel.Error )
     {

@@ -117,7 +117,6 @@ public readonly struct ImmutableOrdinalSortedStrings
     /// <summary>
     /// Gets the range of strings that that start with the <paramref name="prefix"/>.
     /// </summary>
-    /// <param name="prefix">The prefix</param>
     /// <param name="prefix">Common prefix to search.</param>
     /// <returns>The resulting strings.</returns>
     public ReadOnlyMemory<string> GetPrefixedStrings( string prefix )

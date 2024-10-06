@@ -46,12 +46,12 @@ public sealed class PackageDependency
 
     /// <summary>
     /// Gets the version of the package, which will be used in the package.json.
-    /// This version can be fixed by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
+    /// This version can be fixed by the configuration. See <see cref="LibraryManager.LibraryVersionConfiguration"/>.
     /// <para>
     /// The <see cref="SVersionBound.None"/> is used to denote the special "workspace:*". See <see cref="IsWorkspaceDependency"/>.
     /// </para>
     /// <para>
-    /// <see cref="SVersionBound.All"/> ("0.0.0-0"[None,CI]" or "&gt;=0.0.0-0" for npm) can be used to denote the "latest" version.
+    /// <see cref="SVersionBound.All"/> ("0.0.0-0"[None,CI]" or "&gt;=0.0.0-0", "*" or "" for npm) can be used to denote the "latest" version.
     /// See <see cref="IsLatestDependency"/>.
     /// </para>
     /// </summary>

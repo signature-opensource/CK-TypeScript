@@ -140,7 +140,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public string? DefaultTypeScriptVersion { get; set; }
 
     /// <summary>
-    /// Gets or sets whether yarn will be automatically installed (in version <see cref="AutomaticYarnVersion"/>)
+    /// Gets or sets whether yarn will be automatically installed (from an embedded resource in the engine)
     /// if not found in <see cref="TargetProjectPath"/> or above.
     /// <para>
     /// if no yarn can be found in <see cref="TargetProjectPath"/> or above and this is set to false, no TypeScript build will
@@ -177,7 +177,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// <para>
     /// It is up to the developper to ensure that a <c>"references": [ { "path": "./ck-gen" } ]</c> exists in
     /// the target project tsconfig.json and to use <c>tsc --buildMode</c>.
-    /// See <see cref="https://www.typescriptlang.org/docs/handbook/project-references.html"/>.
+    /// See https://www.typescriptlang.org/docs/handbook/project-references.html.
     /// </para>
     /// <para>
     /// Unforunately, this is currently not supported by Jest.

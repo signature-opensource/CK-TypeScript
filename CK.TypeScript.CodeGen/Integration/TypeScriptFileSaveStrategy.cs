@@ -35,6 +35,7 @@ public class TypeScriptFileSaveStrategy
     /// and must be totally dedicated to the automatic TypeScript generation: by default, any existing
     /// file that has not been regenerated will be deleted (see <see cref="CleanupFiles"/>).
     /// </summary>
+    /// <param name="root">The root context.</param>
     /// <param name="targetPath">The folder that will reflect the <see cref="TypeScriptRoot"/> content.</param>
     public TypeScriptFileSaveStrategy( TypeScriptRoot root, NormalizedPath targetPath )
     {
@@ -144,6 +145,7 @@ public class TypeScriptFileSaveStrategy
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
+    /// <param name="savedCount">The number of files saved or null on error.</param>
     /// <returns>The <paramref name="savedCount"/>, null on error (errors must be logged).</returns>
     public virtual int? Finalize( IActivityMonitor monitor, int? savedCount )
     {

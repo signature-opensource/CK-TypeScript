@@ -41,17 +41,21 @@ public sealed class TypeScriptRoot
     /// <summary>
     /// Initializes a new <see cref="TypeScriptRoot"/>.
     /// </summary>
-    /// <param name="libraryVersionConfiguration"
-    /// >External library name to version mapping to use.
+    /// <param name="libraryVersionConfiguration">
+    /// External library name to version mapping to use.
     /// This dictionary must use the <see cref="StringComparer.OrdinalIgnoreCase"/> as its <see cref="ImmutableDictionary{TKey, TValue}.KeyComparer"/>.
     /// </param>
     /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
     /// <param name="generateDocumentation">Whether documentation should be generated.</param>
+    /// <param name="ignoreVersionsBound">True to ignore npm version bound conflicts. See <see cref="LibraryManager.IgnoreVersionsBound"/>.</param>
     /// <param name="reflectTS">True to generate TSType map.</param>
     /// <param name="decimalLibraryName">
     /// Support library for decimal. If <see cref="decimal"/> is used, we default to use https://github.com/MikeMcl/decimal.js-light
-    /// in version <see cref="DecimalJSLightVersion"/>. if "decimal.js" is specified here, it'll be used with <see cref="DecimalJSVersion"/>.
+    /// in version <see cref="LibraryManager.DecimalJSLightVersion"/>.
+    /// <para>
+    /// if "decimal.js" is specified here, it'll be used with <see cref="LibraryManager.DecimalJSVersion"/>.
     /// The actual version used can be overridden thanks to <paramref name="libraryVersionConfiguration"/>.
+    /// </para>
     /// </param>
     public TypeScriptRoot( ImmutableDictionary<string, SVersionBound> libraryVersionConfiguration,
                            bool pascalCase,
@@ -266,8 +270,6 @@ public sealed class TypeScriptRoot
 
     /// <summary>
     /// Saves this <see cref="Root"/> (all its files and creates the necessary folders)
-    /// into <paramref name="outputPath"/>, ensuring that a barrel will be generated for the <see cref="Root"/>
-    /// folder.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>

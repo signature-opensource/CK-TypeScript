@@ -11,6 +11,9 @@ namespace CK.Setup;
 
 public sealed partial class TypeScriptIntegrationContext
 {
+    /// <summary>
+    /// Base for <see cref="BeforeEventArgs"/> and <see cref="AfterEventArgs"/>.
+    /// </summary>
     public class BaseEventArgs : EventMonitoredArgs
     {
         readonly NormalizedPath _yarnPath;
@@ -116,7 +119,7 @@ public sealed partial class TypeScriptIntegrationContext
         /// When called multiple times, the first computed result is returned as-is.
         /// </para>
         /// </summary>
-        /// <param name="typeScriptDep">The package dependency on success.</param>
+        /// <param name="typeScriptDependency">The package dependency on success.</param>
         /// <returns>True on success, false otherwise.</returns>
         public bool SettleTypeScriptVersion( [NotNullWhen( true )] out PackageDependency? typeScriptDependency ) => IntegrationContext.SettleTypeScriptVersion( Monitor, out typeScriptDependency );
 

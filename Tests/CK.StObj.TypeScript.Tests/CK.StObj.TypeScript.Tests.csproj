@@ -11,11 +11,19 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Remove="TypeScriptFileAttr\Res\IAmHere.ts" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--053czwo-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="TypeScriptFileAttr\Res\IAmHere.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

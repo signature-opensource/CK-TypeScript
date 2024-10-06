@@ -1,5 +1,6 @@
 using CK.Core;
 using System.Collections.Generic;
+using CSemVer;
 
 namespace CK.TypeScript.CodeGen;
 

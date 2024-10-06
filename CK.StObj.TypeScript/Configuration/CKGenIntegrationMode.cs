@@ -3,7 +3,7 @@ namespace CK.Setup;
 /// <summary>
 /// Defines <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/>.
 /// <para>
-/// An interesting integration mode is missing here: TSProjectReference would use <see cref="https://www.typescriptlang.org/docs/handbook/project-references.html"/>.
+/// An interesting integration mode is missing here: TSProjectReference would use https://www.typescriptlang.org/docs/handbook/project-references.html.
 /// Unfortunately this is not yet supported by Jest (https://github.com/kulshekhar/ts-jest/issues/1648) nor by Angular (https://github.com/angular/angular/issues/37276).
 /// Hopefully this will be supported one day.
 /// </para>

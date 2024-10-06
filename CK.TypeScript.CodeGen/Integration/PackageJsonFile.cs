@@ -325,6 +325,7 @@ public sealed class PackageJsonFile
     ///     <item>Final version is upgraded.</item>
     /// </list>
     /// </para>
+    /// </summary>
     public DependencyCollection Dependencies => _dependencies;
 
     /// <summary>

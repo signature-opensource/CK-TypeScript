@@ -14,6 +14,11 @@ public sealed class TypeScriptImportLibraryAttributeImpl : ITSCodeGeneratorFacto
     readonly TypeScriptImportLibraryAttribute _attr;
     readonly Type _target;
 
+    /// <summary>
+    /// Initializes a new <see cref="TypeScriptImportLibraryAttributeImpl"/>.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="target">The decorated type.</param>
     public TypeScriptImportLibraryAttributeImpl( TypeScriptImportLibraryAttribute attr, Type target )
     {
         _attr = attr;

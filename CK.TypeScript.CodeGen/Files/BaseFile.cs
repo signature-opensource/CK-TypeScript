@@ -6,9 +6,6 @@ namespace CK.TypeScript.CodeGen;
 
 /// <summary>
 /// Base class for all type of files in a <see cref="TypeScriptFolder"/>.
-/// <para>
-/// See <see cref="FileType"/>.
-/// </para>
 /// </summary>
 public abstract class BaseFile
 {

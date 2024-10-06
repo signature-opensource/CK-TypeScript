@@ -15,12 +15,24 @@ public sealed class TypeScriptImportLibraryAttribute : ContextBoundDelegationAtt
     /// <summary>
     /// Initializes a new TypeScriptImportLibrary attribute.
     /// </summary>
-    /// <param name="import">One or more library to import.</param>
-    public TypeScriptImportLibraryAttribute( string name, string version, DependencyKind dependencyKind )
+    /// <param name="name">The library name to import.</param>
+    /// <param name="versionBound">
+    /// The version bound. Can be:
+    /// <list type="bullet">
+    ///     <item><c>null</c>: the library MUST be configured in the <see cref="TypeScriptAspectConfiguration.LibraryVersions"/>.</item>
+    ///     <item><c>"*"</c>, <c>""</c> or <c>"&gt;=0.0.0-0"</c>: any version can be used. If no other bounds are specified, the library will be installed with the latest npm version.</item>
+    ///     <item>A regular npm version bound like "^0.1.2", "~0.4", ">=7", etc.</item>
+    /// </list>
+    /// </param>
+    /// <param name="dependencyKind">
+    /// The kind of dependency. Conflicts are resolved with a simple rule:
+    /// PeerDependency &gt; Dependency &gt; DevDependency.
+    /// </param>
+    public TypeScriptImportLibraryAttribute( string name, string? versionBound, DependencyKind dependencyKind )
         : base( "CK.StObj.TypeScript.Engine.TypeScriptImportLibraryAttributeImpl, CK.StObj.TypeScript.Engine" )
     {
         Name = name;
-        Version = version;
+        Version = versionBound;
         DependencyKind = dependencyKind;
     }
 
@@ -31,9 +43,9 @@ public sealed class TypeScriptImportLibraryAttribute : ContextBoundDelegationAtt
 
     /// <summary>
     /// Gets the version of the package, which will be used in the package.json.
-    /// This version can be overridden by the configuration. See <see cref="TypeScriptAspectConfiguration.LibraryVersions"/>.
+    /// This bound will be ignored if this library is configured. See <see cref="TypeScriptAspectConfiguration.LibraryVersions"/>.
     /// </summary>
-    public string Version { get; }
+    public string? Version { get; }
 
     /// <summary>
     /// Dependency kind of the package. Will be used to determine in which list

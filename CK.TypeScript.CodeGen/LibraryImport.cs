@@ -35,7 +35,7 @@ public sealed class LibraryImport
 
     /// <summary>
     /// Version of the package, which will be used in the package.json.
-    /// This version can be settled by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
+    /// This version can be settled by the configuration. See <see cref="LibraryManager.LibraryVersionConfiguration"/>.
     /// </summary>
     public SVersionBound Version => _packageDependency.Version;
 
@@ -54,7 +54,7 @@ public sealed class LibraryImport
     /// Gets or sets whether this library is actually used: <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>
     /// sets it to true.
     /// <para>
-    /// This trims the libraries: a library can be registered (thanks to <see cref="LibraryManager.RegisterLibrary"/>) but none of its types
+    /// This trims the libraries: a library can be registered but none of its types
     /// may be used. When a library is not used, it shouldn't appear in the package.json.
     /// For some libraries (typically <see cref="DependencyKind.DevDependency"/>), this can be set to true directly. Note that once
     /// set to true, it never transition back to false.

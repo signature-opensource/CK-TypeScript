@@ -25,7 +25,7 @@ namespace CK.TypeScript.CodeGen;
 /// </summary>
 public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
 {
-    readonly ITSFileBodySection _body;
+    readonly FileBodyCodePart _body;
     internal readonly FileImportCodePart _imports;
     TypeDeclarationImpl _declared;
 
@@ -80,13 +80,13 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     }
 
     /// <summary>
-    /// Gets the all the TypeScript types that are defined in this <see cref="File"/>.
+    /// Gets the all the TypeScript types that are defined in this <see cref="TypeScriptFile"/>.
     /// </summary>
     public IEnumerable<ITSDeclaredFileType> AllTypes => _declared.AllTypes.Concat( AllTypesWithPart );
 
     /// <summary>
     /// Gets the all the TypeScript types that have a <see cref="ITSFileType.TypePart"/> defined
-    /// in this <see cref="File"/>.
+    /// in this <see cref="TypeScriptFile"/>.
     /// </summary>
     public IEnumerable<ITSFileType> AllTypesWithPart => _body.Parts.OfType<ITSKeyedCodePart>()
                                                                    .Select( p => p.Key as ITSFileType )

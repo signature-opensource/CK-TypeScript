@@ -43,6 +43,10 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
         readonly NormalizedPath _jestConfigFilePath;
         readonly NormalizedPath _jestSetupTSFilePath;
 
+        /// <summary>
+        /// Initializes a new Jest handler.
+        /// </summary>
+        /// <param name="context">The integration context.</param>
         public JestSetupHandler( TypeScriptIntegrationContext context )
         {
             _context = context;
@@ -53,8 +57,14 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             _jestSetupTSFilePath = targetProjectPath.AppendPart( JestSetupTSFileName );
         }
 
+        /// <summary>
+        /// Gets the integration context.
+        /// </summary>
         public TypeScriptIntegrationContext Context => _context;
 
+        /// <summary>
+        /// Gets the target project path.
+        /// </summary>
         public NormalizedPath TargetProjectPath => _context.Configuration.TargetProjectPath;
 
         /// <summary>
@@ -62,8 +72,14 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
         /// </summary>
         public NormalizedPath SrcFolderPath => _context.SrcFolderPath;
 
+        /// <summary>
+        /// Gets the <see cref="JestConfigFileName"/> path.
+        /// </summary>
         public NormalizedPath JestConfigFilePath => _jestConfigFilePath;
 
+        /// <summary>
+        /// Gets the <see cref="JestSetupTSFileName"/> path.
+        /// </summary>
         public NormalizedPath JestSetupTSFilePath => _jestSetupTSFilePath;
 
         internal bool DoRun( IActivityMonitor monitor )
@@ -161,7 +177,7 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
         /// with CKTypeScriptEnv and its marker comments.
         /// <para>
         /// This file can be "locked" by removing the first line "-AllowAutoUpdate".
-        /// <see cref="ShouldWriteJestConfigFile(IActivityMonitor, string)"/> takes care of this and can be reused.
+        /// <see cref="ShouldWriteAllowAutoUpdateFile(IActivityMonitor, NormalizedPath, string)"/> takes care of this and can be reused.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -213,6 +229,10 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
 
         /// <summary>
         /// Writes the <see cref="JestSetupTSFileName"/>.
+        /// <para>
+        /// This file can be "locked" by removing the first line "-AllowAutoUpdate".
+        /// <see cref="ShouldWriteAllowAutoUpdateFile(IActivityMonitor, NormalizedPath, string)"/> takes care of this and can be reused.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns>True on success, false otherwise (error should be logged). At this level, always true.</returns>
@@ -305,7 +325,7 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
         }
 
         /// <summary>
-        /// Prepares the project to run Jest by updating the <see cref="JestSetupCKTypeScriptFileName"/> file with
+        /// Prepares the project to run Jest by updating the <see cref="JestConfigFileName"/> file with
         /// the provided <paramref name="environmentVariables"/> and (at least) the "CK_TYPESCRIPT_ENGINE = true".
         /// </summary>
         /// <param name="monitor">Required monitor.</param>
@@ -333,55 +353,6 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             }
             return true;
         }
-
-        //static void WriteJestSetupFile( NormalizedPath jestSetupFilePath, Dictionary<string, string>? environmentVariables )
-        //{
-        //    Throw.DebugAssert( !jestSetupFilePath.IsEmptyPath && jestSetupFilePath.LastPart == JestSetupCKTypeScriptFileName );
-        //    const string header = """
-        //                      // This will run once before each test file and before the testing framework is installed.
-        //                      // This is used by TestHelper.CreateTypeScriptTestRunner to duplicate environment variables settings
-        //                      // in a "persistent" way: these environment variables will be available until the Runner
-        //                      // returned by TestHelper.CreateTypeScriptTestRunner is disposed.
-        //                      //
-        //                      // This part fixes a bug in testEnvionment: 'jsdom':
-        //                      // <fix href="https://stackoverflow.com/questions/68468203/why-am-i-getting-textencoder-is-not-defined-in-jest">
-        //                      import { TextDecoder as ImportedTextDecoder, TextEncoder as ImportedTextEncoder, } from "util";
-        //                      Object.assign(global, { TextDecoder: ImportedTextDecoder, TextEncoder: ImportedTextEncoder, })
-        //                      // </fix>
-
-        //                      """;
-        //    if( environmentVariables == null )
-        //    {
-        //        File.WriteAllText( jestSetupFilePath, header );
-        //    }
-        //    else
-        //    {
-        //        using var f = File.Create( jestSetupFilePath );
-        //        using var text = new StreamWriter( f );
-        //        text.WriteLine( header );
-        //        text.Write( "Object.assign( process.env, " );
-        //        text.Flush();
-        //        using( var w = new Utf8JsonWriter( f ) )
-        //        {
-        //            w.WriteStartObject();
-        //            bool hasTestKey = false;
-        //            foreach( var kv in environmentVariables )
-        //            {
-        //                hasTestKey |= kv.Key == TestRunningKey;
-        //                w.WriteString( kv.Key, kv.Value );
-        //            }
-        //            if( !hasTestKey )
-        //            {
-        //                w.WriteString( TestRunningKey, "true" );
-        //            }
-        //            w.WriteEndObject();
-        //            w.Flush();
-        //        }
-        //        text.WriteLine( ");" );
-        //        text.Flush();
-        //    }
-        //}
-
     }
 
 }

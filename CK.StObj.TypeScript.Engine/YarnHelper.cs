@@ -26,14 +26,12 @@ public static class YarnHelper
 
     /// <summary>
     /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
-    /// and can be automatically installed. See <see cref="AutoInstallYarn"/>.
+    /// and can be automatically installed. See <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/>.
     /// </summary>
     public const string AutomaticYarnVersion = "4.3.1";
 
-    const string _testRunningKey = "CK_TYPESCRIPT_ENGINE";
     const string _yarnFileName = $"yarn-{AutomaticYarnVersion}.cjs";
     const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
-    const int JestConfigFileVersion = 1;
 
     static YarnHelper()
     {
@@ -116,7 +114,7 @@ public static class YarnHelper
         }
         else if( autoInstall )
         {
-            var gitRoot = targetProjectPath.PathsToFirstPart( null, new[] { ".git" } ).FirstOrDefault( p => Directory.Exists( p ) );
+            var gitRoot = targetProjectPath.PathsToFirstPart( null, [".git"] ).FirstOrDefault( p => Directory.Exists( p ) );
             if( gitRoot.IsEmptyPath )
             {
                 monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );

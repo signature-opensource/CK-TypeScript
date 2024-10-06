@@ -71,20 +71,23 @@ public sealed class LibraryManager
     public string DecimalLibraryName => _decimalLibraryName;
 
     /// <summary>
-    /// Gets whether <see cref="SVersionBound"/> are honored or not when different versions of
-    /// the same library are declared.
+    /// Gets whether when code declares multiple version bounds for the same library, version compatibility must be enforced or not.
     /// <para>
-    /// When false, if a package wants "axios": "^0.28.0" (in <see cref="SVersionBound"/> semantics: "0.28.0[LockMajor,Stable]")
-    /// and another one wants ">=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
+    /// When false (the default), if a package wants "axios": "^0.28.0" (in <see cref="SVersionBound"/> semantics: "0.28.0[LockMajor,Stable]")
+    /// and another one wants "&gt;=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
+    /// </para>
+    /// <para>
+    /// When set to true, the greatest <see cref="SVersionBound.Base"/> wins: "1.7.2[Stable]" will be selected.
     /// </para>
     /// </summary>
     public bool IgnoreVersionsBound => _ignoreVersionsBound;
 
     /// <summary>
     /// Gets the configured versions for external npm packages. These configurations take precedence over the
-    /// library versions declared by code via <see cref="RegisterLibrary"/>.
+    /// library versions declared by code via <see cref="RegisterLibrary(IActivityMonitor, string, string?, DependencyKind, string?, LibraryImport[])"/>.
     /// <para>
-    /// Only libraries that are used by code will be used from this configuration.
+    /// These configurations are ignored for libraries that are not used by the code (no <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>
+    /// are made).
     /// </para>
     /// </summary>
     public IReadOnlyDictionary<string, SVersionBound> LibraryVersionConfiguration => _libVersionsConfig;
@@ -162,7 +165,7 @@ public sealed class LibraryManager
 
     /// <summary>
     /// Tries to register an external library with a version bound.
-    /// To register library without any version constraint, use <see cref="RegisterLibrary(string, DependencyKind, string?, LibraryImport[])"/>.
+    /// To register library without any version constraint, use <see cref="RegisterLibrary(IActivityMonitor, string, DependencyKind, string?, LibraryImport[])"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="name">The library name.</param>

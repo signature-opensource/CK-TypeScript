@@ -12,14 +12,14 @@ public sealed partial class TSTypeManager
     /// false default values.
     /// <para>
     /// <see cref="decimal"/> is mapped to an external library that must export a 'Decimal' type.
-    /// This is driven by <see cref="TypeScriptRoot.DecimalLibraryName"/> that defaults to https://github.com/MikeMcl/decimal.js-light/
+    /// This is driven by <see cref="LibraryManager.DecimalLibraryName"/> that defaults to https://github.com/MikeMcl/decimal.js-light/
     /// but https://www.npmjs.com/package/decimal.js ca also be used.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="withNumbers">When true, byte, sbyte, short, ushort, int and uint are mapped to Number with a 0 default.</param>
     /// <param name="withBigInts">When true, long, ulong, BigInteger are mapped to BigInt with a 0n default.</param>
-    /// <param name="withDecimal">When true, decimal is mapped to the 'Decimal' type of <see cref="TypeScriptRoot.DecimalLibraryName"/>.</param>
+    /// <param name="withDecimal">When true, decimal is mapped to the 'Decimal' type of <see cref="LibraryManager.DecimalLibraryName"/>.</param>
     /// <param name="withLuxonTypes">When true, DateTime, DateTimeOffset and TimeSpan are mapped to Luxon's DatTime and Duration types.</param>
     public void RegisterStandardTypes( IActivityMonitor monitor,
                                        bool withNumbers = true,

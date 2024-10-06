@@ -14,7 +14,7 @@ public static partial class TSTestHelperExtensions
     /// </summary>
     /// <param name="binPath">This BinPath configuration to configure.</param>
     /// <param name="targetProjectPath">
-    /// Obtained from <see cref="GetTypeScriptWithTestsSupportTargetProjectPath(IBasicTestHelper, string?)"/> or one of
+    /// Obtained from <see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)"/> or one of
     /// the other similar methods.
     /// </param>
     /// <param name="tsTypes">The types to generate in TypeScript.</param>
@@ -34,7 +34,7 @@ public static partial class TSTestHelperExtensions
     /// </summary>
     /// <param name="tsBinPathAspect">This configuration.</param>
     /// <param name="targetProjectPath">
-    /// Obtained from <see cref="GetTypeScriptWithTestsSupportTargetProjectPath(IBasicTestHelper, string?)"/> or one of
+    /// Obtained from <see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)"/> or one of
     /// the other similar methods.
     /// </param>
     /// <param name="tsTypes">The types to generate in TypeScript.</param>

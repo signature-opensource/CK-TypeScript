@@ -10,7 +10,7 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr;
 
 [TypeScriptPackage]
-[TypeScriptFile( "IAmHere.ts", typeName: "IAmHere" )]
+[TypeScriptFile( "IAmHere.ts", typeName: "IAmHere", TargetFolderName = "" )]
 [TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/utils-native-class", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
 public sealed class Embedded : TypeScriptPackage { }
@@ -19,8 +19,13 @@ public sealed class Embedded : TypeScriptPackage { }
 [TypeScriptImportLibrary( "tslib", "2.7.0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/number-ctor", "~0.1.0", DependencyKind.DevDependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/symbol-ctor", "*", DependencyKind.PeerDependency, ForceUse = true )]
-[TypeScriptFile( "IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo" )]
+[TypeScriptFile( "IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo", TargetFolderName = "" )]
 public sealed class OtherEmbedded : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[TypeScriptImportLibrary( "axios", "*", DependencyKind.Dependency )]
+[TypeScriptFile( "HttpCrisEndpoint.ts", "HttpCrisEndpoint", TargetFolderName = "" )]
+public sealed class WithAxios : TypeScriptPackage { }
 
 
 [TestFixture]
@@ -46,7 +51,7 @@ public class TypeScriptFileAttributeTests
     }
 
     // This test uses NpmPackage integration.
-    [Test( Description = "This test may fail when starting from scratch because the \"latest\" (>=0.0.0-0) @stdlib/symbol-ctor and @stdlib/utils-native-class are installed." )]
+    [Test( Description = "This test may fail when starting from scratch because the \"latest\" (>=0.0.0-0) libraries are installed." )]
     public void TypeScriptFile_and_TypeScriptImportLibrary()
     {
         var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
@@ -60,7 +65,7 @@ public class TypeScriptFileAttributeTests
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         tsConfig.ModuleSystem = TSModuleSystem.CJS;
         tsConfig.UseSrcFolder = true;
-        engineConfig.FirstBinPath.Types.Add( typeof( Embedded ), typeof( OtherEmbedded ) );
+        engineConfig.FirstBinPath.Types.Add( typeof( Embedded ), typeof( OtherEmbedded ), typeof( WithAxios ) );
         engineConfig.RunSuccessfully();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/TypeScriptFileAttr/IAmHere.ts" ) )

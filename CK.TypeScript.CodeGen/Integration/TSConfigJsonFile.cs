@@ -469,6 +469,7 @@ public sealed class TSConfigJsonFile
     /// This class doesn't override ToString() because UpdateContent has to be called first to reflect
     /// the changes.
     /// </para>
+    /// </summary>
     public string WriteAsString()
     {
         UpdateFileRoot();

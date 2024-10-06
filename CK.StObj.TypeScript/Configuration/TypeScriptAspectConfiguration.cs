@@ -68,21 +68,29 @@ public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfigur
     }
 
     /// <summary>
-    /// Gets a dictionary that defines the version to use for an external package.
-    /// The versions specified here override the ones specified in code while
+    /// Gets a dictionary that defines the version bound to use for an external package.
+    /// The bounds specified here override the ones specified in code while
     /// declaring an import.
     ///<para>
-    /// The code can provide default versions (final version is upgrade, see <see cref="IgnoreVersionsBound"/>)
-    /// or no version at all: in this case the library version must be defined here. The code can also
-    /// provide the ">=0.0.0-0" version, that is <see cref="SVersionBound.All"/>.ToString(): the "latest" version of
-    /// the package will eventually be used if no other version are set for the library.
+    /// Multiple codes can provide a version for the same library: the final version is computed and when <see cref="IgnoreVersionsBound"/>
+    /// is false (the default), the final version bound satisfy all the provided bounds.
+    /// <para>
+    /// Code can alos provide no version at all (a null version bound): in this case the library version MUST be defined here.
+    /// </para>
+    /// <para>
+    /// A version bound can be the "*", "" (empty string) or "&gt;=0.0.0-0" version (<see cref="SVersionBound.All"/>):
+    /// the "latest" version of the package will eventually be used if it is not yet installed and no other version can
+    /// be found for the library.
+    /// </para>
     ///</para>
     /// <para>
     /// Example:
     /// <code>
     ///     &lt;LibraryVersions&gt;
     ///        &lt;Library Name="axios" Version="^1.7.2" /&gt;
-    ///        &lt;Library Name="luxon" Version=">=3.1.1" /&gt;
+    ///        &lt;Library Name="luxon" Version="&gt;=3.1.1" /&gt;
+    ///        &lt;!-- "*", "" or "&gt;=0.0.0-0": if it's not already installed, the latest npm version will be installed. --&gt;
+    ///        &lt;Library Name="rxjs" Version="*" /&gt;
     ///     &lt;/LibraryVersions&gt;
     /// </code>
     /// </para>
@@ -98,7 +106,7 @@ public sealed partial class TypeScriptAspectConfiguration : EngineAspectConfigur
     /// version compatibility must be enforced or not.
     /// <para>
     /// When false (the default), if a package wants "axios": "^0.28.0" (in <see cref="SVersionBound"/> semantics: "0.28.0[LockMajor,Stable]")
-    /// and another one wants ">=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
+    /// and another one wants "&gt;=1.7.2" (that is "1.7.2[Stable]"), this will fail. 
     /// </para>
     /// <para>
     /// When set to true, the greatest <see cref="SVersionBound.Base"/> wins: "1.7.2[Stable]" will be selected.
