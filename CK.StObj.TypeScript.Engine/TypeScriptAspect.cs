@@ -277,7 +277,11 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
                 return false;
             }
             // Save or defer.
-            if( _deferedSave != null ) _deferedSave.Add( g );
+            if( _deferedSave != null )
+            {
+                monitor.Info( "Deferring files save and target project integration." );
+                _deferedSave.Add( g );
+            }
             else if( !g.Save( monitor ) ) return false;
         }
         return true;

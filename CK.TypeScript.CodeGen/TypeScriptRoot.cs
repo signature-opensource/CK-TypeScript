@@ -235,9 +235,13 @@ public sealed class TypeScriptRoot
                                 string name,
                                 ref EventMonitoredArgs? sameEvent )
         {
-            if( handler != null )
+            if( handler == null )
             {
-                using( monitor.OpenTrace( "Raising BeforeCodeGeneration event." ) )
+                monitor.Trace( $"Skipped raising {name} event: no subscription." );
+            }
+            else
+            {
+                using( monitor.OpenTrace( $"Raising {name} event." ) )
                 {
                     try
                     {
@@ -245,7 +249,7 @@ public sealed class TypeScriptRoot
                     }
                     catch( Exception ex )
                     {
-                        monitor.Error( $"While raising BeforeCodeGeneration event.", ex );
+                        monitor.Error( $"While raising {name} event.", ex );
                     }
                 }
             }
