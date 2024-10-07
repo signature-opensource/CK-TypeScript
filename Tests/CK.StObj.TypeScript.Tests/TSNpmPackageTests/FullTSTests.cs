@@ -115,7 +115,7 @@ public class FullTSTests
         configuration.FirstBinPath.Types.Add( types );
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
         tsConfig.UseSrcFolder = true;
-        configuration.RunSuccessfully();
+        await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,
                                                                     new Dictionary<string, string>()
@@ -193,7 +193,7 @@ public class FullTSTests
                                               typeof( FakeTypeScriptCrisCommandGenerator ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
 
-        configuration.RunSuccessfully();
+        await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
         await TestHelper.SuspendAsync( resume => resume );
@@ -213,7 +213,7 @@ public class FullTSTests
         config.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
                            .DefaultTypeScriptVersion = "5.4.2";
 
-        config.RunSuccessfully();
+        await config.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
         await TestHelper.SuspendAsync( resume => resume );

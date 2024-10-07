@@ -30,7 +30,7 @@ public class FromScratchTests
             ts.IntegrationMode = CKGenIntegrationMode.Inline;
             ts.AutoInstallYarn = true;
             ts.AutoInstallJest = true;
-            configuration.RunSuccessfully();
+            await configuration.RunSuccessfullyAsync();
 
             await using var runner = TestHelper.CreateTypeScriptRunner( root );
             await TestHelper.SuspendAsync( resume => resume );

@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -72,7 +73,7 @@ public class RecordTests
     }
 
     [Test]
-    public void anonymous_records_use_TypeScript_Tuple_or_Object_Syntax()
+    public async Task anonymous_records_use_TypeScript_Tuple_or_Object_Syntax_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         var types = new[]
@@ -88,7 +89,7 @@ public class RecordTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
         engineConfig.FirstBinPath.Types.Add( types );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         CheckFile( targetProjectPath,
             "ValueTuplePoco1.ts",
@@ -197,7 +198,7 @@ public class RecordTests
 
 
     [Test]
-    public void named_records_are_TypeScript_classes()
+    public async Task named_records_are_TypeScript_classes_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         var tsTypes = new[]
@@ -211,7 +212,7 @@ public class RecordTests
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
         engineConfig.FirstBinPath.Types.Add( tsTypes )
                                        .Add( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         CheckFile( targetProjectPath,
             "Rec1.ts",
@@ -278,7 +279,7 @@ public class RecordTests
     }
 
     [Test]
-    public void recurse_via_record_is_handled()
+    public async Task recurse_via_record_is_handled_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -286,7 +287,7 @@ public class RecordTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IRecTryPoco ) );
         engineConfig.FirstBinPath.Types.Add( typeof( IRecTryPoco ), typeof( RecTry ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         CheckFile( targetProjectPath,
            "RecTry.ts",
@@ -309,14 +310,14 @@ public class RecordTests
     }
 
     [Test]
-    public void record_with_fields_without_default_is_handled()
+    public async Task record_with_fields_without_default_is_handled_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IRecWithNonNullDefaultPoco ) );
         engineConfig.FirstBinPath.Types.Add( typeof( IRecWithNonNullDefaultPoco ), typeof( RecWithNonNullDefault ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         CheckFile( targetProjectPath,
           "RecWithNonNullDefault.ts",

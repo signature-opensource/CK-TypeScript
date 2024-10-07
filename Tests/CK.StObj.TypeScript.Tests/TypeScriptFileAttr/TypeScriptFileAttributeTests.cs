@@ -3,6 +3,7 @@ using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.IO;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -33,14 +34,14 @@ public sealed class WithAxios : TypeScriptPackage { }
 public class TypeScriptFileAttributeTests
 {
     [Test]
-    public void TypeScriptFile_attribute()
+    public async Task TypeScriptFile_attribute_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( Embedded ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        configuration.RunSuccessfully();
+        await configuration.RunSuccessfullyAsync();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/IAmHere.ts" ) )
             .Should().BeTrue();
@@ -53,7 +54,7 @@ public class TypeScriptFileAttributeTests
 
     // This test uses NpmPackage integration.
     [Test( Description = "This test may fail when starting from scratch because the \"latest\" (>=0.0.0-0) libraries are installed." )]
-    public void TypeScriptFile_and_TypeScriptImportLibrary()
+    public async Task TypeScriptFile_and_TypeScriptImportLibrary_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
 
@@ -67,7 +68,7 @@ public class TypeScriptFileAttributeTests
         tsConfig.ModuleSystem = TSModuleSystem.CJS;
         // tsConfig.UseSrcFolder = true NpmPackage => UseSrcFolder = true (a warinig is emitted).
         engineConfig.FirstBinPath.Types.Add( typeof( Embedded ), typeof( OtherEmbedded ), typeof( WithAxios ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/src/IAmHere.ts" ) )
             .Should().BeTrue();

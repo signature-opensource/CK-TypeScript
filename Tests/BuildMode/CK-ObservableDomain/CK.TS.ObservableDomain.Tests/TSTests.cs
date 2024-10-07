@@ -17,7 +17,7 @@ public class TSTests
         engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.ObservableDomain" );
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
 
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
         runner.Run();

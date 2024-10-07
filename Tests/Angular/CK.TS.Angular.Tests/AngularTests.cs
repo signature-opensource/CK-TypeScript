@@ -18,7 +18,7 @@ public class AngularTests
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ) );
-        configuration.RunSuccessfully();
+        await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
         await TestHelper.SuspendAsync( resume => resume );

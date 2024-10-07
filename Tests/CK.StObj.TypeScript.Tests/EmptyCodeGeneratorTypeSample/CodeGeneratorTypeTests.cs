@@ -5,6 +5,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -42,12 +43,12 @@ public class CodeGeneratorTypeTests
     }
 
     [Test]
-    public void all_types_are_empty()
+    public async Task all_types_are_empty_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
         var types = new[]
-{
+        {
             typeof( EnumThatWillBeEmpty ),
             typeof( IWillBeEmpty ),
             typeof( WillBeEmptyClass ),
@@ -58,7 +59,7 @@ public class CodeGeneratorTypeTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
         engineConfig.FirstBinPath.Types.Add( types );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
 
         var e = File.ReadAllText( targetProjectPath.Combine( "ck-gen/EnumThatWillBeEmpty.ts" ) );

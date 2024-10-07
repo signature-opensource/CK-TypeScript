@@ -4,6 +4,7 @@ using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.IO;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -31,7 +32,7 @@ public class PocoTypeScriptTests
     }
 
     [Test]
-    public void no_TypeScript_attribute_provide_no_generation()
+    public async Task no_TypeScript_attribute_provide_no_generation_Async()
     {
         // NotGeneratedByDefault is not generated.
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
@@ -40,13 +41,13 @@ public class PocoTypeScriptTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         engineConfig.FirstBinPath.Types.Add( typeof( INotGeneratedByDefault ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/src/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
     }
 
     [Test]
-    public void no_TypeScript_attribute_is_generated_when_referenced()
+    public async Task no_TypeScript_attribute_is_generated_when_referenced_Async()
     {
         // NotGeneratedByDefault is generated because it is referenced by IGeneratedByDefault.
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
@@ -55,13 +56,13 @@ public class PocoTypeScriptTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         engineConfig.FirstBinPath.Types.Add( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
     }
 
     [Test]
-    public void no_TypeScript_attribute_is_generated_when_Type_appears_in_Aspect()
+    public async Task no_TypeScript_attribute_is_generated_when_Type_appears_in_Aspect_Async()
     {
         // NotGeneratedByDefault is generated because it is configured.
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
@@ -69,7 +70,7 @@ public class PocoTypeScriptTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( INotGeneratedByDefault ) );
         engineConfig.FirstBinPath.Types.Add( typeof( INotGeneratedByDefault ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         File.ReadAllText( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
             .Should().Contain( "export class NotGeneratedByDefault" );

@@ -5,6 +5,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -107,7 +108,7 @@ public class CommandLikeTests
     }
 
     [Test]
-    public void command_like_sample_with_interfaces()
+    public async Task command_like_sample_with_interfaces_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -133,7 +134,7 @@ public class CommandLikeTests
                                              typeof( IAspNetCrisResultError ),
                                              typeof( IUbiquitousValues ),
                                              typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
 
         var p = targetProjectPath.Combine( "ck-gen" );
@@ -225,7 +226,7 @@ public class CommandLikeTests
     }
 
     [Test]
-    public void command_with_simple_results_specialized()
+    public async Task command_with_simple_results_specialized_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         var tsTypes = new[]
@@ -245,11 +246,11 @@ public class CommandLikeTests
                                              typeof( IAspNetCrisResultError ),
                                              typeof( IUbiquitousValues ),
                                              typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
     }
 
     [Test]
-    public void command_with_poco_results_specialized_and_parts()
+    public async Task command_with_poco_results_specialized_and_parts_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         var tsTypes = new[]
@@ -274,11 +275,11 @@ public class CommandLikeTests
                                              typeof( IAspNetCrisResultError ),
                                              typeof( IUbiquitousValues ),
                                              typeof( FakeTypeScriptCrisCommandGeneratorWithFolders ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
     }
 
     [Test]
-    public void commands_with_string_and_command()
+    public async Task commands_with_string_and_command_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -296,7 +297,7 @@ public class CommandLikeTests
                                              typeof( IAspNetCrisResultError ),
                                              typeof( IUbiquitousValues ),
                                              typeof( FakeTypeScriptCrisCommandGenerator ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var p = targetProjectPath.Combine( "ck-gen" );
         var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) ).ReplaceLineEndings();

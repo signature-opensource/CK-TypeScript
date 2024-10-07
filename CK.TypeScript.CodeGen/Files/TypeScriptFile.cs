@@ -92,7 +92,7 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
                                                                    .Where( k => k != null )!;
 
     /// <summary>
-    /// Gets the TypeScript types bound to a C# type that are defined in this <see cref="File"/>.
+    /// Gets the TypeScript types bound to a C# type that are defined in this file.
     /// </summary>
     public IEnumerable<ITSFileCSharpType> CSharpTypes => _body.Parts.OfType<ITSKeyedCodePart>()
                                                                     .Select( p => p.Key as ITSFileCSharpType )

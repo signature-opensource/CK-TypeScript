@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -23,11 +24,11 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void simple_enum_generation_in_multiple_BinPath()
+    public async Task simple_enum_generation_in_multiple_BinPath_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         var engineConfiguration = CreateConfigurationTSCodeInB1AndB2Outputs( targetProjectPath, typeof( Simple ) );
-        engineConfiguration.RunSuccessfully();
+        await engineConfiguration.RunSuccessfullyAsync();
 
         var f1 = targetProjectPath.Combine( "b1/ck-gen/CK/StObj/TypeScript/Tests/Simple.ts" );
         var f2 = targetProjectPath.Combine( "b2/ck-gen/CK/StObj/TypeScript/Tests/Simple.ts" );
@@ -101,7 +102,7 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void explicit_Folder_configured()
+    public async Task explicit_Folder_configured_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -109,7 +110,7 @@ public class BasicGenerationTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( InAnotherFolder ) );
         engineConfig.FirstBinPath.Types.Add( typeof( InAnotherFolder ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var f = targetProjectPath.Combine( "ck-gen/TheFolder/InAnotherFolder.ts" );
         var s = File.ReadAllText( f );
@@ -134,7 +135,7 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void empty_Folder_generates_code_at_the_Root()
+    public async Task empty_Folder_generates_code_at_the_Root_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -142,7 +143,7 @@ public class BasicGenerationTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( AtTheRootFolder ) );
         engineConfig.FirstBinPath.Types.Add( typeof( AtTheRootFolder ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var f1 = targetProjectPath.Combine( "ck-gen/AtTheRootFolder.ts" );
         var s = File.ReadAllText( f1 );
@@ -173,7 +174,7 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void explicit_FileName_configured()
+    public async Task explicit_FileName_configured_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -181,7 +182,7 @@ public class BasicGenerationTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
         engineConfig.FirstBinPath.Types.Add( typeof( InASpecificFile ), typeof( AnotherInASpecificFile ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var f1 = targetProjectPath.Combine( "ck-gen/Folder/EnumFile.ts" );
         var s = File.ReadAllText( f1 );
@@ -208,14 +209,14 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void ExternalName_attribute_overrides_the_Type_name()
+    public async Task ExternalName_attribute_overrides_the_Type_name_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( InASpecificFileWithAnExternalName ) );
         engineConfig.FirstBinPath.Types.Add( typeof( InASpecificFileWithAnExternalName ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var f = targetProjectPath.Combine( "ck-gen/IAmHere/EnumFile.ts" );
         var s = File.ReadAllText( f );
@@ -251,14 +252,14 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void ExternalName_attribute_overrides_the_TypeName_and_the_FileName()
+    public async Task ExternalName_attribute_overrides_the_TypeName_and_the_FileName_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( WithAnExternalName ) );
         engineConfig.FirstBinPath.Types.Add( typeof( WithAnExternalName ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var f = targetProjectPath.Combine( "ck-gen/Folder/Toto.ts" );
         var s = File.ReadAllText( f );
@@ -276,7 +277,7 @@ public class BasicGenerationTests
     }
 
     [Test]
-    public void explicit_TypeName_and_FileName_override_the_ExternalName()
+    public async Task explicit_TypeName_and_FileName_override_the_ExternalName_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
@@ -284,7 +285,7 @@ public class BasicGenerationTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
         engineConfig.FirstBinPath.Types.Add( typeof( AtTheRootAndWithAnotherExplicitTypeName ) );
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         var f = targetProjectPath.Combine( "ck-gen/EnumFile.ts" );
         var s = File.ReadAllText( f );

@@ -62,7 +62,7 @@ public class MultipleTypeScriptTests
         binPath.AddAspect( ts1 );
         ts1.AddOtherConfiguration( ts2 );
 
-        engineConfig.RunSuccessfully();
+        await engineConfig.RunSuccessfullyAsync();
 
         // Runs the Jest tests.
         var t1 = TestHelper.TestProjectFolder.Combine( "Clients/NpmPackage" );

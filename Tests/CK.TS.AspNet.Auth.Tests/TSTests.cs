@@ -21,19 +21,13 @@ public class TSTests
     public async Task CK_TS_AspNet_Auth_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
-        targetProjectPath.Parts[^2].Should().Be( "TSNpmPackageTests" );
 
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        var map = engineConfig.RunSuccessfully().LoadMap();
+        var map = (await engineConfig.RunSuccessfullyAsync()).LoadMap();
 
         var builder = WebApplication.CreateSlimBuilder();
-
-        // Temp
-        Throw.DebugAssert( !builder.Services.Any( item => item.ServiceType == typeof( FakeUserDatabase ) ) );
-        builder.Services.AddSingleton<FakeUserDatabase>();
-        builder.AddUnsafeAllowAllCors();
 
         await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
@@ -52,14 +46,9 @@ public class TSTests
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         tsConfig.GitIgnoreCKGenFolder = true;
 
-        var map = engineConfig.RunSuccessfully().LoadMap();
+        var map = (await engineConfig.RunSuccessfullyAsync()).LoadMap();
 
         var builder = WebApplication.CreateSlimBuilder();
-
-        // Temp
-        Throw.DebugAssert( !builder.Services.Any( item => item.ServiceType == typeof( FakeUserDatabase ) ) );
-        builder.Services.AddSingleton<FakeUserDatabase>();
-        builder.AddUnsafeAllowAllCors();
 
         await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
@@ -83,18 +72,13 @@ public class TSTests
             ts.IntegrationMode = CKGenIntegrationMode.Inline;
             ts.AutoInstallYarn = true;
             ts.AutoInstallJest = true;
-            configuration.RunSuccessfully();
+            var r = await configuration.RunSuccessfullyAsync();
 
             File.Exists( targetProjectPath.Combine( "src/sample.spec.ts" ) ).Should().BeTrue();
 
-            var map = configuration.RunSuccessfully().LoadMap();
+            var map = r.LoadMap();
 
             var builder = WebApplication.CreateSlimBuilder();
-
-            // Temp
-            Throw.DebugAssert( !builder.Services.Any( item => item.ServiceType == typeof( FakeUserDatabase ) ) );
-            builder.Services.AddSingleton<FakeUserDatabase>();
-            builder.AddUnsafeAllowAllCors();
 
             await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
