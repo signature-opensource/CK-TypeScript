@@ -156,11 +156,11 @@ public sealed partial class CTSTypeSystem
                 part.Append( "set( o: " ).Append( ts.TypeName ).Append( " ): " ).Append( ts.TypeName ).Append( " { " );
                 if( t.Kind == PocoTypeKind.Enum )
                 {
-                    part.Append( "o = <" ).Append(ts.TypeName).Append( ">new Number( o );" );
+                    part.Append( "o = <" ).Append( ts.TypeName ).Append( ">new Number( o );" );
                 }
                 else if( ts.IsPrimitive )
                 {
-                    part.Append( "o = Object( o );");
+                    part.Append( "o = Object( o );" );
                 }
                 part.Append( " (o as any)[SymCTS] = this; return o; }," ).NewLine();
             }

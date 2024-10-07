@@ -1,6 +1,5 @@
 using CK.Core;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript.CodeGen;
 

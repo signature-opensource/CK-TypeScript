@@ -1,6 +1,6 @@
 export const SymCTS = Symbol.for("CK.CTSType");
 /**
- * CTSType is currently <any>. Strongly typing it involves to handle null
+ * CTSType is currently &lt;any&gt;. Strongly typing it involves to handle null
  * (detect and raise error) in depth.
  * This is not a validator (the backend is up to date by design) and null handling
  * is a (basic) part of validation.

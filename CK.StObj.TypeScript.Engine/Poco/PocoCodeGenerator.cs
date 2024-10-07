@@ -110,7 +110,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                 {
                     e.SetResolvedType( tsTypeManager.ResolveTSType( monitor, t.Type ) );
                 }
-                else if(t is ICollectionPocoType c && c.IsAbstractReadOnly )
+                else if( t is ICollectionPocoType c && c.IsAbstractReadOnly )
                 {
                     e.SetResolvedType( MapCollectionType( monitor, tsTypeManager, c ) );
                 }
@@ -166,7 +166,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                     var types = tU.AllowedTypes.Where( _typeScriptSet.Contains )
                                                .Select( t => (t, ts: tsTypeManager.ResolveTSType( monitor, t )) ).ToArray();
                     var b = new StringBuilder();
-                    foreach( var (_,u) in types )
+                    foreach( var (_, u) in types )
                     {
                         if( b.Length > 0 ) b.Append( '|' );
                         b.Append( u.NonNullable.TypeName );
@@ -521,7 +521,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                                     throw new Error( `Unable to parse '{{o}}' as SimpleUserMessage.` );
                                 }
                             """ );
-                        return true;
+                    return true;
                 }
             }
         }
@@ -678,7 +678,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                                   ITSFileCSharpType tsType )
     {
         bool atLeastOne = false;
-        tsType.TypePart.Append( "readonly _brand" ).Append( isPrimaryPoco ? "!: " : ": " ); 
+        tsType.TypePart.Append( "readonly _brand" ).Append( isPrimaryPoco ? "!: " : ": " );
         foreach( var a in abstracts )
         {
             // Handles base interfaces.
@@ -698,7 +698,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
         }
         if( !atLeastOne && !isIPoco )
         {
-            var iPoco = _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, typeof(IPoco) );
+            var iPoco = _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, typeof( IPoco ) );
             interfaces.Append( isPrimaryPoco ? " implements " : " extends " )
                       .AppendTypeName( iPoco );
             tsType.TypePart.Append( iPoco.TypeName ).Append( "[\"_brand\"]" );
@@ -724,7 +724,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
             if( f.IsReadOnly ) part.Append( "readonly " );
             part.AppendIdentifier( f.Name );
             if( f.Type.IsNullable ) part.Append( "?" );
-            part.Append( ": " ).AppendTypeName( _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, f.Type.NonNullable ) ).Append(";").NewLine();
+            part.Append( ": " ).AppendTypeName( _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, f.Type.NonNullable ) ).Append( ";" ).NewLine();
         }
 
         var e = new GeneratingAbstractPocoEventArgs( monitor, _typeScriptContext, tsType, a, a.MinimalGeneralizations, interfacesPart, part );

@@ -51,7 +51,7 @@ class RawCodePart : BaseCodeWriter, ITSCodePart
         {
             if( closer != null && p.Closer != closer.ReplaceLineEndings() )
             {
-                throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof(closer) );
+                throw new ArgumentException( $"Existing keyed part Closer is '{p.Closer}' whereas closer parameter is '{closer}' (key is '{key}').", nameof( closer ) );
             }
             return p;
         }

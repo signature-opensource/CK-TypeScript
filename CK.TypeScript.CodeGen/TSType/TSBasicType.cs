@@ -1,6 +1,5 @@
 using CK.Core;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -38,7 +37,7 @@ public class TSBasicType : TSType
     }
 
     TSBasicType( TSTypeManager typeManager, Action<ITSFileImportSection>? imports, string typeName, string? defaultValueSource )
-        : base( typeManager, typeName ) 
+        : base( typeManager, typeName )
     {
         Throw.CheckArgument( defaultValueSource == null || !string.IsNullOrWhiteSpace( defaultValueSource ) );
         _requiredImports = imports;

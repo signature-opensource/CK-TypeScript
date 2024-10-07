@@ -64,11 +64,11 @@ public sealed class TypeScriptTypeConfiguration
         Throw.CheckArgument( typeName == null || !string.IsNullOrWhiteSpace( typeName ) );
         Throw.CheckArgument( folder == null || !string.IsNullOrWhiteSpace( folder ) );
 
-        Type = GetWeakTypeName( type, nameof(type) );
+        Type = GetWeakTypeName( type, nameof( type ) );
         TypeName = typeName;
         Folder = folder;
         FileName = fileName;
-        SameFolderAs = sameFolderAs != null ? GetWeakTypeName( sameFolderAs, nameof(sameFolderAs) ) : null;
+        SameFolderAs = sameFolderAs != null ? GetWeakTypeName( sameFolderAs, nameof( sameFolderAs ) ) : null;
         SameFileAs = sameFileAs != null ? GetWeakTypeName( sameFileAs, nameof( sameFileAs ) ) : null;
 
         static string GetWeakTypeName( Type type, string argumenName )
@@ -156,7 +156,7 @@ public sealed class TypeScriptTypeConfiguration
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="typeResolver">Type resolver for <see cref="SameFolderAs"/> and <see cref="SameFileAs"/>.</param>
     /// <returns>The type script arrtibute or null on error.</returns>
-    public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<string,Type?> typeResolver )
+    public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<string, Type?> typeResolver )
     {
         bool success = true;
         if( TypeName != null ) success &= ValidNotEmpty( monitor, this, "TypeName", TypeName );
@@ -164,7 +164,7 @@ public sealed class TypeScriptTypeConfiguration
         if( SameFileAs != null )
         {
             tSameFile = FindType( monitor, this, typeResolver, "SameFileAs", SameFileAs );
-            success &= tSameFile != null; 
+            success &= tSameFile != null;
             if( FileName != null ) success &= Error( monitor, this, "FileName", "SameFileAs" );
             if( Folder != null ) success &= Error( monitor, this, "Folder", "SameFileAs" );
             if( SameFolderAs != null ) success &= Error( monitor, this, "SameFolderAs", "SameFileAs" );

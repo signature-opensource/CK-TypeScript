@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Numerics;
-
 namespace CK.TypeScript.CodeGen;
 
 sealed class TSBooleanType : TSBasicType

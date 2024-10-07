@@ -2,12 +2,10 @@ using CK.Core;
 using CK.Demo;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using static CK.Setup.EngineResult;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TS.Angular.Tests;

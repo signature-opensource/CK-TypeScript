@@ -62,7 +62,7 @@ public sealed partial class CTSTypeSystem
                 Throw.CheckArgument( ExchangeSet.Contains( t ) );
                 if( t.IsPolymorphic
                     || (t.Kind == PocoTypeKind.Basic
-                        && (t.Type == typeof(TimeSpan)
+                        && (t.Type == typeof( TimeSpan )
                             || t.Type == typeof( long )
                             || t.Type == typeof( ulong )
                             || t.Type == typeof( BigInteger ))) )

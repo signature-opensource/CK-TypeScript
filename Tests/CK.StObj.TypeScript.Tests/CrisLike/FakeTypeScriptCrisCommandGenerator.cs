@@ -2,7 +2,6 @@ using CK.Core;
 using CK.CrisLike;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -14,7 +13,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike;
 // This static class is only here to trigger the global FakeTypeScriptCrisCommandGeneratorImpl ITSCodeGeneratorFactory.
 // This is the same as the static class TypeScriptCrisCommandGenerator in CK.Cris.TypeScript package.
 [ContextBoundDelegation( "CK.StObj.TypeScript.Tests.CrisLike.FakeTypeScriptCrisCommandGeneratorImpl, CK.StObj.TypeScript.Tests" )]
-public static class FakeTypeScriptCrisCommandGenerator {}
+public static class FakeTypeScriptCrisCommandGenerator { }
 
 // Hard coded Cris-like TypeScriptCrisCommandGeneratorImpl.
 public sealed class FakeTypeScriptCrisCommandGeneratorImpl : ITSCodeGeneratorFactory
@@ -142,7 +141,7 @@ public sealed class FakeTypeScriptCrisCommandGeneratorImpl : ITSCodeGeneratorFac
             return true;
         }
 
-        [MemberNotNull(nameof(_command), nameof( _abstractCommand ), nameof( _crisPoco ) )]
+        [MemberNotNull( nameof( _command ), nameof( _abstractCommand ), nameof( _crisPoco ) )]
         TypeScriptFile EnsureCrisCommandModel( IActivityMonitor monitor, TypeScriptContext context )
         {
             if( _modelFile == null )
@@ -162,7 +161,7 @@ public sealed class FakeTypeScriptCrisCommandGeneratorImpl : ITSCodeGeneratorFac
             {
                 fModel.Imports.EnsureImport( monitor, typeof( SimpleUserMessage ) );
                 fModel.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
-                var pocoType = context.Root.TSTypes.ResolveTSType( monitor, typeof(IPoco) );
+                var pocoType = context.Root.TSTypes.ResolveTSType( monitor, typeof( IPoco ) );
                 // Imports the IPoco itself...
                 pocoType.EnsureRequiredImports( fModel.Imports );
 

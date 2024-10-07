@@ -10,7 +10,7 @@ namespace CK.StObj.TypeScript.Engine;
 /// </summary>
 public sealed class TSUnionType : TSBasicType
 {
-    readonly IReadOnlyList<(IPocoType,ITSType)> _types;
+    readonly IReadOnlyList<(IPocoType, ITSType)> _types;
 
     internal TSUnionType( TSTypeManager typeManager, string typeName, Action<ITSFileImportSection>? imports, IReadOnlyList<(IPocoType, ITSType)> types )
         : base( typeManager, typeName, imports, null )
@@ -31,7 +31,7 @@ public sealed class TSUnionType : TSBasicType
     /// <returns>True if the value has been written, false otherwise.</returns>
     protected override bool DoTryWriteValue( ITSCodeWriter writer, object value )
     {
-        foreach( var (_,ts) in _types )
+        foreach( var (_, ts) in _types )
         {
             if( ts.TryWriteValue( writer, value ) ) return true;
         }

@@ -1,11 +1,9 @@
 using CK.Core;
 using CK.Setup.PocoJson;
 using CSemVer;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.Setup;
@@ -174,7 +172,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
                                             : nameof( WaitForLockedTypeSystem ) );
     }
 
-    CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoTypeSystem typeSystem )
+    CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor] IPocoTypeSystem typeSystem )
     {
         using( monitor.OpenInfo( $"PocoTypeSystem is available (without Json serialization): handling TypeScript generation." ) )
         {
@@ -184,7 +182,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
         }
     }
 
-    CSCodeGenerationResult WaitForJsonSerialization( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor]IPocoJsonSerializationServiceEngine jsonSerialization )
+    CSCodeGenerationResult WaitForJsonSerialization( IActivityMonitor monitor, ICSCodeGenerationContext c, [WaitFor] IPocoJsonSerializationServiceEngine jsonSerialization )
     {
         using( monitor.OpenInfo( $"IPocoJsonSerializationServiceEngine is available: handling TypeScript generation." ) )
         {
@@ -228,7 +226,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             // => Only Poco compliant types that are reachable from a registered Poco type will be in TypeScriptExchangeableSet
             //    and handled by the PocoCodeGenerator.
             var initializer = TSContextInitializer.Create( monitor,
-                                                           binPath, 
+                                                           binPath,
                                                            tsBinPathConfig,
                                                            libVersionsConfig,
                                                            typeSystem.SetManager.AllExchangeable,

@@ -102,7 +102,7 @@ public class EnumAndCommentTests
 
 
         s.Should().NotContain( "An xml comment appears in the Xml documentation file." )
-                  .And.Contain( "A "+ newLine + "```" + newLine + "Code block will use triple backticks," + newLine + "   so it can be" )
+                  .And.Contain( "A " + newLine + "```" + newLine + "Code block will use triple backticks," + newLine + "   so it can be" )
                   .And.Contain( newLine + "```" + newLine + "(This is just for fun.)" + newLine + newLine + "A remark is appended." + newLine + newLine + "Another remark is" )
                   .And.Contain( "Two = 2" );
 
@@ -171,7 +171,7 @@ public class EnumAndCommentTests
     /// <typeparam name="T1">The FIRST generic type!</typeparam>
     /// <typeparam name="T2">The SECOND generic type!</typeparam>
     [TypeScript( Folder = "" )]
-    public interface IGeneric<T1,T2>
+    public interface IGeneric<T1, T2>
     {
         /// <summary>
         /// Generic method comment.
@@ -187,7 +187,7 @@ public class EnumAndCommentTests
         /// <param name="tBis">SECOND generic type.</param>
         /// <param name="eTBis">SECOND generic type DEPENDENT.</param>
         /// <returns>The returned generic tuple.</returns>
-        (U1,T1,U2,T2) GenericMethodSample<U1,U2>( U1 u, IList<U1> eU, U2 uBis, IList<U2> eUBis, T1 t, IEnumerable<T1> eT, T2 tBis, IEnumerable<T2> eTBis );
+        (U1, T1, U2, T2) GenericMethodSample<U1, U2>( U1 u, IList<U1> eU, U2 uBis, IList<U2> eUBis, T1 t, IEnumerable<T1> eT, T2 tBis, IEnumerable<T2> eTBis );
     }
 
     [Test]

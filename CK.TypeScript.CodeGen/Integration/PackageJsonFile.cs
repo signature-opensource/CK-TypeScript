@@ -15,7 +15,7 @@ namespace CK.Setup;
 /// <summary>
 /// package.json file model.
 /// </summary>
-public sealed class PackageJsonFile 
+public sealed class PackageJsonFile
 {
     readonly string _packageDefinitionSource;
     JsonFile _file;
@@ -71,13 +71,13 @@ public sealed class PackageJsonFile
     /// <param name="ignoreVersionsBound">See <see cref="LibraryManager.IgnoreVersionsBound"/>.</param>
     /// <returns>The <see cref="PackageJsonFile"/> or null on error.</returns>
     public static PackageJsonFile? Parse( IActivityMonitor monitor,
-                                          string content,    
+                                          string content,
                                           NormalizedPath filePath,
                                           string packageDefinitionSource,
                                           bool ignoreVersionsBound )
     {
         Throw.CheckArgument( filePath.Parts.Count >= 2 && filePath.IsRooted );
-        var documentOptions = new JsonDocumentOptions{ AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+        var documentOptions = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
         JsonNode? root = JsonNode.Parse( content, nodeOptions: default, documentOptions );
         Throw.CheckArgument( "Invalid content string.", root != null && root is JsonObject );
         var f = new PackageJsonFile( new JsonFile( (JsonObject)root, filePath ), new DependencyCollection( ignoreVersionsBound ), packageDefinitionSource );

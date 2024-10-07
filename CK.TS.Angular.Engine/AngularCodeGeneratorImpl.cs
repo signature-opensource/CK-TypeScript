@@ -2,11 +2,11 @@ using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using CSemVer;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System;
 using System.Linq;
 
 namespace CK.TS.Angular.Engine;
@@ -70,7 +70,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     ];
                 """ );
-            
+
             var r = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/routes.ts" );
             r.Body.Append( """
                 export default [
@@ -489,14 +489,14 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         }
                         else
                         {
-                            if( !NeedComma( app, idx, out var needComma) )
+                            if( !NeedComma( app, idx, out var needComma ) )
                             {
                                 monitor.Warn( "Unable to find te start of the array." );
                                 success = false;
                             }
                             else
                             {
-                                app = app.Insert( idx, $"{Environment.NewLine}{(needComma?',':' ')}...CKGenRoutes{Environment.NewLine}" );
+                                app = app.Insert( idx, $"{Environment.NewLine}{(needComma ? ',' : ' ')}...CKGenRoutes{Environment.NewLine}" );
                                 monitor.Info( "Added '...CKGenRoutes' in routes." );
                             }
                         }

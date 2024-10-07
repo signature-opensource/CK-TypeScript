@@ -1,6 +1,3 @@
-using System;
-using System.Globalization;
-
 namespace CK.TypeScript.CodeGen;
 
 sealed class TSStringType : TSBasicType

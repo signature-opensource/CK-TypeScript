@@ -1,11 +1,9 @@
-using CK.Auth;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

@@ -145,7 +145,7 @@ public sealed partial class TSTypeManager
             {
                 Throw.ArgumentException( "Nullable value type cannot be registered." );
             }
-            _types.Add( typeof(Nullable<>).MakeGenericType( type ), tsType.Nullable );
+            _types.Add( typeof( Nullable<> ).MakeGenericType( type ), tsType.Nullable );
         }
         _types.Add( type, tsType );
     }

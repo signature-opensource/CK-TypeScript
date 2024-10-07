@@ -206,7 +206,7 @@ public class FullTSTests
         var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
 
         TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
-        System.IO.File.WriteAllText( targetProjectPath.AppendPart(".gitignore"), "*" );
+        System.IO.File.WriteAllText( targetProjectPath.AppendPart( ".gitignore" ), "*" );
 
         var config = TestHelper.CreateDefaultEngineConfiguration();
         config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );

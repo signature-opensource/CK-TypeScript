@@ -13,7 +13,7 @@ namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr;
 [TypeScriptFile( "IAmHere.ts", typeName: "IAmHere", TargetFolderName = "" )]
 [TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/utils-native-class", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptFile("Some.private.ts")]
+[TypeScriptFile( "Some.private.ts" )]
 public sealed class Embedded : TypeScriptPackage { }
 
 [TypeScriptPackage]

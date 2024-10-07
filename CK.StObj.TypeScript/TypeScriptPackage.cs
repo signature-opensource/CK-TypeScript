@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Setup;
 
 namespace CK.StObj.TypeScript;
 

@@ -29,7 +29,7 @@ public sealed partial class TypeScriptIntegrationContext
     readonly TSConfigJsonFile _tsConfigJson;
     readonly int _initialCKVersion;
     readonly bool _initialEmptyTargetPackage;
-    readonly ImmutableDictionary<string,SVersionBound> _libVersionsConfig;
+    readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
     readonly NormalizedPath _srcFolderPath;
     NormalizedPath _yarnPath;
     SVersion? _typeScriptSdkVersion;
@@ -160,7 +160,7 @@ public sealed partial class TypeScriptIntegrationContext
                     '{boundLessPackages.Select( d => d.ToString() ).Concatenate( "', '" )}'.
                     IntegrationMode is '{configuration.IntegrationMode}': {(configuration.IntegrationMode == CKGenIntegrationMode.Inline
                                                                             ? "nothing will be done"
-                                                                            : "the latest version will be installed (unless configuration or code specify them)" )}.
+                                                                            : "the latest version will be installed (unless configuration or code specify them)")}.
                     """ );
         }
         return new TypeScriptIntegrationContext( configuration, packageJson, tsConfigJson, libVersionsConfig );
@@ -173,7 +173,7 @@ public sealed partial class TypeScriptIntegrationContext
         return _targetPackageJson.Dependencies.AddOrUpdate( monitor, p, cloneAddedDependency: false );
     }
 
-    bool SettleTypeScriptVersion( IActivityMonitor monitor, [NotNullWhen(true)]out PackageDependency? typeScriptDep )
+    bool SettleTypeScriptVersion( IActivityMonitor monitor, [NotNullWhen( true )] out PackageDependency? typeScriptDep )
     {
         using var _ = monitor.OpenInfo( "Analyzing TypeScript versions." );
         Throw.DebugAssert( _saver != null && _targetPackageJson != null );

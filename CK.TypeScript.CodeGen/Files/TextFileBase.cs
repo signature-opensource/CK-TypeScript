@@ -1,5 +1,3 @@
-using CK.Core;
-
 namespace CK.TypeScript.CodeGen;
 
 /// <summary>
@@ -8,7 +6,7 @@ namespace CK.TypeScript.CodeGen;
 public abstract class TextFileBase : BaseFile
 {
     private protected TextFileBase( TypeScriptFolder folder, string name )
-        : base( folder, name ) 
+        : base( folder, name )
     {
     }
 

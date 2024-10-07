@@ -121,7 +121,7 @@ public readonly struct ImmutableOrdinalSortedStrings
     /// <returns>The resulting strings.</returns>
     public ReadOnlyMemory<string> GetPrefixedStrings( string prefix )
     {
-        var (i,l) = GetPrefixedRange( prefix );
+        var (i, l) = GetPrefixedRange( prefix );
         return All.AsMemory().Slice( i, l );
     }
 

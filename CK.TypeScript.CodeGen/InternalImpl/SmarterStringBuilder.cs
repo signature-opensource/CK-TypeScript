@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen;
 /// <summary>
 /// Internal that removes duplicated new lines on a StringBuilder.
 /// </summary>
-ref struct  SmarterStringBuilder
+ref struct SmarterStringBuilder
 {
     public readonly StringBuilder Builder;
 

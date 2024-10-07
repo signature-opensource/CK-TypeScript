@@ -5,7 +5,6 @@ using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.IO;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -18,7 +17,7 @@ public class CommandLikeTests
     /// <summary>
     /// Power level.
     /// </summary>
-    [TypeScript( SameFolderAs = typeof(ICommandOne) )]
+    [TypeScript( SameFolderAs = typeof( ICommandOne ) )]
     public enum Power
     {
         /// <summary>
@@ -265,7 +264,7 @@ public class CommandLikeTests
         };
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, tsTypes);
+        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
 
         // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
         // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to

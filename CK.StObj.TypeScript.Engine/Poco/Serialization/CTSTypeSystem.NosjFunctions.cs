@@ -3,7 +3,6 @@ using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Numerics;
 
@@ -224,7 +223,7 @@ public sealed partial class CTSTypeSystem
             {
                 part.Append( "CTSType.fromTypedJson( o[" ).Append( i ).Append( "] )" );
             }
-            else 
+            else
             {
                 part.Append( $"CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( tF ) ).Append( "].nosj( o[" )
                     .Append( i ).Append( "] )" );
@@ -237,6 +236,6 @@ public sealed partial class CTSTypeSystem
             ++i;
         }
         part.Append( useTupleSyntax ? "];" : "};" ).NewLine()
-            .Append("},").NewLine();
+            .Append( "}," ).NewLine();
     }
 }

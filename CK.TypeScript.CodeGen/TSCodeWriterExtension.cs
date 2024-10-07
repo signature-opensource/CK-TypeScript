@@ -1,15 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Collections;
-using System.Globalization;
-using System.Diagnostics;
-using System.Xml.Linq;
 using CK.Core;
-using System.Text.Json;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using System.Text.Encodings.Web;
-using System.Diagnostics.Metrics;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -281,7 +277,7 @@ public static class TSCodeWriterExtensions
     /// <returns>This code writer to enable fluent syntax.</returns>
     static public T Append<T>( this T @this, int v ) where T : ITSCodeWriter
     {
-        @this.DoAdd( v.ToString( CultureInfo.InvariantCulture) );
+        @this.DoAdd( v.ToString( CultureInfo.InvariantCulture ) );
         return @this;
     }
 

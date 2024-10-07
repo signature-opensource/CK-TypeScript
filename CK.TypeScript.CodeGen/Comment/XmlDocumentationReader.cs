@@ -82,7 +82,7 @@ public class XmlDocumentationReader
     /// <returns>The set of available elements.</returns>
     public static IEnumerable<XElement> GetDocumentationFor( IActivityMonitor monitor, IEnumerable<MemberInfo> members, IDictionary<object, object?>? cache = null )
     {
-        return members.Select( m => (XDoc: GetXmlDocumentation( monitor, m.Module.Assembly, cache ), M: m ) )
+        return members.Select( m => (XDoc: GetXmlDocumentation( monitor, m.Module.Assembly, cache ), M: m) )
                       .Where( m => m.XDoc != null )
                       .Select( m => GetDocumentationElement( m.XDoc!, GetNameAttributeValueFor( m.M ) ) )
                       .Where( e => e != null )!;

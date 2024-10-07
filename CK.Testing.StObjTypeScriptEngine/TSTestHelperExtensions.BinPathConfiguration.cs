@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
-using System.Linq;
 using System;
+using System.Linq;
 
 namespace CK.Testing;
 

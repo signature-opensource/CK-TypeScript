@@ -18,6 +18,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="TSInlineTests\CK_TS_AspNet_Auth_Inline\ck-gen\CK\Core\" />
-    <Folder Include="TSNpmPackageTests\CK_TS_AspNet_Auth\ck-gen\src\CK\Core\" />
   </ItemGroup>
 </Project>

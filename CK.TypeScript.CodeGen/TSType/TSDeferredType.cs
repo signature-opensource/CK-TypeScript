@@ -1,7 +1,5 @@
 using CK.Core;
 using System;
-using System.Data;
-using System.Runtime.CompilerServices;
 
 namespace CK.TypeScript.CodeGen;
 

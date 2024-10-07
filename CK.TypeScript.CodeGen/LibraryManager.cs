@@ -55,7 +55,7 @@ public sealed class LibraryManager
     internal LibraryManager( ImmutableDictionary<string, SVersionBound>? libVersionsConfig, string decimalLibraryName, bool ignoreVersionsBound )
     {
         _libraries = new Dictionary<string, LibraryImport>( StringComparer.OrdinalIgnoreCase );
-        _libVersionsConfig = libVersionsConfig ?? ImmutableDictionary<string,SVersionBound>.Empty;
+        _libVersionsConfig = libVersionsConfig ?? ImmutableDictionary<string, SVersionBound>.Empty;
         _decimalLibraryName = decimalLibraryName;
         _ignoreVersionsBound = ignoreVersionsBound;
     }
@@ -184,7 +184,7 @@ public sealed class LibraryManager
                                            string name,
                                            string? versionBound,
                                            DependencyKind dependencyKind,
-                                           [CallerFilePath]string? definitionSource = null,
+                                           [CallerFilePath] string? definitionSource = null,
                                            params LibraryImport[] impliedDependencies )
     {
         definitionSource ??= "<no source>";

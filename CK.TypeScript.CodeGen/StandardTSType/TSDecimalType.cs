@@ -20,7 +20,7 @@ sealed class TSDecimalType : TSBasicType
 
         static void WriteValue( ITSCodeWriter writer, string num )
         {
-            writer.Append( "new Decimal('" ).Append( num ).Append("')" );
+            writer.Append( "new Decimal('" ).Append( num ).Append( "')" );
         }
 
     }

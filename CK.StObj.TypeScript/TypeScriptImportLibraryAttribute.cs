@@ -1,7 +1,5 @@
 using CK.Setup;
 using System;
-using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 
 namespace CK.StObj.TypeScript;
 
@@ -9,7 +7,7 @@ namespace CK.StObj.TypeScript;
 /// Decorates any class (that can even be static) to specify a library that will be
 /// included in the /ck-gen/package.json file.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+[AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class TypeScriptImportLibraryAttribute : ContextBoundDelegationAttribute
 {
     /// <summary>

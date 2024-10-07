@@ -33,7 +33,7 @@ public interface ICommandAbs : ICommandPart
     /// <summary>
     /// Gets a dictionary of key as objects.
     /// </summary>
-    IReadOnlyDictionary<string,object> KeyDictionary { get; }
+    IReadOnlyDictionary<string, object> KeyDictionary { get; }
 }
 
 /// <summary>

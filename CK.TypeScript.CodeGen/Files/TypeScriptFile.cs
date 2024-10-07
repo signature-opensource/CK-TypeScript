@@ -1,7 +1,6 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -30,14 +29,14 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     TypeDeclarationImpl _declared;
 
     internal TypeScriptFile( TypeScriptFolder folder, string name )
-        : base( folder, name ) 
+        : base( folder, name )
     {
         _imports = new FileImportCodePart( this );
         _body = new FileBodyCodePart( this );
     }
 
     internal TypeScriptFile( TypeScriptRoot r )
-        : this( r.Root, _hiddenFileName ) 
+        : this( r.Root, _hiddenFileName )
     {
     }
 

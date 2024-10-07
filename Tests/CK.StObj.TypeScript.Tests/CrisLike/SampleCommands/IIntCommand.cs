@@ -7,7 +7,7 @@ namespace CK.StObj.TypeScript.Tests.CrisLike;
 /// Concrete command where <see cref="ICommandAbs"/> works with integers.
 /// </summary>
 [TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
-public interface IIntCommand: ICommand, ICommandAbs
+public interface IIntCommand : ICommand, ICommandAbs
 {
     /// <summary>
     /// Gets or sets the integer key.

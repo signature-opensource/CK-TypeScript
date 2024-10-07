@@ -35,7 +35,7 @@ public class RoutedComponentAttribute : TypeScriptPackageAttribute
     /// <summary>
     /// Gets the route for this component.
     /// </summary>
-    public string Route {  get; }
+    public string Route { get; }
 
     /// <summary>
     /// Gets whether this component must be registered 

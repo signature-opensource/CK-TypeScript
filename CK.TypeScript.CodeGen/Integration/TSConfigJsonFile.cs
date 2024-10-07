@@ -524,7 +524,7 @@ public sealed class TSConfigJsonFile
     {
         if( paths == null )
         {
-            compilerOptions.Remove("paths");
+            compilerOptions.Remove( "paths" );
         }
         else
         {

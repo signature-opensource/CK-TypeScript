@@ -123,7 +123,7 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     internal void ClearImports()
     {
-        Throw.DebugAssert( _importTypeCount > 0 || ( _importFiles?.Count ?? 0) == 0 && (_importLibs?.Count ?? 0) == 0 );
+        Throw.DebugAssert( _importTypeCount > 0 || (_importFiles?.Count ?? 0) == 0 && (_importLibs?.Count ?? 0) == 0 );
         _importFiles?.Clear();
         _importLibs?.Clear();
         _importTypeCount = 0;
@@ -170,7 +170,7 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     internal void Build( ref SmarterStringBuilder b )
     {
-        if( _importTypeCount > 0  )
+        if( _importTypeCount > 0 )
         {
             var import = new BaseCodeWriter( _file );
             if( _importLibs != null )

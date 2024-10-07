@@ -1,15 +1,12 @@
 using CK.Core;
-using CK.TypeScript.CodeGen;
 using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 
 namespace CK.Setup;
 
@@ -92,7 +89,7 @@ public static class YarnHelper
         if( yarnPath.HasValue )
         {
             var current = yarnPath.Value.LastPart;
-            if( current.StartsWith("yarn-")
+            if( current.StartsWith( "yarn-" )
                 && current.Length > 5
                 && Version.TryParse( Path.GetFileNameWithoutExtension( current.AsSpan( 5 ) ), out var version ) )
             {
@@ -104,7 +101,7 @@ public static class YarnHelper
                 }
                 else
                 {
-                    monitor.Info( $"Yarn {version.ToString(3)} found at '{yarnPath}'." );
+                    monitor.Info( $"Yarn {version.ToString( 3 )} found at '{yarnPath}'." );
                 }
             }
             else
@@ -297,7 +294,7 @@ public static class YarnHelper
                                     string fileName,
                                     string arguments,
                                     string workingDirectory,
-                                    Dictionary<string,string>? environmentVariables )
+                                    Dictionary<string, string>? environmentVariables )
     {
         var info = new ProcessStartInfo( fileName, arguments )
         {

@@ -1,12 +1,8 @@
 using CK.Core;
-using CK.Setup;
 using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Data;
-using System.Linq;
 
 namespace CK.Setup;
 

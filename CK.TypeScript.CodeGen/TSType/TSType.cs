@@ -1,6 +1,4 @@
 using CK.Core;
-using System;
-using System.Reflection;
 
 namespace CK.TypeScript.CodeGen;
 

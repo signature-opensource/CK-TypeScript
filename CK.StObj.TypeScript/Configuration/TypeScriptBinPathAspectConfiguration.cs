@@ -2,7 +2,6 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Xml.Linq;
 
 namespace CK.Setup;
@@ -234,7 +233,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                new XElement( TypeScriptAspectConfiguration.xBarrels,
                                 Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
                new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
-               DefaultTypeScriptVersion != null 
+               DefaultTypeScriptVersion != null
                 ? new XAttribute( TypeScriptAspectConfiguration.xDefaultTypeScriptVersion, DefaultTypeScriptVersion )
                 : null,
                IntegrationMode is not CKGenIntegrationMode.Inline

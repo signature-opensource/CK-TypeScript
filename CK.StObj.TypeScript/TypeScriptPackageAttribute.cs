@@ -14,7 +14,7 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute
     /// Initializes a new <see cref="TypeScriptPackageAttribute"/>.
     /// </summary>
     /// <param name="callerFilePath">Automatically set by the Roslyn compiler and used to compute the associated embedded resource folder.</param>
-    public TypeScriptPackageAttribute( [CallerFilePath]string? callerFilePath = null )
+    public TypeScriptPackageAttribute( [CallerFilePath] string? callerFilePath = null )
         : base( "CK.StObj.TypeScript.Engine.TypeScriptPackageAttributeImpl, CK.StObj.TypeScript.Engine" )
     {
         CallerFilePath = callerFilePath;

@@ -1,12 +1,12 @@
 using CK.Core;
+using CK.TypeScript.CodeGen;
+using Microsoft.IO;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using CK.TypeScript.CodeGen;
-using System.Text;
-using System;
 using System.Runtime.CompilerServices;
-using Microsoft.IO;
+using System.Text;
 
 namespace CK.Setup;
 
@@ -93,7 +93,7 @@ public sealed partial class TypeScriptContext
                         }
                         else
                         {
-                            b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append(':').AppendLine();
+                            b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append( ':' ).AppendLine();
                             foreach( var (f, origin) in clash )
                             {
                                 b.Append( "   " ).Append( f ).Append( " <= " ).Append( origin.ResourceName )

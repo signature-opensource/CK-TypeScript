@@ -76,7 +76,7 @@ public sealed partial class TypeScriptContext
             {
                 monitor.Warn( $"No files or folders have been generated in '{ckGenFolder}'. Skipping TypeScript integration." );
             }
-            else 
+            else
             {
                 if( BinPathConfiguration.GitIgnoreCKGenFolder )
                 {

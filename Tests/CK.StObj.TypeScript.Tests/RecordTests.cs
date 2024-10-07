@@ -86,7 +86,7 @@ public class RecordTests
         };
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, types);
+        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
         engineConfig.FirstBinPath.Types.Add( types );
         engineConfig.RunSuccessfully();
 
@@ -208,7 +208,7 @@ public class RecordTests
         };
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, tsTypes);
+        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
         engineConfig.FirstBinPath.Types.Add( tsTypes )
                                        .Add( typeof( Rec1 ), typeof( Rec2 ), typeof( Rec3 ) );
         engineConfig.RunSuccessfully();
@@ -314,7 +314,7 @@ public class RecordTests
         var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
 
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect(targetProjectPath, typeof(IRecWithNonNullDefaultPoco));
+        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IRecWithNonNullDefaultPoco ) );
         engineConfig.FirstBinPath.Types.Add( typeof( IRecWithNonNullDefaultPoco ), typeof( RecWithNonNullDefault ) );
         engineConfig.RunSuccessfully();
 

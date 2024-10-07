@@ -4,10 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Net.Mime;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
-using System.Threading;
 
 namespace CK.Setup;
 
@@ -272,7 +269,7 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             text.Write( head );
             if( environmentVariables == null )
             {
-                text.Write("{}");
+                text.Write( "{}" );
             }
             else
             {
@@ -296,14 +293,14 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             }
             text.Write( tail );
 
-            static (int,int) GetRange( NormalizedPath jestConfigFilePath, string content )
+            static (int, int) GetRange( NormalizedPath jestConfigFilePath, string content )
             {
                 var idxStart = content.IndexOf( "// Start-CKTypeScriptEnv" );
                 if( idxStart > 0 )
                 {
                     Throw.DebugAssert( "CKTypeScriptEnv:".Length == 16 );
                     idxStart = content.IndexOf( "CKTypeScriptEnv:", idxStart ) + 16;
-                    while( content[++idxStart] != '{' && idxStart < content.Length) ;
+                    while( content[++idxStart] != '{' && idxStart < content.Length ) ;
                     if( idxStart < content.Length )
                     {
                         if( idxStart > 0 )

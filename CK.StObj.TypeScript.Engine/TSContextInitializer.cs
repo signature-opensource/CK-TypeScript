@@ -379,7 +379,7 @@ sealed class TSContextInitializer
                 }
                 b.Add( g );
             }
-            globals = b.MoveToImmutable(); 
+            globals = b.MoveToImmutable();
             return true;
         }
     }

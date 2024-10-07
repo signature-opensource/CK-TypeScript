@@ -1,6 +1,3 @@
-using CK.Core;
-using CK.StObj.TypeScript.Engine;
-using CK.TypeScript.CodeGen;
 using System;
 
 namespace CK.Setup;

@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.CrisLike;
-using NUnit.Framework;
 
 namespace CK.StObj.TypeScript.Tests.CrisLike;
 

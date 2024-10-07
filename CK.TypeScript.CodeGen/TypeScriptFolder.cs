@@ -1,12 +1,9 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
-using System.Threading;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -31,7 +28,7 @@ public sealed partial class TypeScriptFolder
     static TypeScriptFolder()
     {
         _invalidFileNameChars = System.IO.Path.GetInvalidFileNameChars();
-        _invalidPathChars = _invalidFileNameChars.Where( c =>  c != '/' ).ToArray();
+        _invalidPathChars = _invalidFileNameChars.Where( c => c != '/' ).ToArray();
     }
 
     internal TypeScriptFolder( TypeScriptRoot root )
@@ -321,7 +318,7 @@ public sealed partial class TypeScriptFolder
 
     void AddExportsToBarrel( NormalizedPath subPath, StringBuilder b )
     {
-        if( !subPath.IsEmptyPath && (_wantBarrel || FindLocalFile("index.ts") != null) )
+        if( !subPath.IsEmptyPath && (_wantBarrel || FindLocalFile( "index.ts" ) != null) )
         {
             b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
         }

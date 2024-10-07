@@ -1,6 +1,6 @@
 using CK.Core;
-using System.Numerics;
 using System;
+using System.Numerics;
 
 namespace CK.TypeScript.CodeGen;
 

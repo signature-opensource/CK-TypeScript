@@ -10,7 +10,7 @@ namespace CK.StObj.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
 /// propagation.
 /// When applied to an enum, this preempts the default code generation: the enum will be empty!
 /// </summary>
-[AttributeUsage( AttributeTargets.Class|AttributeTargets.Interface|AttributeTargets.Struct|AttributeTargets.Enum)]
+[AttributeUsage( AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum )]
 public class EmptyTypeScriptAttribute : TypeScriptAttribute
 {
     public EmptyTypeScriptAttribute()

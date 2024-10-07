@@ -3,7 +3,6 @@ using CK.Setup;
 using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Diagnostics;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
