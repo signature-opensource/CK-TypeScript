@@ -234,42 +234,42 @@ public sealed class DocumentationBuilder
                             break;
                         case "seealso":
                         case "see":
+                        {
+                            var cref = (string)c.AttributeRequired( "cref" );
+                            char kind = cref[0];
+                            if( kind == '!' )
                             {
-                                var cref = (string)c.AttributeRequired( "cref" );
-                                char kind = cref[0];
-                                if( kind == '!' )
+                                Append( $"~~{cref}~~" );
+                            }
+                            else
+                            {
+                                string tName;
+                                string? mName;
+                                if( kind == 'T' )
                                 {
-                                    Append( $"~~{cref}~~" );
+                                    tName = cref.Substring( 2 );
+                                    mName = null;
                                 }
                                 else
                                 {
-                                    string tName;
-                                    string? mName;
-                                    if( kind == 'T' )
+                                    if( kind != 'P' && kind != 'F' && kind != 'M' && kind != 'E' )
                                     {
-                                        tName = cref.Substring( 2 );
-                                        mName = null;
+                                        throw new CKException( $"Unsupported cref '{cref}' in element '{e}'." );
                                     }
-                                    else
-                                    {
-                                        if( kind != 'P' && kind != 'F' && kind != 'M' && kind != 'E' )
-                                        {
-                                            throw new CKException( $"Unsupported cref '{cref}' in element '{e}'." );
-                                        }
-                                        int iPar = cref.IndexOf( '(' );
-                                        if( iPar < 0 ) iPar = cref.Length;
-                                        int idx = cref.LastIndexOf( '.', iPar - 1 );
-                                        tName = cref.Substring( 2, idx - 2 );
-                                        ++idx;
-                                        mName = cref.Substring( idx, iPar - idx );
-                                        if( mName == "#ctor" ) mName = "constructor";
-                                    }
-                                    var h = source.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
-                                    Append( h.GetTSDocLink( source, kind, tName, mName, c.Value ) );
+                                    int iPar = cref.IndexOf( '(' );
+                                    if( iPar < 0 ) iPar = cref.Length;
+                                    int idx = cref.LastIndexOf( '.', iPar - 1 );
+                                    tName = cref.Substring( 2, idx - 2 );
+                                    ++idx;
+                                    mName = cref.Substring( idx, iPar - idx );
+                                    if( mName == "#ctor" ) mName = "constructor";
                                 }
-                                trimFirstLine = startNewLine = false;
-                                break;
+                                var h = source.Folder.Root.DocumentationCodeRefHandler ?? DocumentationCodeRef.TextOnly;
+                                Append( h.GetTSDocLink( source, kind, tName, mName, c.Value ) );
                             }
+                            trimFirstLine = startNewLine = false;
+                            break;
+                        }
                         case "paramref":
                         case "typeparamref":
                             Append( (string)c.AttributeRequired( "name" ) );

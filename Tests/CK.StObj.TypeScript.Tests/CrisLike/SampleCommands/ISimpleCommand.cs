@@ -1,4 +1,4 @@
-﻿using CK.CrisLike;
+using CK.CrisLike;
 
 namespace CK.StObj.TypeScript.Tests.CrisLike;
 

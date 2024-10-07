@@ -1,4 +1,4 @@
-﻿namespace CK.StObj.TypeScript.Tests.CrisLike;
+namespace CK.StObj.TypeScript.Tests.CrisLike;
 
 /// <summary>
 /// Simple data record. Compatible with a IPoco field (no mutable reference).

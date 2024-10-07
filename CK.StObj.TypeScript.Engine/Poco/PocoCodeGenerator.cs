@@ -224,37 +224,37 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
         {
             case PocoTypeKind.Array:
             case PocoTypeKind.List:
-                {
-                    var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                    // Uses Array<> rather than "(inner.TypeName)[]".
-                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlyArray<{inner.TypeName}>" : $"Array<{inner.TypeName}>";
-                    ts = tsTypeManager.FindByTypeName( tName )
-                            ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
-                    break;
-                }
+            {
+                var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                // Uses Array<> rather than "(inner.TypeName)[]".
+                var tName = tColl.IsAbstractReadOnly ? $"ReadonlyArray<{inner.TypeName}>" : $"Array<{inner.TypeName}>";
+                ts = tsTypeManager.FindByTypeName( tName )
+                        ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
+                break;
+            }
             case PocoTypeKind.HashSet:
-                {
-                    var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlySet<{inner.TypeName}>" : $"Set<{inner.TypeName}>";
-                    ts = tsTypeManager.FindByTypeName( tName )
-                            ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
-                    break;
-                }
+            {
+                var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                var tName = tColl.IsAbstractReadOnly ? $"ReadonlySet<{inner.TypeName}>" : $"Set<{inner.TypeName}>";
+                ts = tsTypeManager.FindByTypeName( tName )
+                        ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
+                break;
+            }
             case PocoTypeKind.Dictionary:
-                {
-                    var tKey = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
-                    var tValue = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[1] );
-                    var tName = tColl.IsAbstractReadOnly ? $"ReadonlyMap<{tKey.TypeName},{tValue.TypeName}>" : $"Map<{tKey.TypeName},{tValue.TypeName}>";
-                    ts = tsTypeManager.FindByTypeName( tName )
-                            ?? new TSBasicType( tsTypeManager, tName,
-                                                i =>
-                                                {
-                                                    tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
-                                                    tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
-                                                },
-                                                $"new {tName}()" );
-                    break;
-                }
+            {
+                var tKey = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
+                var tValue = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[1] );
+                var tName = tColl.IsAbstractReadOnly ? $"ReadonlyMap<{tKey.TypeName},{tValue.TypeName}>" : $"Map<{tKey.TypeName},{tValue.TypeName}>";
+                ts = tsTypeManager.FindByTypeName( tName )
+                        ?? new TSBasicType( tsTypeManager, tName,
+                                            i =>
+                                            {
+                                                tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
+                                                tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
+                                            },
+                                            $"new {tName}()" );
+                break;
+            }
             default: throw new NotSupportedException( tColl.ToString() );
         }
 
