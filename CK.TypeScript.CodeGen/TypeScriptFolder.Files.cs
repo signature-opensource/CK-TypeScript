@@ -111,10 +111,10 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
 
     /// <summary>
     /// Creates a file from a resource in this folder or a subordinated folder.
-    /// Its type depends on the path extension.
+    /// The result type depends on the path extension.
     /// <para>
     /// Even if this method is named Create, it allows creation from the exact same reource locator (same type, same resource name)
-    /// to enable multile glob resources registrations and individual ones to work together (individual registration can declare types).
+    /// to enable multile glob resources registrations and individual ones to work together (individual registration '.ts' can declare types).
     /// </para>
     /// </summary>
     /// <param name="locator">The resource locator of the file.</param>

@@ -4,9 +4,6 @@ using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular;
 
-/// <summary>
-/// Required decoration of <see cref="RoutedComponent"/>.
-/// </summary>
 public class RoutedComponentAttribute : TypeScriptPackageAttribute
 {
     /// <summary>
@@ -48,4 +45,3 @@ public class RoutedComponentAttribute : TypeScriptPackageAttribute
     /// </summary>
     public string? AsChildOf { get; set; }
 }
-

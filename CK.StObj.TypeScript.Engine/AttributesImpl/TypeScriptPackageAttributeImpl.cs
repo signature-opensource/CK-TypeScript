@@ -1,7 +1,10 @@
 using CK.Core;
 using CK.Setup;
+using CK.TypeScript.CodeGen;
 using System;
+using System.Collections.Immutable;
 using System.Reflection;
+using System.Threading;
 
 namespace CK.StObj.TypeScript.Engine;
 
@@ -11,15 +14,28 @@ namespace CK.StObj.TypeScript.Engine;
 /// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
 /// </para>
 /// </summary>
-public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator
+public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator, ITSCodeGeneratorFactory, ITSCodeGenerator
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
 
     static readonly NormalizedPath _defaultTypeFolderSubPath = "Res";
 
+    NormalizedPath _typeScriptFolder;
     NormalizedPath _resourceTypeFolder;
-    bool? _resourceTypeFolderComputed;
+    ImmutableArray<ResourceTypeLocator> _allRes;
+
+    /// <summary>
+    /// Gets the folder of this package. Defaults to the namespace of the decorated type unless
+    /// specified by <see cref="TypeScriptPackageAttribute.TypeScriptFolder"/>.
+    /// </summary>
+    public NormalizedPath TypeScriptFolder => _typeScriptFolder;
+
+    /// <summary>
+    /// Enables specializations to specify the <see cref="TypeScriptFolder"/>.
+    /// </summary>
+    /// <param name="folder"></param>
+    protected void SetTypeScriptFolder( NormalizedPath folder ) => _typeScriptFolder = folder;
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -35,6 +51,20 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         {
             monitor.Error( $"[TypeScriptPackage] can only decorate a TypeScriptPackage: '{type:N}' is not a TypeScriptPackage." );
         }
+        Throw.DebugAssert( type.Namespace != null );
+        if( string.IsNullOrWhiteSpace( attr.TypeScriptFolder ) )
+        {
+            _typeScriptFolder = type.Namespace.Replace( '.', '/' );
+        }
+        else
+        {
+            _typeScriptFolder = new NormalizedPath( attr.TypeScriptFolder );
+            if( _typeScriptFolder.IsRooted )
+            {
+                monitor.Warn( $"[TypeScriptPackage] on '{type:C}': TypeScriptFolder is rooted, this is useless and removed." );
+                _typeScriptFolder = _typeScriptFolder.With( NormalizedPathRootKind.None );
+            }
+        }
     }
 
     /// <summary>
@@ -47,9 +77,63 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <param name="alsoRegister">Enables this method to register types.</param>
     public virtual void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
     {
-        //var transformers = owner.GetTypeCustomAttributes<TypeScriptTransformerAttributeImpl>().ToList();
-        //_aspect.RegisterTransfomers( _type, transformers );
+        if( GetResourcePath( monitor, _type, _attr.ResourceFolderPath, out var resPath ) )
+        {
+            NormalizedPath p = _attr.CallerFilePath;
+            if( p.IsEmptyPath )
+            {
+                monitor.Error( $"[TypeScriptPackage] on '{_type:N}' has no CallerFilePath. Unable to resolve relative embedded resource paths." );
+            }
+            else
+            {
+                var n = _type.Assembly.GetName().Name;
+                Throw.DebugAssert( n != null );
+                int idx;
+                for( idx = p.Parts.Count - 2; idx >= 0; --idx )
+                {
+                    if( p.Parts[idx] == n ) break;
+                }
+                if( idx < 0 )
+                {
+                    monitor.Error( $"Unable to resolve relative embedded resource paths: assembly name '{n}' folder of type '{_type:N}' not found in '{p}'." );
+                }
+                else
+                {
+                    // TODO: miss a NormalizedPath.SubPath( int start, int len )...
+                    p = p.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
+                    _resourceTypeFolder = p.Combine( resPath ).ResolveDots();
+                }
+            }
+
+        }
+
+        static bool GetResourcePath( IActivityMonitor monitor, Type declaredType, string? resourceFolderPath, out NormalizedPath resourcePath )
+        {
+            if( resourceFolderPath == null ) resourcePath = _defaultTypeFolderSubPath;
+            else
+            {
+                resourcePath = resourceFolderPath;
+                if( resourcePath.RootKind is NormalizedPathRootKind.RootedBySeparator )
+                {
+                    resourcePath = resourcePath.With( NormalizedPathRootKind.None );
+                }
+                else if( resourcePath.RootKind is NormalizedPathRootKind.RootedByDoubleSeparator
+                                             or NormalizedPathRootKind.RootedByFirstPart
+                                             or NormalizedPathRootKind.RootedByURIScheme )
+                {
+                    monitor.Error( $"[TypeScriptPackage] on '{declaredType:N}' has invalid ResourceFolderPath: '{resourceFolderPath}'. Path must be rooted by '/' or be relative." );
+                    return false;
+                }
+                else
+                {
+                    Throw.DebugAssert( "We are left with a regular relative path.", resourcePath.RootKind is NormalizedPathRootKind.None );
+                }
+            }
+            return true;
+        }
+
     }
+
 
     /// <summary>
     /// Implements <see cref="IStObjStructuralConfigurator.Configure(IActivityMonitor, IStObjMutableItem)"/>.
@@ -70,103 +154,13 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     }
 
     /// <summary>
-    /// Tries to resolve the path to the resources based on the type assembly and the <see cref="TypeScriptPackageAttribute.CallerFilePath"/>.
-    /// This path can be empty (when the type is defined in the root folder of its project and the <see cref="TypeScriptPackageAttribute.ResourceFolderPath"/>
-    /// is the empty string).
-    /// <para>
-    /// The resulting path doesn't contain the "ck@" prefix.
-    /// </para>
-    /// </summary>
-    /// <param name="monitor">The monitor to use. Errors will be logged on the first call only.</param>
-    /// <param name="resourceTypePath">The resulting path on success.</param>
-    /// <returns>True on success, false if the path cannot be computed.</returns>
-    public bool TryGetResourceTypePath( IActivityMonitor monitor, out NormalizedPath resourceTypePath )
-    {
-        if( !_resourceTypeFolderComputed.HasValue )
-        {
-            NormalizedPath subPath = HandleResourceFolderPath( monitor );
-            if( !_resourceTypeFolderComputed.HasValue )
-            {
-                ResolveResourceTypePath( monitor, subPath );
-            }
-            Throw.DebugAssert( _resourceTypeFolderComputed.HasValue );
-        }
-        resourceTypePath = _resourceTypeFolder;
-        return _resourceTypeFolderComputed.Value;
-
-        NormalizedPath HandleResourceFolderPath( IActivityMonitor monitor )
-        {
-            NormalizedPath subPath;
-            if( _attr.ResourceFolderPath == null ) subPath = _defaultTypeFolderSubPath;
-            else
-            {
-                subPath = _attr.ResourceFolderPath;
-                if( subPath.RootKind is NormalizedPathRootKind.RootedBySeparator )
-                {
-                    _resourceTypeFolder = subPath.With( NormalizedPathRootKind.None );
-                    _resourceTypeFolderComputed = true;
-                }
-                else if( subPath.RootKind is NormalizedPathRootKind.RootedByDoubleSeparator
-                                             or NormalizedPathRootKind.RootedByFirstPart
-                                             or NormalizedPathRootKind.RootedByURIScheme )
-                {
-                    monitor.Error( $"[TypeScriptPackage] on '{_type:N}' has invalid ResourceFolderPath: '{_attr.ResourceFolderPath}'. Path must be rooted by '/' or be relative." );
-                    _resourceTypeFolderComputed = false;
-                }
-                else
-                {
-                    Throw.DebugAssert( "We are left with a regular relative path.", subPath.RootKind is NormalizedPathRootKind.None );
-                }
-            }
-
-            return subPath;
-        }
-
-        void ResolveResourceTypePath( IActivityMonitor monitor, NormalizedPath subPath )
-        {
-            NormalizedPath p = _attr.CallerFilePath;
-            if( p.IsEmptyPath )
-            {
-                monitor.Error( $"[TypeScriptPackage] on '{_type:N}' has no CallerFilePath. Unable to resolve relative embedded resource paths." );
-                _resourceTypeFolderComputed = false;
-            }
-            else
-            {
-                var n = _type.Assembly.GetName().Name;
-                Throw.DebugAssert( n != null );
-                int idx;
-                for( idx = p.Parts.Count - 2; idx >= 0; --idx )
-                {
-                    if( p.Parts[idx] == n ) break;
-                }
-                if( idx < 0 )
-                {
-                    monitor.Error( $"Unable to resolve relative embedded resource paths: assembly name '{n}' folder of type '{_type:N}' not found in '{p}'." );
-                    _resourceTypeFolderComputed = false;
-                }
-                else
-                {
-                    // TODO: miss a NormalizedPath.SubPath( int start, int len )...
-                    p = p.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
-                    _resourceTypeFolder = p.Combine( subPath ).ResolveDots();
-                    _resourceTypeFolderComputed = true;
-                }
-            }
-        }
-    }
-
-    /// <summary>
     /// Gets the final resource name (prefixed by "ck@") to use for a <paramref name="resourcePath"/> relative
     /// to this <see cref="TypeScriptPackageAttributeImpl"/>, considering its <see cref="TypeScriptPackageAttribute.CallerFilePath"/>
     /// and <see cref="TypeScriptPackageAttribute.ResourceFolderPath"/>.
-    /// <para>
-    /// This can fail: null is returned and errors are logged.
-    /// </para>
     /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="resourcePath">The resource path.</param>
-    /// <returns>The final "ck@" prefixed resource name to use or null on error.</returns>
-    public string? GetCKResourceName( IActivityMonitor monitor, string resourcePath )
+    /// <param name="resourcePath">The relative resource path.</param>
+    /// <returns>The final "ck@" prefixed resource name to use.</returns>
+    public string GetCKResourceName( string resourcePath )
     {
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( resourcePath ) );
         // Fast path when rooted.
@@ -175,11 +169,57 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         {
             return string.Concat( "ck@".AsSpan(), resourcePath.AsSpan( 1 ) );
         }
-        if( !TryGetResourceTypePath( monitor, out var resourceTypeFolder ) )
+        return "ck@" + _resourceTypeFolder.Combine( resourcePath ).ResolveDots();
+    }
+
+    /// <summary>
+    /// Gets all the associated resources from the <see cref="TypeScriptPackageAttribute.ResourceFolderPath"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor (for the warning).</param>
+    /// <param name="warnIfNone">True to warn if no resources were found.</param>
+    /// <returns>The resources.</returns>
+    public ImmutableArray<ResourceTypeLocator> GetAllResources( IActivityMonitor monitor, bool warnIfNone )
+    {
+        if( _allRes.IsDefault )
         {
-            return null;
+            string prefix = $"ck@{_resourceTypeFolder}/";
+            var resNames = _type.Assembly.GetSortedResourceNames2().GetPrefixedStrings( prefix );
+            if( resNames.Length == 0 )
+            {
+                if( warnIfNone ) monitor.Warn( $"Unable to find at least one file for TypeScriptPackage '{_type:N}'." );
+                _allRes = ImmutableArray<ResourceTypeLocator>.Empty;
+            }
+            else
+            {
+                var b = ImmutableArray.CreateBuilder<ResourceTypeLocator>( resNames.Length );
+                foreach( var n in resNames.Span )
+                {
+                    b.Add( new ResourceTypeLocator( _type, n ) );
+                }
+                _allRes = b.MoveToImmutable();
+            }
         }
-        return "ck@" + resourceTypeFolder.Combine( resourcePath ).ResolveDots();
+        return _allRes;
+    }
+
+    ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    {
+        return _attr.ConsiderExplicitResourceOnly ? ITSCodeGenerator.Empty : this;
+    }
+
+    bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
+
+    bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
+
+    bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+    {
+        foreach( ResourceTypeLocator o in GetAllResources( monitor, false ) )
+        {
+            // Skip prefix 'ck@{_resourceTypeFolder}/'.
+            var targetFileName = _typeScriptFolder.Combine( o.ResourceName.Substring( _resourceTypeFolder.Path.Length + 4 ) );
+            context.Root.Root.CreateResourceFile( o, targetFileName );
+        }
+        return true;
     }
 
 }

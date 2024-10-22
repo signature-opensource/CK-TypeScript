@@ -36,7 +36,8 @@ public sealed partial class TypeScriptContext
         _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions.ToImmutableDictionary(),
                                       tsConfig.PascalCase,
                                       tsConfig.GenerateDocumentation,
-                                      tsConfig.IgnoreVersionsBound );
+                                      tsConfig.IgnoreVersionsBound,
+                                      initializer.RootMemory );
         _tsRoot.FolderCreated += OnFolderCreated;
         _tsRoot.TSTypes.TSFromTypeRequired += OnTSFromTypeRequired;
         _tsRoot.TSTypes.TSFromObjectRequired += OnTSFromObjectRequired;

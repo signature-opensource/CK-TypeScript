@@ -63,4 +63,13 @@ public interface ITypeScriptContextInitializer
     /// <inheritdoc cref="TypeScriptContext.IntegrationContext"/>
     TypeScriptIntegrationContext? IntegrationContext { get; }
 
+    /// <summary>
+    /// Gets the initial object mapping for <see cref="TypeScriptContext.Root"/> folder's memory.
+    /// <para>
+    /// This can be used to store extensions to the <see cref="TypeScriptContext"/> that should be exposed
+    /// by extension methods.
+    /// </para>
+    /// </summary>
+    IDictionary<object, object?> RootMemory { get; }
+
 }

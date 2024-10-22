@@ -13,8 +13,8 @@ namespace CK.Core;
 /// of the declarer's assembly.
 /// </para>
 /// <para>
-/// This is a record struct that benefits of the ToString (PrinMembers) and equality code generation but with
-/// an explicit constructor to handle the only <c>default</c> value to be <see cref="IsValid"/> false.
+/// This is a record struct that benefits of the ToString (PrintMembers) and equality code generation but with
+/// an explicit constructor to handle the only <c>default</c> value that is <see cref="IsValid"/> false.
 /// The <c>default</c> value makes <see cref="Nullable{T}"/> useless for this type.
 /// </para>
 /// </summary>

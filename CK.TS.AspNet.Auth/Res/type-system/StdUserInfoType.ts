@@ -27,7 +27,7 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
         if( !o ) { return null; }
 
         function create( r: {[index: string]: any}, schemeNames: Set<string>|null ) : StdUserSchemeInfo {
-            return new StdUserSchemeInfo( r.name, r.lastUsed, schemeNames === null || schemeNames.delete( r.name ) 
+            return new StdUserSchemeInfo( r['name'], r['lastUsed'], schemeNames === null || schemeNames.delete( r['name'] ) 
                                                                     ? SchemeUsageStatus.Active 
                                                                     : SchemeUsageStatus.Deprecated );
         }

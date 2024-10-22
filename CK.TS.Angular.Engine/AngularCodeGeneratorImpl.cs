@@ -12,6 +12,15 @@ using System.Linq;
 namespace CK.TS.Angular.Engine;
 
 /// <summary>
+/// An angular component is a <see cref="TypeScriptFolder"/> that contains its resources.
+/// </summary>
+public sealed class AngularComponent
+{
+
+}
+
+
+/// <summary>
 /// Implements support for Angular projects.
 /// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
@@ -26,10 +35,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             monitor.Warn( $"Angular application requires Inline IntegrationMode. '{initializer.BinPathConfiguration}' mode is not supported, skipping Angular support." );
             return ITSCodeGenerator.Empty;
         }
-        return new CodeGen();
+        var codeGen = new AngularCodeGen();
+        initializer.RootMemory.Add( typeof( IAngularContext ), codeGen );
+        return codeGen;
     }
 
-    sealed class CodeGen : ITSCodeGenerator
+    sealed class AngularCodeGen : ITSCodeGenerator, IAngularContext
     {
         [AllowNull] LibraryImport _angularCore;
         [AllowNull] ITSFileType _ckGenAppModule;
@@ -37,6 +48,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
         [AllowNull] ITSCodePart _routesPart;
+
+        ITSFileType IAngularContext.CKGenAppModule => _ckGenAppModule;
+
+        ITSCodePart IAngularContext.ImportModulePart => _importModulePart;
+
+        ITSCodePart IAngularContext.ExportModulePart => _exportModulePart;
+
+        ITSCodePart IAngularContext.ProviderPart => _providerPart;
+
+        ITSCodePart IAngularContext.RoutesPart => _routesPart;
 
         public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
@@ -85,9 +106,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             Throw.DebugAssert( "Inline mode => IntegrationContext.", context.IntegrationContext != null );
             context.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
             context.IntegrationContext.OnAfterIntegration += OnAfterIntegration;
-
             return true;
         }
+
         bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
         bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
@@ -157,6 +178,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     return CreateNewAngular( monitor, e, tempFolderPath, newFolderPath, tempPackageJsonPath )
                            && UpdateNewPackageJson( monitor, newFolderPath, targetPackageJson, out IList<PackageDependency> savedLatestDependencies, out var newPackageJson )
+                           && CleanupAppComponentHtml( monitor, newFolderPath )
                            && RemoveUselessAngularJsonTestSection( monitor, newFolderPath, newPackageJson )
                            && LiftContent( monitor, targetProjectPath, newFolderPath )
                            && ReloadTargetTSConfigAndPackageJson( monitor, e.IntegrationContext.TSConfigJson, targetPackageJson, savedLatestDependencies )
@@ -201,32 +223,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     }
                 }
 
-                static bool RemoveUselessAngularJsonTestSection( IActivityMonitor monitor, NormalizedPath newFolderPath, PackageJsonFile newPackageJson )
-                {
-                    // LOL! This is absolutely insane.
-                    // (But STJ is really bad at this. I don't want a dependency an have better thing to do right now.)
-                    NormalizedPath filePath = newFolderPath.AppendPart( "angular.json" );
-                    var text = File.ReadAllText( filePath ).ReplaceLineEndings();
-                    var start = """
-                    ,
-                            "test": {
-                    """.ReplaceLineEndings();
-                    int idxStart = text.IndexOf( start );
-                    if( idxStart > 0 )
-                    {
-                        var idxEnd = text.IndexOf( Environment.NewLine + "        }", idxStart );
-                        if( idxEnd > 0 )
-                        {
-                            text = text.Remove( idxStart, idxEnd - idxStart + 9 + Environment.NewLine.Length );
-                            File.WriteAllText( filePath, text );
-                            monitor.Info( "Removed useless \"test\" section from 'angular.json' file." );
-                            return true;
-                        }
-                    }
-                    monitor.Warn( "Unable to locate the \"test\" section in 'angular.json' file." );
-                    return true;
-                }
-
                 static bool UpdateNewPackageJson( IActivityMonitor monitor,
                                                   NormalizedPath newFolderPath,
                                                   PackageJsonFile targetPackageJson,
@@ -258,6 +254,40 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return false;
                     }
                     newPackageJson.Save();
+                    return true;
+                }
+
+                static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
+                {
+                    NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
+                    File.WriteAllText( filePath, "<router-outlet />" );
+                    monitor.Trace( "Keeping only the '<router-outlet />' in 'app.component.html'." );
+                    return true;
+                }
+
+                static bool RemoveUselessAngularJsonTestSection( IActivityMonitor monitor, NormalizedPath newFolderPath, PackageJsonFile newPackageJson )
+                {
+                    // LOL! This is absolutely insane.
+                    // (But STJ is really bad at this. I don't want a dependency an have better thing to do right now.)
+                    NormalizedPath filePath = newFolderPath.AppendPart( "angular.json" );
+                    var text = File.ReadAllText( filePath ).ReplaceLineEndings();
+                    var start = """
+                    ,
+                            "test": {
+                    """.ReplaceLineEndings();
+                    int idxStart = text.IndexOf( start );
+                    if( idxStart > 0 )
+                    {
+                        var idxEnd = text.IndexOf( Environment.NewLine + "        }", idxStart );
+                        if( idxEnd > 0 )
+                        {
+                            text = text.Remove( idxStart, idxEnd - idxStart + 9 + Environment.NewLine.Length );
+                            File.WriteAllText( filePath, text );
+                            monitor.Info( "Removed useless \"test\" section from 'angular.json' file." );
+                            return true;
+                        }
+                    }
+                    monitor.Warn( "Unable to locate the \"test\" section in 'angular.json' file." );
                     return true;
                 }
 

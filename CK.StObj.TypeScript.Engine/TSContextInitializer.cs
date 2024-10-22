@@ -17,6 +17,7 @@ sealed class TSContextInitializer
     readonly IPocoTypeSet _typeScriptExchangeableSet;
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
+    readonly IDictionary<object, object?>? _rootMemory;
 
     /// <summary>
     /// Gets the types that have been explictely registered.
@@ -34,9 +35,14 @@ sealed class TSContextInitializer
     public IPocoTypeSet TypeScriptExchangeableSet => _typeScriptExchangeableSet;
 
     /// <summary>
-    /// Gets the intergration context if integration mode is not null.
+    /// Gets the intergation context if integration mode is not null.
     /// </summary>
     public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
+    /// <summary>
+    /// Gets the root memory if it has been initialized.
+    /// </summary>
+    public IDictionary<object, object?>? RootMemory => _rootMemory;
 
     /// <summary>
     /// Gets the library configured versions.
@@ -64,7 +70,8 @@ sealed class TSContextInitializer
                                            allExchangeableSet,
                                            jsonSerialization,
                                            globalFactories,
-                                           out var globals ) )
+                                           out var globals,
+                                           out var rootMemory) )
         {
             IPocoTypeSystem typeSystem = allExchangeableSet.TypeSystem;
             var emptyExchangeableSet = typeSystem.SetManager.EmptyExchangeable;
@@ -89,7 +96,7 @@ sealed class TSContextInitializer
                 monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
                 tsExchangeable = emptyExchangeableSet;
             }
-            return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig );
+            return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig, rootMemory );
         }
         return null;
     }
@@ -98,13 +105,15 @@ sealed class TSContextInitializer
                           ImmutableArray<ITSCodeGenerator> g,
                           IPocoTypeSet s,
                           TypeScriptIntegrationContext? integrationContext,
-                          ImmutableDictionary<string, SVersionBound> libVersionsConfig )
+                          ImmutableDictionary<string, SVersionBound> libVersionsConfig,
+                          IDictionary<object, object?>? rootMemory )
     {
         _registeredTypes = r;
         _globals = g;
         _typeScriptExchangeableSet = s;
         _integrationContext = integrationContext;
         _libVersionsConfig = libVersionsConfig;
+        _rootMemory = rootMemory;
     }
 
     // Step 1.
@@ -291,6 +300,7 @@ sealed class TSContextInitializer
         readonly Dictionary<Type, RegisteredType> _regTypes;
         readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
         readonly IPocoTypeSet _allExchangeableSet;
+        Dictionary<object,object?>? _rootMemory;
 
         public Initializer( TypeScriptBinPathAspectConfiguration binPathConfiguration,
                             TypeScriptIntegrationContext? integrationContext,
@@ -316,6 +326,11 @@ sealed class TSContextInitializer
         public TypeScriptBinPathAspectConfiguration BinPathConfiguration => _binPathConfiguration;
 
         public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
+        internal Dictionary<object, object?>? RootMemory => _rootMemory;
+
+        IDictionary<object, object?> ITypeScriptContextInitializer.RootMemory => _rootMemory ??= new Dictionary<object,object?>();
+
 
         public bool EnsureRegister( IActivityMonitor monitor,
                                     Type t,
@@ -363,7 +378,8 @@ sealed class TSContextInitializer
                                             IPocoTypeSet allExchangeableSet,
                                             IPocoJsonSerializationServiceEngine? jsonSerialization,
                                             List<ITSCodeGeneratorFactory> globalFactories,
-                                            out ImmutableArray<ITSCodeGenerator> globals )
+                                            out ImmutableArray<ITSCodeGenerator> globals,
+                                            out IDictionary<object,object?>? rootMemory )
     {
         var i = new Initializer( binPathConfiguration, integrationContext, regTypes, jsonSerialization, allExchangeableSet );
         using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
@@ -375,11 +391,13 @@ sealed class TSContextInitializer
                 if( g == null )
                 {
                     globals = ImmutableArray<ITSCodeGenerator>.Empty;
+                    rootMemory = null;
                     return false;
                 }
                 b.Add( g );
             }
             globals = b.MoveToImmutable();
+            rootMemory = i.RootMemory;
             return true;
         }
     }

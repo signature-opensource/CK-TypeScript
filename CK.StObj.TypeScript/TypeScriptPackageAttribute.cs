@@ -6,6 +6,9 @@ namespace CK.StObj.TypeScript;
 
 /// <summary>
 /// Required attribute for <see cref="TypeScriptPackage"/>.
+/// <para>
+/// Embedded resources from <see cref="ResourceFolderPath"/> ("./Res" by default).
+/// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
 public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute
@@ -44,6 +47,25 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute
     /// </para>
     /// </summary>
     public string? ResourceFolderPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the target TypeScript folder in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/>
+    /// that overrides the default path that is based on the decorated type namespace: the folder is
+    /// "/ck-gen/The/Decorated/Type/Namespace" (the dots of the namespace are replaced with a '/').
+    /// <para>
+    /// This should be let to null when possible: using the namespace ease maintenance.
+    /// </para>
+    /// </summary>
+    public string? TypeScriptFolder { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether embedded resources must be explicitly declared by <see cref="TypeScriptFileAttribute"/>
+    /// or <see cref="TypeScriptResourceAttribute"/>.
+    /// <para>
+    /// Defaults to false.
+    /// </para>
+    /// </summary>
+    public bool ConsiderExplicitResourceOnly { get; set; }
 
     /// <summary>
     /// Gets the folder path of the type that declares this attribute.
