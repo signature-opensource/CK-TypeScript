@@ -1,8 +1,10 @@
 using CK.Core;
 using CK.Setup.PocoJson;
 using CK.StObj.TypeScript;
+using CK.StObj.TypeScript.Engine;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Setup;
 
@@ -62,6 +64,11 @@ public interface ITypeScriptContextInitializer
 
     /// <inheritdoc cref="TypeScriptContext.IntegrationContext"/>
     TypeScriptIntegrationContext? IntegrationContext { get; }
+
+    /// <summary>
+    /// Gets the TypeScript packages topologically ordered.
+    /// </summary>
+    ImmutableArray<TypeScriptPackageAttributeImpl> Packages { get; }
 
     /// <summary>
     /// Gets the initial object mapping for <see cref="TypeScriptContext.Root"/> folder's memory.

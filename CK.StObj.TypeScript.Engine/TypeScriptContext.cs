@@ -193,13 +193,14 @@ public sealed partial class TypeScriptContext
                     // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
                     // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
                     && ResolveRegisteredTypes( monitor )
+                    && GeneratePackageCode( monitor, _initializer.Packages, this )
                     // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                     && _tsRoot.GenerateCode( monitor );
         }
 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,
                                                ImmutableArray<ITSCodeGenerator> globals,
-                                               TypeScriptContext? context )
+                                               TypeScriptContext context )
         {
             using( monitor.OpenInfo( $"Starting global code generation for the {globals.Length} {nameof( ITSCodeGenerator )} TypeScript generators." ) )
             {
@@ -210,7 +211,7 @@ public sealed partial class TypeScriptContext
                     {
                         try
                         {
-                            success &= global.StartCodeGeneration( monitor, context! );
+                            success &= global.StartCodeGeneration( monitor, context );
                         }
                         catch( Exception ex )
                         {
@@ -228,6 +229,33 @@ public sealed partial class TypeScriptContext
             return true;
         }
 
+        static bool GeneratePackageCode( IActivityMonitor monitor,
+                                         ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                                         TypeScriptContext context )
+        {
+            using( monitor.OpenInfo( $"Starting code generation for the {packages.Length} TypeScript packages." ) )
+            {
+                var success = true;
+                foreach( var p in packages )
+                {
+                    try
+                    {
+                        success &= p.GenerateCode( monitor, context );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( ex );
+                        success = false;
+                    }
+                }
+                if( !success )
+                {
+                    monitor.CloseGroup( "Failed." );
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     bool ResolveRegisteredTypes( IActivityMonitor monitor )

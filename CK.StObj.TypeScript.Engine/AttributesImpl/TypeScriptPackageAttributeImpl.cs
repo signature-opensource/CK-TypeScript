@@ -14,7 +14,7 @@ namespace CK.StObj.TypeScript.Engine;
 /// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
 /// </para>
 /// </summary>
-public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator, ITSCodeGeneratorFactory, ITSCodeGenerator
+public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
@@ -202,22 +202,41 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         return _allRes;
     }
 
-    ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    /// <summary>
+    /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/> in the order
+    /// of the topological sort of the <see cref="TypeScriptPackage"/>.
+    /// <para>
+    /// Does nothing at this level.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor.</param>
+    /// <param name="initializer">The TypeScriptContext iniitializer.</param>
+    /// <returns>True on success, false otherwise (errors must be logged).</returns>
+    internal protected virtual bool InitializePackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
-        return _attr.ConsiderExplicitResourceOnly ? ITSCodeGenerator.Empty : this;
+        return true;
     }
 
-    bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
-
-    bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
-
-    bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+    /// <summary>
+    /// Called in the order of the topological sort of the <see cref="TypeScriptPackage"/>.
+    /// <para>
+    /// At this level, if <see cref="TypeScriptPackageAttribute.ConsiderExplicitResourceOnly"/> is false (the default), embedded resources
+    /// are copied to the <see cref="TypeScriptFolder"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor.</param>
+    /// <param name="context">The TypeScriptContext.</param>
+    /// <returns>True on success, false otherwise (errors must be logged).</returns>
+    internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
-        foreach( ResourceTypeLocator o in GetAllResources( monitor, false ) )
+        if( !_attr.ConsiderExplicitResourceOnly )
         {
-            // Skip prefix 'ck@{_resourceTypeFolder}/'.
-            var targetFileName = _typeScriptFolder.Combine( o.ResourceName.Substring( _resourceTypeFolder.Path.Length + 4 ) );
-            context.Root.Root.CreateResourceFile( o, targetFileName );
+            foreach( ResourceTypeLocator o in GetAllResources( monitor, false ) )
+            {
+                // Skip prefix 'ck@{_resourceTypeFolder}/'.
+                var targetFileName = _typeScriptFolder.Combine( o.ResourceName.Substring( _resourceTypeFolder.Path.Length + 4 ) );
+                context.Root.Root.CreateResourceFile( o, targetFileName );
+            }
         }
         return true;
     }
