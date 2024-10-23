@@ -1,4 +1,5 @@
 using CK.Demo;
+using CK.NG.AspNet.Auth;
 using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -15,9 +16,11 @@ public class AngularTests
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        var ts = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        ts.CKGenBuildMode = false;
+
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
-        configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ) );
+        configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ), typeof( LoginComponent ), typeof( PasswordLostComponent ) );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

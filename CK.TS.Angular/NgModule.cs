@@ -5,6 +5,7 @@ namespace CK.TS.Angular;
 
 /// <summary>
 /// Base class for NgModule definition. A <see cref="NgModuleAttribute"/> must decorate the final type.
+/// Its type name must end with "Module".
 /// <para>
 /// NgModule are somehow deprecated. Angular standalone components are enough.
 /// </para>

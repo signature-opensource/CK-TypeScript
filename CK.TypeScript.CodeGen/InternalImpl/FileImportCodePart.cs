@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen;
@@ -83,6 +84,21 @@ sealed class FileImportCodePart : ITSFileImportSection
         Throw.CheckArgument( tsType != null && tsTypes != null );
         tsType.EnsureRequiredImports( this );
         foreach( var t in tsTypes )
+        {
+            t.EnsureRequiredImports( this );
+        }
+        return this;
+    }
+
+    public ITSFileImportSection EnsureImport( string typeName )
+    {
+        Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
+        var t = _file.Root.TSTypes.FindByTypeName( typeName );
+        if( t == null )
+        {
+            Throw.InvalidOperationException( $"TypeScript type '{typeName}' is not registered. It cannot be imported in '{_file}'." );
+        }
+        else
         {
             t.EnsureRequiredImports( this );
         }

@@ -64,12 +64,14 @@ public readonly record struct ResourceTypeLocator
         return s ?? ThrowDetailedError();
     }
 
-    readonly bool PrintMembers( StringBuilder b )
+#pragma warning disable IDE0051 // Remove unused private members: See https://github.com/dotnet/roslyn/issues/52421
+    private readonly bool PrintMembers( StringBuilder b )
     {
         b.Append( nameof( ResourceName ) ).Append( " = \"" ).Append( ResourceName ).Append( "\", " )
          .Append( nameof( Declarer ) ).Append( " = " ).Append( Declarer );
         return true;
     }
+#pragma warning restore IDE0051 // Remove unused private members
 
     [StackTraceHidden]
     Stream ThrowDetailedError()

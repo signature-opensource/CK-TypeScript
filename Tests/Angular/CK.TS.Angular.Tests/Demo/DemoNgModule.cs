@@ -5,6 +5,6 @@ namespace CK.Demo;
 
 [NgModule]
 [TypeScriptFile( "DemoService.ts", "GoodLuckService" )]
-public class DemoNgModule : NgModule
+public sealed class DemoNgModule : NgModule
 {
 }

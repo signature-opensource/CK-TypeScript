@@ -450,22 +450,22 @@ sealed class TSContextInitializer
                     b.Add( g );
                 }
             }
-            foreach( var p in packages )
+            if( success )
             {
-                if( !p.InitializePackage( monitor, i ) )
+                foreach( var p in packages )
                 {
-
+                    success &= p.InitializePackage( monitor, i );
+                }
+                if( success )
+                {
+                    globals = b.MoveToImmutable();
+                    rootMemory = i.RootMemory;
+                    return true;
                 }
             }
-            if( !success )
-            {
-                globals = ImmutableArray<ITSCodeGenerator>.Empty;
-                rootMemory = null;
-                return false;
-            }
-            globals = b.MoveToImmutable();
-            rootMemory = i.RootMemory;
-            return true;
+            globals = ImmutableArray<ITSCodeGenerator>.Empty;
+            rootMemory = null;
+            return false;
         }
     }
 

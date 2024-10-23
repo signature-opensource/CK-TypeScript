@@ -45,15 +45,11 @@ public sealed class TypeScriptFileAttributeImpl : IAttributeContextBoundInitiali
     {
         Throw.DebugAssert( owner.Type == _target );
         var packageAttributesImpl = GetPackageAttributesImpl( monitor, owner );
-        if( packageAttributesImpl != null )
+        if( packageAttributesImpl != null
+            && packageAttributesImpl.Resources.TryGetResource( monitor, _attr.ResourcePath, out _resource ) )
         {
-            var resPath = packageAttributesImpl.GetCKResourceName( _attr.ResourcePath );
-            if( resPath != null )
-            {
-                _resource = new ResourceTypeLocator( _target, resPath );
-                _targetPath = _attr.TargetFolderName ?? packageAttributesImpl.TypeScriptFolder;
-                _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( _attr.ResourcePath ) );
-            }
+            _targetPath = _attr.TargetFolderName ?? packageAttributesImpl.TypeScriptFolder;
+            _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( _attr.ResourcePath ) );
         }
     }
 

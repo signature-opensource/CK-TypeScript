@@ -13,7 +13,7 @@ public class NgComponentAttribute : TypeScriptPackageAttribute
     /// </summary>
     /// <param name="callerFilePath">Automatically set by the Roslyn compiler and used to compute the associated embedded resource folder.</param>
     public NgComponentAttribute( [CallerFilePath] string? callerFilePath = null )
-        : base( "CK.TS.Angular.Engine.NGComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
+        : base( "CK.TS.Angular.Engine.NgComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
     {
     }
 
@@ -26,5 +26,11 @@ public class NgComponentAttribute : TypeScriptPackageAttribute
         : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath )
     {
     }
+
+    /// <summary>
+    /// Gets or sets whether this component has a &lt;router-outlet/&gt;.
+    /// When true, this component can be a <see cref="NgRoutedComponentAttribute.TargetComponent"/>.
+    /// </summary>
+    public bool HasRoutes { get; set; }
 
 }

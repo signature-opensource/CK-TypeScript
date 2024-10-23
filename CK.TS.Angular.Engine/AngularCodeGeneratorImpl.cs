@@ -8,17 +8,9 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CK.TS.Angular.Engine;
-
-/// <summary>
-/// An angular component is a <see cref="TypeScriptFolder"/> that contains its resources.
-/// </summary>
-public sealed class AngularComponent
-{
-
-}
-
 
 /// <summary>
 /// Implements support for Angular projects.
@@ -32,24 +24,37 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
     {
         if( initializer.BinPathConfiguration.IntegrationMode != CKGenIntegrationMode.Inline )
         {
-            monitor.Warn( $"Angular application requires Inline IntegrationMode. '{initializer.BinPathConfiguration}' mode is not supported, skipping Angular support." );
-            return ITSCodeGenerator.Empty;
+            monitor.Error( $"Angular application requires Inline IntegrationMode. '{initializer.BinPathConfiguration}' mode is not supported." );
+            return null;
         }
         var codeGen = new AngularCodeGen();
-        initializer.RootMemory.Add( typeof( IAngularContext ), codeGen );
+        initializer.RootMemory.Add( typeof( AngularCodeGen ), codeGen );
         return codeGen;
     }
 
-    sealed class AngularCodeGen : ITSCodeGenerator, IAngularContext
+    internal sealed class AngularCodeGen : ITSCodeGenerator, IAngularContext
     {
+        readonly List<NgModuleAttributeImpl> _modules;
+        [AllowNull] ComponentManager _components;
         [AllowNull] LibraryImport _angularCore;
+        [AllowNull] LibraryImport _angularRouter;
         [AllowNull] ITSFileType _ckGenAppModule;
         [AllowNull] ITSCodePart _importModulePart;
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
-        [AllowNull] ITSCodePart _routesPart;
 
-        ITSFileType IAngularContext.CKGenAppModule => _ckGenAppModule;
+        public AngularCodeGen()
+        {
+            _modules = new List<NgModuleAttributeImpl>();
+        }
+
+        public ITSFileType CKGenAppModule => _ckGenAppModule;
+
+        public ComponentManager ComponentManager => _components;
+
+        LibraryImport IAngularContext.AngularCoreLibrary => _angularCore;
+
+        LibraryImport IAngularContext.AngularRouterLibrary => _angularRouter;
 
         ITSCodePart IAngularContext.ImportModulePart => _importModulePart;
 
@@ -57,15 +62,21 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         ITSCodePart IAngularContext.ProviderPart => _providerPart;
 
-        ITSCodePart IAngularContext.RoutesPart => _routesPart;
+        internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module )
+        {
+            _modules.Add( module );
+            return true;
+        }
 
-        public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+        bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
             _angularCore = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/core", DependencyKind.Dependency );
+            _angularRouter = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/router", DependencyKind.Dependency );
+            _components = new ComponentManager( context );
 
             var f = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
             f.Imports.EnsureImportFromLibrary( _angularCore, "NgModule", "Provider" );
-            _ckGenAppModule = f.CreateType( "CKGenAppModule", null, null );
+            _ckGenAppModule = f.CreateType( "CKGenAppModule", additionalImports: null, defaultValueSource: null );
             _ckGenAppModule.TypePart.Append( """
                 @NgModule({
                     imports: [
@@ -90,17 +101,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 .Append( """
 
                     ];
-                """ );
-
-            var r = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/routes.ts" );
-            r.Body.Append( """
-                export default [
-
-                """ )
-                .InsertPart( out _routesPart )
-                .Append( """
-
-                ];
                 """ );
 
             Throw.DebugAssert( "Inline mode => IntegrationContext.", context.IntegrationContext != null );
@@ -425,7 +425,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
             {
                 var app = File.ReadAllText( appFilePath );
-                if( app.Contains( "import { CKGenAppModule } from '@local/ck-gen';" ) )
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+                if( Regex.IsMatch( app, """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""", RegexOptions.CultureInvariant ) )
                 {
                     monitor.Trace( "File 'src/app/component.ts' imports the CKGenAppModule. Skipping transformation." );
                 }
@@ -437,6 +438,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         AddImportAndConclude( monitor, appFilePath, success, ref app, "import { CKGenAppModule } from '@local/ck-gen';" );
                     }
                 }
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
 
                 static bool AddInImports( IActivityMonitor monitor, ref string app )
                 {

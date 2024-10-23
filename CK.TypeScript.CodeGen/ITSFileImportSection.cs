@@ -31,6 +31,16 @@ public interface ITSFileImportSection
     ITSFileImportSection EnsureImport( ITSType tsType, params ITSType[] tsTypes );
 
     /// <summary>
+    /// Ensures that an import of a registered TypeScript type name exists.
+    /// <para>
+    /// This throws an <see cref="InvalidOperationException"/> if the type is not already registered.
+    /// </para>
+    /// </summary>
+    /// <param name="typeName">The type name to import.</param>
+    /// <returns>This section to enable fluent syntax.</returns>
+    ITSFileImportSection EnsureImport( string typeName );
+
+    /// <summary>
     /// Ensures that an import of one or more type names from the corresponding <see cref="IMinimalTypeScriptFile"/> exists.
     /// </summary>
     /// <param name="file">The referenced file.</param>

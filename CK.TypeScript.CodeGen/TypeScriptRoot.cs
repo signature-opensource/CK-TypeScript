@@ -171,7 +171,7 @@ public sealed class TypeScriptRoot
     /// Raised after the deferred implementors have successfully run on all types to implement and
     /// <see cref="AfterDeferredCodeGeneration"/> has been raised.
     /// <para>
-    /// This can be used to generate pure TS support files or altering exsitng code but registering
+    /// This can be used to generate pure TS support files or altering existing code but registering
     /// new types will throw an <see cref="InvalidOperationException"/>).
     /// </para>
     /// <para>
@@ -188,7 +188,8 @@ public sealed class TypeScriptRoot
     /// <summary>
     /// Raises the <see cref="BeforeCodeGeneration"/> event, generates the code by calling all
     /// the deferred implementors on <see cref="ITSFileCSharpType"/> and if no error has been logged,
-    /// raises the <see cref="AfterCodeGeneration"/> event.
+    /// raises the <see cref="AfterDeferredCodeGeneration"/>, lock the type manager and raises
+    /// the  <see cref="AfterCodeGeneration"/> event.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>True on success, false if an error occurred.</returns>
