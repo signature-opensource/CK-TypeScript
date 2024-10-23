@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CK.TS.Angular\CK.TS.Angular.csproj" />
+    <ProjectReference Include="..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
+  </ItemGroup>
+
+</Project>
