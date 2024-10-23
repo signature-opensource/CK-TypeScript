@@ -1,5 +1,5 @@
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
-import { AuthService, IAuthenticationInfo, IUserInfo } from '@signature/webfrontauth';
+import { inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { AuthService, IAuthenticationInfo, IUserInfo } from '@local/ck-gen';
 
 @Injectable({ providedIn: 'root' })
 export class NgAuthService {

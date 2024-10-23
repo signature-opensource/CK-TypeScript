@@ -1,14 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <EmbeddedResource Include="**\*.ts">
+            <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+        </EmbeddedResource>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CK.TS.Angular\CK.TS.Angular.csproj" />
-    <ProjectReference Include="..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\CK.TS.Angular\CK.TS.Angular.csproj" />
+        <ProjectReference Include="..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
+    </ItemGroup>
 
 </Project>

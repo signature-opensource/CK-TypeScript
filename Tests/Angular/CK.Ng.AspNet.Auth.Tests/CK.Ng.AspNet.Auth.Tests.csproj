@@ -12,6 +12,7 @@
   </ItemGroup>
     
   <ItemGroup>
+      <ProjectReference Include="..\..\..\CK.Ng.AspNet.Auth\CK.Ng.AspNet.Auth.csproj" />
       <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
       <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>

@@ -1,4 +1,4 @@
-import { IEndPoint, IAuthServiceConfiguration } from '@signature/webfrontauth';
+import { IEndPoint, IAuthServiceConfiguration } from '@local/ck-gen';
 
 export class AuthServiceClientConfiguration implements IAuthServiceConfiguration {
     public readonly identityEndPoint: IEndPoint;
@@ -11,7 +11,7 @@ export class AuthServiceClientConfiguration implements IAuthServiceConfiguration
      * @param [loginPath='/login'] The route path WebFrontAuth should redirect to when authentication is required.
      * @param
      */
-    constructor(identityEndPoint: IEndPoint, loginPath: string = '/login', useLocalStorage?: boolean) {
+    constructor( identityEndPoint: IEndPoint, loginPath: string = '/login', useLocalStorage?: boolean ) {
         this.identityEndPoint = identityEndPoint;
         this.loginPath = loginPath;
         this.useLocalStorage = useLocalStorage;
@@ -25,13 +25,13 @@ export class AuthServiceClientConfiguration implements IAuthServiceConfiguration
  * @export
  * @param [loginPath='/login'] The route path WebFrontAuth should redirect to when authentication is required.
  */
-export function createDefaultConfig(loginPath: string = '/login', useLocalStorage?: boolean): AuthServiceClientConfiguration {
+export function createDefaultConfig( loginPath: string = '/login', useLocalStorage?: boolean ): AuthServiceClientConfiguration {
     const isHttps = window.location.protocol.toLowerCase() === 'https:';
     const identityEndPoint: IEndPoint = {
         hostname: window.location.hostname,
-        port: window.location.port ? Number(window.location.port) : undefined,
+        port: window.location.port ? Number( window.location.port ) : undefined,
         disableSsl: !isHttps
     };
 
-    return new AuthServiceClientConfiguration(identityEndPoint, loginPath, useLocalStorage);
+    return new AuthServiceClientConfiguration( identityEndPoint, loginPath, useLocalStorage );
 }

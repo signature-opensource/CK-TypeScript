@@ -58,7 +58,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.EmbeddedResources", "CK.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.EmbeddedResources.Tests", "Tests\CK.EmbeddedResources.Tests\CK.EmbeddedResources.Tests.csproj", "{1BC8BD26-8DDC-40F5-AA08-508DBCB6BF02}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Ng.AspNet.Auth", "CK.NG.AspNet.Auth\CK.Ng.AspNet.Auth.csproj", "{71D53CD1-C2A5-4458-A852-DBFB8746CE28}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Ng.AspNet.Auth", "CK.Ng.AspNet.Auth\CK.Ng.AspNet.Auth.csproj", "{71D53CD1-C2A5-4458-A852-DBFB8746CE28}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.AspNet.Auth.Tests", "Tests\Angular\CK.Ng.AspNet.Auth.Tests\CK.Ng.AspNet.Auth.Tests.csproj", "{D0DA4538-A318-4AFD-9E56-0092A5C41A7D}"
 EndProject

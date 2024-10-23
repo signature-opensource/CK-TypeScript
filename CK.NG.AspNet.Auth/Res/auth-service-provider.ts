@@ -1,16 +1,16 @@
 import { EnvironmentProviders, InjectionToken, makeEnvironmentProviders, Optional } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { AuthService, IAuthenticationInfo, IAuthenticationInfoTypeSystem, IAuthServiceConfiguration, IEndPoint, IUserInfo } from '@signature/webfrontauth';
+import { AuthService, IAuthenticationInfoTypeSystem, IUserInfo } from '@local/ck-gen';
 import { AxiosInstance } from 'axios';
 import { AuthServiceClientConfiguration, createDefaultConfig } from './auth-service-configuration';
-import { AuthInterceptor } from './auth-interceptor';
+import { authInterceptor } from './auth-interceptor';
 
 /**
  * An injection token that can be used in a DI provider.
  * Note: this is the one you pass to HttpCrisEndpoint to unify axios instances.
  * This could come from another very basic package, that would answer most of the basic use cases.
  */
-export const AXIOS = new InjectionToken<AxiosInstance>('AxiosInstance');
+export const AXIOS = new InjectionToken<AxiosInstance>( 'AxiosInstance' );
 
 /**
  * Factory method that instanciates an AuthService. A default AuthServiceClientConfiguration is created if none is given.
@@ -37,6 +37,6 @@ export function provideNgAuthService( axiosInstance: AxiosInstance, config?: Aut
     return makeEnvironmentProviders([
         { provide: AXIOS, useValue: axiosInstance },
         { provide: AuthService, useFactory: authServiceFactory, deps: [AXIOS, [new Optional(), config], [new Optional(), typeSystem]] },
-        provideHttpClient( withInterceptors( [AuthInterceptor] ) )
+        provideHttpClient( withInterceptors( [authInterceptor] ) )
     ]);
 }
