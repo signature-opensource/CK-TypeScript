@@ -8,7 +8,7 @@ public static class CKomposableAppBuilderExtensions
     /// <summary>
     /// Ensures that at least one <see cref="TypeScriptBinPathAspectConfiguration"/> exists in the given <paramref name="binPathName"/>.
     /// If <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/> is empty, configures it to target the
-    /// conventional "<see cref="ICKomposableAppBuilder.GetHostFolderPath"/>/Client" path.
+    /// conventional "<see cref="ICKomposableAppBuilder.GetHostFolderPath">HostFolderPath</see>/<see cref="ICKomposableAppBuilder.ApplicationName">ApplicationName</see>.Web" path.
     /// <para>
     /// Sets <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/> and <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> to true.
     /// </para>
@@ -25,7 +25,7 @@ public static class CKomposableAppBuilderExtensions
         tsBinPathAspect.GitIgnoreCKGenFolder = true;
         if( tsBinPathAspect.TargetProjectPath.IsEmptyPath )
         {
-            tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( "Client" );
+            tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( builder.ApplicationName + ".Web" );
         }
         return tsBinPathAspect;
     }

@@ -3,6 +3,6 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json" Version="27.0.0-a" />
+    <PackageReference Include="CK.Poco.Exc.Json" Version="27.0.0-a00-00-0017-develop" />
   </ItemGroup>
 </Project>
