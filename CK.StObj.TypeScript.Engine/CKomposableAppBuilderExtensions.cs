@@ -18,11 +18,10 @@ public static class CKomposableAppBuilderExtensions
     /// <returns>The <see cref="TypeScriptBinPathAspectConfiguration"/>.</returns>
     public static TypeScriptBinPathAspectConfiguration EnsureDefaultTypeScriptAspectConfiguration( this ICKomposableAppBuilder builder, string binPathName = "First" )
     {
+        builder.EngineConfiguration.EnsureAspect<TypeScriptAspectConfiguration>();
         var binPath = builder.EngineConfiguration.FindRequiredBinPath( binPathName );
-        var tsAspect = builder.EngineConfiguration.EnsureAspect<TypeScriptAspectConfiguration>();
-        var tsBinPathAspect = builder.EngineConfiguration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+        var tsBinPathAspect = binPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         tsBinPathAspect.AutoInstallYarn = true;
-        tsBinPathAspect.GitIgnoreCKGenFolder = true;
         if( tsBinPathAspect.TargetProjectPath.IsEmptyPath )
         {
             tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( builder.ApplicationName + ".Web" );

@@ -24,7 +24,7 @@ namespace CK.TypeScript.CodeGen;
 /// </summary>
 public sealed class TypeScriptRoot
 {
-    Dictionary<object, object?>? _memory;
+    IDictionary<object, object?>? _memory;
     readonly TSTypeManager _tsTypes;
     readonly LibraryManager _libraryManager;
     readonly DocumentationBuilder _docBuilder;
@@ -47,6 +47,7 @@ public sealed class TypeScriptRoot
     /// <param name="pascalCase">Whether PascalCase identifiers should be generated instead of camelCase.</param>
     /// <param name="generateDocumentation">Whether documentation should be generated.</param>
     /// <param name="ignoreVersionsBound">True to ignore npm version bound conflicts. See <see cref="LibraryManager.IgnoreVersionsBound"/>.</param>
+    /// <param name="memory">Optional <see cref="Memory"/>. When let to null, this will be instanntiated on demand.</param>
     /// <param name="reflectTS">True to generate TSType map.</param>
     /// <param name="decimalLibraryName">
     /// Support library for decimal. If <see cref="decimal"/> is used, we default to use https://github.com/MikeMcl/decimal.js-light
@@ -60,12 +61,14 @@ public sealed class TypeScriptRoot
                            bool pascalCase,
                            bool generateDocumentation,
                            bool ignoreVersionsBound,
+                           IDictionary<object, object?>? memory = null,
                            bool reflectTS = false,
                            string decimalLibraryName = "decimal.js-light" )
     {
         Throw.CheckArgument( libraryVersionConfiguration.IsEmpty || libraryVersionConfiguration.KeyComparer == StringComparer.OrdinalIgnoreCase );
         _libraryManager = new LibraryManager( libraryVersionConfiguration, decimalLibraryName, ignoreVersionsBound );
         _pascalCase = pascalCase;
+        _memory = memory;
         _reflectTS = reflectTS;
         _docBuilder = new DocumentationBuilder( withStars: true, generateDoc: generateDocumentation );
         _root = new TypeScriptFolder( this );
@@ -168,7 +171,7 @@ public sealed class TypeScriptRoot
     /// Raised after the deferred implementors have successfully run on all types to implement and
     /// <see cref="AfterDeferredCodeGeneration"/> has been raised.
     /// <para>
-    /// This can be used to generate pure TS support files or altering exsitng code but registering
+    /// This can be used to generate pure TS support files or altering existing code but registering
     /// new types will throw an <see cref="InvalidOperationException"/>).
     /// </para>
     /// <para>
@@ -185,7 +188,8 @@ public sealed class TypeScriptRoot
     /// <summary>
     /// Raises the <see cref="BeforeCodeGeneration"/> event, generates the code by calling all
     /// the deferred implementors on <see cref="ITSFileCSharpType"/> and if no error has been logged,
-    /// raises the <see cref="AfterCodeGeneration"/> event.
+    /// raises the <see cref="AfterDeferredCodeGeneration"/>, lock the type manager and raises
+    /// the  <see cref="AfterCodeGeneration"/> event.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>True on success, false if an error occurred.</returns>

@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CK.TS.Angular.Engine;
 
@@ -23,28 +24,56 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
     {
         if( initializer.BinPathConfiguration.IntegrationMode != CKGenIntegrationMode.Inline )
         {
-            monitor.Warn( $"Angular application requires Inline IntegrationMode. '{initializer.BinPathConfiguration}' mode is not supported, skipping Angular support." );
-            return ITSCodeGenerator.Empty;
+            monitor.Error( $"Angular application requires Inline IntegrationMode. '{initializer.BinPathConfiguration}' mode is not supported." );
+            return null;
         }
-        return new CodeGen();
+        var codeGen = new AngularCodeGen();
+        initializer.RootMemory.Add( typeof( AngularCodeGen ), codeGen );
+        return codeGen;
     }
 
-    sealed class CodeGen : ITSCodeGenerator
+    internal sealed class AngularCodeGen : ITSCodeGenerator, IAngularContext
     {
+        [AllowNull] ComponentManager _components;
         [AllowNull] LibraryImport _angularCore;
+        [AllowNull] LibraryImport _angularRouter;
         [AllowNull] ITSFileType _ckGenAppModule;
         [AllowNull] ITSCodePart _importModulePart;
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
-        [AllowNull] ITSCodePart _routesPart;
 
-        public bool StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
+        public ITSFileType CKGenAppModule => _ckGenAppModule;
+
+        public ComponentManager ComponentManager => _components;
+
+        LibraryImport IAngularContext.AngularCoreLibrary => _angularCore;
+
+        LibraryImport IAngularContext.AngularRouterLibrary => _angularRouter;
+
+        ITSCodePart IAngularContext.ProviderPart => _providerPart;
+
+        internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module, ITSDeclaredFileType tsType )
+        {
+            _ckGenAppModule.File.Imports.EnsureImport( tsType );
+            if( !_importModulePart.IsEmpty )
+            {
+                _importModulePart.Append( ", " );
+                _exportModulePart.Append( ", " );
+            }
+            _importModulePart.Append( module.ModuleName );
+            _exportModulePart.Append( module.ModuleName );
+            return true;
+        }
+
+        bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
             _angularCore = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/core", DependencyKind.Dependency );
+            _angularRouter = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/router", DependencyKind.Dependency );
+            _components = new ComponentManager( context );
 
             var f = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
             f.Imports.EnsureImportFromLibrary( _angularCore, "NgModule", "Provider" );
-            _ckGenAppModule = f.CreateType( "CKGenAppModule", null, null );
+            _ckGenAppModule = f.CreateType( "CKGenAppModule", additionalImports: null, defaultValueSource: null );
             _ckGenAppModule.TypePart.Append( """
                 @NgModule({
                     imports: [
@@ -71,23 +100,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     ];
                 """ );
 
-            var r = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/routes.ts" );
-            r.Body.Append( """
-                export default [
-
-                """ )
-                .InsertPart( out _routesPart )
-                .Append( """
-
-                ];
-                """ );
-
             Throw.DebugAssert( "Inline mode => IntegrationContext.", context.IntegrationContext != null );
             context.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
             context.IntegrationContext.OnAfterIntegration += OnAfterIntegration;
-
             return true;
         }
+
         bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
         bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
@@ -157,6 +175,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     return CreateNewAngular( monitor, e, tempFolderPath, newFolderPath, tempPackageJsonPath )
                            && UpdateNewPackageJson( monitor, newFolderPath, targetPackageJson, out IList<PackageDependency> savedLatestDependencies, out var newPackageJson )
+                           && CleanupAppComponentHtml( monitor, newFolderPath )
                            && RemoveUselessAngularJsonTestSection( monitor, newFolderPath, newPackageJson )
                            && LiftContent( monitor, targetProjectPath, newFolderPath )
                            && ReloadTargetTSConfigAndPackageJson( monitor, e.IntegrationContext.TSConfigJson, targetPackageJson, savedLatestDependencies )
@@ -201,32 +220,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     }
                 }
 
-                static bool RemoveUselessAngularJsonTestSection( IActivityMonitor monitor, NormalizedPath newFolderPath, PackageJsonFile newPackageJson )
-                {
-                    // LOL! This is absolutely insane.
-                    // (But STJ is really bad at this. I don't want a dependency an have better thing to do right now.)
-                    NormalizedPath filePath = newFolderPath.AppendPart( "angular.json" );
-                    var text = File.ReadAllText( filePath ).ReplaceLineEndings();
-                    var start = """
-                    ,
-                            "test": {
-                    """.ReplaceLineEndings();
-                    int idxStart = text.IndexOf( start );
-                    if( idxStart > 0 )
-                    {
-                        var idxEnd = text.IndexOf( Environment.NewLine + "        }", idxStart );
-                        if( idxEnd > 0 )
-                        {
-                            text = text.Remove( idxStart, idxEnd - idxStart + 9 + Environment.NewLine.Length );
-                            File.WriteAllText( filePath, text );
-                            monitor.Info( "Removed useless \"test\" section from 'angular.json' file." );
-                            return true;
-                        }
-                    }
-                    monitor.Warn( "Unable to locate the \"test\" section in 'angular.json' file." );
-                    return true;
-                }
-
                 static bool UpdateNewPackageJson( IActivityMonitor monitor,
                                                   NormalizedPath newFolderPath,
                                                   PackageJsonFile targetPackageJson,
@@ -258,6 +251,43 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return false;
                     }
                     newPackageJson.Save();
+                    return true;
+                }
+
+                static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
+                {
+                    NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
+                    File.WriteAllText( filePath, """
+                        <h1>Hello, {{ title }}</h1>
+                        <router-outlet />
+                        """ );
+                    monitor.Trace( "Keeping only the '<h1>Hello, {{ title }}</h1><router-outlet />' in 'app.component.html'." );
+                    return true;
+                }
+
+                static bool RemoveUselessAngularJsonTestSection( IActivityMonitor monitor, NormalizedPath newFolderPath, PackageJsonFile newPackageJson )
+                {
+                    // LOL! This is absolutely insane.
+                    // (But STJ is really bad at this. I don't want a dependency an have better thing to do right now.)
+                    NormalizedPath filePath = newFolderPath.AppendPart( "angular.json" );
+                    var text = File.ReadAllText( filePath ).ReplaceLineEndings();
+                    var start = """
+                    ,
+                            "test": {
+                    """.ReplaceLineEndings();
+                    int idxStart = text.IndexOf( start );
+                    if( idxStart > 0 )
+                    {
+                        var idxEnd = text.IndexOf( Environment.NewLine + "        }", idxStart );
+                        if( idxEnd > 0 )
+                        {
+                            text = text.Remove( idxStart, idxEnd - idxStart + 9 + Environment.NewLine.Length );
+                            File.WriteAllText( filePath, text );
+                            monitor.Info( "Removed useless \"test\" section from 'angular.json' file." );
+                            return true;
+                        }
+                    }
+                    monitor.Warn( "Unable to locate the \"test\" section in 'angular.json' file." );
                     return true;
                 }
 
@@ -395,7 +425,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
             {
                 var app = File.ReadAllText( appFilePath );
-                if( app.Contains( "import { CKGenAppModule } from '@local/ck-gen';" ) )
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+                if( Regex.IsMatch( app, """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""", RegexOptions.CultureInvariant ) )
                 {
                     monitor.Trace( "File 'src/app/component.ts' imports the CKGenAppModule. Skipping transformation." );
                 }
@@ -407,6 +438,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         AddImportAndConclude( monitor, appFilePath, success, ref app, "import { CKGenAppModule } from '@local/ck-gen';" );
                     }
                 }
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
 
                 static bool AddInImports( IActivityMonitor monitor, ref string app )
                 {

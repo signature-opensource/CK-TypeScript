@@ -13,8 +13,8 @@ namespace CK.Core;
 /// of the declarer's assembly.
 /// </para>
 /// <para>
-/// This is a record struct that benefits of the ToString (PrinMembers) and equality code generation but with
-/// an explicit constructor to handle the only <c>default</c> value to be <see cref="IsValid"/> false.
+/// This is a record struct that benefits of the ToString (PrintMembers) and equality code generation but with
+/// an explicit constructor to handle the only <c>default</c> value that is <see cref="IsValid"/> false.
 /// The <c>default</c> value makes <see cref="Nullable{T}"/> useless for this type.
 /// </para>
 /// </summary>
@@ -64,12 +64,14 @@ public readonly record struct ResourceTypeLocator
         return s ?? ThrowDetailedError();
     }
 
-    readonly bool PrintMembers( StringBuilder b )
+#pragma warning disable IDE0051 // Remove unused private members: See https://github.com/dotnet/roslyn/issues/52421
+    private readonly bool PrintMembers( StringBuilder b )
     {
         b.Append( nameof( ResourceName ) ).Append( " = \"" ).Append( ResourceName ).Append( "\", " )
          .Append( nameof( Declarer ) ).Append( " = " ).Append( Declarer );
         return true;
     }
+#pragma warning restore IDE0051 // Remove unused private members
 
     [StackTraceHidden]
     Stream ThrowDetailedError()

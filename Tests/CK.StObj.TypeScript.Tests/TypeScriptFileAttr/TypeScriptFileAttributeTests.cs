@@ -10,21 +10,21 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.TypeScript.Tests.TypeScriptFileAttr;
 
-[TypeScriptPackage]
+[TypeScriptPackage( ConsiderExplicitResourceOnly = true )]
 [TypeScriptFile( "IAmHere.ts", typeName: "IAmHere", TargetFolderName = "" )]
 [TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/utils-native-class", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptFile( "Some.private.ts" )]
 public sealed class Embedded : TypeScriptPackage { }
 
-[TypeScriptPackage]
+[TypeScriptPackage( ConsiderExplicitResourceOnly = true )]
 [TypeScriptImportLibrary( "tslib", "2.7.0", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/number-ctor", "~0.1.0", DependencyKind.DevDependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@stdlib/symbol-ctor", "*", DependencyKind.PeerDependency, ForceUse = true )]
 [TypeScriptFile( "IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo", TargetFolderName = "" )]
 public sealed class OtherEmbedded : TypeScriptPackage { }
 
-[TypeScriptPackage]
+[TypeScriptPackage( ConsiderExplicitResourceOnly = true )]
 [TypeScriptImportLibrary( "axios", "*", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptFile( "HttpCrisEndpoint.ts", "HttpCrisEndpoint", TargetFolderName = "" )]
 public sealed class WithAxios : TypeScriptPackage { }

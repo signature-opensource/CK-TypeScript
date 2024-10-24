@@ -17,6 +17,8 @@ sealed class TSContextInitializer
     readonly IPocoTypeSet _typeScriptExchangeableSet;
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
+    readonly ImmutableArray<TypeScriptPackageAttributeImpl> _packages;
+    readonly IDictionary<object, object?>? _rootMemory;
 
     /// <summary>
     /// Gets the types that have been explictely registered.
@@ -29,14 +31,24 @@ sealed class TSContextInitializer
     public ImmutableArray<ITSCodeGenerator> GlobalCodeGenerators => _globals;
 
     /// <summary>
+    /// Gets the global TypeScript generators.
+    /// </summary>
+    public ImmutableArray<TypeScriptPackageAttributeImpl> Packages => _packages;
+
+    /// <summary>
     /// Gets the set of Poco compliant types that must be handled in TypeScript.
     /// </summary>
     public IPocoTypeSet TypeScriptExchangeableSet => _typeScriptExchangeableSet;
 
     /// <summary>
-    /// Gets the intergration context if integration mode is not null.
+    /// Gets the intergation context if integration mode is not null.
     /// </summary>
     public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
+    /// <summary>
+    /// Gets the root memory if it has been initialized.
+    /// </summary>
+    public IDictionary<object, object?>? RootMemory => _rootMemory;
 
     /// <summary>
     /// Gets the library configured versions.
@@ -57,14 +69,17 @@ sealed class TSContextInitializer
                                                                  allExchangeableSet,
                                                                  out var globalFactories )
             && InitializeIntegrationContext( monitor, binPathConfiguration, libVersionsConfig, out var integrationContext )
-            && InitializeGlobalGenerators( monitor,
-                                           binPathConfiguration,
-                                           integrationContext,
-                                           regTypes,
-                                           allExchangeableSet,
-                                           jsonSerialization,
-                                           globalFactories,
-                                           out var globals ) )
+            && CollectTypeScriptPackages( monitor, genBinPath, out var packages )
+            && InitializeGlobalGeneratorsAndPackages( monitor,
+                                                      binPathConfiguration,
+                                                      integrationContext,
+                                                      regTypes,
+                                                      allExchangeableSet,
+                                                      jsonSerialization,
+                                                      packages,
+                                                      globalFactories,
+                                                      out var globals,
+                                                      out var rootMemory ) )
         {
             IPocoTypeSystem typeSystem = allExchangeableSet.TypeSystem;
             var emptyExchangeableSet = typeSystem.SetManager.EmptyExchangeable;
@@ -89,7 +104,7 @@ sealed class TSContextInitializer
                 monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
                 tsExchangeable = emptyExchangeableSet;
             }
-            return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig );
+            return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig, packages, rootMemory );
         }
         return null;
     }
@@ -98,13 +113,17 @@ sealed class TSContextInitializer
                           ImmutableArray<ITSCodeGenerator> g,
                           IPocoTypeSet s,
                           TypeScriptIntegrationContext? integrationContext,
-                          ImmutableDictionary<string, SVersionBound> libVersionsConfig )
+                          ImmutableDictionary<string, SVersionBound> libVersionsConfig,
+                          ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                          IDictionary<object, object?>? rootMemory )
     {
         _registeredTypes = r;
         _globals = g;
         _typeScriptExchangeableSet = s;
         _integrationContext = integrationContext;
         _libVersionsConfig = libVersionsConfig;
+        _packages = packages;
+        _rootMemory = rootMemory;
     }
 
     // Step 1.
@@ -291,18 +310,22 @@ sealed class TSContextInitializer
         readonly Dictionary<Type, RegisteredType> _regTypes;
         readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
         readonly IPocoTypeSet _allExchangeableSet;
+        readonly ImmutableArray<TypeScriptPackageAttributeImpl> _packages;
+        Dictionary<object,object?>? _rootMemory;
 
         public Initializer( TypeScriptBinPathAspectConfiguration binPathConfiguration,
                             TypeScriptIntegrationContext? integrationContext,
                             Dictionary<Type, RegisteredType> regTypes,
                             IPocoJsonSerializationServiceEngine? jsonSerialization,
-                            IPocoTypeSet allExchangeableSet )
+                            IPocoTypeSet allExchangeableSet,
+                            ImmutableArray<TypeScriptPackageAttributeImpl> packages )
         {
             _binPathConfiguration = binPathConfiguration;
             _integrationContext = integrationContext;
             _regTypes = regTypes;
             _jsonSerialization = jsonSerialization;
             _allExchangeableSet = allExchangeableSet;
+            _packages = packages;
         }
 
         public IReadOnlyDictionary<Type, RegisteredType> RegisteredTypes => _regTypes;
@@ -316,6 +339,13 @@ sealed class TSContextInitializer
         public TypeScriptBinPathAspectConfiguration BinPathConfiguration => _binPathConfiguration;
 
         public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
+
+        public ImmutableArray<TypeScriptPackageAttributeImpl> Packages => _packages;
+
+        internal Dictionary<object, object?>? RootMemory => _rootMemory;
+
+        IDictionary<object, object?> ITypeScriptContextInitializer.RootMemory => _rootMemory ??= new Dictionary<object,object?>();
+
 
         public bool EnsureRegister( IActivityMonitor monitor,
                                     Type t,
@@ -356,31 +386,86 @@ sealed class TSContextInitializer
     }
 
     // Step 4.
-    static bool InitializeGlobalGenerators( IActivityMonitor monitor,
-                                            TypeScriptBinPathAspectConfiguration binPathConfiguration,
-                                            TypeScriptIntegrationContext? integrationContext,
-                                            Dictionary<Type, RegisteredType> regTypes,
-                                            IPocoTypeSet allExchangeableSet,
-                                            IPocoJsonSerializationServiceEngine? jsonSerialization,
-                                            List<ITSCodeGeneratorFactory> globalFactories,
-                                            out ImmutableArray<ITSCodeGenerator> globals )
+    static bool CollectTypeScriptPackages( IActivityMonitor monitor, IGeneratedBinPath genBinPath, out ImmutableArray<TypeScriptPackageAttributeImpl> packages )
     {
-        var i = new Initializer( binPathConfiguration, integrationContext, regTypes, jsonSerialization, allExchangeableSet );
-        using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators." ) )
+        var bPackages = ImmutableArray.CreateBuilder<TypeScriptPackageAttributeImpl>();
+        bool success = true;
+        foreach( var p in genBinPath.EngineMap.StObjs.OrderedStObjs.Where( o => typeof( TypeScriptPackage ).IsAssignableFrom( o.ClassType ) ) )
         {
+            var a = p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>();
+            TypeScriptPackageAttributeImpl? package;
+            var e = a.GetEnumerator();
+            if( !e.MoveNext() )
+            {
+                monitor.Error( $"TypeScript package '{p.ClassType:N}' miss a [TypeScriptPackage] or specialized attribute." );
+                success = false;
+            }
+            else
+            {
+                package = e.Current;
+                if( e.MoveNext() )
+                {
+                    monitor.Error( $"""
+                                    TypeScript package '{p.ClassType:N}' is decorated with more than one [TypeScriptPackage] or specialized attribute:
+                                    {p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>().Select( a => a.GetType().Name ).Concatenate()}
+                                    """ );
+                    success = false;
+                }
+                else
+                {
+                    bPackages.Add( package );
+                }
+            }
+        }
+        packages = bPackages.DrainToImmutable();
+        return success;
+    }
+
+    // Step 5.
+    static bool InitializeGlobalGeneratorsAndPackages( IActivityMonitor monitor,
+                                                       TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                                       TypeScriptIntegrationContext? integrationContext,
+                                                       Dictionary<Type, RegisteredType> regTypes,
+                                                       IPocoTypeSet allExchangeableSet,
+                                                       IPocoJsonSerializationServiceEngine? jsonSerialization,
+                                                       ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                                                       List<ITSCodeGeneratorFactory> globalFactories,
+                                                       out ImmutableArray<ITSCodeGenerator> globals,
+                                                       out IDictionary<object,object?>? rootMemory )
+    {
+        var i = new Initializer( binPathConfiguration, integrationContext, regTypes, jsonSerialization, allExchangeableSet, packages );
+        using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators, initializing {packages.Length} TypeScript packages." ) )
+        {
+            bool success = true;
             var b = ImmutableArray.CreateBuilder<ITSCodeGenerator>( globalFactories.Count );
             foreach( var f in globalFactories )
             {
                 var g = f.CreateTypeScriptGenerator( monitor, i );
                 if( g == null )
                 {
-                    globals = ImmutableArray<ITSCodeGenerator>.Empty;
-                    return false;
+                    success = false;
                 }
-                b.Add( g );
+                else
+                {
+                    b.Add( g );
+                }
             }
-            globals = b.MoveToImmutable();
-            return true;
+            if( success )
+            {
+                foreach( var p in packages )
+                {
+                    success &= p.InitializePackage( monitor, i );
+                }
+                if( success )
+                {
+                    globals = b.MoveToImmutable();
+                    rootMemory = i.RootMemory;
+                    return true;
+                }
+            }
+            globals = ImmutableArray<ITSCodeGenerator>.Empty;
+            rootMemory = null;
+            return false;
         }
     }
 

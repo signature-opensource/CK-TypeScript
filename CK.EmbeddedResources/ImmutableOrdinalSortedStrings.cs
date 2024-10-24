@@ -46,8 +46,8 @@ public readonly struct ImmutableOrdinalSortedStrings
     public static ImmutableOrdinalSortedStrings UnsafeCreate( string[] transferOwnership, bool mustSort )
     {
         return mustSort
-                ? new ImmutableOrdinalSortedStrings( true, true, transferOwnership )
-                : new ImmutableOrdinalSortedStrings( true, transferOwnership );
+                ? new ImmutableOrdinalSortedStrings( true, transferOwnership )
+                : new ImmutableOrdinalSortedStrings( true, true, transferOwnership );
     }
 
     ImmutableOrdinalSortedStrings( bool ownsIt, string[] strings )

@@ -7,7 +7,6 @@ namespace CK.AspNet.Auth;
 /// </summary>
 [TypeScriptPackage]
 [TypeScriptImportLibrary( "axios", "^1.7.2", DependencyKind.PeerDependency, ForceUse = true )]
-[TypeScriptResourceFiles]
 public class TSPackage : TypeScriptPackage
 {
 }

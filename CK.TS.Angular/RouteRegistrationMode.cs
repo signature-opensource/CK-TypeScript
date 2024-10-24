@@ -1,7 +1,7 @@
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Defines how a <see cref="RoutedComponent"/> must be registered.
+/// Defines how a <see cref="NgRoutedComponent"/> must be registered.
 /// </summary>
 public enum RouteRegistrationMode
 {
