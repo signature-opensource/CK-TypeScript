@@ -27,16 +27,6 @@ public interface IAngularContext
     LibraryImport AngularRouterLibrary { get; }
 
     /// <summary>
-    /// The import module part.
-    /// </summary>
-    ITSCodePart ImportModulePart { get; }
-
-    /// <summary>
-    /// Gets the import module part.
-    /// </summary>
-    ITSCodePart ExportModulePart { get; }
-
-    /// <summary>
     /// Gets the 'static Providers : Provider[] = [...]' part.
     /// </summary>
     ITSCodePart ProviderPart { get; }

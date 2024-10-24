@@ -46,10 +46,10 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
         }
         var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
         Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-        Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
 
         return base.GenerateCode( monitor, context )
-               && context.GetAngularCodeGen().RegisterModule( monitor, this );
+               && context.GetAngularCodeGen().RegisterModule( monitor, this, tsType );
     }
 
 }

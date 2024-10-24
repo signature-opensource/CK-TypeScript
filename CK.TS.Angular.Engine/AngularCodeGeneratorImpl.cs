@@ -34,7 +34,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
     internal sealed class AngularCodeGen : ITSCodeGenerator, IAngularContext
     {
-        readonly List<NgModuleAttributeImpl> _modules;
         [AllowNull] ComponentManager _components;
         [AllowNull] LibraryImport _angularCore;
         [AllowNull] LibraryImport _angularRouter;
@@ -42,11 +41,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         [AllowNull] ITSCodePart _importModulePart;
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
-
-        public AngularCodeGen()
-        {
-            _modules = new List<NgModuleAttributeImpl>();
-        }
 
         public ITSFileType CKGenAppModule => _ckGenAppModule;
 
@@ -56,15 +50,18 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         LibraryImport IAngularContext.AngularRouterLibrary => _angularRouter;
 
-        ITSCodePart IAngularContext.ImportModulePart => _importModulePart;
-
-        ITSCodePart IAngularContext.ExportModulePart => _exportModulePart;
-
         ITSCodePart IAngularContext.ProviderPart => _providerPart;
 
-        internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module )
+        internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module, ITSDeclaredFileType tsType )
         {
-            _modules.Add( module );
+            _ckGenAppModule.File.Imports.EnsureImport( tsType );
+            if( !_importModulePart.IsEmpty )
+            {
+                _importModulePart.Append( ", " );
+                _exportModulePart.Append( ", " );
+            }
+            _importModulePart.Append( module.ModuleName );
+            _exportModulePart.Append( module.ModuleName );
             return true;
         }
 
@@ -260,8 +257,11 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
                 {
                     NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
-                    File.WriteAllText( filePath, "<router-outlet />" );
-                    monitor.Trace( "Keeping only the '<router-outlet />' in 'app.component.html'." );
+                    File.WriteAllText( filePath, """
+                        <h1>Hello, {{ title }}</h1>
+                        <router-outlet />
+                        """ );
+                    monitor.Trace( "Keeping only the '<h1>Hello, {{ title }}</h1><router-outlet />' in 'app.component.html'." );
                     return true;
                 }
 

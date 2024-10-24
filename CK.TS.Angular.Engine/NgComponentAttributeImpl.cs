@@ -76,8 +76,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
         }
         var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
         Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-        var tsFile = Unsafe.As<ResourceTypeScriptFile>( file );
-        ITSDeclaredFileType tsType = tsFile.DeclareType( ComponentName );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
 
         return base.GenerateCode( monitor, context )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
