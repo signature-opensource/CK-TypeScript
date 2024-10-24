@@ -147,7 +147,7 @@ public sealed class PackageDependency
         {
             if( _definitionSource == ConfigurationSourceName )
             {
-                monitor.Log( detailedLogLevel, $"TypeScript library '{_name}' version comes from the configuration. Ignoring '{other._version}' from '{other.DefinitionSource}'." );
+                monitor.Log( detailedLogLevel, $"TypeScript library '{_name}' version comes from the configuration. Ignoring '{other._version}' from '{other._definitionSource}'." );
                 return true;
             }
             if( other._definitionSource == ConfigurationSourceName )
@@ -170,7 +170,7 @@ public sealed class PackageDependency
             {
                 if( _version.Contains( other._version ) )
                 {
-                    monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': upgraded from '{_version}' to '{other._version}' from '{other.DefinitionSource}'." );
+                    monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': upgraded from '{_version}' (by '{_definitionSource}') to '{other._version}' (by '{other._definitionSource}')." );
                     _version = other._version;
                     _definitionSource = other._definitionSource;
                 }
@@ -179,7 +179,7 @@ public sealed class PackageDependency
                     if( !ignoreVersionsBound )
                     {
                         monitor.Error( $"""
-                            TypeScript library '{_name}': incompatible versions detected between current '{_version}' and '{other._version}' from '{other.DefinitionSource}'.
+                            TypeScript library '{_name}': incompatible versions detected between current '{_version}' (by '{_definitionSource}') and '{other._version}' (by '{other._definitionSource}').
                             Set IgnoreVersionsBound to true to allow the upgrade.
                             """ );
                         return false;
@@ -190,7 +190,7 @@ public sealed class PackageDependency
                     if( logWarn )
                     {
                         monitor.Warn( $"""
-                            TypeScript library '{_name}': current version '{_version}' is not compaible with '{other._version}' from '{other.DefinitionSource}'.
+                            TypeScript library '{_name}': current version '{_version}' (by '{_definitionSource}') is not compatible with '{other._version}' (by '{other._definitionSource}').
                             Since IgnoreVersionsBound is true, the version is updated to '{newV}'.
                             """ );
                     }
@@ -206,7 +206,7 @@ public sealed class PackageDependency
     {
         if( otherDep > _dependencyKind )
         {
-            monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': Kind changed from '{_dependencyKind}' to '{otherDep}' from '{otherDefinitionSource}'." );
+            monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': Kind changed from '{_dependencyKind}' to '{otherDep}' (by '{otherDefinitionSource}')." );
             _dependencyKind = otherDep;
         }
     }
