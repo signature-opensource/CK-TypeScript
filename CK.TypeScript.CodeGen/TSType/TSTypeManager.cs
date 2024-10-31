@@ -199,7 +199,7 @@ public sealed partial class TSTypeManager
         {
             if( GenerateCodeDone )
             {
-                Throw.InvalidOperationException( $"Resolving '{keyType}': No new types muste be registered after Code Generation step." );
+                Throw.InvalidOperationException( $"Resolving '{keyType}': No new types must be registered after Code Generation step." );
             }
             if( keyType is Type t )
             {
