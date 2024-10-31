@@ -1,46 +1,41 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <IsPackable>false</IsPackable>
-    </PropertyGroup>
-    <ItemGroup>
-        <PackageReference Include="CK.Testing.Nunit" Version="11.0.0-a00-00-0005-develop" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <EmbeddedResource Include="**\*.ts;**\*.html;**\*.less">
-            <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Remove="TSInlineTests/**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.html" />
-      <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.less" />
-      <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.ts" />
-      <None Remove="Demo\Res\demo-ng.module.ts" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
-        <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.html">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.less">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.ts">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="Demo\Res\demo-ng.module.ts">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-    
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.Nunit" Version="11.0.0-a00-00-0006-develop" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="**\*.ts;**\*.html;**\*.less">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Remove="TSInlineTests/**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.html" />
+    <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.less" />
+    <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.ts" />
+    <None Remove="Demo\Res\demo-ng.module.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+    <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.html">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.less">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Demo\Res\demo-ng.module.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>
