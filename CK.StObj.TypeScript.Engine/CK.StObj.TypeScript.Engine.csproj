@@ -3,10 +3,10 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-      <EmbeddedResource Include="../.yarn/releases/yarn-4.5.1.cjs" />
+    <EmbeddedResource Include="../.yarn/releases/yarn-4.5.1.cjs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="27.0.0-a00-00-0029-develop" />
+    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="27.0.0-a00-00-0030-develop" />
     <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
   </ItemGroup>
