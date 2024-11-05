@@ -2,12 +2,7 @@ import axios from 'axios';
 import { CookieJar } from 'tough-cookie';
 import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 
-import {
-    AuthService,
-    IAuthenticationInfo,
-    AuthLevel,
-    IUserInfo
-} from '@local/ck-gen';
+import { AuthService, IAuthenticationInfo, AuthLevel, IUserInfo } from '@local/ck-gen';
 import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-helpers';
 
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
