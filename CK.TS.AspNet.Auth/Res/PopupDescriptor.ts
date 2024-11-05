@@ -6,50 +6,50 @@ export type Collector = (s:string) => void;
  */
 export class PopupDescriptor {
 
-    private _popupTitle: string = 'Connection';
-    public get popupTitle(): string { return this._popupTitle; }
-    public set popupTitle( popupTitle: string ) { if( popupTitle ) { this._popupTitle = popupTitle; } }
+    #popupTitle: string = 'Connection';
+    public get popupTitle(): string { return this.#popupTitle; }
+    public set popupTitle( popupTitle: string ) { if( popupTitle ) { this.#popupTitle = popupTitle; } }
 
-    private _features: string = 'menubar=no, status=no, scrollbars=no, menubar=no, width=700, height=700';
-    public get features(): string { return this._features; }
-    public set features( features: string ) { if( features ) { this._features = features; } }
+    #features: string = 'menubar=no, status=no, scrollbars=no, menubar=no, width=700, height=700';
+    public get features(): string { return this.#features; }
+    public set features( features: string ) { if( features ) { this.#features = features; } }
 
-    private _basicFormTitle: string = 'Connection';
-    public get basicFormTitle(): string { return this._basicFormTitle; }
-    public set basicFormTitle( basicFormTitile: string ) { if( basicFormTitile ) { this._basicFormTitle = basicFormTitile; } }
+    #basicFormTitle: string = 'Connection';
+    public get basicFormTitle(): string { return this.#basicFormTitle; }
+    public set basicFormTitle( basicFormTitile: string ) { if( basicFormTitile ) { this.#basicFormTitle = basicFormTitile; } }
 
-    private _basicUserNamePlaceholder: string = 'username';
-    public get basicUserNamePlaceholder(): string { return this._basicUserNamePlaceholder; }
+    #basicUserNamePlaceholder: string = 'username';
+    public get basicUserNamePlaceholder(): string { return this.#basicUserNamePlaceholder; }
     public set basicUserNamePlaceholder( basicUserNamePlaceholder: string ) {
-        if( basicUserNamePlaceholder ) { this._basicUserNamePlaceholder = basicUserNamePlaceholder; }
+        if( basicUserNamePlaceholder ) { this.#basicUserNamePlaceholder = basicUserNamePlaceholder; }
     }
 
-    private _basicPasswordPlaceholder: string = 'password';
-    public get basicPasswordPlaceholder(): string { return this._basicPasswordPlaceholder; }
+    #basicPasswordPlaceholder: string = 'password';
+    public get basicPasswordPlaceholder(): string { return this.#basicPasswordPlaceholder; }
     public set basicPasswordPlaceholder( baiscPasswordPlaceholder: string ) {
-        if( baiscPasswordPlaceholder ) { this._basicPasswordPlaceholder = baiscPasswordPlaceholder; }
+        if( baiscPasswordPlaceholder ) { this.#basicPasswordPlaceholder = baiscPasswordPlaceholder; }
     }
 
-    private _basicSubmitButtonLabel: string = 'Submit';
-    public get basicSubmitButtonLabel(): string { return this._basicSubmitButtonLabel; }
+    #basicSubmitButtonLabel: string = 'Submit';
+    public get basicSubmitButtonLabel(): string { return this.#basicSubmitButtonLabel; }
     public set basicSubmitButtonLabel( basicSubmitButtonLabel: string ) {
-        if( basicSubmitButtonLabel ) { this._basicSubmitButtonLabel = basicSubmitButtonLabel; }
+        if( basicSubmitButtonLabel ) { this.#basicSubmitButtonLabel = basicSubmitButtonLabel; }
     }
 
-    private _basicMissingCredentialsError: string = 'Missing credentials.';
-    public get basicMissingCredentialsError() : string { return this._basicMissingCredentialsError; }
+    #basicMissingCredentialsError: string = 'Missing credentials.';
+    public get basicMissingCredentialsError() : string { return this.#basicMissingCredentialsError; }
     public set basicMissingCredentialsError( basicMissingCredentialsError: string ) { 
-        if( basicMissingCredentialsError ) { this._basicMissingCredentialsError = basicMissingCredentialsError; }
+        if( basicMissingCredentialsError ) { this.#basicMissingCredentialsError = basicMissingCredentialsError; }
     }
-    private _basicInvalidCredentialsError: string = 'Invalid credentials.';
-    public get basicInvalidCredentialsError(): string { return this._basicInvalidCredentialsError; }
+    #basicInvalidCredentialsError: string = 'Invalid credentials.';
+    public get basicInvalidCredentialsError(): string { return this.#basicInvalidCredentialsError; }
     public set basicInvalidCredentialsError( basicInvalidCredentialsError: string ) {
-        if( basicInvalidCredentialsError ) { this._basicInvalidCredentialsError = basicInvalidCredentialsError; }
+        if( basicInvalidCredentialsError ) { this.#basicInvalidCredentialsError = basicInvalidCredentialsError; }
     }
-    private _basicRememberMeLabel: string = 'Remember me';
-    public get basicRememberMeLabel(): string { return this._basicRememberMeLabel; }
+    #basicRememberMeLabel: string = 'Remember me';
+    public get basicRememberMeLabel(): string { return this.#basicRememberMeLabel; }
     public set basicRememberMeLabel( basicRememberMeLabel: string ) {
-        if( basicRememberMeLabel ) { this._basicRememberMeLabel = basicRememberMeLabel; }
+        if( basicRememberMeLabel ) { this.#basicRememberMeLabel = basicRememberMeLabel; }
     }
 
     public generateBasicHtml(rememberMe: boolean): string {
@@ -110,7 +110,7 @@ display: none;
         collector( 'class="remember-me-input"/> <label for="remember-me-input" class="remember-me-label">' );
         collector( this.basicRememberMeLabel );
         collector( '</label> </div> <button id="submit-button">' );
-        collector( this.basicSubmitButtonLabel );
+        collector( this.#basicSubmitButtonLabel );
         collector( '</button>' );
         this.generateScript( collector );
         collector( '</body>');

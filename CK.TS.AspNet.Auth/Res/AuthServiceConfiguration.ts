@@ -1,23 +1,23 @@
 import { IAuthServiceConfiguration, IEndPoint, IAuthenticationInfo, IUserInfo } from './authService.model.public';
 
 export class AuthServiceConfiguration {
-    private readonly _identityServerEndPoint: string;
+    readonly #identityServerEndPoint: string;
 
     /** When defined, the local storage is available. */
     public readonly localStorage?: Storage;
 
     /** Gets the end point address. */
-    public get webFrontAuthEndPoint(): string { return this._identityServerEndPoint; }
+    public get webFrontAuthEndPoint(): string { return this.#identityServerEndPoint; }
 
     constructor(config: IAuthServiceConfiguration) {
         if (typeof config.identityEndPoint === "string") {
-            this._identityServerEndPoint = config.identityEndPoint;
-            if (!this._identityServerEndPoint.endsWith('/')) {
-                this._identityServerEndPoint += '/';
+            this.#identityServerEndPoint = config.identityEndPoint;
+            if (!this.#identityServerEndPoint.endsWith('/')) {
+                this.#identityServerEndPoint += '/';
             }
         }
         else {
-            this._identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
+            this.#identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
         }
         if(  config.useLocalStorage ) this.localStorage = this.getAvailableStorage('localStorage');
     }

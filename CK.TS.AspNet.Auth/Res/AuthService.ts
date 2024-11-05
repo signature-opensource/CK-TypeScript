@@ -9,53 +9,53 @@ import { PopupDescriptor } from './PopupDescriptor';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
 
-    private _authenticationInfo: IAuthenticationInfoImpl<T>;
-    private _token: string;
-    private _rememberMe: boolean;
-    private _refreshable: boolean;
-    private _availableSchemes: ReadonlyArray<string>;
-    private _endPointVersion: string;
-    private _configuration: AuthServiceConfiguration;
-    private _currentError?: IWebFrontAuthError;
-    private _lastResult: ILastResult;
+    #authenticationInfo: IAuthenticationInfoImpl<T>;
+    #token: string;
+    #rememberMe: boolean;
+    #refreshable: boolean;
+    #availableSchemes: ReadonlyArray<string>;
+    #endPointVersion: string;
+    #configuration: AuthServiceConfiguration;
+    #currentError?: IWebFrontAuthError;
+    #lastResult: ILastResult;
 
-    private _axiosInstance: AxiosInstance;
-    private _interceptor: number;
-    private _typeSystem: IAuthenticationInfoTypeSystem<T>;
-    private _popupDescriptor: PopupDescriptor | undefined;
-    private _expTimer: ReturnType<typeof setTimeout> | undefined;
-    private _cexpTimer: ReturnType<typeof setTimeout> | undefined;
+    #axiosInstance: AxiosInstance;
+    #interceptor: number;
+    #typeSystem: IAuthenticationInfoTypeSystem<T>;
+    #popupDescriptor: PopupDescriptor | undefined;
+    #expTimer: ReturnType<typeof setTimeout> | undefined;
+    #cexpTimer: ReturnType<typeof setTimeout> | undefined;
 
-    private _subscribers: Set<( eventSource: AuthService ) => void>;
-    private _onMessage?: ( this: Window, ev: MessageEvent ) => void;
-    private _closed: boolean;
-    private _popupWin: Window | undefined;
+    #subscribers: Set<( eventSource: AuthService ) => void>;
+    #onMessage?: ( this: Window, ev: MessageEvent ) => void;
+    #closed: boolean;
+    #popupWin: Window | undefined;
 
     /** Gets the current authentication information. */
-    public get authenticationInfo(): IAuthenticationInfo<T> { return this._authenticationInfo; }
+    public get authenticationInfo(): IAuthenticationInfo<T> { return this.#authenticationInfo; }
     /** Gets the current authentication token. This is the empty string when there is currently no authentication. */
-    public get token(): string { return this._token; }
+    public get token(): string { return this.#token; }
     /** Gets whether this service will automatically refreshes the authentication. */
-    public get refreshable(): boolean { return this._refreshable; }
+    public get refreshable(): boolean { return this.#refreshable; }
     /** Gets whether the current authentication should be memorized or considered a transient one. */
-    public get rememberMe(): boolean { return this._rememberMe; }
+    public get rememberMe(): boolean { return this.#rememberMe; }
     /** Gets the available authentication schemes names. */
-    public get availableSchemes(): ReadonlyArray<string> { return this._availableSchemes; }
+    public get availableSchemes(): ReadonlyArray<string> { return this.#availableSchemes; }
     /** Gets the Authentication server version.*/
-    public get endPointVersion(): string { return this._endPointVersion; }
+    public get endPointVersion(): string { return this.#endPointVersion; }
     /** Gets the last server result with the last server data and error if any. */
-    public get lastResult(): ILastResult { return this._lastResult; }
+    public get lastResult(): ILastResult { return this.#lastResult; }
     /** Gets the TypeSystem that manages AuthenticationInfo and UserInfo.*/
-    public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this._typeSystem; }
+    public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this.#typeSystem; }
     /** Gets whether this AuthService is closed: no method should be called anymore. */
-    public get isClosed(): boolean { return this._closed; }
+    public get isClosed(): boolean { return this.#closed; }
 
     public get popupDescriptor(): PopupDescriptor {
-        if ( !this._popupDescriptor ) { this._popupDescriptor = new PopupDescriptor(); }
-        return this._popupDescriptor;
+        if ( !this.#popupDescriptor ) { this.#popupDescriptor = new PopupDescriptor(); }
+        return this.#popupDescriptor;
     }
     public set popupDescriptor( popupDescriptor: PopupDescriptor ) {
-        if ( popupDescriptor ) { this._popupDescriptor = popupDescriptor; }
+        if ( popupDescriptor ) { this.#popupDescriptor = popupDescriptor; }
     };
 
     //#region constructor
@@ -73,29 +73,29 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                   typeSystem?: IAuthenticationInfoTypeSystem<T>)
     {
         if ( !configuration ) { throw new Error( 'Configuration must be defined.' ); }
-        this._configuration = new AuthServiceConfiguration( configuration );
+        this.#configuration = new AuthServiceConfiguration( configuration );
 
         if ( !axiosInstance ) { throw new Error( 'AxiosInstance must be defined.' ); }
-        this._axiosInstance = axiosInstance;
-        this._interceptor = this._axiosInstance.interceptors.request.use( this.onIntercept() );
+        this.#axiosInstance = axiosInstance;
+        this.#interceptor = this.#axiosInstance.interceptors.request.use( this.onIntercept() );
 
-        this._closed = false;
-        this._typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
-        this._endPointVersion = '';
-        this._availableSchemes = [];
-        this._subscribers = new Set<() => void>();
-        this._expTimer = undefined;
-        this._cexpTimer = undefined;
-        this._authenticationInfo = this._typeSystem.authenticationInfo.none;
-        this._refreshable = false;
-        this._rememberMe = false;
-        this._token = '';
-        this._lastResult = { serverData: undefined, error: undefined };
-        this._popupDescriptor = undefined;
+        this.#closed = false;
+        this.#typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
+        this.#endPointVersion = '';
+        this.#availableSchemes = [];
+        this.#subscribers = new Set<() => void>();
+        this.#expTimer = undefined;
+        this.#cexpTimer = undefined;
+        this.#authenticationInfo = this.#typeSystem.authenticationInfo.none;
+        this.#refreshable = false;
+        this.#rememberMe = false;
+        this.#token = '';
+        this.#lastResult = { serverData: undefined, error: undefined };
+        this.#popupDescriptor = undefined;
 
         if ( !( typeof window === 'undefined' ) ) {
-            this._onMessage = this.onMessage();
-            window.addEventListener( 'message', this._onMessage, false );
+            this.#onMessage = this.onMessage();
+            window.addEventListener( 'message', this.#onMessage, false );
         }
 
         this.localDisconnect();
@@ -138,16 +138,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * This can be called multiple times.
      */
     public close(): void {
-        if ( !this._closed ) {
-            this._closed = true;
+        if ( !this.#closed ) {
+            this.#closed = true;
             this.clearTimeouts();
-            this._subscribers.clear();
-            this._axiosInstance.interceptors.request.eject( this._interceptor );
-            if ( this._onMessage ) window.removeEventListener( 'message', this._onMessage, false );
+            this.#subscribers.clear();
+            this.#axiosInstance.interceptors.request.eject( this.#interceptor );
+            if ( this.#onMessage ) window.removeEventListener( 'message', this.#onMessage, false );
         }
     }
 
-    private checkClosed() { if ( this._closed ) throw new Error( "This AuthService has been closed." ); }
+    private checkClosed() { if ( this.#closed ) throw new Error( "This AuthService has been closed." ); }
 
     //#endregion
 
@@ -160,16 +160,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     private setExpirationTimeout(): void {
-        const timeDifference = this._authenticationInfo.expires!.getTime() - Date.now();
+        const timeDifference = this.#authenticationInfo.expires!.getTime() - Date.now();
 
         if ( timeDifference > this.maxTimeout ) {
-            this._expTimer = setTimeout( this.setExpirationTimeout, this.maxTimeout );
+            this.#expTimer = setTimeout( this.setExpirationTimeout, this.maxTimeout );
         } else {
-            this._expTimer = setTimeout( () => {
-                if ( this._refreshable ) {
+            this.#expTimer = setTimeout( () => {
+                if ( this.#refreshable ) {
                     this.refresh();
                 } else {
-                    this._authenticationInfo = this._authenticationInfo.setExpires( undefined );
+                    this.#authenticationInfo = this.#authenticationInfo.setExpires( undefined );
                     this.onChange();
                 }
             }, AuthService.getSafeTimeDifference( timeDifference ) );
@@ -177,16 +177,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     private setCriticalExpirationTimeout(): void {
-        const timeDifference = this._authenticationInfo.criticalExpires!.getTime() - Date.now();
+        const timeDifference = this.#authenticationInfo.criticalExpires!.getTime() - Date.now();
 
         if ( timeDifference > this.maxTimeout ) {
-            this._cexpTimer = setTimeout( this.setCriticalExpirationTimeout, this.maxTimeout );
+            this.#cexpTimer = setTimeout( this.setCriticalExpirationTimeout, this.maxTimeout );
         } else {
-            this._cexpTimer = setTimeout( () => {
-                if ( this._refreshable ) {
+            this.#cexpTimer = setTimeout( () => {
+                if ( this.#refreshable ) {
                     this.refresh();
                 } else {
-                    this._authenticationInfo = this._authenticationInfo.setCriticalExpires();
+                    this.#authenticationInfo = this.#authenticationInfo.setCriticalExpires();
                     this.onChange();
                 }
             }, AuthService.getSafeTimeDifference( timeDifference ) );
@@ -194,22 +194,22 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     }
 
     private clearTimeouts(): void {
-        if ( this._expTimer ) {
-            clearTimeout( this._expTimer );
-            this._expTimer = undefined;
+        if ( this.#expTimer ) {
+            clearTimeout( this.#expTimer );
+            this.#expTimer = undefined;
         }
-        if ( this._cexpTimer ) {
-            clearTimeout( this._cexpTimer );
-            this._cexpTimer = undefined;
+        if ( this.#cexpTimer ) {
+            clearTimeout( this.#cexpTimer );
+            this.#cexpTimer = undefined;
         }
     }
 
     private onIntercept(): ( value: InternalAxiosRequestConfig<undefined> ) => InternalAxiosRequestConfig<undefined> {
         return ( config: InternalAxiosRequestConfig<undefined> ) => {
-            if ( this._token
+            if ( this.#token
                 && this.shouldSetToken( config.url! ) ) {
                 config.headers = config.headers ?? new AxiosHeaders();
-                Object.assign( config.headers, { Authorization: `Bearer ${this._token}` } );
+                Object.assign( config.headers, { Authorization: `Bearer ${this.#token}` } );
             }
             return config;
         };
@@ -223,8 +223,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 // Still, anybody may send us such a message so here we check the other way around before accepting the message: the
                 // sender must origin from our endPoint.
                 const origin = messageEvent.origin + '/';
-                if ( origin !== this._configuration.webFrontAuthEndPoint ) {
-                    throw new Error( `Incorrect origin in postMessage. Expected '${this._configuration.webFrontAuthEndPoint}', but was '${origin}'` );
+                if ( origin !== this.#configuration.webFrontAuthEndPoint ) {
+                    throw new Error( `Incorrect origin in postMessage. Expected '${this.#configuration.webFrontAuthEndPoint}', but was '${origin}'` );
                 }
                 this.handleServerResponse( messageEvent.data.data );
             }
@@ -237,7 +237,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /** helper that assigns a new LastResult instance. Must be called before onChange(). */
     private setLastResult( data?: IWebFrontAuthResponse ): void {
-        this._lastResult = { error: this._currentError, serverData: data ? data.userData : undefined };
+        this.#lastResult = { error: this.#currentError, serverData: data ? data.userData : undefined };
     }
 
     /**
@@ -274,8 +274,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
 
             const query = this.buildQueryString( requestOptions.queries );
-            const response = await this._axiosInstance.post<IWebFrontAuthResponse>(
-                `${this._configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
+            const response = await this.#axiosInstance.post<IWebFrontAuthResponse>(
+                `${this.#configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
                 !!requestOptions.body ? JSON.stringify( requestOptions.body ) : {},
                 { withCredentials: true } );
 
@@ -288,7 +288,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 return;
             }
             // Sets the current error (weird success status).
-            this._currentError = new WebFrontAuthError( {
+            this.#currentError = new WebFrontAuthError( {
                 errorId: `HTTP.Status.${status}`,
                 errorText: 'Unhandled success status'
             } );
@@ -301,20 +301,20 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             const axiosError = error as AxiosError;
             if ( !( axiosError && axiosError.response ) ) {
                 // Connection issue (no axios response): 408 is Request Timeout.
-                this._currentError = new WebFrontAuthError( {
+                this.#currentError = new WebFrontAuthError( {
                     errorId: 'HTTP.Status.408',
                     errorText: 'No connection could be made'
                 } );
                 // If we are refreshing and there is no connection to the server, and the current level is None,
                 /// we challenge the local storage and try to restore the available schemes and (unsafe) authentication.
-                if ( this._authenticationInfo.level == AuthLevel.None
+                if ( this.#authenticationInfo.level == AuthLevel.None
                     && entryPoint === 'refresh'
-                    && this._configuration.localStorage ) {
+                    && this.#configuration.localStorage ) {
 
-                    const [auth, schemes] = this._typeSystem.authenticationInfo.loadFromLocalStorage( this._configuration.localStorage,
-                        this._configuration.webFrontAuthEndPoint,
-                        this._availableSchemes );
-                    this._availableSchemes = schemes;
+                    const [auth, schemes] = this.#typeSystem.authenticationInfo.loadFromLocalStorage( this.#configuration.localStorage,
+                        this.#configuration.webFrontAuthEndPoint,
+                        this.#availableSchemes );
+                    this.#availableSchemes = schemes;
                     if ( auth ) {
                         // This sets the (unsafe, no expiration) auth and trigger the onChange: we are done.
                         this.localDisconnect( auth );
@@ -327,7 +327,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 const errorResponse = axiosError.response;
                 const data = errorResponse.data as IWebFrontAuthResponse || {};
 
-                this._currentError = new WebFrontAuthError( {
+                this.#currentError = new WebFrontAuthError( {
                     errorId: data.errorId || `HTTP.Status.${errorResponse.status}`,
                     errorText: data.errorText || 'Server response error'
                 } );
@@ -335,9 +335,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
         // There has been an error.
         this.setLastResult();
-        const a = this._authenticationInfo.checkExpiration();
-        if ( a != this._authenticationInfo ) {
-            this._authenticationInfo = a;
+        const a = this.#authenticationInfo.checkExpiration();
+        if ( a != this.#authenticationInfo ) {
+            this.#authenticationInfo = a;
             this.onNewAuthenticationInfo();
         }
         else {
@@ -351,30 +351,30 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             return;
         }
 
-        this._currentError = undefined;
+        this.#currentError = undefined;
 
         // Checking the version first.
         if ( r.version ) {
             // Only refresh returns the version.
-            this._endPointVersion = r.version;
+            this.#endPointVersion = r.version;
         }
-        if ( r.schemes ) { this._availableSchemes = r.schemes; }
+        if ( r.schemes ) { this.#availableSchemes = r.schemes; }
 
         if ( r.loginFailureCode && r.loginFailureReason ) {
-            this._currentError = new WebFrontAuthError( {
+            this.#currentError = new WebFrontAuthError( {
                 loginFailureCode: r.loginFailureCode,
                 loginFailureReason: r.loginFailureReason
             } );
         }
 
         if ( r.errorId && r.errorText ) {
-            this._currentError = new WebFrontAuthError( {
+            this.#currentError = new WebFrontAuthError( {
                 errorId: r.errorId,
                 errorText: r.errorText
             } );
         }
 
-        if ( this._currentError ) {
+        if ( this.#currentError ) {
             this.localDisconnect( undefined, r );
             return;
         }
@@ -385,42 +385,42 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             return;
         }
 
-        this._token = r.token ? r.token : '';
-        this._refreshable = r.refreshable ? r.refreshable : false;
-        this._rememberMe = r.rememberMe ? r.rememberMe : false;
+        this.#token = r.token ? r.token : '';
+        this.#refreshable = r.refreshable ? r.refreshable : false;
+        this.#rememberMe = r.rememberMe ? r.rememberMe : false;
 
-        const info = this._typeSystem.authenticationInfo.fromServerResponse( r.info, this._availableSchemes );
-        this._authenticationInfo = info !== null ? info : this._typeSystem.authenticationInfo.none.setDeviceId( this._authenticationInfo.deviceId );
+        const info = this.#typeSystem.authenticationInfo.fromServerResponse( r.info, this.#availableSchemes );
+        this.#authenticationInfo = info !== null ? info : this.#typeSystem.authenticationInfo.none.setDeviceId( this.#authenticationInfo.deviceId );
 
         this.setLastResult( r );
         this.onNewAuthenticationInfo();
     }
 
     private onNewAuthenticationInfo() {
-        if ( this._authenticationInfo.expires ) {
+        if ( this.#authenticationInfo.expires ) {
             this.setExpirationTimeout();
-            if ( this._authenticationInfo.criticalExpires ) { this.setCriticalExpirationTimeout(); }
+            if ( this.#authenticationInfo.criticalExpires ) { this.setCriticalExpirationTimeout(); }
         }
-        if ( this._configuration.localStorage ) {
-            this._typeSystem.authenticationInfo.saveToLocalStorage(
-                this._configuration.localStorage,
-                this._configuration.webFrontAuthEndPoint,
-                this._authenticationInfo,
-                this._availableSchemes );
+        if ( this.#configuration.localStorage ) {
+            this.#typeSystem.authenticationInfo.saveToLocalStorage(
+                this.#configuration.localStorage,
+                this.#configuration.webFrontAuthEndPoint,
+                this.#authenticationInfo,
+                this.#availableSchemes );
         }
         this.onChange();
     }
 
     private localDisconnect( fromLocalStorage?: IAuthenticationInfoImpl<T>, data?: IWebFrontAuthResponse ): void {
         // Keep (and applies) the current rememberMe configuration: this is the "local" disconnect.
-        this._token = '';
-        this._refreshable = false;
-        if ( fromLocalStorage ) this._authenticationInfo = fromLocalStorage;
-        else if ( this._rememberMe ) {
-            this._authenticationInfo = this._authenticationInfo.setExpires();
+        this.#token = '';
+        this.#refreshable = false;
+        if ( fromLocalStorage ) this.#authenticationInfo = fromLocalStorage;
+        else if ( this.#rememberMe ) {
+            this.#authenticationInfo = this.#authenticationInfo.setExpires();
         }
         else {
-            this._authenticationInfo = this._typeSystem.authenticationInfo.none.setDeviceId( this._authenticationInfo.deviceId );
+            this.#authenticationInfo = this.#typeSystem.authenticationInfo.none.setDeviceId( this.#authenticationInfo.deviceId );
         }
         this.clearTimeouts();
         this.setLastResult( data );
@@ -446,7 +446,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         impersonateActualUser?: boolean,
         serverData?: { [index: string]: string | null } ): Promise<void> {
         this.checkClosed();
-        if ( rememberMe === undefined ) rememberMe = this._rememberMe;
+        if ( rememberMe === undefined ) rememberMe = this.#rememberMe;
         await this.sendRequest( 'basicLogin', { body: { userName, password, userData: serverData, rememberMe, impersonateActualUser } } );
     }
 
@@ -461,7 +461,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public async unsafeDirectLogin( provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null } ): Promise<void> {
         this.checkClosed();
-        if ( rememberMe === undefined ) rememberMe = this._rememberMe;
+        if ( rememberMe === undefined ) rememberMe = this.#rememberMe;
         await this.sendRequest( 'unsafeDirectLogin', { body: { provider, payload, userData: serverData, rememberMe, impersonateActualUser } } );
     }
 
@@ -480,8 +480,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         // No need to encodeURIComponent these parameters.
         const queries: string[] = [];
         if ( callBackend ) { queries.push( 'callBackend' ); }
-        if ( requestSchemes || this._availableSchemes.length === 0 ) { queries.push( 'schemes' ); }
-        if ( requestVersion || this._endPointVersion === '' ) { queries.push( 'version' ); }
+        if ( requestSchemes || this.#availableSchemes.length === 0 ) { queries.push( 'schemes' ); }
+        if ( requestVersion || this.#endPointVersion === '' ) { queries.push( 'version' ); }
         await this.sendRequest( 'refresh', { queries } );
     }
 
@@ -502,12 +502,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public async logout(): Promise<void> {
         this.checkClosed();
-        this._token = '';
+        this.#token = '';
         await this.sendRequest( 'logout', {}, /* skipResponseHandling */ true );
-        if ( this._configuration.localStorage ) {
-            this._typeSystem.authenticationInfo.saveToLocalStorage(
-                this._configuration.localStorage,
-                this._configuration.webFrontAuthEndPoint,
+        if ( this.#configuration.localStorage ) {
+            this.#typeSystem.authenticationInfo.saveToLocalStorage(
+                this.#configuration.localStorage,
+                this.#configuration.webFrontAuthEndPoint,
                 null,
                 [] )
         }
@@ -552,7 +552,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         impersonateActualUser?: boolean,
         serverData?: { [index: string]: string | null } ): Promise<void> {
         this.checkClosed();
-        if ( rememberMe === undefined ) rememberMe = this._rememberMe;
+        if ( rememberMe === undefined ) rememberMe = this.#rememberMe;
         if ( scheme === 'Basic' ) {
             const popup = this.ensurePopup( 'about:blank' );
             popup.document.write( this.popupDescriptor.generateBasicHtml( rememberMe ) );
@@ -593,15 +593,15 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     }
     private ensurePopup( url: string ): Window {
-        if ( !this._popupWin || this._popupWin.closed ) {
-            this._popupWin = window.open( url, this.popupDescriptor.popupTitle, this.popupDescriptor.features )!;
-            if ( this._popupWin === null ) throw new Error( "Unable to open popup window." );
+        if ( !this.#popupWin || this.#popupWin.closed ) {
+            this.#popupWin = window.open( url, this.popupDescriptor.popupTitle, this.popupDescriptor.features )!;
+            if ( this.#popupWin === null ) throw new Error( "Unable to open popup window." );
         }
         else {
-            this._popupWin.location.href = url;
-            this._popupWin.focus();
+            this.#popupWin.location.href = url;
+            this.#popupWin.focus();
         }
-        return this._popupWin;
+        return this.#popupWin;
     }
 
     /**
@@ -614,8 +614,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public shouldSetToken( url: string ): boolean {
         this.checkClosed();
         if ( !url ) throw new Error( "Url should not be null or undefined" )
-        if ( this._token === "" ) return false;
-        return url.startsWith( this._configuration.webFrontAuthEndPoint );
+        if ( this.#token === "" ) return false;
+        return url.startsWith( this.#configuration.webFrontAuthEndPoint );
     }
 
     //#endregion
@@ -623,7 +623,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region onChange
 
     private onChange(): void {
-        this._subscribers.forEach( func => func( this ) );
+        this.#subscribers.forEach( func => func( this ) );
     }
 
     /**
@@ -632,7 +632,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public addOnChange( func: ( eventSource: AuthService ) => void ): void {
         this.checkClosed();
-        if ( func !== undefined && func !== null ) { this._subscribers.add( func ); }
+        if ( func !== undefined && func !== null ) { this.#subscribers.add( func ); }
     }
 
     /**
@@ -642,7 +642,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public removeOnChange( func: ( eventSource: AuthService ) => void ): boolean {
         this.checkClosed();
-        return this._subscribers.delete( func );
+        return this.#subscribers.delete( func );
     }
     //#endregion
 
@@ -672,7 +672,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         if ( serverData ) {
             Object.keys( serverData ).forEach( i => params.push( { key: encodeURIComponent( i ), value: this.encData( serverData[i] ) } ) );
         }
-        return `${this._configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString( params, scheme )}`;
+        return `${this.#configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString( params, scheme )}`;
     }
     private encData( v: string | null ): string | null {
         return v === null ? null : encodeURIComponent( v );
