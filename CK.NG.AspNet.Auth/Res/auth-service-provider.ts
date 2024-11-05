@@ -1,8 +1,7 @@
-import { EnvironmentProviders, InjectionToken, makeEnvironmentProviders, Optional } from '@angular/core';
+import { APP_INITIALIZER, EnvironmentProviders, inject, InjectionToken, makeEnvironmentProviders } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { AuthService, IAuthenticationInfoTypeSystem, IUserInfo } from '@local/ck-gen';
+import { IAuthServiceConfiguration, AuthService, IAuthenticationInfoTypeSystem, IUserInfo } from '@local/ck-gen';
 import { AxiosInstance } from 'axios';
-import { AuthServiceClientConfiguration, createDefaultConfig } from './auth-service-configuration';
 import { authInterceptor } from './auth-interceptor';
 
 /**
@@ -10,7 +9,7 @@ import { authInterceptor } from './auth-interceptor';
  * Note: this is the one you pass to HttpCrisEndpoint to unify axios instances.
  * This could come from another very basic package, that would answer most of the basic use cases.
  */
-export const AXIOS = new InjectionToken<AxiosInstance>( 'AxiosInstance' );
+export const AXIOS = new InjectionToken<AxiosInstance>('AxiosInstance');
 
 /**
  * Provides the necessary providers to configure the NgAuthService. (AXIOS injectionToken, AuthService, HttpClient with AuthInterceptor)
@@ -19,15 +18,32 @@ export const AXIOS = new InjectionToken<AxiosInstance>( 'AxiosInstance' );
  * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo. Note: this could/should be removed anytime.
  * @returns An EnvironmentProviders that can be used to configure the NgAuthService in an app's providers configuration.
  */
-export function provideNgAuthService( axiosInstance: AxiosInstance, authConfig?: AuthServiceClientConfiguration, typeSystem?: IAuthenticationInfoTypeSystem<IUserInfo> ): EnvironmentProviders {
-    if ( !authConfig ) {
-        authConfig = createDefaultConfig();
-    }
+export function provideNgAuthService(axiosInstance: AxiosInstance,
+    authConfig?: IAuthServiceConfiguration,
+    typeSystem?: IAuthenticationInfoTypeSystem<IUserInfo>): EnvironmentProviders {
 
-    return makeEnvironmentProviders( [
+    return makeEnvironmentProviders([
         { provide: AXIOS, useValue: axiosInstance },
-        { provide: AuthServiceClientConfiguration, useValue: authConfig },
-        { provide: AuthService, useValue: new AuthService( authConfig, axiosInstance, typeSystem ) },
-        provideHttpClient( withInterceptors( [authInterceptor] ) )
-    ] );
+        { provide: AuthService, useValue: new AuthService(axiosInstance, authConfig, typeSystem) },
+        {
+            provide: APP_INITIALIZER,
+            useFactory: refreshAuthService,
+            multi: true
+        },
+        provideHttpClient(withInterceptors([authInterceptor]))
+    ]);
+}
+
+function refreshAuthService() {
+    const authService = inject(AuthService);
+    return async () => {
+        await authService.refresh(true);
+        if (authService.lastResult.error) {
+            console.error(
+                'Error while initalizing new AuthService.',
+                authService.lastResult.error.errorId,
+                authService.lastResult.error.errorText
+            );
+        }
+    }
 }

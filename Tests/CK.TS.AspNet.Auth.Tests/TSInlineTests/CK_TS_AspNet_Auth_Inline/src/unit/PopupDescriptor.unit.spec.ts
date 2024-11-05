@@ -10,12 +10,12 @@ describe('PopupDescriptor', function () {
     describe('when defined in an AuthService', function () {
 
         it('should be instanciated by default.', function () {
-            const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+            const authService = new AuthService( axiosInstance, { identityEndPoint: {} } );
             expect(authService.popupDescriptor).not.toBeNull();
         });
 
         it('should not accept a custom descriptor.', function () {
-            const authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+            const authService = new AuthService( axiosInstance, { identityEndPoint: {} } );
             expect(authService.popupDescriptor).not.toBeNull();
 
             const customPopupDescriptor = new PopupDescriptor();

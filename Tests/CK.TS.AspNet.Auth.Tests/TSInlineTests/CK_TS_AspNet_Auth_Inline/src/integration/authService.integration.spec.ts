@@ -47,7 +47,7 @@ describeWithServer('AuthService', function() {
         addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
 
-        authService = await AuthService.createAsync( { identityEndPoint: serverAddress }, axiosInstance );
+        authService = await AuthService.createAsync( axiosInstance, { identityEndPoint: serverAddress } );
     });
 
     beforeEach(async function() {

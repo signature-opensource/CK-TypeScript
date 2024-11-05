@@ -26,8 +26,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     #expTimer: ReturnType<typeof setTimeout> | undefined;
     #cexpTimer: ReturnType<typeof setTimeout> | undefined;
 
-    #subscribers: Set<( eventSource: AuthService ) => void>;
-    #onMessage?: ( this: Window, ev: MessageEvent ) => void;
+    #subscribers: Set<(eventSource: AuthService) => void>;
+    #onMessage?: (this: Window, ev: MessageEvent) => void;
     #closed: boolean;
     #popupWin: Window | undefined;
 
@@ -51,11 +51,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get isClosed(): boolean { return this.#closed; }
 
     public get popupDescriptor(): PopupDescriptor {
-        if ( !this.#popupDescriptor ) { this.#popupDescriptor = new PopupDescriptor(); }
+        if (!this.#popupDescriptor) { this.#popupDescriptor = new PopupDescriptor(); }
         return this.#popupDescriptor;
     }
-    public set popupDescriptor( popupDescriptor: PopupDescriptor ) {
-        if ( popupDescriptor ) { this.#popupDescriptor = popupDescriptor; }
+    public set popupDescriptor(popupDescriptor: PopupDescriptor) {
+        if (popupDescriptor) { this.#popupDescriptor = popupDescriptor; }
     };
 
     //#region constructor
@@ -64,20 +64,18 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * Instantiates a new AuthService. Note that the 'refresh' method must be called.
      * It is simpler and safer to use the factory method 'createAsync' that fully initializes
      * the AuthService before returning it.
-     * @param configuration The required configuration (endpoint and whether local storage should be used).
      * @param axiosInstance The axios instance that will be used. An interceptor is automatically registered that adds the token to each request (under control of {@link shouldSetToken}).
+     * @param configuration Optional configuration (server url and whether local storage should be used). Local storage is used by default.
      * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo.
      */
-    constructor ( configuration: IAuthServiceConfiguration,
-                  axiosInstance: AxiosInstance,
-                  typeSystem?: IAuthenticationInfoTypeSystem<T>)
-    {
-        if ( !configuration ) { throw new Error( 'Configuration must be defined.' ); }
-        this.#configuration = new AuthServiceConfiguration( configuration );
-
-        if ( !axiosInstance ) { throw new Error( 'AxiosInstance must be defined.' ); }
+    constructor(axiosInstance: AxiosInstance,
+        configuration?: IAuthServiceConfiguration,
+        typeSystem?: IAuthenticationInfoTypeSystem<T>) {
+        if (!axiosInstance) { throw new Error('AxiosInstance must be defined.'); }
         this.#axiosInstance = axiosInstance;
-        this.#interceptor = this.#axiosInstance.interceptors.request.use( this.onIntercept() );
+        this.#configuration = new AuthServiceConfiguration(configuration);
+
+        this.#interceptor = this.#axiosInstance.interceptors.request.use(this.onIntercept());
 
         this.#closed = false;
         this.#typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
@@ -93,9 +91,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this.#lastResult = { serverData: undefined, error: undefined };
         this.#popupDescriptor = undefined;
 
-        if ( !( typeof window === 'undefined' ) ) {
+        if (!(typeof window === 'undefined')) {
             this.#onMessage = this.onMessage();
-            window.addEventListener( 'message', this.#onMessage, false );
+            window.addEventListener('message', this.#onMessage, false);
         }
 
         this.localDisconnect();
@@ -104,29 +102,28 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     /**
      * Factory method that instantiates a new AuthService and calls the asynchronous refresh before
      * returning the service.
-     * @param configuration The required configuration (endpoint and whether local storage should be used).
      * @param axiosInstance The axios instance that will be used. An interceptor is automatically registered that adds the token to each request (under control of {@link shouldSetToken}).
+     * @param configuration Optional configuration (endpoint and whether local storage should be used). Local storage is used by default.
      * @param typeSystem Optional specialized type system that manages AuthenticationInfo and UserInfo.
      * @param throwOnError True to throw if any error occurred (server cannot be reached, protocol error, etc.)
      * @returns A new AuthService that may have a currentError if parameter throwOnError is false (the default).
      */
-    public static async createAsync<T extends IUserInfo = IUserInfo>(configuration: IAuthServiceConfiguration,
-                                                                     axiosInstance: AxiosInstance,
-                                                                     typeSystem?: IAuthenticationInfoTypeSystem<T>,
-                                                                     throwOnError: boolean = false): Promise<AuthService>
-    {
-        const authService = new AuthService<T>( configuration, axiosInstance, typeSystem );
-        await authService.refresh( true );
-        if ( authService.lastResult.error ) {
+    public static async createAsync<T extends IUserInfo = IUserInfo>(axiosInstance: AxiosInstance,
+        configuration?: IAuthServiceConfiguration,
+        typeSystem?: IAuthenticationInfoTypeSystem<T>,
+        throwOnError: boolean = false): Promise<AuthService> {
+        const authService = new AuthService<T>(axiosInstance, configuration, typeSystem);
+        await authService.refresh(true);
+        if (authService.lastResult.error) {
             console.error(
                 'Error while initalizing new AuthService.',
                 authService.lastResult.error.errorId,
                 authService.lastResult.error.errorText
             );
 
-            if ( throwOnError ) {
+            if (throwOnError) {
                 authService.close();
-                throw new Error( 'Unable to initalize a new AuthService. See logs.' );
+                throw new Error('Unable to initalize a new AuthService. See logs.');
             }
         }
         return authService;
@@ -138,16 +135,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * This can be called multiple times.
      */
     public close(): void {
-        if ( !this.#closed ) {
+        if (!this.#closed) {
             this.#closed = true;
             this.clearTimeouts();
             this.#subscribers.clear();
-            this.#axiosInstance.interceptors.request.eject( this.#interceptor );
-            if ( this.#onMessage ) window.removeEventListener( 'message', this.#onMessage, false );
+            this.#axiosInstance.interceptors.request.eject(this.#interceptor);
+            if (this.#onMessage) window.removeEventListener('message', this.#onMessage, false);
         }
     }
 
-    private checkClosed() { if ( this.#closed ) throw new Error( "This AuthService has been closed." ); }
+    private checkClosed() { if (this.#closed) throw new Error("This AuthService has been closed."); }
 
     //#endregion
 
@@ -155,78 +152,78 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     private readonly maxTimeout: number = 2147483647;
 
-    private static getSafeTimeDifference( timeDifference: number ): number {
+    private static getSafeTimeDifference(timeDifference: number): number {
         return timeDifference * 2 / 3;
     }
 
     private setExpirationTimeout(): void {
         const timeDifference = this.#authenticationInfo.expires!.getTime() - Date.now();
 
-        if ( timeDifference > this.maxTimeout ) {
-            this.#expTimer = setTimeout( this.setExpirationTimeout, this.maxTimeout );
+        if (timeDifference > this.maxTimeout) {
+            this.#expTimer = setTimeout(this.setExpirationTimeout, this.maxTimeout);
         } else {
-            this.#expTimer = setTimeout( () => {
-                if ( this.#refreshable ) {
+            this.#expTimer = setTimeout(() => {
+                if (this.#refreshable) {
                     this.refresh();
                 } else {
-                    this.#authenticationInfo = this.#authenticationInfo.setExpires( undefined );
+                    this.#authenticationInfo = this.#authenticationInfo.setExpires(undefined);
                     this.onChange();
                 }
-            }, AuthService.getSafeTimeDifference( timeDifference ) );
+            }, AuthService.getSafeTimeDifference(timeDifference));
         }
     }
 
     private setCriticalExpirationTimeout(): void {
         const timeDifference = this.#authenticationInfo.criticalExpires!.getTime() - Date.now();
 
-        if ( timeDifference > this.maxTimeout ) {
-            this.#cexpTimer = setTimeout( this.setCriticalExpirationTimeout, this.maxTimeout );
+        if (timeDifference > this.maxTimeout) {
+            this.#cexpTimer = setTimeout(this.setCriticalExpirationTimeout, this.maxTimeout);
         } else {
-            this.#cexpTimer = setTimeout( () => {
-                if ( this.#refreshable ) {
+            this.#cexpTimer = setTimeout(() => {
+                if (this.#refreshable) {
                     this.refresh();
                 } else {
                     this.#authenticationInfo = this.#authenticationInfo.setCriticalExpires();
                     this.onChange();
                 }
-            }, AuthService.getSafeTimeDifference( timeDifference ) );
+            }, AuthService.getSafeTimeDifference(timeDifference));
         }
     }
 
     private clearTimeouts(): void {
-        if ( this.#expTimer ) {
-            clearTimeout( this.#expTimer );
+        if (this.#expTimer) {
+            clearTimeout(this.#expTimer);
             this.#expTimer = undefined;
         }
-        if ( this.#cexpTimer ) {
-            clearTimeout( this.#cexpTimer );
+        if (this.#cexpTimer) {
+            clearTimeout(this.#cexpTimer);
             this.#cexpTimer = undefined;
         }
     }
 
-    private onIntercept(): ( value: InternalAxiosRequestConfig<undefined> ) => InternalAxiosRequestConfig<undefined> {
-        return ( config: InternalAxiosRequestConfig<undefined> ) => {
-            if ( this.#token
-                && this.shouldSetToken( config.url! ) ) {
+    private onIntercept(): (value: InternalAxiosRequestConfig<undefined>) => InternalAxiosRequestConfig<undefined> {
+        return (config: InternalAxiosRequestConfig<undefined>) => {
+            if (this.#token
+                && this.shouldSetToken(config.url!)) {
                 config.headers = config.headers ?? new AxiosHeaders();
-                Object.assign( config.headers, { Authorization: `Bearer ${this.#token}` } );
+                Object.assign(config.headers, { Authorization: `Bearer ${this.#token}` });
             }
             return config;
         };
     }
 
-    private onMessage(): ( this: Window, ev: MessageEvent ) => void {
-        return ( messageEvent ) => {
-            if ( messageEvent.data.WFA === 'WFA' ) {
+    private onMessage(): (this: Window, ev: MessageEvent) => void {
+        return (messageEvent) => {
+            if (messageEvent.data.WFA === 'WFA') {
                 // We are the only one (in terms of domain origin) that can receive this message since we call the server with this
                 // document.location.origin and this has been used by the postMessage targetOrigin parameter.
                 // Still, anybody may send us such a message so here we check the other way around before accepting the message: the
                 // sender must origin from our endPoint.
                 const origin = messageEvent.origin + '/';
-                if ( origin !== this.#configuration.webFrontAuthEndPoint ) {
-                    throw new Error( `Incorrect origin in postMessage. Expected '${this.#configuration.webFrontAuthEndPoint}', but was '${origin}'` );
+                if (origin !== this.#configuration.webFrontAuthEndPoint) {
+                    throw new Error(`Incorrect origin in postMessage. Expected '${this.#configuration.webFrontAuthEndPoint}', but was '${origin}'`);
                 }
-                this.handleServerResponse( messageEvent.data.data );
+                this.handleServerResponse(messageEvent.data.data);
             }
         };
     }
@@ -236,7 +233,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region request handling
 
     /** helper that assigns a new LastResult instance. Must be called before onChange(). */
-    private setLastResult( data?: IWebFrontAuthResponse ): void {
+    private setLastResult(data?: IWebFrontAuthResponse): void {
         this.#lastResult = { error: this.#currentError, serverData: data ? data.userData : undefined };
     }
 
@@ -267,57 +264,57 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param requestOptions
      * @param skipResponseHandling
      */
-    private async sendRequest( entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
+    private async sendRequest(entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
         requestOptions: { body?: object, queries?: Array<string | { key: string, value: string }> },
-        skipResponseHandling: boolean = false ): Promise<void> {
+        skipResponseHandling: boolean = false): Promise<void> {
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
 
-            const query = this.buildQueryString( requestOptions.queries );
+            const query = this.buildQueryString(requestOptions.queries);
             const response = await this.#axiosInstance.post<IWebFrontAuthResponse>(
                 `${this.#configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
-                !!requestOptions.body ? JSON.stringify( requestOptions.body ) : {},
-                { withCredentials: true } );
+                !!requestOptions.body ? JSON.stringify(requestOptions.body) : {},
+                { withCredentials: true });
 
             const status = response.status;
-            if ( status === 200 ) {
-                if ( !skipResponseHandling ) {
-                    this.handleServerResponse( response.data );
+            if (status === 200) {
+                if (!skipResponseHandling) {
+                    this.handleServerResponse(response.data);
                 }
                 // Done (handleServerResponse did its job or there is nothing to do).
                 return;
             }
             // Sets the current error (weird success status).
-            this.#currentError = new WebFrontAuthError( {
+            this.#currentError = new WebFrontAuthError({
                 errorId: `HTTP.Status.${status}`,
                 errorText: 'Unhandled success status'
-            } );
-            this.setLastResult( response.data );
-        } catch ( error ) {
+            });
+            this.setLastResult(response.data);
+        } catch (error) {
 
             // This should not happen too often nor contain dangerous secrets...
-            console.log( 'Exception while sending ' + entryPoint + ' request.', error );
+            console.log('Exception while sending ' + entryPoint + ' request.', error);
 
             const axiosError = error as AxiosError;
-            if ( !( axiosError && axiosError.response ) ) {
+            if (!(axiosError && axiosError.response)) {
                 // Connection issue (no axios response): 408 is Request Timeout.
-                this.#currentError = new WebFrontAuthError( {
+                this.#currentError = new WebFrontAuthError({
                     errorId: 'HTTP.Status.408',
                     errorText: 'No connection could be made'
-                } );
+                });
                 // If we are refreshing and there is no connection to the server, and the current level is None,
                 /// we challenge the local storage and try to restore the available schemes and (unsafe) authentication.
-                if ( this.#authenticationInfo.level == AuthLevel.None
+                if (this.#authenticationInfo.level == AuthLevel.None
                     && entryPoint === 'refresh'
-                    && this.#configuration.localStorage ) {
+                    && this.#configuration.localStorage) {
 
-                    const [auth, schemes] = this.#typeSystem.authenticationInfo.loadFromLocalStorage( this.#configuration.localStorage,
+                    const [auth, schemes] = this.#typeSystem.authenticationInfo.loadFromLocalStorage(this.#configuration.localStorage,
                         this.#configuration.webFrontAuthEndPoint,
-                        this.#availableSchemes );
+                        this.#availableSchemes);
                     this.#availableSchemes = schemes;
-                    if ( auth ) {
+                    if (auth) {
                         // This sets the (unsafe, no expiration) auth and trigger the onChange: we are done.
-                        this.localDisconnect( auth );
+                        this.localDisconnect(auth);
                         return;
                     }
                 }
@@ -327,16 +324,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                 const errorResponse = axiosError.response;
                 const data = errorResponse.data as IWebFrontAuthResponse || {};
 
-                this.#currentError = new WebFrontAuthError( {
+                this.#currentError = new WebFrontAuthError({
                     errorId: data.errorId || `HTTP.Status.${errorResponse.status}`,
                     errorText: data.errorText || 'Server response error'
-                } );
+                });
             }
         }
         // There has been an error.
         this.setLastResult();
         const a = this.#authenticationInfo.checkExpiration();
-        if ( a != this.#authenticationInfo ) {
+        if (a != this.#authenticationInfo) {
             this.#authenticationInfo = a;
             this.onNewAuthenticationInfo();
         }
@@ -345,8 +342,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         }
     }
 
-    private handleServerResponse( r: IWebFrontAuthResponse ): void {
-        if ( !r ) {
+    private handleServerResponse(r: IWebFrontAuthResponse): void {
+        if (!r) {
             this.localDisconnect();
             return;
         }
@@ -354,34 +351,34 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this.#currentError = undefined;
 
         // Checking the version first.
-        if ( r.version ) {
+        if (r.version) {
             // Only refresh returns the version.
             this.#endPointVersion = r.version;
         }
-        if ( r.schemes ) { this.#availableSchemes = r.schemes; }
+        if (r.schemes) { this.#availableSchemes = r.schemes; }
 
-        if ( r.loginFailureCode && r.loginFailureReason ) {
-            this.#currentError = new WebFrontAuthError( {
+        if (r.loginFailureCode && r.loginFailureReason) {
+            this.#currentError = new WebFrontAuthError({
                 loginFailureCode: r.loginFailureCode,
                 loginFailureReason: r.loginFailureReason
-            } );
+            });
         }
 
-        if ( r.errorId && r.errorText ) {
-            this.#currentError = new WebFrontAuthError( {
+        if (r.errorId && r.errorText) {
+            this.#currentError = new WebFrontAuthError({
                 errorId: r.errorId,
                 errorText: r.errorText
-            } );
+            });
         }
 
-        if ( this.#currentError ) {
-            this.localDisconnect( undefined, r );
+        if (this.#currentError) {
+            this.localDisconnect(undefined, r);
             return;
         }
 
 
-        if ( !r.info ) {
-            this.localDisconnect( undefined, r );
+        if (!r.info) {
+            this.localDisconnect(undefined, r);
             return;
         }
 
@@ -389,41 +386,41 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this.#refreshable = r.refreshable ? r.refreshable : false;
         this.#rememberMe = r.rememberMe ? r.rememberMe : false;
 
-        const info = this.#typeSystem.authenticationInfo.fromServerResponse( r.info, this.#availableSchemes );
-        this.#authenticationInfo = info !== null ? info : this.#typeSystem.authenticationInfo.none.setDeviceId( this.#authenticationInfo.deviceId );
+        const info = this.#typeSystem.authenticationInfo.fromServerResponse(r.info, this.#availableSchemes);
+        this.#authenticationInfo = info !== null ? info : this.#typeSystem.authenticationInfo.none.setDeviceId(this.#authenticationInfo.deviceId);
 
-        this.setLastResult( r );
+        this.setLastResult(r);
         this.onNewAuthenticationInfo();
     }
 
     private onNewAuthenticationInfo() {
-        if ( this.#authenticationInfo.expires ) {
+        if (this.#authenticationInfo.expires) {
             this.setExpirationTimeout();
-            if ( this.#authenticationInfo.criticalExpires ) { this.setCriticalExpirationTimeout(); }
+            if (this.#authenticationInfo.criticalExpires) { this.setCriticalExpirationTimeout(); }
         }
-        if ( this.#configuration.localStorage ) {
+        if (this.#configuration.localStorage) {
             this.#typeSystem.authenticationInfo.saveToLocalStorage(
                 this.#configuration.localStorage,
                 this.#configuration.webFrontAuthEndPoint,
                 this.#authenticationInfo,
-                this.#availableSchemes );
+                this.#availableSchemes);
         }
         this.onChange();
     }
 
-    private localDisconnect( fromLocalStorage?: IAuthenticationInfoImpl<T>, data?: IWebFrontAuthResponse ): void {
+    private localDisconnect(fromLocalStorage?: IAuthenticationInfoImpl<T>, data?: IWebFrontAuthResponse): void {
         // Keep (and applies) the current rememberMe configuration: this is the "local" disconnect.
         this.#token = '';
         this.#refreshable = false;
-        if ( fromLocalStorage ) this.#authenticationInfo = fromLocalStorage;
-        else if ( this.#rememberMe ) {
+        if (fromLocalStorage) this.#authenticationInfo = fromLocalStorage;
+        else if (this.#rememberMe) {
             this.#authenticationInfo = this.#authenticationInfo.setExpires();
         }
         else {
-            this.#authenticationInfo = this.#typeSystem.authenticationInfo.none.setDeviceId( this.#authenticationInfo.deviceId );
+            this.#authenticationInfo = this.#typeSystem.authenticationInfo.none.setDeviceId(this.#authenticationInfo.deviceId);
         }
         this.clearTimeouts();
-        this.setLastResult( data );
+        this.setLastResult(data);
         this.onChange();
     }
 
@@ -440,14 +437,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
      * and can modify this dictionary of nullable strings.
      */
-    public async basicLogin( userName: string,
+    public async basicLogin(userName: string,
         password: string,
         rememberMe?: boolean,
         impersonateActualUser?: boolean,
-        serverData?: { [index: string]: string | null } ): Promise<void> {
+        serverData?: { [index: string]: string | null }): Promise<void> {
         this.checkClosed();
-        if ( rememberMe === undefined ) rememberMe = this.#rememberMe;
-        await this.sendRequest( 'basicLogin', { body: { userName, password, userData: serverData, rememberMe, impersonateActualUser } } );
+        if (rememberMe === undefined) rememberMe = this.#rememberMe;
+        await this.sendRequest('basicLogin', { body: { userName, password, userData: serverData, rememberMe, impersonateActualUser } });
     }
 
     /**
@@ -459,10 +456,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
      * and can modify this dictionary of nullable strings.
      */
-    public async unsafeDirectLogin( provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null } ): Promise<void> {
+    public async unsafeDirectLogin(provider: string, payload: object, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null }): Promise<void> {
         this.checkClosed();
-        if ( rememberMe === undefined ) rememberMe = this.#rememberMe;
-        await this.sendRequest( 'unsafeDirectLogin', { body: { provider, payload, userData: serverData, rememberMe, impersonateActualUser } } );
+        if (rememberMe === undefined) rememberMe = this.#rememberMe;
+        await this.sendRequest('unsafeDirectLogin', { body: { provider, payload, userData: serverData, rememberMe, impersonateActualUser } });
     }
 
     /**
@@ -475,14 +472,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param requestVersion True to force a refresh of the version (this is automatically
      * true when current endPointVersion is the empty string).
      */
-    public async refresh( callBackend: boolean = false, requestSchemes: boolean = false, requestVersion: boolean = false ): Promise<void> {
+    public async refresh(callBackend: boolean = false, requestSchemes: boolean = false, requestVersion: boolean = false): Promise<void> {
         this.checkClosed();
         // No need to encodeURIComponent these parameters.
         const queries: string[] = [];
-        if ( callBackend ) { queries.push( 'callBackend' ); }
-        if ( requestSchemes || this.#availableSchemes.length === 0 ) { queries.push( 'schemes' ); }
-        if ( requestVersion || this.#endPointVersion === '' ) { queries.push( 'version' ); }
-        await this.sendRequest( 'refresh', { queries } );
+        if (callBackend) { queries.push('callBackend'); }
+        if (requestSchemes || this.#availableSchemes.length === 0) { queries.push('schemes'); }
+        if (requestVersion || this.#endPointVersion === '') { queries.push('version'); }
+        await this.sendRequest('refresh', { queries });
     }
 
     /**
@@ -490,10 +487,10 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * This is always successful when the user is the actual user: the impersonation is cleared.
      * @param user The user name or identifier into whom the currently authenticated user wants to be impersonated.
      */
-    public async impersonate( user: string | number ): Promise<void> {
+    public async impersonate(user: string | number): Promise<void> {
         this.checkClosed();
-        const requestOptions = { body: ( typeof user === 'string' ) ? { userName: user } : { userId: user } };
-        await this.sendRequest( 'impersonate', requestOptions );
+        const requestOptions = { body: (typeof user === 'string') ? { userName: user } : { userId: user } };
+        await this.sendRequest('impersonate', requestOptions);
     }
 
     /**
@@ -503,13 +500,13 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public async logout(): Promise<void> {
         this.checkClosed();
         this.#token = '';
-        await this.sendRequest( 'logout', {}, /* skipResponseHandling */ true );
-        if ( this.#configuration.localStorage ) {
+        await this.sendRequest('logout', {}, /* skipResponseHandling */ true);
+        if (this.#configuration.localStorage) {
             this.#typeSystem.authenticationInfo.saveToLocalStorage(
                 this.#configuration.localStorage,
                 this.#configuration.webFrontAuthEndPoint,
                 null,
-                [] )
+                [])
         }
         await this.refresh();
     }
@@ -524,19 +521,19 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
     * and can modify this dictionary of nullable strings.
     */
-    public async startInlineLogin( scheme: string, returnUrl: string, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null } ): Promise<void> {
+    public async startInlineLogin(scheme: string, returnUrl: string, rememberMe?: boolean, impersonateActualUser?: boolean, serverData?: { [index: string]: string | null }): Promise<void> {
         this.checkClosed();
-        if ( !returnUrl ) { throw new Error( 'returnUrl must be defined.' ); }
-        if ( !( returnUrl.startsWith( 'http://' ) || returnUrl.startsWith( 'https://' ) ) ) {
-            if ( returnUrl.charAt( 0 ) !== '/' ) { returnUrl = '/' + returnUrl; }
+        if (!returnUrl) { throw new Error('returnUrl must be defined.'); }
+        if (!(returnUrl.startsWith('http://') || returnUrl.startsWith('https://'))) {
+            if (returnUrl.charAt(0) !== '/') { returnUrl = '/' + returnUrl; }
             returnUrl = document.location.origin + returnUrl;
         }
         const params = [
-            { key: 'returnUrl', value: encodeURIComponent( returnUrl ) },
+            { key: 'returnUrl', value: encodeURIComponent(returnUrl) },
             rememberMe ? 'rememberMe' : '',
             impersonateActualUser ? 'impersonateActualUser' : ''
         ];
-        document.location.href = this.buildStartLoginUrl( scheme, params, serverData );
+        document.location.href = this.buildStartLoginUrl(scheme, params, serverData);
     }
 
     /**
@@ -547,30 +544,30 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior
     * and can modify this dictionary of nullable strings.
     */
-    public async startPopupLogin( scheme: string,
+    public async startPopupLogin(scheme: string,
         rememberMe?: boolean,
         impersonateActualUser?: boolean,
-        serverData?: { [index: string]: string | null } ): Promise<void> {
+        serverData?: { [index: string]: string | null }): Promise<void> {
         this.checkClosed();
-        if ( rememberMe === undefined ) rememberMe = this.#rememberMe;
-        if ( scheme === 'Basic' ) {
-            const popup = this.ensurePopup( 'about:blank' );
-            popup.document.write( this.popupDescriptor.generateBasicHtml( rememberMe ) );
+        if (rememberMe === undefined) rememberMe = this.#rememberMe;
+        if (scheme === 'Basic') {
+            const popup = this.ensurePopup('about:blank');
+            popup.document.write(this.popupDescriptor.generateBasicHtml(rememberMe));
             const onClick = async () => {
 
-                const usernameInput = popup!.document.getElementById( 'username-input' ) as HTMLInputElement;
-                const passwordInput = popup!.document.getElementById( 'password-input' ) as HTMLInputElement;
-                const rememberMeInput = popup!.document.getElementById( 'remember-me-input' ) as HTMLInputElement;
-                const errorDiv = popup!.document.getElementById( 'error-div' ) as HTMLInputElement;
+                const usernameInput = popup!.document.getElementById('username-input') as HTMLInputElement;
+                const passwordInput = popup!.document.getElementById('password-input') as HTMLInputElement;
+                const rememberMeInput = popup!.document.getElementById('remember-me-input') as HTMLInputElement;
+                const errorDiv = popup!.document.getElementById('error-div') as HTMLInputElement;
                 const loginData = { username: usernameInput.value, password: passwordInput.value, rememberMe: rememberMeInput.checked };
 
-                if ( !( loginData.username && loginData.password ) ) {
+                if (!(loginData.username && loginData.password)) {
                     errorDiv.innerHTML = this.popupDescriptor.basicMissingCredentialsError;
                     errorDiv.style.display = 'block';
                 } else {
-                    await this.basicLogin( loginData.username, loginData.password, loginData.rememberMe, false, serverData );
+                    await this.basicLogin(loginData.username, loginData.password, loginData.rememberMe, false, serverData);
 
-                    if ( this.authenticationInfo.level >= AuthLevel.Normal ) {
+                    if (this.authenticationInfo.level >= AuthLevel.Normal) {
                         popup!.close();
                     } else {
                         errorDiv.innerHTML = this.popupDescriptor.basicInvalidCredentialsError;
@@ -578,24 +575,24 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                     }
                 }
             }
-            const eOnClick = popup.document.getElementById( 'submit-button' );
-            if ( eOnClick == null ) throw new Error( "Unable to find required 'submit-button' element." );
-            eOnClick.onclick = ( async () => await onClick() );
+            const eOnClick = popup.document.getElementById('submit-button');
+            if (eOnClick == null) throw new Error("Unable to find required 'submit-button' element.");
+            eOnClick.onclick = (async () => await onClick());
         }
         else {
             const data = [
-                { key: 'callerOrigin', value: encodeURIComponent( document.location.origin ) },
+                { key: 'callerOrigin', value: encodeURIComponent(document.location.origin) },
                 rememberMe ? 'rememberMe' : '',
                 impersonateActualUser ? 'impersonateActualUser' : ''
             ];
-            this.ensurePopup( this.buildStartLoginUrl( scheme, data, serverData ) );
+            this.ensurePopup(this.buildStartLoginUrl(scheme, data, serverData));
         }
 
     }
-    private ensurePopup( url: string ): Window {
-        if ( !this.#popupWin || this.#popupWin.closed ) {
-            this.#popupWin = window.open( url, this.popupDescriptor.popupTitle, this.popupDescriptor.features )!;
-            if ( this.#popupWin === null ) throw new Error( "Unable to open popup window." );
+    private ensurePopup(url: string): Window {
+        if (!this.#popupWin || this.#popupWin.closed) {
+            this.#popupWin = window.open(url, this.popupDescriptor.popupTitle, this.popupDescriptor.features)!;
+            if (this.#popupWin === null) throw new Error("Unable to open popup window.");
         }
         else {
             this.#popupWin.location.href = url;
@@ -611,11 +608,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * In the future, this may be extended to support other secure endpoints if needed.
      * @param url The url to be checked.
      */
-    public shouldSetToken( url: string ): boolean {
+    public shouldSetToken(url: string): boolean {
         this.checkClosed();
-        if ( !url ) throw new Error( "Url should not be null or undefined" )
-        if ( this.#token === "" ) return false;
-        return url.startsWith( this.#configuration.webFrontAuthEndPoint );
+        if (!url) throw new Error("Url should not be null or undefined")
+        if (this.#token === "") return false;
+        return url.startsWith(this.#configuration.webFrontAuthEndPoint);
     }
 
     //#endregion
@@ -623,16 +620,16 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     //#region onChange
 
     private onChange(): void {
-        this.#subscribers.forEach( func => func( this ) );
+        this.#subscribers.forEach(func => func(this));
     }
 
     /**
      * Registers a callback function that will be called on any change.
      * @param func A callback function that will be called whenever something changes.
      */
-    public addOnChange( func: ( eventSource: AuthService ) => void ): void {
+    public addOnChange(func: (eventSource: AuthService) => void): void {
         this.checkClosed();
-        if ( func !== undefined && func !== null ) { this.#subscribers.add( func ); }
+        if (func !== undefined && func !== null) { this.#subscribers.add(func); }
     }
 
     /**
@@ -640,42 +637,42 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      * @param func The callback function to remove.
      * @returns True if the callback has been found and removed, false otherwise.
      */
-    public removeOnChange( func: ( eventSource: AuthService ) => void ): boolean {
+    public removeOnChange(func: (eventSource: AuthService) => void): boolean {
         this.checkClosed();
-        return this.#subscribers.delete( func );
+        return this.#subscribers.delete(func);
     }
     //#endregion
 
-    private buildQueryString( params?: Array<string | { key: string, value: string | null }>, scheme?: string ): string {
+    private buildQueryString(params?: Array<string | { key: string, value: string | null }>, scheme?: string): string {
         let query = params && params.length
-            ? `?${params.map( q => typeof ( q ) === "string"
+            ? `?${params.map(q => typeof (q) === "string"
                 ? q
                 : q.value === null
                     ? q.key
-                    : `${q.key}=${q.value}` )
-                .join( '&' )}`
+                    : `${q.key}=${q.value}`)
+                .join('&')}`
             : '';
-        let schemeParam = scheme ? `scheme=${encodeURIComponent( scheme )}` : '';
-        if ( query && schemeParam ) {
+        let schemeParam = scheme ? `scheme=${encodeURIComponent(scheme)}` : '';
+        if (query && schemeParam) {
             query += `&${schemeParam}`;
         }
-        else if ( schemeParam ) {
+        else if (schemeParam) {
             query += `?${schemeParam}`;
         }
         return query;
     }
 
-    private buildStartLoginUrl( scheme: string,
+    private buildStartLoginUrl(scheme: string,
         params: Array<string | { key: string, value: string | null }>,
         serverData?: { [index: string]: string | null }
     ): string {
-        if ( serverData ) {
-            Object.keys( serverData ).forEach( i => params.push( { key: encodeURIComponent( i ), value: this.encData( serverData[i] ) } ) );
+        if (serverData) {
+            Object.keys(serverData).forEach(i => params.push({ key: encodeURIComponent(i), value: this.encData(serverData[i]) }));
         }
-        return `${this.#configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString( params, scheme )}`;
+        return `${this.#configuration.webFrontAuthEndPoint}.webfront/c/startLogin${this.buildQueryString(params, scheme)}`;
     }
-    private encData( v: string | null ): string | null {
-        return v === null ? null : encodeURIComponent( v );
+    private encData(v: string | null): string | null {
+        return v === null ? null : encodeURIComponent(v);
     }
 
 }

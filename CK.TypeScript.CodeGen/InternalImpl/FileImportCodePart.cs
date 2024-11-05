@@ -5,7 +5,6 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 
 namespace CK.TypeScript.CodeGen;

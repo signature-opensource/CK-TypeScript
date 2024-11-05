@@ -1,4 +1,3 @@
-using CK.StObj.TypeScript;
 using CK.TS.Angular;
 
 namespace CK.NG.AspNet.Auth;

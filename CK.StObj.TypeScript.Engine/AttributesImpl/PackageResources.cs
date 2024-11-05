@@ -1,7 +1,6 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace CK.StObj.TypeScript.Engine;
 

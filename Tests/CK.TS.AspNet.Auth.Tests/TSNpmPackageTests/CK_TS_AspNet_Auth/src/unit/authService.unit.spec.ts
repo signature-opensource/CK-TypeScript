@@ -1,13 +1,6 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
-import {
-    AuthService,
-    IAuthenticationInfo,
-    AuthLevel,
-    IUserInfo,
-    SchemeUsageStatus,
-    WebFrontAuthError
-} from '@local/ck-gen';
+import { AuthService, IAuthenticationInfo, AuthLevel, IUserInfo, SchemeUsageStatus, WebFrontAuthError } from '@local/ck-gen';
 import { IWebFrontAuthResponse } from '@local/ck-gen/src/CK/AspNet/Auth/index.private';
 import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
 import ResponseBuilder from '../helpers/response-builder';
@@ -46,7 +39,7 @@ describe('AuthService', function () {
     }
 
     beforeAll(function () {
-        authService = new AuthService({ identityEndPoint: {} }, axiosInstance);
+        authService = new AuthService( axiosInstance, { identityEndPoint: {} } );
 
         requestInterceptorId = axiosInstance.interceptors.request.use((config) => {
             return config;

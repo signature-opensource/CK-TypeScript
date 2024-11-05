@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using static System.Net.WebRequestMethods;
 
 namespace CK.TypeScript.CodeGen;
 

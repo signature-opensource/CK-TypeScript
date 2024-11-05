@@ -115,9 +115,9 @@ export interface IUserSchemeInfo {
 /** Describes the AuthService configuration. */
 export interface IAuthServiceConfiguration {
     /** Gets the endpoint to use. Can simply be the url of the server (prefixed with
-     *  the protocol 'htpp://' or 'https://').
+     *  the protocol 'http://' or 'https://').
      */
-    readonly identityEndPoint: IEndPoint|string;
+    readonly identityEndPoint?: IEndPoint|string;
     /** True to enable local storage: current authentication is stored and 
      * restored (at Unsafe level) if server cannot be initially reached. */
     readonly useLocalStorage?: boolean;

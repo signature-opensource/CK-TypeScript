@@ -1,4 +1,3 @@
-using CK.StObj.TypeScript;
 using System;
 using System.Runtime.CompilerServices;
 

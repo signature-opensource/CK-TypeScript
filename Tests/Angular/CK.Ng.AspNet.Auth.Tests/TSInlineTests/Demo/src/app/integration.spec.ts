@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { AuthLevel, AuthService } from '@local/ck-gen';
-import { NgAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/auth.service';
+import { NgAuthService, provideNgAuthService } from '@local/ck-gen';
 import { TestBed } from '@angular/core/testing';
-import { provideNgAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/auth-service-provider';
+import { CookieJar } from 'tough-cookie';
+import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 
 if ( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout( 30 * 60 * 1000 ); // 30 minutes
 
@@ -12,30 +13,37 @@ const describeWithServer = serverAddress ? describe : describe.skip;
 describeWithServer( 'NgAuthService integration tests', () => {
     beforeAll( async () => {
         const axiosInstance = axios.create();
-        await TestBed.configureTestingModule( { providers: [provideNgAuthService( axiosInstance )] } ).compileComponents();
+        const cookieJar = new CookieJar();
+        addCookieJar(axiosInstance);
+        axiosInstance.defaults.jar = cookieJar;
+        await TestBed.configureTestingModule( { providers: [provideNgAuthService( axiosInstance, { identityEndPoint: serverAddress } )] } ).compileComponents();
     } );
 
     beforeEach( async () => {
         const authService = TestBed.inject( AuthService );
         await authService.logout();
     } );
-
+        
     it( 'ngAuthService authInfos should be correctly updated', async () => {
+        
         const ngAuthService = TestBed.inject( NgAuthService );
-        const authService = TestBed.inject( AuthService );
+        const authService = ngAuthService.authService;
 
-        expect( ngAuthService.authenficationInfo() ).toStrictEqual( authService.authenticationInfo );
+        expect( authService.authenticationInfo.level ).toBe( AuthLevel.None );
+
+        expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
         await authService.basicLogin( 'Albert', 'success' );
-        expect( ngAuthService.authenficationInfo() ).toStrictEqual( authService.authenticationInfo );
+        expect( ngAuthService.authenticationInfo().level ).toBe( AuthLevel.Normal );
+        expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
 
-        let current = ngAuthService.authenficationInfo();
+        let current = ngAuthService.authenticationInfo();
         expect( current.user.userName ).toBe( 'Albert' );
         expect( current.level ).toBe( AuthLevel.Normal );
 
         await authService.logout();
-        expect( ngAuthService.authenficationInfo() ).toStrictEqual( authService.authenticationInfo );
+        expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
 
-        current = ngAuthService.authenficationInfo();
+        current = ngAuthService.authenticationInfo();
         expect( current.user.userId ).toBe( 0 );
         expect( current.user.userName ).toBe( '' );
     } );

@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TS.Angular.Engine;
 

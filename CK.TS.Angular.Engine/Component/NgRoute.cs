@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.TypeScript.CodeGen;
-using System;
 using System.Collections.Generic;
 
 namespace CK.TS.Angular.Engine;

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
+using CK.Core;
 
 namespace CK.Ng.AspNet.Auth.Tests;
 
@@ -17,7 +18,9 @@ public class NgAspNetAuthTests
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        Throw.DebugAssert( tsConfig.CKGenBuildMode );
+
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth" );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();

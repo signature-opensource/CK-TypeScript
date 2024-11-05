@@ -3,7 +3,6 @@ using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace CK.TS.Angular.Engine;
 
