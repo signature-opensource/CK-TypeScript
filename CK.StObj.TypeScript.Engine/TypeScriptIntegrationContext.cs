@@ -419,7 +419,7 @@ public sealed partial class TypeScriptIntegrationContext
         // Obtains the yarn path or error.
         var yarnPath = YarnHelper.GetYarnInstallPath( monitor,
                                                       _configuration.TargetProjectPath,
-                                                      _configuration.AutoInstallYarn );
+                                                      _configuration.InstallYarn );
         if( !yarnPath.HasValue ) return false;
         _yarnPath = yarnPath.Value;
 

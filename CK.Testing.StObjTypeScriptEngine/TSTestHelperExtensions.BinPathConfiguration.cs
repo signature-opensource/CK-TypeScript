@@ -63,18 +63,19 @@ public static partial class TSTestHelperExtensions
         tsBinPathAspect.CKGenBuildMode = true;
         if( testMode == GenerateMode.GenerateOnly )
         {
+            tsBinPathAspect.AutoInstallJest = false;
+            tsBinPathAspect.InstallYarn = YarnInstallOption.None;
             tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.None;
         }
         else
         {
-            tsBinPathAspect.AutoInstallYarn = true;
             if( testMode == GenerateMode.BuildOnly )
             {
+                tsBinPathAspect.AutoInstallJest = false;
                 tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
             }
             else
             {
-                tsBinPathAspect.AutoInstallJest = true;
                 if( testMode == GenerateMode.Inline )
                 {
                     tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.Inline;

@@ -132,8 +132,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             {
                 if( !configuration.AutoInstallJest )
                 {
-                    monitor.Warn( $"Setting AutoInstallJest to true (Angular application must always have test support)." );
-                    configuration.AutoInstallJest = true;
+                    monitor.Error( $"Angular application must always have test support: TypeScriptBinPathAspectConfiguration.AutoInstallJest must be set to true." );
+                    return false;
                 }
                 return true;
             }

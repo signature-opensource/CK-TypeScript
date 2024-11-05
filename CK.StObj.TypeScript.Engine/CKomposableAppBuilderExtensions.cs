@@ -21,7 +21,6 @@ public static class CKomposableAppBuilderExtensions
         builder.EngineConfiguration.EnsureAspect<TypeScriptAspectConfiguration>();
         var binPath = builder.EngineConfiguration.FindRequiredBinPath( binPathName );
         var tsBinPathAspect = binPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
-        tsBinPathAspect.AutoInstallYarn = true;
         if( tsBinPathAspect.TargetProjectPath.IsEmptyPath )
         {
             tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( builder.ApplicationName + ".Web" );

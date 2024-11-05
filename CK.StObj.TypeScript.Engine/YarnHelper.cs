@@ -23,7 +23,7 @@ public static class YarnHelper
 
     /// <summary>
     /// The current yarn version that is embedded in the CK.StObj.TypeScript.Engine assembly
-    /// and can be automatically installed. See <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/>.
+    /// and can be automatically installed. See <see cref="TypeScriptBinPathAspectConfiguration.InstallYarn"/>.
     /// </summary>
     public const string AutomaticYarnVersion = "4.5.1";
 
@@ -83,8 +83,9 @@ public static class YarnHelper
         return SVersion.Create( packageJson.Version.Major, packageJson.Version.Minor, packageJson.Version.Patch );
     }
 
-    internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, bool autoInstall )
+    internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, YarnInstallOption option )
     {
+        bool runInstall = option != YarnInstallOption.None;
         var yarnPath = TryFindYarn( targetProjectPath, out var aboveCount );
         if( yarnPath.HasValue )
         {
@@ -93,41 +94,33 @@ public static class YarnHelper
                 && current.Length > 5
                 && Version.TryParse( Path.GetFileNameWithoutExtension( current.AsSpan( 5 ) ), out var version ) )
             {
-                if( version.Major < 4 )
-                {
-                    monitor.Warn( $"Yarn found at '{yarnPath}' but expected version is Yarn 4. " +
-                                  $"Please upgrade to Yarn 4: yarn set version {AutomaticYarnVersion}." );
-
-                }
-                else
-                {
-                    monitor.Info( $"Yarn {version.ToString( 3 )} found at '{yarnPath}'." );
-                }
+                monitor.Info( $"Yarn {version.ToString( 3 )} found at '{yarnPath}'." );
+                runInstall = version < Version.Parse( AutomaticYarnVersion ); 
             }
             else
             {
                 monitor.Warn( $"Unable to read version from Yarn found at '{yarnPath}'. Expected something like '{_yarnFileName}'." );
             }
         }
-        else if( autoInstall )
+        else if( runInstall )
         {
             var gitRoot = targetProjectPath.PathsToFirstPart( null, [".git"] ).FirstOrDefault( p => Directory.Exists( p ) );
             if( gitRoot.IsEmptyPath )
             {
                 monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
-                yarnPath = AutoInstall( monitor, targetProjectPath, 0 );
+                yarnPath = AutoInstall( monitor, targetProjectPath, 0, yarnPath );
             }
             else
             {
                 Throw.DebugAssert( gitRoot.LastPart == ".git" );
                 monitor.Info( $"Git root found: '{gitRoot}'. Setting up a shared .yarn cache." );
                 aboveCount = targetProjectPath.Parts.Count - gitRoot.Parts.Count + 1;
-                yarnPath = AutoInstall( monitor, targetProjectPath, aboveCount );
+                yarnPath = AutoInstall( monitor, targetProjectPath, aboveCount, yarnPath );
             }
         }
         if( !yarnPath.HasValue )
         {
-            monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and AutoInstallYarn is false." );
+            monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and InstallYarn is None." );
         }
         else
         {
@@ -135,7 +128,7 @@ public static class YarnHelper
         }
         return yarnPath;
 
-        static NormalizedPath? AutoInstall( IActivityMonitor monitor, NormalizedPath targetProjectPath, int aboveCount )
+        static NormalizedPath? AutoInstall( IActivityMonitor monitor, NormalizedPath targetProjectPath, int aboveCount, NormalizedPath? previousYarnPath )
         {
             NormalizedPath? yarnPath;
             var yarnRootPath = targetProjectPath.RemoveLastPart( aboveCount );
@@ -152,6 +145,20 @@ public static class YarnHelper
                 yarnBinStream!.CopyTo( fileStream );
             }
             HandleGitIgnore( monitor, yarnRootPath );
+            if( previousYarnPath.HasValue )
+            {
+                using( monitor.OpenInfo( $"Deleting old yarn runtime '{previousYarnPath.Value}'." ) )
+                {
+                    try
+                    {
+                        File.Delete( previousYarnPath.Value );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( ex );
+                    }
+                }
+            }
             return yarnPath;
 
             static void HandleGitIgnore( IActivityMonitor monitor, NormalizedPath yarnRootPath )

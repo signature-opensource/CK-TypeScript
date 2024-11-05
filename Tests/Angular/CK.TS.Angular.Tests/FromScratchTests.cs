@@ -28,8 +28,6 @@ public class FromScratchTests
             var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
             ts.TargetProjectPath = root;
             ts.IntegrationMode = CKGenIntegrationMode.Inline;
-            ts.AutoInstallYarn = true;
-            ts.AutoInstallJest = true;
             await configuration.RunSuccessfullyAsync();
 
             await using var runner = TestHelper.CreateTypeScriptRunner( root );

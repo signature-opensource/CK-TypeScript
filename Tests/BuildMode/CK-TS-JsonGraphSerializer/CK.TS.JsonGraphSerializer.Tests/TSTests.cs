@@ -42,8 +42,6 @@ public class MultipleTypeScriptTests
         {
             TargetProjectPath = "Clients/NpmPackage",
             IntegrationMode = CKGenIntegrationMode.NpmPackage,
-            AutoInstallYarn = true,
-            AutoInstallJest = true,
             TypeFilterName = "TypeScriptN",
         };
         ts1.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
@@ -52,8 +50,6 @@ public class MultipleTypeScriptTests
         {
             TargetProjectPath = "Clients/Inline",
             IntegrationMode = CKGenIntegrationMode.Inline,
-            AutoInstallYarn = true,
-            AutoInstallJest = true,
             TypeFilterName = "TypeScriptI"
         };
         ts2.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );

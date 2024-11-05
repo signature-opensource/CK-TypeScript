@@ -70,9 +70,9 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xTypeFilterName = XNamespace.None + "TypeFilterName";
 
     /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/> attribute name.
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.InstallYarn"/> attribute name.
     /// </summary>
-    public static readonly XName xAutoInstallYarn = XNamespace.None + "AutoInstallYarn";
+    public static readonly XName xInstallYarn = XNamespace.None + "InstallYarn";
 
     /// <summary>
     /// The <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> attribute name.

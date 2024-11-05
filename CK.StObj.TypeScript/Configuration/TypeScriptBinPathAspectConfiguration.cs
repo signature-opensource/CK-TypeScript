@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CK.Setup;
@@ -26,6 +27,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         TypeFilterName = "TypeScript";
         ModuleSystem = TSModuleSystem.Default;
         GitIgnoreCKGenFolder = true;
+        AutoInstallJest = true;
     }
 
     /// <summary>
@@ -149,12 +151,21 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// Defaults to false.
     /// </para>
     /// </summary>
+    [Obsolete( "Use InstallYarn = None/AutoInstall/AutoUpgrade", true )]
     public bool AutoInstallYarn { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether Yarn must be installed or upgraded.
+    /// <para>
+    /// Defaults to <see cref="YarnInstallOption.AutoUpgrade"/>.
+    /// </para>
+    /// </summary>
+    public YarnInstallOption InstallYarn { get; set; }
 
     /// <summary>
     /// Gets or sets whether Jest must be installed.
     /// <para>
-    /// Defaults to false.
+    /// Defaults to true.
     /// </para>
     /// </summary>
     public bool AutoInstallJest { get; set; }
@@ -206,12 +217,16 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         var tsIntegrationMode = (string?)e.Attribute( TypeScriptAspectConfiguration.xIntegrationMode );
         IntegrationMode = tsIntegrationMode == null ? CKGenIntegrationMode.Inline : Enum.Parse<CKGenIntegrationMode>( tsIntegrationMode, ignoreCase: true );
 
-        AutoInstallYarn = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallYarn ) ?? false;
+        if( e.Attribute( "AutoInstallYarn" ) != null)
+        {
+            throw new XmlException( "AutoInstallYarn is obsolete: please use InstallYarn = \"None\", \"AutoInstall\" or \"AutoUpgrade\"." );
+        }
+        var yarnInstall = (string?)e.Attribute( TypeScriptAspectConfiguration.xInstallYarn );
+        InstallYarn = yarnInstall == null ? YarnInstallOption.AutoUpgrade : Enum.Parse<YarnInstallOption>( yarnInstall, ignoreCase: true );
+        
         GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? true;
 
-        AutoInstallJest = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallJest )
-                          ?? (bool?)e.Attribute( "EnsureTestSupport" ) // Legacy.
-                          ?? false;
+        AutoInstallJest = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallJest ) ?? true;
 
         CKGenBuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xCKGenBuildMode ) ?? false;
         UseSrcFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseSrcFolder ) ?? false;
@@ -239,11 +254,11 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                IntegrationMode is not CKGenIntegrationMode.Inline
                 ? new XAttribute( TypeScriptAspectConfiguration.xIntegrationMode, IntegrationMode.ToString() )
                 : null,
-               AutoInstallJest
-                ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallJest, true )
+               !AutoInstallJest
+                ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallJest, false )
                 : null,
-               AutoInstallYarn
-                ? new XAttribute( TypeScriptAspectConfiguration.xAutoInstallYarn, true )
+               InstallYarn != YarnInstallOption.AutoUpgrade
+                ? new XAttribute( TypeScriptAspectConfiguration.xInstallYarn, InstallYarn )
                 : null,
                GitIgnoreCKGenFolder is false
                 ? new XAttribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder, false )

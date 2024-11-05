@@ -67,8 +67,6 @@ public class TSTests
             var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
             ts.TargetProjectPath = targetProjectPath;
             ts.IntegrationMode = CKGenIntegrationMode.Inline;
-            ts.AutoInstallYarn = true;
-            ts.AutoInstallJest = true;
             var r = await configuration.RunSuccessfullyAsync();
 
             File.Exists( targetProjectPath.Combine( "src/sample.spec.ts" ) ).Should().BeTrue();
