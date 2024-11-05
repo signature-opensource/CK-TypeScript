@@ -17,30 +17,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.html" />
-      <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.less" />
-      <None Remove="CK.NG.AspNet\PasswordLost\Res\password-lost.component.ts" />
-      <None Remove="Demo\Res\demo-ng.module.ts" />
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
         <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.html">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.less">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.NG.AspNet\PasswordLost\Res\password-lost.component.ts">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="Demo\Res\demo-ng.module.ts">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
     </ItemGroup>
     
 </Project>

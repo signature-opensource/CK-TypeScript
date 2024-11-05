@@ -44,7 +44,6 @@ public class TSTests
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
         var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        tsConfig.GitIgnoreCKGenFolder = true;
 
         var map = (await engineConfig.RunSuccessfullyAsync()).LoadMap();
 
