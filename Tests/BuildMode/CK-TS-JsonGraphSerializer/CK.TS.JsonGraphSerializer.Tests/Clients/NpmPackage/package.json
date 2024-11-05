@@ -1,24 +1,23 @@
 {
+  "name": "npmpackage",
+  "private": true,
   "scripts": {
     "test": "jest"
   },
+  "workspaces": [
+    "ck-gen"
+  ],
   "devDependencies": {
     "@local/ck-gen": "workspace:*",
-    "@types/jest": "^29.5.13",
-    "@types/node": "^22.7.4",
-    "@yarnpkg/sdks": "^3.2",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.9",
     "jest": "^29.7",
     "jest-environment-jsdom": "^29.7",
     "rxjs": "^7.8.1",
     "ts-jest": "^29.2.5",
     "typescript": "=5.4.5"
   },
-  "name": "npmpackage",
-  "private": true,
   "ckVersion": 1,
-  "workspaces": [
-    "ck-gen"
-  ],
   "peerDependencies": {
     "rxjs": "^7.8.1"
   }
