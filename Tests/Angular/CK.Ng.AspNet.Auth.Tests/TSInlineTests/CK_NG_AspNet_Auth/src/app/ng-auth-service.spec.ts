@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { NgAuthService, AXIOS, provideNgAuthService } from '@local/ck-gen';
+import { NgAuthService, AXIOS, CKGenAppModule } from '@local/ck-gen';
 import axios, { AxiosInstance } from 'axios';
 
-const serverAddress = CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
+const serverAddress = "";//CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
 const describeWithServer = serverAddress ? describe : describe.skip;
 
 describeWithServer( 'NgAuthService configuration and injection tests', () => {
@@ -12,9 +12,7 @@ describeWithServer( 'NgAuthService configuration and injection tests', () => {
     beforeEach( async () => {
         axiosInstance = axios.create();
 
-        await TestBed.configureTestingModule( {
-          providers: [provideNgAuthService(axiosInstance, { identityEndPoint: serverAddress } )],
-        } ).compileComponents();
+        await TestBed.configureTestingModule( { providers: CKGenAppModule.Providers } ).compileComponents();
 
         service = TestBed.inject( NgAuthService );
     } );

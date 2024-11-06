@@ -1,13 +1,13 @@
 import axios from 'axios';
 import { AuthLevel, AuthService } from '@local/ck-gen';
-import { NgAuthService, provideNgAuthService } from '@local/ck-gen';
+import { NgAuthService, CKGenAppModule } from '@local/ck-gen';
 import { TestBed } from '@angular/core/testing';
 import { CookieJar } from 'tough-cookie';
 import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 
 if ( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout( 30 * 60 * 1000 ); // 30 minutes
 
-const serverAddress = CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
+const serverAddress = ""//CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
 const describeWithServer = serverAddress ? describe : describe.skip;
 
 describeWithServer( 'NgAuthService integration tests', () => {
@@ -16,7 +16,7 @@ describeWithServer( 'NgAuthService integration tests', () => {
         const cookieJar = new CookieJar();
         addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
-        await TestBed.configureTestingModule( { providers: [provideNgAuthService( axiosInstance, { identityEndPoint: serverAddress } )] } ).compileComponents();
+        await TestBed.configureTestingModule( { providers: CKGenAppModule.Providers } ).compileComponents();
     } );
 
     beforeEach( async () => {
@@ -29,7 +29,8 @@ describeWithServer( 'NgAuthService integration tests', () => {
         const ngAuthService = TestBed.inject( NgAuthService );
         const authService = ngAuthService.authService;
 
-        expect( authService.authenticationInfo.level ).toBe( AuthLevel.None );
+      expect(authService.authenticationInfo.level).toBe(AuthLevel.None);
+      expect(authService.availableSchemes.length).toBeGreaterThan(0);
 
         expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
         await authService.basicLogin( 'Albert', 'success' );

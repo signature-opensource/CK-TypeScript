@@ -62,7 +62,7 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute
     /// Gets or sets whether embedded resources must be explicitly declared by <see cref="TypeScriptFileAttribute"/>
     /// or <see cref="TypeScriptResourceAttribute"/>.
     /// <para>
-    /// Defaults to false.
+    /// Defaults to false: by default all files in <see cref="ResourceFolderPath"/> are considered. 
     /// </para>
     /// </summary>
     public bool ConsiderExplicitResourceOnly { get; set; }

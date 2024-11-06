@@ -49,6 +49,7 @@ public sealed class TypeScriptResourceAttributeImpl : IAttributeContextBoundInit
         {
             _targetPath = _attr.TargetFolderName ?? packageAttributesImpl.TypeScriptFolder;
             _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( _attr.ResourcePath ) );
+            packageAttributesImpl.RemoveResource( _resource );
         }
     }
 

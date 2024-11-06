@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
-    
+
     <ItemGroup>
         <EmbeddedResource Include="**\*.ts">
             <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
@@ -11,8 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CK.NG.Axios\CK.NG.Axios.csproj" />
-        <ProjectReference Include="..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
+        <ProjectReference Include="..\CK.TS.Angular\CK.TS.Angular.csproj" />
     </ItemGroup>
 
 </Project>

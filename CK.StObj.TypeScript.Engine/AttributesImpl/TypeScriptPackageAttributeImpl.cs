@@ -1,6 +1,8 @@
 using CK.Core;
 using CK.Setup;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CK.StObj.TypeScript.Engine;
 
@@ -15,7 +17,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
     readonly PackageResources _resources;
+    readonly HashSet<ResourceTypeLocator> _removedResources;
     NormalizedPath _typeScriptFolder;
+
 
     /// <summary>
     /// Gets the folder of this package. Defaults to the namespace of the decorated type unless
@@ -39,6 +43,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// </summary>
     public Type DecoratedType => _type;
 
+    /// <summary>
+    /// Gets the resources for this package.
+    /// </summary>
     public PackageResources Resources => _resources;
 
     /// <summary>
@@ -51,6 +58,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     {
         _attr = attr;
         _type = type;
+        _removedResources = new HashSet<ResourceTypeLocator>();
         if( !typeof( TypeScriptPackage ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[TypeScriptPackage] can only decorate a TypeScriptPackage: '{type:N}' is not a TypeScriptPackage." );
@@ -86,6 +94,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
                 monitor.Error( $"{o.ToString()}: [TypeScriptPackage] sets Package to be '{_attr.Package.Name}' but it is already '{o.Container.Type:N}'." );
             }
         }
+        o.ItemKind = DependentItemKindSpec.Container;
         OnConfigure( monitor, o );
     }
 
@@ -112,7 +121,19 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
     internal protected virtual bool InitializePackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
+        _removedResources.Clear();
         return true;
+    }
+
+    /// <summary>
+    /// Removes a resource from the <see cref="Resources"/>: <see cref="GenerateCode(IActivityMonitor, TypeScriptContext)"/>
+    /// won't generate its file.
+    /// </summary>
+    /// <param name="resource"></param>
+    internal void RemoveResource( ResourceTypeLocator resource )
+    {
+        Throw.DebugAssert( resource.Declarer == _type );
+        _removedResources.Add( resource );
     }
 
     /// <summary>
@@ -127,10 +148,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
     internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
-        if( !_attr.ConsiderExplicitResourceOnly )
+        if( !_attr.ConsiderExplicitResourceOnly && _resources.AllResources.Length != _removedResources.Count )
         {
             foreach( ResourceTypeLocator o in _resources.AllResources )
             {
+                if( _removedResources.Contains( o ) ) continue;
                 // Skip prefix 'ck@{_resourceTypeFolder}/'.
                 var targetFileName = _typeScriptFolder.Combine( o.ResourceName.Substring( _resources.ResourcePrefix.Length ) );
                 context.Root.Root.CreateResourceFile( o, targetFileName );

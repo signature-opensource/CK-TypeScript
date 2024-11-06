@@ -25,7 +25,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     #popupDescriptor: PopupDescriptor | undefined;
     #expTimer: ReturnType<typeof setTimeout> | undefined;
     #cexpTimer: ReturnType<typeof setTimeout> | undefined;
-
+    #isInitialized: Promise<void>;
+    #resolveInitialized: () => void;
     #subscribers: Set<(eventSource: AuthService) => void>;
     #onMessage?: (this: Window, ev: MessageEvent) => void;
     #closed: boolean;
@@ -49,6 +50,14 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     public get typeSystem(): IAuthenticationInfoTypeSystem<T> { return this.#typeSystem; }
     /** Gets whether this AuthService is closed: no method should be called anymore. */
     public get isClosed(): boolean { return this.#closed; }
+
+    /** 
+     * A promise resolved when this AuthService has been initialized: refresh has been called at least once. 
+     * This is awaitable and should be used when initialization is handled by out-of-reach code. 
+     * This doesn't capture the potential error: the error is for the refresh caller and this {@link authenticationInfo}
+     * is anonymous (and {@link lastResult} can be used if needed).
+     */
+    public get isInitialized(): Promise<void> { return this.#isInitialized; }
 
     public get popupDescriptor(): PopupDescriptor {
         if (!this.#popupDescriptor) { this.#popupDescriptor = new PopupDescriptor(); }
@@ -76,6 +85,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         this.#configuration = new AuthServiceConfiguration(configuration);
 
         this.#interceptor = this.#axiosInstance.interceptors.request.use(this.onIntercept());
+
+        // Intermediate r and guard is to satisfy TypeScript definite assignment rule.
+        var r;
+        this.#isInitialized = new Promise(resolve => r = resolve);
+        if (typeof r === "undefined") throw new Error();
+        this.#resolveInitialized = r;
 
         this.#closed = false;
         this.#typeSystem = typeSystem ? typeSystem : new StdAuthenticationTypeSystem() as any;
@@ -480,6 +495,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         if (requestSchemes || this.#availableSchemes.length === 0) { queries.push('schemes'); }
         if (requestVersion || this.#endPointVersion === '') { queries.push('version'); }
         await this.sendRequest('refresh', { queries });
+
+        this.#resolveInitialized();
     }
 
     /**
