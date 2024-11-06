@@ -126,6 +126,21 @@ public class FullTSTests
         runner.Run();
     }
 
+    public interface IWithDecimalCommand : ICommand
+    {
+        decimal Value { get; set; }
+    }
+
+    public interface IWithULongCommand : ICommand
+    {
+        ulong Value { get; set; }
+    }
+
+    public interface IWithBigIntegerCommand : ICommand
+    {
+        BigInteger Value { get; set; }
+    }
+
     public interface ITestSerializationCommand : ICommand
     {
         string String { get; set; }
@@ -180,7 +195,10 @@ public class FullTSTests
             typeof( ICommandAbsWithResult ),
             typeof( INamedRecordWithResultCommand ),
             // Basic types.
-            typeof( ITestSerializationCommand )
+            typeof( ITestSerializationCommand ),
+            typeof( IWithDecimalCommand ),
+            typeof( IWithULongCommand ),
+            typeof( IWithBigIntegerCommand )
         };
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();

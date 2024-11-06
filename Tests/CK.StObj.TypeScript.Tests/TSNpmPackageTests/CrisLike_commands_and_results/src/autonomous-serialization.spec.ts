@@ -1,6 +1,7 @@
 import { CTSType, Guid, UserMessageLevel, NamedRecord, NamedRecordCommand, AnonymousRecordCommand, CommandCommand, SomeCommand, SimplestCommand, SimpleCommand, ExtendedCultureInfo, GrantLevel, TypeKind } from "@local/ck-gen";
 import { DateTime, Duration } from "luxon";
 import { Decimal } from "decimal.js-light";
+import { WithDecimalCommand, WithULongCommand, WithBigIntegerCommand } from "@local/ck-gen";
 import { TestSerializationCommand } from "@local/ck-gen";
 import { SimpleUserMessage } from "@local/ck-gen";
 
@@ -81,8 +82,42 @@ it('O map with projection can use 2 methods.', () => {
 // Sample test.
 describe('Command serialization', () => {
 
-  it('Command with basic types.', () => {
-      var c = new TestSerializationCommand( 
+  it('WithDecimalCommand.', () => {
+    var c = new WithDecimalCommand( new Decimal(3712) );
+    const json = CTSType.toTypedJson( c );
+    const s = JSON.stringify(json);
+    expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.IWithDecimalCommand",{"value":"3712"}]' );
+    const raw = JSON.parse(s);
+    const back = CTSType.fromTypedJson( raw );
+    expect( back ).toStrictEqual( c );
+
+  } );
+
+  it('WithULongCommand.', () => {
+    var c = new WithULongCommand( 99999999n );
+    const json = CTSType.toTypedJson( c );
+    const s = JSON.stringify(json);
+    expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.IWithULongCommand",{"value":"99999999"}]' );
+    const raw = JSON.parse(s);
+    const back = CTSType.fromTypedJson( raw );
+    expect( back ).toStrictEqual( c );
+
+  } );
+
+  it('WithBigIntegerCommand.', () => {
+    var c = new WithBigIntegerCommand( 99999999n );
+    const json = CTSType.toTypedJson( c );
+    const s = JSON.stringify(json);
+    expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.IWithBigIntegerCommand",{"value":"99999999"}]' );
+    const raw = JSON.parse(s);
+    const back = CTSType.fromTypedJson( raw );
+    expect( back ).toStrictEqual( c );
+
+  } );
+
+  it('TestSerializationCommand with basic types.', () => {
+
+    var c = new TestSerializationCommand( 
         "A string", 
         42,
         3.7, 
@@ -98,12 +133,12 @@ describe('Command serialization', () => {
         new SimpleUserMessage(UserMessageLevel.Info,"Hello!"),
         new Decimal( "79228162514264337593543950335" ) );
 
-      const json = CTSType.toTypedJson( c );
-      const s = JSON.stringify(json);
+      const oJ = CTSType.toTypedJson( c );
+      const s = JSON.stringify( oJ );
       expect(s).toEqual( '["CK.StObj.TypeScript.Tests.TSTests.FullTSTests.ITestSerializationCommand",{"string":"A string","int32":42,"single":3.7,"double":3.141592653589793,"long":"9999","uLong":"-87878","bigInteger":"99999999","grantLevel":32,"typeKind":13,"guid":"d0acf1b1-4675-4a23-af51-3c834d910f3d","dateTime":"2024-03-06T13:26:12.854Z","timeSpan":"37120000","simpleUserMessage":[4,"Hello!",0],"decimal":"79228162514264337593543950335"}]' );
-      const raw = JSON.parse(s);
-      const back = CTSType.fromTypedJson( raw );
-      expect( back ).toStrictEqual( c );
+      const c2 = CTSType.parse( s );
+      const s2 = CTSType.stringify( c2 );
+      expect( s ).toBe( s2 );
     });
 
     it( 'Command with records.', () => {
