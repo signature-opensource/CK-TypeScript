@@ -219,7 +219,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 
         if( e.Attribute( "AutoInstallYarn" ) != null)
         {
-            throw new XmlException( "AutoInstallYarn is obsolete: please use InstallYarn = \"None\", \"AutoInstall\" or \"AutoUpgrade\"." );
+            throw new XmlException( "AutoInstallYarn is obsolete: please use InstallYarn = \"None\", \"AutoInstall\" or \"AutoUpgrade\" (AutoUpgrade is the default)." );
         }
         var yarnInstall = (string?)e.Attribute( TypeScriptAspectConfiguration.xInstallYarn );
         InstallYarn = yarnInstall == null ? YarnInstallOption.AutoUpgrade : Enum.Parse<YarnInstallOption>( yarnInstall, ignoreCase: true );

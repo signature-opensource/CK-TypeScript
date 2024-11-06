@@ -11,7 +11,7 @@ namespace CK.TS.Angular.Tests;
 public class AngularTests
 {
     [Test]
-    public async Task Demo_Async()
+    public async Task CK_TS_Angular_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 

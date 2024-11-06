@@ -13,7 +13,7 @@ namespace CK.Ng.AspNet.Auth.Tests;
 public class NgAspNetAuthTests
 {
     [Test]
-    public async Task Demo_Async()
+    public async Task CK_NG_AspNet_Auth_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
