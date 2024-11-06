@@ -186,7 +186,7 @@ public sealed class PackageDependency
                     }
                     var otherWins = other._version.Base > _version.Base
                                     || (other._version.Base == _version.Base && other._version.Lock > _version.Lock);
-                    SVersionBound newV = otherWins ? _version : other._version;
+                    SVersionBound newV = otherWins ? other._version : _version;
                     if( logWarn )
                     {
                         monitor.Warn( $"""
