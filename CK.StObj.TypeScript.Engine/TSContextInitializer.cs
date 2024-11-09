@@ -454,7 +454,7 @@ sealed class TSContextInitializer
             {
                 foreach( var p in packages )
                 {
-                    success &= p.InitializePackage( monitor, i );
+                    success &= p.InitializeTypeScriptPackage( monitor, i );
                 }
                 if( success )
                 {

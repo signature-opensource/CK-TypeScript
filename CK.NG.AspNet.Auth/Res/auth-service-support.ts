@@ -4,9 +4,10 @@ import { AuthService, } from '@local/ck-gen';
 import { authInterceptor } from './auth-interceptor';
 
 /**
- * Provides support providers for NgAuthService: an APP_INITIALIZER that will call the initial async refresh and configures the HttpClient 
- * with an interceptor that handles the Bearer token. 
- * @returns  EnvironmentProviders that support the NgAuthService.
+ * Provides support providers for AuthService:
+ * - an APP_INITIALIZER that will call the initial async refresh of the CK.TS.AspNet.Auth AuthService.
+ * - configures the HttpClient with an interceptor that handles the Bearer token from the AuthService. 
+ * @returns  EnvironmentProviders that support the AuthService (the NgAuthService injects the AuthService).
  */
 export function provideNgAuthSupport(): EnvironmentProviders {
 
@@ -14,11 +15,6 @@ export function provideNgAuthSupport(): EnvironmentProviders {
         {
             provide: APP_INITIALIZER,
             useFactory: refreshAuthService,
-            multi: true
-        },
-        {
-            provide: APP_INITIALIZER,
-            useFactory: refreshAuthService2,
             multi: true
         },
         provideHttpClient(withInterceptors([authInterceptor]))
@@ -37,12 +33,4 @@ function refreshAuthService() {
             );
         }
     }
-}
-
-function refreshAuthService2() {
-    const authService = inject(AuthService);
-    if (authService.availableSchemes.length == 0) {
-        throw new Error("Raté");
-    }
-
 }

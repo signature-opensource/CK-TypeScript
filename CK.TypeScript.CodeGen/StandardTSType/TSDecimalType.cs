@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen;
 sealed class TSDecimalType : TSBasicType
 {
     public TSDecimalType( TSTypeManager typeManager, LibraryImport decimalLib )
-        : base( typeManager, "Decimal", i => i.EnsureImportFromLibrary( decimalLib, "Decimal" ), "new Decimal(0)" )
+        : base( typeManager, "Decimal", i => i.ImportFromLibrary( decimalLib, "Decimal" ), "new Decimal(0)" )
     {
     }
 

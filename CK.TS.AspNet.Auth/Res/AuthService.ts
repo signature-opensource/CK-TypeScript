@@ -59,6 +59,12 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
      */
     public get isInitialized(): Promise<void> { return this.#isInitialized; }
 
+    /**
+     * Static flag that turns on full exception logs.
+     * Defaults to false: only the IWebFrontAuthError is logged.
+     */
+    public static debugMode: boolean = false;
+
     public get popupDescriptor(): PopupDescriptor {
         if (!this.#popupDescriptor) { this.#popupDescriptor = new PopupDescriptor(); }
         return this.#popupDescriptor;
@@ -282,12 +288,11 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     private async sendRequest(entryPoint: 'basicLogin' | 'unsafeDirectLogin' | 'refresh' | 'impersonate' | 'logout' | 'startLogin',
         requestOptions: { body?: object, queries?: Array<string | { key: string, value: string }> },
         skipResponseHandling: boolean = false): Promise<void> {
+        const url = `${this.#configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${this.buildQueryString(requestOptions.queries)}`;
         try {
             this.clearTimeouts(); // We clear timeouts beforehand to avoid concurent requests
-
-            const query = this.buildQueryString(requestOptions.queries);
             const response = await this.#axiosInstance.post<IWebFrontAuthResponse>(
-                `${this.#configuration.webFrontAuthEndPoint}.webfront/c/${entryPoint}${query}`,
+                url,
                 !!requestOptions.body ? JSON.stringify(requestOptions.body) : {},
                 { withCredentials: true });
 
@@ -307,8 +312,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             this.setLastResult(response.data);
         } catch (error) {
 
+            // In debug mode, logs any exception.
             // This should not happen too often nor contain dangerous secrets...
-            console.log('Exception while sending ' + entryPoint + ' request.', error);
+            if( AuthService.debugMode ) console.log('Exception while sending: ' + url, error);
 
             const axiosError = error as AxiosError;
             if (!(axiosError && axiosError.response)) {
@@ -328,6 +334,8 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
                         this.#availableSchemes);
                     this.#availableSchemes = schemes;
                     if (auth) {
+                        console.log('Error while refreshing, authenticationInfo and available schemes are restored from local storage : ' + url,
+                                     this.#currentError );
                         // This sets the (unsafe, no expiration) auth and trigger the onChange: we are done.
                         this.localDisconnect(auth);
                         return;
@@ -346,6 +354,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
             }
         }
         // There has been an error.
+        console.log('Error while sending: ' + url, this.#currentError);
         this.setLastResult();
         const a = this.#authenticationInfo.checkExpiration();
         if (a != this.#authenticationInfo) {

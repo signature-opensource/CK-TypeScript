@@ -39,7 +39,7 @@ struct TypeDeclarationImpl
         public override void EnsureRequiredImports( ITSFileImportSection section )
         {
             base.EnsureRequiredImports( section );
-            section.EnsureImport( _file, TypeName );
+            section.ImportFromFile( _file, TypeName );
         }
     }
 }

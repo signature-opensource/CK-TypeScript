@@ -3,6 +3,7 @@ using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace CK.StObj.TypeScript.Engine;
 
@@ -18,6 +19,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     readonly Type _type;
     readonly PackageResources _resources;
     readonly HashSet<ResourceTypeLocator> _removedResources;
+    readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
 
 
@@ -58,6 +60,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     {
         _attr = attr;
         _type = type;
+        _extensions = new List<TypeScriptPackageAttributeImplExtension>();
         _removedResources = new HashSet<ResourceTypeLocator>();
         if( !typeof( TypeScriptPackage ).IsAssignableFrom( type ) )
         {
@@ -84,6 +87,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
         }
     }
 
+    internal void AddExtension( TypeScriptPackageAttributeImplExtension e )
+    {
+        _extensions.Add( e );
+    }
+
     void IStObjStructuralConfigurator.Configure( IActivityMonitor monitor, IStObjMutableItem o )
     {
         if( _attr.Package != null )
@@ -93,6 +101,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
             {
                 monitor.Error( $"{o.ToString()}: [TypeScriptPackage] sets Package to be '{_attr.Package.Name}' but it is already '{o.Container.Type:N}'." );
             }
+        }
+        else if( !typeof( IRootTypeScriptPackage ).IsAssignableFrom( o.ClassType ) )
+        {
+            o.Container.Type = typeof( IRootTypeScriptPackage );
+            o.Container.StObjRequirementBehavior = StObjRequirementBehavior.None;
         }
         o.ItemKind = DependentItemKindSpec.Container;
         OnConfigure( monitor, o );
@@ -119,9 +132,8 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// <param name="monitor">The monitor.</param>
     /// <param name="initializer">The TypeScriptContext iniitializer.</param>
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
-    internal protected virtual bool InitializePackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    internal protected virtual bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
-        _removedResources.Clear();
         return true;
     }
 
@@ -130,7 +142,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// won't generate its file.
     /// </summary>
     /// <param name="resource"></param>
-    internal void RemoveResource( ResourceTypeLocator resource )
+    internal protected void RemoveResource( ResourceTypeLocator resource )
     {
         Throw.DebugAssert( resource.Declarer == _type );
         _removedResources.Add( resource );
@@ -148,6 +160,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
     internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
+        bool success = true;
+        foreach( var e in _extensions )
+        {
+            success &= e.GenerateCode( monitor, this, context );
+        }
         if( !_attr.ConsiderExplicitResourceOnly && _resources.AllResources.Length != _removedResources.Count )
         {
             foreach( ResourceTypeLocator o in _resources.AllResources )

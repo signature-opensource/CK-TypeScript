@@ -70,7 +70,7 @@ public sealed partial class CTSTypeSystem
         if( context.Root.ReflectTS )
         {
             Throw.DebugAssert( "ReflectTS is true.", context.Root.TSTypes.ReflectTSTypeFile != null );
-            _ctsTypeFile.Imports.EnsureImport( context.Root.TSTypes.ReflectTSTypeFile, "TSType" );
+            _ctsTypeFile.Imports.ImportFromFile( context.Root.TSTypes.ReflectTSTypeFile, "TSType" );
         }
 
         context.Root.AfterCodeGeneration += OnAfterCodeGeneration;
@@ -90,7 +90,7 @@ public sealed partial class CTSTypeSystem
                 var ctorBody = ts.TypePart.FindKeyedPart( ITSKeyedCodePart.ConstructorBodyPart );
                 if( ctorBody != null )
                 {
-                    ctorBody.File.Imports.EnsureImport( _ctsType.File, "CTSType" );
+                    ctorBody.File.Imports.ImportFromFile( _ctsType.File, "CTSType" );
                     ctorBody.Append( "CTSType[" ).AppendSourceString( _jsonExhangeableNames.GetName( t ) ).Append( "].set( this );" ).NewLine();
                 }
                 else
@@ -112,13 +112,13 @@ public sealed partial class CTSTypeSystem
 
     /// <summary>
     /// Gets the symbol used to type objects with their associated CTSType.
-    /// This is exposed so that <see cref="ITSFileImportSection.EnsureImport(ITSType, ITSType[])"/> can easily import it.
+    /// This is exposed so that <see cref="ITSFileImportSection.Import(ITSType)"/> can easily import it.
     /// </summary>
     public ITSType SymCTS => _symCTS;
 
     /// <summary>
     /// Gets the static CTSType object.
-    /// This is exposed so that <see cref="ITSFileImportSection.EnsureImport(ITSType, ITSType[])"/> can easily import it.
+    /// This is exposed so that <see cref="ITSFileImportSection.Import(ITSType)"/> can easily import it.
     /// </summary>
     public ITSType CTSType => _ctsType;
 
@@ -152,7 +152,7 @@ public sealed partial class CTSTypeSystem
             }
             if( t.IsSerializedObservable )
             {
-                part.File.Imports.EnsureImport( ts );
+                part.File.Imports.Import( ts );
                 part.Append( "set( o: " ).Append( ts.TypeName ).Append( " ): " ).Append( ts.TypeName ).Append( " { " );
                 if( t.Kind == PocoTypeKind.Enum )
                 {

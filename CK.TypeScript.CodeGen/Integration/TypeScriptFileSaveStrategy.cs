@@ -123,7 +123,7 @@ public class TypeScriptFileSaveStrategy
         using var stream = file.TryGetContentStream();
         if( stream != null )
         {
-            using var output = File.OpenWrite( filePath );
+            using var output = File.Create( filePath );
             stream.CopyTo( output );
         }
         else

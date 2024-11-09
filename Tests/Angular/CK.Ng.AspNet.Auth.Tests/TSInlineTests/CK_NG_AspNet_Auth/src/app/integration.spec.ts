@@ -1,27 +1,37 @@
 import axios from 'axios';
-import { AuthLevel, AuthService } from '@local/ck-gen';
+import { AuthLevel, AuthService, AXIOS } from '@local/ck-gen';
 import { NgAuthService, CKGenAppModule } from '@local/ck-gen';
 import { TestBed } from '@angular/core/testing';
 import { CookieJar } from 'tough-cookie';
 import { wrapper as addCookieJar } from 'axios-cookiejar-support';
+import { AppComponent } from './app.component';
 
 if ( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout( 30 * 60 * 1000 ); // 30 minutes
 
-const serverAddress = ""//CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
+const serverAddress = CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
 const describeWithServer = serverAddress ? describe : describe.skip;
 
 describeWithServer( 'NgAuthService integration tests', () => {
     beforeAll( async () => {
+    } );
+
+    beforeEach( async () => {
         const axiosInstance = axios.create();
         const cookieJar = new CookieJar();
         addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
-        await TestBed.configureTestingModule( { providers: CKGenAppModule.Providers } ).compileComponents();
-    } );
+        await TestBed.configureTestingModule( 
+            { 
+                imports: [AppComponent],
+                providers: [
+                    { provide: AXIOS, useValue: axiosInstance },
+                    ...CKGenAppModule.Providers.exclude("CK.Ng.Axios.TSPackage")
+                ] 
 
-    beforeEach( async () => {
-        const authService = TestBed.inject( AuthService );
-        await authService.logout();
+            } ).compileComponents();
+
+      const ngAuthService = TestBed.inject(NgAuthService);
+      await ngAuthService.authService.isInitialized;
     } );
         
     it( 'ngAuthService authInfos should be correctly updated', async () => {

@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen;
 sealed class TSLuxonDateTime : TSBasicType
 {
     public TSLuxonDateTime( TSTypeManager typeManager, LibraryImport luxonLib )
-        : base( typeManager, "DateTime", i => i.EnsureImportFromLibrary( luxonLib, "DateTime" ), "DateTime.utc(1,1,1)" )
+        : base( typeManager, "DateTime", i => i.ImportFromLibrary( luxonLib, "DateTime" ), "DateTime.utc(1,1,1)" )
     {
     }
 

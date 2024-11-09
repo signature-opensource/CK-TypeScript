@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.StObj.TypeScript;
 using CK.StObj.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
@@ -60,6 +61,8 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public string FileComponentName => _snakeName;
 
+    public bool IsAppComponent => DecoratedType == typeof( AppComponent );
+
     /// <summary>
     /// Gets the attribute.
     /// </summary>
@@ -68,16 +71,27 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         var fName = _snakeName + ".component.ts";
-        if( !Resources.TryGetResource( monitor, fName, out var res ) )
-        {
-            return false;
-        }
-        var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
 
-        return base.GenerateCode( monitor, context )
-               && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
+        // If we are on the AppComponent, don't try to lookup the resources (there are no resources).
+        // Simply declare the AppComponent (that is the first one to GenerateCode because it is THE
+        // IRootTypeScriptPackage.
+        if( IsAppComponent )
+        {
+            return true; //context.GetAngularCodeGen().ComponentManager.DeclareAppComponent( monitor, this );
+        }
+        else
+        {
+            if( !Resources.TryGetResource( monitor, fName, out var res ) )
+            {
+                return false;
+            }
+            var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
+            Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+            ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
+
+            return base.GenerateCode( monitor, context )
+                   && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
+        }
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]

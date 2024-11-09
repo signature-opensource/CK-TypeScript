@@ -20,7 +20,10 @@ public class AngularTests
         ts.CKGenBuildMode = false;
 
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
-        configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ), typeof( LoginComponent ), typeof( PasswordLostComponent ) );
+        configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ),
+                                              typeof( LoginComponent ),
+                                              typeof( PasswordLostComponent ),
+                                              typeof( SomeAuthPackage ) );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

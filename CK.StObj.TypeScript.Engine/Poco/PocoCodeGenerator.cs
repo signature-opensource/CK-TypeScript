@@ -179,7 +179,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                                              {
                                                  foreach( var t in types )
                                                  {
-                                                     i.EnsureImport( t.ts );
+                                                     i.Import( t.ts );
                                                  }
                                              },
                                              types );
@@ -229,7 +229,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                 // Uses Array<> rather than "(inner.TypeName)[]".
                 var tName = tColl.IsAbstractReadOnly ? $"ReadonlyArray<{inner.TypeName}>" : $"Array<{inner.TypeName}>";
                 ts = tsTypeManager.FindByTypeName( tName )
-                        ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), "[]" );
+                        ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.Import( inner ) ), "[]" );
                 break;
             }
             case PocoTypeKind.HashSet:
@@ -237,7 +237,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                 var inner = tsTypeManager.ResolveTSType( monitor, tColl.ItemTypes[0] );
                 var tName = tColl.IsAbstractReadOnly ? $"ReadonlySet<{inner.TypeName}>" : $"Set<{inner.TypeName}>";
                 ts = tsTypeManager.FindByTypeName( tName )
-                        ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.EnsureImport( inner ) ), $"new {tName}()" );
+                        ?? new TSBasicType( tsTypeManager, tName, i => inner.EnsureRequiredImports( i.Import( inner ) ), $"new {tName}()" );
                 break;
             }
             case PocoTypeKind.Dictionary:
@@ -249,8 +249,8 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                         ?? new TSBasicType( tsTypeManager, tName,
                                             i =>
                                             {
-                                                tKey.EnsureRequiredImports( i.EnsureImport( tKey ) );
-                                                tValue.EnsureRequiredImports( i.EnsureImport( tValue ) );
+                                                tKey.EnsureRequiredImports( i.Import( tKey ) );
+                                                tValue.EnsureRequiredImports( i.Import( tValue ) );
                                             },
                                             $"new {tName}()" );
                 break;

@@ -69,7 +69,7 @@ class NgRoute
             body.Append( "{ path: " ).AppendSourceString( comp.Route );
             if( comp.Attribute.RegistrationMode == RouteRegistrationMode.None )
             {
-                routes.Imports.EnsureImport( c._tsType );
+                routes.Imports.Import( c._tsType );
                 body.Append( ", component: " ).Append( comp.ComponentName );
             }
             else

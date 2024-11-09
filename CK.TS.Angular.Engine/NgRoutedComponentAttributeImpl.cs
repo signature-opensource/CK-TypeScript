@@ -23,10 +23,9 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
         {
             monitor.Error( $"[NgRoutedComponent] can only decorate a NgRoutedComponent: '{type:N}' is not a NgRoutedComponent." );
         }
-        if( !typeof( NgRoutedComponent ).IsAssignableFrom( attr.TargetComponent )
-            && attr.TargetComponent != typeof( CKGenAppModule ) )
+        if( !typeof( NgComponent ).IsAssignableFrom( attr.TargetComponent ) )
         {
-            monitor.Error( $"[NgRoutedComponent] on '{type:C}': TargetRoutedComponent = typeof({attr.TargetComponent:C}) is not a NgRoutedComponent (nor the CKGenAppModule)." );
+            monitor.Error( $"[NgRoutedComponent] on '{type:C}': TargetRoutedComponent = typeof({attr.TargetComponent:C}) is not a NgComponent." );
         }
         if( attr.HasRoutes && attr.Route == "" )
         {
@@ -46,7 +45,12 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
 
     protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
     {
-        if( Attribute.TargetComponent != typeof( CKGenAppModule ) )
+        //
+        // Makes the TargetComponent a requirement for this Real Object if this is not
+        // the AppComponent: the AppComponent is the IRootTypeScriptPackage that ultimately
+        // contains all the TypeScriptPackages...
+        //
+        if( Attribute.TargetComponent != typeof( AppComponent ) )
         {
             o.Requires.AddNew( Attribute.TargetComponent, StObjRequirementBehavior.ErrorIfNotStObj );
         }

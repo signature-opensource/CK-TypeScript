@@ -53,7 +53,7 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
 
     public override void EnsureRequiredImports( ITSFileImportSection section )
     {
-        section.EnsureImport( _file, TypeName );
+        section.ImportFromFile( _file, TypeName );
     }
 
     protected override bool DoTryWriteValue( ITSCodeWriter writer, object value ) => _tryWriteValue?.Invoke( writer, this, value ) ?? false;

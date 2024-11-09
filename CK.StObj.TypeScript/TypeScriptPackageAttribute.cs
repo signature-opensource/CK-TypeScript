@@ -7,7 +7,26 @@ namespace CK.StObj.TypeScript;
 /// <summary>
 /// Required attribute for <see cref="TypeScriptPackage"/>.
 /// <para>
-/// Embedded resources from <see cref="ResourceFolderPath"/> ("./Res" by default).
+/// A package is associated to embedded resources from <see cref="ResourceFolderPath"/> ("./Res" by default)
+/// and is often decorated with other attributes:
+/// <list type="bullet">
+///     <item>
+///     <see cref="TypeScriptResourceAttribute"/> enables a file from the <see cref="ResourceFolderPath"/> to
+///     be extracted to another location than the package's <see cref="TypeScriptFolder"/> by specifying a
+///     <see cref="TypeScriptResourceAttribute.TargetFolder"/>.
+///     </item>
+///     <item>
+///     <see cref="TypeScriptFileAttribute"/> is like <see cref="TypeScriptResourceAttribute"/> but in addition
+///     can declare exported type names from the file.
+///     </item>
+///     <item>
+///     <see cref="TypeScriptImportLibraryAttribute"/> enables a package to import an external npm library.
+///     </item>
+/// </list>
+/// </para>
+/// <para>
+/// This attribute defines a root package that doesn't belong to any other package. The <see cref="TypeScriptPackageAttribute{T}"/>
+/// must be used to define a subordinated package.
 /// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
@@ -35,9 +54,9 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute
     }
 
     /// <summary>
-    /// Gets or sets the package to which this package belongs.
+    /// Gets the package to which this package belongs.
     /// </summary>
-    public Type? Package { get; set; }
+    public virtual Type? Package => null;
 
     /// <summary>
     /// Gets or sets the folder's path where embedded resources for this package should be loaded from.

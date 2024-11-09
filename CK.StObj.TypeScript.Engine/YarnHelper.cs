@@ -140,7 +140,7 @@ public static class YarnHelper
             var a = Assembly.GetExecutingAssembly();
             Throw.DebugAssert( a.GetName().Name == "CK.StObj.TypeScript.Engine" );
             using( var yarnBinStream = a.GetManifestResourceStream( $"CK.StObj.TypeScript.Engine.{_yarnFileName}" ) )
-            using( var fileStream = File.OpenWrite( yarnPath ) )
+            using( var fileStream = File.Create( yarnPath ) )
             {
                 yarnBinStream!.CopyTo( fileStream );
             }

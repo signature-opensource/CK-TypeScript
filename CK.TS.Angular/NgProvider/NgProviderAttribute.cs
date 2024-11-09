@@ -1,42 +1,39 @@
 using CK.Core;
 using CK.Setup;
+using CK.StObj.TypeScript;
 using System;
 
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Non generic base class <see cref="NgProviderAttribute{T}"/>
+/// Adds a provider registration to a <see cref="TypeScriptPackage"/>.
+/// <para>
+/// Required dependencies must be added with one or more <see cref="NgProviderImportAttribute"/>.
+/// </para>
 /// </summary>
-public abstract class NgProviderAttribute : ContextBoundDelegationAttribute, IRealObjectAttribute
+[AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
+public sealed class NgProviderAttribute : ContextBoundDelegationAttribute
 {
-    private protected NgProviderAttribute( Type typeScriptPackage, (string Code, string? Source)[] definitions  )
+    /// <summary>
+    /// Initializes a new <see cref="NgProviderAttribute{T}"/> with a single provider definition.
+    /// </summary>
+    /// <param name="providerCode">Provider definition code.</param>
+    /// <param name="sourceNameSuffix">Optional source name suffix added to the C# name of the decorated <see cref="TypeScriptPackage"/> class.</param>
+    public NgProviderAttribute( string providerCode, string? sourceNameSuffix = null )
         : base( "CK.TS.Angular.Engine.NgProviderAttributeImpl, CK.TS.Angular.Engine" )
     {
-        TypeScriptPackage = typeScriptPackage;
-        ProviderDefinitions = definitions;
+        ProviderCode = providerCode;
+        SourceNameSuffix = sourceNameSuffix;
     }
 
     /// <summary>
-    /// Gets the <see cref="TypeScriptPackage"/> to which this provider belongs.
+    /// Gets the providers definition code.
     /// </summary>
-    public Type TypeScriptPackage { get; }
+    public string ProviderCode { get; }
 
     /// <summary>
-    /// Gets the providers definition code and optional source.
+    /// Gets an optional suffix added to the C# name of the decorated <see cref="TypeScriptPackage"/> class.
+    /// This string identifies the provider registration and always starts with the C# name of the decorated <see cref="TypeScriptPackage"/> class.
     /// </summary>
-    public (string Code, string? SourceName)[] ProviderDefinitions { get; }
-
-    Type? IRealObjectAttribute.Container => TypeScriptPackage;
-
-    DependentItemKindSpec IRealObjectAttribute.ItemKind => DependentItemKindSpec.Item;
-
-    TrackAmbientPropertiesMode IRealObjectAttribute.TrackAmbientProperties => TrackAmbientPropertiesMode.None;
-
-    Type[]? IRealObjectAttribute.Requires => Type.EmptyTypes;
-
-    Type[]? IRealObjectAttribute.RequiredBy => Type.EmptyTypes;
-
-    Type[]? IRealObjectAttribute.Children => Type.EmptyTypes;
-
-    Type[]? IRealObjectAttribute.Groups => Type.EmptyTypes;
+    public string? SourceNameSuffix { get; }
 }

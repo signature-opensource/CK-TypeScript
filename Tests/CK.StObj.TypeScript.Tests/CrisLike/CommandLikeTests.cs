@@ -141,8 +141,8 @@ public class CommandLikeTests
         File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).Should().Contain( "export enum Power" );
 
         var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) ).ReplaceLineEndings();
-        tOne.Should().Contain( """import { Power } from "./Power";""" )
-                 .And.Contain( """import { CommandTwo } from "../Commands/CrisLike/CMDCommandTwo";""" );
+        tOne.Should().Contain( """import { Power } from './Power';""" )
+                 .And.Contain( """import { CommandTwo } from '../Commands/CrisLike/CMDCommandTwo';""" );
 
         tOne.Should().Contain( "export class CommandOne implements ICommand {" )
                  .And.Contain( """
@@ -164,9 +164,9 @@ public class CommandLikeTests
 
 
         var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) ).ReplaceLineEndings();
-        tTwo.Should().Contain( """import { Power } from "../../TheFolder/Power";""" )
-                 .And.Contain( """import { CommandOne, CommandThree } from "../../TheFolder/CMDCommandOne";""" )
-                 .And.Contain( """import { ICommandModel, ICommand } from "../../CK/Cris/Model";""" );
+        tTwo.Should().Contain( """import { Power } from '../../TheFolder/Power';""" )
+                 .And.Contain( """import { CommandOne, CommandThree } from '../../TheFolder/CMDCommandOne';""" )
+                 .And.Contain( """import { ICommandModel, ICommand } from '../../CK/Cris/Model';""" );
 
         tTwo.Should().Contain( "export class CommandTwo implements ICommand {" )
                  .And.Contain( """
@@ -302,8 +302,8 @@ public class CommandLikeTests
         var p = targetProjectPath.Combine( "ck-gen" );
         var tS = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/StringCommand.ts" ) ).ReplaceLineEndings();
         tS.Should().StartWith( """
-            import { ICommandModel, ICommand } from "../../../../Cris/Model";
-            import { ICommandAbs } from "./ICommandAbs";
+            import { ICommandModel, ICommand } from '../../../../Cris/Model';
+            import { ICommandAbs } from './ICommandAbs';
             """.ReplaceLineEndings() );
         tS.Should().Contain( "export class StringCommand implements ICommand, ICommandAbs {" )
                 .And.Contain( """
@@ -322,9 +322,9 @@ public class CommandLikeTests
 
         var tC = File.ReadAllText( p.Combine( "CK/StObj/TypeScript/Tests/CrisLike/CommandCommand.ts" ) ).ReplaceLineEndings();
         tC.Should().StartWith( """
-            import { ICommandModel, ICommand } from "../../../../Cris/Model";
-            import { ICommandAbsWithNullableKey } from "./ICommandAbsWithNullableKey";
-            import { ExtendedCultureInfo } from "../../../../Core/ExtendedCultureInfo";
+            import { ICommandModel, ICommand } from '../../../../Cris/Model';
+            import { ICommandAbsWithNullableKey } from './ICommandAbsWithNullableKey';
+            import { ExtendedCultureInfo } from '../../../../Core/ExtendedCultureInfo';
             """.ReplaceLineEndings() );
         tC.Should().Contain( "export class CommandCommand implements ICommand, ICommandAbsWithNullableKey {" )
                 .And.Contain( """

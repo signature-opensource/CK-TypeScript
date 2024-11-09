@@ -30,4 +30,9 @@
       <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSGeneratedOnly\no_TypeScript_attribute_is_generated_when_referenced\ck-gen\CK\" />
+    <Folder Include="TSGeneratedOnly\no_TypeScript_attribute_is_generated_when_Type_appears_in_Aspect\ck-gen\CK\" />
+    <Folder Include="TSGeneratedOnly\with_date_and_guid\ck-gen\CK\" />
+  </ItemGroup>
 </Project>

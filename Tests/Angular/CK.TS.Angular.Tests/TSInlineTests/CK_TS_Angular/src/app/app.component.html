@@ -1,2 +1,17 @@
 <h1>Hello, {{ title }}</h1>
+
+@if( authService.isAnonymous ) {
+<!-- #PrePublic revert="true" -->
+<!-- #PreRouterOutlet revert="true" -->
 <router-outlet />
+<!-- #PostRouterOutlet -->
+<!-- #PostPublic -->
+}
+@else {
+<!-- #PrePrivate revert="true" -->
+<!-- #PreRouterOutlet revert="true" -->
+<router-outlet />
+<!-- #PostRouterOutlet -->
+<!-- #PostPrivate -->
+}
+

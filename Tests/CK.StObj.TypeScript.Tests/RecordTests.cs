@@ -217,7 +217,7 @@ public class RecordTests
         CheckFile( targetProjectPath,
             "Rec1.ts",
             """
-            import { Guid } from "./System/Guid";
+            import { Guid } from './System/Guid';
 
             export class Rec1 {
             public constructor(

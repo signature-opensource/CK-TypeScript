@@ -4,17 +4,12 @@ using System.Runtime.CompilerServices;
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Required attribute for <see cref="NgRoutedComponent"/>.
+/// Non generic base class of <see cref="NgRoutedComponent{T}"/>.
 /// </summary>
 public class NgRoutedComponentAttribute : NgComponentAttribute
 {
-    /// <summary>
-    /// Initializes a new <see cref="NgRoutedComponentAttribute"/>.
-    /// </summary>
-    /// <param name="targetRoutedComponent">The routed component under which this component must appear.</param>
-    /// <param name="callerFilePath">Automatically set by the Roslyn compiler and used to compute the associated embedded resource folder.</param>
-    public NgRoutedComponentAttribute( Type targetRoutedComponent,
-                                       [CallerFilePath] string? callerFilePath = null )
+    private protected NgRoutedComponentAttribute( Type targetRoutedComponent,
+                                                  [CallerFilePath] string? callerFilePath = null )
         : base( "CK.TS.Angular.Engine.NgRoutedComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
     {
         TargetComponent = targetRoutedComponent;
@@ -43,3 +38,5 @@ public class NgRoutedComponentAttribute : NgComponentAttribute
     /// </summary>
     public RouteRegistrationMode RegistrationMode { get; set; }
 }
+
+

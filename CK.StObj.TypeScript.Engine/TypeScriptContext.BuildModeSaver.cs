@@ -36,7 +36,7 @@ public sealed partial class TypeScriptContext
                 if( !CheckEqual( filePath, fMem ) )
                 {
                     fMem.Position = 0;
-                    using var fDisk = File.OpenWrite( OnClashPath( monitor, file, filePath ) );
+                    using var fDisk = File.Create( OnClashPath( monitor, file, filePath ) );
                     fMem.CopyTo( fDisk );
                 }
             }

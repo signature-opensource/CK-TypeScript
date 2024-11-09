@@ -95,7 +95,7 @@ public sealed class FakeTypeScriptCrisCommandGeneratorImpl : ITSCodeGeneratorFac
                 {
                     e.ImplementedInterfaces = e.ImplementedInterfaces.Where( i => i.Type != typeof( ICommand ) );
                 }
-                e.PocoTypePart.File.Imports.EnsureImport( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "ICommandModel" );
+                e.PocoTypePart.File.Imports.ImportFromFile( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "ICommandModel" );
                 e.PocoTypePart.NewLine()
                     .Append( "get commandModel(): ICommandModel { return " ).Append( e.TSGeneratedType.TypeName ).Append( ".#m; }" ).NewLine()
                     .NewLine()

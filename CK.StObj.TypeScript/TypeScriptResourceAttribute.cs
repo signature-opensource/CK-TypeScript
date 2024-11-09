@@ -38,5 +38,5 @@ public sealed class TypeScriptResourceAttribute : ContextBoundDelegationAttribut
     /// By default, when this is let to null, the resource file is copied to the <see cref="TypeScriptPackageAttribute.TypeScriptFolder"/>.
     /// </para>
     /// </summary>
-    public string? TargetFolderName { get; set; }
+    public string? TargetFolder { get; set; }
 }

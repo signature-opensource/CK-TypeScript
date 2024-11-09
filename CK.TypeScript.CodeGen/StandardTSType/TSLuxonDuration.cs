@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen;
 sealed class TSLuxonDuration : TSBasicType
 {
     public TSLuxonDuration( TSTypeManager typeManager, LibraryImport luxonLib )
-        : base( typeManager, "Duration", i => i.EnsureImportFromLibrary( luxonLib, "Duration" ), "Duration.fromMillis(0)" )
+        : base( typeManager, "Duration", i => i.ImportFromLibrary( luxonLib, "Duration" ), "Duration.fromMillis(0)" )
     {
     }
 

@@ -16,7 +16,7 @@ sealed class ComponentManager
     {
         _context = context;
         _routes = new Dictionary<Type, NgRoute>();
-        _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( CKGenAppModule ), "CK/Angular", null, null, null );
+        _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( AppComponent ), "CK/Angular", null, null, null );
         _context.AfterCodeGeneration += OnAfterCodeGeneration;
     }
 

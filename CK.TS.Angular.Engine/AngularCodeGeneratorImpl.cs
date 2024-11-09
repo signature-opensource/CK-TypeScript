@@ -52,9 +52,17 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         ITSCodePart IAngularContext.ProviderPart => _providerPart;
 
+        /// <summary>
+        /// Called by NgProviderAttributeImpl.
+        /// </summary>
+        internal void AddNgProvider( string providerCode, string sourceName )
+        {
+            _providerPart.Append( "CKGenAppModule.s( " ).Append( providerCode ).Append( ", " ).AppendSourceString( sourceName ).Append( " )," ).NewLine();
+        }
+
         internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module, ITSDeclaredFileType tsType )
         {
-            _ckGenAppModule.File.Imports.EnsureImport( tsType );
+            _ckGenAppModule.File.Imports.Import( tsType );
             if( !_importModulePart.IsEmpty )
             {
                 _importModulePart.Append( ", " );
@@ -72,9 +80,43 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             _components = new ComponentManager( context );
 
             var f = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
-            f.Imports.EnsureImportFromLibrary( _angularCore, "NgModule", "Provider" );
+            f.Imports.ImportFromLibrary( _angularCore, "NgModule, Provider, EnvironmentProviders" );
             _ckGenAppModule = f.CreateType( "CKGenAppModule", additionalImports: null, defaultValueSource: null );
             _ckGenAppModule.TypePart.Append( """
+
+                export type CKGenInjected = any[];
+                
+                export type SourcedProvider = (EnvironmentProviders | Provider) & {source: string};
+
+                /**
+                 * Array-like of Provider or EnvironmentProviders that supports {@link exclude}
+                 * to remove some of them: they can be manually reinjected if nominal configuration
+                 * must be changed.
+                 */
+                export class SourcedProviders extends Array<SourcedProvider> {
+
+                    constructor(o: SourcedProvider[]) {
+                        super();
+                        this.push( ...o );
+                    }
+
+                    /**
+                     * Exludes all the providers issued by the given source.
+                     * At least one such provider must exist otherwise this throws.
+                     */
+                    exclude( sourceName: string ): SourcedProviders
+                    {
+                        let idx = this.findIndex( s => s.source == sourceName );
+                        if( idx < 0 ) throw new Error( `No provider from source '${sourceName}' found.` );
+                        do
+                        {
+                            this.splice( idx, 1 );
+                        }
+                        while( (idx = this.findIndex( s => s.source == sourceName )) >= 0 );
+                        return this;
+                    }
+                }
+
                 @NgModule({
                     imports: [
 
@@ -91,13 +133,20 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     ] })
                 export class CKGenAppModule {
-                    static Providers : Provider[] = [
+                    private static s( p: EnvironmentProviders | Provider, source: string ) : SourcedProvider
+                    {
+                        const s = <SourcedProvider>p;
+                        s.source = source; 
+                        return s;
+                    }
+
+                    static Providers : SourcedProviders = new SourcedProviders( [
 
                 """ )
                 .InsertPart( out _providerPart )
                 .Append( """
 
-                    ];
+                    ] );
                 """ );
 
             Throw.DebugAssert( "Inline mode => IntegrationContext.", context.IntegrationContext != null );
@@ -109,6 +158,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         bool ITSCodeGenerator.OnResolveObjectKey( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromObjectEventArgs e ) => true;
 
         bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
+
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute': no need (single shot), we keep the interpreted regex.
 
         void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
         {
@@ -259,9 +310,19 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
                     File.WriteAllText( filePath, """
                         <h1>Hello, {{ title }}</h1>
+
+                        <!-- #PrePublic revert="true" -->
                         <router-outlet />
+                        <!-- #PostPublic -->
                         """ );
-                    monitor.Trace( "Keeping only the '<h1>Hello, {{ title }}</h1><router-outlet />' in 'app.component.html'." );
+                    monitor.Trace( """
+                                   File 'app.component.html' is:
+                                   <h1>Hello, {{ title }}</h1>
+
+                                   <!-- #PrePublic revert="true" -->
+                                   <router-outlet />
+                                   <!-- #PostPublic -->
+                                   """ );
                     return true;
                 }
 
@@ -425,7 +486,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
             {
                 var app = File.ReadAllText( appFilePath );
-#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
                 if( Regex.IsMatch( app, """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""", RegexOptions.CultureInvariant ) )
                 {
                     monitor.Trace( "File 'src/app/component.ts' imports the CKGenAppModule. Skipping transformation." );
@@ -434,11 +494,27 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 {
                     using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
                     {
+                        // const ckGenInjected: CKGenInjected = [];
+                        InjectBeforeComponent( monitor, """
+                            const ckGenInjected: CKGenInjected = [];
+
+                            """, ref app );
                         bool success = AddInImports( monitor, ref app );
                         AddImportAndConclude( monitor, appFilePath, success, ref app, "import { CKGenAppModule } from '@local/ck-gen';" );
                     }
                 }
-#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+
+                static bool InjectBeforeComponent( IActivityMonitor monitor, string s, ref string app )
+                {
+                    int idx = app.IndexOf( "@Component(" );
+                    if( idx < 0 )
+                    {
+                        monitor.Warn( "Unable to find the @Component(...) declaration." );
+                        return false;
+                    }
+                    app = app.Insert( idx, s );
+                    return true;
+                }
 
                 static bool AddInImports( IActivityMonitor monitor, ref string app )
                 {
@@ -455,12 +531,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             {
                                 if( app[idxEnd] == ',' )
                                 {
-                                    app = app.Insert( idxEnd, " CKGenAppModule," );
+                                    app = app.Insert( idxEnd, " CKGenAppModule, ...ckGenInjected," );
                                 }
                                 else
                                 {
                                     Throw.DebugAssert( app[idxEnd] == ']' );
-                                    app = app.Insert( idx + 12, ", CKGenAppModule" );
+                                    app = app.Insert( idx + 12, ", CKGenAppModule, ...ckGenInjected" );
                                 }
                                 monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
                                 return true;
@@ -591,5 +667,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         }
 
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'
     }
 }
