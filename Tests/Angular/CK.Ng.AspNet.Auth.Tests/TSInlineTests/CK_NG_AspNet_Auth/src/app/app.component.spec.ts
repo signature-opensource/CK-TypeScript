@@ -14,7 +14,7 @@ describe('AppComponent without backend...', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(AppComponent);
     app = fixture.componentInstance;
-    // Wait for the AuthService initialization (404 not found).
+    // Wait for the AuthService initialization (that should be on error).
     const ngAuthService = TestBed.inject( NgAuthService );
     await ngAuthService.authService.isInitialized;
     expect( ngAuthService.authService.lastResult.error?.errorId ).toBeTruthy();
