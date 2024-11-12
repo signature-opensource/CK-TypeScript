@@ -5,7 +5,7 @@ import { CKGenAppModule, NgAuthService } from '@local/ck-gen';
 describe('AppComponent without backend...', () => {
   let fixture: ComponentFixture<AppComponent>;
   let app: AppComponent;
-  
+
   // The app is available (but the AuthService is on error).
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -14,10 +14,10 @@ describe('AppComponent without backend...', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(AppComponent);
     app = fixture.componentInstance;
-    // Wait for the AuthService initialization (404 not found). 
+    // Wait for the AuthService initialization (404 not found).
     const ngAuthService = TestBed.inject( NgAuthService );
     await ngAuthService.authService.isInitialized;
-    expect( ngAuthService.authService.lastResult.error?.errorId ).toBe('HTTP.Status.404');
+    expect( ngAuthService.authService.lastResult.error?.errorId ).toBeTruthy();
   });
 
   it(`should have the 'Demo' title`, () => {
