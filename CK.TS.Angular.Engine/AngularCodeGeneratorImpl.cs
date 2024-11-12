@@ -95,7 +95,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                  */
                 export class SourcedProviders extends Array<SourcedProvider> {
                     /**
-                     * Exludes all the providers issued by the given source.
+                     * Excludes all the providers issued by the given source.
                      * At least one such provider must exist otherwise this throws.
                      */
                     exclude( sourceName: string ): SourcedProviders

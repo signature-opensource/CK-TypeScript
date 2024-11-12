@@ -332,6 +332,11 @@ public sealed partial class TypeScriptIntegrationContext
         else
         {
             finalCommand.Append( "/C yarn install" );
+            if( !YarnHelper.HasInstallStateGZ( _configuration.TargetProjectPath ) )
+            {
+                monitor.Trace( $"No '.yarn/install-state.gz' found. 'yarn install' will be done. " );
+                canSkipRun = false;
+            }
         }
         PackageDependency[] manualPeerDeps = ExtractLatestDependencies( _targetPackageJson, finalCommand );
         if( canSkipRun && manualPeerDeps.Length == 0 )

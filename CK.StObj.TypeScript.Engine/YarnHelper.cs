@@ -237,11 +237,10 @@ public static class YarnHelper
         }
     }
 
-    internal static bool HasVSCodeSupport( NormalizedPath targetProjectPath )
+    internal static bool HasInstallStateGZ( NormalizedPath targetProjectPath )
     {
-        var integrationsFile = targetProjectPath.Combine( ".yarn/sdks/integrations.yml" );
-        if( !File.Exists( integrationsFile ) ) return false;
-        return File.ReadAllText( integrationsFile ).Contains( "- vscode" );
+        var integrationsFile = targetProjectPath.Combine( ".yarn/install-state.gz" );
+        return File.Exists( integrationsFile );
     }
 
     static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
