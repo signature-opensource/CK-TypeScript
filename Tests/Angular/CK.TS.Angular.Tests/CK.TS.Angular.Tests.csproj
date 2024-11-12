@@ -1,56 +1,49 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <IsPackable>false</IsPackable>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="CK.Testing.Nunit" Version="11.0.0-a00-00-0007-develop" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <EmbeddedResource Include="**\*.ts;**\*.html;**\*.less">
-            <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Remove="TSInlineTests/**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.html" />
-      <None Remove="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.less" />
-      <None Remove="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.ts" />
-      <None Remove="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.html" />
-      <None Remove="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.less" />
-      <None Remove="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.ts" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
-        <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Update="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.html">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.less">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.ts">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.html">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.less">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-      <EmbeddedResource Update="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.ts">
-        <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.Nunit" Version="11.0.0-a00-00-0008-develop" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="**\*.ts;**\*.html;**\*.less">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Remove="TSInlineTests/**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.html" />
+    <None Remove="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.less" />
+    <None Remove="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.ts" />
+    <None Remove="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.html" />
+    <None Remove="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.less" />
+    <None Remove="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+    <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.html">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.less">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.Ng.PublicSection\PublicFooter\Res\public-footer.component.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.html">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.less">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="CK.Ng.PublicSection\PublicTopbar\Res\public-topbar.component.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>
