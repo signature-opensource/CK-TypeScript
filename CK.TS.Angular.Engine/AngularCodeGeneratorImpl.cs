@@ -94,12 +94,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                  * must be changed.
                  */
                 export class SourcedProviders extends Array<SourcedProvider> {
-
-                    constructor(o: SourcedProvider[]) {
-                        super();
-                        this.push( ...o );
-                    }
-
                     /**
                      * Exludes all the providers issued by the given source.
                      * At least one such provider must exist otherwise this throws.
@@ -114,6 +108,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         }
                         while( (idx = this.findIndex( s => s.source == sourceName )) >= 0 );
                         return this;
+                    }
+                    
+                    static createFrom(o: SourcedProvider[]) {
+                        const sp = new SourcedProviders();
+                        sp.push(...o);
+                        return sp;
                     }
                 }
 
@@ -140,7 +140,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return s;
                     }
 
-                    static Providers : SourcedProviders = new SourcedProviders( [
+                    static Providers : SourcedProviders = SourcedProviders.createFrom( [
 
                 """ )
                 .InsertPart( out _providerPart )
