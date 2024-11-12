@@ -14,12 +14,3 @@ namespace CK.StObj.TypeScript;
 public abstract class TypeScriptPackage : IRealObject
 {
 }
-
-public interface IRootTypeScriptPackage : IRealObject
-{
-}
-
-[TypeScriptPackage]
-public class RootTypeScriptPackage : TypeScriptPackage, IRootTypeScriptPackage
-{
-}

@@ -17,13 +17,7 @@ export class AuthServiceConfiguration {
             if (typeof (window) === 'undefined') {
                 throw new Error("IAuthServiceConfiguration required.");
             }
-            const loc = window.location;
-            const isHttps = loc.protocol.toLowerCase() === 'https:';
-            this.#identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint({
-                hostname: loc.hostname,
-                port: loc.port ? Number(loc.port) : undefined,
-                disableSsl: !isHttps
-            });
+            this.#identityServerEndPoint = window.location.origin + '/';
         }
         else if (typeof config.identityEndPoint === "string") {
             this.#identityServerEndPoint = config.identityEndPoint;
