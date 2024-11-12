@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { AuthLevel, AuthService, AXIOS } from '@local/ck-gen';
 import { NgAuthService, CKGenAppModule } from '@local/ck-gen';
 import { TestBed } from '@angular/core/testing';
@@ -20,22 +20,25 @@ describeWithServer( 'NgAuthService integration tests', () => {
         const cookieJar = new CookieJar();
         addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
-        await TestBed.configureTestingModule( 
-            { 
+        await TestBed.configureTestingModule(
+            {
                 imports: [AppComponent],
                 providers: [
                     { provide: AXIOS, useValue: axiosInstance },
-                    ...CKGenAppModule.Providers.exclude("CK.Ng.Axios.TSPackage")
-                ] 
+                    { provide: AuthService, deps:[AXIOS], useFactory: (a : AxiosInstance) => new AuthService( a, {
+                      identityEndPoint: serverAddress
+                    } ) },
+                    ...CKGenAppModule.Providers.exclude("CK.Ng.Axios.TSPackage").exclude("CK.Ng.AspNet.Auth.TSPackage")
+                ]
 
             } ).compileComponents();
 
       const ngAuthService = TestBed.inject(NgAuthService);
       await ngAuthService.authService.isInitialized;
     } );
-        
+
     it( 'ngAuthService authInfos should be correctly updated', async () => {
-        
+
         const ngAuthService = TestBed.inject( NgAuthService );
         const authService = ngAuthService.authService;
 
