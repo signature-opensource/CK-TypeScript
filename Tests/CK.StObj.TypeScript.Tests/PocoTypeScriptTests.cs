@@ -3,6 +3,7 @@ using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
@@ -74,5 +75,20 @@ public class PocoTypeScriptTests
 
         File.ReadAllText( targetProjectPath.Combine( "ck-gen/CK/StObj/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
             .Should().Contain( "export class NotGeneratedByDefault" );
+    }
+
+    public interface IRecursive : IPoco
+    {
+        IList<IRecursive> Children { get; }
+    }
+
+    [Test]
+    public async Task recursive_type_dont_import_themselves_Async()
+    {
+        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IRecursive ) );
+        engineConfig.FirstBinPath.Types.Add( typeof( IRecursive ) );
+        await engineConfig.RunSuccessfullyAsync();
     }
 }

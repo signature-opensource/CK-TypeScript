@@ -34,5 +34,6 @@
     <Folder Include="TSGeneratedOnly\no_TypeScript_attribute_is_generated_when_referenced\ck-gen\CK\" />
     <Folder Include="TSGeneratedOnly\no_TypeScript_attribute_is_generated_when_Type_appears_in_Aspect\ck-gen\CK\" />
     <Folder Include="TSGeneratedOnly\with_date_and_guid\ck-gen\CK\" />
+    <Folder Include="TSNpmPackageTests\recursive_type_dont_import_themselves\ck-gen\src\CK\StObj\TypeScript\" />
   </ItemGroup>
 </Project>

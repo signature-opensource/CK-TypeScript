@@ -14,6 +14,8 @@ sealed class FileImportCodePart : ITSFileImportSection
     List<ImportFromLibrary>? _importsFromLibs;
     List<ImportFromFile>? _importsFromFiles;
     ImportFromLocalCKGen? _importFromLocalCKGen;
+    // Fake, always empty, collector.
+    ImportFromFileSelfReference? _importFromFileSelfReference;
 
     public FileImportCodePart( TypeScriptFile f )
     {
@@ -26,7 +28,12 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     public void ImportFromLibrary( LibraryImport library, string symbolNames ) => EnsureLibrary( library ).Add( symbolNames );
 
-    public ITSImportLine EnsureFile( IMinimalTypeScriptFile file ) => DoEnsure( file );
+    public ITSImportLine EnsureFile( IMinimalTypeScriptFile file )
+    {
+        return _file == file
+                ? (_importFromFileSelfReference ??= new ImportFromFileSelfReference( _file ))
+                : DoEnsure( file );
+    }
 
     public void ImportFromFile( IMinimalTypeScriptFile file, string symbolNames ) => EnsureFile( file ).Add( symbolNames );
 
