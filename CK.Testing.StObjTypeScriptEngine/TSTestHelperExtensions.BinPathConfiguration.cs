@@ -11,6 +11,10 @@ public static partial class TSTestHelperExtensions
     /// Ensures that a <see cref="TypeScriptAspect"/> is available in <see cref="EngineConfiguration.Aspects"/> and that
     /// this <see cref="BinPathConfiguration"/> contains a <see cref="TypeScriptBinPathAspectConfiguration"/> configured
     /// for the <paramref name="targetProjectPath"/>.
+    /// <para>
+    /// <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> is false: to preserve the current ck-gen/ folder
+    /// and manually validate the changes, set it to true.
+    /// </para>
     /// </summary>
     /// <param name="binPath">This BinPath configuration to configure.</param>
     /// <param name="targetProjectPath">
@@ -31,6 +35,10 @@ public static partial class TSTestHelperExtensions
 
     /// <summary>
     /// Applies the options driven by <paramref name="targetProjectPath"/> to this <see cref="TypeScriptBinPathAspectConfiguration"/>
+    /// <para>
+    /// <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> is false: to preserve the current ck-gen/ folder
+    /// and manually validate the changes, set it to true.
+    /// </para>
     /// </summary>
     /// <param name="tsBinPathAspect">This configuration.</param>
     /// <param name="targetProjectPath">
@@ -60,7 +68,6 @@ public static partial class TSTestHelperExtensions
                                                         """ )
         };
         tsBinPathAspect.TargetProjectPath = targetProjectPath;
-        tsBinPathAspect.CKGenBuildMode = true;
         if( testMode == GenerateMode.GenerateOnly )
         {
             tsBinPathAspect.AutoInstallJest = false;
