@@ -19,7 +19,6 @@ public class NgAspNetAuthTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        Throw.DebugAssert( tsConfig.CKGenBuildMode );
 
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth" );
