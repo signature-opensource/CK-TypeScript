@@ -100,13 +100,13 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                      */
                     exclude( sourceName: string ): SourcedProviders
                     {
-                        let idx = this.findIndex( s => s.source == sourceName );
+                        let idx = this.findIndex( s => s.source === sourceName );
                         if( idx < 0 ) throw new Error( `No provider from source '${sourceName}' found.` );
                         do
                         {
                             this.splice( idx, 1 );
                         }
-                        while( (idx = this.findIndex( s => s.source == sourceName )) >= 0 );
+                        while( (idx = this.findIndex( s => s.source === sourceName )) >= 0 );
                         return this;
                     }
                     

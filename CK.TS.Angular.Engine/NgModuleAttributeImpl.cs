@@ -37,6 +37,15 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
+    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
+    {
+        base.OnConfigure( monitor, o );
+        if( o.Container.Type == typeof( RootTypeScriptPackage ) )
+        {
+            o.Container.Type = typeof( AppComponent );
+        }
+    }
+
     protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         var fName = _snakeName + ".module.ts";

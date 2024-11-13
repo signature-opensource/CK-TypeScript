@@ -68,16 +68,23 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
+    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
+    {
+        base.OnConfigure( monitor, o );
+        if( !IsAppComponent && o.Container.Type == typeof(RootTypeScriptPackage) )
+        {
+            o.Container.Type = typeof( AppComponent );
+        }
+    }
+
     protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         var fName = _snakeName + ".component.ts";
 
         // If we are on the AppComponent, don't try to lookup the resources (there are no resources).
-        // Simply declare the AppComponent (that is the first one to GenerateCode because it is THE
-        // IRootTypeScriptPackage.
         if( IsAppComponent )
         {
-            return true; //context.GetAngularCodeGen().ComponentManager.DeclareAppComponent( monitor, this );
+            return true;
         }
         else
         {

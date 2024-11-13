@@ -102,12 +102,16 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
                 monitor.Error( $"{o.ToString()}: [TypeScriptPackage] sets Package to be '{_attr.Package.Name}' but it is already '{o.Container.Type:N}'." );
             }
         }
-        else if( !typeof( IRootTypeScriptPackage ).IsAssignableFrom( o.ClassType ) )
+        else if( !typeof( RootTypeScriptPackage ).IsAssignableFrom( o.ClassType ) )
         {
-            o.Container.Type = typeof( IRootTypeScriptPackage );
+            o.Container.Type = typeof( RootTypeScriptPackage );
             o.Container.StObjRequirementBehavior = StObjRequirementBehavior.None;
         }
-        o.ItemKind = DependentItemKindSpec.Container;
+        // Keeps the potentially configured item kind (allows TypeScriptPackages to be Group rather than Container).
+        if( o.ItemKind == DependentItemKindSpec.Unknown )
+        {
+            o.ItemKind = DependentItemKindSpec.Container;
+        }
         OnConfigure( monitor, o );
     }
 

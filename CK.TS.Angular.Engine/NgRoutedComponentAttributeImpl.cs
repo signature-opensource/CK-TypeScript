@@ -45,11 +45,9 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
 
     protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
     {
-        //
+        base.OnConfigure( monitor, o );
         // Makes the TargetComponent a requirement for this Real Object if this is not
-        // the AppComponent: the AppComponent is the IRootTypeScriptPackage that ultimately
-        // contains all the TypeScriptPackages...
-        //
+        // the AppComponent
         if( Attribute.TargetComponent != typeof( AppComponent ) )
         {
             o.Requires.AddNew( Attribute.TargetComponent, StObjRequirementBehavior.ErrorIfNotStObj );
