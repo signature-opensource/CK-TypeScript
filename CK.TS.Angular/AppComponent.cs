@@ -1,6 +1,3 @@
-using CK.Core;
-using CK.StObj.TypeScript;
-
 namespace CK.TS.Angular;
 
 /// <summary>

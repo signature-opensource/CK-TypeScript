@@ -1,5 +1,4 @@
 using CK.StObj.TypeScript;
-using System;
 using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular;
