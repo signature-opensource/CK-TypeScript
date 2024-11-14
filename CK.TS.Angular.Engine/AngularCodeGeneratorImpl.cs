@@ -494,13 +494,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 {
                     using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
                     {
-                        // const ckGenInjected: CKGenInjected = [];
                         InjectBeforeComponent( monitor, """
                             const ckGenInjected: CKGenInjected = [];
 
                             """, ref app );
                         bool success = AddInImports( monitor, ref app );
-                        AddImportAndConclude( monitor, appFilePath, success, ref app, "import { CKGenAppModule } from '@local/ck-gen';" );
+                        AddImportAndConclude( monitor, appFilePath, success, ref app, "import { CKGenAppModule, CKGenInjected } from '@local/ck-gen';" );
                     }
                 }
 
