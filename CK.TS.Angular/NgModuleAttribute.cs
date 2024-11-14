@@ -1,4 +1,4 @@
-using CK.StObj.TypeScript;
+using CK.TypeScript;
 using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular;

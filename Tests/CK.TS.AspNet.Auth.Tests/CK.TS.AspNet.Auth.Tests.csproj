@@ -11,7 +11,7 @@
   <ItemGroup>
     <!-- These will be package references. -->
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="24.0.0-a00-00-0029-develop" />
-    <ProjectReference Include="..\..\CK.Testing.StObjTypeScriptEngine\CK.Testing.StObjTypeScriptEngine.csproj" />
+    <ProjectReference Include="..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />

@@ -234,17 +234,17 @@ public sealed partial class TSTypeManager
         //         public record struct RecTry( string Name, List<RecTry> Others );
         //         public interface IRecTryPoco : IPoco { IList<RecTry> R1 { get; } }
         //
-        // Let's firts register an Object, the Poco: {[PrimaryPoco]CK.StObj.TypeScript.Tests.RecordTests.IRecTryPoco}.
+        // Let's firts register an Object, the Poco: {[PrimaryPoco]CK.TypeScript.Tests.RecordTests.IRecTryPoco}.
         // PrimaryPoco, NamedRecord and Basic types are rerouted to their C# Type. This registers:
-        // 	    {Name = "IRecTryPoco" FullName = "CK.StObj.TypeScript.Tests.RecordTests+IRecTryPoco"}
+        // 	    {Name = "IRecTryPoco" FullName = "CK.TypeScript.Tests.RecordTests+IRecTryPoco"}
         // Fields resolution is deferred (no reentrancy).
         // The Type is in the cache.
         // There is no issue with the DefaultValue: it is "new PocoTypeName()" and it is ALWAYS available.
         // The Object is in the cache.
         // 
-        // Let's now register the RecTry Object: {[Record]CK.StObj.TypeScript.Tests.RecordTests.RecTry}
+        // Let's now register the RecTry Object: {[Record]CK.TypeScript.Tests.RecordTests.RecTry}
         // 	Same as the PrimaryPoco case, it is rerouted to its C# resolution:
-        // 	    {Name = "RecTry" FullName = "CK.StObj.TypeScript.Tests.RecordTests+RecTry"}
+        // 	    {Name = "RecTry" FullName = "CK.TypeScript.Tests.RecordTests+RecTry"}
         // 	Type is in the Cache but here the DefaultValue kicks in... Even if the default value is simply $"new TypeName()", 
         // 	to know IF there is a default (i.e. all fields have a defaults), one need to resolve the field types
         // 	and this can lead to an infinite recursion...
@@ -253,10 +253,10 @@ public sealed partial class TSTypeManager
         //  will be set by calling the DefaultValueSourceProvider that will resolve the fields types:
         // 	-> Resolving the DefaultValueSource for named record RecTry.
         // 		{[Basic]string}
-        // 		{[List]List<CK.StObj.TypeScript.Tests.RecordTests.RecTry>}
+        // 		{[List]List<CK.TypeScript.Tests.RecordTests.RecTry>}
         // 		-> A list is an inline type: its argument needs to be resolved to compute its TypeName.
-        // 		-> We reenter the Object RecTry {[Record]CK.StObj.TypeScript.Tests.RecordTests.RecTry}
-        // 		   As usual the Object is rerouted to its Type -> {Name = "RecTry" FullName = "CK.StObj.TypeScript.Tests.RecordTests+RecTry"}
+        // 		-> We reenter the Object RecTry {[Record]CK.TypeScript.Tests.RecordTests.RecTry}
+        // 		   As usual the Object is rerouted to its Type -> {Name = "RecTry" FullName = "CK.TypeScript.Tests.RecordTests+RecTry"}
         // 		   but here it is found in the cache: this why the DefaultValue is "slightly deferred".
         // 		   The Object is added to the cache. We are done with it... But in a nested call.
         // When the top level resolution ends, the Object is already in the cache.

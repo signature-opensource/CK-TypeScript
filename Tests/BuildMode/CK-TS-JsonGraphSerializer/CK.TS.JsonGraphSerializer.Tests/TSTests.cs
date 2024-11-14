@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using CK.StObj.TypeScript;
+using CK.TypeScript;
 using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;

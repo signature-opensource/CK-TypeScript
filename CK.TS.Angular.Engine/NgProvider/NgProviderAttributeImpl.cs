@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using CK.StObj.TypeScript.Engine;
+using CK.TypeScript.Engine;
 using System;
 using System.Runtime.CompilerServices;
 

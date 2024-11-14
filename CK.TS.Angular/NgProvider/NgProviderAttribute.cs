@@ -1,5 +1,5 @@
 using CK.Setup;
-using CK.StObj.TypeScript;
+using CK.TypeScript;
 using System;
 
 namespace CK.TS.Angular;

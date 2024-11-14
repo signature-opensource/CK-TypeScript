@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
-using CK.StObj.TypeScript;
-using CK.StObj.TypeScript.Engine;
+using CK.TypeScript;
+using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;

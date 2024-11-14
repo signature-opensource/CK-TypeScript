@@ -9,6 +9,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
+    <ProjectReference Include="..\..\..\..\CK.TypeScript\CK.TypeScript.csproj" />
   </ItemGroup>
 </Project>
