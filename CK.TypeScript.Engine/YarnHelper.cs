@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 
@@ -218,9 +219,8 @@ public static class YarnHelper
     static void EnsureYarnRcFileAtYarnLevel( IActivityMonitor monitor, NormalizedPath yarnPath )
     {
         Throw.DebugAssert( yarnPath.Parts.Count > 3 && yarnPath.Parts[^3] == ".yarn" && yarnPath.Parts[^2] == "releases" );
+        var firstLine = $"yarnPath: \"./{yarnPath.RemoveFirstPart( yarnPath.Parts.Count - 3 )}\"";
         var def = $"""
-                   yarnPath: "./{yarnPath.RemoveFirstPart( yarnPath.Parts.Count - 3 )}"
-
                    # We don't use Zero Install: compression level defaults to 0 (no compression) in yarn 4
                    # because 0 (no compression) is slightly better for git. As we don't commit the packages,
                    # we continue to use the yarn 3 default compression mode.
@@ -241,10 +241,28 @@ public static class YarnHelper
         if( File.Exists( yarnrcFile ) )
         {
             var current = File.ReadAllText( yarnrcFile );
-            monitor.Info( $"File '{yarnrcFile}' exists, leaving it unchanged:{Environment.NewLine}{current}" );
+            if( !current.StartsWith( firstLine ) )
+            {
+                var lines = current.Split( '\n', StringSplitOptions.TrimEntries ).ToList();
+                int idx = lines.IndexOf( l => l.StartsWith( "yarnPath:" ) );
+                if( idx == 0 ) lines[0] = firstLine;
+                else 
+                {
+                    if( idx > 0 ) lines.RemoveAt( idx );
+                    lines.Insert( 0, firstLine );
+                }
+                var newOne = string.Join( Environment.NewLine, lines );
+                monitor.Info( $"Updated .yarnrc.yml from:{Environment.NewLine}{current}{Environment.NewLine}to:{Environment.NewLine}{newOne}" );
+                File.WriteAllText( yarnrcFile, newOne );
+            }
+            else
+            {
+                monitor.Info( $"File '{yarnrcFile}' exists and has the right yarnPath, leaving it unchanged:{Environment.NewLine}{current}" );
+            }
         }
         else
         {
+            def = firstLine + Environment.NewLine + def;
             monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{def}" );
             File.WriteAllText( yarnrcFile, def );
         }
