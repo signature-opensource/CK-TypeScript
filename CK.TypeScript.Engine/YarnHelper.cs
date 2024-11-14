@@ -99,7 +99,7 @@ public static class YarnHelper
                     if( option == YarnInstallOption.AutoUpgrade )
                     {
                         monitor.Info( $"YarnInstall = AutoUpgrade: upgrading to Yarn {AutomaticYarnVersion}." );
-                        yarnPath = AutoInstall( monitor, yarnPath.Value.RemoveLastPart( 2 ), yarnPath );
+                        yarnPath = AutoInstall( monitor, yarnPath.Value.RemoveLastPart( 3 ), yarnPath );
                     }
                     else
                     {
