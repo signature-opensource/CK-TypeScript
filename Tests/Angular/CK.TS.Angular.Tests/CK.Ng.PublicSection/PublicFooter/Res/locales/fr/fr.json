@@ -1,0 +1,9 @@
+{
+    "PublicFooter": {
+        // In French, the following apply:
+        "ContactUs": "Contactez nous au <a href='tel:04 77 35 55 64'>04 77 35 55 64</a> ou par <a href='mail:france@signature.one'>mail</a>.",
+        "Address": "29 Avenue de l'industrie, 42390 Villars",
+        // BUG! This one is NOT defined in default.json.
+        "TechnicalContact": "Spi"
+    }
+}

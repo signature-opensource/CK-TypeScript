@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CKGenInjected } from '@local/ck-gen';
 
+import { TranslateModule } from '@ngx-translate/core';
+
 const ckGenInjected: CKGenInjected = [];
 
 @Component({
