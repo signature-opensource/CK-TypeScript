@@ -136,6 +136,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
     internal protected virtual bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
+        initializer.EnsureRegister( monitor, t, false, )
         return true;
     }
 

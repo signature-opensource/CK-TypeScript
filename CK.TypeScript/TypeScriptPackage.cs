@@ -9,7 +9,6 @@ namespace CK.TypeScript;
 /// The [TypeScriptPackage] attribute provides the support of the folder of embedded resources associated to the package.
 /// </para>
 /// </summary>
-[RealObject( ItemKind = DependentItemKindSpec.Container )]
 [CKTypeDefiner]
 public abstract class TypeScriptPackage : IRealObject
 {

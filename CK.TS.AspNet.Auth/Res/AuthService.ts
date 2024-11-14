@@ -1,7 +1,7 @@
-import { AxiosRequestConfig, AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
+import { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
 
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
-import { AuthLevel, IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';
+import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';
 import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
 import { StdAuthenticationTypeSystem } from './type-system';

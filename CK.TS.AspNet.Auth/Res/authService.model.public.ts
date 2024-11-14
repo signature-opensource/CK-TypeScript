@@ -1,15 +1,4 @@
-
-/** Defines the 4 possible levels of authentication. */
-export enum AuthLevel {
-    /** None authentication level is for the Anonymous user. */
-    None = 0,
-    /** Unsafe authentication level: @see IAuthenticationInfo.user is necessarily Anonymous.*/
-    Unsafe,
-    /** Normal authentication level.*/
-    Normal,
-    /** Critical authentication level must be active for a short time.*/
-    Critical
-}
+import AuthLevel from '../AuthLevel';
 
 /** Defines the status of the user schemes (see @see IUserSchemeInfo). */
 export enum SchemeUsageStatus {
