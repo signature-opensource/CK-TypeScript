@@ -85,7 +85,6 @@ public static class YarnHelper
 
     internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, YarnInstallOption option )
     {
-        bool runInstall = option != YarnInstallOption.None;
         var yarnPath = TryFindYarn( targetProjectPath, out var aboveCount );
         if( yarnPath.HasValue )
         {
@@ -95,44 +94,58 @@ public static class YarnHelper
                 && Version.TryParse( Path.GetFileNameWithoutExtension( current.AsSpan( 5 ) ), out var version ) )
             {
                 monitor.Info( $"Yarn {version.ToString( 3 )} found at '{yarnPath}'." );
-                runInstall = version < Version.Parse( AutomaticYarnVersion ); 
+                if( version < Version.Parse( AutomaticYarnVersion ) )
+                {
+                    if( option == YarnInstallOption.AutoUpgrade )
+                    {
+                        monitor.Info( $"YarnInstall = AutoUpgrade: upgrading to Yarn {AutomaticYarnVersion}." );
+                        yarnPath = AutoInstall( monitor, yarnPath.Value.RemoveLastPart( 2 ), yarnPath );
+                    }
+                    else
+                    {
+                        monitor.Info( $"YarnInstall = {option}. Skipping upgrade to {AutomaticYarnVersion}." );
+                    }
+                }
             }
             else
             {
-                monitor.Warn( $"Unable to read version from Yarn found at '{yarnPath}'. Expected something like '{_yarnFileName}'." );
+                throw new CKException( $"Unable to read version from Yarn found at '{yarnPath}'. Expected something like '{_yarnFileName}'. This must be fixed manually" );
             }
-        }
-        else if( runInstall )
-        {
-            var gitRoot = targetProjectPath.PathsToFirstPart( null, [".git"] ).FirstOrDefault( p => Directory.Exists( p ) );
-            if( gitRoot.IsEmptyPath )
-            {
-                monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
-                yarnPath = AutoInstall( monitor, targetProjectPath, 0, yarnPath );
-            }
-            else
-            {
-                Throw.DebugAssert( gitRoot.LastPart == ".git" );
-                monitor.Info( $"Git root found: '{gitRoot}'. Setting up a shared .yarn cache." );
-                aboveCount = targetProjectPath.Parts.Count - gitRoot.Parts.Count + 1;
-                yarnPath = AutoInstall( monitor, targetProjectPath, aboveCount, yarnPath );
-            }
-        }
-        if( !yarnPath.HasValue )
-        {
-            monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and InstallYarn is None." );
         }
         else
+        {
+            if( option == YarnInstallOption.None )
+            {
+                monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and YarnInstall is None." );
+            }
+            else
+            {
+                var gitRoot = targetProjectPath.PathsToFirstPart( null, [".git"] ).FirstOrDefault( p => Directory.Exists( p ) );
+                if( gitRoot.IsEmptyPath )
+                {
+                    monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
+                    yarnPath = AutoInstall( monitor, targetProjectPath, yarnPath );
+                }
+                else
+                {
+                    Throw.DebugAssert( gitRoot.LastPart == ".git" );
+                    monitor.Info( $"Git root found: '{gitRoot}'. Setting up a shared .yarn cache." );
+                    aboveCount = targetProjectPath.Parts.Count - gitRoot.Parts.Count + 1;
+                    var yarnRootPath = targetProjectPath.RemoveLastPart( aboveCount );
+                    monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{yarnRootPath}'." );
+                    yarnPath = AutoInstall( monitor, yarnRootPath, yarnPath );
+                }
+            }
+        }
+        if( yarnPath.HasValue )
         {
             EnsureYarnRcFileAtYarnLevel( monitor, yarnPath.Value );
         }
         return yarnPath;
 
-        static NormalizedPath? AutoInstall( IActivityMonitor monitor, NormalizedPath targetProjectPath, int aboveCount, NormalizedPath? previousYarnPath )
+        static NormalizedPath? AutoInstall( IActivityMonitor monitor, NormalizedPath yarnRootPath, NormalizedPath? previousYarnPath )
         {
             NormalizedPath? yarnPath;
-            var yarnRootPath = targetProjectPath.RemoveLastPart( aboveCount );
-            monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{yarnRootPath}'." );
             var yarnBinDir = yarnRootPath.Combine( ".yarn/releases" );
             monitor.Trace( $"Extracting '{_yarnFileName}' to '{yarnBinDir}'." );
             Directory.CreateDirectory( yarnBinDir );
