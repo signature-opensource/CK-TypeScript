@@ -1,8 +1,13 @@
 using CommunityToolkit.HighPerformance;
+using Microsoft.Extensions.FileProviders;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 namespace CK.Core;
 
@@ -11,7 +16,8 @@ namespace CK.Core;
 /// </summary>
 public static class AssemblyExtensions
 {
-    static readonly ConcurrentDictionary<Assembly, ImmutableOrdinalSortedStrings> _cache = new();
+    static readonly ConcurrentDictionary<Assembly, AssemblyResources> _cache = new();
+    static readonly object _lock = new();
 
     /// <summary>
     /// Gets all resource names contained in the assembly (calls <see cref="Assembly.GetManifestResourceNames"/>)
@@ -19,14 +25,41 @@ public static class AssemblyExtensions
     /// </summary>
     /// <param name="assembly">Assembly </param>
     /// <returns>An ordered list of the resource names.</returns>
-    static public ImmutableOrdinalSortedStrings GetSortedResourceNames2( this Assembly assembly )
+    static public AssemblyResources GetResources( this Assembly assembly )
     {
-        // We don't care about duplicate computation and set. "Out of lock" Add in GetOrAdd is okay.
         return _cache.GetOrAdd( assembly, a =>
         {
-            var l = a.GetManifestResourceNames();
-            return ImmutableOrdinalSortedStrings.UnsafeCreate( l, mustSort: true );
+            // We DO care about duplicate computation.
+            // "Out of lock" GetOrAdd must be protected.
+            lock( _lock )
+            {
+                return new AssemblyResources( a );
+            }
         } );
+    }
+
+    /// <summary>
+    /// Gets a resource content.
+    /// <para>
+    /// If a stream cannot be obtained, a detailed <see cref="IOException"/> is raised.
+    /// </para>
+    /// </summary>
+    /// <param name="assembly">This assembly.</param>
+    /// <param name="resourceName">The reource name.</param>
+    /// <returns>The resource's content stream.</returns>
+    public static Stream OpenResourceStream( this Assembly assembly, string resourceName )
+    {
+        var s = assembly.GetManifestResourceStream( resourceName );
+        return s ?? ThrowDetailedError( assembly, resourceName );
+    }
+
+    [StackTraceHidden]
+    static Stream ThrowDetailedError( Assembly assembly, string resourceName )
+    {
+        var b = new StringBuilder();
+        b.AppendLine( $"Resource '{resourceName}' cannot be loaded from '{assembly.GetName().Name}'." );
+        AssemblyExtensions.AppendDetailedError( b, assembly, resourceName );
+        throw new IOException( b.ToString() );
     }
 
     /// <summary>
@@ -39,7 +72,16 @@ public static class AssemblyExtensions
     /// <returns>The string or null on error.</returns>
     public static string? TryGetCKResourceString( this Assembly assembly, IActivityMonitor monitor, string resourceName, LogLevel logLevel = LogLevel.Error )
     {
-        using var s = TryOpenCKResourceStream( assembly, monitor, resourceName );
+        return TryGetCKResourceString( assembly, monitor, resourceName, logLevel, null );
+    }
+
+    internal static string? TryGetCKResourceString( Assembly assembly,
+                                                    IActivityMonitor monitor,
+                                                    string resourceName,
+                                                    LogLevel logLevel,
+                                                    AssemblyResources? assemblyResources )
+    {
+        using var s = TryOpenCKResourceStream( assembly, monitor, resourceName, logLevel, assemblyResources );
         try
         {
             return s == null
@@ -63,6 +105,15 @@ public static class AssemblyExtensions
     /// <returns>The Stream or null on error.</returns>
     public static Stream? TryOpenCKResourceStream( this Assembly assembly, IActivityMonitor monitor, string resourceName, LogLevel logLevel = LogLevel.Error )
     {
+        return TryOpenCKResourceStream( assembly, monitor, resourceName, logLevel, null );
+    }
+
+    internal static Stream? TryOpenCKResourceStream( Assembly assembly,
+                                                     IActivityMonitor monitor,
+                                                     string resourceName,
+                                                     LogLevel logLevel,
+                                                     AssemblyResources? assemblyResources )
+    {
         if( resourceName is null
             || resourceName.Length <= 3
             || !resourceName.StartsWith( "ck@" )
@@ -78,8 +129,8 @@ public static class AssemblyExtensions
                 var resName = resourceName.AsSpan().Slice( 3 );
                 var fName = Path.GetFileName( resName );
                 string? shouldBe = null;
-                var resNames = assembly.GetSortedResourceNames2();
-                foreach( string c in resNames.GetPrefixedStrings( "ck@" ).Span )
+                assemblyResources ??= assembly.GetResources();
+                foreach( string c in assemblyResources.CKResourceNames.Span )
                 {
                     if( c.AsSpan().EndsWith( fName, StringComparison.OrdinalIgnoreCase ) )
                     {
@@ -104,5 +155,25 @@ public static class AssemblyExtensions
     static void LogLoadError( Assembly a, IActivityMonitor monitor, string resourceName, LogLevel logLevel, Exception ex )
     {
         monitor.Log( logLevel, $"While loading '{resourceName}' from '{a.GetName().Name}'.", ex );
+    }
+
+    internal static void AppendDetailedError( StringBuilder b, Assembly assembly, string resourceName )
+    {
+        var info = assembly.GetManifestResourceInfo( resourceName );
+        if( info == null )
+        {
+            b.AppendLine( "No information for this resource. The ResourceName may not exist at all. Resource names are:" );
+            foreach( var n in assembly.GetManifestResourceNames() )
+            {
+                b.AppendLine( n );
+            }
+        }
+        else
+        {
+            b.AppendLine( "ManifestResourceInfo:" )
+             .Append( "ReferencedAssembly = " ).Append( info.ReferencedAssembly ).AppendLine()
+             .Append( "FileName = " ).Append( info.FileName ).AppendLine()
+             .Append( "ResourceLocation = " ).Append( info.ResourceLocation ).AppendLine();
+        }
     }
 }

@@ -61,6 +61,41 @@ public readonly struct ImmutableOrdinalSortedStrings
         All = ImmutableCollectionsMarshal.AsImmutableArray( strings );
     }
 
+    /// <summary>
+    /// Gets whether <see cref="All"/> can be used or has not been initialized.
+    /// </summary>
+    public bool IsValid => !All.IsDefault;
+
+    /// <summary>
+    /// Gets the index of the string in <see cref="All"/> or -1 if not found.
+    /// </summary>
+    /// <param name="name">Name to search.</param>
+    /// <returns>The resulting index or -1 if not found.</returns>
+    public int IndexOf( string name )
+    {
+        Throw.CheckNotNullArgument( name );
+        return IndexOf( name, All.AsSpan() );
+    }
+
+    readonly struct Finder : IComparable<string>
+    {
+        readonly string _prefix;
+
+        public Finder( string prefix ) => _prefix = prefix;
+
+        public int CompareTo( string? other )
+        {
+            Throw.DebugAssert( other != null );
+            return _prefix.AsSpan().CompareTo( other.AsSpan(), StringComparison.Ordinal );
+        }
+    }
+
+    internal static int IndexOf( string name, ReadOnlySpan<string> sAll )
+    {
+        int idx = sAll.BinarySearch( new Finder( name ) );
+        return idx < 0 ? -1 : idx;
+    }
+
     readonly struct BegFinder : IComparable<string>
     {
         readonly string _prefix;
@@ -74,6 +109,24 @@ public readonly struct ImmutableOrdinalSortedStrings
             int cmp = _prefix.AsSpan().CompareTo( other.AsSpan( 0, _prefix.Length ), StringComparison.Ordinal );
             return cmp == 0 ? -1 : cmp;
         }
+    }
+
+    /// <summary>
+    /// Gets the index of the first string in <see cref="All"/> that starts with the <paramref name="prefix"/>.
+    /// </summary>
+    /// <param name="prefix">Prefix to search.</param>
+    /// <returns>The resulting index or -1 if not found.</returns>
+    public int GetPrefixedStart( string prefix ) => GetPrefixedStart( prefix, All.AsSpan() );
+
+    internal static int GetPrefixedStart( string prefix, ReadOnlySpan<string> sAll )
+    {
+        int beg = sAll.BinarySearch( new BegFinder( prefix ) );
+        if( beg < 0 )
+        {
+            beg = ~beg;
+            if( beg == sAll.Length ) return -1;
+        }
+        return beg;
     }
 
     readonly struct EndFinder : IComparable<string>
@@ -92,13 +145,14 @@ public readonly struct ImmutableOrdinalSortedStrings
     }
 
     /// <summary>
-    /// Gets the range of strings that start with the <paramref name="prefix"/>.
+    /// Gets the range of strings in <see cref="All"/> that start with the <paramref name="prefix"/>.
     /// </summary>
     /// <param name="prefix">Common prefix to search.</param>
-    /// <returns>The resulting range.</returns>
-    public (int Idx, int Length) GetPrefixedRange( string prefix )
+    /// <returns>The resulting range. Length (and Idx) is 0 if no strings can be found.</returns>
+    public (int Idx, int Length) GetPrefixedRange( string prefix ) => GetPrefixedRange( prefix, All.AsSpan() );
+
+    internal static (int Idx, int Length) GetPrefixedRange( string prefix, ReadOnlySpan<string> sAll )
     {
-        var sAll = All.AsSpan();
         int beg = sAll.BinarySearch( new BegFinder( prefix ) );
         if( beg < 0 )
         {
@@ -115,7 +169,7 @@ public readonly struct ImmutableOrdinalSortedStrings
 
 
     /// <summary>
-    /// Gets the range of strings that that start with the <paramref name="prefix"/>.
+    /// Gets the range of strings in <see cref="All"/> that start with the <paramref name="prefix"/>.
     /// </summary>
     /// <param name="prefix">Common prefix to search.</param>
     /// <returns>The resulting strings.</returns>

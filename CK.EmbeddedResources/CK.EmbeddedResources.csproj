@@ -1,8 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="22.0.0-a00-00-0011-develop" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="22.0.0-a00-00-0011-develop" />
+        <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="MSBuild/CK.EmbeddedResources.props">
+            <Pack>true</Pack>
+            <PackagePath>buildTransitive\CK.EmbeddedResources.props</PackagePath>
+        </Content>
+        <Content Include="MSBuild/CK.EmbeddedResources.targets">
+            <Pack>true</Pack>
+            <PackagePath>buildTransitive\CK.EmbeddedResources.targets</PackagePath>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="MSBuild\" />
+    </ItemGroup>
 </Project>

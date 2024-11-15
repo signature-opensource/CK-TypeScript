@@ -48,7 +48,7 @@ public sealed class PackageResources
             {
                 if( IsValid )
                 {
-                    var resNames = _type.Assembly.GetSortedResourceNames2().GetPrefixedStrings( _prefix );
+                    var resNames = _type.Assembly.GetResources().GetPrefixedStrings( _prefix );
                     if( resNames.Length == 0 )
                     {
                         _allRes = ImmutableArray<ResourceTypeLocator>.Empty;

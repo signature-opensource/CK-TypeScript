@@ -77,23 +77,9 @@ public readonly record struct ResourceTypeLocator
     Stream ThrowDetailedError()
     {
         var b = new StringBuilder();
-        b.Append( $"Resource '{ToString()}' cannot be loaded." );
-        var info = Declarer.Assembly.GetManifestResourceInfo( ResourceName );
-        if( info == null )
-        {
-            b.AppendLine( " No information for this resource. The ResourceName may not exist at all. Resource names are:" );
-            foreach( var n in Declarer.Assembly.GetManifestResourceNames() )
-            {
-                b.AppendLine( n );
-            }
-        }
-        else
-        {
-            b.AppendLine( "ManifestResourceInfo:" )
-             .Append( "ReferencedAssembly = " ).Append( info.ReferencedAssembly ).AppendLine()
-             .Append( "FileName = " ).Append( info.FileName ).AppendLine()
-             .Append( "ResourceLocation = " ).Append( info.ResourceLocation ).AppendLine();
-        }
+        b.AppendLine( $"Resource '{ToString()}' cannot be loaded." );
+        AssemblyExtensions.AppendDetailedError( b, Declarer.Assembly, ResourceName );
         throw new IOException( b.ToString() );
     }
+
 }

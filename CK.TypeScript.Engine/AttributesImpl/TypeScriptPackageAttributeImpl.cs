@@ -156,7 +156,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
                 // But this is weird.
                 if( attr != null )
                 {
-                    if( r.TypeName != attr.TypeName || r.FileName != attr.FileName || r.Folder != attr.Folder || r.SameFileAs != attr.SameFileAs || r.SameFolderAs != attr.SameFolderAs )
+                    if( r.TypeName != attr.TypeName
+                       || r.FileName != attr.FileName
+                       || r.Folder != attr.Folder
+                       || r.SameFileAs != attr.SameFileAs
+                       || r.SameFolderAs != attr.SameFolderAs )
                     {
                         monitor.Warn( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
                         return attr.ApplyOverride( r );
