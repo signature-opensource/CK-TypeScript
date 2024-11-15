@@ -773,7 +773,11 @@ public sealed partial class TypeScriptIntegrationContext
                     closer = """
                         ,
                             "rootDir": "src",
-                            "baseUrl": "./src"
+                            "baseUrl": "./src",
+                            "paths": {
+                              "@local/ck-gen": [ "./" ],
+                              "@local/ck-gen/*": [ "./*" ]
+                            }
                           },
                           "include": [ "src/**/*" ]
                         }
@@ -783,7 +787,11 @@ public sealed partial class TypeScriptIntegrationContext
                 else
                 {
                     closer = $$"""
-
+                        ,
+                            "paths": {
+                              "@local/ck-gen": [ "./" ],
+                              "@local/ck-gen/*": [ "./*" ]
+                            }
                           },
                           "exclude": [ "{{filePrefix}}tsconfig*.json", "{{filePrefix}}package.json" ]
                         }
