@@ -243,7 +243,7 @@ public static class YarnHelper
             var current = File.ReadAllText( yarnrcFile );
             if( !current.StartsWith( firstLine ) )
             {
-                var lines = current.Split( '\n', StringSplitOptions.TrimEntries ).ToList();
+                var lines = current.Split( '\n' ).Select( l => l.TrimEnd() ).ToList();
                 int idx = lines.IndexOf( l => l.StartsWith( "yarnPath:" ) );
                 if( idx == 0 ) lines[0] = firstLine;
                 else 
