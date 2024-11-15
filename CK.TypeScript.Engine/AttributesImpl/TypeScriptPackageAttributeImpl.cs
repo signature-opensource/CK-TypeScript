@@ -1,7 +1,10 @@
 using CK.Core;
 using CK.Setup;
+using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace CK.TypeScript.Engine;
 
@@ -11,7 +14,7 @@ namespace CK.TypeScript.Engine;
 /// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
 /// </para>
 /// </summary>
-public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStructuralConfigurator
+public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
@@ -19,6 +22,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     readonly HashSet<ResourceTypeLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
+    // This is here only to support RegisterTypeScriptType registration...
+    // This is bad and must be refactored.
+    [AllowNull] ITypeAttributesCache _owner;
 
 
     /// <summary>
@@ -85,6 +91,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
         }
     }
 
+    void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
+    {
+        _owner = owner;
+    }
+
     internal void AddExtension( TypeScriptPackageAttributeImplExtension e )
     {
         _extensions.Add( e );
@@ -136,7 +147,25 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBound, IStObjStru
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
     internal protected virtual bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
-        initializer.EnsureRegister( monitor, t, false, )
+        bool success = true;
+        foreach( var r in _owner.GetTypeCustomAttributes<RegisterTypeScriptTypeAttribute>() )
+        {
+            success &= initializer.EnsureRegister( monitor, r.Type, false, attr =>
+            {
+                // A Register can override because of package ordering...
+                // But this is weird.
+                if( attr != null )
+                {
+                    if( r.TypeName != attr.TypeName || r.FileName != attr.FileName || r.Folder != attr.Folder || r.SameFileAs != attr.SameFileAs || r.SameFolderAs != attr.SameFolderAs )
+                    {
+                        monitor.Warn( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
+                        return attr.ApplyOverride( r );
+                    }
+                    return attr;
+                }
+                return new TypeScriptAttribute( r );
+            } );
+        }
         return true;
     }
 
