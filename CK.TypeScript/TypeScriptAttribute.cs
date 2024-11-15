@@ -14,13 +14,9 @@ namespace CK.TypeScript;
 /// to the type or by global ones.
 /// </remarks>
 [AttributeUsage( AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum )]
-public class TypeScriptAttribute : ContextBoundDelegationAttribute
+public class TypeScriptAttribute : ContextBoundDelegationAttribute, ITypeScriptTypeDecorationAttribute
 {
-    string? _typeName;
-    string? _folder;
-    string? _fileName;
-    Type? _sameFolderAs;
-    Type? _sameFileAs;
+    TypeScriptTypeDecorationImpl _impl;
 
     /// <summary>
     /// Initializes a new empty <see cref="TypeScriptAttribute"/>.
@@ -41,115 +37,48 @@ public class TypeScriptAttribute : ContextBoundDelegationAttribute
     }
 
     /// <summary>
-    /// Gets or sets an optional sub folder that will contain the TypeScript generated code.
-    /// There must be no leading '/' or '\': the path is relative to the TypeScript output path of each <see cref="BinPathConfiguration"/>.
-    /// <para>
-    /// This folder cannot be set to a non null path if <see cref="SameFolderAs"/> or <see cref="SameFileAs"/> is set to a non null type.
-    /// </para>
-    /// <para>
-    /// When let to null, the folder will be derived from the type's namespace (unless <see cref="SameFolderAs"/> is set).
-    /// When <see cref="string.Empty"/>, the file will be in the root folder of the TypeScript output path.
-    /// </para>
+    /// Should not be used. Supports the infrastructure (and should be removed as soon as possible).
     /// </summary>
-    public string? Folder
+    /// <param name="other"></param>
+    public TypeScriptAttribute( ITypeScriptTypeDecorationAttribute other )
+        : base( "CK.TypeScript.Engine.TypeScriptAttributeImpl, CK.TypeScript.Engine" )
     {
-        get => _folder;
-        set
-        {
-            if( value != null )
-            {
-                value = value.Trim();
-                if( value.Length > 0 && (value[0] == '/' || value[0] == '\\') )
-                {
-                    Throw.ArgumentException( "value", "Folder must not be rooted: " + value );
-                }
-                if( _sameFolderAs != null ) Throw.InvalidOperationException( "Folder cannot be set when SameFolderAs is not null." );
-                if( _sameFileAs != null ) Throw.InvalidOperationException( "Folder cannot be set when SameFileAs is not null." );
-            }
-            _folder = value;
-        }
+        _impl = new TypeScriptTypeDecorationImpl( other );
     }
 
-    /// <summary>
-    /// Gets or sets the file name that will contain the TypeScript generated code.
-    /// When not null, this must be a valid file name that ends with a '.ts' extension.
-    /// <para>
-    /// This must be null if <see cref="SameFileAs"/> is not null.
-    /// </para>
-    /// </summary>
+    /// <inheritdoc />
+    public string? Folder 
+    {
+        get => _impl.Folder;
+        set => _impl.Folder = value;
+    }
+
+    /// <inheritdoc />
     public string? FileName
     {
-        get => _fileName;
-        set
-        {
-            if( value != null )
-            {
-                value = value.Trim();
-                if( value.Length <= 3 || !value.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase ) )
-                {
-                    Throw.ArgumentException( "FileName must end with '.ts': " + value );
-                }
-                if( _sameFileAs != null ) Throw.InvalidOperationException( "FileName cannot be set when SameFileAs is not null." );
-            }
-            _fileName = value;
-        }
+        get => _impl.FileName;
+        set => _impl.FileName = value;
     }
 
-    /// <summary>
-    /// Gets or sets the TypeScript type name to use for this type.
-    /// This takes precedence over the <see cref="ExternalNameAttribute"/> that itself
-    /// takes precedence over the <see cref="MemberInfo.Name"/> of the type.
-    /// </summary>
+    /// <inheritdoc />
     public string? TypeName
     {
-        get => _typeName;
-        set
-        {
-            Throw.CheckNotNullOrWhiteSpaceArgument( value );
-            _typeName = value;
-        }
+        get => _impl.TypeName;
+        set => _impl.TypeName = value;
     }
 
-    /// <summary>
-    /// Gets or sets another type which defines the <see cref="Folder"/>.
-    /// Folder MUST be null and <see cref="SameFileAs"/> must be null or be the same as the new value otherwise
-    /// an <see cref="InvalidOperationException"/> is raised.
-    /// <para>
-    /// This defaults to <see cref="SameFileAs"/>.
-    /// </para>
-    /// </summary>
+    /// <inheritdoc />
     public Type? SameFolderAs
     {
-        get => _sameFolderAs ?? _sameFileAs;
-        set
-        {
-            if( value != null )
-            {
-                if( _folder != null ) Throw.InvalidOperationException( "SameFolderAs cannot be set when Folder is not null." );
-                if( _sameFileAs != null && _sameFileAs != value ) Throw.InvalidOperationException( "SameFolderAs cannot be set when SameFileAs is not null (except to the same type)." );
-            }
-            _sameFolderAs = value;
-        }
+        get => _impl.SameFolderAs;
+        set => _impl.SameFolderAs = value;
     }
 
-    /// <summary>
-    /// Gets or sets another type which defines the final <see cref="Folder"/> and <see cref="FileName"/>.
-    /// Both Folder and FileName MUST be null otherwise an <see cref="InvalidOperationException"/> is raised (conversely, Folder and FileName can
-    /// be set to non null values only if this SameFileAs is null).
-    /// </summary>
+    /// <inheritdoc />
     public Type? SameFileAs
     {
-        get => _sameFileAs;
-        set
-        {
-            if( value != null )
-            {
-                if( _folder != null ) Throw.InvalidOperationException( "SameFileAs cannot be set when Folder is not null." );
-                if( _fileName != null ) Throw.InvalidOperationException( "SameFileAs cannot be set when FileName is not null." );
-                if( _sameFolderAs != null && _sameFolderAs != value ) Throw.InvalidOperationException( "SameFileAs cannot be set when SameFolderAs is not null (except to the same type)." );
-            }
-            _sameFileAs = value;
-        }
+        get => _impl.SameFileAs;
+        set => _impl.SameFileAs = value;
     }
 
     /// <summary>
@@ -157,28 +86,28 @@ public class TypeScriptAttribute : ContextBoundDelegationAttribute
     /// </summary>
     /// <param name="other">The other attribute to apply.</param>
     /// <returns>This attribute.</returns>
-    public TypeScriptAttribute ApplyOverride( TypeScriptAttribute? other )
+    public TypeScriptAttribute ApplyOverride( ITypeScriptTypeDecorationAttribute? other )
     {
         if( other == null ) return this;
-        if( other.TypeName != null ) _typeName = other.TypeName;
+        if( other.TypeName != null ) TypeName = other.TypeName;
         if( other.SameFileAs != null )
         {
-            Debug.Assert( other._fileName == null && other._folder == null && other._sameFolderAs == null );
-            _fileName = null;
-            _folder = null;
-            _sameFolderAs = null;
-            _sameFileAs = other.SameFileAs;
+            Debug.Assert( other.FileName == null && other.Folder == null && other.SameFolderAs == null );
+            FileName = null;
+            Folder = null;
+            SameFolderAs = null;
+            SameFileAs = other.SameFileAs;
         }
         else if( other.SameFolderAs != null )
         {
-            Debug.Assert( other._folder == null );
-            _folder = null;
-            _sameFolderAs = other.SameFolderAs;
+            Debug.Assert( other.Folder == null );
+            Folder = null;
+            SameFolderAs = other.SameFolderAs;
         }
         else
         {
-            if( other.FileName != null ) _fileName = other.FileName;
-            if( other.Folder != null ) _folder = other.Folder;
+            if( other.FileName != null ) FileName = other.FileName;
+            if( other.Folder != null ) Folder = other.Folder;
         }
         return this;
     }
