@@ -66,6 +66,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Axios", "CK.Ng.Axios\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Localization", "CK.Ng.Localization\CK.Ng.Localization.csproj", "{A1708F78-B9E8-4F87-A8DD-0BCFE3FA098F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Abstractions", "CK.EmbeddedResources.Abstractions\CK.EmbeddedResources.Abstractions.csproj", "{861B9A03-BE51-4BB0-9105-C9C5C3772F29}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -156,6 +158,10 @@ Global
 		{A1708F78-B9E8-4F87-A8DD-0BCFE3FA098F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1708F78-B9E8-4F87-A8DD-0BCFE3FA098F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1708F78-B9E8-4F87-A8DD-0BCFE3FA098F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{861B9A03-BE51-4BB0-9105-C9C5C3772F29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{861B9A03-BE51-4BB0-9105-C9C5C3772F29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{861B9A03-BE51-4BB0-9105-C9C5C3772F29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{861B9A03-BE51-4BB0-9105-C9C5C3772F29}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

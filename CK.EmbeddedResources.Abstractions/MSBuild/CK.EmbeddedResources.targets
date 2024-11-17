@@ -4,7 +4,7 @@
     Simply adds the set of CKEmbeddedResource into the MSBuild EmbeddedResource one, mapping
     their logical name to their original path in the project.
     -->
-    <Target Name="HandleCKEmbeddedResource" BeforeTargets="BeforeResGen">
+    <Target Name="HandleCKEmbeddedResource" BeforeTargets="BeforeResGen" Condition=" '$(EnableCKEmbeddedResource)' != 'false' ">
         <ItemGroup>
             <EmbeddedResource Include="@(CKEmbeddedResource)" Type="Non-Resx" WithCulture="false">
                 <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>

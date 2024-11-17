@@ -8,17 +8,17 @@ namespace CK.TypeScript.CodeGen;
 /// </summary>
 public abstract class ResourceTextFileBase : TextFileBase, IResourceFile
 {
-    readonly ResourceTypeLocator _locator;
+    readonly ResourceLocator _locator;
     string? _content;
 
-    internal ResourceTextFileBase( TypeScriptFolder folder, string name, in ResourceTypeLocator locator )
+    internal ResourceTextFileBase( TypeScriptFolder folder, string name, in ResourceLocator locator )
         : base( folder, name )
     {
         _locator = locator;
     }
 
     /// <inheritdoc />
-    public ResourceTypeLocator Locator => _locator;
+    public ResourceLocator Locator => _locator;
 
     /// <summary>
     /// Sets the textual content.

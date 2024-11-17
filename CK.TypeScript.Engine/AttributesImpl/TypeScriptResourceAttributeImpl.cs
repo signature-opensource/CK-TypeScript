@@ -8,7 +8,7 @@ namespace CK.TypeScript.Engine;
 
 public sealed class TypeScriptResourceAttributeImpl : TypeScriptPackageAttributeImplExtension
 {
-    ResourceTypeLocator _resource;
+    Core.ResourceLocator _resource;
     NormalizedPath _targetPath;
 
     public new TypeScriptResourceAttribute Attribute => Unsafe.As<TypeScriptResourceAttribute>( base.Attribute );

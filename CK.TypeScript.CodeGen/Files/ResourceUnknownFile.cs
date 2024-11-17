@@ -8,16 +8,16 @@ namespace CK.TypeScript.CodeGen;
 /// </summary>
 public sealed class ResourceUnknownFile : BaseFile, IResourceFile
 {
-    readonly ResourceTypeLocator _locator;
+    readonly ResourceLocator _locator;
 
-    internal ResourceUnknownFile( TypeScriptFolder folder, string name, in ResourceTypeLocator locator )
+    internal ResourceUnknownFile( TypeScriptFolder folder, string name, in ResourceLocator locator )
         : base( folder, name )
     {
         _locator = locator;
     }
 
     /// <inheritdoc />
-    public ResourceTypeLocator Locator => _locator;
+    public ResourceLocator Locator => _locator;
 
     /// <summary>
     /// Returns <see cref="GetContentStream()"/>.

@@ -10,5 +10,5 @@ public interface IResourceFile
     /// <summary>
     /// Gets the resource locator of this file.
     /// </summary>
-    ResourceTypeLocator Locator { get; }
+    ResourceLocator Locator { get; }
 }

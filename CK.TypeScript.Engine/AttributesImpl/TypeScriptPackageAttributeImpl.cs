@@ -18,8 +18,8 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
-    readonly PackageResources _resources;
-    readonly HashSet<ResourceTypeLocator> _removedResources;
+    readonly IResourceContainer _resources;
+    readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
     // This is here only to support RegisterTypeScriptType registration...
@@ -52,7 +52,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the resources for this package.
     /// </summary>
-    public PackageResources Resources => _resources;
+    public IResourceContainer Resources => _resources;
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -64,15 +64,15 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     {
         _attr = attr;
         _type = type;
-        _extensions = new List<TypeScriptPackageAttributeImplExtension>();
-        _removedResources = new HashSet<ResourceTypeLocator>();
         if( !typeof( TypeScriptPackage ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[TypeScriptPackage] can only decorate a TypeScriptPackage: '{type:N}' is not a TypeScriptPackage." );
         }
 
-        // Computes Resources: if an error occured this is null but we won't go further so we ignore the null here.
-        _resources = PackageResources.Create( monitor, type, attr.ResourceFolderPath, attr.CallerFilePath, "TypeScriptPackage" )!;
+        _extensions = new List<TypeScriptPackageAttributeImplExtension>();
+        _removedResources = new HashSet<Core.ResourceLocator>();
+        // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
+        _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
 
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );
@@ -178,9 +178,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// won't generate its file.
     /// </summary>
     /// <param name="resource"></param>
-    internal protected void RemoveResource( ResourceTypeLocator resource )
+    internal protected void RemoveResource( Core.ResourceLocator resource )
     {
-        Throw.DebugAssert( resource.Declarer == _type );
+        Throw.DebugAssert( resource.Container == _resources );
         _removedResources.Add( resource );
     }
 
@@ -201,14 +201,13 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         {
             success &= e.GenerateCode( monitor, this, context );
         }
-        if( !_attr.ConsiderExplicitResourceOnly && _resources.AllResources.Length != _removedResources.Count )
+        if( !_attr.ConsiderExplicitResourceOnly )
         {
-            foreach( ResourceTypeLocator o in _resources.AllResources )
+            foreach( var r in _resources.AllResources )
             {
-                if( _removedResources.Contains( o ) ) continue;
-                // Skip prefix 'ck@{_resourceTypeFolder}/'.
-                var targetFileName = _typeScriptFolder.Combine( o.ResourceName.Substring( _resources.ResourcePrefix.Length ) );
-                context.Root.Root.CreateResourceFile( o, targetFileName );
+                if( _removedResources.Contains( r ) ) continue;
+                var targetFileName = _typeScriptFolder.Combine( r.LocalResourceName.ToString() );
+                context.Root.Root.CreateResourceFile( r, targetFileName );
             }
         }
         return true;

@@ -105,8 +105,8 @@ public readonly struct ImmutableOrdinalSortedStrings
         public int CompareTo( string? other )
         {
             Throw.DebugAssert( other != null );
-            if( _prefix.Length > other.Length ) return 1;
-            int cmp = _prefix.AsSpan().CompareTo( other.AsSpan( 0, _prefix.Length ), StringComparison.Ordinal );
+            int l = Math.Min( _prefix.Length, other.Length );
+            int cmp = _prefix.AsSpan().CompareTo( other.AsSpan( 0, l ), StringComparison.Ordinal );
             return cmp == 0 ? -1 : cmp;
         }
     }
@@ -138,8 +138,8 @@ public readonly struct ImmutableOrdinalSortedStrings
         public int CompareTo( string? other )
         {
             Throw.DebugAssert( other != null );
-            if( _prefix.Length > other.Length ) return -1;
-            int cmp = _prefix.AsSpan().CompareTo( other.AsSpan( 0, _prefix.Length ), StringComparison.Ordinal );
+            int l = Math.Min( _prefix.Length, other.Length );
+            int cmp = _prefix.AsSpan().CompareTo( other.AsSpan( 0, l ), StringComparison.Ordinal );
             return cmp == 0 ? 1 : cmp;
         }
     }
@@ -159,12 +159,17 @@ public readonly struct ImmutableOrdinalSortedStrings
             beg = ~beg;
             if( beg == sAll.Length ) return default;
         }
-        int len = sAll.Slice( beg ).BinarySearch( new EndFinder( prefix ) );
+        return (beg, GetEndIndex( prefix, sAll.Slice( beg ) ));
+    }
+
+    internal static int GetEndIndex( string prefix, ReadOnlySpan<string> tail )
+    {
+        int len = tail.BinarySearch( new EndFinder( prefix ) );
         if( len < 0 )
         {
             len = ~len;
         }
-        return (beg, len);
+        return len;
     }
 
 
@@ -173,10 +178,49 @@ public readonly struct ImmutableOrdinalSortedStrings
     /// </summary>
     /// <param name="prefix">Common prefix to search.</param>
     /// <returns>The resulting strings.</returns>
-    public ReadOnlyMemory<string> GetPrefixedStrings( string prefix )
+    public ReadOnlyMemory<string> GetPrefixedStrings( string prefix ) => GetPrefixedStrings( prefix, All.AsMemory() );
+
+    /// <summary>
+    /// Gets the range of strings in <see cref="All"/> that start with the <paramref name="prefix"/>.
+    /// </summary>
+    /// <param name="prefix">Common prefix to search.</param>
+    /// <returns>The resulting strings.</returns>
+    internal static ReadOnlyMemory<string> GetPrefixedStrings( string prefix, ReadOnlyMemory<string> tail )
     {
-        var (i, l) = GetPrefixedRange( prefix );
-        return All.AsMemory().Slice( i, l );
+        var (i, l) = GetPrefixedRange( prefix, tail.Span );
+        return tail.Slice( i, l );
     }
+
+    /// <summary>
+    /// Gets whether the <paramref name="prefix"/> exists: at least one string starts with it.
+    /// </summary>
+    /// <param name="prefix">Prefix to search.</param>
+    /// <returns>True if found, false otherwise.</returns>
+    public bool IsPrefix( string prefix ) => IsPrefix( prefix, All.AsSpan() );
+
+    readonly struct PrefixPredicate : IComparable<string>
+    {
+        readonly string _prefix;
+
+        public PrefixPredicate( string prefix ) => _prefix = prefix;
+
+        public int CompareTo( string? other )
+        {
+            Throw.DebugAssert( other != null );
+            int l = other.Length;
+            bool isCandidate = _prefix.Length < l;
+            if( isCandidate ) l = _prefix.Length;
+            int cmp = _prefix.AsSpan().CompareTo( other.AsSpan( 0, l ), StringComparison.Ordinal );
+            return cmp == 0
+                    ? (isCandidate ? 0 : -1)
+                    : cmp;
+        }
+    }
+
+    internal static bool IsPrefix( string prefix, ReadOnlySpan<string> tail )
+    {
+        return tail.BinarySearch( new PrefixPredicate( prefix ) ) >= 0;
+    }
+
 
 }

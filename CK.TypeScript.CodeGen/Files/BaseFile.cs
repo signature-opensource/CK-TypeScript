@@ -70,7 +70,7 @@ public abstract class BaseFile
     public override string ToString() => Name;
 
 
-    internal static BaseFile CreateResourceFile( TypeScriptFolder folder, string name, in ResourceTypeLocator locator )
+    internal static BaseFile CreateResourceFile( TypeScriptFolder folder, string name, in ResourceLocator locator )
     {
         Throw.DebugAssert( folder != null && name != null );
         var n = Path.GetExtension( name.AsSpan() );

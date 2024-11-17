@@ -14,7 +14,7 @@ namespace CK.TypeScript.Engine;
 /// </summary>
 public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImplExtension
 {
-    ResourceTypeLocator _resource;
+    Core.ResourceLocator _resource;
     NormalizedPath _targetPath;
 
     /// <summary>
