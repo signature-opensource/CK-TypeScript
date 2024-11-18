@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 
 namespace CK.TypeScript.Engine;
@@ -22,6 +23,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
+    TSLocaleCultureSet? _tsLocales;
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
     [AllowNull] ITypeAttributesCache _owner;
@@ -53,6 +55,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// Gets the resources for this package.
     /// </summary>
     public IResourceContainer Resources => _resources;
+
+    /// <summary>
+    /// Gets the local culture set that contains the translations associated to this package.
+    /// </summary>
+    public TSLocaleCultureSet? TSLocales => _tsLocales;
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -138,22 +145,30 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/> in the order
     /// of the topological sort of the <see cref="TypeScriptPackage"/>.
-    /// <para>
-    /// Does nothing at this level.
-    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor.</param>
-    /// <param name="initializer">The TypeScriptContext iniitializer.</param>
+    /// <param name="initializer">The TypeScriptContext initializer.</param>
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
-    internal protected virtual bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    internal bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
         bool success = true;
+
+        // First, initializes our _tsLocales if a "ts-locales/" folder exists.
+        // And if we have locales, remove them from the resources as they are handled separately.
+        Throw.DebugAssert( _resources.IsValid );
+        success &= TSLocaleCultureSet.LoadTSLocales( monitor, _resources, initializer.BinPathConfiguration.ActiveCultures, out _tsLocales );
+        if( _tsLocales != null )
+        {
+            _removedResources.AddRange( _resources.AllResources.Where( r => r.LocalResourceName.Span.StartsWith( "ts-locales" ) ) );
+        }
+
+        // Then handle the RegisterTypeScriptTypeAttribute.
         foreach( var r in _owner.GetTypeCustomAttributes<RegisterTypeScriptTypeAttribute>() )
         {
             success &= initializer.EnsureRegister( monitor, r.Type, false, attr =>
             {
                 // A Register can override because of package ordering...
-                // But this is weird.
+                // Even if this is weird.
                 if( attr != null )
                 {
                     if( r.TypeName != attr.TypeName
@@ -170,7 +185,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
                 return new TypeScriptAttribute( r );
             } );
         }
-        return true;
+        return success;
     }
 
     /// <summary>
@@ -189,6 +204,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <para>
     /// At this level, if <see cref="TypeScriptPackageAttribute.ConsiderExplicitResourceOnly"/> is false (the default), embedded resources
     /// are copied to the <see cref="TypeScriptFolder"/>.
+    /// If <see cref="TSLocales"/> exists, it is added to the <see cref="TypeScriptContext.TSLocales"/>.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor.</param>
@@ -197,6 +213,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         bool success = true;
+
+        if( _tsLocales != null ) context.TSLocales.Add( _tsLocales );
+
         foreach( var e in _extensions )
         {
             success &= e.GenerateCode( monitor, this, context );

@@ -26,7 +26,7 @@ sealed class AssemblySubContainer : IResourceContainer
     }
 
     internal AssemblySubContainer( AssemblyResources assemblyResources, string prefix, string? displayName, Type type, ReadOnlyMemory<string> resourceNames )
-    : this( assemblyResources, prefix, displayName ?? $"Assembly embedded resources of '{type.ToCSharpName()}'", resourceNames )
+    : this( assemblyResources, prefix, displayName ?? $"CKEmbeddedResources of '{type.ToCSharpName()}' type", resourceNames )
     {
     }
 

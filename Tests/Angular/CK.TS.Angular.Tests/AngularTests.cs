@@ -1,4 +1,6 @@
+using CK.Core;
 using CK.Demo;
+using CK.Ng.PublicSection;
 using CK.NG.AspNet.Auth;
 using CK.Testing;
 using NUnit.Framework;
@@ -17,13 +19,23 @@ public class AngularTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         var ts = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-US" ) );
+
+
         ts.CKGenBuildMode = false;
 
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ),
+                                              // CK.Ng.AspNet.Auth folder.
                                               typeof( LoginComponent ),
                                               typeof( PasswordLostComponent ),
-                                              typeof( SomeAuthPackage ) );
+                                              typeof( SomeAuthPackage ),
+                                              // CK.Ng.PublicSection
+                                              typeof( PublicSectionPackage ),
+                                              typeof( PublicFooterComponent ),
+                                              typeof( PublicTopbarComponent ) );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

@@ -79,14 +79,14 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     }
 
     /// <summary>
-    /// Gets "{ ResourceName: '...', Container: '...' }" when <see cref="IsValid"/> is true
+    /// Gets "{ ResourceName: "...", Container: "..." }" when <see cref="IsValid"/> is true
     /// or the empty string when IsValid is false.
     /// </summary>
     /// <returns></returns>
     public override string ToString()
     {
         return IsValid
-                ? $"{{ ResourceName: '{ResourceName}', Container: '{Container.DisplayName}' }}"
+                ? $"{{ ResourceName: \"{ResourceName}\", Container: \"{Container.DisplayName}\" }}"
                 : "";
     }
 

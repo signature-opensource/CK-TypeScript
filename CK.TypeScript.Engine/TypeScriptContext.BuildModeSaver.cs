@@ -90,7 +90,7 @@ public sealed partial class TypeScriptContext
                         }
                         else
                         {
-                            b.Append( " (genrated code)" );
+                            b.Append( " (generated code)" );
                         }
                         b.AppendLine();
                     }

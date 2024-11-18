@@ -24,6 +24,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     {
         Barrels = new HashSet<NormalizedPath>();
         Types = new List<TypeScriptTypeConfiguration>();
+        ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
         ModuleSystem = TSModuleSystem.Default;
         GitIgnoreCKGenFolder = true;
@@ -95,6 +96,17 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             }
         }
     }
+
+    /// <summary>
+    /// Gets a mutable set of cultures that should be handled by the generated TypeScript code.
+    /// <para>
+    /// It is useless to register the "en" culture as it is always implicitly added.
+    /// </para>
+    /// <para>
+    /// In configuration files, this is expressed as a comma separated string of BCP47 culture names.
+    /// </para>
+    /// </summary>
+    public HashSet<NormalizedCultureInfo> ActiveCultures { get; }
 
     /// <summary>
     /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
@@ -234,6 +246,16 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         ModuleSystem = tsModuleSystem == null ? TSModuleSystem.Default : Enum.Parse<TSModuleSystem>( tsModuleSystem, ignoreCase: true );
         EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
 
+        ActiveCultures.Clear();
+        var cultures = (string?)e.Attribute( TypeScriptAspectConfiguration.xActiveCultures );
+        if( cultures != null )
+        {
+            foreach( var name in cultures.Split( ',', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries ) )
+            {
+                ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( name ) );
+            }
+        }
+
         Types.Clear();
         Types.AddRange( e.Elements( EngineConfiguration.xTypes )
                            .Elements( EngineConfiguration.xType )
@@ -275,6 +297,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                EnableTSProjectReferences
                 ? new XAttribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences, true )
                 : null,
+               new XAttribute( TypeScriptAspectConfiguration.xActiveCultures, ActiveCultures.Select( c => c.Culture.Name ).Concatenate( ", " ) ),
                new XElement( EngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
             );
     }

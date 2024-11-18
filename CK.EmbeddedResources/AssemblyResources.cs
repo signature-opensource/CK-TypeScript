@@ -246,7 +246,7 @@ public sealed partial class AssemblyResources
             {
                 // TODO: miss a NormalizedPath.SubPath( int start, int len )...
                 p = p.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
-                var prefix = $"ck@{p.Path}/Res/";
+                var prefix = p.IsEmptyPath ? "ck@Res/" : $"ck@{p.Path}/Res/";
                 return new AssemblySubContainer( this, prefix, containerDisplayName, type, ImmutableOrdinalSortedStrings.GetPrefixedStrings( prefix, _ckResourceNames ) );
             }
         }
