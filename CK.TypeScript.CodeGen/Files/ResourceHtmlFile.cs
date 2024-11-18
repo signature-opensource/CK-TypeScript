@@ -7,7 +7,7 @@ namespace CK.TypeScript.CodeGen;
 /// </summary>
 public sealed class ResourceHtmlFile : ResourceTextFileBase
 {
-    internal ResourceHtmlFile( TypeScriptFolder folder, string name, in ResourceTypeLocator locator )
+    internal ResourceHtmlFile( TypeScriptFolder folder, string name, in ResourceLocator locator )
         : base( folder, name, in locator )
     {
     }

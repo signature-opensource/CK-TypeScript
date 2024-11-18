@@ -14,7 +14,7 @@ public sealed partial class TypeScriptContext
 {
     sealed class BuildModeSaver : TypeScriptFileSaveStrategy
     {
-        List<(NormalizedPath Gen, ResourceTypeLocator Origin)>? _clashes;
+        List<(NormalizedPath Gen, Core.ResourceLocator Origin)>? _clashes;
 
         public BuildModeSaver( TypeScriptRoot root, NormalizedPath targetPath )
             : base( root, targetPath )
@@ -65,7 +65,7 @@ public sealed partial class TypeScriptContext
         string OnClashPath( IActivityMonitor monitor, BaseFile file, NormalizedPath filePath )
         {
             string savedFilePath;
-            _clashes ??= new List<(NormalizedPath, ResourceTypeLocator)>();
+            _clashes ??= new List<(NormalizedPath, Core.ResourceLocator)>();
             _clashes.Add( (file.Folder.Path.AppendPart( file.Name ), file is IResourceFile rF ? rF.Locator : default) );
             savedFilePath = $"{filePath.Path}.G{file.Extension}";
             monitor.Trace( $"Saving '{Path.GetFileName( savedFilePath.AsSpan() )}'." );
@@ -81,25 +81,18 @@ public sealed partial class TypeScriptContext
                 using( monitor.OpenError( $"BuildMode: {_clashes.Count} files have been generated differently than the existing one:" ) )
                 {
                     var b = new StringBuilder();
-                    foreach( var clash in _clashes.GroupBy( c => c.Origin.Declarer?.Assembly ) )
+                    foreach( var clash in _clashes.OrderBy( clash => clash.Gen ) )
                     {
-                        if( clash.Key == null )
+                        b.Append( clash.Gen ).Append( " <= " );
+                        if( clash.Origin.IsValid )
                         {
-                            b.AppendLine( "> (generated file):" );
-                            foreach( var (f, _) in clash )
-                            {
-                                b.Append( "   " ).AppendLine( f );
-                            }
+                            b.Append( ", from " ).Append( clash.Origin );
                         }
                         else
                         {
-                            b.Append( "> Assembly: " ).Append( clash.Key.GetName().Name ).Append( ':' ).AppendLine();
-                            foreach( var (f, origin) in clash )
-                            {
-                                b.Append( "   " ).Append( f ).Append( " <= " ).Append( origin.ResourceName )
-                                 .Append( ", declared by " ).AppendLine( origin.Declarer.ToCSharpName() );
-                            }
+                            b.Append( " (generated code)" );
                         }
+                        b.AppendLine();
                     }
                     monitor.Trace( b.ToString() );
                 }

@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 
 namespace CK.TypeScript.Engine;
@@ -18,10 +19,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
-    readonly PackageResources _resources;
-    readonly HashSet<ResourceTypeLocator> _removedResources;
+    readonly IResourceContainer _resources;
+    readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
+    TSLocaleCultureSet? _tsLocales;
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
     [AllowNull] ITypeAttributesCache _owner;
@@ -52,7 +54,12 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the resources for this package.
     /// </summary>
-    public PackageResources Resources => _resources;
+    public IResourceContainer Resources => _resources;
+
+    /// <summary>
+    /// Gets the local culture set that contains the translations associated to this package.
+    /// </summary>
+    public TSLocaleCultureSet? TSLocales => _tsLocales;
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -64,15 +71,15 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     {
         _attr = attr;
         _type = type;
-        _extensions = new List<TypeScriptPackageAttributeImplExtension>();
-        _removedResources = new HashSet<ResourceTypeLocator>();
         if( !typeof( TypeScriptPackage ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[TypeScriptPackage] can only decorate a TypeScriptPackage: '{type:N}' is not a TypeScriptPackage." );
         }
 
-        // Computes Resources: if an error occured this is null but we won't go further so we ignore the null here.
-        _resources = PackageResources.Create( monitor, type, attr.ResourceFolderPath, attr.CallerFilePath, "TypeScriptPackage" )!;
+        _extensions = new List<TypeScriptPackageAttributeImplExtension>();
+        _removedResources = new HashSet<Core.ResourceLocator>();
+        // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
+        _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
 
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );
@@ -137,26 +144,39 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 
     /// <summary>
     /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/> in the order
-    /// of the topological sort of the <see cref="TypeScriptPackage"/>.
-    /// <para>
-    /// Does nothing at this level.
-    /// </para>
+    /// of the topological sort of the <see cref="TypeScriptPackage"/>. A package is initialized after its subordinated
+    /// packages (its content).
     /// </summary>
     /// <param name="monitor">The monitor.</param>
-    /// <param name="initializer">The TypeScriptContext iniitializer.</param>
+    /// <param name="initializer">The TypeScriptContext initializer.</param>
     /// <returns>True on success, false otherwise (errors must be logged).</returns>
-    internal protected virtual bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    internal bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
         bool success = true;
+
+        // First, initializes our _tsLocales if a "ts-locales/" folder exists.
+        // And if we have locales, remove them from the resources as they are handled separately.
+        Throw.DebugAssert( _resources.IsValid );
+        success &= TSLocaleCultureSet.LoadTSLocales( monitor, _resources, initializer.BinPathConfiguration.ActiveCultures, out _tsLocales );
+        if( _tsLocales != null )
+        {
+            _removedResources.AddRange( _resources.AllResources.Where( r => r.LocalResourceName.Span.StartsWith( "ts-locales" ) ) );
+        }
+
+        // Then handle the RegisterTypeScriptTypeAttribute.
         foreach( var r in _owner.GetTypeCustomAttributes<RegisterTypeScriptTypeAttribute>() )
         {
             success &= initializer.EnsureRegister( monitor, r.Type, false, attr =>
             {
                 // A Register can override because of package ordering...
-                // But this is weird.
+                // Even if this is weird.
                 if( attr != null )
                 {
-                    if( r.TypeName != attr.TypeName || r.FileName != attr.FileName || r.Folder != attr.Folder || r.SameFileAs != attr.SameFileAs || r.SameFolderAs != attr.SameFolderAs )
+                    if( r.TypeName != attr.TypeName
+                       || r.FileName != attr.FileName
+                       || r.Folder != attr.Folder
+                       || r.SameFileAs != attr.SameFileAs
+                       || r.SameFolderAs != attr.SameFolderAs )
                     {
                         monitor.Warn( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
                         return attr.ApplyOverride( r );
@@ -166,7 +186,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
                 return new TypeScriptAttribute( r );
             } );
         }
-        return true;
+        return success;
     }
 
     /// <summary>
@@ -174,17 +194,19 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// won't generate its file.
     /// </summary>
     /// <param name="resource"></param>
-    internal protected void RemoveResource( ResourceTypeLocator resource )
+    internal protected void RemoveResource( Core.ResourceLocator resource )
     {
-        Throw.DebugAssert( resource.Declarer == _type );
+        Throw.DebugAssert( resource.Container == _resources );
         _removedResources.Add( resource );
     }
 
     /// <summary>
-    /// Called in the order of the topological sort of the <see cref="TypeScriptPackage"/>.
+    /// Called in the order of the topological sort of the <see cref="TypeScriptPackage"/>. This is called after
+    /// the subordinated packages (the package's content).
     /// <para>
     /// At this level, if <see cref="TypeScriptPackageAttribute.ConsiderExplicitResourceOnly"/> is false (the default), embedded resources
     /// are copied to the <see cref="TypeScriptFolder"/>.
+    /// If <see cref="TSLocales"/> exists, it is added to the <see cref="TypeScriptContext.TSLocales"/>.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor.</param>
@@ -193,18 +215,20 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         bool success = true;
+
+        if( _tsLocales != null ) context.TSLocales.Add( _tsLocales );
+
         foreach( var e in _extensions )
         {
             success &= e.GenerateCode( monitor, this, context );
         }
-        if( !_attr.ConsiderExplicitResourceOnly && _resources.AllResources.Length != _removedResources.Count )
+        if( !_attr.ConsiderExplicitResourceOnly )
         {
-            foreach( ResourceTypeLocator o in _resources.AllResources )
+            foreach( var r in _resources.AllResources )
             {
-                if( _removedResources.Contains( o ) ) continue;
-                // Skip prefix 'ck@{_resourceTypeFolder}/'.
-                var targetFileName = _typeScriptFolder.Combine( o.ResourceName.Substring( _resources.ResourcePrefix.Length ) );
-                context.Root.Root.CreateResourceFile( o, targetFileName );
+                if( _removedResources.Contains( r ) ) continue;
+                var targetFileName = _typeScriptFolder.Combine( r.LocalResourceName.ToString() );
+                context.Root.Root.CreateResourceFile( r, targetFileName );
             }
         }
         return true;

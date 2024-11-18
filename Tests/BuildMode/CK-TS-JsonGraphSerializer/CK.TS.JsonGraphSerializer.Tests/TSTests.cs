@@ -34,6 +34,7 @@ public class MultipleTypeScriptTests
     {
         // We don't need any C# backend here.
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+
         engineConfig.BasePath = TestHelper.TestProjectFolder;
         var binPath = engineConfig.FirstBinPath;
         binPath.Assemblies.Add( "CK.TS.JsonGraphSerializer" );
@@ -50,7 +51,8 @@ public class MultipleTypeScriptTests
         {
             TargetProjectPath = "Clients/Inline",
             IntegrationMode = CKGenIntegrationMode.Inline,
-            TypeFilterName = "TypeScriptI"
+            TypeFilterName = "TypeScriptI",
+            CKGenBuildMode = true
         };
         ts2.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
 

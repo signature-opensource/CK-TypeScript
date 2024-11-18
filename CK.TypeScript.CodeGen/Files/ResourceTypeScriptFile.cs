@@ -11,7 +11,7 @@ public sealed class ResourceTypeScriptFile : ResourceTextFileBase, IMinimalTypeS
 {
     TypeDeclarationImpl _declared;
 
-    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, in ResourceTypeLocator locator )
+    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, in ResourceLocator locator )
         : base( folder, name, in locator )
     {
     }

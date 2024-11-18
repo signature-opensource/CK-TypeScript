@@ -21,6 +21,7 @@ public sealed partial class TypeScriptContext
     readonly TSContextInitializer _initializer;
     readonly TypeScriptRoot _tsRoot;
     readonly PocoCodeGenerator _pocoGenerator;
+    readonly List<TSLocaleCultureSet> _tsLocales;
 
     internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                 TypeScriptBinPathAspectConfiguration tsBinPathConfig,
@@ -31,6 +32,7 @@ public sealed partial class TypeScriptContext
         _integrationContext = initializer.IntegrationContext;
         _binPathConfiguration = tsBinPathConfig;
         _initializer = initializer;
+        _tsLocales = new List<TSLocaleCultureSet>();
         var tsConfig = tsBinPathConfig.AspectConfiguration;
         Throw.DebugAssert( tsConfig != null );
         _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions.ToImmutableDictionary(),
@@ -153,6 +155,13 @@ public sealed partial class TypeScriptContext
     public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _initializer.GlobalCodeGenerators;
 
     /// <summary>
+    /// Gets a mutable list of <see cref="TSLocaleCultureSet"/>.
+    /// Order matters: the final translation set is built from this list, a set can
+    /// override any translation from previous ones.
+    /// </summary>
+    public List<TSLocaleCultureSet> TSLocales => _tsLocales;
+
+    /// <summary>
     /// Relays the <see cref="TypeScriptRoot.BeforeCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
     /// as the sender.
     /// <para>
@@ -195,6 +204,7 @@ public sealed partial class TypeScriptContext
                     && ResolveRegisteredTypes( monitor )
                     && GeneratePackageCode( monitor, _initializer.Packages, this )
                     // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
+                    && GenerateTSLocaleSupport( monitor, this )
                     && _tsRoot.GenerateCode( monitor );
         }
 
@@ -254,6 +264,17 @@ public sealed partial class TypeScriptContext
                     return false;
                 }
             }
+            return true;
+        }
+
+        static bool GenerateTSLocaleSupport( IActivityMonitor monitor, TypeScriptContext context )
+        {
+            if( context.TSLocales.Count == 0 )
+            {
+                monitor.Trace( "No ts-locale content to process." );
+                return true;
+            }
+
             return true;
         }
     }

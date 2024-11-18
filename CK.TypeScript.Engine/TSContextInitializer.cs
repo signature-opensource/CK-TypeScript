@@ -6,6 +6,7 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.Setup;
@@ -342,10 +343,10 @@ sealed class TSContextInitializer
 
         public ImmutableArray<TypeScriptPackageAttributeImpl> Packages => _packages;
 
+        // Lazy instantiation of the RootMemory.
         internal Dictionary<object, object?>? RootMemory => _rootMemory;
 
         IDictionary<object, object?> ITypeScriptContextInitializer.RootMemory => _rootMemory ??= new Dictionary<object,object?>();
-
 
         public bool EnsureRegister( IActivityMonitor monitor,
                                     Type t,
@@ -390,7 +391,7 @@ sealed class TSContextInitializer
     {
         var bPackages = ImmutableArray.CreateBuilder<TypeScriptPackageAttributeImpl>();
         bool success = true;
-        foreach( var p in genBinPath.EngineMap.StObjs.OrderedStObjs.Where( o => typeof( TypeScriptPackage ).IsAssignableFrom( o.ClassType ) ) )
+        foreach( var p in genBinPath.EngineMap.StObjs.OrderedAfterContentStObjs.Where( o => typeof( TypeScriptPackage ).IsAssignableFrom( o.ClassType ) ) )
         {
             var a = p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>();
             TypeScriptPackageAttributeImpl? package;
