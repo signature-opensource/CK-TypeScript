@@ -1,7 +1,7 @@
 using CK.TypeScript;
 using CK.TS.Angular;
 
-namespace CK.NG.AspNet.Auth;
+namespace CK.Ng.AspNet.Auth;
 
 [TypeScriptPackage]
 [TypeScriptFile( "SomeAuthService.ts", "SomeAuthService" )]

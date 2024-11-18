@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Demo;
 using CK.Ng.PublicSection;
-using CK.NG.AspNet.Auth;
+using CK.Ng.AspNet.Auth;
 using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
