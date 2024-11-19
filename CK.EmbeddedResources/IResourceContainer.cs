@@ -70,6 +70,20 @@ public interface IResourceContainer
     /// </summary>
     IEnumerable<ResourceLocator> AllResources { get; }
 
+    // Missing a container.GetAllResourcesFrom( IDirectoryContents ) when we don't care about folders and want a
+    // direct access to the items.
+
+    /// <summary>
+    /// Gets the flattened resources from a directory (that must be issued by this <see cref="GetFileProvider()"/>).
+    /// To be used when you don't care about folders and want a direct access to the items.
+    /// <para>
+    /// Depending on the actual implementation, this can be much more efficient than recursively enumerating <see cref="IFileInfo"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="directory"></param>
+    /// <returns></returns>
+    IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory );
+
     /// <summary>
     /// Creates a <see cref="IFileProvider"/> on the resources.
     /// </summary>

@@ -1,9 +1,12 @@
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace CK.Core;
@@ -12,11 +15,11 @@ namespace CK.Core;
 /// File system implementation of a <see cref="IResourceContainer"/>.
 /// This is a simple wrapper around a <see cref="PhysicalFileProvider"/> that does the hard job.
 /// </summary>
-public sealed class FileSystemResourceContainer : IResourceContainer
+public sealed class FileSystemResourceContainer : IResourceContainer, IFileProvider
 {
     readonly string _displayName;
-    readonly PhysicalFileProvider _fileProvider;
-    readonly string _resourcePrefix;
+    readonly string _root;
+    readonly string _normalizedRoot;
 
     /// <summary>
     /// Iniitalizes a new <see cref="FileSystemResourceContainer"/>.
@@ -27,9 +30,10 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public FileSystemResourceContainer( string root, string displayName )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
-        _fileProvider = new PhysicalFileProvider( root, ExclusionFilters.None );
+        Throw.CheckArgument( Path.IsPathRooted( root ) );
         _displayName = displayName;
-        _resourcePrefix = Normalize( _fileProvider.Root );
+        _root = Path.GetFullPath( root );
+        _normalizedRoot = Normalize( _root );
     }
 
     static string Normalize( string path )
@@ -47,10 +51,8 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     /// <inheritdoc />
     public string DisplayName => _displayName;
 
-    IFileProvider IResourceContainer.GetFileProvider() => _fileProvider;
-
     /// <inheritdoc />
-    public PhysicalFileProvider GetFileProvider() => _fileProvider;
+    public IFileProvider GetFileProvider() => this;
 
     /// <inheritdoc />
     public ResourceLocator GetResourceLocator( IFileInfo fileInfo )
@@ -65,10 +67,23 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     {
         get
         {
-            foreach( var f in Directory.EnumerateFiles( _fileProvider.Root ) )
+            foreach( var f in Directory.EnumerateFiles( _fileProvider.Root, "*", SearchOption.AllDirectories ) )
             {
                 yield return new ResourceLocator( this, Normalize( f ) );
             }
+        }
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory )
+    {
+        if( directory is not PhysicalDirectoryContents d || d.PhysicalPath == null || !d.PhysicalPath.StartsWith( _fileProvider.Root ) )
+        {
+            throw new ArgumentException( $"The provided directory is not from this '{DisplayName}'." );
+        }
+        foreach( var f in Directory.EnumerateFiles( d.PhysicalPath ) )
+        {
+            yield return new ResourceLocator( this, Normalize( f ) );
         }
     }
 
@@ -121,4 +136,18 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     /// <inheritdoc />
     public override string ToString() => _displayName;
 
+    IFileInfo IFileProvider.GetFileInfo( string subpath )
+    {
+        throw new NotImplementedException();
+    }
+
+    IDirectoryContents IFileProvider.GetDirectoryContents( string subpath )
+    {
+        throw new NotImplementedException();
+    }
+
+    IChangeToken IFileProvider.Watch( string filter )
+    {
+        throw new NotImplementedException();
+    }
 }

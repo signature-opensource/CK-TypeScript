@@ -10,8 +10,8 @@ public sealed partial class AssemblyResources
     {
         readonly string _path;
         readonly FileProvider _fileProvider;
+        readonly string _name;
         long _fileLength;
-        string _name;
 
         internal FileInfo( FileProvider r, string path, string name )
         {

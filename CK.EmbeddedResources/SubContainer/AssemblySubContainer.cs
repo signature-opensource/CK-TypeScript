@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using static CK.Core.AssemblyResources;
 
 namespace CK.Core;
@@ -26,7 +28,7 @@ sealed class AssemblySubContainer : IResourceContainer
     }
 
     internal AssemblySubContainer( AssemblyResources assemblyResources, string prefix, string? displayName, Type type, ReadOnlyMemory<string> resourceNames )
-    : this( assemblyResources, prefix, displayName ?? $"CKEmbeddedResources of '{type.ToCSharpName()}' type", resourceNames )
+        : this( assemblyResources, prefix, displayName ?? $"CKEmbeddedResources of '{type.ToCSharpName()}' type", resourceNames )
     {
     }
 
@@ -55,6 +57,15 @@ sealed class AssemblySubContainer : IResourceContainer
                 }
             }
         }
+    }
+
+    public IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory )
+    {
+        if( directory is not DirectoryContents d || d.FileProvider != _fileProvider )
+        {
+            throw new ArgumentException( $"The provided directory is not from this '{DisplayName}'." );
+        }
+        return MemoryMarshal.ToEnumerable( d.ResourceNames ).Select( p => new ResourceLocator( this, p ) );
     }
 
     public StringComparer ResourceNameComparer => StringComparer.Ordinal;

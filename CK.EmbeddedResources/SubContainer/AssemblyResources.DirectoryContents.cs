@@ -9,13 +9,13 @@ namespace CK.Core;
 
 public sealed partial class AssemblyResources
 {
-    sealed class DirectoryContents : IDirectoryContents, IFileInfo
+    internal sealed class DirectoryContents : IDirectoryContents, IFileInfo
     {
         readonly FileProvider _provider;
         readonly string _path;
-        int _idx;
-        int _count;
-        string _name;
+        readonly string _name;
+        readonly int _idx;
+        readonly int _count;
 
         public DirectoryContents( FileProvider r )
         {
@@ -46,6 +46,10 @@ public sealed partial class AssemblyResources
         public DateTimeOffset LastModified => _provider.AssemblyResources.GetLastModified();
 
         public bool IsDirectory => true;
+
+        internal FileProvider FileProvider => _provider;
+
+        internal ReadOnlyMemory<string> ResourceNames => _provider.ResourceNames.Slice( _idx, _count );
 
         public Stream CreateReadStream()
         {

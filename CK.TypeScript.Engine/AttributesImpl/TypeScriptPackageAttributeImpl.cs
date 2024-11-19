@@ -23,7 +23,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
-    TSLocaleCultureSet? _tsLocales;
+    LocaleCultureSet? _tsLocales;
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
     [AllowNull] ITypeAttributesCache _owner;
@@ -59,7 +59,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the local culture set that contains the translations associated to this package.
     /// </summary>
-    public TSLocaleCultureSet? TSLocales => _tsLocales;
+    public LocaleCultureSet? TSLocales => _tsLocales;
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -157,7 +157,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         // First, initializes our _tsLocales if a "ts-locales/" folder exists.
         // And if we have locales, remove them from the resources as they are handled separately.
         Throw.DebugAssert( _resources.IsValid );
-        success &= TSLocaleCultureSet.LoadTSLocales( monitor, _resources, initializer.BinPathConfiguration.ActiveCultures, out _tsLocales );
+        success &= _resources.LoadLocales( monitor, initializer.BinPathConfiguration.ActiveCultures, out _tsLocales, "ts-locales" );
         if( _tsLocales != null )
         {
             _removedResources.AddRange( _resources.AllResources.Where( r => r.LocalResourceName.Span.StartsWith( "ts-locales" ) ) );

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -16,9 +16,9 @@ public sealed class EmptyResourceContainer : IResourceContainer
     readonly string _displayName;
 
     /// <summary>
-    /// A default empty containaer named "Empty resource container".
+    /// A default empty container named "Generated Code Container".
     /// </summary>
-    public static readonly EmptyResourceContainer Default = new EmptyResourceContainer( "Empty resource container" );
+    public static readonly EmptyResourceContainer GeneratedCode = new EmptyResourceContainer( "Generated Code Container" );
 
     /// <summary>
     /// Initiaizes a new empty container with a display name.
@@ -47,6 +47,9 @@ public sealed class EmptyResourceContainer : IResourceContainer
     public IEnumerable<ResourceLocator> AllResources => ImmutableArray<ResourceLocator>.Empty;
 
     /// <inheritdoc />
+    public IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory ) => ImmutableArray<ResourceLocator>.Empty;
+
+    /// <inheritdoc />
     public StringComparer ResourceNameComparer => StringComparer.Ordinal;
 
     /// <inheritdoc />
@@ -70,4 +73,5 @@ public sealed class EmptyResourceContainer : IResourceContainer
 
     /// <inheritdoc />
     public override string ToString() => _displayName;
+
 }

@@ -38,10 +38,6 @@ public sealed partial class AssemblyResources
     /// </summary>
     public ReadOnlyMemory<string> CKResourceNames => _ckResourceNames;
 
-    public bool IsValid => throw new NotImplementedException();
-
-    public string DisplayName => throw new NotImplementedException();
-
     /// <summary>
     /// Gets a resource content.
     /// <para>
@@ -96,7 +92,7 @@ public sealed partial class AssemblyResources
         if( string.IsNullOrEmpty( subpath ) )
         {
             return _ckResourceNames.Length == 0
-                        ? EmptyResourceContainer.Default.GetFileProvider()
+                        ? EmptyResourceContainer.GeneratedCode.GetFileProvider()
                         : new FileProvider( this, "ck@", _ckResourceNames );
         }
         Throw.CheckArgument( !subpath.Contains( '\\' ) );
@@ -114,7 +110,7 @@ public sealed partial class AssemblyResources
         }
         var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( subpath, _ckResourceNames.Span );
         return len == 0
-                ? EmptyResourceContainer.Default.GetFileProvider()
+                ? EmptyResourceContainer.GeneratedCode.GetFileProvider()
                 : new FileProvider( this, subpath, _ckResourceNames.Slice( idx, len ) );
     }
 

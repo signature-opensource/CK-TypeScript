@@ -4,6 +4,8 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
 
 namespace CK.Setup;
 
@@ -21,7 +23,8 @@ public sealed partial class TypeScriptContext
     readonly TSContextInitializer _initializer;
     readonly TypeScriptRoot _tsRoot;
     readonly PocoCodeGenerator _pocoGenerator;
-    readonly List<TSLocaleCultureSet> _tsLocales;
+    readonly List<LocaleCultureSet> _tsLocales;
+    readonly FileSystemResourceContainer? _ckGenTransform;
 
     internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                 TypeScriptBinPathAspectConfiguration tsBinPathConfig,
@@ -32,7 +35,7 @@ public sealed partial class TypeScriptContext
         _integrationContext = initializer.IntegrationContext;
         _binPathConfiguration = tsBinPathConfig;
         _initializer = initializer;
-        _tsLocales = new List<TSLocaleCultureSet>();
+        _tsLocales = new List<LocaleCultureSet>();
         var tsConfig = tsBinPathConfig.AspectConfiguration;
         Throw.DebugAssert( tsConfig != null );
         _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions.ToImmutableDictionary(),
@@ -48,6 +51,11 @@ public sealed partial class TypeScriptContext
         _tsRoot.AfterCodeGeneration += OnAfterCodeGeneration;
         Root.Root.EnsureBarrel();
         _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
+        var ckGenTPath = tsBinPathConfig.TargetProjectPath.AppendPart( "ck-gen-transform" );
+        if( Directory.Exists( ckGenTPath ) )
+        {
+            _ckGenTransform = new FileSystemResourceContainer( ckGenTPath, "ck-gen-transform/" );
+        }
     }
 
     void OnFolderCreated( TypeScriptFolder f )
@@ -155,11 +163,17 @@ public sealed partial class TypeScriptContext
     public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _initializer.GlobalCodeGenerators;
 
     /// <summary>
-    /// Gets a mutable list of <see cref="TSLocaleCultureSet"/>.
+    /// Gets a mutable list of <see cref="LocaleCultureSet"/>.
     /// Order matters: the final translation set is built from this list, a set can
     /// override any translation from previous ones.
     /// </summary>
-    public List<TSLocaleCultureSet> TSLocales => _tsLocales;
+    public List<LocaleCultureSet> TSLocales => _tsLocales;
+
+    /// <summary>
+    /// Gets the "/ck-gen-transform" container if the folder exists in
+    /// the <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/>.
+    /// </summary>
+    public IResourceContainer? CKGenTransform => _ckGenTransform;
 
     /// <summary>
     /// Relays the <see cref="TypeScriptRoot.BeforeCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
@@ -203,8 +217,8 @@ public sealed partial class TypeScriptContext
                     // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
                     && ResolveRegisteredTypes( monitor )
                     && GeneratePackageCode( monitor, _initializer.Packages, this )
-                    // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                     && GenerateTSLocaleSupport( monitor, this )
+                    // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                     && _tsRoot.GenerateCode( monitor );
         }
 
@@ -269,13 +283,41 @@ public sealed partial class TypeScriptContext
 
         static bool GenerateTSLocaleSupport( IActivityMonitor monitor, TypeScriptContext context )
         {
+            bool success = true;
             if( context.TSLocales.Count == 0 )
             {
                 monitor.Trace( "No ts-locale content to process." );
-                return true;
             }
+            else
+            {
+                IEnumerable<LocaleCultureSet> locales = context.TSLocales;
+                if( context.CKGenTransform != null )
+                {
+                    if( context.CKGenTransform.LoadLocales( monitor, context.BinPathConfiguration.ActiveCultures, out var appLocales, "ts-locales" ) )
+                    {
+                        if( appLocales != null ) locales = locales.Append( appLocales );
+                    }
+                    else
+                    {
+                        success = false;
+                    }
+                }
 
-            return true;
+                success &= LocaleCultureSet.CreateFinalSet( monitor, locales, out var finalSet );
+                if( success )
+                {
+                    Throw.DebugAssert( finalSet != null );
+                    var finalPath = context.BinPathConfiguration.TargetCKGenPath.AppendPart( "ts-locales" );
+                    Directory.CreateDirectory( finalPath );
+                    WriteFinalSet( finalPath, finalSet, withDefault: context.BinPathConfiguration.ActiveCultures.Contains( NormalizedCultureInfo.CodeDefault ) );
+                }
+            }
+            return success;
+
+            static void WriteFinalSet( NormalizedPath path, LocaleCultureSet final, bool withDefault )
+            {
+
+            }
         }
     }
 
