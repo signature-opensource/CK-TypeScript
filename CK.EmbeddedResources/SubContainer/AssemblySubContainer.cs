@@ -42,6 +42,13 @@ sealed class AssemblySubContainer : IResourceContainer
         return _assemblyResources.OpenResourceStream( resource.ResourceName ); 
     }
 
+    public void WriteStream( in ResourceLocator resource, Stream target )
+    {
+        resource.CheckContainer( this );
+        using var source = _assemblyResources.OpenResourceStream( resource.ResourceName );
+        source.CopyTo( target );
+    }
+
     public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => DynamicResourceContainer.DoGetResource( _prefix, this, _names.Span, localResourceName );
 
     public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )

@@ -34,14 +34,20 @@ public interface IResourceContainer
     string ResourcePrefix { get; }
 
     /// <summary>
-    /// Gets a resource content from a locator that must belong to this container.
+    /// Gets a resource content from a locator (that must belong to this container).
     /// <para>
-    /// If a stream cannot be obtained, a detailed <see cref="Exception"/> must be raised.
     /// </para>
     /// </summary>
     /// <param name="resource">The resource locator.</param>
     /// <returns>The resource's content stream.</returns>
     Stream GetStream( in ResourceLocator resource );
+
+    /// <summary>
+    /// Writes the the resource (that must belong to this container) to a stream.
+    /// </summary>
+    /// <param name="resource">The resource to write.</param>
+    /// <param name="target">The target stream.</param>
+    void WriteStream( in ResourceLocator resource, Stream target );
 
     /// <summary>
     /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false

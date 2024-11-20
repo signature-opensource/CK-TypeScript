@@ -65,11 +65,20 @@ public sealed class FileSystemResourceContainer : IResourceContainer
 
     /// <inheritdoc />
     public StringComparer NameComparer => StringComparer.Ordinal;
+
     /// <inheritdoc />
     public Stream GetStream( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return File.OpenRead( resource.ResourceName );
+    }
+
+    /// <inheritdoc />
+    public void WriteStream( in ResourceLocator resource, Stream target )
+    {
+        resource.CheckContainer( this );
+        using var source = File.OpenRead( resource.ResourceName );
+        source.CopyTo( target );
     }
 
     /// <inheritdoc />

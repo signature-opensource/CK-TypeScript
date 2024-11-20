@@ -91,13 +91,24 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     /// <summary>
     /// Gets the resource content.
-    /// If a stream cannot be obtained, a detailed <see cref="IOException"/> is raised.
+    /// See <see cref="IResourceContainer.GetStream(in ResourceLocator)"/>.
     /// </summary>
     /// <returns>The resource's content stream.</returns>
     public Stream GetStream()
     {
         Throw.CheckState( IsValid );
         return _container.GetStream( this );
+    }
+
+    /// <summary>
+    /// Writes the content of this resource to a stream.
+    /// See <see cref="IResourceContainer.WriteStream(ResourceLocator, Stream)"/>.
+    /// </summary>
+    /// <param name="target">The target stream.</param>
+    public void WriteStream( Stream target )
+    {
+        Throw.CheckState( IsValid );
+        _container.WriteStream( this, target );
     }
 
     /// <summary>

@@ -169,6 +169,24 @@ public sealed class DynamicResourceContainer : IResourceContainer
     }
 
     /// <inheritdoc />
+    public void WriteStream( in ResourceLocator resource, Stream target )
+    {
+        resource.CheckContainer( this );
+        int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.ResourceName, _names.Span );
+        Throw.DebugAssert( idx >= 0 );
+        var s = _streamStore[idx];
+        if( s is Action<Stream> writer )
+        {
+            writer( target );
+        }
+        else
+        {
+            using var source = ((Func<Stream>)s)();
+            source.CopyTo( target );
+        }
+    }
+
+    /// <inheritdoc />
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );

@@ -46,11 +46,26 @@ public abstract class BaseFile
     /// </summary>
     public ReadOnlySpan<char> Extension => Path.GetExtension( _name.AsSpan() );
 
+
     /// <summary>
-    /// Tries to provide the content of this file as a stream (that must be disposed once done with it).
+    /// Gets whether this file holds a stream (<see cref="GetStream()"/> and <see cref="WriteStream()"/> can be called)
+    /// or the content must be obtained by other methods specific to the actual type.
     /// </summary>
-    /// <returns>The content stream or null if the content must be obtained by other methods specific to the actual type.</returns>
-    public abstract Stream? TryGetContentStream();
+    public abstract bool HasStream { get; }
+
+    /// <summary>
+    /// Gets the content of this file as a stream (that must be disposed once done with it).
+    /// <see cref="HasStream"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </summary>
+    /// <returns>The content stream.</returns>
+    public abstract Stream GetStream();
+
+    /// <summary>
+    /// Writes the content of this file to the target.
+    /// <see cref="HasStream"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </summary>
+    /// <param name="target">The target stream to write to.</param>
+    public abstract void WriteStream( Stream target );
 
     /// <summary>
     /// Saves this file into a folder on the file system.

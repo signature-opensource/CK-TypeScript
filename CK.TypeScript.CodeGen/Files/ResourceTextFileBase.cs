@@ -43,10 +43,21 @@ public abstract class ResourceTextFileBase : TextFileBase, IResourceFile
     }
 
     /// <summary>
-    /// Returns the resource stream only if the content has not been set or already loaded.
+    /// Gets whether textual content has not been already loaded or has been set.
     /// </summary>
-    /// <returns>The resource stream or null if <see cref="GetCurrentText()"/> is available.</returns>
-    public override Stream? TryGetContentStream() => _content == null
-                                                        ? _locator.GetStream()
-                                                        : null;
+    public override bool HasStream => _content == null;
+
+    /// <inheritdoc />
+    public override Stream GetStream()
+    {
+        Throw.CheckState( HasStream );
+        return _locator.GetStream();
+    }
+
+    /// <inheritdoc />
+    public override void WriteStream( Stream target )
+    {
+        Throw.CheckState( HasStream );
+        _locator.WriteStream( target );
+    }
 }

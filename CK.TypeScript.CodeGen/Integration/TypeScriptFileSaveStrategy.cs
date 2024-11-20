@@ -107,7 +107,7 @@ public class TypeScriptFileSaveStrategy
     }
 
     /// <summary>
-    /// At this level simply writes the <see cref="BaseFile.TryGetContentStream()"/> or
+    /// At this level simply writes the <see cref="BaseFile.GetStream()"/> or
     /// the <see cref="TextFileBase.GetCurrentText()"/> and removes the <paramref name="filePath"/>
     /// from <see cref="CleanupFiles"/>.
     /// <para>
@@ -120,11 +120,10 @@ public class TypeScriptFileSaveStrategy
     public virtual void SaveFile( IActivityMonitor monitor, BaseFile file, NormalizedPath filePath )
     {
         monitor.Trace( $"Saving '{file.Name}'." );
-        using var stream = file.TryGetContentStream();
-        if( stream != null )
+        if( file.HasStream )
         {
             using var output = File.Create( filePath );
-            stream.CopyTo( output );
+            file.WriteStream( output );
         }
         else
         {

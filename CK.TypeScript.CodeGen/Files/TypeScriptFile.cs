@@ -57,10 +57,16 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
 
     /// <summary>
-    /// Always null. To retrieve the <see cref="Imports"/> and <see cref="Body"/> use <see cref="GetCurrentText()"/>.
+    /// Always false: the content of a TypeScriptFile is in memory (the <see cref="Imports"/> and the <see cref="Body"/>).
+    /// Use <see cref="GetCurrentText()"/> to retrieve the content.
     /// </summary>
-    /// <returns></returns>
-    public override Stream? TryGetContentStream() => null;
+    public override bool HasStream => false;
+
+    /// <inheritdoc />
+    public override Stream GetStream() => Throw.InvalidOperationException<Stream>();
+
+    /// <inheritdoc />
+    public override void WriteStream( Stream target ) => Throw.InvalidOperationException<Stream>();
 
     /// <summary>
     /// Overridden to compute and returns the concatenated <see cref="Imports"/> and <see cref="Body"/>.

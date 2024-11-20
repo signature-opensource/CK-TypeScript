@@ -53,6 +53,9 @@ public sealed class EmptyResourceContainer : IResourceContainer
     public Stream GetStream( in ResourceLocator resource ) => Throw.InvalidOperationException<Stream>();
 
     /// <inheritdoc />
+    public void WriteStream( in ResourceLocator resource, Stream target ) => Throw.InvalidOperationException();
+
+    /// <inheritdoc />
     public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => default;
 
     /// <inheritdoc />

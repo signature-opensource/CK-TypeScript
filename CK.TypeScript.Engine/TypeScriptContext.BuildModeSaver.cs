@@ -28,11 +28,10 @@ public sealed partial class TypeScriptContext
                 base.SaveFile( monitor, file, filePath );
                 return;
             }
-            using var stream = file.TryGetContentStream();
-            if( stream != null )
+            if( file.HasStream )
             {
-                using var fMem = (RecyclableMemoryStream)Util.RecyclableStreamManager.GetStream();
-                stream.CopyTo( fMem );
+                using var fMem = Util.RecyclableStreamManager.GetStream();
+                file.WriteStream( fMem );
                 if( !CheckEqual( filePath, fMem ) )
                 {
                     fMem.Position = 0;
