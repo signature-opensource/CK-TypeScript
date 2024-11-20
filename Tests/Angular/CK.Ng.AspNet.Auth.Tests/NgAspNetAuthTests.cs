@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
-using CK.Core;
 
 namespace CK.Ng.AspNet.Auth.Tests;
 

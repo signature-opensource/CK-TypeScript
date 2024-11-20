@@ -1,30 +1,24 @@
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.FileProviders.Physical;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using static CK.Core.AssemblyResources;
 
 namespace CK.Core;
 
 sealed class AssemblySubContainer : IResourceContainer
 {
-    readonly ReadOnlyMemory<string> _resourceNames;
+    readonly ReadOnlyMemory<string> _names;
     readonly AssemblyResources _assemblyResources;
     readonly string _prefix;
     readonly string _displayName;
-    IFileProvider? _fileProvider;
 
     internal AssemblySubContainer( AssemblyResources assemblyResources, string prefix, string displayName, ReadOnlyMemory<string> resourceNames )
     {
         _assemblyResources = assemblyResources;
         _prefix = prefix;
         _displayName = displayName;
-        _resourceNames = resourceNames;
+        _names = resourceNames;
     }
 
     internal AssemblySubContainer( AssemblyResources assemblyResources, string prefix, string? displayName, Type type, ReadOnlyMemory<string> resourceNames )
@@ -36,67 +30,51 @@ sealed class AssemblySubContainer : IResourceContainer
 
     public string DisplayName => _displayName;
 
-    public IFileProvider GetFileProvider() => _fileProvider ??= new FileProvider( _assemblyResources, _prefix, _resourceNames );
+    public IEnumerable<ResourceLocator> AllResources => MemoryMarshal.ToEnumerable( _names ).Select( p => new ResourceLocator( this, p ) );
 
-    public ResourceLocator GetResourceLocator( IFileInfo fileInfo )
-    {
-        return fileInfo is AssemblyResources.FileInfo f && f.FileProvider == _fileProvider
-                ? new ResourceLocator( this, f.Path )
-                : default;
-    }
-
-    public IEnumerable<ResourceLocator> AllResources
-    {
-        get
-        {
-            if( GetFileProvider() is FileProvider p )
-            {
-                for( int i = 0; i < p.ResourceNames.Length; ++i )
-                {
-                    yield return new ResourceLocator( this, p.ResourceNames.Span[i] );
-                }
-            }
-        }
-    }
-
-    public IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory )
-    {
-        if( directory is not DirectoryContents d || d.FileProvider != _fileProvider )
-        {
-            throw new ArgumentException( $"The provided directory is not from this '{DisplayName}'." );
-        }
-        return MemoryMarshal.ToEnumerable( d.ResourceNames ).Select( p => new ResourceLocator( this, p ) );
-    }
-
-    public StringComparer ResourceNameComparer => StringComparer.Ordinal;
+    public StringComparer NameComparer => StringComparer.Ordinal;
 
     public string ResourcePrefix => _prefix;
 
-    public Stream GetStream( ResourceLocator resource )
+    public Stream GetStream( in ResourceLocator resource )
     {
         Throw.CheckArgument( resource.IsValid && resource.Container == this );
         return _assemblyResources.OpenResourceStream( resource.ResourceName ); 
     }
 
-    public bool TryGetResource( ReadOnlySpan<char> localResourceName, out ResourceLocator locator )
+    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => DynamicResourceContainer.DoGetResource( _prefix, this, _names.Span, localResourceName );
+
+    public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )
     {
-        var name = String.Concat( _prefix.AsSpan(), localResourceName );
-        int idx = ImmutableOrdinalSortedStrings.IndexOf( name, _resourceNames.Span );
-        if( idx >= 0 )
-        {
-            locator = new ResourceLocator( this, name );
-            return true;
-        }
-        locator = default;
-        return false;
+        folder.CheckContainer( this );
+        return DynamicResourceContainer.DoGetResource( folder.FolderName, this, _names.Span, localResourceName );
     }
 
-    /// <inheritdoc />
-    public bool HasDirectory( ReadOnlySpan<char> localResourceName )
+    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => DynamicResourceContainer.DoGetFolder( _prefix, this, _names.Span, localFolderName );
+
+    public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName )
     {
-        var name = String.Concat( _prefix.AsSpan(), localResourceName );
-        if( name[name.Length - 1] != '/' ) name += '/';
-        return ImmutableOrdinalSortedStrings.IsPrefix( name, _resourceNames.Span ); ;
+        folder.CheckContainer( this );
+        return DynamicResourceContainer.DoGetFolder( folder.FolderName, this, _names.Span, localFolderName );
+    }
+
+    public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder ) => DynamicResourceContainer.DoGetAllResources( folder, this, _names );
+
+    public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder ) => DynamicResourceContainer.DoGetResources( folder, this, _names );
+
+    public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder ) => DynamicResourceContainer.DoGetFolders( folder, this, _names );
+
+    public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
+    {
+        folder.CheckContainer( this );
+        var s = folder.LocalFolderName.Span;
+        return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
+    }
+
+    public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
+    {
+        resource.CheckContainer( this );
+        return Path.GetFileName( resource.LocalResourceName.Span );
     }
 
     public override string ToString() =>_displayName;

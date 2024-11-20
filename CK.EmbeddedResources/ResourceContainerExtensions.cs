@@ -1,3 +1,5 @@
+using System;
+
 namespace CK.Core;
 
 /// <summary>
@@ -22,4 +24,57 @@ public static class ResourceContainerExtensions
         }
         return true;
     }
+
+    /// <summary>
+    /// Tries to get an existing resource.
+    /// </summary>
+    /// <param name="container">This container.</param>
+    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="locator">The resulting locator.</param>
+    /// <returns>True if the resource exists, false otherwise.</returns>
+    public static bool TryGetResource( this IResourceContainer container, ReadOnlySpan<char> localResourceName, out ResourceLocator locator )
+    {
+        locator = container.GetResource( localResourceName );
+        return locator.IsValid;
+    }
+
+    /// <summary>
+    /// Tries to get an existing folder.
+    /// </summary>
+    /// <param name="container">This container.</param>
+    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <param name="folder">The resulting folder.</param>
+    /// <returns>True if the folder exists, false otherwise.</returns>
+    public static bool TryGetFolder( this IResourceContainer container,  ReadOnlySpan<char> localFolderName, out ResourceFolder folder )
+    {
+        folder = container.GetFolder( localFolderName );
+        return folder.IsValid;
+    }
+
+    /// <summary>
+    /// Tries to get an existing resource in this folder.
+    /// </summary>
+    /// <param name="parentFolder">This folder.</param>
+    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="locator">The resulting locator.</param>
+    /// <returns>True if the resource exists, false otherwise.</returns>
+    public static bool TryGetResource( this ResourceFolder parentFolder, ReadOnlySpan<char> localResourceName, out ResourceLocator locator )
+    {
+        locator = parentFolder.GetResource( localResourceName );
+        return locator.IsValid;
+    }
+
+    /// <summary>
+    /// Tries to get an existing folder in this folder.
+    /// </summary>
+    /// <param name="folder">This folder.</param>
+    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <param name="folder">The resulting folder.</param>
+    /// <returns>True if the folder exists, false otherwise.</returns>
+    public static bool TryGetFolder( this ResourceFolder parentFolder,  ReadOnlySpan<char> localFolderName, out ResourceFolder folder )
+    {
+        folder = parentFolder.GetFolder( localFolderName );
+        return folder.IsValid;
+    }
+
 }

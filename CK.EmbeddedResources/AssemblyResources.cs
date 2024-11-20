@@ -1,4 +1,3 @@
-using Microsoft.Extensions.FileProviders;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -13,14 +12,12 @@ public sealed partial class AssemblyResources
     readonly Assembly _assembly;
     readonly ImmutableOrdinalSortedStrings _allResourceNames;
     readonly ReadOnlyMemory<string> _ckResourceNames;
-    DateTimeOffset _lastModified;
 
     internal AssemblyResources( Assembly a )
     {
         _assembly = a;
         _allResourceNames = ImmutableOrdinalSortedStrings.UnsafeCreate( a.GetManifestResourceNames(), mustSort: true );
         _ckResourceNames = _allResourceNames.GetPrefixedStrings( "ck@" );
-        _lastModified = Util.UtcMinValue;
     }
 
     /// <summary>
@@ -73,11 +70,11 @@ public sealed partial class AssemblyResources
     }
 
     /// <summary>
-    /// Creates a <see cref="IFileProvider"/>.
-    /// This returns a provider of all the "ck@" prefixed resources when <paramref name="subpath"/> is null or empty.
+    /// Creates a <see cref="IResourceContainer"/> on a sub path of the "ck@" embedded resources.
+    /// All the "ck@" prefixed resources can be handled when <paramref name="subpath"/> is empty.
     /// <para>
     /// If the path doesn't start with "ck@", the prefix is automatically added.
-    /// Path separator is '/' (using a '\' will fail to find the content).
+    /// Path separator is '/' (using a '\' will throw).
     /// It can be empty: all the <see cref="CKResourceNames"/> will be reachable.
     /// </para>
     /// </summary>
@@ -86,16 +83,16 @@ public sealed partial class AssemblyResources
     /// Should almost always end with "Res/" as it's the standard directory names that automatically
     /// embeds the "ck@" resources. 
     /// </param>
-    /// <returns>A file provider. May be <see cref="NullFileProvider"/>.</returns>
-    public IFileProvider CreateFileProvider( string? subpath = null )
+    /// <returns>A resource container. May be an <see cref="EmptyResourceContainer"/>.</returns>
+    public IResourceContainer CreateCKResourceContainer( string subpath, string displayName )
     {
+        if( _ckResourceNames.Length == 0 ) return new EmptyResourceContainer( displayName );
         if( string.IsNullOrEmpty( subpath ) )
         {
-            return _ckResourceNames.Length == 0
-                        ? EmptyResourceContainer.GeneratedCode.GetFileProvider()
-                        : new FileProvider( this, "ck@", _ckResourceNames );
+            return new AssemblySubContainer( this, "ck@", displayName, _ckResourceNames );
         }
-        Throw.CheckArgument( !subpath.Contains( '\\' ) );
+        Throw.CheckArgument( subpath.Contains( '\\' ) is false );
+
         bool needPrefix = !subpath.StartsWith( "ck@", StringComparison.Ordinal );
         bool needSuffix = subpath.Length > (needPrefix ? 3 : 0) && subpath[^1] != '/';
         if( needPrefix )
@@ -110,30 +107,8 @@ public sealed partial class AssemblyResources
         }
         var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( subpath, _ckResourceNames.Span );
         return len == 0
-                ? EmptyResourceContainer.GeneratedCode.GetFileProvider()
-                : new FileProvider( this, subpath, _ckResourceNames.Slice( idx, len ) );
-    }
-
-    DateTimeOffset GetLastModified()
-    {
-        if( _lastModified == Util.UtcMinValue )
-        {
-            var assemblyLocation = _assembly.Location;
-            if( !string.IsNullOrEmpty( assemblyLocation ) )
-            {
-                try
-                {
-                    _lastModified = File.GetLastWriteTimeUtc( assemblyLocation );
-                }
-                catch( PathTooLongException )
-                {
-                }
-                catch( UnauthorizedAccessException )
-                {
-                }
-            }
-        }
-        return _lastModified;
+                ? new EmptyResourceContainer( displayName )
+                : new AssemblySubContainer( this, subpath, displayName, _ckResourceNames.Slice( idx, len ) );
     }
 
     /// <summary>
@@ -146,7 +121,7 @@ public sealed partial class AssemblyResources
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
-    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "Assemby embedded resources of 'type'".</param>
+    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
     public IResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor, Type type, string? containerDisplayName = null )
     {
         return GetCallerInfo( monitor, type, type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(), out var callerPath, out var callerSource )
@@ -209,7 +184,7 @@ public sealed partial class AssemblyResources
     /// <param name="callerFilePath">The caller file path. This is required: when null or empty, an error is logged and an invalid container is returned.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>. (This is used for logging).</param>
     /// <param name="attributeName">The attribute name that declares the resource (used for logging).</param>
-    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "Assemby embedded resources of 'type'".</param>
+    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
     public IResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
                                                                string? callerFilePath,

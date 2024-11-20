@@ -1,19 +1,19 @@
 using System;
 using System.IO;
-using System.Text;
 
 namespace CK.Core;
 
 /// <summary>
-/// Locator for a resource from a type and a resource name in a <see cref="IResourceContainer"/>.
+/// Locator for a resource in a <see cref="IResourceContainer"/>.
 /// <para>
-/// This is a record struct that benefits of the ToString (PrintMembers) and equality code generation but with
-/// an explicit constructor to handle the only <c>default</c> value that is <see cref="IsValid"/> false.
-/// The <c>default</c> value makes <see cref="Nullable{T}"/> useless for this type.
+/// The <c>default</c> value is <see cref="IsValid"/> false: this makes <see cref="Nullable{T}"/> useless for this type.
 /// </para>
 /// </summary>
 public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 {
+    readonly IResourceContainer _container;
+    readonly string _resourceName;
+
     /// <summary>
     /// Initializes a new resource locator.
     /// </summary>
@@ -23,8 +23,8 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     {
         Throw.CheckNotNullArgument( container );
         Throw.CheckNotNullOrWhiteSpaceArgument( fullResourceName );
-        Container = container;
-        ResourceName = fullResourceName;
+        _container = container;
+        _resourceName = fullResourceName;
     }
 
     /// <summary>
@@ -35,12 +35,12 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// </para>
     /// Only the <c>default</c> of this type is invalid.
     /// </summary>
-    public bool IsValid => Container != null;
+    public bool IsValid => _container != null;
 
     /// <summary>
     /// Gets the type resources that contains this resource.
     /// </summary>
-    public IResourceContainer Container { get; }
+    public IResourceContainer Container => _container;
 
     /// <summary>
     /// Gets the resource name in the <see cref="Container"/>.
@@ -48,23 +48,45 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// This is the full resource name that includes the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </para>
     /// </summary>
-    public string ResourceName { get; }
+    public string ResourceName => _resourceName;
 
     /// <summary>
     /// Gets the resource name without the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </summary>
-    public ReadOnlyMemory<char> LocalResourceName => ResourceName.AsMemory( Container.ResourcePrefix.Length.. );
+    public ReadOnlyMemory<char> LocalResourceName
+    {
+        get
+        {
+            Throw.CheckState( IsValid );
+            return _resourceName.AsMemory( _container.ResourcePrefix.Length.. );
+        }
+    }
+
+    /// <summary>
+    /// Gets the name of this resource.
+    /// <para>
+    /// This is a simple relay to <see cref="IResourceContainer.GetResourceName(ResourceLocator)"/>.
+    /// </para>
+    /// </summary>
+    public ReadOnlySpan<char> Name
+    {
+        get
+        {
+            Throw.CheckState( IsValid );
+            return _container.GetResourceName( this );
+        }
+    }
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="ResourceName"/>
-    /// must be equal for the <see cref="IResourceContainer.ResourceNameComparer"/>.
+    /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
     /// </summary>
     /// <param name="other">The other locator.</param>
     /// <returns>True if the resources are the same.</returns>
     public bool Equals( ResourceLocator other )
     {
-        return Container == other.Container
-               && (!IsValid || Container.ResourceNameComparer.Equals( ResourceName, other.ResourceName ));
+        return _container == other._container
+               && (!IsValid || _container.NameComparer.Equals( _resourceName, other._resourceName ));
     }
 
     /// <summary>
@@ -75,18 +97,18 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public Stream GetStream()
     {
         Throw.CheckState( IsValid );
-        return Container.GetStream( this );
+        return _container.GetStream( this );
     }
 
     /// <summary>
-    /// Gets "{ ResourceName: "...", Container: "..." }" when <see cref="IsValid"/> is true
+    /// Gets "'LocalResourceName' in 'Container'" when <see cref="IsValid"/> is true
     /// or the empty string when IsValid is false.
     /// </summary>
     /// <returns></returns>
     public override string ToString()
     {
         return IsValid
-                ? $"{{ ResourceName: \"{ResourceName}\", Container: \"{Container.DisplayName}\" }}"
+                ? $"'{LocalResourceName}' in '{_container.DisplayName}'"
                 : "";
     }
 
@@ -97,8 +119,19 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public static bool operator !=( ResourceLocator left, ResourceLocator right ) => !(left == right);
 
     public override int GetHashCode() => IsValid
-                                            ? HashCode.Combine( Container.GetHashCode(), Container.ResourceNameComparer.GetHashCode( ResourceName ) )
+                                            ? HashCode.Combine( Container.GetHashCode(), _container.NameComparer.GetHashCode( ResourceName ) )
                                             : 0;
 
+    internal void CheckContainer( IResourceContainer expectedContainer )
+    {
+        if( _container != expectedContainer )
+        {
+            if( !IsValid )
+            {
+                throw new ArgumentException( $"The resource is invalid." );
+            }
+            throw new ArgumentException( $"The resource {ToString()} doesn't belong to this '{expectedContainer.DisplayName}'." );
+        }
+    }
 
 }

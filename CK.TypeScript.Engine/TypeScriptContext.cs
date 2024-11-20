@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace CK.Setup;
 
@@ -293,7 +294,11 @@ public sealed partial class TypeScriptContext
                 IEnumerable<LocaleCultureSet> locales = context.TSLocales;
                 if( context.CKGenTransform != null )
                 {
-                    if( context.CKGenTransform.LoadLocales( monitor, context.BinPathConfiguration.ActiveCultures, out var appLocales, "ts-locales" ) )
+                    if( context.CKGenTransform.LoadLocales( monitor,
+                                                            context.BinPathConfiguration.ActiveCultures,
+                                                            out var appLocales,
+                                                            "ts-locales",
+                                                            isOverrideFolder: true ) )
                     {
                         if( appLocales != null ) locales = locales.Append( appLocales );
                     }
@@ -307,16 +312,32 @@ public sealed partial class TypeScriptContext
                 if( success )
                 {
                     Throw.DebugAssert( finalSet != null );
-                    var finalPath = context.BinPathConfiguration.TargetCKGenPath.AppendPart( "ts-locales" );
-                    Directory.CreateDirectory( finalPath );
-                    WriteFinalSet( finalPath, finalSet, withDefault: context.BinPathConfiguration.ActiveCultures.Contains( NormalizedCultureInfo.CodeDefault ) );
+                    var localeFolder = context.Root.Root.FindOrCreateFolder( "ts-locales" );
+                    WriteFinalSet( monitor, localeFolder, finalSet );
                 }
             }
             return success;
 
-            static void WriteFinalSet( NormalizedPath path, LocaleCultureSet final, bool withDefault )
+            static void WriteFinalSet( IActivityMonitor monitor, TypeScriptFolder localeFolder, FinalLocaleCultureSet final )
             {
-
+                final.PropagateFallbackTranslations( monitor );
+                var resources = new DynamicResourceContainer( "FinalTSLocales" );
+                foreach( var set in final.Root.FlattenedAll )
+                {
+                    // Use the CultureInfo to have the "correct" casing for culture names.
+                    var fileName = $"{set.Culture.Culture.Name}.json";
+                    var res = resources.AddWriter( fileName, stream =>
+                    {
+                        using var w = new Utf8JsonWriter( stream, new JsonWriterOptions() { Indented = true } );
+                        w.WriteStartObject();
+                        foreach( var t in set.Translations )
+                        {
+                            w.WriteString( t.Key, t.Value.Text );
+                        }
+                        w.WriteEndObject();
+                    } );
+                    localeFolder.CreateResourceFile( res, fileName );
+                }
             }
         }
     }

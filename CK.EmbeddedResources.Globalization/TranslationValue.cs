@@ -1,6 +1,3 @@
-using CK.Core;
-using System;
-
 namespace CK.Core;
 
 /// <summary>
@@ -12,7 +9,7 @@ namespace CK.Core;
 public readonly struct TranslationValue : IEquatable<TranslationValue>
 {
     readonly string _text;
-    readonly IResourceContainer _origin;
+    readonly ResourceLocator _origin;
     readonly bool _isOverride;
 
     /// <summary>
@@ -23,7 +20,7 @@ public readonly struct TranslationValue : IEquatable<TranslationValue>
     /// <summary>
     /// Gets the origin of the translation.
     /// </summary>
-    public IResourceContainer Origin => _origin;
+    public ResourceLocator Origin => _origin;
 
     /// <summary>
     /// Gets whether this translation overrides an existing translation provided by another component.
@@ -36,7 +33,7 @@ public readonly struct TranslationValue : IEquatable<TranslationValue>
     /// <param name="text">The translation text.</param>
     /// <param name="origin">The origin.</param>
     /// <param name="isOverride">Whether this translation overrides an existing translation provided by another component</param>
-    public TranslationValue( string text, IResourceContainer origin, bool isOverride )
+    public TranslationValue( string text, ResourceLocator origin, bool isOverride )
     {
         _text = text;
         _origin = origin;

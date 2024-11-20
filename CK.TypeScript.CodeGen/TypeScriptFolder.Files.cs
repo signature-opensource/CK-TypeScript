@@ -113,7 +113,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// Creates a file from a resource in this folder or a subordinated folder.
     /// The result type depends on the path extension.
     /// <para>
-    /// Even if this method is named Create, it allows creation from the exact same reource locator (same type, same resource name)
+    /// Even if this method is named Create, it allows creation from the exact same resource locator (same container, same resource name)
     /// to enable multile glob resources registrations and individual ones to work together (individual registration '.ts' can declare types).
     /// </para>
     /// </summary>
@@ -130,7 +130,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         {
             if( f is TypeScriptFile )
             {
-                throw new InvalidOperationException( $"Unable fo create '{path}' from resource '{locator}'. This file is a TypeScript generated file." );
+                throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file is a TypeScript generated file." );
             }
             Throw.DebugAssert( "TypeScript is the only type of file that may not come from a resource.", f is IResourceFile );
             // See comments!
@@ -139,7 +139,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
             {
                 return f;
             }
-            throw new InvalidOperationException( $"Unable fo create '{path}' from resource '{locator}'. This file already comes from '{rF.Locator}'." );
+            throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file already comes from {rF.Locator}." );
         }
         CheckCreateLocalName( name, isFolder: false );
         f = BaseFile.CreateResourceFile( folder, name, in locator );

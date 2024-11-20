@@ -1,8 +1,6 @@
-using CK.Core;
 using CK.Setup;
 using System;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace CK.TypeScript;
 

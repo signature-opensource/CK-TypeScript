@@ -1,25 +1,16 @@
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.FileProviders.Internal;
-using Microsoft.Extensions.FileProviders.Physical;
-using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
 namespace CK.Core;
 
 /// <summary>
 /// File system implementation of a <see cref="IResourceContainer"/>.
-/// This is a simple wrapper around a <see cref="PhysicalFileProvider"/> that does the hard job.
 /// </summary>
-public sealed class FileSystemResourceContainer : IResourceContainer, IFileProvider
+public sealed class FileSystemResourceContainer : IResourceContainer
 {
     readonly string _displayName;
     readonly string _root;
-    readonly string _normalizedRoot;
 
     /// <summary>
     /// Iniitalizes a new <see cref="FileSystemResourceContainer"/>.
@@ -32,122 +23,149 @@ public sealed class FileSystemResourceContainer : IResourceContainer, IFileProvi
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
         Throw.CheckArgument( Path.IsPathRooted( root ) );
         _displayName = displayName;
-        _root = Path.GetFullPath( root );
-        _normalizedRoot = Normalize( _root );
-    }
-
-    static string Normalize( string path )
-    {
-        return Path.DirectorySeparatorChar != '/'
-                ? path.Replace( '\\', '/' )
-                : path;
+        _root = Path.GetFullPath( root ) + Path.DirectorySeparatorChar;
     }
 
     /// <summary>
-    /// Always true.
+    /// Gets whether the <see cref="ResourcePrefix"/> that is the root directory exists on the file system.
     /// </summary>
-    public bool IsValid => true;
+    public bool IsValid => Directory.Exists( _root );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// This is the root directory ending with a <see cref="Path.DirectorySeparatorChar"/>.
+    /// </remarks>
+    public string ResourcePrefix => _root;
+
 
     /// <inheritdoc />
     public string DisplayName => _displayName;
-
-    /// <inheritdoc />
-    public IFileProvider GetFileProvider() => this;
-
-    /// <inheritdoc />
-    public ResourceLocator GetResourceLocator( IFileInfo fileInfo )
-    {
-        return fileInfo is PhysicalFileInfo f && f.PhysicalPath.StartsWith( _fileProvider.Root, StringComparison.Ordinal )
-                ? new ResourceLocator( this, Normalize( f.PhysicalPath ) )
-                : default;
-    }
 
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources
     {
         get
         {
-            foreach( var f in Directory.EnumerateFiles( _fileProvider.Root, "*", SearchOption.AllDirectories ) )
+            foreach( var f in Directory.EnumerateFiles( _root, "*", SearchOption.AllDirectories ) )
             {
-                yield return new ResourceLocator( this, Normalize( f ) );
+                yield return new ResourceLocator( this, f );
             }
         }
     }
 
     /// <inheritdoc />
-    public IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory )
+    public IEnumerable<ResourceLocator> GetAllResource( ResourceFolder folder )
     {
-        if( directory is not PhysicalDirectoryContents d || d.PhysicalPath == null || !d.PhysicalPath.StartsWith( _fileProvider.Root ) )
+        folder.CheckContainer( this );
+        foreach( var f in Directory.EnumerateFiles( folder.FolderName, "*", SearchOption.AllDirectories ) )
         {
-            throw new ArgumentException( $"The provided directory is not from this '{DisplayName}'." );
-        }
-        foreach( var f in Directory.EnumerateFiles( d.PhysicalPath ) )
-        {
-            yield return new ResourceLocator( this, Normalize( f ) );
+            yield return new ResourceLocator( this, f );
         }
     }
 
-    /// <summary>
-    /// Gets the <see cref="StringComparer.Ordinal"/>.
-    /// <para>
-    /// This is a mess (see https://github.com/dotnet/runtime/issues/35128).
-    /// </summary>
-    public StringComparer ResourceNameComparer => StringComparer.Ordinal;
-
-    /// <summary>
-    /// Gets the <see cref="PhysicalFileProvider.Root"/> but with '/' instead of '\'.
-    /// <para>
-    /// This path ends with a '/'.
-    /// </para>
-    /// </summary>
-    public string ResourcePrefix => _resourcePrefix;
-
     /// <inheritdoc />
-    public Stream GetStream( ResourceLocator resource )
+    public StringComparer NameComparer => StringComparer.Ordinal;
+    /// <inheritdoc />
+    public Stream GetStream( in ResourceLocator resource )
     {
-        Throw.CheckArgument( resource.IsValid && resource.Container == this );
+        resource.CheckContainer( this );
         return File.OpenRead( resource.ResourceName );
     }
 
     /// <inheritdoc />
-    public bool TryGetResource( ReadOnlySpan<char> localResourceName, out ResourceLocator locator )
-    {
-        var name = String.Concat( _fileProvider.Root.AsSpan(), localResourceName );
-        if( File.Exists( name ) )
-        {
-            locator = new ResourceLocator( this, Normalize( name ) );
-            return true;
-        }
-        locator = default;
-        return false;
-    }
+    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => DoGetResource( _root, localResourceName );
 
     /// <inheritdoc />
-    public bool HasDirectory( ReadOnlySpan<char> localResourceName )
+    public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )
+    {
+        folder.CheckContainer( this );
+        return DoGetResource( folder.FolderName, localResourceName );
+    }
+
+    ResourceLocator DoGetResource( string prefix, ReadOnlySpan<char> localResourceName )
     {
         if( localResourceName.Length > 0 && (localResourceName[0] == '/' || localResourceName[0] == '\\') )
         {
-            localResourceName = localResourceName.Slice( 0, localResourceName.Length - 1 );
+            localResourceName = localResourceName.Slice( 1 );
         }
-        var name = String.Concat( _fileProvider.Root.AsSpan(), localResourceName );
-        return Directory.Exists( name );
+        var name = String.Concat( prefix, localResourceName );
+        if( File.Exists( name ) )
+        {
+            return new ResourceLocator( this, name.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar ) );
+        }
+        return default;
+    }
+
+    /// <inheritdoc />
+    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => DoGetFolder( _root, localFolderName );
+
+    /// <inheritdoc />
+    public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName )
+    {
+        folder.CheckContainer( this );
+        return DoGetFolder( folder.FolderName, localFolderName );
+    }
+
+    private ResourceFolder DoGetFolder( string prefix, ReadOnlySpan<char> localFolderName )
+    {
+        if( localFolderName.Length > 0 && (localFolderName[0] == '/' || localFolderName[0] == '\\') )
+        {
+            localFolderName = localFolderName.Slice( 1 );
+        }
+        var name = String.Concat( prefix, localFolderName );
+        if( Directory.Exists( name ) )
+        {
+            return new ResourceFolder( this, name.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar ) + Path.DirectorySeparatorChar );
+        }
+        return default;
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder )
+    {
+        folder.CheckContainer( this );
+        foreach( var f in Directory.EnumerateFiles( folder.FolderName, "*", SearchOption.AllDirectories ) )
+        {
+            yield return new ResourceLocator( this, f );
+        }
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder )
+    {
+        folder.CheckContainer( this );
+        foreach( var f in Directory.EnumerateFiles( folder.FolderName ) )
+        {
+            yield return new ResourceLocator( this, f );
+        }
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder )
+    {
+        folder.CheckContainer( this );
+        foreach( var f in Directory.EnumerateDirectories( folder.FolderName ) )
+        {
+            Throw.DebugAssert( f[f.Length - 1] != Path.DirectorySeparatorChar );
+            yield return new ResourceFolder( this, f + Path.DirectorySeparatorChar );
+        }
+    }
+
+    /// <inheritdoc />
+    public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
+    {
+        folder.CheckContainer( this );
+        var s = folder.LocalFolderName.Span;
+        return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
+    }
+
+    /// <inheritdoc />
+    public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
+    {
+        resource.CheckContainer( this );
+        return Path.GetFileName( resource.LocalResourceName.Span );
     }
 
     /// <inheritdoc />
     public override string ToString() => _displayName;
-
-    IFileInfo IFileProvider.GetFileInfo( string subpath )
-    {
-        throw new NotImplementedException();
-    }
-
-    IDirectoryContents IFileProvider.GetDirectoryContents( string subpath )
-    {
-        throw new NotImplementedException();
-    }
-
-    IChangeToken IFileProvider.Watch( string filter )
-    {
-        throw new NotImplementedException();
-    }
 }

@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CK.Core;
 
@@ -15,6 +9,9 @@ namespace CK.Core;
 /// The hierarchy is under control of the <see cref="NormalizedCultureInfo"/> trees, itself
 /// under control of the <see cref="System.Globalization.CultureInfo.Parent"/> structure.
 /// </para>
+/// <para>
+/// Even if this can be created manually, <see cref="ResourceContainerGlobalizationExtension.LoadLocales"/> do the hard job.
+/// </para>
 /// </summary>
 public sealed partial class LocaleCultureSet
 {
@@ -22,6 +19,24 @@ public sealed partial class LocaleCultureSet
     readonly Core.ResourceLocator _origin;
     Dictionary<string, TranslationValue>? _translations;
     List<LocaleCultureSet>? _children;
+
+    /// <summary>
+    /// Copy constructor. This does a deep copy of the <paramref name="set"/>.
+    /// </summary>
+    /// <param name="set">The set to copy.</param>
+    public LocaleCultureSet( LocaleCultureSet set )
+    {
+        _culture = set._culture;
+        _origin = set._origin;
+        if( set._translations != null )
+        {
+            _translations = new Dictionary<string, TranslationValue>( set._translations );
+        }
+        if( set._children != null )
+        {
+            _children = new List<LocaleCultureSet>( set._children.Select( s => new LocaleCultureSet( s ) ) );
+        }
+    }
 
     public LocaleCultureSet( Core.ResourceLocator origin, NormalizedCultureInfo c )
         : this( origin, c, null )
@@ -36,7 +51,12 @@ public sealed partial class LocaleCultureSet
     }
 
     /// <summary>
-    /// Gets the translations.
+    /// Gets whether at least one translation exists (without allocating an empty <see cref="Translations"/>).
+    /// </summary>
+    public bool HasTranslations => _translations != null && _translations.Count > 0;
+
+    /// <summary>
+    /// Gets the mutable translations.
     /// </summary>
     public Dictionary<string, TranslationValue> Translations => _translations ??= new Dictionary<string, TranslationValue>();
 
@@ -56,22 +76,54 @@ public sealed partial class LocaleCultureSet
     public IEnumerable<LocaleCultureSet> Children => _children ?? Enumerable.Empty<LocaleCultureSet>();
 
     /// <summary>
+    /// Gets all the culture sets, starting with this one (depth-first traversal).
+    /// </summary>
+    public IEnumerable<LocaleCultureSet> FlattenedAll
+    {
+        get
+        {
+            yield return this;
+            if( _children != null )
+            {
+                foreach( var child in _children )
+                {
+                    foreach( var c in child.FlattenedAll )
+                    {
+                        yield return c;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Tries to create a unified set of resources from multiple sets. Order matters: first set values can be overridden
     /// by subsequent ones.
+    /// <para>
+    /// The <see cref="FinalLocaleCultureSet.Root"/>, as opposed to sets created by <see cref="ResourceContainerGlobalizationExtension.LoadLocales"/>
+    /// is compact: parent cultures, even with no translation, always exist: if only "fr-FR" resources exist, the final
+    /// root set will have a "fr" set with no translation that will contain the "fr-FR" in its <see cref="Children"/>.
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="locales">The list of locales to process.</param>
     /// <param name="finalSet">The resulting final set.</param>
     /// <returns>True on success, false on error.</returns>
-    public static bool CreateFinalSet( IActivityMonitor monitor, IEnumerable<LocaleCultureSet> locales, [NotNullWhen(true)]out LocaleCultureSet? finalSet )
+    public static bool CreateFinalSet( IActivityMonitor monitor, IEnumerable<LocaleCultureSet> locales, [NotNullWhen(true)]out FinalLocaleCultureSet? finalSet )
     {
         bool success = true;
-        finalSet = new LocaleCultureSet( new Core.ResourceLocator( EmptyResourceContainer.GeneratedCode, "FinalLocales" ), NormalizedCultureInfo.CodeDefault );
+        var f = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.GeneratedCode, "FinalLocales" ), NormalizedCultureInfo.CodeDefault );
         foreach( var loc in locales )
         {
-            success &= finalSet.MergeWith( monitor, loc );
+            success &= f.FinalMergeWith( monitor, loc );
         }
-        return success;
+        if( success )
+        {
+            finalSet = new FinalLocaleCultureSet( f );
+            return true;
+        }
+        finalSet = null;
+        return false;
     }
 
     internal void AddSpecific( LocaleCultureSet specificSet )
@@ -105,62 +157,23 @@ public sealed partial class LocaleCultureSet
         return null;
     }
 
-    // Quick & Dirty implementation: as this is done at the end of process, we lift the content
-    // instead of creating intermediate dictionaries and mutate them.
-    bool MergeWith( IActivityMonitor monitor, LocaleCultureSet above )
+    internal bool Remove( LocaleCultureSet s )
     {
-        bool success = true;
-        if( _translations == null || _translations.Count == 0 )
+        if( _children != null )
         {
-            _translations = above._translations;
-        }
-        else if( above._translations != null && above._translations.Count > 0 )
-        {
-            success &= MergeTranslations( monitor, _translations, above._translations );
-        }
-        if( above._children != null )
-        {
-            if( _children == null )
+            if( _children.Remove( s ) )
             {
-                _children = above._children;
-            }
-            else
-            {
-                foreach( var a in above._children )
+                if( s._children != null )
                 {
-                    var mine = Find( a._culture );
-                    if( mine != null )
-                    {
-                        success &= mine.MergeWith( monitor, a );
-                    }
-                    else
-                    {
-                        var mineParent = FindClosest( a._culture );
-                        if( mineParent != null )
-                        {
-                            mineParent.AddSpecific( a );
-                        }
-                        else
-                        {
-                            _children.Add( a );
-                        }
-                    }
+                    _children.AddRange( s._children );
                 }
+                return true;
             }
-        }
-        return success;
-
-
-        static bool MergeTranslations( IActivityMonitor monitor,
-                                       Dictionary<string, TranslationValue> target,
-                                       Dictionary<string, TranslationValue> above )
-        {
-            foreach( var kv in above )
+            foreach( var child in _children )
             {
-                
+                if( child.Remove( s ) ) return true;
             }
-            return false;
         }
+        return false;
     }
-
 }

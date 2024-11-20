@@ -67,10 +67,14 @@ public readonly struct ImmutableOrdinalSortedStrings
     public bool IsValid => !All.IsDefault;
 
     /// <summary>
-    /// Gets the index of the string in <see cref="All"/> or -1 if not found.
+    /// Gets the index of the string in <see cref="All"/> or a negative
+    /// value if not found.
     /// </summary>
     /// <param name="name">Name to search.</param>
-    /// <returns>The resulting index or -1 if not found.</returns>
+    /// <returns>
+    /// A zero or positive index when found, or a negative number that is the bitwise complement
+    /// of the potential insertion index if not found.
+    /// </returns>
     public int IndexOf( string name )
     {
         Throw.CheckNotNullArgument( name );
@@ -90,11 +94,7 @@ public readonly struct ImmutableOrdinalSortedStrings
         }
     }
 
-    internal static int IndexOf( string name, ReadOnlySpan<string> sAll )
-    {
-        int idx = sAll.BinarySearch( new Finder( name ) );
-        return idx < 0 ? -1 : idx;
-    }
+    internal static int IndexOf( string name, ReadOnlySpan<string> sAll ) => sAll.BinarySearch( new Finder( name ) );
 
     readonly struct BegFinder : IComparable<string>
     {

@@ -1,24 +1,18 @@
-using Microsoft.Extensions.FileProviders;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace CK.Core;
 
 /// <summary>
-/// Abstract resource container. Its goal is to handle <see cref="ResourceLocator"/> and
-/// to support <see cref="IFileProvider"/> abstraction.
+/// Abstract resource container. Its goal is to handle <see cref="ResourceFolder"/> and <see cref="ResourceLocator"/>.
 /// <para>
 /// An <see cref="AssemblyResources"/> is not a <see cref="IResourceContainer"/> (because we cannot know the
-/// path separator to use for all the resources) but it can create subordinate containers on the "ck@" prefixed resources
-/// (that uses '/' as the path separator) thanks to <see cref="AssemblyResources.CreateResourcesContainerForType(CK.Core.IActivityMonitor, Type, string?)"/>.
+/// folder separator to use for all the resources) but it can create subordinate containers on the "ck@" prefixed resources
+/// (that uses '/' as the folder separator) thanks to <see cref="AssemblyResources.CreateResourcesContainerForType(IActivityMonitor, Type, string?)"/>.
 /// </para>
 /// <para>
-/// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories.
+/// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories and files.
 /// </para>
 /// </summary>
 public interface IResourceContainer
@@ -40,70 +34,100 @@ public interface IResourceContainer
     string ResourcePrefix { get; }
 
     /// <summary>
-    /// Gets a resource content.
+    /// Gets a resource content from a locator that must belong to this container.
     /// <para>
-    /// If a stream cannot be obtained, a detailed <see cref="IOException"/> is raised.
+    /// If a stream cannot be obtained, a detailed <see cref="Exception"/> must be raised.
     /// </para>
     /// </summary>
-    /// <param name="resourceName">The resource name.</param>
+    /// <param name="resource">The resource locator.</param>
     /// <returns>The resource's content stream.</returns>
-    Stream GetStream( ResourceLocator resource );
+    Stream GetStream( in ResourceLocator resource );
 
     /// <summary>
-    /// Tries to get an existing resource.
+    /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false
+    /// if the resource doesn't exist.
     /// </summary>
-    /// <param name="localResourceName">The local resource name.</param>
-    /// <param name="locator">The resulting locator.</param>
-    /// <returns>True if the resource exists, false otherwise.</returns>
-    bool TryGetResource( ReadOnlySpan<char> localResourceName, out ResourceLocator locator );
+    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <returns>The resource locator that may not be valid.</returns>
+    ResourceLocator GetResource( ReadOnlySpan<char> localResourceName );
 
     /// <summary>
-    /// Gets a <see cref="ResourceLocator"/> from a <see cref="IFileInfo"/> that must have been created
-    /// from this <see cref="GetFileProvider()"/> otherwise the returned <see cref="ResourceLocator.IsValid"/> is false.
+    /// Gets an existing resource in a <paramref name="folder"/> or a locator with <see cref="ResourceLocator.IsValid"/> false
+    /// if the resource doesn't exist.
     /// </summary>
-    /// <param name="fileInfo">The file info.</param>
-    /// <returns>The resource locator (<see cref="ResourceLocator.IsValid"/> may be false).</returns>
-    ResourceLocator GetResourceLocator( IFileInfo fileInfo );
+    /// <param name="folder">The parent folder.</param>
+    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <returns>The resource locator that may not be valid.</returns>
+    ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName );
 
     /// <summary>
-    /// Gets all the existing <see cref="ResourceLocator"/>.
+    /// Gets an existing folder or a ResourceFolder with <see cref="ResourceLocator.IsValid"/> false
+    /// if the folder doesn't exist.
+    /// </summary>
+    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <returns>The resource folder that may not be valid.</returns>
+    ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName );
+
+    /// <summary>
+    /// Gets an existing folder in a <paramref name="folder"/> or a ResourceFolder with <see cref="ResourceLocator.IsValid"/> false
+    /// if the folder doesn't exist.
+    /// </summary>
+    /// <param name="folder">The parent folder.</param>
+    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <returns>The resource folder that may not be valid.</returns>
+    ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName );
+
+    /// <summary>
+    /// Gets all the existing <see cref="ResourceLocator"/> regardless of any folder.
+    /// To be used when you don't care about folders and want a direct access to the resources.
     /// </summary>
     IEnumerable<ResourceLocator> AllResources { get; }
 
-    // Missing a container.GetAllResourcesFrom( IDirectoryContents ) when we don't care about folders and want a
-    // direct access to the items.
+    /// <summary>
+    /// Gets the all the resources contained in <paramref name="folder"/> (that must belong to this container),
+    /// regardless of any subordinated folders.
+    /// To be used when you don't care about folders and want a direct access to the resources.
+    /// </summary>
+    /// <param name="folder">The resource folder for which all resources must be enumerated.</param>
+    /// <returns>All the resources of the folder.</returns>
+    IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder );
 
     /// <summary>
-    /// Gets the flattened resources from a directory (that must be issued by this <see cref="GetFileProvider()"/>).
-    /// To be used when you don't care about folders and want a direct access to the items.
-    /// <para>
-    /// Depending on the actual implementation, this can be much more efficient than recursively enumerating <see cref="IFileInfo"/>.
-    /// </para>
+    /// Gets the resources contained in a folder (that must belong to this container).
     /// </summary>
-    /// <param name="directory"></param>
-    /// <returns></returns>
-    IEnumerable<ResourceLocator> GetAllResourceLocatorsFrom( IDirectoryContents directory );
+    /// <param name="folder">The parent resource folder.</param>
+    /// <returns>The resources that this folder contains.</returns>
+    IEnumerable<ResourceLocator> GetResources( ResourceFolder folder );
 
     /// <summary>
-    /// Creates a <see cref="IFileProvider"/> on the resources.
+    /// Gets the direct children folders contained in <paramref name="folder"/> (that must belong to this container).
     /// </summary>
-    /// <returns>A file provider.</returns>
-    IFileProvider GetFileProvider();
-
-    /// <summary>
-    /// Checks whether a directory exists without necessarily using the <see cref="GetFileProvider()"/>.
-    /// <para>
-    /// For some containers, this can be a welcome optimization.
-    /// </para>
-    /// </summary>
-    /// <param name="localResourceName">The local directory name to lookup.</param>
-    /// <returns>True if this container has the directory.</returns>
-    bool HasDirectory( ReadOnlySpan<char> localResourceName );
+    /// <param name="folder">The parent resource folder.</param>
+    /// <returns>The direct children folders.</returns>
+    IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder );
 
     /// <summary>
     /// Gets the string comparer to use for the resource names.
     /// </summary>
-    StringComparer ResourceNameComparer { get; }
+    StringComparer NameComparer { get; }
+
+    /// <summary>
+    /// Gets the name of a folder (that must belong to this container)
+    /// without any parent folder related information. May be empty for some
+    /// resources of some container implementations.
+    /// </summary>
+    /// <param name="folder">A folder.</param>
+    /// <returns>The name of the folder.</returns>
+    ReadOnlySpan<char> GetFolderName( ResourceFolder folder );
+
+    /// <summary>
+    /// Gets the name of a resource (that must belong to this container)
+    /// without any folder related information. May be empty for some
+    /// resources of some container implementations.
+    /// </summary>
+    /// <param name="folder">A folder.</param>
+    /// <returns>The name of the resource.</returns>
+    ReadOnlySpan<char> GetResourceName( ResourceLocator resource );
 
     /// <summary>
     /// Returns the <see cref="DisplayName"/>.

@@ -1,9 +1,4 @@
-using CK.Core;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System;
-using System.Linq;
 using System.Text.Json;
 
 namespace CK.Core;
@@ -13,6 +8,29 @@ public static class ResourceContainerGlobalizationExtension
     /// <summary>
     /// Processes the <paramref name="folder"/> if it exists and returns a <see cref="LocaleCultureSet"/>.
     /// Returns false on error (error has been logged).
+    /// <para>
+    /// The following folder:
+    /// <code>
+    /// kind-locales/
+    ///   default.jsonc
+    ///   fr-FR.json
+    ///   en/
+    ///     en-GB.jsonc
+    ///   en-US.jsonc
+    ///   de.json
+    /// </code>
+    /// Will produce the "en" (from the <c>default.jsonc</c> file), the "en-GB", "en-US", "fr-FR" and "de" culture set.
+    /// Folders are ignored, files with ".jsonc" can contain comments whereas in ".json" files, comments are prohibited.
+    /// Parent cultures are not created if not needed: here the "fr" set is not created.
+    /// </para>
+    /// <para>
+    /// The the <c>default.jsonc</c> file is required unless <paramref name="isOverrideFolder"/> is true.
+    /// </para>
+    /// <para>
+    /// When <paramref name="isOverrideFolder"/> is true, the loaded folder is an override that doesn't define new resources.
+    /// It doesn't need a <c>default.json</c> and all resources in its files are considered to have an implicit "O:" key prefix.
+    /// 
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="container">The container of resources.</param>
@@ -23,226 +41,257 @@ public static class ResourceContainerGlobalizationExtension
                                     IActivityMonitor monitor,
                                     IReadOnlySet<NormalizedCultureInfo> activeCultures,
                                     out LocaleCultureSet? locales,
-                                    string folder = "locales" )
+                                    string folder = "locales",
+                                    bool isOverrideFolder = false )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( folder );
-        var content = container.GetFileProvider().GetDirectoryContents( folder );
-        if( content.Exists )
+        if( container.TryGetFolder( folder, out var content ) )
         {
-            using( monitor.OpenInfo( $"Reading '{folder}/' folder from '{container}'." ) )
+            using( monitor.OpenInfo( $"Reading {content}." ) )
             {
-                var defFilePath = $"{folder}/default.json";
-                if( !container.TryGetResource( defFilePath, out var defFile )
-                    && !container.TryGetResource( defFilePath + 'c', out defFile ) )
+                var defaultSet = CreateRoot( monitor, content, isOverrideFolder );
+                if( defaultSet != null )
                 {
-                    monitor.Error( $"Missing '{defFilePath}' file in {container}. This file must contain all the resources in english." );
+                    locales = ReadLocales( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures );
+                    return locales != null;
                 }
-                else if( ReadJson( monitor, defFile, out var defTranslations ) )
-                {
-                    var defaultSet = new LocaleCultureSet( defFile, NormalizedCultureInfo.CodeDefault, defTranslations );
-                    locales = ReadLocales( monitor, container, defaultSet, container.GetAllResourceLocatorsFrom( content ), activeCultures );
-                    if( locales == null ) return false;
-                }
-
             }
         }
         locales = null;
         return true;
-    }
 
-    static LocaleCultureSet? ReadLocales( IActivityMonitor monitor,
-                                          IResourceContainer container,
-                                          LocaleCultureSet defaultSet,
-                                          IEnumerable<ResourceLocator> allResources,
-                                          IReadOnlySet<NormalizedCultureInfo> activeCultures )
-    {
-        bool success = true;
-
-        // Should we use the IFileProvider or AllResources?
-        // Missing a container.GetAllResourcesFrom( IDirectoryContents ) when we don't care about folders and want a
-        // direct access to the items.
-        var candidates = allResources.Where( r => r != defaultSet.Origin
-                                                  && (r.LocalResourceName.Span.EndsWith( ".json" ) || r.LocalResourceName.Span.EndsWith( ".jsonc" )) );
-
-        var others = candidates.OrderBy( o => o.ResourceName.Length );
-        foreach( var o in others )
+        static LocaleCultureSet? CreateRoot( IActivityMonitor monitor, ResourceFolder folder, bool isOverrideFolder )
         {
-            var cName = Path.GetFileNameWithoutExtension( o.ResourceName.AsSpan().ToString() );
-            if( !NormalizedCultureInfo.IsValidCultureName( cName ) )
+            if( folder.TryGetResource( "default.json", out var defFile )
+                || folder.TryGetResource( "default.jsonc", out defFile )
+                || isOverrideFolder && (folder.TryGetResource( "en.json", out defFile ) || folder.TryGetResource( "en.jsonc", out defFile )) )
             {
-                monitor.Error( $"Invalid '{o}'. Name '{cName}' is not a BCP47 compliant culture name." );
-                success = false;
+                if( ReadJson( monitor, defFile, isOverrideFolder, out var defTranslations ) )
+                {
+                    return new LocaleCultureSet( defFile, NormalizedCultureInfo.CodeDefault, defTranslations );
+                }
             }
             else
             {
-                var c = NormalizedCultureInfo.FindNormalizedCultureInfo( cName );
-                if( c == null || !activeCultures.Contains( c ) )
+                // We didn't find a default (or an "en" if isOverrideFolder is true).
+                if( isOverrideFolder )
                 {
-                    monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the TSBinPathConfiguration.ActiveCultures list." );
+                    // If isOverrideFolder, simply returns an empty "en" root set.
+                    return new LocaleCultureSet( defFile, NormalizedCultureInfo.CodeDefault );
                 }
-                else if( c == NormalizedCultureInfo.CodeDefault )
+                // Regular folder MUST contain a "default".
+                monitor.Error( $"Missing 'default.json' file in {folder}. This file must contain all the resources in english." );
+            }
+            return null;
+        }
+
+        static LocaleCultureSet? ReadLocales( IActivityMonitor monitor,
+                                              LocaleCultureSet defaultSet,
+                                              bool isOverrideFolder,
+                                              IEnumerable<ResourceLocator> allResources,
+                                              IReadOnlySet<NormalizedCultureInfo> activeCultures )
+        {
+            bool success = true;
+
+            // Ordering by increasing length: process less specific first.
+            var others = allResources.Where( r => r != defaultSet.Origin
+                                                  && (r.LocalResourceName.Span.EndsWith( ".json" ) || r.LocalResourceName.Span.EndsWith( ".jsonc" )) )
+                                     .OrderBy( o => o.ResourceName.Length );
+
+            foreach( var o in others )
+            {
+                var cName = Path.GetFileNameWithoutExtension( o.ResourceName.AsSpan().ToString() );
+                if( !NormalizedCultureInfo.IsValidCultureName( cName ) )
                 {
-                    monitor.Error( $"File '{o}' defines the \"en\" culture. This is the default culture that must be in 'default.json' (or 'default.jsonc') file." );
+                    monitor.Error( $"Invalid '{o}'. Name '{cName}' is not a BCP47 compliant culture name." );
                     success = false;
                 }
                 else
                 {
-                    if( !c.IsNeutralCulture && defaultSet.Find( c.NeutralCulture ) == null )
+                    var c = NormalizedCultureInfo.FindNormalizedCultureInfo( cName );
+                    if( c == null || !activeCultures.Contains( c ) )
                     {
-                        monitor.Error( $"""
-                                        Cannot handle culture '{cName}' from '{o}'.
-                                        The translation file for the neutral culture '{c.NeutralCulture.Name}' is required.
-                                        """ );
+                        monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the TSBinPathConfiguration.ActiveCultures list." );
+                    }
+                    else if( c == NormalizedCultureInfo.CodeDefault )
+                    {
+                        //
+                        // When isOverrideFolder is true, finding an "en" here means there were a "default.json" (because of the r != defaultSet.Origin
+                        // condition in the others): the error can be the same as with a false isOverrideFolder.
+                        //
+                        monitor.Error( $"File {o} defines the \"en\" culture. This is the default culture that must be in 'default.json' (or 'default.jsonc') file." );
                         success = false;
                     }
                     else
                     {
-                        var parent = c.IsNeutralCulture ? defaultSet : defaultSet.FindClosest( c );
-                        Throw.DebugAssert( "Since the NeutralCulture exists.", parent != null );
-                        if( parent.Culture == c )
+                        if( !c.IsNeutralCulture && defaultSet.Find( c.NeutralCulture ) == null )
                         {
-                            monitor.Error( $"Duplicate files found for culture '{cName}': '{o}' and '{parent.Origin}' lead to the same culture." );
+                            monitor.Error( $"""
+                                        Cannot handle culture '{cName}' from {o}.
+                                        The translation file for the neutral culture '{c.NeutralCulture.Name}' is required.
+                                        """ );
                             success = false;
                         }
                         else
                         {
-                            if( ReadSpecificSet( monitor, o, c, defaultSet, out var specificSet ) )
+                            var parent = c.IsNeutralCulture || c.IsDefault
+                                            ? defaultSet
+                                            : defaultSet.FindClosest( c );
+                            Throw.DebugAssert( "Since the NeutralCulture exists.", parent != null );
+                            if( parent.Culture == c )
                             {
-                                parent.AddSpecific( specificSet );
-                                monitor.Trace( $"Successfully loaded {specificSet.Translations.Count} translations from '{o.ResourceName}'." );
+                                monitor.Error( $"Duplicate files found for culture '{cName}': {o} and {parent.Origin} lead to the same culture." );
+                                success = false;
                             }
                             else
                             {
-                                success = false;
+                                if( ReadSpecificSet( monitor, o, c, defaultSet, isOverrideFolder, out var specificSet ) )
+                                {
+                                    parent.AddSpecific( specificSet );
+                                    monitor.Trace( $"Successfully loaded {specificSet.Translations.Count} translations from {o}." );
+                                }
+                                else
+                                {
+                                    success = false;
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        return success ? defaultSet : null;
+            return success ? defaultSet : null;
 
-        static bool ReadSpecificSet( IActivityMonitor monitor,
-                                        Core.ResourceLocator locator,
-                                        NormalizedCultureInfo culture,
-                                        LocaleCultureSet defaultSet,
-                                        [NotNullWhen( true )] out LocaleCultureSet? specificSet )
-        {
-            specificSet = null;
-            if( ReadJson( monitor, locator, out var content ) )
+            static bool ReadSpecificSet( IActivityMonitor monitor,
+                                         Core.ResourceLocator locator,
+                                         NormalizedCultureInfo culture,
+                                         LocaleCultureSet defaultSet,
+                                         bool isOverrideFolder,
+                                         [NotNullWhen( true )] out LocaleCultureSet? specificSet )
             {
-                bool success = true;
-                foreach( var kv in content )
+                specificSet = null;
+                if( ReadJson( monitor, locator, isOverrideFolder, out var content ) )
                 {
-                    // When a key overrides/masks an entry, it masks a key defined in another component.
-                    // The fact that "fr-FR" overrides the "Super.EvenBetter.Text" key does NOT mean that
-                    // this key must also be defined as an override in the "default.json" file: it has to be defined
-                    // in the final merged set by a lower-level component.
-                    if( !kv.Value.IsOverride && !defaultSet.Translations.ContainsKey( kv.Key ) )
+                    bool success = true;
+                    foreach( var kv in content )
                     {
-                        monitor.Error( $"""
-                                        Missing default key in default translation file.
-                                        Key '{kv.Value}' defined in translation file '{locator}' doesn't exist in '{locator.LocalResourceName}'.
+                        // When a key overrides/masks an entry, it masks a key defined in another component.
+                        // The fact that "fr-FR" overrides the "Super.EvenBetter.Text" key does NOT mean that
+                        // this key must also be defined as an override in the "default.json" file: it has to be defined
+                        // in the final merged set by a lower-level component. Override handling is done by the FinalSet,
+                        // not here.
+                        if( !kv.Value.IsOverride && !defaultSet.Translations.ContainsKey( kv.Key ) )
+                        {
+                            monitor.Error( $"""
+                                        Missing key in default translation file.
+                                        Key '{kv.Value}' defined in translation file {locator} doesn't exist in {defaultSet.Origin}.
                                         """ );
-                        success = false;
+                            success = false;
+                        }
+                    }
+                    if( success )
+                    {
+                        specificSet = new LocaleCultureSet( locator, culture, content );
+                        return true;
                     }
                 }
-                if( success )
-                {
-                    specificSet = new LocaleCultureSet( locator, culture, content );
-                    return true;
-                }
+                return false;
             }
-            return false;
         }
-    }
 
 
-    static bool ReadJson( IActivityMonitor monitor, Core.ResourceLocator locator, [NotNullWhen( true )] out Dictionary<string, TranslationValue>? content )
-    {
-        content = null;
-        try
+        static bool ReadJson( IActivityMonitor monitor,
+                              ResourceLocator locator,
+                              bool isOverrideFolder,
+                              [NotNullWhen( true )] out Dictionary<string, TranslationValue>? content )
         {
-            using var s = locator.GetStream();
-            content = ReadJsonTranslationFile( locator.Container, s, skipComments: locator.ResourceName.EndsWith( ".jsonc" ) );
-            return true;
-        }
-        catch( Exception ex )
-        {
-            monitor.Error( $"Unable to read translations from '{locator}'.", ex );
-            return false;
-        }
-    }
-
-    static Dictionary<string, TranslationValue> ReadJsonTranslationFile( IResourceContainer origin, Stream s, bool skipComments )
-    {
-        var options = new JsonReaderOptions
-        {
-            CommentHandling = skipComments ? JsonCommentHandling.Skip : JsonCommentHandling.Disallow,
-            AllowTrailingCommas = true
-        };
-        using var context = Utf8JsonStreamReader.Create( s, options, out var reader );
-        var result = new Dictionary<string, TranslationValue>();
-        ReadJson( ref reader, context, origin, result );
-        return result;
-
-        static void ReadJson( ref Utf8JsonReader r, IUtf8JsonReaderContext context, IResourceContainer origin, Dictionary<string, TranslationValue> target )
-        {
-            if( r.TokenType == JsonTokenType.None && !r.Read() )
+            content = null;
+            try
             {
-                Throw.InvalidDataException( $"Expected a json object." );
+                using var s = locator.GetStream();
+                content = ReadJsonTranslationFile( locator, s, isOverrideFolder, skipComments: locator.ResourceName.EndsWith( ".jsonc" ) );
+                return true;
             }
-            Throw.CheckData( r.TokenType == JsonTokenType.StartObject );
-            ReadObject( ref r, context, origin, target, "" );
-
-            static void ReadObject( ref Utf8JsonReader r,
-                                    IUtf8JsonReaderContext context,
-                                    IResourceContainer origin,
-                                    Dictionary<string, TranslationValue> target,
-                                    string parentPath )
+            catch( Exception ex )
             {
-                Throw.DebugAssert( r.TokenType == JsonTokenType.StartObject );
-                Throw.DebugAssert( parentPath.Length == 0 || parentPath[^1] == '.' );
+                monitor.Error( $"Unable to read translations from {locator}.", ex );
+                return false;
+            }
+        }
 
-                r.ReadWithMoreData( context );
-                while( r.TokenType == JsonTokenType.PropertyName )
+        static Dictionary<string, TranslationValue> ReadJsonTranslationFile( ResourceLocator origin, Stream s, bool isOverrideFolder, bool skipComments )
+        {
+            var options = new JsonReaderOptions
+            {
+                CommentHandling = skipComments ? JsonCommentHandling.Skip : JsonCommentHandling.Disallow,
+                AllowTrailingCommas = true
+            };
+            using var context = Utf8JsonStreamReader.Create( s, options, out var reader );
+            var result = new Dictionary<string, TranslationValue>();
+            ReadJson( ref reader, context, origin, isOverrideFolder, result );
+            return result;
+
+            static void ReadJson( ref Utf8JsonReader r,
+                                  IUtf8JsonReaderContext context,
+                                  ResourceLocator origin,
+                                  bool isOverrideFolder,
+                                  Dictionary<string, TranslationValue> target )
+            {
+                if( r.TokenType == JsonTokenType.None && !r.Read() )
                 {
-                    var propertyName = r.GetString();
-                    Throw.CheckData( "Expected non empty property name.", !string.IsNullOrWhiteSpace( propertyName ) );
-                    Throw.CheckData( "Property name cannot end or start with '.' nor contain '..'.",
-                                     propertyName[0] != '.' && propertyName[^1] != '.' && !propertyName.Contains( ".." ) );
-                    bool isOverride = false;
-                    if( propertyName.StartsWith( "O:" ) )
-                    {
-                        isOverride = true;
-                        propertyName = propertyName.Substring( 2 );
-                    }
-                    propertyName = parentPath + propertyName;
+                    Throw.InvalidDataException( $"Expected a json object." );
+                }
+                Throw.CheckData( r.TokenType == JsonTokenType.StartObject );
+                ReadObject( ref r, context, origin, isOverrideFolder, target, "" );
+
+                static void ReadObject( ref Utf8JsonReader r,
+                                        IUtf8JsonReaderContext context,
+                                        ResourceLocator origin,
+                                        bool isOverrideFolder,
+                                        Dictionary<string, TranslationValue> target,
+                                        string parentPath )
+                {
+                    Throw.DebugAssert( r.TokenType == JsonTokenType.StartObject );
+                    Throw.DebugAssert( parentPath.Length == 0 || parentPath[^1] == '.' );
+
                     r.ReadWithMoreData( context );
-                    if( r.TokenType == JsonTokenType.StartObject )
+                    while( r.TokenType == JsonTokenType.PropertyName )
                     {
-                        if( isOverride )
+                        var propertyName = r.GetString();
+                        Throw.CheckData( "Expected non empty property name.", !string.IsNullOrWhiteSpace( propertyName ) );
+                        Throw.CheckData( "Property name cannot end or start with '.' nor contain '..'.",
+                                         propertyName[0] != '.' && propertyName[^1] != '.' && !propertyName.Contains( ".." ) );
+                        bool isOverride = isOverrideFolder;
+                        if( propertyName.StartsWith( "O:" ) )
                         {
-                            Throw.InvalidDataException( $"Invalid parent property name \"O:{propertyName}\": When defining a subordinated object, the parent key must not be an override." );
+                            isOverride = true;
+                            propertyName = propertyName.Substring( 2 );
                         }
-                        ReadObject( ref r, context, origin, target, parentPath + propertyName + '.' );
+                        propertyName = parentPath + propertyName;
+                        r.ReadWithMoreData( context );
+                        if( r.TokenType == JsonTokenType.StartObject )
+                        {
+                            if( isOverride )
+                            {
+                                Throw.InvalidDataException( $"Invalid parent property name \"O:{propertyName}\": When defining a subordinated object, the parent key must not be an override." );
+                            }
+                            ReadObject( ref r, context, origin, isOverrideFolder, target, parentPath + propertyName + '.' );
+                        }
+                        else
+                        {
+                            if( r.TokenType != JsonTokenType.String )
+                            {
+                                Throw.InvalidDataException( $"Expected a string or an object, got a '{r.TokenType}'." );
+                            }
+                            if( !target.TryAdd( propertyName, new TranslationValue( r.GetString()!, origin, isOverride ) ) )
+                            {
+                                Throw.InvalidDataException( $"Duplicate key '{propertyName}' found." );
+                            }
+                        }
+                        r.ReadWithMoreData( context );
                     }
-                    else
-                    {
-                        if( r.TokenType != JsonTokenType.String )
-                        {
-                            Throw.InvalidDataException( $"Expected a string or an object, got a '{r.TokenType}'." );
-                        }
-                        if( !target.TryAdd( propertyName, new TranslationValue( r.GetString()!, origin, isOverride ) ) )
-                        {
-                            Throw.InvalidDataException( $"Duplicate key '{propertyName}' found." );
-                        }
-                    }
-                    r.ReadWithMoreData( context );
                 }
             }
         }
-    }
 
+    }
 }
-

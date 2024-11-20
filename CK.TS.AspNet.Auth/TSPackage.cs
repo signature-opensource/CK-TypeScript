@@ -1,5 +1,4 @@
 using CK.Auth;
-using CK.Core;
 using CK.TypeScript;
 
 namespace CK.AspNet.Auth;

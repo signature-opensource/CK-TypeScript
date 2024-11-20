@@ -1,9 +1,6 @@
 using CK.Core;
 using FluentAssertions;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.FileProviders.Physical;
 using NUnit.Framework;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -30,10 +27,9 @@ public class AssemblyResourcesTests
     {
         var r = typeof( AssemblyResourcesTests ).Assembly.GetResources();
 
-        IFileProvider provider = r.CreateFileProvider();
-        IDirectoryContents root = provider.GetDirectoryContents( "" );
+        var root = r.CreateCKResourceContainer( "", "On the Root");
         var b = new StringBuilder();
-        Dump( b, root, 0 );
+        Dump( b, new ResourceFolder( root, root.ResourcePrefix ), 0 );
         b.ToString().Should().Be( """
             C1
               Res
@@ -68,26 +64,27 @@ public class AssemblyResourcesTests
 
     }
 
-    static void Dump( StringBuilder b, IDirectoryContents d, int depth )
+    static void Dump( StringBuilder b, ResourceFolder d, int depth )
     {
-        foreach( IFileInfo item in d )
+        foreach( var f in d.Folders )
         {
-            b.Append( ' ', depth*2 ).AppendLine( item.Name );
-            if( item.IsDirectory )
-            {
-                Dump( b, (IDirectoryContents)item, depth + 1 );
-            }
+            b.Append( ' ', depth * 2 ).Append( f.Name ).AppendLine();
+            Dump( b, f, depth + 1 );
+        }
+        foreach( var f in d.Resources )
+        {
+            b.Append( ' ', depth * 2 ).Append( f.Name ).AppendLine();
         }
     }
 
     [TestCase( true )]
     [TestCase( false )]
-    public void any_FileProvider_root_folder_can_be_selected( bool fromProvider )
+    public void any_sub_path_can_be_selected( bool fromProvider )
     {
         var r = typeof( AssemblyResourcesTests ).Assembly.GetResources();
 
-        IFileProvider provider = r.CreateFileProvider( fromProvider ? "C1/Res" : null );
-        IDirectoryContents root = provider.GetDirectoryContents( fromProvider ? "" : "C1/Res" );
+        var container = r.CreateCKResourceContainer( fromProvider ? "C1/Res" : "", "Container" );
+        container.TryGetFolder( fromProvider ? "" : "C1/Res", out var root );
         var b = new StringBuilder();
         Dump( b, root, 0 );
         b.ToString().Should().Be( """
@@ -104,8 +101,8 @@ public class AssemblyResourcesTests
 
             """ );
 
-        IFileProvider otherProvider = r.CreateFileProvider( fromProvider ? "C1/Res/SomeFolder" : null );
-        IDirectoryContents otherRoot = otherProvider.GetDirectoryContents( fromProvider ? "" : "C1/Res/SomeFolder" );
+        var otherContainer = r.CreateCKResourceContainer( fromProvider ? "C1/Res/SomeFolder" : "", "Other container" );
+        var otherRoot = otherContainer.GetFolder( fromProvider ? "" : "C1/Res/SomeFolder" );
         var bOther = new StringBuilder();
         Dump( bOther, otherRoot, 0 );
         bOther.ToString().Should().Be( """

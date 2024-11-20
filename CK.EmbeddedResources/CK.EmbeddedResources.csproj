@@ -5,8 +5,6 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="22.0.0-a00-00-0011-develop" />
-        <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="9.0.0" />
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\CK.EmbeddedResources.Abstractions\CK.EmbeddedResources.Abstractions.csproj" />
