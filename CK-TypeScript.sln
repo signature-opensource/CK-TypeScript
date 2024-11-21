@@ -70,6 +70,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Abstra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Globalization", "CK.EmbeddedResources.Globalization\CK.EmbeddedResources.Globalization.csproj", "{5144FA99-73A6-4824-9F97-88B9D49D7AA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Html.Transform", "CK.Html.Transform\CK.Html.Transform.csproj", "{03F0F4EF-3FEE-4021-B68E-593A0110F717}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.TypeScript.Transform", "CK.TypeScript.Transform\CK.TypeScript.Transform.csproj", "{405F36E0-16BC-4B31-9B64-16E70372862D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -168,6 +172,14 @@ Global
 		{5144FA99-73A6-4824-9F97-88B9D49D7AA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5144FA99-73A6-4824-9F97-88B9D49D7AA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5144FA99-73A6-4824-9F97-88B9D49D7AA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03F0F4EF-3FEE-4021-B68E-593A0110F717}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03F0F4EF-3FEE-4021-B68E-593A0110F717}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03F0F4EF-3FEE-4021-B68E-593A0110F717}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03F0F4EF-3FEE-4021-B68E-593A0110F717}.Release|Any CPU.Build.0 = Release|Any CPU
+		{405F36E0-16BC-4B31-9B64-16E70372862D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{405F36E0-16BC-4B31-9B64-16E70372862D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{405F36E0-16BC-4B31-9B64-16E70372862D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{405F36E0-16BC-4B31-9B64-16E70372862D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
