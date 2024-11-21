@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>CK.AspNet.Auth</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
@@ -9,12 +9,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="**\*.sql" />
+    <PackageReference Include="CK.AspNet.Auth" Version="24.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="23.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
+    <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
   </ItemGroup>
 </Project>

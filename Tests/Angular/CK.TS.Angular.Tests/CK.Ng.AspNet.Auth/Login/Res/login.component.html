@@ -1,0 +1,13 @@
+I'm the login component (my parameter: {{authService.someParameter}}).
+
+<span>Current user: {{authService.userName()}}</span>
+
+<button (click)="authService.login('Albert')">Login (as Albert)</button>
+
+<button (click)="authService.logout()">Logout</button>
+
+<router-outlet />
+
+
+
+

@@ -1,0 +1,5 @@
+{
+  // ck-gen-transform/ts-locales are "override" files: their keys are implictely prefixed by "O:".
+  // This one will be ignored: this key doesn't exist.
+  "PublicFooter.Title": "Footer title"
+}

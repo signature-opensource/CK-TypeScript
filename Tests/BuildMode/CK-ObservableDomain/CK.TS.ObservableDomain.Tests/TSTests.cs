@@ -1,27 +1,26 @@
+using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
-using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
-using CK.Setup;
+using static CK.Testing.MonitorTestHelper;
 
-namespace CK.TS.ObservableDomain.Tests
+namespace CK.TS.ObservableDomain.Tests;
+
+[TestFixture]
+public class TSTests
 {
-    [TestFixture]
-    public class TSTests
+    [Test]
+    public async Task CK_TS_ObservableDomain_Async()
     {
-        [Test]
-        public async Task CK_TS_ObservableDomain_Async()
-        {
-            var targetProjectPath = TestHelper.GetTypeScriptBuildModeTargetProjectPath();
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
-            var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-            engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-            engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.ObservableDomain" );
-            engineConfig.RunSuccessfully();
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+        engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.ObservableDomain" );
+        var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
 
-            await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
-            runner.Run();
-        }
+        await engineConfig.RunSuccessfullyAsync();
 
+        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
+        runner.Run();
     }
+
 }

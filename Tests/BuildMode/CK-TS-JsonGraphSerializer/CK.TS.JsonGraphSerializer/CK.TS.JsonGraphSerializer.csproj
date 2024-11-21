@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <RootNamespace>CK.JsonGraphSerializer</RootNamespace>
-  </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="**\*.ts">
-      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\CK.StObj.TypeScript\CK.StObj.TypeScript.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <!--
+    Project references don't propagate build (transitive or not) NuGet files.
+    We need to reference them explicitly.        
+    -->
+    <Import Project="../../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.props" />
+    <Import Project="../../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.targets" />
+    
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\..\CK.TypeScript\CK.TypeScript.csproj" />
+    </ItemGroup>
 </Project>

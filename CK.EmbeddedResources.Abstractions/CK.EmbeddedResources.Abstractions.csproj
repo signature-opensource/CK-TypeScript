@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+        <ItemGroup>
+        <Content Include="MSBuild/CK.EmbeddedResources.props">
+            <Pack>true</Pack>
+            <PackagePath>buildTransitive\CK.EmbeddedResources.props</PackagePath>
+        </Content>
+        <Content Include="MSBuild/CK.EmbeddedResources.targets">
+            <Pack>true</Pack>
+            <PackagePath>buildTransitive\CK.EmbeddedResources.targets</PackagePath>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="MSBuild\" />
+    </ItemGroup>
+    
+</Project>

@@ -1,0 +1,13 @@
+{
+    // The default.json is the "en" culture.
+
+    // This file is read as a jsonc (json with comments) so
+    // don't hesitate to comment!
+
+    "PublicFooter": {
+        "ContactUs": "Contact us by phone <a href='tel:04 77 35 55 64'>04 77 35 55 64</a> or by email <a href='mail:contact@signature.one'>contact@signature.one</a>."
+    },
+    // ... or dot separated.
+    "PublicFooter.Legal": "(c) Signature-Code",
+    "PublicFooter.Address": "29 Avenue de l'industrie, 42390 Villars FRANCE"
+}

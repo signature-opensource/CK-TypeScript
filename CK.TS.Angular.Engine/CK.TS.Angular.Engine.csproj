@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CK.TypeScript.Engine\CK.TypeScript.Engine.csproj" />
+    <ProjectReference Include="..\CK.TS.Angular\CK.TS.Angular.csproj" />
+  </ItemGroup>
+</Project>

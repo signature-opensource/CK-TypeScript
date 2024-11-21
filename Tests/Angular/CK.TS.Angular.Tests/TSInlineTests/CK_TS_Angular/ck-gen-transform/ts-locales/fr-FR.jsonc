@@ -1,0 +1,5 @@
+{
+  // This file is ignored: the configuration has ActiveCultures = ["fr","en-GB","en-US"].
+  // Any "fr-FR" is ignored.
+	"Public.Footer.Title": "Titre du pied de page (en France)"
+}

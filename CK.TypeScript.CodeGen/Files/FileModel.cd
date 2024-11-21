@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="CK.TypeScript.CodeGen.BaseFile">
+    <Position X="2" Y="0.5" Width="1.75" />
+    <Members>
+      <Field Name="_folder" Hidden="true" />
+      <Field Name="_hiddenFileName" Hidden="true" />
+      <Field Name="_name" Hidden="true" />
+      <Field Name="_next" Hidden="true" />
+      <Method Name="BaseFile" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAIIAAAAAAACAEgAABAAQAAAAAQQAgAQAAAAAABAA=</HashCode>
+      <FileName>Files\BaseFile.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.TextFileBase">
+    <Position X="3.25" Y="4.25" Width="1.5" />
+    <Members>
+      <Method Name="TextFileBase" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\TextFileBase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.TypeScriptFile">
+    <Position X="0.5" Y="6.25" Width="2" />
+    <Members>
+      <Field Name="_body" Hidden="true" />
+      <Field Name="_imports" Hidden="true" />
+      <Method Name="TypeScriptFile" Hidden="true" />
+    </Members>
+    <NestedTypes>
+      <Class Name="CK.TypeScript.CodeGen.TypeScriptFile.TSFileType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Files\TypeScriptFile.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+      <Class Name="CK.TypeScript.CodeGen.TypeScriptFile.TSCSharpType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Files\TypeScriptFile.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <InheritanceLine Type="CK.TypeScript.CodeGen.TextFileBase" FixedToPoint="true">
+      <Path>
+        <Point X="4" Y="5.483" />
+        <Point X="4" Y="5.875" />
+        <Point X="2.25" Y="5.875" />
+        <Point X="2.25" Y="6.25" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAEBAAAABggQABAAAFAAAgAAgAQAAAAAAAAAAAEAA=</HashCode>
+      <FileName>Files\TypeScriptFile.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.ResourceTextFileBase">
+    <Position X="4.75" Y="6.25" Width="2" />
+    <Members>
+      <Field Name="_content" Hidden="true" />
+      <Field Name="_locator" Hidden="true" />
+      <Method Name="ResourceTextFileBase" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAQIAgQABAAABAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceTextFileBase.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="1.133" />
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.ResourceUnknownFile" Collapsed="true">
+    <Position X="0.5" Y="4.25" Width="2" />
+    <InheritanceLine Type="CK.TypeScript.CodeGen.BaseFile" FixedToPoint="true">
+      <Path>
+        <Point X="2.875" Y="3.209" />
+        <Point X="2.875" Y="3.875" />
+        <Point X="1.938" Y="3.875" />
+        <Point X="1.938" Y="4.25" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAQAAAQAAAAABAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceUnknownFile.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.ResourceHtmlFile" Collapsed="true">
+    <Position X="4.5" Y="9" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceHtmlFile.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.ResourceTypeScriptFile" Collapsed="true">
+    <Position X="8" Y="9" Width="2" />
+    <InheritanceLine Type="CK.TypeScript.CodeGen.ResourceTextFileBase" FixedToPoint="true">
+      <Path>
+        <Point X="5.75" Y="8.319" />
+        <Point X="5.75" Y="8.625" />
+        <Point X="8.25" Y="8.625" />
+        <Point X="8.25" Y="9" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAABAAAAAAAgAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceTypeScriptFile.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.5" />
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.ResourceTextFile" Collapsed="true">
+    <Position X="2.75" Y="9" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceTextFile.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.ResourceStyleFile" Collapsed="true">
+    <Position X="6.25" Y="9" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceStyleFile.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="CK.TypeScript.CodeGen.IResourceFile">
+    <Position X="6.5" Y="0.5" Width="1.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\IResourceFile.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.TypeScript.CodeGen.IMinimalTypeScriptFile">
+    <Position X="4.25" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAACABAAAAAAQAAAAAAQAAAAAAAAAABAA=</HashCode>
+      <FileName>Files\IMinimalTypeScriptFile.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

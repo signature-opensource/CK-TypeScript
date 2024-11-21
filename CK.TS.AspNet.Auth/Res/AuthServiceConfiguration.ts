@@ -1,25 +1,34 @@
-import { IAuthServiceConfiguration, IEndPoint, IAuthenticationInfo, IUserInfo } from './authService.model.public';
+import { IAuthServiceConfiguration, IEndPoint } from './authService.model.public';
 
 export class AuthServiceConfiguration {
-    private readonly _identityServerEndPoint: string;
+    readonly #identityServerEndPoint: string;
 
     /** When defined, the local storage is available. */
     public readonly localStorage?: Storage;
 
     /** Gets the end point address. */
-    public get webFrontAuthEndPoint(): string { return this._identityServerEndPoint; }
+    public get webFrontAuthEndPoint(): string { return this.#identityServerEndPoint; }
 
-    constructor(config: IAuthServiceConfiguration) {
-        if (typeof config.identityEndPoint === "string") {
-            this._identityServerEndPoint = config.identityEndPoint;
-            if (!this._identityServerEndPoint.endsWith('/')) {
-                this._identityServerEndPoint += '/';
+    constructor(config?: IAuthServiceConfiguration) {
+        if (!config) {
+            config = { useLocalStorage: true };
+        }
+        if (!config.identityEndPoint) {
+            if (typeof (window) === 'undefined') {
+                throw new Error("IAuthServiceConfiguration required.");
+            }
+            this.#identityServerEndPoint = window.location.origin + '/';
+        }
+        else if (typeof config.identityEndPoint === "string") {
+            this.#identityServerEndPoint = config.identityEndPoint;
+            if (!this.#identityServerEndPoint.endsWith('/')) {
+                this.#identityServerEndPoint += '/';
             }
         }
         else {
-            this._identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
+            this.#identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
         }
-        if(  config.useLocalStorage ) this.localStorage = this.getAvailableStorage('localStorage');
+        if (config.useLocalStorage) this.localStorage = this.getAvailableStorage('localStorage');
     }
 
     private static getUrlFromEndPoint(endPoint: IEndPoint): string {
@@ -41,8 +50,8 @@ export class AuthServiceConfiguration {
      * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Feature-detecting_localStorage
      * @param storageType Storage type, either 'localStorage' or 'sessionStorage'
      */
-    private getAvailableStorage(storageType: 'localStorage' | 'sessionStorage'):  Storage|undefined {
-        let storage: Storage|undefined = undefined;
+    private getAvailableStorage(storageType: 'localStorage' | 'sessionStorage'): Storage | undefined {
+        let storage: Storage | undefined = undefined;
         try {
             if (typeof (window) !== 'undefined') {
                 storage = window[storageType];
@@ -52,22 +61,13 @@ export class AuthServiceConfiguration {
             }
         }
         catch (e) {
-            const isAvailable = e instanceof DOMException 
-                                && ( 
-                                        // everything except Firefox
-                                        e.code === 22 ||
-                                        // Firefox
-                                        e.code === 1014 ||
-                                        // test name field too, because code might not be present
-                                        // everything except Firefox
-                                        e.name === 'QuotaExceededError' ||
-                                        // Firefox
-                                        e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-                                    )
-                                   // acknowledge QuotaExceededError only if there's something already stored
-                                && (storage && storage!.length !== 0);
-            
-            if( !isAvailable ) storage = undefined;
+            const isAvailable = e instanceof DOMException
+                && e.name === 'QuotaExceededError'
+                // acknowledge QuotaExceededError only if there's something already stored
+                && storage
+                && storage!.length !== 0;
+
+            if (!isAvailable) storage = undefined;
         }
         return storage;
     }

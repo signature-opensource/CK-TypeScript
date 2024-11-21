@@ -1,23 +1,22 @@
 using System;
 
-namespace CK.TypeScript.CodeGen
-{
-    sealed class TSLuxonDuration : TSBasicType
-    {
-        public TSLuxonDuration( TSTypeManager typeManager, LibraryImport luxonLib )
-            : base( typeManager, "Duration", i => i.EnsureImportFromLibrary( luxonLib, "Duration" ), "Duration.fromMillis(0)" )
-        {
-        }
+namespace CK.TypeScript.CodeGen;
 
-        protected override bool DoTryWriteValue( ITSCodeWriter writer, object value )
+sealed class TSLuxonDuration : TSBasicType
+{
+    public TSLuxonDuration( TSTypeManager typeManager, LibraryImport luxonLib )
+        : base( typeManager, "Duration", i => i.ImportFromLibrary( luxonLib, "Duration" ), "Duration.fromMillis(0)" )
+    {
+    }
+
+    protected override bool DoTryWriteValue( ITSCodeWriter writer, object value )
+    {
+        if( value is TimeSpan v )
         {
-            if( value is TimeSpan v )
-            {
-                writer.Append( "Duration.fromMillis(" ).Append( v.TotalMilliseconds ).Append( ")" );
-                return true;
-            }
-            return false;
+            writer.Append( "Duration.fromMillis(" ).Append( v.TotalMilliseconds ).Append( ")" );
+            return true;
         }
+        return false;
     }
 }
 

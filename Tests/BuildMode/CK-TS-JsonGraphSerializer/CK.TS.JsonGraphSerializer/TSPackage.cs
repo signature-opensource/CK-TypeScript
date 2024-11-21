@@ -1,10 +1,9 @@
-using CK.StObj.TypeScript;
+using CK.TypeScript;
 
-namespace CK.JsonGraphSerializer
+namespace CK.JsonGraphSerializer;
+
+[TypeScriptPackage]
+[TypeScriptFile( "index.ts" )]
+public class TSPackage : TypeScriptPackage
 {
-    [TypeScriptPackage]
-    [TypeScriptFile( "Res/index.ts" )]
-    public class TSPackage : TypeScriptPackage
-    {
-    }
 }

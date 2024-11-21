@@ -1,15 +1,4 @@
-
-/** Defines the 4 possible levels of authentication. */
-export enum AuthLevel {
-    /** None authentication level is for the Anonymous user. */
-    None = 0,
-    /** Unsafe authentication level: @see IAuthenticationInfo.user is necessarily Anonymous.*/
-    Unsafe,
-    /** Normal authentication level.*/
-    Normal,
-    /** Critical authentication level must be active for a short time.*/
-    Critical
-}
+import { AuthLevel } from '@local/ck-gen';
 
 /** Defines the status of the user schemes (see @see IUserSchemeInfo). */
 export enum SchemeUsageStatus {
@@ -115,9 +104,9 @@ export interface IUserSchemeInfo {
 /** Describes the AuthService configuration. */
 export interface IAuthServiceConfiguration {
     /** Gets the endpoint to use. Can simply be the url of the server (prefixed with
-     *  the protocol 'htpp://' or 'https://').
+     *  the protocol 'http://' or 'https://').
      */
-    readonly identityEndPoint: IEndPoint|string;
+    readonly identityEndPoint?: IEndPoint|string;
     /** True to enable local storage: current authentication is stored and 
      * restored (at Unsafe level) if server cannot be initially reached. */
     readonly useLocalStorage?: boolean;

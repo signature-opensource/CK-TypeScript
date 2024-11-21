@@ -1,143 +1,214 @@
 using CK.Core;
 using CSemVer;
-using System.Diagnostics.CodeAnalysis;
 
-namespace CK.TypeScript.CodeGen
+namespace CK.TypeScript.CodeGen;
+
+/// <summary>
+/// Captures a package dependency. This class is (surprisingly) mutable: the version and the kind can
+/// evolve.
+/// </summary>
+public sealed class PackageDependency
 {
+    readonly string _name;
+    SVersionBound _version;
+    DependencyKind _dependencyKind;
+    string _definitionSource;
 
     /// <summary>
-    /// Captures a package dependency. This class is (surprisingly) mutable: the version and the kind can
-    /// evolve.
+    /// Name of the definitive <see cref="DefinitionSource"/>.
+    /// Only the <see cref="LibraryManager"/> should use this for its <see cref="LibraryManager.LibraryVersionConfiguration"/>.
+    /// </summary>
+    public const string ConfigurationSourceName = "Configuration";
+
+    /// <summary>
+    /// Initializes a new <see cref="PackageDependency"/>.
+    /// </summary>
+    /// <param name="name">The dependency name.</param>
+    /// <param name="version">The version bound.</param>
+    /// <param name="dependencyKind">The kind of dependency.</param>
+    /// <param name="definitionSource">The dependency source definition.</param>
+    public PackageDependency( string name, SVersionBound version, DependencyKind dependencyKind, string definitionSource )
+    {
+        Throw.CheckNotNullOrWhiteSpaceArgument( name );
+        Throw.CheckNotNullOrWhiteSpaceArgument( definitionSource );
+        _name = name;
+        _version = version;
+        _dependencyKind = dependencyKind;
+        _definitionSource = definitionSource;
+    }
+
+    /// <summary>
+    /// Name of the package name, which will be the string put in the package.json.
+    /// </summary>
+    public string Name => _name;
+
+    /// <summary>
+    /// Gets the version of the package, which will be used in the package.json.
+    /// This version can be fixed by the configuration. See <see cref="LibraryManager.LibraryVersionConfiguration"/>.
     /// <para>
-    /// The <see cref="TypeScriptRoot.Save(IActivityMonitor, TypeScriptFileSaveStrategy)"/> updates the
-    /// <see cref="TypeScriptFileSaveStrategy.GeneratedDependencies"/> that can be altered before being
-    /// used to create or update package.json files.
+    /// The <see cref="SVersionBound.None"/> is used to denote the special "workspace:*". See <see cref="IsWorkspaceDependency"/>.
+    /// </para>
+    /// <para>
+    /// <see cref="SVersionBound.All"/> ("0.0.0-0"[None,CI]" or "&gt;=0.0.0-0", "*" or "" for npm) can be used to denote the "latest" version.
+    /// See <see cref="IsLatestDependency"/>.
     /// </para>
     /// </summary>
-    public sealed class PackageDependency
+    public SVersionBound Version => _version;
+
+    /// <summary>
+    /// Gets whether this dependency is "workspace:*" dependency.
+    /// See https://yarnpkg.com/features/workspaces#cross-references).
+    /// <para>
+    /// This version is invalid (there's little chance that a 2147483647.2147483647.2147483647 versioned package exists one day).
+    /// </para>
+    /// </summary>
+    public bool IsWorkspaceDependency => _version == SVersionBound.None;
+
+    /// <summary>
+    /// Gets whether this dependency has a <see cref="SVersionBound.All"/> (&gt;=0.0.0-0) version.
+    /// This dependency should be installed via npm/yarn tooling so that its "current" version is installed and the package.json
+    /// be updated to reflect the resolved version.
+    /// <para>
+    /// Note that using this "&gt;=0.0.0-0" in a package.json and running a "yarn install" will actually install the package but
+    /// without reflecting the resolved version in the package.json.
+    /// </para>
+    /// </summary>
+    public bool IsLatestDependency => _version == SVersionBound.All;
+
+    /// <summary>
+    /// Dependency kind of the package. Will be used to determine in which list
+    /// of the packgage.json the dependency should appear.
+    /// </summary>
+    public DependencyKind DependencyKind => _dependencyKind;
+
+    /// <summary>
+    /// Gets the <see cref="Version"/> as npm version range.
+    /// <para>
+    /// This is either "workspace:*" or the <see cref="SVersionBound.ToNpmString()"/>.
+    /// </para>
+    /// </summary>
+    public string NpmVersionRange => IsWorkspaceDependency ? $"workspace:*" : _version.ToNpmString();
+
+    /// <summary>
+    /// Gets the source definition.
+    /// </summary>
+    public string DefinitionSource => _definitionSource;
+
+    /// <summary>
+    /// Sets the <see cref="DependencyKind"/> even if the new one is lower than the existing one.
+    /// </summary>
+    /// <param name="kind">The dependency kind to set.</param>
+    public void UnconditionalSetDependencyKind( DependencyKind kind ) => _dependencyKind = kind;
+
+    /// <summary>
+    /// Sets the <see cref="Version"/> regardless of the current version.
+    /// </summary>
+    /// <param name="version">The version bound to set.</param>
+    public void UnconditionalSetVersion( SVersionBound version ) => _version = version;
+
+    /// <summary>
+    /// Overridden to return the kind, name and the <see cref="NpmVersionRange"/>.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString() => $"{_dependencyKind}: {_name} {NpmVersionRange}";
+
+    /// <summary>
+    /// Updates this dependency from another one that must have the same <see cref="Name"/>.
+    /// <para>
+    /// This always fail if this <see cref="IsWorkspaceDependency"/> is true (but the other can be a workspace dependency:
+    /// this one will become a workspace dependency and a waning will be logged).
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="other">The package dependency to merge with this one.</param>
+    /// <param name="ignoreVersionsBound">True to skip version bound check.</param>
+    /// <param name="detailedLogLevel">By default upgrades of version or kind are not logged.</param>
+    /// <param name="logWarn">
+    /// By default logs the warning of bound check failures (when <paramref name="ignoreVersionsBound"/> is true) and when
+    /// the other is a <see cref="IsWorkspaceDependency"/>.
+    /// </param>
+    /// <returns>True on success, false on error.</returns>
+    public bool Update( IActivityMonitor monitor,
+                        PackageDependency other,
+                        bool ignoreVersionsBound,
+                        LogLevel detailedLogLevel = LogLevel.None,
+                        bool logWarn = true )
     {
-        readonly string _name;
-        SVersionBound _version;
-        DependencyKind _dependencyKind;
-
-        /// <summary>
-        /// Initializes a new <see cref="PackageDependency"/>.
-        /// </summary>
-        /// <param name="name">The dependency name.</param>
-        /// <param name="version">The version bound.</param>
-        /// <param name="dependencyKind">The kind of dependency.</param>
-        public PackageDependency( string name, SVersionBound version, DependencyKind dependencyKind )
+        if( _version == SVersionBound.None )
         {
-            Throw.CheckNotNullOrWhiteSpaceArgument( name );
-            _name = name;
-            _version = version;
-            _dependencyKind = dependencyKind;
+            monitor.Error( $"TypeScript library '{_name}' is a Workspace dependency. It cannot be updated." );
+            return false;
         }
-
-        /// <summary>
-        /// Name of the package name, which will be the string put in the package.json.
-        /// </summary>
-        public string Name => _name;
-
-        /// <summary>
-        /// Gets the version of the package, which will be used in the package.json.
-        /// This version can be fixed by the configuration. See <see cref="TypeScriptRoot.LibraryVersionConfiguration"/>.
-        /// <para>
-        /// The <see cref="SVersionBound.None"/> is used to denote the special "workspace:*". See <see cref="IsWorkspaceDependency"/>.
-        /// </para>
-        /// </summary>
-        public SVersionBound Version => _version;
-
-        /// <summary>
-        /// Gets whether this dependency is "workspace:*" dependency.
-        /// See https://yarnpkg.com/features/workspaces#cross-references).
-        /// <para>
-        /// This version is invalid (there's little chance that a 2147483647.2147483647.2147483647 versioned package exists one day).
-        /// </para>
-        /// </summary>
-        public bool IsWorkspaceDependency => _version == SVersionBound.None;
-
-        /// <summary>
-        /// Dependency kind of the package. Will be used to determine in which list
-        /// of the packgage.json the dependency should appear.
-        /// </summary>
-        public DependencyKind DependencyKind => _dependencyKind;
-
-        /// <summary>
-        /// Gets the <see cref="Version"/> as npm version range.
-        /// <para>
-        /// This is either "workspace:*" or the <see cref="SVersionBound.ToNpmString()"/>.
-        /// </para>
-        /// </summary>
-        public string NpmVersionRange => IsWorkspaceDependency ? $"workspace:*" : _version.ToNpmString();
-
-        /// <summary>
-        /// Sets the <see cref="DependencyKind"/> even if the new one is lower than the existing one.
-        /// </summary>
-        /// <param name="kind">The dependency kind to set.</param>
-        public void UnconditionalSetDependencyKind( DependencyKind kind ) => _dependencyKind = kind;
-
-        /// <summary>
-        /// Sets the <see cref="Version"/> regardless of the current version.
-        /// </summary>
-        /// <param name="version">The version bound to set.</param>
-        public void UnconditionalSetVersion( SVersionBound version ) => _version = version;
-
-        public override string ToString() => $"{_dependencyKind}: {_name} {NpmVersionRange}";
-
-        internal static bool TryParseVersion( IActivityMonitor monitor, string name, string version, DependencyKind dependencyKind, out SVersionBound v )
+        if( other._version != SVersionBound.None )
         {
-            // These are external libraries. Prerelease versions have not the same semantics as our in the npm
-            // ecosystem. We use the mainstream semantics here.
-            var parseResult = SVersionBound.NpmTryParse( version, includePrerelease: false );
-            v = parseResult.Result;
-            if( !parseResult.IsValid )
+            Update( monitor, detailedLogLevel, other._dependencyKind, other._definitionSource );
+        }
+        if( _version != other._version )
+        {
+            if( _definitionSource == ConfigurationSourceName )
             {
-                monitor.Error( $"Invalid version '{version}' for TypeScript library '{name}' ({dependencyKind}): {parseResult.Error}" );
-                return false;
+                monitor.Log( detailedLogLevel, $"TypeScript library '{_name}' version comes from the configuration. Ignoring '{other._version}' from '{other._definitionSource}'." );
+                return true;
             }
-            return true;
-        }
-
-        internal bool DoUpdate( SVersionBound newVersion, bool ignoreVersionsBound, [NotNullWhen(false)]out string? error, out string? warn )
-        {
-            Throw.DebugAssert( newVersion != _version );
-            error = warn = null;
-            SVersionBound newV;
-            if( newVersion == SVersionBound.None )
+            if( other._definitionSource == ConfigurationSourceName )
             {
-                warn = $"TypeScript library '{_name}' changed to a \"workspace:*\" dependency.";
-                newV = newVersion;
+                monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': version is now the configured one '{other._version}'." );
+                _version = other._version;
+                _definitionSource = ConfigurationSourceName;
+                return true;
+            }
+            if( other._version == SVersionBound.None )
+            {
+                if( logWarn )
+                {
+                    monitor.Warn( $"TypeScript library '{_name}' changed to a \"workspace:*\" dependency from '{other._definitionSource}'." );
+                }
+                _definitionSource = other._definitionSource;
+                _version = SVersionBound.None;
             }
             else
             {
-                if( _version.Contains( newVersion ) ) newV = newVersion;
-                else if( newVersion.Contains( _version ) ) newV = _version;
-                else
+                if( _version.Contains( other._version ) )
+                {
+                    monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': upgraded from '{_version}' (by '{_definitionSource}') to '{other._version}' (by '{other._definitionSource}')." );
+                    _version = other._version;
+                    _definitionSource = other._definitionSource;
+                }
+                else if( !other._version.Contains( _version ) )
                 {
                     if( !ignoreVersionsBound )
                     {
-                        error = $"""
-                            TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'.
+                        monitor.Error( $"""
+                            TypeScript library '{_name}': incompatible versions detected between current '{_version}' (by '{_definitionSource}') and '{other._version}' (by '{other._definitionSource}').
                             Set IgnoreVersionsBound to true to allow the upgrade.
-                            """;
+                            """ );
                         return false;
                     }
-                    newV = _version.Base > newVersion.Base ? _version : newVersion;
-                    warn = $"""
-                            TypeScript library '{_name}': incompatible versions detected between '{_version}' and '{newVersion}'.
-                            Ignored since IgnoreVersionsBound is true.
-                            """;
+                    var otherWins = other._version.Base > _version.Base
+                                    || (other._version.Base == _version.Base && other._version.Lock > _version.Lock);
+                    SVersionBound newV = otherWins ? other._version : _version;
+                    if( logWarn )
+                    {
+                        monitor.Warn( $"""
+                            TypeScript library '{_name}': current version '{_version}' (by '{_definitionSource}') is not compatible with '{other._version}' (by '{other._definitionSource}').
+                            Since IgnoreVersionsBound is true, the version is updated to '{newV}'.
+                            """ );
+                    }
+                    _version = newV;
+                    if( otherWins ) _definitionSource = other._definitionSource;
                 }
             }
-            _version = newV;
-            return true;
         }
-
-        internal void Update( DependencyKind kind )
-        {
-            if( kind > _dependencyKind ) _dependencyKind = kind;
-        }
-
+        return true;
     }
+
+    internal void Update( IActivityMonitor monitor, LogLevel detailedLogLevel, DependencyKind otherDep, string otherDefinitionSource )
+    {
+        if( otherDep > _dependencyKind )
+        {
+            monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': Kind changed from '{_dependencyKind}' to '{otherDep}' (by '{otherDefinitionSource}')." );
+            _dependencyKind = otherDep;
+        }
+    }
+
 }

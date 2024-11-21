@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <!-- This is required to test the TypeScript doncumentation from C# feature. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TypeScriptFileAttr\Res\**\*.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="TypeScriptFileAttr\Res\IAmHere.ts" />
+    <None Remove="TypeScriptFileAttr\Res\Some.private.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.Nunit" Version="11.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="TypeScriptFileAttr\Res\Some.private.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="TypeScriptFileAttr\Res\IAmHere.ts">
+      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSGeneratedOnly\no_TypeScript_attribute_is_generated_when_referenced\ck-gen\CK\" />
+    <Folder Include="TSGeneratedOnly\no_TypeScript_attribute_is_generated_when_Type_appears_in_Aspect\ck-gen\CK\" />
+    <Folder Include="TSGeneratedOnly\with_date_and_guid\ck-gen\CK\" />
+    <Folder Include="TSNpmPackageTests\recursive_type_dont_import_themselves\ck-gen\src\CK.TypeScript\" />
+  </ItemGroup>
+</Project>
