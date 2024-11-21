@@ -1,28 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <IsPackable>false</IsPackable>
-    </PropertyGroup>
-    <ItemGroup>
-        <PackageReference Include="CK.Testing.Nunit" Version="11.0.0-a00-00-0013-develop" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
-    </ItemGroup>
-
-    <!--
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.Nunit" Version="11.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <!--
     Project references don't propagate build (transitive or not) NuGet files.
     We need to reference them explicitly.        
     -->
-    <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.props" />
-    <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.targets" />
-
-    <ItemGroup>
-        <EmbeddedResource Remove="TSInlineTests/**" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
-        <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
-    </ItemGroup>
-    
+  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.props" />
+  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.targets" />
+  <ItemGroup>
+    <EmbeddedResource Remove="TSInlineTests/**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
+    <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
+  </ItemGroup>
 </Project>
