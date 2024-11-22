@@ -5,6 +5,11 @@ using System.Collections.Immutable;
 
 namespace CK.Transform;
 
+public interface IParser
+{
+    AbstractNode Parse( ReadOnlyMemory<char> text );
+}
+
 public sealed class TransformTokenizer : PartialTokenizer
 {
     protected internal override TokenNode Tokenize( ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head )

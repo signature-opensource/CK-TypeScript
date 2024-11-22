@@ -11,7 +11,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Base class of all possible <see cref="TokenNode"/> and <see cref="CompositeNode"/>.
 /// </summary>
-public abstract partial class AbstractNode
+public abstract partial class AbstractNode : IAbstractNode
 {
     readonly ImmutableArray<Trivia> _leadingTrivias;
     readonly ImmutableArray<Trivia> _trailingTrivias;
@@ -22,10 +22,25 @@ public abstract partial class AbstractNode
         _trailingTrivias = trailing;
     }
 
-    /// <summary>
-    /// Gets the direct children if any.
-    /// </summary>
     public abstract IReadOnlyList<AbstractNode> ChildrenNodes { get; }
+
+    public ImmutableArray<Trivia> LeadingTrivias => _leadingTrivias;
+
+    public abstract IEnumerable<Trivia> FullLeadingTrivias { get; }
+
+    public ImmutableArray<Trivia> TrailingTrivias => _trailingTrivias;
+
+    public abstract IEnumerable<Trivia> FullTrailingTrivias { get; }
+
+    public abstract IEnumerable<AbstractNode> LeadingNodes { get; }
+
+    public abstract IEnumerable<AbstractNode> TrailingNodes { get; }
+
+    public abstract IEnumerable<TokenNode> AllTokens { get; }
+
+    public abstract int Width { get; }
+
+    public abstract TokenType TokenType { get; }
 
     /// <summary>
     /// Extracts a mutable copy of the children. This list is either:
@@ -36,51 +51,6 @@ public abstract partial class AbstractNode
     /// </summary>
     /// <returns>A <c>List&lt;ISqlNode&gt;</c> or a <c>Node?[]</c> array.</returns>
     public abstract IList<AbstractNode> GetRawContent();
-
-    /// <summary>
-    /// Leading <see cref="Trivia"/>.
-    /// </summary>
-    public ImmutableArray<Trivia> LeadingTrivias => _leadingTrivias;
-
-    /// <summary>
-    /// Gets the whole leading trivias for this node and its <see cref="LeadingNodes"/>.
-    /// </summary>
-    public abstract IEnumerable<Trivia> FullLeadingTrivias { get; }
-
-    /// <summary>
-    /// Trailing <see cref="Trivia"/>.
-    /// </summary>
-    public ImmutableArray<Trivia> TrailingTrivias => _trailingTrivias;
-
-    /// <summary>
-    /// Gets the whole trailing trivias for this node and its <see cref="TrailingNodes"/>.
-    /// </summary>
-    public abstract IEnumerable<Trivia> FullTrailingTrivias { get; }
-
-    /// <summary>
-    /// Gets the leading nodes from this one to the deepest left-most children.
-    /// </summary>
-    public abstract IEnumerable<AbstractNode> LeadingNodes { get; }
-
-    /// <summary>
-    /// Gets the trailing nodes from this one to the deepest right-most children.
-    /// </summary>
-    public abstract IEnumerable<AbstractNode> TrailingNodes { get; }
-
-    /// <summary>
-    /// Gets the tokens that compose this node.
-    /// </summary>
-    public abstract IEnumerable<TokenNode> AllTokens { get; }
-
-    /// <summary>
-    /// Gets the number of tokens in <see cref="AllTokens"/>.
-    /// </summary>
-    public abstract int Width { get; }
-
-    /// <summary>
-    /// Gets this <see cref="Transform.TokenType"/>.
-    /// </summary>
-    public abstract TokenType TokenType { get; }
 
     /// <summary>
     /// Finds the token at a relative position in this node. if the index is out of 
@@ -138,8 +108,6 @@ public abstract partial class AbstractNode
         return idx;
     }
 
-    public virtual AbstractNode UnPar => this;
-
     /// <summary>
     /// Fundamental method that rebuilds this Node with new trivias and content.
     /// <para>
@@ -147,7 +115,7 @@ public abstract partial class AbstractNode
     /// </para>
     /// </summary>
     /// <param name="leading">Leading trivias.</param>
-    /// <param name="content">New content.</param>
+    /// <param name="content">New content or null if the content did not change.</param>
     /// <param name="trailing">Trailing trivias.</param>
     /// <returns>A new immutable object.</returns>
     protected abstract AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing );

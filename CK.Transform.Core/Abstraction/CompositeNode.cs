@@ -6,7 +6,8 @@ using System.Linq;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Base class for all non token nodes. They are composed of other nodes (some of them being tokens).
+/// Base class for all non token nodes.
+/// They are composed of other nodes (some of them being tokens).
 /// </summary>
 public abstract class CompositeNode : AbstractNode
 {
