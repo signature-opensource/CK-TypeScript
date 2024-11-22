@@ -4,4 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Transform.Core\CK.Transform.Core.csproj" />
+  </ItemGroup>
+
 </Project>
