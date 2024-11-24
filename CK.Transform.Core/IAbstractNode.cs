@@ -6,11 +6,24 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Ultimate abstraction of a node that can be transformed.
-/// The <see cref="AbstractNode"/> class (that should be the only implementation of this interface)
-/// is used instead of this interface: this is used by the 
+/// <para>
+/// Even if the <see cref="AbstractNode"/> class is the only implementation of this interface,
+/// this interface helps defining complex composition and enables covariance support (for
+/// the <see cref="IAbstractNodeList{T}"/> for instance).
+/// </para>
+/// <para>
+/// The interface cannot be implemented in other assembly than this one: any <see cref="IAbstractNode"/>
+/// is necessarily a <see cref="AbstractNode"/>.
+/// </para>
 /// </summary>
 public interface IAbstractNode
 {
+    /// <summary>
+    /// This can only be implemented in this assembly and <see cref="AbstractNode"/> does this
+    /// with an explicit implementation to avoid poulluting its API.
+    /// </summary>
+    internal void ExternalImplementationsDisabled();
+
     /// <summary>
     /// Gets this <see cref="Core.TokenType"/>.
     /// Always <see cref="Core.TokenType.None"/> for <see cref="CompositeNode"/>.

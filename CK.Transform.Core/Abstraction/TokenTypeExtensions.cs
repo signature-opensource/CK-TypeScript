@@ -42,13 +42,15 @@ public static class TokenTypeExtensions
     public static bool IsError( this TokenType type ) => type <= 0;
 
     /// <summary>
-    /// Gets whether this token type is actually a kind of <see cref="Trivia"/>.
+    /// Gets whether this token type is actually a successful kind of <see cref="Trivia"/>, including
+    /// <see cref="TokenType.Whitespace"/>.
     /// <para>
-    /// Only Trivia (that are not <see cref="TokenNode"/>) can carry a trivia token type.
+    /// Only Trivia (not <see cref="TokenNode"/>) can carry a trivia token type.
     /// </para>
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is a trivia.</returns>
     public static bool IsTrivia( this TokenType type ) => (type & TokenType.TriviaClassMask) == TokenType.TriviaClassMask;
+
 }
 

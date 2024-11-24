@@ -24,6 +24,14 @@ public abstract class CompositeNode : AbstractNode
     }
 
     /// <summary>
+    /// Initializes a new <see cref="CompositeNode"/>.
+    /// </summary>
+    private protected CompositeNode()
+        : base( [], [] )
+    {
+    }
+
+    /// <summary>
     /// Always <see cref="TokenNode.None"/>.
     /// </summary>
     public override sealed TokenType TokenType => TokenType.None;

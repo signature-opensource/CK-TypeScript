@@ -10,20 +10,23 @@ public interface IParser
     AbstractNode Parse( ReadOnlyMemory<char> text );
 }
 
-public sealed class TransformTokenizer : PartialTokenizer
+public sealed class TransformTokenizer : Analyzer
 {
-    protected internal override TokenNode Tokenize( ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head )
+    protected override void ParseTrivia( ref TriviaCollector c )
     {
-        Throw.DebugAssert( "This never called on an empty text.", head.Length > 0 );
+        throw new NotImplementedException();
+    }
+
+    protected internal override IAbstractNode? Parse( ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head )
+    {
+        Throw.DebugAssert( "This is never called on an empty text.", head.Length > 0 );
         var s = head.Span;
-        if( s[0] == '"' )
+        if( TryCreateToken( (Core.TokenType)TokenType.Inject, "inject", out var inject ) )
         {
-            return ReadRawString( s, leadingTrivias, ref head );
-        }
-        if( TryCreateToken( (int)TokenType.Inject, "inject", out var result )
-            || TryCreateToken( (int)TokenType.Into, "into", out result ) )
-        {
-            return result;
+            if( !TryCreateToken( (Core.TokenType)TokenType.Into, "into", out var into ) ) return null;
+            {
+                return into;
+            }
         }
         return TokenErrorNode.Unhandled;
     }

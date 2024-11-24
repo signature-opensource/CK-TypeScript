@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CK.Transform.Core;
@@ -22,35 +23,37 @@ public abstract partial class AbstractNode : IAbstractNode
         _trailingTrivias = trailing;
     }
 
+    void IAbstractNode.ExternalImplementationsDisabled() { }
+
+    /// <inheritdoc />
     public abstract IReadOnlyList<AbstractNode> ChildrenNodes { get; }
 
+    /// <inheritdoc />
     public ImmutableArray<Trivia> LeadingTrivias => _leadingTrivias;
 
+    /// <inheritdoc />
     public abstract IEnumerable<Trivia> FullLeadingTrivias { get; }
 
+    /// <inheritdoc />
     public ImmutableArray<Trivia> TrailingTrivias => _trailingTrivias;
 
+    /// <inheritdoc />
     public abstract IEnumerable<Trivia> FullTrailingTrivias { get; }
 
+    /// <inheritdoc />
     public abstract IEnumerable<AbstractNode> LeadingNodes { get; }
 
+    /// <inheritdoc />
     public abstract IEnumerable<AbstractNode> TrailingNodes { get; }
 
+    /// <inheritdoc />
     public abstract IEnumerable<TokenNode> AllTokens { get; }
 
+    /// <inheritdoc />
     public abstract int Width { get; }
 
+    /// <inheritdoc />
     public abstract TokenType TokenType { get; }
-
-    /// <summary>
-    /// Extracts a mutable copy of the children. This list is either:
-    /// <list type="bullet">
-    ///     <item>A truly dynamic <see cref="List{T}"/> with non null Node in it.</item>
-    ///     <item>Or an array with potentially null nodes that may be changed but its length can not change.</item>
-    /// </list>
-    /// </summary>
-    /// <returns>A <c>List&lt;ISqlNode&gt;</c> or a <c>Node?[]</c> array.</returns>
-    public abstract IList<AbstractNode> GetRawContent();
 
     /// <summary>
     /// Finds the token at a relative position in this node. if the index is out of 
@@ -59,7 +62,7 @@ public abstract partial class AbstractNode : IAbstractNode
     /// <param name="index">The zero based index of the token to locate.</param>
     /// <param name="onPath">Will be called for each intermediate node with the relative index of its first token.</param>
     /// <returns>The token or null if index is out of range.</returns>
-    public TokenNode? LocateToken( int index, Action<AbstractNode, int> onPath )
+    public TokenNode? LocateToken( int index, Action<IAbstractNode, int> onPath )
     {
         if( index < 0 || index >= Width ) return null;
 
@@ -78,7 +81,7 @@ public abstract partial class AbstractNode : IAbstractNode
                 {
                     if( c is TokenNode r ) return r;
                     onPath( c, cPos );
-                    n = c;
+                    n = Unsafe.As<AbstractNode>( c );
                     break;
                 }
                 cPos += cW;
@@ -108,6 +111,17 @@ public abstract partial class AbstractNode : IAbstractNode
         return idx;
     }
 
+
+    /// <summary>
+    /// Extracts a mutable copy of the children. This list is either:
+    /// <list type="bullet">
+    ///     <item>A truly dynamic <see cref="List{T}"/> with non null AbstractNodes in it.</item>
+    ///     <item>An array with potentially null AbstractNodes that may be changed but its length cannot change.</item>
+    /// </list>
+    /// </summary>
+    /// <returns>A <c>List&lt;AbstractNode&gt;</c> or a <c>AbstractNode?[]</c> array.</returns>
+    public abstract IList<AbstractNode> GetRawContent();
+
     /// <summary>
     /// Fundamental method that rebuilds this Node with new trivias and content.
     /// <para>
@@ -115,7 +129,7 @@ public abstract partial class AbstractNode : IAbstractNode
     /// </para>
     /// </summary>
     /// <param name="leading">Leading trivias.</param>
-    /// <param name="content">New content or null if the content did not change.</param>
+    /// <param name="content">New content or null if the content did not change. See <see cref="GetRawContent()"/>.</param>
     /// <param name="trailing">Trailing trivias.</param>
     /// <returns>A new immutable object.</returns>
     protected abstract AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing );

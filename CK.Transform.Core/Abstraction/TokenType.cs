@@ -32,7 +32,10 @@ public enum TokenType
     /// <summary>
     /// Sign bit (bit n°31) is 1 to indicate an error or the end of the input.
     /// <para>
-    /// This is the token type class n°0.
+    /// This is the token type class n°0 and the only class that can be combined with
+    /// another class bit (with any other token type). Thanks to this, any token type
+    /// can be "on error". Trivia uses this: the error for a type of comment is the
+    /// "unterminated comment" error.
     /// </para>
     /// </summary>
     ErrorClassBit = 1 << (31 - ErrorClassNumber),
@@ -55,16 +58,6 @@ public enum TokenType
     EndOfInput = ErrorClassBit,
 
     /// <summary>
-    /// An opened /* comment is not closed by a */.
-    /// </summary>
-    ErrorClosingStarComment = ErrorClassBit | 1 << 24,
-
-    /// <summary>
-    /// An opened &lt;!-- comment is not closed by a --&gt;.
-    /// </summary>
-    ErrorClosingXmlComment = ErrorClassBit | 2 << 24,
-
-    /// <summary>
     /// Denotes an unhandled token. See <see cref="TokenErrorNode.Unhandled"/>.
     /// </summary>
     ErrorUnhandled = ErrorClassBit | 3 << 24,
@@ -79,31 +72,31 @@ public enum TokenType
     /// <summary>
     /// One or more <see cref="char.IsWhiteSpace(char)"/>.
     /// </summary>
-    Whitespace = TriviaClassBit | 1,
+    Whitespace = TriviaClassBit,
 
     /// <summary>
     /// The "//".
     /// Ends with a new line.
     /// </summary>
-    LineComment = TriviaClassBit | 2,
+    LineComment = TriviaClassBit | 1,
 
     /// <summary>
     /// The "/*".
     /// Ends with a "*/".
     /// </summary>
-    StarComment = TriviaClassBit | 3,
+    StarComment = TriviaClassBit | 2,
 
     /// <summary>
     /// The "&lt;!--".
     /// Ends with "--&gt;".
     /// </summary>
-    XmlComment = TriviaClassBit | 4,
+    XmlComment = TriviaClassBit | 3,
 
     /// <summary>
     /// The "--".
     /// Ends with a new line.
     /// </summary>
-    SqlComment = TriviaClassBit | 5,
+    SqlComment = TriviaClassBit | 4,
 
     #endregion
 
