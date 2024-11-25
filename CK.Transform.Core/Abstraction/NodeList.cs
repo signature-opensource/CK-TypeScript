@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace CK.Transform.Core;
 
-public class NodeList : NodeList<AbstractNode>
+/// <summary>
+/// Simple list of any type of <see cref="AbstractNode"/>.
+/// </summary>
+public sealed class NodeList : NodeList<AbstractNode>
 {
     public NodeList( IEnumerable<AbstractNode> items, ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, int minCount = 0 )
         : base( items, leading, trailing, minCount )

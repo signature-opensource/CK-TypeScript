@@ -1,93 +1,107 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.Transform.Core;
 
-/// <summary>
-/// Base class for all non token nodes.
-/// They are composed of other nodes (some of them being tokens).
-/// </summary>
-public abstract class CompositeNode : AbstractNode
+public abstract class CompositeNode : SyntaxNode
 {
-    int _width;
+    internal readonly AbstractNode?[] _store;
+    AbstractNode[]? _content;
 
-    /// <summary>
-    /// Initializes a new <see cref="CompositeNode"/>.
-    /// </summary>
-    /// <param name="leading">The leading trivias.</param>
-    /// <param name="trailing">The trailing trivias.</param>
-    private protected CompositeNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
+    protected CompositeNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, params AbstractNode?[] uncheckedStore )
         : base( leading, trailing )
     {
+        _store = uncheckedStore;
     }
 
-    /// <summary>
-    /// Initializes a new <see cref="CompositeNode"/>.
-    /// </summary>
-    private protected CompositeNode()
-        : base( [], [] )
+    protected CompositeNode( CompositeNode o, ImmutableArray<Trivia> leading, AbstractNode?[]? uncheckedStore, ImmutableArray<Trivia> trailing )
+    : base( leading, trailing )
     {
+        _store = uncheckedStore ?? o._store;
     }
 
-    /// <summary>
-    /// Always <see cref="TokenNode.None"/>.
-    /// </summary>
-    public override sealed TokenType TokenType => TokenType.None;
+    public override IReadOnlyList<AbstractNode> ChildrenNodes => _content ??= CreateContent( _store );
 
-    /// <summary>
-    /// Gets the total number of token that this element contains.
-    /// </summary>
-    public override sealed int Width => _width == -1 ? (_width = ChildrenNodes.Select( c => c.Width ).Sum()) : _width;
-
-    /// <summary>
-    /// Gets a list starting with this node and the first nodes recursively.
-    /// </summary>
-    public override sealed IEnumerable<AbstractNode> LeadingNodes
+    static AbstractNode[] CreateContent( AbstractNode?[] store )
     {
-        get
+        int count = 0;
+        for( var i = 0; i < store.Length; ++i )
         {
-            AbstractNode n = this;
-            for(; ; )
-            {
-                yield return n;
-                if( n.ChildrenNodes.Count == 0 ) yield break;
-                n = n.ChildrenNodes[0];
-            }
+            if( store[i] != null ) ++count;
         }
-    }
-
-    /// <summary>
-    /// Gets a list starting with this node and the last nodes recursively.
-    /// </summary>
-    public override sealed IEnumerable<AbstractNode> TrailingNodes
-    {
-        get
+        var c = new AbstractNode[count];
+        count = 0;
+        for( var i = 0; i < store.Length; ++i )
         {
-            AbstractNode n = this;
-            for(; ; )
-            {
-                yield return n;
-                if( n.ChildrenNodes.Count == 0 ) yield break;
-                n = n.ChildrenNodes[n.ChildrenNodes.Count - 1];
-            }
+            var o = store[i];
+            if( o != null ) c[count++] = o;
         }
+        return c;
     }
 
-    /// <summary>
-    /// Gets the leading trivias of all the <see cref="LeadingNodes"/>.
-    /// </summary>
-    public override sealed IEnumerable<Trivia> FullLeadingTrivias => LeadingNodes.SelectMany( n => n.LeadingTrivias );
+    protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
+    {
+        throw new NotImplementedException();
+    }
 
-    /// <summary>
-    /// Gets the trailing trivias of all the <see cref="TrailingNodes"/>.
-    /// </summary>
-    public override sealed IEnumerable<Trivia> FullTrailingTrivias => TrailingNodes.Reverse().SelectMany( n => n.TrailingTrivias );
+    protected abstract CompositeNode DoClone( ImmutableArray<Trivia> leading, MutableCompositeContent? content, ImmutableArray<Trivia> trailing )
+    {
+        throw new NotImplementedException();
+    }
+}
 
-    /// <summary>
-    /// Enumerates all the tokens that this node contains.
-    /// </summary>
-    public override sealed IEnumerable<TokenNode> AllTokens => ChildrenNodes.ToTokens();
+public class MutableNodeContent
+{
+    private protected readonly AbstractNode _node;
 
+    public MutableNodeContent( AbstractNode node )
+    {
+        _node = node;
+        Leading = node.LeadingTrivias;
+        Trailing = node.TrailingTrivias;
+    }
+
+    public ImmutableArray<Trivia> Leading { get; set; }
+
+    public ImmutableArray<Trivia> Trailing { get; set; }
+
+    AbstractNode Clone()
+    {
+        if( Trailing == _node.TrailingTrivias )
+    }
+
+}
+
+public sealed class MutableCompositeContent : IMutableAbstractNodeContent
+{
+    readonly CompositeNode _node;
+    AbstractNode?[] _content;
+
+    public MutableCompositeContent( CompositeNode node )
+    {
+        _node = node;
+        _content = (AbstractNode?[])_node._store.Clone();
+    }
+
+    public ImmutableArray<Trivia> Leading { get; set; }
+
+    public ImmutableArray<Trivia> Trailing { get; set; }
+
+    public void Replace( int index, AbstractNode? node ) => _content[index] = node;
+
+    public int Length => _content.Length;
+
+
+    public CompositeNode Clone( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
+    {
+        
+    }
+}
+
+
+public abstract class CollectionNode : SyntaxNode
+{
+    internal protected abstract List<AbstractNode> GetMutableContent();
 }

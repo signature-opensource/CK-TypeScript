@@ -10,7 +10,7 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Base class of all possible <see cref="TokenNode"/> and <see cref="CompositeNode"/>.
+/// Base class of all possible <see cref="TokenNode"/> and <see cref="SyntaxNode"/>.
 /// </summary>
 public abstract partial class AbstractNode : IAbstractNode
 {
@@ -120,7 +120,14 @@ public abstract partial class AbstractNode : IAbstractNode
     /// </list>
     /// </summary>
     /// <returns>A <c>List&lt;AbstractNode&gt;</c> or a <c>AbstractNode?[]</c> array.</returns>
-    public abstract IList<AbstractNode> GetRawContent();
+    internal abstract IList<AbstractNode> GetRawContent();
+
+    internal AbstractNode InternalDoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
+    {
+        return leading == _leadingTrivias && content == null && trailing == _trailingTrivias
+                ? this
+                : DoClone( leading, content, trailing );
+    }
 
     /// <summary>
     /// Fundamental method that rebuilds this Node with new trivias and content.
@@ -168,13 +175,12 @@ public abstract partial class AbstractNode : IAbstractNode
         }
         if( !contentChanged ) content = null;
         tL?.AddRange( n._trailingTrivias );
-        AbstractNode sN = (AbstractNode)n;
         return root
-                ? sN.InternalDoClone(
+                ? n.InternalDoClone(
                         hL != null ? hL.ToImmutableArray() : n.LeadingTrivias,
                         content,
                         tL != null ? tL.ToImmutableArray() : n.TrailingTrivias )
-                : sN.InternalDoClone(
+                : n.InternalDoClone(
                         hL != null ? ImmutableArray<Trivia>.Empty : n.LeadingTrivias,
                         content,
                         tL != null ? ImmutableArray<Trivia>.Empty : n.TrailingTrivias );
@@ -370,7 +376,7 @@ public abstract partial class AbstractNode : IAbstractNode
         return lastChild;
     }
 
-    static IList<AbstractNode>? RawStuffContent( IList<AbstractNode> content, int iStart, int count, IReadOnlyList<AbstractNode> children )
+    static IList<AbstractNode>? RawStuffContent( IList<AbstractNode> content, int index, int count, IReadOnlyList<AbstractNode> children )
     {
         List<AbstractNode>? lC = content as List<AbstractNode>;
         if( lC == null || children.Count == count )
@@ -379,17 +385,17 @@ public abstract partial class AbstractNode : IAbstractNode
             bool changed = false;
             for( int i = 0; i < count; ++i )
             {
-                if( content[iStart + i] != children[i] )
+                if( content[index + i] != children[i] )
                 {
-                    content[iStart + i] = children[i];
+                    content[index + i] = children[i];
                     changed = true;
                 }
             }
             return changed ? content : null;
         }
         Throw.DebugAssert( lC != null );
-        lC.RemoveRange( iStart, count );
-        lC.InsertRange( iStart, children );
+        lC.RemoveRange( index, count );
+        lC.InsertRange( index, children );
         return content;
     }
 
@@ -423,14 +429,5 @@ public abstract partial class AbstractNode : IAbstractNode
         }
         return DoClone( _leadingTrivias, null, _trailingTrivias.Insert( idx, t ) );
     }
-
-    internal AbstractNode InternalDoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
-    {
-        return leading == _leadingTrivias && content == null && trailing == _trailingTrivias
-                ? this
-                : DoClone( leading, content, trailing );
-    }
-
-
 
 }

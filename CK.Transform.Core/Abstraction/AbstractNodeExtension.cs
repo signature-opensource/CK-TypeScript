@@ -183,13 +183,13 @@ public static class AbstractNodeExtension
     /// Inserts or replace one or more children at a given index in <see cref="AbstractNode.GetRawContent"/>.
     /// </summary>
     /// <param name="this">This node.</param>
-    /// <param name="iStart">The index.</param>
+    /// <param name="index">The index.</param>
     /// <param name="count">The number of children to replace.</param>
     /// <param name="children">The children to insert.</param>
     /// <returns>A new immutable object or this if no change occurred.</returns>
-    static public T StuffRawContent<T>( this T @this, int iStart, int count, params AbstractNode[] children ) where T : class, IAbstractNode
+    static public T StuffRawContent<T>( this T @this, int index, int count, params AbstractNode[] children ) where T : class, IAbstractNode
     {
-        return Unsafe.As<T>( Unsafe.As<AbstractNode>( @this ).DoStuffRawContent( iStart, count, children ) );
+        return Unsafe.As<T>( Unsafe.As<AbstractNode>( @this ).DoStuffRawContent( index, count, children ) );
     }
 
 }

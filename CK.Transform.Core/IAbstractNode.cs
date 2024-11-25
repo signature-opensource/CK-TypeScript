@@ -26,7 +26,7 @@ public interface IAbstractNode
 
     /// <summary>
     /// Gets this <see cref="Core.TokenType"/>.
-    /// Always <see cref="Core.TokenType.None"/> for <see cref="CompositeNode"/>.
+    /// Always <see cref="Core.TokenType.None"/> for <see cref="SyntaxNode"/>.
     /// </summary>
     TokenType TokenType { get; }
 

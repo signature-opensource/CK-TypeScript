@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace CK.Transform.Core;
 
-public class NodeList<T> : CompositeNode, IAbstractNodeList<T> where T : AbstractNode
+public class NodeList<T> : SyntaxNode, IAbstractNodeList<T> where T : AbstractNode
 {
     readonly IReadOnlyList<T> _items;
 
@@ -30,12 +30,12 @@ public class NodeList<T> : CompositeNode, IAbstractNodeList<T> where T : Abstrac
     /// method. <paramref name="safeContent"/> must be obtained through <see cref="GetSafeContent(IList{AbstractNode}?, int)"/>.
     /// </summary>
     /// <param name="leading">Leading trivias.</param>
+    /// <param name="content">Items of this list.</param>
     /// <param name="trailing">Trailing trivias.</param>
-    /// <param name="safeContent">Items of this list.</param>
-    protected NodeList( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, IReadOnlyList<T> safeContent )
+    protected NodeList( NodeList<T> o, ImmutableArray<Trivia> leading, List<T> content, ImmutableArray<Trivia> trailing )
         : base( leading, trailing )
     {
-        _items = safeContent;
+        _items = content;
     }
 
     static void RaiseItemCountError( AbstractNode o, int count, int minCount )
@@ -53,7 +53,7 @@ public class NodeList<T> : CompositeNode, IAbstractNodeList<T> where T : Abstrac
     public T this[int index] => _items[index];
 
     /// <inheritdoc />
-    public override IList<AbstractNode> GetRawContent() => _items.Cast<AbstractNode>().ToList();
+    internal override IList<AbstractNode> GetRawContent() => new List<AbstractNode>( _items );
 
     /// <inheritdoc />
     public IEnumerator<T> GetEnumerator() => _items.GetEnumerator();
@@ -113,6 +113,6 @@ public class NodeList<T> : CompositeNode, IAbstractNodeList<T> where T : Abstrac
     protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
     {
         Throw.CheckState( "The DoClone() method MUST be overridden by specialized types.", GetType() == typeof( NodeList<T> ) );
-        return new NodeList<T>( leading, trailing, GetSafeContent( content ) );
+        return new NodeList<T>( o, leading, trailing, GetSafeContent( content ) );
     }
 }

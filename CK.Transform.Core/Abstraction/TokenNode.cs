@@ -86,6 +86,7 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
 
     /// <summary>
     /// Tests token value equality: the reference equality still applies to tokens.
+    /// This tests that the <see cref="Text"/> is the same.
     /// </summary>
     /// <param name="t">Token to compare to.</param>
     /// <returns>True if the this token has the same <see cref="Text"/> (ordinal comparison) as the other one.</returns>

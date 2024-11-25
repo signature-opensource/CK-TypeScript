@@ -16,7 +16,7 @@ using CNode = SNode<
         RawString,
         TokenNode>; // ;
 
-public sealed class InjectIntoNode : CompositeNode
+public sealed class InjectIntoNode : SyntaxNode
 {
     readonly CNode _content;
 
