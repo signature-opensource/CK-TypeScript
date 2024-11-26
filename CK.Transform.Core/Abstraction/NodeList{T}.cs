@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace CK.Transform.Core;
 
-public class NodeList<T> : SyntaxNode, IAbstractNodeList<T> where T : AbstractNode
+public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class, IAbstractNode
 {
     readonly IReadOnlyList<T> _items;
 
@@ -51,9 +51,6 @@ public class NodeList<T> : SyntaxNode, IAbstractNodeList<T> where T : AbstractNo
 
     /// <inheritdoc />
     public T this[int index] => _items[index];
-
-    /// <inheritdoc />
-    internal override IList<AbstractNode> GetRawContent() => new List<AbstractNode>( _items );
 
     /// <inheritdoc />
     public IEnumerator<T> GetEnumerator() => _items.GetEnumerator();

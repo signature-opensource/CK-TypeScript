@@ -91,7 +91,7 @@ public abstract class CompositeNode : SyntaxNode
     /// <typeparam name="T">Type of the node.</typeparam>
     /// <param name="index">Index in the store.</param>
     /// <returns>The node.</returns>
-    protected T? At<T>( int index ) where T : AbstractNode => (T?)_store[index];
+    protected T? At<T>( int index ) where T : class, IAbstractNode => (T?)(object?)_store[index];
 
     static void SafeCheck( Action<CompositeNode,int> a, CompositeNode n, int index, string propertName )
     {
@@ -105,7 +105,7 @@ public abstract class CompositeNode : SyntaxNode
         }
     }
 
-    protected readonly struct OptionalChild<T> where T : AbstractNode
+    protected readonly struct OptionalChild<T> where T : class, IAbstractNode
     {
         readonly int _index;
         public OptionalChild( int index ) => _index = index;
@@ -124,7 +124,7 @@ public abstract class CompositeNode : SyntaxNode
         }
     }
 
-    protected readonly struct RequiredChild<T> where T : AbstractNode
+    protected readonly struct RequiredChild<T> where T : class, IAbstractNode
     {
         readonly int _index;
         public RequiredChild( int index ) => _index = index;
@@ -162,7 +162,7 @@ public abstract class CompositeNode : SyntaxNode
     /// <param name="index">Index in the store.</param>
     /// <returns>The node.</returns>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    protected T? UnsafeAt<T>( int index ) where T : AbstractNode
+    protected T? UnsafeAt<T>( int index ) where T : class, IAbstractNode
     {
         ref AbstractNode? first = ref MemoryMarshal.GetArrayDataReference( _store );
         return Unsafe.As<T?>( Unsafe.Add( ref first, (nint)index ) );
