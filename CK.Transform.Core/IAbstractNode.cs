@@ -5,10 +5,10 @@ using System.Collections.Immutable;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Ultimate abstraction of a node that can be transformed.
+/// Ultimate abstraction of an Abstract Syntax Tree item that can be transformed.
 /// <para>
 /// Even if the <see cref="AbstractNode"/> class is the only implementation of this interface,
-/// this interface helps defining complex composition and enables covariance support (for
+/// this interface helps defining complex composition and enables covariance support (see
 /// the <see cref="IAbstractNodeList{T}"/> for instance).
 /// </para>
 /// <para>
@@ -32,6 +32,12 @@ public interface IAbstractNode
 
     /// <summary>
     /// Gets the direct children if any.
+    /// <para>
+    /// A <see cref="TokenNode"/> has no children.
+    /// An empty <see cref="CollectionNode"/> may have no children.
+    /// To my knowledge, a <see cref="CompositeNode"/> can hardly have no children at all:
+    /// that would mean that all its fields are optional... But it is possible.
+    /// </para>
     /// </summary>
     IReadOnlyList<AbstractNode> ChildrenNodes { get; }
 

@@ -98,35 +98,16 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     public override sealed IReadOnlyList<AbstractNode> ChildrenNodes => ImmutableArray<AbstractNode>.Empty;
 
     /// <summary>
-    /// Always empty since a token has no children.
-    /// </summary>
-    /// <returns>An empty read only list.</returns>
-    public override sealed IList<AbstractNode> GetRawContent()
-    {
-        // Must be the empty Array, not the empty ImmutableArray to follow
-        // the Array/IList constraint.
-        return Array.Empty<AbstractNode>();
-    }
-
-    /// <summary>
     /// Gets a enumerable with only this token inside.
     /// </summary>
     public override sealed IEnumerable<TokenNode> AllTokens => this;
 
     /// <summary>
-    /// By default, returns a clone of this instance (no change except the new trivias).
-    /// <para>
-    /// This MUST be overridden by specializations.
-    /// </para>
+    /// Does nothing ath this level: the fact that the <see cref="Text"/> is necessarily non empty and the
+    /// <see cref="TokenType"/> is not a trivia is checked by the constructor.
     /// </summary>
-    /// <param name="leading">Leading trivias.</param>
-    /// <param name="content">New content (ignored as this is always empty: a token has no content).</param>
-    /// <param name="trailing">Trailing trivias.</param>
-    /// <returns>A clone with the new trivias.</returns>
-    protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
+    public override void DoCheckInvariants()
     {
-        Throw.CheckState( "The DoClone() method MUST be overridden by specialized types.", GetType() == typeof( TokenNode ) );
-        return new TokenNode( _tokenType, _text, leading, trailing );
     }
 
     IEnumerator<TokenNode> IEnumerable<TokenNode>.GetEnumerator() => new CKEnumeratorMono<TokenNode>( this );

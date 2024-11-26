@@ -1,4 +1,4 @@
-﻿using CK.Transform.Core;
+using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -34,10 +34,5 @@ public sealed class RawString : TokenNode, ITransformLanguageNode
     /// Gets the number of lines.
     /// </summary>
     public int LineCount => _lineCount;
-
-    protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
-    {
-        return new RawString( Text, _innerText, _lineCount, leading, trailing );
-    }
 
 }

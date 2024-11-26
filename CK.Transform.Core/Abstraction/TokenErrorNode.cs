@@ -4,12 +4,16 @@ using System.Collections.Immutable;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Can capture any error as a <see cref="TokenNode"/> (hence as an <see cref="AbstractNode"/>): this may
+/// appear anywhere in the AST.
+/// </summary>
 public class TokenErrorNode : TokenNode
 {
     readonly string _errorMessage;
 
     /// <summary>
-    /// Singleton used by PartialTokenizer.
+    /// Singleton for "Unhandled" scenario (a gentle error).
     /// </summary>
     public static readonly TokenErrorNode Unhandled = new TokenErrorNode( TokenType.ErrorUnhandled, "Unhandled" );
 
@@ -27,9 +31,4 @@ public class TokenErrorNode : TokenNode
     /// Gets the error message.
     /// </summary>
     public string ErrorMessage => _errorMessage;
-
-    protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
-    {
-        return new TokenErrorNode( TokenType, _errorMessage, leading, trailing );
-    }
 }
