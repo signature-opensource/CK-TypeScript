@@ -8,6 +8,9 @@ using System.Xml.Linq;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Composite mutator.
+/// </summary>
 public class CompositeNodeMutator : AbstractNodeMutator
 {
     AbstractNode?[]? _items;
@@ -33,7 +36,7 @@ public class CompositeNodeMutator : AbstractNodeMutator
     /// <summary>
     /// Gets the fully mutable children store.
     /// </summary>
-    public AbstractNode?[] RawItems => _items ??= (AbstractNode?[])Origin._store.Clone();
+    public AbstractNode?[] RawItems => _items ??= Unsafe.As<AbstractNode?[]>( Origin._store.Clone() );
 
     /// <summary>
     /// Creates the mutated node from this <see cref="RawItems"/> and trivias (or returns the <see cref="Origin"/>
@@ -44,7 +47,7 @@ public class CompositeNodeMutator : AbstractNodeMutator
     /// </para>
     /// </summary>
     /// <returns>The cloned node.</returns>
-    public override AbstractNode Clone()
+    public override sealed AbstractNode Clone()
     {
         var content = _items != null && !_items.AsSpan().SequenceEqual( Origin._store.AsSpan() )
                         ? this
@@ -59,7 +62,7 @@ public class CompositeNodeMutator : AbstractNodeMutator
         static AbstractNode CreateAndCheck( CompositeNode origin, ImmutableArray<Trivia> leading, CompositeNodeMutator content, ImmutableArray<Trivia> trailing )
         {
             var o = origin.DoClone( leading, content, trailing );
-            o.DoCheckInvariants();
+            o.CheckInvariants();
             return o;
         }
     }

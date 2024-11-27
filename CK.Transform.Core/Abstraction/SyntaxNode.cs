@@ -26,10 +26,10 @@ public abstract class SyntaxNode : AbstractNode
     }
 
     /// <summary>
-    /// Initializes a new <see cref="SyntaxNode"/>.
+    /// Initializes a new <see cref="SyntaxNode"/> with no trivias.
     /// </summary>
     private protected SyntaxNode()
-        : base( [], [] )
+        : base( ImmutableArray<Trivia>.Empty, ImmutableArray<Trivia>.Empty )
     {
     }
 

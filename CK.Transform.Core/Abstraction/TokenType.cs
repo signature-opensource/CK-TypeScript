@@ -53,19 +53,62 @@ public enum TokenType
     TriviaClassMask = -1 << (31 - TriviaClassNumber),
 
     /// <summary>
+    /// Generic token type are not classified: none of the 24 class bits are set: this lets
+    /// 255 possible token types for them.
+    /// <para>
+    /// Parsers are free to reuse them but most often, these generic types won't be used,
+    /// they will be redefined in the TokenType Class defined for the language. 
+    /// The <c>GenericLowerThan</c> for instance should not be useful to many languages: this
+    /// is often an operator with an associated priority and a specific TokenType will be
+    /// able to capture the priority.
+    /// </para>
+    /// <para>
+    /// Good candidates are basic characters without too much overloaded semantics... and there
+    /// are not many of them.
+    /// </para>
+    /// <para>
+    /// The GenericText can contain any text. This is a kind of fallback token type that can be used
+    /// when an island of text doesn't need any special processing or is not handled. An example of
+    /// usage is to model the content of an Xml CDATA node.
+    /// </para>
+    /// </summary>
+    GenericText = 1,
+
+    /// <summary>
+    /// A comma <c>,</c> is often used with a the only semantics to separate items in list.
+    /// Note that when expressions must be analyzed, this may (dependeing on the language and
+    /// the way the parser is written) need to be considered as an operator and associated to
+    /// a priority.
+    /// </summary>
+    GenericComma = 2,
+
+    /// <summary>
+    /// A semi-colon <c>;</c> is often used as the statement terminator.
+    /// </summary>
+    GenericSemiColon = 3,
+
+    /// <summary>
     /// The end of input has only the most significant bit set.
+    /// This can be understood as the combination of the <see cref="ErrorClassBit"/>
+    /// and <see cref="None"/>.
     /// </summary>
     EndOfInput = ErrorClassBit,
 
     /// <summary>
-    /// Denotes an unhandled token. See <see cref="TokenErrorNode.Unhandled"/>.
+    /// Generic syntax error.
     /// </summary>
-    ErrorUnhandled = ErrorClassBit | 3 << 24,
+    SyntaxError = ErrorClassBit | 1,
 
     /// <summary>
-    /// An unterminated string: the end-of-input has been reached before the closing quote (whatever it is).
+    /// Denotes an unhandled token. See <see cref="TokenErrorNode.Unhandled"/>.
     /// </summary>
-    ErrorUnterminatedString = ErrorClassBit | 4 << 24,
+    ErrorUnhandled = ErrorClassBit | 2,
+
+    /// <summary>
+    /// An unterminated string: the end-of-input has been reached before the closing "quote" (whatever it is).
+    /// </summary>
+    ErrorUnterminatedString = ErrorClassBit | 3,
+
 
     #region Trivia
 

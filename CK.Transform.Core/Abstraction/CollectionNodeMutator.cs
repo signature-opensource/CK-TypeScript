@@ -15,7 +15,6 @@ public class CollectionNodeMutator : AbstractNodeMutator
 
     /// <summary>
     /// Initializes a mutator for a <see cref="CollectionNode"/>.
-    /// At this level, only Trivias can be mutated.
     /// <para>
     /// When specialized, the constructor must not be public. It should always be internal (or
     /// internal protected if the mutator is not sealed) so that it can only be a obtain by a call to
@@ -34,7 +33,7 @@ public class CollectionNodeMutator : AbstractNodeMutator
     /// <summary>
     /// Gets the fully mutable items list.
     /// </summary>
-    public IList<AbstractNode> RawItems => _items ??= new List<AbstractNode>( Origin.Store );
+    public IList<AbstractNode> RawItems => _items ??= new List<AbstractNode>( Origin.ChildrenNodes );
 
     /// <summary>
     /// Creates the mutated node from this <see cref="RawItems"/> and trivias (or returns the <see cref="Origin"/>
@@ -45,9 +44,9 @@ public class CollectionNodeMutator : AbstractNodeMutator
     /// </para>
     /// </summary>
     /// <returns>The cloned node.</returns>
-    public override AbstractNode Clone()
+    public override sealed AbstractNode Clone()
     {
-        CollectionNodeMutator? content = _items != null && !CollectionsMarshal.AsSpan( _items ).SequenceEqual( Origin.Store.AsSpan() )
+        CollectionNodeMutator? content = _items != null && !_items.SequenceEqual( Origin.ChildrenNodes )
                                             ? this
                                             : null;
         var triviaChanged = GetTrivias( out var leading, out var trailing );
@@ -60,32 +59,32 @@ public class CollectionNodeMutator : AbstractNodeMutator
         static AbstractNode CreateAndCheck( CollectionNode origin, ImmutableArray<Trivia> leading, CollectionNodeMutator content, ImmutableArray<Trivia> trailing )
         {
             var o = origin.DoClone( leading, content, trailing );
-            o.DoCheckInvariants();
+            o.CheckInvariants();
             return o;
         }
     }
 
-    internal override AbstractNode? GetFirstChildForTrivia( out int idx )
+    internal override sealed AbstractNode? GetFirstChildForTrivia( out int idx )
     {
-        Throw.DebugAssert( "Called first", _items == null );
         idx = 0;
-        return Origin.Store.Length > 0 ? Origin.Store[0] : null;
+        var c = Origin.ChildrenNodes;
+        return c.Count > 0 ? c[0] : null;
     }
 
-    internal override AbstractNode? GetLastChildForTrivia( out int idx )
+    internal override sealed AbstractNode? GetLastChildForTrivia( out int idx )
     {
-        if( Origin.Store.Length > 0 )
+        var c = Origin.ChildrenNodes;
+        if( c.Count > 0 )
         {
-            idx = Origin.Store.Length - 1;
-            return Origin.Store[idx];
+            idx = c.Count - 1;
+            return c[idx];
         }
         idx = 0;
         return null;
     }
 
-    internal override void ReplaceForTrivia( int idx, AbstractNode n )
+    internal override sealed void ReplaceForTrivia( int idx, AbstractNode n )
     {
         RawItems[idx] = n;
     }
-
 }

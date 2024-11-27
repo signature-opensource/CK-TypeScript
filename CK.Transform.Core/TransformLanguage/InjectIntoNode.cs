@@ -12,11 +12,11 @@ namespace CK.Transform;
 
 public sealed class InjectIntoNode : CompositeNode
 {
-    readonly RequiredChild<TokenNode> _injecT = new( 0 );
-    readonly RequiredChild<RawString> _content = new( 1 );
-    readonly RequiredChild<TokenNode> _intoT = new( 2 );
-    readonly RequiredChild<RawString> _target = new( 3 );
-    readonly OptionalChild<TokenNode> _statementTerminator = new( 4 );
+    static readonly RequiredChild<TokenNode> _injecT = new( 0 );
+    static readonly RequiredChild<RawString> _content = new( 1 );
+    static readonly RequiredChild<TokenNode> _intoT = new( 2 );
+    static readonly RequiredChild<RawString> _target = new( 3 );
+    static readonly OptionalChild<TokenNode> _statementTerminator = new( 4 );
 
     public InjectIntoNode( TokenNode injectT, RawString content, TokenNode intoT, RawString target, TokenNode? terminator )
         : base( [], [], injectT, content, intoT, target, terminator )

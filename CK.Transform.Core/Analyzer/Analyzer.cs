@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Threading;
 
 namespace CK.Transform.Core;
@@ -52,6 +53,28 @@ public abstract class Analyzer
     /// </summary>
     public ReadOnlyMemory<char> RemainingText => _head;
 
+    /// <summary>
+    /// Gets the error if any.
+    /// Once an error is set, only <see cref="Reset(ReadOnlyMemory{char})"/> can be called.
+    /// </summary>
+    public TokenErrorNode? Error => _error;
+
+    public ref struct Head
+    {
+        readonly Analyzer _analyzer;
+        readonly ReadOnlySpan<char> _text;
+        ReadOnlySpan<char> _head;
+
+        internal Head( Analyzer analyzer )
+        {
+            _analyzer = analyzer;
+            _text = analyzer._text.Span;
+            _head = _text;
+        }
+
+
+    }
+
     ///// <summary>
     ///// Returns a node or a <see cref="NodeList{T}"/> of node.
     ///// </summary>
@@ -95,45 +118,64 @@ public abstract class Analyzer
     /// <returns>The next node.</returns>
     public IAbstractNode Parse()
     {
+        Throw.CheckState( Error is null );
         int r = CollectLeadingTrivias();
         _leadingTrivias = _trivias.DrainToImmutable();
         if( r < 0 )
         {
-            return SetErrorLocation( new TokenErrorNode( (TokenType)r, "Missing comment end.", _leadingTrivias ) );
+            return CreateError( "Missing comment end.", (TokenType)r );
         }
         _head = _head.Slice( r );
         if( _head.Length == 0 )
         {
-            return SetErrorLocation( new TokenErrorNode( TokenType.EndOfInput, "End of input.", _leadingTrivias ) );
+            return CreateError( "End of input.", TokenType.EndOfInput );
         }
         // We can use -1 for the unset result here because a
         // success is a positive value and an error is the combination
         // of TokenType.ClassErrorBit (the sign bit) and a TokenType:
         // a trivia result value cannot be full of 1 bits.
         _trailingTriviasResult = -1;
-        var t = Parse( _leadingTrivias, ref _head );
+        var parsedNode = Parse( _leadingTrivias, ref _head );
+        Throw.CheckState( "Parse() method returned null.", parsedNode != null );
         // Always update the head to expose an up-to-date RemaingText.
         if( _trailingTriviasResult > 0 )
         {
             _head = _head.Slice( _trailingTriviasResult );
         }
+        Throw.DebugAssert( (parsedNode.TokenType < 0) == parsedNode is TokenErrorNode );
 
-        Throw.DebugAssert( (t.TokenType < 0) == t is TokenErrorNode );
-
-        if( t.TokenType < 0 ) return SetErrorLocation( (TokenErrorNode)t );
+        if( parsedNode.TokenType < 0 ) return _error = SetErrorLocation( (TokenErrorNode)parsedNode );
 
         Throw.CheckState( GetTrailingTriviasAlreadyCalled is true );
         if( _trailingTriviasResult < 0 )
         {
-            return SetErrorLocation( new TokenErrorNode( (TokenType)r, $"Missing comment end after token '{t.GetType().Name}'.", _leadingTrivias, t.TrailingTrivias ) );
+            _error = new TokenErrorNode( (TokenType)r, $"Missing comment end after token '{parsedNode.GetType().Name}'.", CreateSourcePosition(), _leadingTrivias, parsedNode.TrailingTrivias );
+            return SetErrorLocation( _error );
         }
-        return t;
+        return parsedNode;
     }
 
-    TokenNode SetErrorLocation( TokenErrorNode error )
+    SourcePosition CreateSourcePosition()
     {
-        //TODO
-        return error;
+        int line, column;
+        var sText = _text.Span;
+        int headIndex = sText.Length - _head.Length;
+        var before = sText.Slice( 0, headIndex );
+        int lastIndex = before.LastIndexOf( '\n' );
+        if( lastIndex >= 0 )
+        {
+            line = sText.Count( '\n' );
+            if( lastIndex < sText.Length && sText[lastIndex] == '\r' ) ++lastIndex;
+            column = headIndex - lastIndex;
+            // Edge case: head is on the \r:
+            if( column < 0 ) column = 0;
+        }
+        else
+        {
+            line = 0;
+            column = headIndex;
+        }
+        return new SourcePosition( line, column );
     }
 
     /// <summary>
@@ -151,7 +193,7 @@ public abstract class Analyzer
     /// <param name="leadingTrivias">The leading trivias of the token.</param>
     /// <param name="head">The current <see cref="RemainingText"/> that must be forwarded.</param>
     /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    internal protected abstract IAbstractNode? Parse( ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head );
+    internal protected abstract IAbstractNode Parse( ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head );
 
     int CollectLeadingTrivias()
     {
@@ -212,6 +254,19 @@ public abstract class Analyzer
     /// </summary>
     /// <param name="c">The trivia collector.</param>
     protected abstract void ParseTrivia( ref TriviaCollector c );
+
+    /// <summary>
+    /// Error factory. This is the only way for <see cref="Parse(ImmutableArray{Trivia}, ref ReadOnlyMemory{char})"/> to return an error.
+    /// <para>
+    /// </para>
+    /// </summary>
+    /// <param name="errorMessage"></param>
+    /// <param name="errorType"></param>
+    /// <returns></returns>
+    protected TokenErrorNode CreateError( string errorMessage, TokenType errorType = TokenType.SyntaxError )
+    {
+        return new TokenErrorNode( errorType, errorMessage, CreateSourcePosition(), _leadingTrivias, ImmutableArray<Trivia>.Empty );
+    }
 
     /// <summary>
     /// Helper function for easy case that matches the start of the <see cref="RemainingText"/>

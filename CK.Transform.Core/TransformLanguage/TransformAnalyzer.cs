@@ -5,12 +5,7 @@ using System.Collections.Immutable;
 
 namespace CK.Transform;
 
-public interface IParser
-{
-    AbstractNode Parse( ReadOnlyMemory<char> text );
-}
-
-public sealed class TransformTokenizer : Analyzer
+public sealed class TransformAnalyzer : Analyzer
 {
     protected override void ParseTrivia( ref TriviaCollector c )
     {
@@ -41,7 +36,7 @@ public sealed class TransformTokenizer : Analyzer
             int innerStart = idx;
             while( ++idx != s.Length )
             {
-                if( )
+                //if( )
             }
         }
 

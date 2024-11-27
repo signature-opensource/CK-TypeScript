@@ -22,7 +22,7 @@ namespace CK.Transform.Core;
 /// access to its children by calling <see cref="At{T}(int)"/> and check any condition on them.
 /// </para>
 /// </summary>
-public abstract class CompositeNode : SyntaxNode
+public abstract partial class CompositeNode : SyntaxNode
 {
     internal readonly AbstractNode?[] _store;
     AbstractNode[]? _content;
@@ -169,9 +169,9 @@ public abstract class CompositeNode : SyntaxNode
     }
 
     /// <inheritdoc />
-    public override IReadOnlyList<AbstractNode> ChildrenNodes => _content ??= CreateContent( _store );
+    public override IReadOnlyList<AbstractNode> ChildrenNodes => _content ??= CreateChildren( _store );
 
-    static AbstractNode[] CreateContent( AbstractNode?[] store )
+    static AbstractNode[] CreateChildren( AbstractNode?[] store )
     {
         int count = 0;
         for( var i = 0; i < store.Length; ++i )

@@ -40,6 +40,11 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
         _text = text;
     }
 
+    public TokenNode( ref Analyzer.Head head, TokenType tokenType = TokenType.GenericText )
+    {
+
+    }
+
     // Constructor for error.
     private protected TokenNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, TokenType error, string message )
         : base( leading, trailing )
@@ -103,10 +108,17 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     public override sealed IEnumerable<TokenNode> AllTokens => this;
 
     /// <summary>
+    /// Returns a basic <see cref="AbstractNodeMutator"/>. This cannot be specialized: a token has no children,
+    /// there's nothing to mutate other than the trivias.
+    /// </summary>
+    /// <returns>A mutator.</returns>
+    public override sealed AbstractNodeMutator CreateMutator() => new AbstractNodeMutator( this );
+
+    /// <summary>
     /// Does nothing ath this level: the fact that the <see cref="Text"/> is necessarily non empty and the
     /// <see cref="TokenType"/> is not a trivia is checked by the constructor.
     /// </summary>
-    public override void DoCheckInvariants()
+    protected override void DoCheckInvariants()
     {
     }
 
@@ -123,5 +135,4 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     /// </summary>
     /// <returns></returns>
     public override sealed string ToString() => _text.ToString();
-
 }

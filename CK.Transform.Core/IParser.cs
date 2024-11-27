@@ -30,8 +30,8 @@ public interface IParser
     IAbstractNode Parse( ref ReadOnlyMemory<char> text );
 
     /// <summary>
-    /// Must be overridden to return a readable name.
+    /// Must be overridden to return the language name (or names) handled by this parser.
     /// </summary>
-    /// <returns>This parser name.</returns>
+    /// <returns>The language name.</returns>
     string ToString();
 }

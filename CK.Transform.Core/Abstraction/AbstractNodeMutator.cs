@@ -8,6 +8,7 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Mutator encapsulates clone creation for nodes.
+/// At this level, only trivias are handled.
 /// <para>
 /// <see cref="CompositeNode"/> has a <see cref="CompositeNodeMutator"/> and <see cref="CollectionNode"/> has
 /// <see cref="CollectionNodeMutator"/>. A mutator can be specialized to its target node type to offer
@@ -116,3 +117,4 @@ public class AbstractNodeMutator
         Debug.Fail( "Never called on AbstractNodeMutator." );
     }
 }
+

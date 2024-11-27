@@ -4,112 +4,74 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Collection of typed <see cref="IAbstractNode"/>.
+/// </summary>
+/// <typeparam name="T">The collection item type.</typeparam>
 public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class, IAbstractNode
 {
-    readonly IReadOnlyList<T> _items;
+    readonly ImmutableArray<AbstractNode> _children;
 
     /// <summary>
-    /// Initializes a new list.
+    /// Initializes a new list from its children without trivias.
     /// </summary>
-    /// <param name="items">The items of the list.</param>
-    /// <param name="leading">The leading trivias.</param>
-    /// <param name="trailing">The trailing trivias.</param>
-    /// <param name="minCount">Optional minimal item count.</param>
-    public NodeList( IEnumerable<T> items, ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, int minCount = 0 )
-        : base( leading, trailing )
+    /// <param name="children">The children.</param>
+    public NodeList( params IEnumerable<T> children )
     {
-        _items = items.ToArray();
-        if( _items.Count < minCount ) RaiseItemCountError( this, _items.Count, minCount );
+        _children = children.Cast<AbstractNode>().ToImmutableArray();
     }
 
     /// <summary>
-    /// Protected constructor that must be used only by <see cref="DoClone(ImmutableArray{Trivia}, IList{AbstractNode}?, ImmutableArray{Trivia})"/>
-    /// method. <paramref name="safeContent"/> must be obtained through <see cref="GetSafeContent(IList{AbstractNode}?, int)"/>.
-    /// </summary>
-    /// <param name="leading">Leading trivias.</param>
-    /// <param name="content">Items of this list.</param>
-    /// <param name="trailing">Trailing trivias.</param>
-    protected NodeList( NodeList<T> o, ImmutableArray<Trivia> leading, List<T> content, ImmutableArray<Trivia> trailing )
-        : base( leading, trailing )
-    {
-        _items = content;
-    }
-
-    static void RaiseItemCountError( AbstractNode o, int count, int minCount )
-    {
-        Throw.ArgumentException( $"'{o.GetType().Name}': must contain at least {minCount} item(s) (found only {count})." );
-    }
-
-    /// <inheritdoc />
-    public override IReadOnlyList<AbstractNode> ChildrenNodes => _items;
-
-    /// <inheritdoc />
-    public int Count => _items.Count;
-
-    /// <inheritdoc />
-    public T this[int index] => _items[index];
-
-    /// <inheritdoc />
-    public IEnumerator<T> GetEnumerator() => _items.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
-
-    /// <summary>
-    /// Helper method for <see cref="DoClone(ImmutableArray{Trivia}, IList{AbstractNode}?, ImmutableArray{Trivia})"/> implementations.
-    /// This throws ArgumentException if content has null, not T types or if <paramref name="minCount"/> is not satisfied. 
-    /// </summary>
-    /// <param name="content">The cloned content.</param>
-    /// <param name="minCount">Optional minimal count.</param>
-    /// <returns>The safe item list to provide to the clone dedicated constructor.</returns>
-    protected IReadOnlyList<T> GetSafeContent( IList<AbstractNode>? content, int minCount = 0 )
-    {
-        IReadOnlyList<T>? safeContent;
-        if( content == null )
-        {
-            safeContent = _items;
-        }
-        else
-        {
-            int i = 0;
-            foreach( var e in content )
-            {
-                if( e is not T ) Throw.ArgumentException( $"'{GetType().Name}': Expected item '{typeof( T ).Name}' at {i} but got '{e.GetType().Name ?? "null"}'." );
-                ++i;
-            }
-            if( i < minCount ) RaiseItemCountError( this, i, minCount );
-            safeContent = content as IReadOnlyList<T>;
-            if( safeContent == null )
-            {
-                if( i == 0 ) safeContent = Array.Empty<T>();
-                else
-                {
-                    var a = new T[i];
-                    i = 0;
-                    foreach( var e in content ) a[i++] = (T)e;
-                    safeContent = a;
-                }
-            }
-        }
-        return safeContent;
-    }
-
-    /// <summary>
-    /// Clones this list.
+    /// Initializes a new list from its children and trivias.
     /// <para>
-    /// This MUST be overridden by specializations. <see cref="GetSafeContent(IList{AbstractNode}?, int)"/> must be called
-    /// before calling <see cref=""/>
+    /// The content should be check by calling <see cref="AbstractNode.CheckInvariants()"/>
+    /// unless this is called by <see cref="CollectionNodeMutator"/> (that does this autmoatically).
     /// </para>
     /// </summary>
-    /// <param name="leading">Leading trivias.</param>
-    /// <param name="content">New content. Null when unchanged.</param>
-    /// <param name="trailing">Trailing trivias.</param>
-    /// <returns>A cloned list.</returns>
-    protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, IList<AbstractNode>? content, ImmutableArray<Trivia> trailing )
+    /// <param name="leading">The leading trivias.</param>
+    /// <param name="trailing">The trailing trivias.</param>
+    /// <param name="uncheckedChildren">The children.</param>
+    public NodeList( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, params ImmutableArray<AbstractNode> uncheckedChildren )
+        : base( leading, trailing )
     {
-        Throw.CheckState( "The DoClone() method MUST be overridden by specialized types.", GetType() == typeof( NodeList<T> ) );
-        return new NodeList<T>( o, leading, trailing, GetSafeContent( content ) );
+        _children = uncheckedChildren;
+    }
+
+    /// <inheritdoc />
+    public T this[int index] => Unsafe.As<T>( _children[index] );
+
+    /// <inheritdoc />
+    public override sealed IReadOnlyList<AbstractNode> ChildrenNodes => _children;
+
+    /// <inheritdoc />
+    public int Count =>_children.Length;
+
+    /// <inheritdoc />
+    public IEnumerator<T> GetEnumerator() => _children.Cast<T>().GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>
+    /// Checks that all stored items are <typeparamref name="T"/>.
+    /// </summary>
+    protected override void DoCheckInvariants()
+    {
+        Throw.CheckArgument( _children.All( c => c is T ) );
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// This MUST be overridden if this class is specialized.
+    /// </remarks>
+    protected internal override AbstractNode DoClone( ImmutableArray<Trivia> leading, CollectionNodeMutator content, ImmutableArray<Trivia> trailing )
+    {
+        Throw.CheckState( "DoClone() MUST be overridden.", GetType() == typeof( NodeList<T> ) );
+        return new NodeList<T>( leading, trailing, content.RawItems.ToImmutableArray() );
     }
 }
+
+

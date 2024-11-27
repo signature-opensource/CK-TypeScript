@@ -34,9 +34,9 @@ public interface IAbstractNode
     /// Gets the direct children if any.
     /// <para>
     /// A <see cref="TokenNode"/> has no children.
-    /// An empty <see cref="CollectionNode"/> may have no children.
+    /// An empty list may have no children.
     /// To my knowledge, a <see cref="CompositeNode"/> can hardly have no children at all:
-    /// that would mean that all its fields are optional... But it is possible.
+    /// that would mean that all its fields are optional... But it is technically possible.
     /// </para>
     /// </summary>
     IReadOnlyList<AbstractNode> ChildrenNodes { get; }

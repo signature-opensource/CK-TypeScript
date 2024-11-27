@@ -61,7 +61,7 @@ public sealed class CompositeParser : IParser
             // On the end, stop calling any more parsers.
             if( node.TokenType == TokenType.EndOfInput ) break;
         }
-        if( multiResult != null ) return new NodeList<AbstractNode>( multiResult, [], [] );
+        if( multiResult != null ) return new NodeList<AbstractNode>( multiResult );
         if( singleResult != null ) return singleResult;
         return new TokenErrorNode( TokenType.EndOfInput, $"Parser '{_name}' found nothig to parse." );
 
