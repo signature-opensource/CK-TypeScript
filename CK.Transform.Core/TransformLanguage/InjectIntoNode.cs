@@ -8,7 +8,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CK.Transform;
+namespace CK.Transform.TransformLanguage;
 
 public sealed class InjectIntoNode : CompositeNode
 {
@@ -51,5 +51,11 @@ public sealed class InjectIntoNode : CompositeNode
     internal protected override AbstractNode DoClone( ImmutableArray<Trivia> leading, CompositeNodeMutator content, ImmutableArray<Trivia> trailing )
     {
         return new InjectIntoNode( leading, content, trailing );
+    }
+
+    internal static IAbstractNode Create( TokenNode inject, IAbstractNode content, IAbstractNode into, IAbstractNode target, IAbstractNode terminator )
+    {
+        if( content is RawString safeContent
+            && into)
     }
 }

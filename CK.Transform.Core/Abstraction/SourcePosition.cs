@@ -6,8 +6,10 @@ using System.Runtime.Serialization;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Line number and column in a source text.
-/// This uses 0 based index.
+/// Line number and column in a source text. This uses 0 based index.
+/// <para>
+/// <see cref="GetSourceIndex(ReadOnlySpan{char})"/> and <see cref="GetSourcePosition(ReadOnlySpan{char}, int)"/> do the job.
+/// </para>
 /// </summary>
 public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<SourcePosition>
 {
@@ -36,6 +38,53 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     /// Gets the 0 based column.
     /// </summary>
     public int Column => _column;
+
+    /// <summary>
+    /// Gets the index in the source text that corresponds to this position or null
+    /// if this position doesn't exist.
+    /// </summary>
+    /// <param name="source">The source text.</param>
+    /// <returns>The index or null if not found.</returns>
+    public int? GetSourceIndex( ReadOnlySpan<char> source )
+    {
+        int result = 0;
+        var l = _line;
+        while( l > 0 )
+        {
+            int nextIdx = source.Slice( result ).IndexOf( '\n' );
+            if( nextIdx < 0 ) return null;
+            result += nextIdx;
+            l--;
+        }
+        int lineLength = source.Slice( result ).IndexOf( '\n' );
+        if( lineLength < 0 ) lineLength = source.Length - result;
+        return _column < lineLength ? result + _column : null;
+    }
+
+    /// <summary>
+    /// Computes the <see cref="SourcePosition"/> in a source text.
+    /// </summary>
+    /// <param name="source">The source text.</param>
+    /// <param name="index">The index in the <paramref name="source"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">index is less than zero or greater than source's length</exception>
+    /// <returns>The source position.</returns>
+    public static SourcePosition GetSourcePosition( ReadOnlySpan<char> source, int index )
+    {
+        int line, column;
+        var before = source.Slice( 0, index );
+        int lastIndex = before.LastIndexOf( '\n' );
+        if( lastIndex >= 0 )
+        {
+            line = before.Count( '\n' );
+            column = index - lastIndex;
+        }
+        else
+        {
+            line = 0;
+            column = index;
+        }
+        return new SourcePosition( line, column );
+    }
 
     /// <summary>
     /// Determines whether two <see cref="SourcePosition"/> are the same.

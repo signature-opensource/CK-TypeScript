@@ -4,8 +4,10 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Standard micro parsers of trivias.
+/// These extension methods are <see cref="TriviaParser"/> and can easily be combined
+/// into composite <see cref="TriviaParser"/>.
 /// </summary>
-public static class TriviaCollectorExtensions
+public static class TriviaHeadExtensions
 {
     /// <summary>
     /// A <see cref="TokenType.LineComment"/> is a C-like language comment that starts with a "//" and ends with a new line.
@@ -13,33 +15,29 @@ public static class TriviaCollectorExtensions
     /// This kind of trivia cannot be on error: if the end of input is reached, the comment is valid.
     /// </para>
     /// </summary>
-    /// <param name="c">This collector.</param>
-    /// <returns>The successfully parsed length or 0 when <see cref="TriviaCollector.Head"/> doesn't start with "//".</returns>
-    public static int LineComment( this ref TriviaCollector c )
+    /// <param name="c">This head.</param>
+    public static void AcceptLineComment( this ref TriviaHead c )
     {
         if( c.Head.StartsWith( "//" ) )
         {
             int iS = 1;
             while( ++iS < c.Head.Length && c.Head[iS] != '\n' ) ;
-            return c.Accept( TokenType.SqlComment, iS );
+            c.Accept( TokenType.SqlComment, iS );
         }
-        return 0;
     }
 
     /// <summary>
     /// Same as <see cref="LineComment(ref TriviaCollector)"/> but with a starting "--".
     /// </summary>
-    /// <param name="c">This collector.</param>
-    /// <returns>The successfully parsed length or 0 when <see cref="TriviaCollector.Head"/> doesn't start with "--".</returns>
-    public static int SqlComment( this ref TriviaCollector c )
+    /// <param name="c">This head.</param>
+    public static void AcceptSqlComment( this ref TriviaHead c )
     {
         if( c.Head.StartsWith( "--" ) )
         {
             int iS = 1;
             while( ++iS < c.Head.Length && c.Head[iS] != '\n' ) ;
-            return c.Accept( TokenType.SqlComment, iS );
+            c.Accept( TokenType.SqlComment, iS );
         }
-        return 0;
     }
 
     /// <summary>
@@ -48,49 +46,51 @@ public static class TriviaCollectorExtensions
     /// This kind of trivia can be on error when the end of input is reached before the terminator.
     /// </para>
     /// </summary>
-    /// <param name="c">This collector.</param>
-    /// <returns>
-    /// The successfully parsed length, 0 when <see cref="TriviaCollector.Head"/> doesn't start with "/*" or
-    /// a negative value one error (see <see cref="TriviaCollector"/>).
-    /// </returns>
-    public static int StartComment( this ref TriviaCollector c )
+    /// <param name="c">This head.</param>
+    public static void AcceptStartComment( this ref TriviaHead c )
     {
         if( c.Head.StartsWith( "/*" ) )
         {
             int iS = 1;
             for(; ; )
             {
-                if( ++iS == c.Head.Length ) return c.Error( TokenType.StarComment );
-                if( c.Head.StartsWith( "/*" ) )
+                if( ++iS == c.Head.Length )
                 {
-                    return c.Accept( TokenType.StarComment, iS + 2 );
+                    c.Reject( TokenType.StarComment );
+                    return;
+                }
+                if( c.Head.StartsWith( "*/" ) )
+                {
+                    c.Accept( TokenType.StarComment, iS + 2 );
+                    return;
                 }
             }
         }
-        return 0;
     }
 
     /// <summary>
-    /// 
+    /// Xml comment is a block comment that starts with "<!--" and ends with "-->".
     /// </summary>
-    /// <param name="c"></param>
-    /// <returns></returns>
-    public static int XmlComment( this ref TriviaCollector c )
+    /// <param name="c">This head.</param>
+    public static void AcceptXmlComment( this ref TriviaHead c )
     {
         if( c.Head.StartsWith( "<!--" ) )
         {
             int iS = 3;
             for(; ; )
             {
-                if( ++iS == c.Head.Length ) return c.Error( TokenType.XmlComment );
+                if( ++iS == c.Head.Length )
+                {
+                    c.Reject( TokenType.XmlComment );
+                    return;
+                }
                 if( c.Head.StartsWith( "-->" ) )
                 {
                     iS += 3;
-                    return c.Accept( TokenType.XmlComment, iS );
+                    c.Accept( TokenType.XmlComment, iS );
+                    return;
                 }
             }
         }
-        return 0;
     }
-
 }

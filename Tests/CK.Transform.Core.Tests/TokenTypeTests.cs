@@ -14,7 +14,6 @@ public class TokenTypeTests
         FluentActions.Invoking( () => TokenTypeExtensions.ReserveTokenClass( 0, "This is the error!" ) )
             .Should().Throw<InvalidOperationException>()
                      .WithMessage( "The class 'This is the error!' cannot use n°0, this number is already reserved by 'Error'." );
-
     }
 
 }

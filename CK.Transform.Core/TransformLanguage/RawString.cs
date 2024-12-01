@@ -3,13 +3,23 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace CK.Transform;
+namespace CK.Transform.TransformLanguage;
 
 /// <summary>
-/// A raw string follows the same rules as the C# raw string: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/raw-string
-/// except that 1 or 2 quotes are enough: you only need 3 quotes if the string contains "".
+/// A raw string follows the same rules as the C# raw string: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/raw-string.
+/// <list type="bullet">
+///     <item>A single quote opens a "single-line string": the closing quote must appear before the end-of-line.</item>
+///     <item>Two consecutive quotes is the empty string "".</item>
+///     <item>Three quotes or more opens a multi-line string that can contain consecutive quotes sequence shorter than the opening quotes.</item>
+/// </list>
+/// <para>
+/// Escape character '\' is a regular character: thanks to the <c>"""raw "string""""</c> it is useless, <c>"""\""""</c> is the string '\"'.
+/// </para>
+/// <para>
+/// Note that in C#, <c>"""raw "string""""</c> is not valid (but valid for us).
+/// </para>
 /// </summary>
-public sealed class RawString : TokenNode, ITransformLanguageNode
+public sealed class RawString : TokenNode
 {
     readonly ReadOnlyMemory<char> _innerText;
     readonly int _lineCount;
@@ -19,7 +29,7 @@ public sealed class RawString : TokenNode, ITransformLanguageNode
                         int lineCount,
                         ImmutableArray<Trivia> leading,
                         ImmutableArray<Trivia> trailing )
-        : base( (Core.TokenType)Transform.TokenType.RawString, text, leading, trailing )
+        : base( TokenType.GenericString, text, leading, trailing )
     {
         _innerText = innerText;
         _lineCount = lineCount;

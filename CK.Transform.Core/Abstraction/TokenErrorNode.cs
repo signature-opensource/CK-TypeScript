@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -33,8 +34,9 @@ public class TokenErrorNode : TokenNode
         : base( leading,
                 trailing,
                 error,
-                errorMessage )
+                errorMessage.AsMemory() )
     {
+        Throw.DebugAssert( error.IsError() );
         Throw.DebugAssert( !leading.IsDefault );
         Throw.DebugAssert( !trailing.IsDefault );
         Throw.DebugAssert( !string.IsNullOrWhiteSpace( errorMessage ) );

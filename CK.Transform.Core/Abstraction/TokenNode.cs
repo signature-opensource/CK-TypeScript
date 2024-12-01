@@ -17,8 +17,7 @@ namespace CK.Transform.Core;
 /// no real negative impact on the performance (as it is a <c>ReadOnlyMemory&lt;char&gt;</c> of the original text).
 /// </para>
 /// <para>
-/// This class is not sealed. A language can introduced specialized token types with more behavior if needed.
-/// When specialized <see cref="DoClone"/> MUST be overridden.
+/// This class is not sealed. A language can introduce specialized token types with more behavior if needed.
 /// </para>
 /// </summary>
 public class TokenNode : AbstractNode, IEnumerable<TokenNode>
@@ -27,31 +26,34 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     readonly TokenType _tokenType;
 
     /// <summary>
-    /// Initializes a new <see cref="TokenNode"/>. <paramref name="tokenType"/> must be strictly positive (not an error) and not a trivia.
+    /// Initializes a new <see cref="TokenNode"/>. <paramref name="tokenType"/> must be strictly positive (not an error) and not a trivia
+    /// and <paramref name="text"/> cannot be empty. 
     /// </summary>
     /// <param name="tokenType">Type of the token.</param>
+    /// <param name="text">The token text. Cannot be empty.</param>
     /// <param name="leading">Leading trivias.</param>
     /// <param name="trailing">Trailing trivias.</param>
-    public TokenNode( TokenType tokenType, ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
-        : base( leading, trailing )
+    public TokenNode( TokenType tokenType, ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
+        : base( leading.IsDefault ? [] : leading, trailing.IsDefault ? [] : trailing )
     {
-        Throw.CheckArgument( !tokenType.IsError() && !tokenType.IsTrivia()  );
+        Throw.CheckArgument( !tokenType.IsError() && !tokenType.IsTrivia() );
+        Throw.CheckArgument( text.Length > 0 );
         _tokenType = tokenType;
         _text = text;
     }
 
-    public TokenNode( ref Analyzer.Head head, TokenType tokenType = TokenType.GenericText )
-    {
-
-    }
-
-    // Constructor for error.
-    private protected TokenNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, TokenType error, string message )
+    /// <summary>
+    /// Special internal constructor for error and special tokens: <paramref name="tokenType"/> is not checked, <paramref name="text"/> can be empty.
+    /// </summary>
+    /// <param name="leading">Leading trivias.</param>
+    /// <param name="trailing">Trailing trivias.</param>
+    /// <param name="tokenType">Unchecked token type.</param>
+    /// <param name="text">May be empty or not from the source text.</param>
+    internal TokenNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, TokenType tokenType, ReadOnlyMemory<char> text )
         : base( leading, trailing )
     {
-        Throw.CheckArgument( error < 0 );
-        _tokenType = error;
-        _text = message.AsMemory();
+        _tokenType = tokenType;
+        _text = text;
     }
 
     /// <summary>

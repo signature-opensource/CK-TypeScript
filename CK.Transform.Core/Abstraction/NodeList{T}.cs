@@ -29,7 +29,7 @@ public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class,
     /// Initializes a new list from its children and trivias.
     /// <para>
     /// The content should be check by calling <see cref="AbstractNode.CheckInvariants()"/>
-    /// unless this is called by <see cref="CollectionNodeMutator"/> (that does this autmoatically).
+    /// unless this is called by <see cref="CollectionNodeMutator"/> (that does this automatically).
     /// </para>
     /// </summary>
     /// <param name="leading">The leading trivias.</param>
@@ -50,17 +50,22 @@ public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class,
     /// <inheritdoc />
     public int Count =>_children.Length;
 
+    /// <summary>
+    /// Gives access to the internal store.
+    /// </summary>
+    protected ImmutableArray<AbstractNode> Children => _children;
+
     /// <inheritdoc />
     public IEnumerator<T> GetEnumerator() => _children.Cast<T>().GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     /// <summary>
-    /// Checks that all stored items are <typeparamref name="T"/>.
+    /// Checks that all stored items are <typeparamref name="T"/> and are not <see cref="IErrorTolerantNode"/>.
     /// </summary>
     protected override void DoCheckInvariants()
     {
-        Throw.CheckArgument( _children.All( c => c is T ) );
+        Throw.CheckArgument( _children.All( c => c is T && c is not IErrorTolerantNode ) );
     }
 
     /// <inheritdoc />

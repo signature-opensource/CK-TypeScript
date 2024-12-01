@@ -56,15 +56,11 @@ public enum TokenType
     /// Generic token type are not classified: none of the 24 class bits are set: this lets
     /// 255 possible token types for them.
     /// <para>
-    /// Parsers are free to reuse them but most often, these generic types won't be used,
+    /// Parsers are free to reuse them but often, these generic types won't be used,
     /// they will be redefined in the TokenType Class defined for the language. 
     /// The <c>GenericLowerThan</c> for instance should not be useful to many languages: this
     /// is often an operator with an associated priority and a specific TokenType will be
     /// able to capture the priority.
-    /// </para>
-    /// <para>
-    /// Good candidates are basic characters without too much overloaded semantics... and there
-    /// are not many of them.
     /// </para>
     /// <para>
     /// The GenericText can contain any text. This is a kind of fallback token type that can be used
@@ -75,17 +71,48 @@ public enum TokenType
     GenericText = 1,
 
     /// <summary>
+    /// Can be used by error tolerant parsers to denote an unrecognized token in an error tolerant parser.
+    /// <para>
+    /// An unrecognized token would be an error in a regular parser.
+    /// </para>
+    /// </summary>
+    GenericUnexpectedToken = 2,
+
+    /// <summary>
+    /// Can be used by error tolerant parsers to denote a missing token (for the <see cref="MissingTokenNode"/>).
+    /// </summary>
+    GenericMissingToken = 3,
+
+    /// <summary>
     /// A comma <c>,</c> is often used with a the only semantics to separate items in list.
     /// Note that when expressions must be analyzed, this may (dependeing on the language and
     /// the way the parser is written) need to be considered as an operator and associated to
     /// a priority.
     /// </summary>
-    GenericComma = 2,
+    GenericComma = 4,
 
     /// <summary>
     /// A semi-colon <c>;</c> is often used as the statement terminator.
     /// </summary>
-    GenericSemiColon = 3,
+    GenericSemiColon = 5,
+
+    /// <summary>
+    /// A string can have a lot of representations. This can be used by language parsers if
+    /// it can avoid creating a specific token type.
+    /// </summary>
+    GenericString = 6,
+
+    /// <summary>
+    /// An identifier can have a lot of representations. This can be used by language parsers if
+    /// it can avoid creating a specific token type.
+    /// </summary>
+    GenericIdentifier = 7,
+
+    /// <summary>
+    /// A keyword. This can be used by language parsers if
+    /// it can avoid creating a specific token type.
+    /// </summary>
+    GenericKeyword = 8,
 
     /// <summary>
     /// The end of input has only the most significant bit set.

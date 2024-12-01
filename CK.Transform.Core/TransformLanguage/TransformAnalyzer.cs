@@ -1,51 +1,65 @@
 using CK.Core;
 using CK.Transform.Core;
+using CK.Transform.ErrorTolerant;
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
-namespace CK.Transform;
+namespace CK.Transform.TransformLanguage;
 
-public sealed class TransformAnalyzer : Analyzer
+public class TransformAnalyzerContext : AnalyzerContext<TransformAnalyzerContext>
 {
-    protected override void ParseTrivia( ref TriviaCollector c )
+    public TransformAnalyzerContext()
     {
-        throw new NotImplementedException();
     }
 
-    protected internal override IAbstractNode? Parse( ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head )
+    protected TransformAnalyzerContext( TransformAnalyzerContext parent ) : base( parent )
     {
-        Throw.DebugAssert( "This is never called on an empty text.", head.Length > 0 );
-        var s = head.Span;
-        if( TryCreateToken( (Core.TokenType)TokenType.Inject, "inject", out var inject ) )
+    }
+}
+
+public sealed class TransformAnalyzer : ContextualAnalyzer<TransformAnalyzerContext>
+{
+    public TransformAnalyzer()
+    {
+    }
+
+    protected override IAbstractNode Parse( ref AnalyzerHead head, TransformAnalyzerContext context )
+    {
+        if( head.TryAcceptToken( TokenType.GenericIdentifier, "inject", out var inject ) )
         {
-            if( !TryCreateToken( (Core.TokenType)TokenType.Into, "into", out var into ) ) return null;
-            {
-                return into;
-            }
+            var c = new InjectContext( context, inject );
+            MatchRawString( ref head, c, out var content );
+            MatchToken( ref head, c, "into", out var into );
+            MatchInjectionPoint( ref head, c, out var target );
+            MatchStatementTerminator( ref head, context, out var terminator );
+            return InjectIntoNode.Create( inject, content, into, target, terminator );
         }
         return TokenErrorNode.Unhandled;
     }
 
-    TokenNode ReadRawString( ReadOnlySpan<char> s, ImmutableArray<Trivia> leadingTrivias, ref ReadOnlyMemory<char> head )
+    private void MatchToken( ref AnalyzerHead head, TransformAnalyzerContext context, string text, [NotNull]out AbstractNode? into )
     {
-        int idx = 0;
-        while( ++idx != s.Length && s[idx] == '"' ) ;
-        if( idx != s.Length )
+        if( !head.TryAcceptToken( TokenType.GenericKeyword, text, out into ) )
         {
-            int lineCount = 0;
-            int innerStart = idx;
-            while( ++idx != s.Length )
-            {
-                //if( )
-            }
-        }
-
-
-        throw new NotImplementedException();
-
-        static TokenErrorNode UnterminatedError()
-        {
-            return new TokenErrorNode( Core.TokenType.ErrorUnterminatedString, "Unterminated raw string" );
+            into = context.TextNotFound( ref head, text );
         }
     }
+
+    protected internal override void ParseTrivia( ref TriviaHead c )
+    {
+        c.AcceptStartComment();
+        c.AcceptLineComment();
+    }
+}
+
+class InjectContext : TransformAnalyzerContext
+{
+    public InjectContext( TransformAnalyzerContext parent, TokenNode inject ) : base( parent )
+    {
+    }
+
+
 }

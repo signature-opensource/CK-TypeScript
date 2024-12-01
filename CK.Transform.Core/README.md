@@ -1,7 +1,8 @@
 # CK.Transform.Core
 
-A Parser is any `Func<ReadOnlyMemory<char>,AbstractNode>`. Having no interface or base class
-that defines it enforces the fact that a Parser must be stateless.
+A Parser cound be any `Func<ReadOnlyMemory<char>,AbstractNode>`. Having no interface or base class
+that defines it enforces the fact that a Parser must be stateless... However we introduce a stateful
+object, the `Analyzer` that can support reusable builders and offer contextual information if needed.
 
 Exceptions are not used for the control flow (they remain exceptional): errors are returned
 thanks to the `TokenErrorNode` that carries an an error token type (negative integer), an error message
@@ -9,5 +10,17 @@ and the location of the error.
 
 A parser can return a "true" error when it can determine for sure that a syntax error exists or the
 special `TokenErrorNode.Unhandled` that states that the parser failed to recognize its language.
-A generic multi-language parser can be 
+
+
+## Error handling
+The `TokenErrorNode` acts as an exception: when encountered, it should bubble up accross the parser
+functions and becomes the top-level result.
+
+This behavior is simple to implement and understand. This is eveything but "fault tolerant" because
+the source code to transform is necessarily (or must be) syntaxically valid. This library doesn't not 
+implement linter, interpreter or compiler, it exists solly to transform a valid fragment of code into
+another valid fragment of code.
+
+The Fault-Tolerant 
+
 

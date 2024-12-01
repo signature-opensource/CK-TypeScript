@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -76,11 +76,11 @@ public class NodeSeparatedList<T,TSep> : CollectionNode, IAbstractNodeList<T>
             var childrenAtIndex = _children[i];
             if( (i & 1) == 0 )
             {
-                Throw.CheckArgument( childrenAtIndex is T );
+                Throw.CheckArgument( childrenAtIndex is T && childrenAtIndex is not IErrorTolerantNode );
             }
             else
             {
-                Throw.CheckArgument( childrenAtIndex is TSep );
+                Throw.CheckArgument( childrenAtIndex is TSep && childrenAtIndex is not IErrorTolerantNode );
             }
         }
     }

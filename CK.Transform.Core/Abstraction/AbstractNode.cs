@@ -22,6 +22,7 @@ public abstract partial class AbstractNode : IAbstractNode
 
     private protected AbstractNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
     {
+        Throw.DebugAssert( leading.IsDefault is false && trailing.IsDefault is false );
         _leadingTrivias = leading;
         _trailingTrivias = trailing;
     }

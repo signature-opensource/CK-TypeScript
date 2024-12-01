@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
@@ -64,9 +65,13 @@ public abstract partial class CompositeNode : SyntaxNode
     /// <summary>
     /// Overridden to call <see cref="DoCheckInvariants(int)"/> that is the
     /// actual implementation.
+    /// <para>
+    /// This checks that no children is a <see cref="IErrorTolerantNode"/>.
+    /// </para>
     /// </summary>
     protected override sealed void DoCheckInvariants()
     {
+        Throw.CheckArgument( _store.All( c => c is not IErrorTolerantNode ) );
         DoCheckInvariants( _store.Length );
     }
 
@@ -193,7 +198,7 @@ public abstract partial class CompositeNode : SyntaxNode
 
     /// <summary>
     /// Fundamental method that rebuilds this Node with a mutated content.
-    /// The <paramref name="content"/> must be checked in depth and must throw on any incoherency.
+    /// <see cref="AbstractNode.CheckInvariants"/> is automatically called on the resu
     /// <para>
     /// This is called only if a mutation is required because the content has changed (Trivias mutations
     /// are handled independently).
