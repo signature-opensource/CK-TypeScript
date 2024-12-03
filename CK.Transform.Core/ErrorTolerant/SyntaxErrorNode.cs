@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CK.Transform.ErrorTolerant;
 
-public sealed class SyntaxErrorNode : NodeList<AbstractNode>, IErrorTolerantNode
+public sealed class SyntaxErrorNode : RawNodeList, IErrorTolerantNode
 {
     /// <summary>
     /// Initializes a new <see cref="SyntaxErrorNode"/> from its children and trivias.
@@ -23,16 +23,13 @@ public sealed class SyntaxErrorNode : NodeList<AbstractNode>, IErrorTolerantNode
     public SyntaxErrorNode( ImmutableArray<Trivia> leading,
                             ImmutableArray<Trivia> trailing,
                             params ImmutableArray<AbstractNode> children )
-        : base( leading, trailing, children )
+        : base( NodeType.SyntaxErrorNode, leading, trailing, children )
     {
         DoCheckInvariants();
     }
 
     /// <summary>
-    /// Overridden to skip the check as children are de facto <see cref="AbstractNode"/>
-    /// and this obviously skips the check that children must not be <see cref="IErrorTolerantNode"/>.
-    /// <para>
-    /// A contrario, this chacks that at least one child is a <see cref="IErrorTolerantNode"/>.
+    /// Checks that at least one child is a <see cref="IErrorTolerantNode"/>.
     /// </para>
     /// </summary>
     protected override void DoCheckInvariants()

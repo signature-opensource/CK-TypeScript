@@ -11,7 +11,7 @@ using System.Xml;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Base class for tokens. A token is 1-<see cref="Width"/> node with a non zero or error <see cref="TokenType"/>.
+/// Base class for tokens. A token is 1-<see cref="Width"/> node with a non zero or error <see cref="NodeType"/>.
 /// <para>
 /// To simplify implementation, a token always holds its <see cref="Text"/>, even for terminal tokens. This has
 /// no real negative impact on the performance (as it is a <c>ReadOnlyMemory&lt;char&gt;</c> of the original text).
@@ -23,7 +23,7 @@ namespace CK.Transform.Core;
 public class TokenNode : AbstractNode, IEnumerable<TokenNode>
 {
     readonly ReadOnlyMemory<char> _text;
-    readonly TokenType _tokenType;
+    readonly NodeType _tokenType;
 
     /// <summary>
     /// Initializes a new <see cref="TokenNode"/>. <paramref name="tokenType"/> must be strictly positive (not an error) and not a trivia
@@ -33,7 +33,7 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     /// <param name="text">The token text. Cannot be empty.</param>
     /// <param name="leading">Leading trivias.</param>
     /// <param name="trailing">Trailing trivias.</param>
-    public TokenNode( TokenType tokenType, ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
+    public TokenNode( NodeType tokenType, ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
         : base( leading.IsDefault ? [] : leading, trailing.IsDefault ? [] : trailing )
     {
         Throw.CheckArgument( !tokenType.IsError() && !tokenType.IsTrivia() );
@@ -49,7 +49,7 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     /// <param name="trailing">Trailing trivias.</param>
     /// <param name="tokenType">Unchecked token type.</param>
     /// <param name="text">May be empty or not from the source text.</param>
-    internal TokenNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, TokenType tokenType, ReadOnlyMemory<char> text )
+    internal TokenNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, NodeType tokenType, ReadOnlyMemory<char> text )
         : base( leading, trailing )
     {
         _tokenType = tokenType;
@@ -59,7 +59,7 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     /// <summary>
     /// The token type. It can be an error if this is a <see cref="TokenErrorNode"/>.
     /// </summary>
-    public override sealed TokenType TokenType => _tokenType;
+    public override sealed NodeType NodeType => _tokenType;
 
     /// <summary>
     /// Gets this token's <see cref="ISqlNode.LeadingTrivias"/>.
@@ -118,7 +118,7 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
 
     /// <summary>
     /// Does nothing ath this level: the fact that the <see cref="Text"/> is necessarily non empty and the
-    /// <see cref="TokenType"/> is not a trivia is checked by the constructor.
+    /// <see cref="NodeType"/> is not a trivia is checked by the constructor.
     /// </summary>
     protected override void DoCheckInvariants()
     {

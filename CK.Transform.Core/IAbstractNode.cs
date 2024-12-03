@@ -25,10 +25,10 @@ public interface IAbstractNode
     internal void ExternalImplementationsDisabled();
 
     /// <summary>
-    /// Gets this <see cref="Core.TokenType"/>.
-    /// Always <see cref="Core.TokenType.None"/> for <see cref="SyntaxNode"/>.
+    /// Gets this <see cref="Core.NodeType"/>.
+    /// Always <see cref="Core.NodeType.None"/> for <see cref="SyntaxNode"/>.
     /// </summary>
-    TokenType TokenType { get; }
+    NodeType NodeType { get; }
 
     /// <summary>
     /// Gets the direct children if any.

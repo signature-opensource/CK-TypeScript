@@ -57,7 +57,7 @@ public abstract partial class AbstractNode : IAbstractNode
     public abstract int Width { get; }
 
     /// <inheritdoc />
-    public abstract TokenType TokenType { get; }
+    public abstract NodeType NodeType { get; }
 
     /// <summary>
     /// Creates a mutator object that can <see cref="AbstractNodeMutator.Clone()"/> this node.

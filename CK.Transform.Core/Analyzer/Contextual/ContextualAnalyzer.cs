@@ -46,7 +46,7 @@ public abstract class ContextualAnalyzer<T> : Analyzer where T : AnalyzerContext
     }
 
     /// <summary>
-    /// Same as the contextless <see cref="Analyzer.Parse()"/> but with a <paramref name="context"/>.
+    /// Same as the contextless <see cref="Analyzer.ParseOne()"/> but with a <paramref name="context"/>.
     /// </summary>
     /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
     /// <param name="context">The parse context.</param>

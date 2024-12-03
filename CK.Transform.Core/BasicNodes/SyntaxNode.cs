@@ -34,9 +34,9 @@ public abstract class SyntaxNode : AbstractNode
     }
 
     /// <summary>
-    /// Always <see cref="TokenNode.None"/>.
+    /// Defaults to <see cref="Core.NodeType.SyntaxNode"/>.
     /// </summary>
-    public override sealed TokenType TokenType => TokenType.None;
+    public override NodeType NodeType => NodeType.SyntaxNode;
 
     /// <summary>
     /// Gets the total number of token that this element contains.

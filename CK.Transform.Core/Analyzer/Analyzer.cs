@@ -10,6 +10,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
+
 /// <summary>
 /// Abstract analyzer: <see cref="ParseTrivia(ref TriviaHead)"/> and <see cref="Parse(ref AnalyzerHead)"/> must
 /// be implemented.
@@ -53,7 +54,7 @@ public abstract partial class Analyzer
     /// Returns the next node.
     /// </summary>
     /// <returns>The next node.</returns>
-    public IAbstractNode Parse()
+    public IAbstractNode ParseOne()
     {
         var head = new AnalyzerHead( this );
         var n = Parse( ref head  );
@@ -78,8 +79,8 @@ public abstract partial class Analyzer
         List<AbstractNode>? multiResult = null;
         for( ; ; )
         {
-            var node = Unsafe.As<AbstractNode>( Parse() );
-            if( !node.TokenType.IsError() )
+            var node = Unsafe.As<AbstractNode>( ParseOne() );
+            if( !node.NodeType.IsError() )
             {
                 if( singleResult == null ) singleResult = node;
                 else
@@ -90,7 +91,7 @@ public abstract partial class Analyzer
             }
             else
             {
-                if( node.TokenType == TokenType.EndOfInput )
+                if( node.NodeType == NodeType.EndOfInput )
                 {
                     if( multiResult != null ) return new NodeList<AbstractNode>( multiResult );
                     if( singleResult != null ) return singleResult;
@@ -116,9 +117,16 @@ public abstract partial class Analyzer
     internal protected abstract IAbstractNode Parse( ref AnalyzerHead head );
 
     /// <summary>
-    /// Must try to parse one of the suported trivias.
+    /// The default <see cref="TriviaParser"/> to apply.
     /// </summary>
     /// <param name="c">The trivia collector.</param>
     internal protected abstract void ParseTrivia( ref TriviaHead c );
+
+    /// <summary>
+    /// The default <see cref="LowLevelTokenizer"/> to apply.
+    /// </summary>
+    /// <param name="head">The start of the text to categorize. Leading trivias have already been handled.</param>
+    /// <param name="candidate">The candidate token detected.</param>
+    internal protected abstract LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
 
 }

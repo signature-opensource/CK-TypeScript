@@ -9,7 +9,7 @@ namespace CK.Transform.Core;
 /// Can capture any error as a <see cref="TokenNode"/> (hence as an <see cref="AbstractNode"/>): this may
 /// appear anywhere in the AST.
 /// <para>
-/// This can only be created by <see cref="Analyzer.CreateError(string, TokenType)"/>.
+/// This can only be created by <see cref="Analyzer.CreateError(string, NodeType)"/>.
 /// </para>
 /// </summary>
 public class TokenErrorNode : TokenNode
@@ -20,13 +20,13 @@ public class TokenErrorNode : TokenNode
     /// <summary>
     /// Singleton for "Unhandled" scenario (a gentle error). This error is always at 0,0 and hase the "Unhandled" error message. 
     /// </summary>
-    public static readonly TokenErrorNode Unhandled = new TokenErrorNode( TokenType.ErrorUnhandled,
+    public static readonly TokenErrorNode Unhandled = new TokenErrorNode( NodeType.ErrorUnhandled,
                                                                           "Unhandled",
                                                                           default,
                                                                           ImmutableArray<Trivia>.Empty,
                                                                           ImmutableArray<Trivia>.Empty );
 
-    internal TokenErrorNode( TokenType error,
+    internal TokenErrorNode( NodeType error,
                              string errorMessage,
                              SourcePosition sourcePosition,
                              ImmutableArray<Trivia> leading,

@@ -5,7 +5,7 @@ namespace CK.Html.Transform;
 
 public class Class1 : IAbstractNode
 {
-    public TokenType TokenType => throw new NotImplementedException();
+    public NodeType NodeType => throw new NotImplementedException();
 
     public IReadOnlyList<AbstractNode> ChildrenNodes => throw new NotImplementedException();
 

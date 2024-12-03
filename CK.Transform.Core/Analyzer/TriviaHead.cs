@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// 
 /// </para>
 /// Micro parsers for <see cref="Trivia"/> are extension methods on this collector
-/// that call <see cref="Accept(TokenType, int)"/> or <see cref="Reject(TokenType)"/>.
+/// that call <see cref="Accept(NodeType, int)"/> or <see cref="Reject(NodeType)"/>.
 /// <para>
 /// </para>
 /// </summary>
@@ -21,7 +21,7 @@ public ref struct TriviaHead
     readonly ReadOnlyMemory<char> _text;
     int _idxText;
     int _acceptedLength;
-    TokenType _error;
+    NodeType _error;
 
     /// <summary>
     /// Initializes a new head on a text.
@@ -46,12 +46,12 @@ public ref struct TriviaHead
     }
 
     /// <summary>
-    /// Accepts a trivia. This must not be called once <see cref="Error(TokenType)"/> has been called.
+    /// Accepts a trivia. This must not be called once <see cref="Error(NodeType)"/> has been called.
     /// </summary>
     /// <param name="tokenType">The type of trivia.</param>
     /// <param name="length">The trivia length. Must be positive.</param>
     /// <returns>The <see cref="AcceptedLength"/>.</returns>
-    public int Accept( TokenType tokenType, int length )
+    public int Accept( NodeType tokenType, int length )
     {
         Throw.CheckState( HasError is false );
         Throw.CheckArgument( tokenType.IsTrivia() );
@@ -69,30 +69,30 @@ public ref struct TriviaHead
     public readonly int AcceptedLength => _acceptedLength;
 
     /// <summary>
-    /// Gets the error sets by <see cref="Reject(TokenType)"/>.
-    /// Defaults to <see cref="TokenType.None"/>.
+    /// Gets the error sets by <see cref="Reject(NodeType)"/>.
+    /// Defaults to <see cref="NodeType.None"/>.
     /// </summary>
-    public readonly TokenType Error => _error;
+    public readonly NodeType Error => _error;
 
     /// <summary>
-    /// Gets whether <see cref="Reject(TokenType)"/> has been called.
+    /// Gets whether <see cref="Reject(NodeType)"/> has been called.
     /// </summary>
-    public readonly bool HasError => _error != TokenType.None;
+    public readonly bool HasError => _error != NodeType.None;
 
     /// <summary>
     /// Signals an error by returning and setting the <see cref="Error"/> to the combination of 
-    /// <see cref="TokenType.ErrorClassBit"/> and <paramref name="tokenType"/>.
+    /// <see cref="NodeType.ErrorClassBit"/> and <paramref name="tokenType"/>.
     /// <para>
-    /// This must be called only once. <see cref="Accept(TokenType, int)"/> cannot be called anymore.
+    /// This must be called only once. <see cref="Accept(NodeType, int)"/> cannot be called anymore.
     /// </para>
     /// </summary>
     /// <param name="tokenType">The type of trivia.</param>
     /// <returns>The error token type.</returns>
-    public TokenType Reject( TokenType tokenType )
+    public NodeType Reject( NodeType tokenType )
     {
         Throw.CheckState( HasError is false );
         Throw.CheckArgument( tokenType.IsTrivia() );
-        return _error = TokenType.ErrorClassBit | tokenType;
+        return _error = NodeType.ErrorClassBit | tokenType;
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public ref struct TriviaHead
     /// Collects as many possible <see cref="Trivia"/>.
     /// <para>
     /// Whitespaces (span of <see cref="char.IsWhiteSpace(char)"/>) are automatically handled
-    /// and collected as <see cref="TokenType.Whitespace"/>.
+    /// and collected as <see cref="NodeType.Whitespace"/>.
     /// </para>
     /// </summary>
     /// <param name="parser">The parser function. When null, only whitespaces are collected.</param>
@@ -116,7 +116,7 @@ public ref struct TriviaHead
             ParseWhiteSpaces();
             int currentLength = _acceptedLength;
             parser?.Invoke( ref this );
-            if( _error != TokenType.None || currentLength == _acceptedLength )
+            if( _error != NodeType.None || currentLength == _acceptedLength )
             {
                 break;
             }
@@ -129,14 +129,14 @@ public ref struct TriviaHead
         {
             int iS = 0;
             while( ++iS != _head.Length && char.IsWhiteSpace( _head[iS] ) ) ;
-            Accept( TokenType.Whitespace, iS );
+            Accept( NodeType.Whitespace, iS );
         }
     }
 
     /// <summary>
     /// Collects the trivia that can be parsed by one of the <paramref name="parsers"/>.
     /// <para>
-    /// This starts by collecting a <see cref="TokenType.Whitespace"/> trivia, then each
+    /// This starts by collecting a <see cref="NodeType.Whitespace"/> trivia, then each
     /// parser is called (in the order of the <paramref name="parsers"/>). The first one
     /// that sets an error or accepts a trivia stops the enumeration.
     /// </para>
@@ -149,7 +149,7 @@ public ref struct TriviaHead
         {
             int currentLength = _acceptedLength;
             parser( ref this );
-            if( _error != TokenType.None || currentLength != _acceptedLength )
+            if( _error != NodeType.None || currentLength != _acceptedLength )
             {
                 break;
             }
@@ -180,7 +180,7 @@ public ref struct TriviaHead
                     break;
                 }
             }
-            Accept( TokenType.Whitespace, iS );
+            Accept( NodeType.Whitespace, iS );
             if( eol ) return;
         }
         // ...or consider only one comment.

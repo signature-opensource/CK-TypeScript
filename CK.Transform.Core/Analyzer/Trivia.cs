@@ -12,20 +12,20 @@ namespace CK.Transform.Core;
 /// </summary>
 public readonly struct Trivia : IEquatable<Trivia>
 {
-    readonly TokenType _tokenType;
+    readonly NodeType _tokenType;
     readonly ReadOnlyMemory<char> _content;
 
     /// <summary>
     /// A single space trivias.
     /// </summary>
-    public static readonly ImmutableArray<Trivia> OneSpace = [new Trivia( TokenType.Whitespace, " " )];
+    public static readonly ImmutableArray<Trivia> OneSpace = [new Trivia( NodeType.Whitespace, " " )];
 
-    public Trivia( TokenType tokenType, string content )
+    public Trivia( NodeType tokenType, string content )
         : this( tokenType, content.AsMemory() )
     {
     }
 
-    public Trivia( TokenType tokenType, ReadOnlyMemory<char> content )
+    public Trivia( NodeType tokenType, ReadOnlyMemory<char> content )
     {
         Throw.CheckArgument( tokenType.IsTrivia() );
         Throw.CheckArgument( content.Length > 0 );
@@ -34,19 +34,19 @@ public readonly struct Trivia : IEquatable<Trivia>
     }
 
     /// <summary>
-    /// Gets the token type that necessarily belongs to <see cref="TokenType.TriviaClassBit"/>
-    /// or is <see cref="TokenType.None"/> if <see cref="IsValid"/> is false.
+    /// Gets the token type that necessarily belongs to <see cref="NodeType.TriviaClassBit"/>
+    /// or is <see cref="NodeType.None"/> if <see cref="IsValid"/> is false.
     /// </summary>
-    public TokenType TokenType => _tokenType;
+    public NodeType TokenType => _tokenType;
 
     /// <summary>
     /// Gets whether this trivia is valid.
     /// </summary>
-    public bool IsValid => _tokenType != TokenType.None;
+    public bool IsValid => _tokenType != NodeType.None;
 
     /// <summary>
     /// Gets the content of this trivia including delimiters like the prefix "//" characters
-    /// for <see cref="TokenType.LineComment"/>.
+    /// for <see cref="NodeType.LineComment"/>.
     /// </summary>
     public ReadOnlyMemory<char> Content => _content;
 
@@ -119,7 +119,7 @@ public readonly struct Trivia : IEquatable<Trivia>
         IAbstractNode r = right;
         left = left.ExtractTrailingTrivias( ( t, idx ) =>
         {
-            if( t.TokenType == TokenType.Whitespace )
+            if( t.TokenType == NodeType.Whitespace )
             {
                 r = r.AddLeadingTrivia( t );
                 return true;
@@ -144,7 +144,7 @@ public readonly struct Trivia : IEquatable<Trivia>
         IAbstractNode l = left;
         right = right.ExtractLeadingTrivias( ( t, idx ) =>
         {
-            if( t.TokenType == TokenType.Whitespace )
+            if( t.TokenType == NodeType.Whitespace )
             {
                 l = l.AddTrailingTrivia( t );
                 return true;
