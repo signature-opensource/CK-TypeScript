@@ -66,12 +66,12 @@ public abstract partial class CompositeNode : SyntaxNode
     /// Overridden to call <see cref="DoCheckInvariants(int)"/> that is the
     /// actual implementation.
     /// <para>
-    /// This checks that no children is a <see cref="IErrorTolerantNode"/>.
+    /// This checks that no children is a <see cref="ErrorTolerant.IErrorTolerantNode"/>.
     /// </para>
     /// </summary>
     protected override sealed void DoCheckInvariants()
     {
-        Throw.CheckArgument( _store.All( c => c is not IErrorTolerantNode ) );
+        Throw.CheckArgument( _store.All( c => c is not ErrorTolerant.IErrorTolerantNode ) );
         DoCheckInvariants( _store.Length );
     }
 

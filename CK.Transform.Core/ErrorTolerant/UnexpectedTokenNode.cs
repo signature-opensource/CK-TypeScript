@@ -17,7 +17,10 @@ public sealed class UnexpectedTokenNode : TokenNode, IErrorTolerantNode
     /// <param name="tokenType">The token type. Must not be an error.</param>
     /// <param name="leading">Leading trivias.</param>
     /// <param name="trailing">Trailing trivias.</param>
-    public UnexpectedTokenNode( ReadOnlyMemory<char> text, NodeType tokenType = NodeType.GenericUnexpectedToken, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
+    public UnexpectedTokenNode( ReadOnlyMemory<char> text,
+                                NodeType tokenType = NodeType.GenericUnexpectedToken,
+                                ImmutableArray<Trivia> leading = default,
+                                ImmutableArray<Trivia> trailing = default )
         : base( tokenType, text, leading, trailing )
     {
     }

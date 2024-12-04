@@ -15,11 +15,6 @@ public readonly struct Trivia : IEquatable<Trivia>
     readonly NodeType _tokenType;
     readonly ReadOnlyMemory<char> _content;
 
-    /// <summary>
-    /// A single space trivias.
-    /// </summary>
-    public static readonly ImmutableArray<Trivia> OneSpace = [new Trivia( NodeType.Whitespace, " " )];
-
     public Trivia( NodeType tokenType, string content )
         : this( tokenType, content.AsMemory() )
     {

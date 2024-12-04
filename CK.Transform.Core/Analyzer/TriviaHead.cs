@@ -37,10 +37,11 @@ public ref struct TriviaHead
         _collector = collector;
     }
 
-    internal TriviaHead( ReadOnlySpan<char> head, int idxText, ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector )
+    internal TriviaHead( ReadOnlySpan<char> head, ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector )
     {
+        Throw.DebugAssert( text.Length >= head.Length );
         _head = head;
-        _idxText = idxText;
+        _idxText = text.Length - head.Length;
         _text = text;
         _collector = collector;
     }

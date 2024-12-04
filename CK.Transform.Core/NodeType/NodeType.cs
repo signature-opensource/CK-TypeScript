@@ -47,7 +47,7 @@ public enum NodeType
     /// </para>
     /// </summary>
     TriviaClassNumber = 23,
-    TriviaClassBit = 1 << TriviaClassNumber,
+    TriviaClassBit = 1 << (31 - TriviaClassNumber),
     TriviaClassMask = -1 << (31 - TriviaClassNumber),
 
     /// <summary>

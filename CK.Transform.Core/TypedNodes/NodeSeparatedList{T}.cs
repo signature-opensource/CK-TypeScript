@@ -76,11 +76,11 @@ public class NodeSeparatedList<T,TSep> : CollectionNode, IAbstractNodeList<T>
             var childrenAtIndex = _children[i];
             if( (i & 1) == 0 )
             {
-                Throw.CheckArgument( childrenAtIndex is T && childrenAtIndex is not IErrorTolerantNode );
+                Throw.CheckArgument( childrenAtIndex is T && childrenAtIndex is not ErrorTolerant.IErrorTolerantNode );
             }
             else
             {
-                Throw.CheckArgument( childrenAtIndex is TSep && childrenAtIndex is not IErrorTolerantNode );
+                Throw.CheckArgument( childrenAtIndex is TSep && childrenAtIndex is not ErrorTolerant.IErrorTolerantNode );
             }
         }
     }

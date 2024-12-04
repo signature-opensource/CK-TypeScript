@@ -5,6 +5,22 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
+public interface IAnalyzerBehavior
+{
+    /// <summary>
+    /// The default <see cref="TriviaParser"/> to apply.
+    /// </summary>
+    /// <param name="c">The trivia collector.</param>
+    void ParseTrivia( ref TriviaHead c );
+
+    /// <summary>
+    /// The default <see cref="LowLevelTokenizer"/> to apply.
+    /// </summary>
+    /// <param name="head">The start of the text to categorize. Leading trivias have already been handled.</param>
+    /// <param name="candidate">The candidate token detected.</param>
+    LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
+}
+
 /// <summary>
 /// Analyzer head that can be extended by extension methods to create specialized <see cref="TokenNode"/>.
 /// Extension methods can also be used to expose <see cref="AbstractNode"/> factory methods.
@@ -15,9 +31,9 @@ public ref struct AnalyzerHead
     readonly ReadOnlySpan<char> _text;
     readonly ReadOnlyMemory<char> _memText;
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
-    TriviaParser? _triviaParser;
+    IAnalyzerBehavior _behavior;
+    TriviaParser _triviaParser;
     ImmutableArray<Trivia> _leadingTrivias;
-    LowLevelTokenizer? _lowLevelTokenizer;
     TokenErrorNode? _triviaError;
     TokenErrorNode? _finalError;
     ReadOnlySpan<char> _lowLevelTokenText;
@@ -30,14 +46,34 @@ public ref struct AnalyzerHead
         _text = _memText.Span;
         _head = _text;
         _triviaBuilder = analyzer._triviaBuilder;
+        _behavior = analyzer;
         _triviaParser = analyzer.ParseTrivia;
-        _lowLevelTokenizer = analyzer.LowLevelTokenize;
+        EnsureLeadingTrivias();
+    }
+
+    internal AnalyzerHead( ReadOnlyMemory<char> text,
+                           IAnalyzerBehavior behavior,
+                           ImmutableArray<Trivia>.Builder? triviaBuilder = null )
+    {
+        _memText = text;
+        _text = _memText.Span;
+        _head = _text;
+        _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
+        _behavior = behavior;
+        _triviaParser = analyzer.ParseTrivia;
+        EnsureLeadingTrivias();
     }
 
     /// <summary>
     /// Gets the current head to analyze.
     /// </summary>
     public readonly ReadOnlySpan<char> Head => _head;
+
+    /// <summary>
+    /// Gets the remaining text.
+    /// </summary>
+    /// <returns></returns>
+    public readonly ReadOnlyMemory<char> GetRemainingText() => _memText.Slice( _lastSuccessfulHead );
 
     /// <summary>
     /// Gets the error from the trivia analysis.
@@ -82,6 +118,20 @@ public ref struct AnalyzerHead
     }
 
     /// <summary>
+    /// Replaces the analyzer behavior. This sets the <see cref="TriviaParser"/> and <see cref="LowLevelTokenizer"/>.
+    /// </summary>
+    /// <param name="behavior">The new behavior to use.</param>
+    /// <returns>The previous behavior (can be restored later).</returns>
+    public IAnalyzerBehavior SetBehavior( IAnalyzerBehavior behavior )
+    {
+        Throw.CheckNotNullArgument( behavior );
+        var previous = _behavior;
+        _behavior = behavior;
+        _triviaParser = behavior.ParseTrivia;
+        return previous;
+    }
+
+    /// <summary>
     /// Allows to replace the default trivia parser that is the <see cref="Analyzer.ParseTrivia(ref TriviaHead)"/>.
     /// This can be used in advanced scenario where trivias can change during an analysis.
     /// <para>
@@ -90,28 +140,13 @@ public ref struct AnalyzerHead
     /// </summary>
     /// <param name="parser">The trivia parser to use.</param>
     /// <returns>The previous parser (can be restored later).</returns>
-    public TriviaParser? SetTriviaParser( TriviaParser? parser )
+    public TriviaParser? SetTriviaParser( TriviaParser parser )
     {
+        Throw.CheckNotNullArgument( parser );
         var previous = _triviaParser;
         _triviaParser = parser;
         return previous;
     }
-
-    /// <summary>
-    /// Allows to replace the default low-level tokenizer that is the <see cref="Analyzer.LowLevelTokenize(ReadOnlySpan{char}, out LowLevelToken)"/>.
-    /// <para>
-    /// Setting null disables <see cref="LowLevelToken"/> initialization.
-    /// </para>
-    /// </summary>
-    /// <param name="tokenizer">The low-level tokenizer to use.</param>
-    /// <returns>The previous tokenizer (can be restored later).</returns>
-    public LowLevelTokenizer? SetLowLevelTokenizer( LowLevelTokenizer? tokenizer )
-    {
-        var previous = _lowLevelTokenizer;
-        _lowLevelTokenizer = tokenizer;
-        return previous;
-    }
-
 
     /// <summary>
     /// Validates the <see cref="Head"/> first <paramref name="tokenLength"/> characters. A <see cref="TokenNode"/> should be
@@ -124,10 +159,12 @@ public ref struct AnalyzerHead
     /// <param name="text">The resulting <see cref="TokenNode.Text"/>.</param>
     /// <param name="leading">The resulting <see cref="AbstractNode.LeadingNodes"/>.</param>
     /// <param name="trailing">The resulting <see cref="AbstractNode.TrailingNodes"/>.</param>
+    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     public void AcceptToken( int tokenLength,
                              out ReadOnlyMemory<char> text,
                              out ImmutableArray<Trivia> leading,
-                             out ImmutableArray<Trivia> trailing )
+                             out ImmutableArray<Trivia> trailing,
+                             IAnalyzerBehavior? newBehavior = null )
     {
         Throw.CheckArgument( tokenLength > 0 );
         Throw.CheckState( TriviaError == null );
@@ -142,6 +179,8 @@ public ref struct AnalyzerHead
         _lastSuccessfulHead = _head.Length;
         _leadingTrivias = default;
         trailing = GetTrailingTrivias();
+        // If a new behavior must be set, it's now (and only now).
+        if( newBehavior != null ) _behavior = newBehavior;
         EnsureLeadingTrivias();
     }
 
@@ -154,12 +193,13 @@ public ref struct AnalyzerHead
     /// </summary>
     /// <param name="type">The <see cref="TokenNode.NodeType"/> to create.</param>
     /// <param name="tokenLength">The length of the token. Must be positive.</param>
+    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>The token node.</returns>
-    public TokenNode CreateToken( NodeType type, int tokenLength )
+    public TokenNode CreateToken( NodeType type, int tokenLength, IAnalyzerBehavior? newBehavior = null )
     {
         if( FinalError != null ) return FinalError;
         Throw.CheckArgument( !type.IsError() &&  !type.IsTrivia() );
-        AcceptToken( tokenLength, out var text, out var leading, out var trailing );
+        AcceptToken( tokenLength, out var text, out var leading, out var trailing, newBehavior );
         // Use the internal unchecked constructor as every parameters have been checked.
         return new TokenNode( leading, trailing, type, text );
     }
@@ -187,17 +227,19 @@ public ref struct AnalyzerHead
     /// <param name="result">The non null TokenNode on success.</param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
     /// <param name="comparisonType">Optional comparison type.</param>
+    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>True on success, false otherwise.</returns>
     public bool AcceptLowLevelToken( ReadOnlySpan<char> expectedText,
                                      [NotNullWhen( true )] out TokenNode? result,
                                      NodeType type = NodeType.None,
-                                     StringComparison comparisonType = StringComparison.Ordinal )
+                                     StringComparison comparisonType = StringComparison.Ordinal,
+                                     IAnalyzerBehavior? newBehavior = null )
     {
         Throw.CheckArgument( expectedText.Length > 0 );
         if( _lowLevelTokenText.Equals( expectedText, comparisonType ) )
         {
             if( type == NodeType.None ) type = _lowLevelToken.NodeType;
-            result = CreateToken( type, expectedText.Length );
+            result = CreateToken( type, expectedText.Length, newBehavior );
             return true;
         }
         result = null;
@@ -226,17 +268,19 @@ public ref struct AnalyzerHead
     /// </summary>
     /// <param name="expected"></param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
+    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns></returns>
-    public TokenNode MatchToken( ReadOnlySpan<char> expected, NodeType type = NodeType.None )
+    public TokenNode MatchToken( ReadOnlySpan<char> expected,
+                                 NodeType type = NodeType.None,
+                                 StringComparison comparisonType = StringComparison.Ordinal,
+                                 IAnalyzerBehavior? newBehavior = null )
     {
-        if( AcceptLowLevelToken( expected, out var n, type ) ) return n;
+        if( AcceptLowLevelToken( expected, out var n, type, comparisonType, newBehavior ) ) return n;
         return CreateError( $"Expected '{expected}'." );
     }
 
 
     #region Internal & private
-
-    internal readonly ReadOnlyMemory<char> GetRemainingText() => _memText.Slice( _lastSuccessfulHead );
 
     /// <summary>
     /// Currently private but may be exposed with a "ManualTriviaMode" configuration
@@ -267,7 +311,7 @@ public ref struct AnalyzerHead
             _lowLevelToken = default;
             // Creates the Trivia head and collects every possible trivias thanks to the
             // current trivia parser.
-            var c = new TriviaHead( _head, _head.Length, _memText, _triviaBuilder );
+            var c = new TriviaHead( _head, _memText, _triviaBuilder );
             c.ParseAll( _triviaParser );
             // Captures the collected trivias: CreateError will have them.
             _leadingTrivias = _triviaBuilder.DrainToImmutable();
@@ -285,12 +329,9 @@ public ref struct AnalyzerHead
                 return false;
             }
             // Initializes the low-level token.
-            if( _lowLevelTokenizer != null )
-            {
-                _lowLevelToken = _lowLevelTokenizer( _head );
-                Throw.CheckState( _lowLevelToken.Length >= 0  );
-                _lowLevelTokenText = _head.Slice( _lowLevelToken.Length );
-            }
+            _lowLevelToken = _behavior.LowLevelTokenize( _head );
+            Throw.CheckState( _lowLevelToken.Length >= 0  );
+            _lowLevelTokenText = _head.Slice( 0, _lowLevelToken.Length );
         }
         return true;
     }
@@ -306,7 +347,7 @@ public ref struct AnalyzerHead
             _finalError = _triviaError = CreateError( "End of input.", NodeType.EndOfInput );
             return ImmutableArray<Trivia>.Empty;
         }
-        var c = new TriviaHead( _head, _head.Length, _memText, _triviaBuilder );
+        var c = new TriviaHead( _head, _memText, _triviaBuilder );
         c.ParseTrailingTrivias( _triviaParser );
         var trivias = _triviaBuilder.DrainToImmutable();
         // Forwards the head: on error, the SourcePosition will be accurate.

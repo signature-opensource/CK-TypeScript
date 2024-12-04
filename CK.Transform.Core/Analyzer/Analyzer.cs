@@ -12,10 +12,10 @@ namespace CK.Transform.Core;
 
 
 /// <summary>
-/// Abstract analyzer: <see cref="ParseTrivia(ref TriviaHead)"/> and <see cref="Parse(ref AnalyzerHead)"/> must
+/// Abstract analyzer: <see cref="ParseTrivia(ref TriviaHead)"/> and <see cref="Parse(ref AnalyzerHead, Analyzer)"/> must
 /// be implemented.
 /// </summary>
-public abstract partial class Analyzer
+public abstract partial class Analyzer : IAnalyzerBehavior
 {
     ReadOnlyMemory<char> _text;
     internal readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
@@ -57,50 +57,11 @@ public abstract partial class Analyzer
     public IAbstractNode ParseOne()
     {
         var head = new AnalyzerHead( this );
-        var n = Parse( ref head  );
+        var n = Parse( ref head );
         Throw.CheckState( n is AbstractNode );
         _head = head.GetRemainingText();
         return n;
     }
-
-    /// <summary>
-    /// Attempts to fully parse a source text.
-    /// This returns an <see cref="IAbstractNode"/> that can be <see cref="NodeList{T}"/> of <see cref="AbstractNode"/>,
-    /// a single successful top-level node or a <see cref="TokenErrorNode"/>.
-    /// <para>
-    /// This stops at the first <see cref="TokenErrorNode"/> (including the <see cref="TokenErrorNode.Unhandled"/>).
-    /// </para>
-    /// </summary>
-    /// <param name="text">The text to parse.</param>
-    /// <returns>The result.</returns>
-    public IAbstractNode ParseAll()
-    {
-        AbstractNode? singleResult = null;
-        List<AbstractNode>? multiResult = null;
-        for( ; ; )
-        {
-            var node = Unsafe.As<AbstractNode>( ParseOne() );
-            if( !node.NodeType.IsError() )
-            {
-                if( singleResult == null ) singleResult = node;
-                else
-                {
-                    multiResult ??= new List<AbstractNode>() { singleResult };
-                    multiResult.Add( node );
-                }
-            }
-            else
-            {
-                if( node.NodeType == NodeType.EndOfInput )
-                {
-                    if( multiResult != null ) return new NodeList<AbstractNode>( multiResult );
-                    if( singleResult != null ) return singleResult;
-                }
-                return node;
-            }
-        }
-    }
-
 
     /// <summary>
     /// Tries to read a top-level language node from the <see cref="AnalyzerHead"/>.
@@ -109,24 +70,18 @@ public abstract partial class Analyzer
     /// </para>
     /// <para>
     /// The notion of "top-level" is totally language dependent. A language can perfectly decide that a list of statements must be handled
-    /// as a top-level node. However, when possible the standard <see cref="ParseAll"/> should be used.
+    /// as a top-level node.
     /// </para>
     /// </summary>
     /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
+    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    internal protected abstract IAbstractNode Parse( ref AnalyzerHead head );
+    public abstract IAbstractNode Parse( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null );
 
-    /// <summary>
-    /// The default <see cref="TriviaParser"/> to apply.
-    /// </summary>
-    /// <param name="c">The trivia collector.</param>
-    internal protected abstract void ParseTrivia( ref TriviaHead c );
+    /// <inheritdoc />
+    public abstract void ParseTrivia( ref TriviaHead c );
 
-    /// <summary>
-    /// The default <see cref="LowLevelTokenizer"/> to apply.
-    /// </summary>
-    /// <param name="head">The start of the text to categorize. Leading trivias have already been handled.</param>
-    /// <param name="candidate">The candidate token detected.</param>
-    internal protected abstract LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
+    /// <inheritdoc />
+    public abstract LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
 
 }

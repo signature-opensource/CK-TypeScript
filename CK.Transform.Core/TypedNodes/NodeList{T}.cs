@@ -61,11 +61,11 @@ public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class,
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     /// <summary>
-    /// Checks that all stored items are <typeparamref name="T"/> and are not <see cref="IErrorTolerantNode"/>.
+    /// Checks that all stored items are <typeparamref name="T"/> and are not <see cref="ErrorTolerant.IErrorTolerantNode"/>.
     /// </summary>
     protected override void DoCheckInvariants()
     {
-        Throw.CheckArgument( _children.All( c => c is T && c is not IErrorTolerantNode ) );
+        Throw.CheckArgument( _children.All( c => c is T && c is not ErrorTolerant.IErrorTolerantNode ) );
     }
 
     /// <inheritdoc />

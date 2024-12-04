@@ -21,13 +21,13 @@ public abstract class BaseTransformAnalyzer : Analyzer
         _language = language;
     }
 
-    protected internal override void ParseTrivia( ref TriviaHead c )
+    public override void ParseTrivia( ref TriviaHead c )
     {
         c.AcceptRecursiveStartComment();
         c.AcceptLineComment();
     }
 
-    protected internal override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
+    public override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         var c = head[0];
         if( char.IsAsciiLetter( c ) )
@@ -47,7 +47,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
         return default;
     }
 
-    protected internal override IAbstractNode Parse( ref AnalyzerHead head )
+    public override IAbstractNode Parse( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null )
     {
         if( head.AcceptLowLevelToken( "inject", out var inject ) )
         {

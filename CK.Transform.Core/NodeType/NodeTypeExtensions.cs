@@ -50,7 +50,7 @@ public static class NodeTypeExtensions
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is a trivia.</returns>
-    public static bool IsTrivia( this NodeType type ) => (type & NodeType.TriviaClassMask) == NodeType.TriviaClassMask;
+    public static bool IsTrivia( this NodeType type ) => (type & NodeType.TriviaClassMask) == NodeType.TriviaClassBit;
 
 }
 

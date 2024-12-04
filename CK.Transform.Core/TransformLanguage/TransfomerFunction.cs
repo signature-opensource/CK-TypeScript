@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace CK.Transform.TransformLanguage;
@@ -37,6 +38,10 @@ public sealed class TransfomerFunction : CompositeNode
 
     TransfomerFunction( ImmutableArray<Trivia> leading, CompositeNodeMutator content, ImmutableArray<Trivia> trailing )
         : base( leading,content, trailing )
+    {
+    }
+
+    public TransfomerFunction( TokenNode create, TokenNode language, TokenNode transformer, TokenNode? functionName1, TokenNode? on, AbstractNode? target1, TokenNode asT1, TokenNode beginT1, List<ITransformStatement> statements1, TokenNode endT1 )
     {
     }
 

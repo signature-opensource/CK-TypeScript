@@ -7,76 +7,19 @@ using System.Linq;
 namespace CK.Transform.TransformLanguage;
 
 
-public sealed class TransfomerHost
+public sealed partial class TransformerHost
 {
-    readonly List<CachedLanguage> _languages;
-
-    sealed class CachedLanguage
+    sealed class TAnalyzer : BaseTransformAnalyzer
     {
-        public readonly TransformLanguage Language;
-        public readonly BaseTransformAnalyzer TransformAnalyzer;
-        public readonly Analyzer TargetAnalyzer;
+        readonly TransformerHost _host;
 
-        public CachedLanguage( TransformLanguage language )
+        public TAnalyzer( TransformerHost host )
+            : base( host._transformLanguage )
         {
-            Language = language;
-            TransformAnalyzer = language.CreateTransformAnalyzer();
-            TargetAnalyzer = language.CreateTargetAnalyzer();
-        }
-    }
-
-    public TransfomerHost( params IEnumerable<TransformLanguage> languages )
-    {
-        _languages = new List<CachedLanguage>();
-        foreach( var language in languages ) EnsureLanguage( language );
-    }
-
-    public IEnumerable<TransformLanguage> Languages => _languages.Select( l => l.Language );
-
-    public bool RemoveLanguage( TransformLanguage language )
-    {
-        var idx = _languages.FindIndex( l => l.Language.LanguageName == language.LanguageName );
-        if( idx >= 0 )
-        {
-            _languages.RemoveAt( idx );
-            return true;
-        }
-        return false;
-    }
-
-    public void EnsureLanguage( TransformLanguage language )
-    {
-        var l = _languages.FirstOrDefault( l => l.Language.LanguageName == language.LanguageName );
-        if( l == null )
-        {
-            _languages.Add( new CachedLanguage( language ) );
-        }
-    }
-
-    CachedLanguage? Find( ReadOnlySpan<char> name )
-    {
-        foreach( var l in _languages )
-        {
-            if( name.Equals( l.Language.LanguageName, StringComparison.OrdinalIgnoreCase ) )
-                return l;
-        }
-        return null;
-    }
-
-    sealed class FunctionAnalyzer : Analyzer
-    {
-        readonly TransfomerHost _host;
-
-        public FunctionAnalyzer( TransfomerHost host ) => _host = host;
-
-
-        protected internal override void ParseTrivia( ref TriviaHead c )
-        {
-            c.AcceptRecursiveStartComment();
-            c.AcceptLineComment();
+            _host = host;
         }
 
-        protected internal override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
+        public override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
         {
             var c = head[0];
             if( char.IsAsciiLetter( c ) )
@@ -92,7 +35,7 @@ public sealed class TransfomerHost
             return default;
         }
 
-        protected internal override IAbstractNode Parse( ref AnalyzerHead head )
+        internal IAbstractNode ParseFunction( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null )
         {
             if( head.AcceptLowLevelToken( "create", out var create ) )
             {
@@ -103,10 +46,10 @@ public sealed class TransfomerHost
                 }
                 var language = head.CreateLowLevelToken();
                 var transformer = head.MatchToken( "transformer" );
-                if( transformer is TokenErrorNode ) return transformer;
+                if( transformer is IErrorNode ) return transformer;
                 TokenNode? functionName = null;
                 bool hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
-                if( !hasOn )
+                if( !hasOn && !head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) )
                 {
                     functionName = head.CreateLowLevelToken();
                     hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
@@ -118,7 +61,7 @@ public sealed class TransfomerHost
                     on = head.CreateLowLevelToken();
                     if( head.LowLevelToken.NodeType == NodeType.DoubleQuote )
                     {
-                        target = BaseTransformAnalyzer.MatchRawString( ref head );
+                        target = MatchRawString( ref head );
                         if( target is not RawString ) return target;
                     }
                     else if( head.LowLevelToken.NodeType == NodeType.GenericIdentifier )
@@ -131,22 +74,22 @@ public sealed class TransfomerHost
                     }
                 }
                 var asT = head.MatchToken( "as" );
-                if( asT is TokenErrorNode ) return asT;
-                var beginT = head.MatchToken( "begin" );
-                if( beginT is TokenErrorNode ) return beginT;
-                cLang.TransformAnalyzer.Reset( RemainingText );
+                if( asT is IErrorNode ) return asT;
+                var beginT = head.MatchToken( "begin", newBehavior: cLang.TransformAnalyzer );
+                if( beginT is IErrorNode ) return beginT;
                 List<ITransformStatement> statements = new List<ITransformStatement>();
-                while( !head.AcceptLowLevelToken( "end", out var endT ) )
+                TokenNode? endT;
+                while( !head.AcceptLowLevelToken( "end", out endT, newBehavior: newBehavior ?? this ) )
                 {
-                    var s = cLang.TransformAnalyzer.ParseOne();
-                    if( s is TokenErrorNode ) return s;
+                    var s = cLang.TransformAnalyzer.Parse( ref head );
+                    if( s is IErrorNode ) return s;
                     if( s is not ITransformStatement statement )
                     {
                         return Throw.InvalidOperationException<IAbstractNode>( $"Language '{cLang.Language.LanguageName}' parsed a '{s.GetType().ToCSharpName()}' that is not a ITransformStatement." );
                     }
                     statements.Add( statement );
                 }
-
+                return new TransfomerFunction( create, language, transformer, functionName, on, target, asT, beginT, statements, endT );
             }
             return head.CreateError( "Expecting 'create <language> transformer [name] [on <target>] as begin ... end" );
         }

@@ -24,7 +24,10 @@ public sealed class MissingTokenNode : TokenNode, IErrorTolerantNode
     /// <param name="tokenType">The token type. Must not be an error.</param>
     /// <param name="leading">Leading trivias.</param>
     /// <param name="trailing">Trailing trivias.</param>
-    public MissingTokenNode( string message, NodeType tokenType = NodeType.GenericMissingToken, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
+    public MissingTokenNode( string message,
+                             NodeType tokenType = NodeType.GenericMissingToken,
+                             ImmutableArray<Trivia> leading = default,
+                             ImmutableArray<Trivia> trailing = default )
         : base( leading.IsDefault ? [] : leading,
                 trailing.IsDefault ? [] : trailing,
                 tokenType,
