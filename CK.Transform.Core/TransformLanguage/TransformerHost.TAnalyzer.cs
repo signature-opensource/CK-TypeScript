@@ -75,11 +75,11 @@ public sealed partial class TransformerHost
                 }
                 var asT = head.MatchToken( "as" );
                 if( asT is IErrorNode ) return asT;
-                var beginT = head.MatchToken( "begin", newBehavior: cLang.TransformAnalyzer );
+                var beginT = head.MatchToken( "begin" );
                 if( beginT is IErrorNode ) return beginT;
-                List<ITransformStatement> statements = new List<ITransformStatement>();
+                var statements = new List<ITransformStatement>();
                 TokenNode? endT;
-                while( !head.AcceptLowLevelToken( "end", out endT, newBehavior: newBehavior ?? this ) )
+                while( !head.AcceptLowLevelToken( "end", out endT ) )
                 {
                     var s = cLang.TransformAnalyzer.Parse( ref head );
                     if( s is IErrorNode ) return s;

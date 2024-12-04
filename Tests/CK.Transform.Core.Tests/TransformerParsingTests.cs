@@ -1,4 +1,4 @@
-﻿using CK.Transform.TransformLanguage;
+using CK.Transform.TransformLanguage;
 using FluentAssertions;
 using NUnit.Framework;
 

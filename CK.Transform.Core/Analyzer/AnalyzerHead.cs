@@ -5,22 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
-public interface IAnalyzerBehavior
-{
-    /// <summary>
-    /// The default <see cref="TriviaParser"/> to apply.
-    /// </summary>
-    /// <param name="c">The trivia collector.</param>
-    void ParseTrivia( ref TriviaHead c );
-
-    /// <summary>
-    /// The default <see cref="LowLevelTokenizer"/> to apply.
-    /// </summary>
-    /// <param name="head">The start of the text to categorize. Leading trivias have already been handled.</param>
-    /// <param name="candidate">The candidate token detected.</param>
-    LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
-}
-
 /// <summary>
 /// Analyzer head that can be extended by extension methods to create specialized <see cref="TokenNode"/>.
 /// Extension methods can also be used to expose <see cref="AbstractNode"/> factory methods.
@@ -51,16 +35,35 @@ public ref struct AnalyzerHead
         EnsureLeadingTrivias();
     }
 
-    internal AnalyzerHead( ReadOnlyMemory<char> text,
-                           IAnalyzerBehavior behavior,
-                           ImmutableArray<Trivia>.Builder? triviaBuilder = null )
+    public AnalyzerHead( ReadOnlyMemory<char> text,
+                         IAnalyzerBehavior behavior,
+                         ImmutableArray<Trivia>.Builder? triviaBuilder = null )
     {
         _memText = text;
         _text = _memText.Span;
         _head = _text;
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
         _behavior = behavior;
-        _triviaParser = analyzer.ParseTrivia;
+        _triviaParser = behavior.ParseTrivia;
+        EnsureLeadingTrivias();
+    }
+
+    public AnalyzerHead( ref AnalyzerHead from, IAnalyzerBehavior? behavior = null )
+    {
+        _memText = from.GetRemainingText();
+        _text = _memText.Span;
+        _head = _text;
+        _triviaBuilder = from._triviaBuilder;
+        if( behavior != null )
+        {
+            _behavior = behavior;
+            _triviaParser = behavior.ParseTrivia;
+        }
+        else
+        {
+            _behavior = from._behavior;
+            _triviaParser = from._triviaParser;
+        }
         EnsureLeadingTrivias();
     }
 
@@ -118,37 +121,6 @@ public ref struct AnalyzerHead
     }
 
     /// <summary>
-    /// Replaces the analyzer behavior. This sets the <see cref="TriviaParser"/> and <see cref="LowLevelTokenizer"/>.
-    /// </summary>
-    /// <param name="behavior">The new behavior to use.</param>
-    /// <returns>The previous behavior (can be restored later).</returns>
-    public IAnalyzerBehavior SetBehavior( IAnalyzerBehavior behavior )
-    {
-        Throw.CheckNotNullArgument( behavior );
-        var previous = _behavior;
-        _behavior = behavior;
-        _triviaParser = behavior.ParseTrivia;
-        return previous;
-    }
-
-    /// <summary>
-    /// Allows to replace the default trivia parser that is the <see cref="Analyzer.ParseTrivia(ref TriviaHead)"/>.
-    /// This can be used in advanced scenario where trivias can change during an analysis.
-    /// <para>
-    /// Setting null handles only <see cref="NodeType.Whitespace"/> trivias.
-    /// </para>
-    /// </summary>
-    /// <param name="parser">The trivia parser to use.</param>
-    /// <returns>The previous parser (can be restored later).</returns>
-    public TriviaParser? SetTriviaParser( TriviaParser parser )
-    {
-        Throw.CheckNotNullArgument( parser );
-        var previous = _triviaParser;
-        _triviaParser = parser;
-        return previous;
-    }
-
-    /// <summary>
     /// Validates the <see cref="Head"/> first <paramref name="tokenLength"/> characters. A <see cref="TokenNode"/> should be
     /// created with the final <paramref name="text"/>, <paramref name="leading"/> and <paramref name="trailing"/> data.
     /// <para>
@@ -159,12 +131,10 @@ public ref struct AnalyzerHead
     /// <param name="text">The resulting <see cref="TokenNode.Text"/>.</param>
     /// <param name="leading">The resulting <see cref="AbstractNode.LeadingNodes"/>.</param>
     /// <param name="trailing">The resulting <see cref="AbstractNode.TrailingNodes"/>.</param>
-    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     public void AcceptToken( int tokenLength,
                              out ReadOnlyMemory<char> text,
                              out ImmutableArray<Trivia> leading,
-                             out ImmutableArray<Trivia> trailing,
-                             IAnalyzerBehavior? newBehavior = null )
+                             out ImmutableArray<Trivia> trailing )
     {
         Throw.CheckArgument( tokenLength > 0 );
         Throw.CheckState( TriviaError == null );
@@ -173,14 +143,11 @@ public ref struct AnalyzerHead
         text = _memText.Slice( _text.Length - _head.Length, tokenLength );
         _head = _head.Slice( tokenLength );
         leading = _leadingTrivias;
-        // Before preloading the leading trivia for the next token, save the
-        // current head position. The calling Analyzer updates its 
-        // RemainingText from this index.
-        _lastSuccessfulHead = _head.Length;
         _leadingTrivias = default;
         trailing = GetTrailingTrivias();
-        // If a new behavior must be set, it's now (and only now).
-        if( newBehavior != null ) _behavior = newBehavior;
+        // Before preloading the leading trivia for the next token, save the
+        // current head position. RemainingText is based on this index.
+        _lastSuccessfulHead = _head.Length;
         EnsureLeadingTrivias();
     }
 
@@ -193,13 +160,12 @@ public ref struct AnalyzerHead
     /// </summary>
     /// <param name="type">The <see cref="TokenNode.NodeType"/> to create.</param>
     /// <param name="tokenLength">The length of the token. Must be positive.</param>
-    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>The token node.</returns>
-    public TokenNode CreateToken( NodeType type, int tokenLength, IAnalyzerBehavior? newBehavior = null )
+    public TokenNode CreateToken( NodeType type, int tokenLength )
     {
         if( FinalError != null ) return FinalError;
         Throw.CheckArgument( !type.IsError() &&  !type.IsTrivia() );
-        AcceptToken( tokenLength, out var text, out var leading, out var trailing, newBehavior );
+        AcceptToken( tokenLength, out var text, out var leading, out var trailing );
         // Use the internal unchecked constructor as every parameters have been checked.
         return new TokenNode( leading, trailing, type, text );
     }
@@ -227,19 +193,17 @@ public ref struct AnalyzerHead
     /// <param name="result">The non null TokenNode on success.</param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
     /// <param name="comparisonType">Optional comparison type.</param>
-    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>True on success, false otherwise.</returns>
     public bool AcceptLowLevelToken( ReadOnlySpan<char> expectedText,
                                      [NotNullWhen( true )] out TokenNode? result,
                                      NodeType type = NodeType.None,
-                                     StringComparison comparisonType = StringComparison.Ordinal,
-                                     IAnalyzerBehavior? newBehavior = null )
+                                     StringComparison comparisonType = StringComparison.Ordinal )
     {
         Throw.CheckArgument( expectedText.Length > 0 );
         if( _lowLevelTokenText.Equals( expectedText, comparisonType ) )
         {
             if( type == NodeType.None ) type = _lowLevelToken.NodeType;
-            result = CreateToken( type, expectedText.Length, newBehavior );
+            result = CreateToken( type, expectedText.Length );
             return true;
         }
         result = null;
@@ -275,7 +239,7 @@ public ref struct AnalyzerHead
                                  StringComparison comparisonType = StringComparison.Ordinal,
                                  IAnalyzerBehavior? newBehavior = null )
     {
-        if( AcceptLowLevelToken( expected, out var n, type, comparisonType, newBehavior ) ) return n;
+        if( AcceptLowLevelToken( expected, out var n, type, comparisonType ) ) return n;
         return CreateError( $"Expected '{expected}'." );
     }
 

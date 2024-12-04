@@ -47,7 +47,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
         return default;
     }
 
-    public override IAbstractNode Parse( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null )
+    public override IAbstractNode Parse( ref AnalyzerHead head )
     {
         if( head.AcceptLowLevelToken( "inject", out var inject ) )
         {

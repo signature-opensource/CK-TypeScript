@@ -69,10 +69,12 @@ public sealed partial class TransformerHost
         }
     }
 
-    public TransfomerFunction Parse( string text )
+    public TransfomerFunction Parse( string text ) => Parse( text.AsMemory() );
+
+    public TransfomerFunction Parse( ReadOnlyMemory<char> text )
     {
-        _transformAnalyzer.Reset( text.AsMemory() );
-        var n = _transformAnalyzer.ParseFunction();
+        var head = new AnalyzerHead( text, _transformAnalyzer );
+        var n = _transformAnalyzer.ParseFunction( ref head );
         if( n is not TransfomerFunction f )
         {
             return Throw.ArgumentException<TransfomerFunction>( nameof( text ) );

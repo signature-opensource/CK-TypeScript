@@ -39,22 +39,21 @@ public abstract class ContextualAnalyzer<T> : Analyzer where T : AnalyzerContext
     /// the root context.
     /// </summary>
     /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
-    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    public override sealed IAbstractNode Parse( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null )
+    public override sealed IAbstractNode Parse( ref AnalyzerHead head )
     {
-        return Parse( ref head, _rootContext, newBehavior );
+        return Parse( ref head, _rootContext );
     }
 
     /// <summary>
-    /// Same as the contextless <see cref="Analyzer.Parse(ref AnalyzerHead, IAnalyzerBehavior?)"/>
+    /// Same as the contextless <see cref="Analyzer.Parse(ref AnalyzerHead)"/>
     /// but with a <paramref name="context"/>.
     /// </summary>
     /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
     /// <param name="context">The parse context.</param>
     /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    public abstract IAbstractNode Parse( ref AnalyzerHead head, T context, IAnalyzerBehavior? newBehavior = null );
+    public abstract IAbstractNode Parse( ref AnalyzerHead head, T context );
 }
 
 

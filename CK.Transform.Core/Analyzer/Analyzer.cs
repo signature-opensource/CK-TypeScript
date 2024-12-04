@@ -10,7 +10,6 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
-
 /// <summary>
 /// Abstract analyzer: <see cref="ParseTrivia(ref TriviaHead)"/> and <see cref="Parse(ref AnalyzerHead, Analyzer)"/> must
 /// be implemented.
@@ -74,9 +73,8 @@ public abstract partial class Analyzer : IAnalyzerBehavior
     /// </para>
     /// </summary>
     /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
-    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
     /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    public abstract IAbstractNode Parse( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null );
+    public abstract IAbstractNode Parse( ref AnalyzerHead head );
 
     /// <inheritdoc />
     public abstract void ParseTrivia( ref TriviaHead c );
