@@ -59,12 +59,12 @@ public sealed partial class TransformerHost
                 if( hasOn )
                 {
                     on = head.CreateLowLevelToken();
-                    if( head.LowLevelToken.NodeType == NodeType.DoubleQuote )
+                    if( head.LowLevelTokenType == NodeType.DoubleQuote )
                     {
                         target = MatchRawString( ref head );
                         if( target is not RawString ) return target;
                     }
-                    else if( head.LowLevelToken.NodeType == NodeType.GenericIdentifier )
+                    else if( head.LowLevelTokenType == NodeType.GenericIdentifier )
                     {
                         target = head.CreateLowLevelToken();
                     }
@@ -89,7 +89,7 @@ public sealed partial class TransformerHost
                     }
                     statements.Add( statement );
                 }
-                return new TransfomerFunction( create, language, transformer, functionName, on, target, asT, beginT, statements, endT );
+                return new TransfomerFunction( create, language, transformer, functionName, on, target, asT, beginT, new NodeList<ITransformStatement>( statements ), endT );
             }
             return head.CreateError( "Expecting 'create <language> transformer [name] [on <target>] as begin ... end" );
         }

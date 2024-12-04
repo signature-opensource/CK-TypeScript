@@ -19,7 +19,7 @@ public sealed class InjectIntoStatement : CompositeNode, ITransformStatement
     static readonly RequiredChild<TokenNode> _statementTerminator = new( 4 );
 
     public InjectIntoStatement( TokenNode inject, RawString content, TokenNode into, InjectionPoint target, TokenNode terminator )
-        : base( [], [], inject, content, into, target, terminator )
+        : base( inject, content, into, target, terminator )
     {
     }
 

@@ -3,6 +3,8 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Reflection.Metadata;
 
 namespace CK.Transform.TransformLanguage;
 
@@ -37,11 +39,12 @@ public sealed class TransfomerFunction : CompositeNode
     }
 
     TransfomerFunction( ImmutableArray<Trivia> leading, CompositeNodeMutator content, ImmutableArray<Trivia> trailing )
-        : base( leading,content, trailing )
+        : base( leading, content, trailing )
     {
     }
 
-    public TransfomerFunction( TokenNode create, TokenNode language, TokenNode transformer, TokenNode? functionName1, TokenNode? on, AbstractNode? target1, TokenNode asT1, TokenNode beginT1, List<ITransformStatement> statements1, TokenNode endT1 )
+    public TransfomerFunction( TokenNode create, TokenNode language, TokenNode transformer, TokenNode? functionName, TokenNode? on, AbstractNode? target, TokenNode asT, TokenNode begin, NodeList<ITransformStatement> statements, TokenNode end )
+        : base( create, language, transformer, functionName, on, target, asT, begin, statements, end )
     {
     }
 

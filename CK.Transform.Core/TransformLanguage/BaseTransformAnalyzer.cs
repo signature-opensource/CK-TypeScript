@@ -75,7 +75,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
 
         static AbstractNode MatchInjectionPoint( ref AnalyzerHead head )
         {
-            if( head.LowLevelToken.NodeType == NodeType.OpenAngleBracket )
+            if( head.LowLevelTokenType == NodeType.OpenAngleBracket )
             {
                 var sHead = head.Head;
                 int iS = 0;
@@ -92,7 +92,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
 
     public static AbstractNode MatchRawString( ref AnalyzerHead head )
     {
-        if( head.LowLevelToken.NodeType == NodeType.DoubleQuote )
+        if( head.LowLevelTokenType == NodeType.DoubleQuote )
         {
             var start = head.Head.TrimStart( '"' );
             var quoteCount = head.Head.Length - start.Length;

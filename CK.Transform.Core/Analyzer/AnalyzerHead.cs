@@ -15,13 +15,13 @@ public ref struct AnalyzerHead
     readonly ReadOnlySpan<char> _text;
     readonly ReadOnlyMemory<char> _memText;
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
-    IAnalyzerBehavior _behavior;
+    readonly IAnalyzerBehavior _behavior;
     TriviaParser _triviaParser;
     ImmutableArray<Trivia> _leadingTrivias;
     TokenErrorNode? _triviaError;
     TokenErrorNode? _finalError;
     ReadOnlySpan<char> _lowLevelTokenText;
-    LowLevelToken _lowLevelToken;
+    NodeType _lowLevelTokenType;
     int _lastSuccessfulHead;
 
     internal AnalyzerHead( Analyzer analyzer )
@@ -93,14 +93,15 @@ public ref struct AnalyzerHead
     public readonly TokenErrorNode? FinalError => _finalError;
 
     /// <summary>
-    /// Gets the low-level token.
+    /// Gets the low-level token type.
+    /// <see cref="NodeType.None"/> if it has not been computed by <see cref="IAnalyzerBehavior.LowLevelTokenize(ReadOnlySpan{char})"/>.
     /// </summary>
-    public LowLevelToken LowLevelToken => _lowLevelToken;
+    public readonly NodeType LowLevelTokenType => _lowLevelTokenType;
 
     /// <summary>
     /// Gets the <see cref="LowLevelToken"/> text.
     /// </summary>
-    public ReadOnlySpan<char> LowLevelTokenText => _lowLevelTokenText;
+    public readonly ReadOnlySpan<char> LowLevelTokenText => _lowLevelTokenText;
 
     /// <summary>
     /// Sets a final error. Must not be called if <see cref="FinalError"/> is not null.
@@ -143,10 +144,15 @@ public ref struct AnalyzerHead
         text = _memText.Slice( _text.Length - _head.Length, tokenLength );
         _head = _head.Slice( tokenLength );
         leading = _leadingTrivias;
-        _leadingTrivias = default;
+
+
+        // Reset the _leadingTrivias after the GetTrailingTrivias(): if an error
+        // must be created, it must have the leading trivias.
         trailing = GetTrailingTrivias();
+
         // Before preloading the leading trivia for the next token, save the
         // current head position. RemainingText is based on this index.
+        _leadingTrivias = default;
         _lastSuccessfulHead = _head.Length;
         EnsureLeadingTrivias();
     }
@@ -176,13 +182,13 @@ public ref struct AnalyzerHead
     /// If a <see cref="FinalError"/> exists, it is returned instead (once a final error is set, no token can be accepted).
     /// </para>
     /// </summary>
-    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
+    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
     /// <returns>The token node.</returns>
     public TokenNode CreateLowLevelToken( NodeType type = NodeType.None )
     {
-        Throw.CheckState( LowLevelToken.Length > 0 );
-        if( type == NodeType.None ) type = _lowLevelToken.NodeType;
-        return CreateToken( type, _lowLevelToken.Length );
+        Throw.CheckState( _lowLevelTokenText.Length > 0 );
+        if( type == NodeType.None ) type = _lowLevelTokenType;
+        return CreateToken( type, _lowLevelTokenText.Length );
     }
 
     /// <summary>
@@ -191,7 +197,7 @@ public ref struct AnalyzerHead
     /// </summary>
     /// <param name="expectedText">The text that must match the <see cref="LowLevelTokenText"/>. Must not be empty.</param>
     /// <param name="result">The non null TokenNode on success.</param>
-    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
+    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
     /// <param name="comparisonType">Optional comparison type.</param>
     /// <returns>True on success, false otherwise.</returns>
     public bool AcceptLowLevelToken( ReadOnlySpan<char> expectedText,
@@ -202,7 +208,7 @@ public ref struct AnalyzerHead
         Throw.CheckArgument( expectedText.Length > 0 );
         if( _lowLevelTokenText.Equals( expectedText, comparisonType ) )
         {
-            if( type == NodeType.None ) type = _lowLevelToken.NodeType;
+            if( type == NodeType.None ) type = _lowLevelTokenType;
             result = CreateToken( type, expectedText.Length );
             return true;
         }
@@ -272,7 +278,8 @@ public ref struct AnalyzerHead
                 return false;
             }
             // Resets the current low-level token.
-            _lowLevelToken = default;
+            _lowLevelTokenType = NodeType.None;
+            _lowLevelTokenText = default;
             // Creates the Trivia head and collects every possible trivias thanks to the
             // current trivia parser.
             var c = new TriviaHead( _head, _memText, _triviaBuilder );
@@ -293,9 +300,13 @@ public ref struct AnalyzerHead
                 return false;
             }
             // Initializes the low-level token.
-            _lowLevelToken = _behavior.LowLevelTokenize( _head );
-            Throw.CheckState( _lowLevelToken.Length >= 0  );
-            _lowLevelTokenText = _head.Slice( 0, _lowLevelToken.Length );
+            var t = _behavior.LowLevelTokenize( _head );
+            _lowLevelTokenType = t.NodeType;
+            if( t.Length != 0 )
+            {
+                Throw.CheckState( t.Length >= 0 );
+                _lowLevelTokenText = _head.Slice( 0, t.Length );
+            }
         }
         return true;
     }
