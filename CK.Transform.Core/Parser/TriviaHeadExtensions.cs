@@ -51,19 +51,14 @@ public static class TriviaHeadExtensions
     {
         if( c.Head.StartsWith( "/*" ) )
         {
-            int iS = 1;
-            for(; ; )
+            int i = c.Head.IndexOf( "*/" );
+            if( i < 0 )
             {
-                if( ++iS == c.Head.Length )
-                {
-                    c.Reject( NodeType.StarComment );
-                    return;
-                }
-                if( c.Head.StartsWith( "*/" ) )
-                {
-                    c.Accept( NodeType.StarComment, iS + 2 );
-                    return;
-                }
+                c.EndOfInput( NodeType.StarComment );
+            }
+            else
+            {
+                c.Accept( NodeType.StarComment, i + 2 );
             }
         }
     }
@@ -78,31 +73,25 @@ public static class TriviaHeadExtensions
     /// <param name="c">This head.</param>
     public static void AcceptRecursiveStartComment( this ref TriviaHead c )
     {
-        if( c.Head.StartsWith( "/*" ) )
+        var h = c.Head;
+        if( h.StartsWith( "/*" ) )
         {
-            int depth = 0;
-            int iS = 1;
-            for(; ; )
+            h = h.Slice( 2 );
+            int depth = 1;
+            for( ; ; )
             {
-                if( ++iS == c.Head.Length )
+                int iE = h.IndexOf( "*/" );
+                if( iE < 0 )
                 {
-                    c.Reject( NodeType.StarComment );
+                    c.EndOfInput( NodeType.StarComment );
                     return;
                 }
-                if( c.Head.StartsWith( "*/" ) )
-                {
-                    if( --depth == 0 )
-                    {
-                        c.Accept( NodeType.StarComment, iS + 2 );
-                        return;
-                    }
-                }
-                else if( c.Head.StartsWith( "/*" ) )
-                {
-                    iS += 2;
-                    ++depth;
-                }
+                depth += h.Slice( 0, iE ).Count( "/*" ) - 1;
+                h = h.Slice( iE + 2 );
+                if( depth == 0 ) break;
             }
+            c.Head.Overlaps( h, out var pos );
+            c.Accept( NodeType.StarComment, pos );
         }
     }
 
@@ -114,20 +103,14 @@ public static class TriviaHeadExtensions
     {
         if( c.Head.StartsWith( "<!--" ) )
         {
-            int iS = 3;
-            for(; ; )
+            int i = c.Head.IndexOf( "-->" );
+            if( i < 0 )
             {
-                if( ++iS == c.Head.Length )
-                {
-                    c.Reject( NodeType.XmlComment );
-                    return;
-                }
-                if( c.Head.StartsWith( "-->" ) )
-                {
-                    iS += 3;
-                    c.Accept( NodeType.XmlComment, iS );
-                    return;
-                }
+                c.EndOfInput( NodeType.XmlComment );
+            }
+            else
+            {
+                c.Accept( NodeType.XmlComment, i + 3 );
             }
         }
     }

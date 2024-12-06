@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Low level <see cref="AnalyzerHead"/> behavior handles the trivias and
-/// estimates the <see cref="AnalyzerHead.LowLevelToken"/>.
+/// Low level <see cref="ParserHead"/> behavior handles the trivias and
+/// estimates the <see cref="ParserHead.LowLevelTokenType"/> and <see cref="ParserHead.LowLevelTokenText"/>.
 /// </summary>
-public interface IAnalyzerBehavior
+public interface IParserHeadBehavior
 {
     /// <summary>
     /// The default <see cref="TriviaParser"/> to apply.
@@ -15,7 +15,7 @@ public interface IAnalyzerBehavior
     void ParseTrivia( ref TriviaHead c );
 
     /// <summary>
-    /// The <see cref="AnalyzerHead.LowLevelToken"/> builder.
+    /// The <see cref="LowLevelToken"/> builder.
     /// </summary>
     /// <param name="head">The start of the text to categorize. Leading trivias have already been handled.</param>
     /// <returns>A candidate token.</returns>

@@ -35,9 +35,9 @@ public sealed partial class TransformerHost
             return default;
         }
 
-        internal IAbstractNode ParseFunction( ref AnalyzerHead head, IAnalyzerBehavior? newBehavior = null )
+        internal IAbstractNode ParseFunction( ref ParserHead head, IParserHeadBehavior? newBehavior = null )
         {
-            if( head.AcceptLowLevelToken( "create", out var create ) )
+            if( head.TryMatchToken( "create", out var create ) )
             {
                 CachedLanguage? cLang = _host.Find( head.LowLevelTokenText );
                 if( cLang == null )
@@ -73,16 +73,19 @@ public sealed partial class TransformerHost
                         return head.CreateError( "Expecting a transformer name after 'on' that can be a string or an identifier." );
                     }
                 }
-                var asT = head.MatchToken( "as" );
-                if( asT is IErrorNode ) return asT;
+                head.TryMatchToken( "as", out var asT );
                 var beginT = head.MatchToken( "begin" );
                 if( beginT is IErrorNode ) return beginT;
                 var statements = new List<ITransformStatement>();
                 TokenNode? endT;
-                while( !head.AcceptLowLevelToken( "end", out endT ) )
+                while( !head.TryMatchToken( "end", out endT ) )
                 {
-                    var s = cLang.TransformAnalyzer.Parse( ref head );
+                    var s = DoParse( ref head );
                     if( s is IErrorNode ) return s;
+                    if( s == null )
+                    {
+                        return head.CreateError( $"Expecting '{cLang.Language.LanguageName}' statement." );
+                    }
                     if( s is not ITransformStatement statement )
                     {
                         return Throw.InvalidOperationException<IAbstractNode>( $"Language '{cLang.Language.LanguageName}' parsed a '{s.GetType().ToCSharpName()}' that is not a ITransformStatement." );

@@ -35,25 +35,20 @@ public abstract class ContextualAnalyzer<T> : Analyzer where T : AnalyzerContext
     }
 
     /// <summary>
-    /// Overridden to call the contextualized <see cref="Parse(ref AnalyzerHead, T)"/> with
+    /// Overridden to call <see cref="Parse(ref ParserHead, T)"/> with
     /// the root context.
     /// </summary>
-    /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
-    /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    public override sealed IAbstractNode Parse( ref AnalyzerHead head )
-    {
-        return Parse( ref head, _rootContext );
-    }
+    /// <param name="head">The <see cref="ParserHead"/>.</param>
+    /// <returns>A node (can be an error node) or null if not recognized.</returns>
+    protected override sealed IAbstractNode? Parse( ref ParserHead head ) => Parse( ref head, _rootContext );
 
     /// <summary>
-    /// Same as the contextless <see cref="Analyzer.Parse(ref AnalyzerHead)"/>
-    /// but with a <paramref name="context"/>.
+    /// Parser with <paramref name="context"/>.
     /// </summary>
-    /// <param name="head">The <see cref="AnalyzerHead"/>.</param>
+    /// <param name="head">The <see cref="ParserHead"/>.</param>
     /// <param name="context">The parse context.</param>
-    /// <param name="newBehavior">Optional behavior that will be set after the parse.</param>
-    /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
-    public abstract IAbstractNode Parse( ref AnalyzerHead head, T context );
+    /// <returns>A node (can be an error node) or null if not recognized.</returns>
+    protected abstract IAbstractNode? Parse( ref ParserHead head, T context );
 }
 
 

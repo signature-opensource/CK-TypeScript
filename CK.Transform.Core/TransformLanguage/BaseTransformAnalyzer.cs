@@ -47,16 +47,23 @@ public abstract class BaseTransformAnalyzer : Analyzer
         return default;
     }
 
-    public override IAbstractNode Parse( ref AnalyzerHead head )
+    protected override IAbstractNode? Parse( ref ParserHead head ) => DoParse( ref head );
+
+    /// <summary>
+    /// Current implementation is stateless. This can be static.
+    /// </summary>
+    /// <param name="head"></param>
+    /// <returns></returns>
+    internal static IAbstractNode? DoParse( ref ParserHead head )
     {
-        if( head.AcceptLowLevelToken( "inject", out var inject ) )
+        if( head.TryMatchToken( "inject", out var inject ) )
         {
             return MatchInjectIntoStatement( ref head, inject );
         }
-        return TokenErrorNode.Unhandled;
+        return null;
     }
 
-    static IAbstractNode MatchInjectIntoStatement( ref AnalyzerHead head, TokenNode inject )
+    static IAbstractNode MatchInjectIntoStatement( ref ParserHead head, TokenNode inject )
     {
         var n = MatchRawString( ref head );
         if( n is not RawString content ) return n;
@@ -73,7 +80,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
         return new InjectIntoStatement( inject, content, into, target, terminator );
 
 
-        static AbstractNode MatchInjectionPoint( ref AnalyzerHead head )
+        static AbstractNode MatchInjectionPoint( ref ParserHead head )
         {
             if( head.LowLevelTokenType == NodeType.OpenAngleBracket )
             {
@@ -90,7 +97,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
         }
     }
 
-    public static AbstractNode MatchRawString( ref AnalyzerHead head )
+    public static AbstractNode MatchRawString( ref ParserHead head )
     {
         if( head.LowLevelTokenType == NodeType.DoubleQuote )
         {
@@ -111,19 +118,19 @@ public abstract class BaseTransformAnalyzer : Analyzer
         }
         return head.CreateError( "Expected string." );
 
-        static AbstractNode SingleLine( ref AnalyzerHead head, ReadOnlySpan<char> start )
+        static AbstractNode SingleLine( ref ParserHead head, ReadOnlySpan<char> start )
         {
             int idxE = start.IndexOf( '"' );
             if( idxE < 0 ) return head.CreateError( "Unterminated string." );
             start = start.Slice( 0, idxE );
             if( start.Contains( '\n' ) ) return head.CreateError( "Single-line string must not contain end of line." );
             head.AcceptToken( 2 + start.Length, out var text, out var leading, out var trailing );
-            return new RawString( text, text.Slice( 1, start.Length - 1 ), leading, trailing );
+            return new RawString( text, text.Slice( 1, start.Length ), leading, trailing );
         }
 
-        static AbstractNode PossiblyMultiLine( ref AnalyzerHead head, ReadOnlySpan<char> start, int quoteCount )
+        static AbstractNode PossiblyMultiLine( ref ParserHead head, ReadOnlySpan<char> start, int quoteCount )
         {
-            int idxE = start.IndexOf( start.Slice( 0, quoteCount ) );
+            int idxE = start.IndexOf( head.Head.Slice( 0, quoteCount ) );
             if( idxE < 0 ) return head.CreateError( "Unterminated string." );
             var lineOrMultiLine = start.Slice( 0, idxE );
             int idxFirstEndOfLine = lineOrMultiLine.IndexOf( "\n" );
@@ -143,11 +150,12 @@ public abstract class BaseTransformAnalyzer : Analyzer
             idxE += offset;
             start = start.Slice( 0, idxE );
             head.AcceptToken( 2*quoteCount + start.Length, out var text, out var leading, out var trailing );
-            return new RawString( text, text.Slice( quoteCount, start.Length - quoteCount ), leading, trailing );
+            return new RawString( text, text.Slice( quoteCount, start.Length ), leading, trailing );
         }
 
-        static AbstractNode MultiLine( ref AnalyzerHead head, ReadOnlySpan<char> multiLine, int quoteCount, int idxFirstEndOfLine )
+        static AbstractNode MultiLine( ref ParserHead head, ReadOnlySpan<char> multiLine, int quoteCount, int idxFirstEndOfLine )
         {
+            int contentLength = multiLine.Length;
             ReadOnlySpan<char> mustBeEmpty;
             if( idxFirstEndOfLine > 0 )
             {
@@ -156,30 +164,55 @@ public abstract class BaseTransformAnalyzer : Analyzer
                 {
                     return head.CreateError( $"Invalid multi-line raw string: there must be no character after the opening {head.Head.Slice( 0, quoteCount )} characters." );
                 }
+                multiLine = multiLine.Slice( idxFirstEndOfLine + 1 );
             }
             int idxLastEndOfLine = multiLine.LastIndexOf( '\n' );
-            Throw.DebugAssert( idxLastEndOfLine > 0 );
-            if( idxLastEndOfLine == idxFirstEndOfLine )
+            if( idxLastEndOfLine < 0 )
             {
                 return head.CreateError( $"Invalid multi-line raw string: at least one line must appear between the {head.Head.Slice( 0, quoteCount )}." );
             }
-            mustBeEmpty = multiLine.Slice( idxLastEndOfLine );
+            mustBeEmpty = multiLine.Slice( idxLastEndOfLine + 1 );
             if( mustBeEmpty.ContainsAnyExcept( " \t" ) )
             {
                 return head.CreateError( $"Invalid multi-line raw string: there must be no character on the line before the closing {head.Head.Slice( 0, quoteCount )} characters." );
             }
-            multiLine = multiLine.Slice( idxFirstEndOfLine, idxLastEndOfLine - idxFirstEndOfLine );
-            var mLine = head.Head.Slice( quoteCount + idxFirstEndOfLine, multiLine.Length );
             int prefixLength = mustBeEmpty.Length;
-            int i;
+            multiLine = multiLine.Slice( 0, multiLine.Length - prefixLength );
+            var mLine = head.Text.Slice( head.Text.Length - head.Head.Length + quoteCount + idxFirstEndOfLine + 1, multiLine.Length );
             var builder = ImmutableArray.CreateBuilder<ReadOnlyMemory<char>>();
-            
-            while( (i = multiLine.IndexOf( "\n" )) >= 0 )
-            {
 
-                multiLine = multiLine.Slice( i + 1 );
+            // EnumerateLines normalizes the EOL. One cannot update a position
+            // without inspecting the actual EOL, so we use Overlaps to obtain
+            // the offset in the ReadOnlyMemory.
+            bool hasEmptyLine = false;
+            foreach( var line in multiLine.EnumerateLines() )
+            {
+                if( hasEmptyLine )
+                {
+                    builder.Add( default );
+                    hasEmptyLine = false;
+                }
+                if( line.Length > prefixLength )
+                {
+                    if( line.Slice( 0, prefixLength ).ContainsAnyExcept( " \t" ) )
+                    {
+                        return head.CreateError( $"Invalid multi-line raw string: there must be no character before column {prefixLength} in '{line}'." );
+                    }
+                    Throw.DebugAssert( multiLine.Overlaps( line ) );
+                    multiLine.Overlaps( line, out var pos );
+                    builder.Add( mLine.Slice( pos + prefixLength, line.Length - prefixLength ) );
+                }
+                else
+                {
+                    if( line.ContainsAnyExcept( " \t" ) )
+                    {
+                        return head.CreateError( $"Invalid multi-line raw string: there must be no character before column {prefixLength}." );
+                    }
+                    hasEmptyLine = true;
+                }
             }
-            throw new NotImplementedException();
+            head.AcceptToken( 2 * quoteCount + contentLength, out var text, out var leading, out var trailing );
+            return new RawString( text, text.Slice( quoteCount, contentLength - quoteCount ), builder.DrainToImmutable(), leading, trailing );
         }
     }
 

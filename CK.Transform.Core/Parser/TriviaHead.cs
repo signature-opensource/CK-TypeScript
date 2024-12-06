@@ -7,11 +7,8 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Parsing head for comment trivias.
 /// <para>
-/// 
-/// </para>
-/// Micro parsers for <see cref="Trivia"/> are extension methods on this collector
-/// that call <see cref="Accept(NodeType, int)"/> or <see cref="Reject(NodeType)"/>.
-/// <para>
+/// Micro parsers for <see cref="Trivia"/> are <see cref="TriviaParser"/> functions (typically extension
+/// methods on this collector) that call <see cref="Accept(NodeType, int)"/> or <see cref="EndOfInput(NodeType)"/>.
 /// </para>
 /// </summary>
 public ref struct TriviaHead
@@ -20,8 +17,7 @@ public ref struct TriviaHead
     readonly ImmutableArray<Trivia>.Builder _collector;
     readonly ReadOnlyMemory<char> _text;
     int _idxText;
-    int _acceptedLength;
-    NodeType _error;
+    int _length;
 
     /// <summary>
     /// Initializes a new head on a text.
@@ -29,7 +25,7 @@ public ref struct TriviaHead
     /// <param name="text">The text to parse.</param>
     /// <param name="collector">The collector of <see cref="Trivia"/>.</param>
     /// <param name="start">The starting index to consider in the text.</param>
-    public TriviaHead( ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector, int start = 0 )
+    public TriviaHead( ref ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector, int start = 0 )
     {
         _head = text.Span.Slice( start );
         _idxText = start;
@@ -47,59 +43,54 @@ public ref struct TriviaHead
     }
 
     /// <summary>
-    /// Accepts a trivia. This must not be called once <see cref="Error(NodeType)"/> has been called.
+    /// Gets the head to analyze.
     /// </summary>
-    /// <param name="tokenType">The type of trivia.</param>
-    /// <param name="length">The trivia length. Must be positive.</param>
-    /// <returns>The <see cref="AcceptedLength"/>.</returns>
-    public int Accept( NodeType tokenType, int length )
-    {
-        Throw.CheckState( HasError is false );
-        Throw.CheckArgument( tokenType.IsTrivia() );
-        Throw.CheckArgument( length > 0 );
-        _collector.Add( new Trivia( tokenType, _text.Slice( _idxText, length ) ) );
-        _idxText += length;
-        _head = _head.Slice( length );
-        return _acceptedLength += length;
-    }
+    public readonly ReadOnlySpan<char> Head => _head;
 
     /// <summary>
     /// Gets the accepted length (that is sum of the collected <see cref="Trivia.Content"/>'s length)
     /// regardless of the <see cref="Error"/>.
     /// </summary>
-    public readonly int AcceptedLength => _acceptedLength;
+    public readonly int Length => _length;
 
     /// <summary>
-    /// Gets the error sets by <see cref="Reject(NodeType)"/>.
-    /// Defaults to <see cref="NodeType.None"/>.
+    /// Gets whether head is empty.
     /// </summary>
-    public readonly NodeType Error => _error;
+    public readonly bool IsEndOfInput => _head.Length == 0;
 
     /// <summary>
-    /// Gets whether <see cref="Reject(NodeType)"/> has been called.
+    /// Accepts a trivia. This must not be called once <see cref="EndOfInput(NodeType)"/> has been called.
     /// </summary>
-    public readonly bool HasError => _error != NodeType.None;
+    /// <param name="tokenType">The type of trivia.</param>
+    /// <param name="length">The trivia length. Must be positive.</param>
+    public void Accept( NodeType tokenType, int length )
+    {
+        Throw.CheckState( IsEndOfInput is false );
+        Throw.CheckArgument( tokenType.IsTrivia() );
+        Throw.CheckArgument( length > 0 );
+        _collector.Add( new Trivia( tokenType, _text.Slice( _idxText, length ) ) );
+        _idxText += length;
+        _length += length;
+        _head = _head.Slice( length );
+    }
 
     /// <summary>
-    /// Signals an error by returning and setting the <see cref="Error"/> to the combination of 
+    /// Signals an unterminated comment. The last <see cref="Trivia.TokenType"/> is the combination of 
     /// <see cref="NodeType.ErrorClassBit"/> and <paramref name="tokenType"/>.
     /// <para>
     /// This must be called only once. <see cref="Accept(NodeType, int)"/> cannot be called anymore.
     /// </para>
     /// </summary>
     /// <param name="tokenType">The type of trivia.</param>
-    /// <returns>The error token type.</returns>
-    public NodeType Reject( NodeType tokenType )
+    public void EndOfInput( NodeType tokenType )
     {
-        Throw.CheckState( HasError is false );
+        Throw.CheckState( IsEndOfInput is false );
         Throw.CheckArgument( tokenType.IsTrivia() );
-        return _error = NodeType.ErrorClassBit | tokenType;
+        _collector.Add( new Trivia( NodeType.ErrorClassBit | tokenType, _text.Slice( _idxText, _head.Length ) ) );
+        _idxText += _head.Length;
+        _length += _head.Length;
+        _head = default;
     }
-
-    /// <summary>
-    /// Gets the head to analyze.
-    /// </summary>
-    public readonly ReadOnlySpan<char> Head => _head;
 
     /// <summary>
     /// Collects as many possible <see cref="Trivia"/>.
@@ -111,13 +102,15 @@ public ref struct TriviaHead
     /// <param name="parser">The parser function. When null, only whitespaces are collected.</param>
     public void ParseAll( TriviaParser? parser )
     {
+        if( IsEndOfInput ) return;
         for(; ; )
         {
             // A leading trivia eats all the whitespaces.
             ParseWhiteSpaces();
-            int currentLength = _acceptedLength;
+            if( IsEndOfInput ) return;
+            int currentLength = _length;
             parser?.Invoke( ref this );
-            if( _error != NodeType.None || currentLength == _acceptedLength )
+            if( IsEndOfInput || currentLength == _length )
             {
                 break;
             }
@@ -126,6 +119,7 @@ public ref struct TriviaHead
 
     void ParseWhiteSpaces()
     {
+        Throw.DebugAssert( !IsEndOfInput );
         if( char.IsWhiteSpace( _head[0] ) )
         {
             int iS = 0;
@@ -145,12 +139,14 @@ public ref struct TriviaHead
     /// <param name="parser">The parser function. When empty, only whitespaces are collected.</param>
     public void ParseAny( params ImmutableArray<TriviaParser> parsers )
     {
+        if( IsEndOfInput ) return;
         ParseWhiteSpaces();
         foreach( var parser in parsers ) 
         {
-            int currentLength = _acceptedLength;
+            if( IsEndOfInput ) return;
+            int currentLength = _length;
             parser( ref this );
-            if( _error != NodeType.None || currentLength != _acceptedLength )
+            if( currentLength != _length )
             {
                 break;
             }
@@ -168,6 +164,7 @@ public ref struct TriviaHead
     /// <param name="parser">The parser function. When null, only whitespaces are collected.</param>
     public void ParseTrailingTrivias( TriviaParser? parser )
     {
+        if( IsEndOfInput ) return;
         // A trailing trivia stops at the end of line...
         if( char.IsWhiteSpace( _head[0] ) )
         {
@@ -182,7 +179,7 @@ public ref struct TriviaHead
                 }
             }
             Accept( NodeType.Whitespace, iS );
-            if( eol ) return;
+            if( eol || IsEndOfInput ) return;
         }
         // ...or consider only one comment.
         parser?.Invoke( ref this );

@@ -16,7 +16,7 @@ public sealed class TransfomerFunction : CompositeNode
     static readonly OptionalChild<TokenNode> _functionName = new( 3 );
     static readonly OptionalChild<InjectionPoint> _onT = new( 4 );
     static readonly OptionalChild<AbstractNode> _target = new( 5 );
-    static readonly RequiredChild<TokenNode> _asT = new( 6 );
+    static readonly OptionalChild<TokenNode> _asT = new( 6 );
     static readonly RequiredChild<TokenNode> _beginT = new( 7 );
     static readonly RequiredChild<NodeList<ITransformStatement>> _statements = new( 8 );
     static readonly RequiredChild<TokenNode> _endT = new( 9 );
@@ -43,7 +43,7 @@ public sealed class TransfomerFunction : CompositeNode
     {
     }
 
-    public TransfomerFunction( TokenNode create, TokenNode language, TokenNode transformer, TokenNode? functionName, TokenNode? on, AbstractNode? target, TokenNode asT, TokenNode begin, NodeList<ITransformStatement> statements, TokenNode end )
+    public TransfomerFunction( TokenNode create, TokenNode language, TokenNode transformer, TokenNode? functionName, TokenNode? on, AbstractNode? target, TokenNode? asT, TokenNode begin, NodeList<ITransformStatement> statements, TokenNode end )
         : base( create, language, transformer, functionName, on, target, asT, begin, statements, end )
     {
     }

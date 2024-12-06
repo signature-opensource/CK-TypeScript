@@ -28,7 +28,7 @@ public abstract class AnalyzerContext<TSelf> where TSelf : AnalyzerContext<TSelf
     }
 
     /// <summary>
-    /// Called when <see cref="ContextualAnalyzer{T}.Reset(ReadOnlyMemory{char})"/>.
+    /// Called on <see cref="ContextualAnalyzer{T}.Reset(ReadOnlyMemory{char})"/>.
     /// </summary>
     /// <param name="analyzer">The analyzer.</param>
     internal protected virtual void OnResetAnalyzer( Analyzer analyzer )

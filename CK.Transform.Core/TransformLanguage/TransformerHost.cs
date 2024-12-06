@@ -73,11 +73,11 @@ public sealed partial class TransformerHost
 
     public TransfomerFunction Parse( ReadOnlyMemory<char> text )
     {
-        var head = new AnalyzerHead( text, _transformAnalyzer );
+        var head = new ParserHead( text, _transformAnalyzer );
         var n = _transformAnalyzer.ParseFunction( ref head );
         if( n is not TransfomerFunction f )
         {
-            return Throw.ArgumentException<TransfomerFunction>( nameof( text ) );
+            return Throw.ArgumentException<TransfomerFunction>( nameof( text ), n.ToString() );
         }
         return f;
     }

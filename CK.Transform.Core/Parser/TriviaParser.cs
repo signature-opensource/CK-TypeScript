@@ -8,7 +8,7 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// A micro parser for trivias is a function that analyses the <see cref="TriviaHead.Head"/>
-/// and calls <see cref="TriviaHead.Accept(NodeType, int)"/>, <see cref="TriviaHead.Reject(NodeType)"/>
+/// and calls <see cref="TriviaHead.Accept(NodeType, int)"/>, <see cref="TriviaHead.EndOfInput(NodeType)"/>
 /// or does nothing because it doesn't recognize the pattern.
 /// <para>
 /// These micro parser can easily be combined, see <see cref="TriviaHead.ParseAll(TriviaParser)"/> and
