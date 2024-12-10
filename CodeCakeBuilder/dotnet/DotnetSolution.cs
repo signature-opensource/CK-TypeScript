@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using Cake.Common.Tools.DotNet.MSBuild;
 
 namespace CodeCake;
 
@@ -129,7 +130,11 @@ public partial class DotnetSolution : ICIWorkflow
                 Configuration = _globalInfo.BuildInfo.BuildConfiguration,
                 NoRestore = true,
                 NoBuild = true,
-                Loggers = ["trx"]
+                Loggers = ["trx"],
+                MSBuildSettings = new DotNetMSBuildSettings()
+                {
+                    MaxCpuCount = 1
+                }
             };
             _globalInfo.Cake.DotNetTest( null, options );
         }
