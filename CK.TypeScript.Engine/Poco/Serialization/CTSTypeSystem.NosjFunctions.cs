@@ -41,7 +41,7 @@ public sealed partial class CTSTypeSystem
         {
             part.Append( $"return o != null ? new {ts.TypeName}( o ) : undefined;" );
         }
-        else if( t.Type == typeof( SimpleUserMessage ) )
+        else if( t.Type == typeof( SimpleUserMessage ) || t.Type == typeof( UserMessage ) )
         {
             part.Append( $"return o != null ? SimpleUserMessage.parse( o ) : undefined;" );
         }
