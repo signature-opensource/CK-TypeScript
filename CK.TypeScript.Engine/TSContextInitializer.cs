@@ -85,14 +85,15 @@ sealed class TSContextInitializer
             var emptyExchangeableSet = typeSystem.SetManager.EmptyExchangeable;
             IPocoTypeSet tsExchangeable;
             // Creating the TypeScript exchangeable set based on EmptyExchangeable with all the registered types.
-            // We exclude the UserMessage and the FormattedString structs and the MCString and CodeString reference types
+            // We exclude the FormattedString structs and the MCString and CodeString reference types
             // because there are no TypeScript implementation for them (at least for now), only the SimpleUserMessage
             // (that will be handled as any other named record) is TypeScript compliant.
+            //
+            // The UserMessage is accepted: we map it to the SimpleUserMessage type.
             if( binPathConfiguration.TypeFilterName != "None" )
             {
                 var include = regTypes.Values.Select( r => r.PocoType ).Where( p => p != null );
-                var exclude = (new[] { typeSystem.FindByType( typeof( UserMessage ) ),
-                                       typeSystem.FindByType( typeof( FormattedString ) ),
+                var exclude = (new[] { typeSystem.FindByType( typeof( FormattedString ) ),
                                        typeSystem.FindByType( typeof( MCString ) ),
                                        typeSystem.FindByType( typeof( CodeString ) ),
                                     }).Where( t => t != null );
