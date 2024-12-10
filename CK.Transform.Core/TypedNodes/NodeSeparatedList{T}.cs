@@ -14,10 +14,8 @@ public class NodeSeparatedList<T,TSep> : CollectionNode, IAbstractNodeList<T>
     where T : class, IAbstractNode
     where TSep : class, IAbstractNode
 {
-    readonly ImmutableArray<AbstractNode> _children;
-
     /// <summary>
-    /// Initializes a new list from its children and trivias.
+    /// Initializes a new list from its children.
     /// <para>
     /// The content should be check by calling <see cref="AbstractNode.CheckInvariants()"/>
     /// unless this is called by <see cref="CollectionNodeMutator"/> (that does this autmoatically).
@@ -25,8 +23,8 @@ public class NodeSeparatedList<T,TSep> : CollectionNode, IAbstractNodeList<T>
     /// </summary>
     /// <param name="uncheckedChildren">The children.</param>
     public NodeSeparatedList( params ImmutableArray<AbstractNode> uncheckedChildren )
+        : base( uncheckedChildren )
     {
-        _children = uncheckedChildren;
     }
 
     /// <summary>
@@ -40,16 +38,12 @@ public class NodeSeparatedList<T,TSep> : CollectionNode, IAbstractNodeList<T>
     /// <param name="trailing">The trailing trivias.</param>
     /// <param name="uncheckedChildren">The children.</param>
     public NodeSeparatedList( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, params ImmutableArray<AbstractNode> uncheckedChildren )
-        : base( leading, trailing )
+        : base( leading, trailing, uncheckedChildren )
     {
-        _children = uncheckedChildren;
     }
 
     /// <inheritdoc />
     public T this[int index] => Unsafe.As<T>( _children[index >> 1] );
-
-    /// <inheritdoc />
-    public override sealed IReadOnlyList<AbstractNode> ChildrenNodes => _children;
 
     /// <inheritdoc />
     public int Count => (_children.Length + 1) >> 1;

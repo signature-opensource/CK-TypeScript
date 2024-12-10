@@ -3,10 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Xml.Linq;
-using System.Xml;
+using System.Text;
 
 namespace CK.Transform.Core;
 
@@ -55,6 +52,16 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
         _tokenType = tokenType;
         _text = text;
     }
+
+    /// <summary>
+    /// Creates a marker token. <see cref="Text"/> is empty and there is no trivias.
+    /// <para>
+    /// The <paramref name="type"/> is free to be any value, including error (negative value).
+    /// </para>
+    /// </summary>
+    /// <param name="type">The token type.</param>
+    /// <returns>A token.</returns>
+    public static TokenNode CreateMarker( NodeType type = NodeType.GenericMarkerToken ) => new TokenNode( ImmutableArray<Trivia>.Empty, ImmutableArray<Trivia>.Empty, type, default );
 
     /// <summary>
     /// The token type. It can be an error if this is a <see cref="TokenErrorNode"/>.
@@ -129,8 +136,17 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     IEnumerator IEnumerable.GetEnumerator() => new CKEnumeratorMono<TokenNode>( this );
 
     /// <summary>
+    /// Overridden to append the <see cref="Text"/>.
+    /// </summary>
+    /// <param name="b">The target builder.</param>
+    protected override void WriteWithoutTrivias( StringBuilder b )
+    {
+        b.Append( _text );
+    }
+
+    /// <summary>
     /// Gets the <see cref="Text"/> as a string.
-    /// This should be used in debug seesion only (this allocates a string).
+    /// This should be used in debug session only (this allocates a string).
     /// <para>
     /// This is sealed: the ToString() of a Token must always be its Text.
     /// </para>

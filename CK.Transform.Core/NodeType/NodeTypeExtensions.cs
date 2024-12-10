@@ -42,7 +42,7 @@ public static class NodeTypeExtensions
     public static bool IsError( this NodeType type ) => type <= 0;
 
     /// <summary>
-    /// Gets whether this token type is actually a successful kind of <see cref="Trivia"/>, including
+    /// Gets whether this token type is a <see cref="Trivia"/>, including
     /// <see cref="NodeType.Whitespace"/>.
     /// <para>
     /// Only Trivia (not <see cref="TokenNode"/>) can carry a trivia token type.
@@ -52,5 +52,52 @@ public static class NodeTypeExtensions
     /// <returns>True if this token is a trivia.</returns>
     public static bool IsTrivia( this NodeType type ) => (type & NodeType.TriviaClassMask) == NodeType.TriviaClassBit;
 
+    /// <summary>
+    /// Gets whether this is a whitespace trivia.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public static bool IsWhitespace( this NodeType type ) => type == NodeType.Whitespace;
+
+    /// <summary>
+    /// Gets whether this is a comment trivia.
+    /// </summary>
+    /// <param name="type">This token type.</param>
+    /// <returns>True if this token is a line comment.</returns>
+    public static bool IsTriviaComment( this NodeType type ) => (type & NodeType.TriviaClassMask) == NodeType.TriviaClassMask
+                                                                && (type & NodeType.TriviaCommentMask) != 0;
+
+    /// <summary>
+    /// Gets whether this is a Line comment trivia.
+    /// </summary>
+    /// <param name="type">This token type.</param>
+    /// <returns>True if this token is a line comment.</returns>
+    public static bool IsTriviaLineComment( this NodeType type ) => (type & NodeType.TriviaClassMask) == NodeType.TriviaClassMask
+                                                                    && (type & NodeType.TriviaCommentStartLengthMask) != 0
+                                                                    && (type & NodeType.TriviaCommentEndLengthMask) == 0;
+
+    /// <summary>
+    /// Gets whether this is a Block comment trivia.
+    /// </summary>
+    /// <param name="type">This token type.</param>
+    /// <returns>True if this token is a line comment.</returns>
+    public static bool IsTriviaBlockComment( this NodeType type ) => (type & NodeType.TriviaClassMask) == NodeType.TriviaClassMask
+                                                                     && (type & NodeType.TriviaCommentEndLengthMask) != 0;
+
+    public static NodeType GetTriviaLineCommentType( int commentStartLength )
+    {
+        Throw.CheckOutOfRangeArgument( commentStartLength >= 1 && commentStartLength < 8 );
+        return NodeType.TriviaClassBit | (NodeType)commentStartLength;
+    }
+
+    public static NodeType GetTriviaBlockCommentType( int commentStartLength, int commentEndLength )
+    {
+        Throw.CheckOutOfRangeArgument( commentEndLength >= 1 && commentEndLength < 8 );
+        return GetTriviaLineCommentType( commentStartLength ) | (NodeType)(commentEndLength << 3);
+    }
+
+    internal static int GetTriviaCommentStartLength( this NodeType type ) => IsTrivia( type ) ? ((int)type & 3) : 0;
+
+    internal static int GetTriviaCommentEndLength( this NodeType type ) => IsTrivia( type ) ? (((int)type >> 3) & 3) : 0;
 }
 

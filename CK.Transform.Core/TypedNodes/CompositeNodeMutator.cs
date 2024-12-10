@@ -1,10 +1,8 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 
 namespace CK.Transform.Core;
 
@@ -37,6 +35,29 @@ public class CompositeNodeMutator : AbstractNodeMutator
     /// Gets the fully mutable children store.
     /// </summary>
     public AbstractNode?[] RawItems => _items ??= Unsafe.As<AbstractNode?[]>( Origin._store.Clone() );
+
+    /// <summary>
+    /// Applies a mutator to each child.
+    /// When the mutator returns null, the child is removed.
+    /// </summary>
+    /// <param name="mutator">The mutator function.</param>
+    public void ApplyMutation( Func<AbstractNode, AbstractNode?> mutator )
+    {
+        AbstractNode?[]? rawItems = null;
+        for( int i = 0; i < Origin._store.Length; i++ )
+        {
+            AbstractNode? c = Origin._store[i];
+            if( c != null )
+            {
+                var cM = mutator( c );
+                if( !ReferenceEquals( c, cM ) )
+                {
+                    rawItems ??= RawItems;
+                    rawItems[i] = cM;
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Creates the mutated node from this <see cref="RawItems"/> and trivias (or returns the <see cref="Origin"/>

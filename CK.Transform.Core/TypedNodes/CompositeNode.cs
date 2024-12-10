@@ -5,7 +5,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 
 namespace CK.Transform.Core;
 

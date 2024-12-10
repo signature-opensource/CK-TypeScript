@@ -16,7 +16,7 @@ public enum BasicNodeType : byte
     None,
 
     /// <summary>
-    /// The GenericNode is the default for <see cref="Core.SyntaxNode"/>.
+    /// Default node type for <see cref="Core.SyntaxNode"/>.
     /// </summary>
     SyntaxNode,
 
@@ -26,14 +26,14 @@ public enum BasicNodeType : byte
     SyntaxErrorNode,
 
     /// <summary>
-    /// The GenericText can contain any text. This is a kind of fallback token type that can be used
-    /// when an island of text doesn't need any special processing or is not handled. An example of
-    /// usage is to model the content of an Xml CDATA node.
+    /// The GenericNode can contain any text or a list of any node type (typically a <see cref="RawNodeList"/>).
+    /// This is a kind of fallback token type that can be used when an island of text doesn't need any special
+    /// processing or is not handled. An example of usage is to model the content of an Xml CDATA node.
     /// </summary>
-    GenericText,
+    GenericNode,
 
     /// <summary>
-    /// Can be used by error tolerant parsers to denote an unrecognized (or skipped) token.
+    /// Can be used by error tolerant parsers to denote an unrecognized (or skipped) token (for the <see cref="ErrorTolerant.UnexpectedTokenNode"/>).
     /// <para>
     /// An unrecognized token would be an error in a regular parser.
     /// </para>
@@ -41,9 +41,17 @@ public enum BasicNodeType : byte
     GenericUnexpectedToken,
 
     /// <summary>
-    /// Can be used by error tolerant parsers to denote a missing token (for the <see cref="MissingTokenNode"/>).
+    /// Can be used by error tolerant parsers to denote a missing token (for the <see cref="ErrorTolerant.MissingTokenNode"/>).
+    /// <para>
+    /// An missing token would be an error in a regular parser.
+    /// </para>
     /// </summary>
     GenericMissingToken,
+
+    /// <summary>
+    /// Default type of <see cref="TokenNode.CreateMarker(NodeType)"/>.
+    /// </summary>
+    GenericMarkerToken,
 
     /// <summary>
     /// A string can have a lot of representations. This can be used by language parsers if

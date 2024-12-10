@@ -1,11 +1,8 @@
-using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace CK.Transform.Core;
 
@@ -33,7 +30,28 @@ public class CollectionNodeMutator : AbstractNodeMutator
     /// <summary>
     /// Gets the fully mutable items list.
     /// </summary>
-    public IList<AbstractNode> RawItems => _items ??= new List<AbstractNode>( Origin.ChildrenNodes );
+    public List<AbstractNode> RawItems => _items ??= new List<AbstractNode>( Origin.ChildrenNodes );
+
+    /// <summary>
+    /// Applies a mutator to each child.
+    /// When the mutator returns null, the child is removed.
+    /// </summary>
+    /// <param name="mutator">The mutator function.</param>
+    public void ApplyMutation( Func<AbstractNode, AbstractNode?> mutator )
+    {
+        List<AbstractNode>? rawItems = null;
+        for( int i = 0; i < Origin._children.Length; i++ )
+        {
+            AbstractNode? c = Origin._children[i];
+            var cM = mutator( c );
+            if( !ReferenceEquals( c, cM ) )
+            {
+                rawItems ??= RawItems;
+                if( cM == null ) rawItems.RemoveAt( i-- );
+                else rawItems[i] = cM;
+            }
+        }
+    }
 
     /// <summary>
     /// Creates the mutated node from this <see cref="RawItems"/> and trivias (or returns the <see cref="Origin"/>

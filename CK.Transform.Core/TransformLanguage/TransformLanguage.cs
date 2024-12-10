@@ -18,4 +18,7 @@ public abstract class TransformLanguage
     internal protected abstract Analyzer CreateTargetAnalyzer();
 
     public override string ToString() => _languageName;
+
+    internal protected virtual NodeScopeBuilder? HandleTransformerTarget( AbstractNode target ) => null;
+
 }

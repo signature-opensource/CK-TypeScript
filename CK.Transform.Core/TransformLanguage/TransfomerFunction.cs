@@ -1,10 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Reflection.Metadata;
 
 namespace CK.Transform.TransformLanguage;
 

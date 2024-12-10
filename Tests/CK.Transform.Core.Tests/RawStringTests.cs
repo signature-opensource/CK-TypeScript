@@ -18,7 +18,7 @@ public class RawStringTests
     public void valid_single_line_RawString_tests( string code, string expected )
     {
         var h = new TransformerHost();
-        var f = h.Parse( $"create transform transformer on {code} begin end " );
+        var f = h.ParseFunction( $"create transform transformer on {code} begin end " );
         var t = f.Target as RawString;
         Throw.DebugAssert( t != null );
         var expectedLines = expected.Split( Environment.NewLine );
@@ -35,7 +35,7 @@ public class RawStringTests
     public void invalid_single_line_RawString_tests( string code, string errorMessage )
     {
         var h = new TransformerHost();
-        FluentActions.Invoking( () => h.Parse( $"create transform transformer on {code} begin end " ) )
+        FluentActions.Invoking( () => h.ParseFunction( $"create transform transformer on {code} begin end " ) )
             .Should().Throw<Exception>().WithMessage( errorMessage );
     }
 
@@ -72,10 +72,30 @@ public class RawStringTests
                          Below2
                      
                      """ )]
+    [TestCase( """"""""""
+                    /*As many quotes as needed by the content.*/
+
+                            """"""
+                    "",
+                    "One",
+                    ""Two"",
+                    """Three""",
+                    """"Four"""",
+                    """""Five"""""
+                    """"""
+
+               """""""""", """""""
+                           "",
+                           "One",
+                           ""Two"",
+                           """Three""",
+                           """"Four"""",
+                           """""Five"""""
+                           """"""" )]
     public void valid_multi_line_RawString_tests( string code, string expected )
     {
         var h = new TransformerHost();
-        var f = h.Parse( $"create transform transformer on {code} begin end " );
+        var f = h.ParseFunction( $"create transform transformer on {code} begin end " );
         var t = f.Target as RawString;
         Throw.DebugAssert( t != null );
         var expectedLines = expected.Split( Environment.NewLine );
@@ -124,7 +144,7 @@ public class RawStringTests
     public void invalid_multi_line_RawString_tests( string code, string errorMessage )
     {
         var h = new TransformerHost();
-        FluentActions.Invoking( () => h.Parse( $"create transform transformer on {code} begin end " ) )
+        FluentActions.Invoking( () => h.ParseFunction( $"create transform transformer on {code} begin end " ) )
             .Should().Throw<Exception>().WithMessage( errorMessage );
     }
 

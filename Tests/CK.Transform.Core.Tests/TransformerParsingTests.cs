@@ -12,7 +12,7 @@ public class TransformerParsingTests
     public void Empty_minimal_function()
     {
         var h = new TransformerHost();
-        var f = h.Parse( "create transform transformer as begin end" );
+        var f = h.ParseFunction( "create transform transformer as begin end" );
         f.Statements.Should().HaveCount( 0 );
     }
 
@@ -20,7 +20,7 @@ public class TransformerParsingTests
     public void named_function()
     {
         var h = new TransformerHost();
-        var f = h.Parse( "create transform transformer MyTransformer as begin end" );
+        var f = h.ParseFunction( "create transform transformer MyTransformer as begin end" );
         f.Name.Should().Be( "MyTransformer" );
         f.Target.Should().BeNull();
     }
@@ -29,7 +29,7 @@ public class TransformerParsingTests
     public void named_with_empty_target_function()
     {
         var h = new TransformerHost();
-        var f = h.Parse( """create transform transformer MyTransformer on "" as begin end""" );
+        var f = h.ParseFunction( """create transform transformer MyTransformer on "" as begin end""" );
         f.Name.Should().Be( "MyTransformer" );
         var t = f.Target as RawString;
         Throw.DebugAssert( t != null );
@@ -41,7 +41,7 @@ public class TransformerParsingTests
     public void with_target_function()
     {
         var h = new TransformerHost();
-        var f = h.Parse( """create transform transformer on "the target!" as begin end""" );
+        var f = h.ParseFunction( """create transform transformer on "the target!" as begin end""" );
         f.Name.Should().Be( "" );
         var t = f.Target as RawString;
         Throw.DebugAssert( t != null );
@@ -53,7 +53,7 @@ public class TransformerParsingTests
     public void with_multi_but_singleline_text_target_function()
     {
         var h = new TransformerHost();
-        var f = h.Parse( """""
+        var f = h.ParseFunction( """""
                     create transform transformer on """
                                          create transform transformer as begin end
                                          """

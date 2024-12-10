@@ -1,8 +1,6 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace CK.Transform.Core;
 

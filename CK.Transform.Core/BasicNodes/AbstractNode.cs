@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -99,7 +98,7 @@ public abstract partial class AbstractNode : IAbstractNode
     /// <param name="index">The zero based index of the token to locate.</param>
     /// <param name="onPath">Will be called for each intermediate node with the relative index of its first token.</param>
     /// <returns>The token or null if index is out of range.</returns>
-    public TokenNode? LocateToken( int index, Action<IAbstractNode, int> onPath )
+    public TokenNode? LocateToken( int index, Action<AbstractNode, int> onPath )
     {
         if( index < 0 || index >= Width ) return null;
 
@@ -304,4 +303,18 @@ public abstract partial class AbstractNode : IAbstractNode
         return CloneForTrivias( _leadingTrivias, _trailingTrivias.Insert( idx, t ) );
     }
 
+    public StringBuilder Write( StringBuilder b )
+    {
+        foreach( var t in LeadingTrivias ) b.Append( t.Content );
+        WriteWithoutTrivias( b );
+        foreach( var t in TrailingTrivias ) b.Append( t.Content );
+        return b;
+    }
+
+    protected virtual void WriteWithoutTrivias( StringBuilder b )
+    {
+        foreach( var t in ChildrenNodes ) t.Write( b );
+    }
+
+    public override string ToString() => Write( new StringBuilder() ).ToString();   
 }

@@ -1,5 +1,3 @@
-using CommunityToolkit.HighPerformance.Helpers;
-using Microsoft.Extensions.Primitives;
 using System;
 
 namespace CK.Transform.Core;
@@ -15,7 +13,7 @@ public enum NodeType
 
     /// <summary>
     /// There is at most 23 classes of token type.
-    /// The last (and smallest one with only 127 possible token types) is the <see cref="TriviaClassNumber"/>.
+    /// The last (and smallest one with only 256 possible values) is the <see cref="TriviaClassNumber"/>.
     /// <para>
     /// Error class number is 0 (this is the signed bit n°31).
     /// </para>
@@ -41,32 +39,13 @@ public enum NodeType
     /// <summary>
     /// Class for trivias (whitespace and comments).
     /// <para>
-    /// This is the token type class n°23 and the last possible class. Even if we currently
-    /// have only 5 types of trivias, there is a provision for 127 total types of trivias.
-    /// May be useful if in the future we add new types of trivias (or offer an extension points for trivias). 
+    /// This is the token type class n°23 and the last possible class.
+    /// See <see cref="Trivia"/>.
     /// </para>
     /// </summary>
     TriviaClassNumber = 23,
     TriviaClassBit = 1 << (31 - TriviaClassNumber),
     TriviaClassMask = -1 << (31 - TriviaClassNumber),
-
-    /// <summary>
-    /// The end of input has only the most significant bit set.
-    /// This can be understood as the combination of the <see cref="ErrorClassBit"/>
-    /// and <see cref="None"/>.
-    /// </summary>
-    EndOfInput = ErrorClassBit,
-
-    /// <summary>
-    /// Denotes an unhandled token. See <see cref="TokenErrorNode.Unhandled"/>.
-    /// </summary>
-    ErrorUnhandled = ErrorClassBit | GenericText,
-
-    /// <summary>
-    /// An unterminated string: the end-of-input has been reached before the closing "quote" (whatever it is).
-    /// </summary>
-    ErrorUnterminatedString = ErrorClassBit | GenericString,
-
 
     #region Trivia
 
@@ -76,42 +55,73 @@ public enum NodeType
     Whitespace = TriviaClassBit,
 
     /// <summary>
-    /// The "//".
-    /// Ends with a new line.
+    /// Currently unused bit. Must be 0.
     /// </summary>
-    LineComment = TriviaClassBit | 1,
+    TriviaUnusedBit = TriviaClassBit | 1 << 6,
 
     /// <summary>
-    /// The "/*".
-    /// Ends with a "*/".
+    /// Mask for the length of the comment start. Use <see cref="NodeTypeExtensions.GetTriviaCommentStartLength(NodeType)"/> 
+    /// to retrieve this information.
     /// </summary>
-    StarComment = TriviaClassBit | 2,
+    TriviaCommentStartLengthMask = TriviaClassBit | 3,
 
     /// <summary>
-    /// The "&lt;!--".
-    /// Ends with "--&gt;".
+    /// Mask for the length of the comment start. Use <see cref="NodeTypeExtensions.GetTriviaCommentEndLength(NodeType)"/> 
+    /// to retrieve this information.
     /// </summary>
-    XmlComment = TriviaClassBit | 3,
+    TriviaCommentEndLengthMask = TriviaClassBit | 7 << 3,
 
     /// <summary>
-    /// The "--".
-    /// Ends with a new line.
+    /// Mask for both start and end comment length.
     /// </summary>
-    SqlComment = TriviaClassBit | 4,
+    TriviaCommentMask = TriviaCommentStartLengthMask | TriviaCommentEndLengthMask,
 
     #endregion
 
+    /// <summary>
+    /// The end of input has only the most significant bit set.
+    /// This can be understood as the combination of the <see cref="ErrorClassBit"/>
+    /// and <see cref="None"/>.
+    /// Used by <see cref="NodeLocation.EndOfInput"/> and any <see cref="ParserHead.EndOfInput"/> tokens.
+    /// </summary>
+    EndOfInput = ErrorClassBit,
 
+    /// <summary>
+    /// Beginning of the input (the fact that this is clasified as an error is meaningless).
+    /// Used by <see cref="NodeLocation.BegOfInput"/>.
+    /// </summary>
+    BegOfInput = ErrorClassBit | SyntaxErrorNode,
+
+    /// <summary>
+    /// An unterminated string: the end-of-input has been reached before the closing "quote" (whatever it is).
+    /// </summary>
+    ErrorUnterminatedString = ErrorClassBit | GenericString,
+
+
+
+    /// <inheritdoc cref="BasicNodeType.SyntaxNode"/>
     SyntaxNode = BasicNodeType.SyntaxNode,
+    /// <inheritdoc cref="BasicNodeType.SyntaxErrorNode"/>
     SyntaxErrorNode = BasicNodeType.SyntaxErrorNode,
-    GenericText = BasicNodeType.GenericText,
+    /// <inheritdoc cref="BasicNodeType.GenericNode"/>
+    GenericNode = BasicNodeType.GenericNode,
+    /// <inheritdoc cref="BasicNodeType.GenericUnexpectedToken"/>
     GenericUnexpectedToken = BasicNodeType.GenericUnexpectedToken,
+    /// <inheritdoc cref="BasicNodeType.GenericMissingToken"/>
     GenericMissingToken = BasicNodeType.GenericMissingToken,
+    /// <inheritdoc cref="BasicNodeType.GenericMarkerToken"/>
+    GenericMarkerToken = BasicNodeType.GenericMarkerToken,
+    /// <inheritdoc cref="BasicNodeType.GenericString"/>
     GenericString = BasicNodeType.GenericString,
+    /// <inheritdoc cref="BasicNodeType.GenericIdentifier"/>
     GenericIdentifier = BasicNodeType.GenericIdentifier,
+    /// <inheritdoc cref="BasicNodeType.GenericKeyword"/>
     GenericKeyword = BasicNodeType.GenericKeyword,
+    /// <inheritdoc cref="BasicNodeType.GenericInteger"/>
     GenericInteger = BasicNodeType.GenericInteger,
+    /// <inheritdoc cref="BasicNodeType.GenericFloat"/>
     GenericFloat = BasicNodeType.GenericFloat,
+    /// <inheritdoc cref="BasicNodeType.GenericNumber"/>
     GenericNumber = BasicNodeType.GenericNumber,
     /// <inheritdoc cref="BasicNodeType.Comma"/>
     Comma = BasicNodeType.Comma,

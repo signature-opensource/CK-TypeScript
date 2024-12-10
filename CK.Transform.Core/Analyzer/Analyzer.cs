@@ -1,12 +1,7 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
@@ -44,16 +39,58 @@ public abstract partial class Analyzer : IParserHeadBehavior
     public ReadOnlyMemory<char> RemainingText => _head;
 
     /// <summary>
-    /// Returns the next node.
+    /// Returns the next node. <see cref="RemainingText"/> is updated.
     /// </summary>
     /// <returns>The next node.</returns>
     public IAbstractNode? Parse()
     {
         var head = new ParserHead( _head, this, _triviaBuilder );
         var n = Parse( ref head );
-        Throw.DebugAssert( "IAbstractNode is necessarily a AnstractNode.", n is null || n is AbstractNode );
-        _head = head.GetRemainingText();
+        Throw.DebugAssert( "IAbstractNode is necessarily a AbstractNode.", n is null || n is AbstractNode );
+        _head = head.RemainingText;
         return n;
+    }
+
+    /// <summary>
+    /// Attempts to fully parse a source text.
+    /// This returns an <see cref="IAbstractNode"/> that can be a <see cref="RawNodeList"/>,
+    /// a single successful top-level node or a <see cref="TokenErrorNode"/>.
+    /// <para>
+    /// All the text must be successfully parsed or a <see cref="TokenErrorNode"/> is returned.
+    /// This doesn't update the <see cref="RemainingText"/> since either nothing or all the <see cref="Text"/>
+    /// has been analyzed.
+    /// </para>
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <returns>The result.</returns>
+    public IAbstractNode ParseAll()
+    {
+        var head = new ParserHead( _head, this, _triviaBuilder );
+        AbstractNode? singleResult = null;
+        ImmutableArray<AbstractNode>.Builder? multiResult = null;
+        for(; ; )
+        {
+            var node = Unsafe.As<AbstractNode>( Parse( ref head ) );
+            if( node == null )
+            {
+                if( head.EndOfInput != null )
+                {
+                    if( multiResult != null ) return new RawNodeList( NodeType.GenericNode, multiResult.DrainToImmutable() );
+                    if( singleResult != null ) return singleResult;
+                }
+                return head.CreateError( "Empty or unrecognized text." );
+            }
+            if( node.NodeType.IsError() )
+            {
+                return node;
+            }
+            if( singleResult == null ) singleResult = node;
+            else
+            {
+                multiResult ??= ImmutableArray.CreateBuilder<AbstractNode>();
+                multiResult.Add( node );
+            }
+        }
     }
 
     /// <summary>
@@ -72,7 +109,7 @@ public abstract partial class Analyzer : IParserHeadBehavior
     /// </para>
     /// </summary>
     /// <param name="head">The <see cref="ParserHead"/>.</param>
-    /// <returns>The node (can be a <see cref="TokenErrorNode"/>).</returns>
+    /// <returns>The node (can be a <see cref="TokenErrorNode"/>) or null if unhandled.</returns>
     protected abstract IAbstractNode? Parse( ref ParserHead head );
 
     /// <inheritdoc />

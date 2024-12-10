@@ -1,4 +1,4 @@
-﻿using CK.Transform.Core;
+using CK.Transform.Core;
 
 namespace CK.Transform.TransformLanguage;
 
@@ -15,7 +15,7 @@ public sealed partial class TransformerHost
             _host = host;
         }
 
-        internal protected override Analyzer CreateTargetAnalyzer() => _host._transformAnalyzer;
+        internal protected override Analyzer CreateTargetAnalyzer() => new TAnalyzer( _host );
 
         internal protected override BaseTransformAnalyzer CreateTransformAnalyzer() => _host._transformAnalyzer;
     }

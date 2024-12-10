@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -23,6 +24,8 @@ public abstract class SyntaxNode : AbstractNode
     private protected SyntaxNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
         : base( leading, trailing )
     {
+        Throw.DebugAssert( "CollectionNode xor CompositeNode.",
+                           typeof( CollectionNode ).IsAssignableFrom( GetType() ) || typeof( CompositeNode ).IsAssignableFrom( GetType() ) );
     }
 
     /// <summary>

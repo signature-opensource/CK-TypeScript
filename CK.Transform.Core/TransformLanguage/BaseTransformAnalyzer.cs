@@ -1,44 +1,58 @@
 using CK.Core;
 using CK.Transform.Core;
-using CK.Transform.ErrorTolerant;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
+using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
+using static CK.Transform.TransformLanguage.TransformerHost;
 
 namespace CK.Transform.TransformLanguage;
 
 
 public abstract class BaseTransformAnalyzer : Analyzer
 {
+    readonly TransformerHost _host;
     readonly TransformLanguage _language;
 
     public TransformLanguage Language => _language;
 
-    protected BaseTransformAnalyzer( TransformLanguage language )
+    protected BaseTransformAnalyzer( TransformerHost host, TransformLanguage language )
     {
+        _host = host;
         _language = language;
     }
 
-    public override void ParseTrivia( ref TriviaHead c )
+    public override sealed void ParseTrivia( ref TriviaHead c )
     {
         c.AcceptRecursiveStartComment();
         c.AcceptLineComment();
     }
 
+    /// <summary>
+    /// Implements minimal support required by any Transform language:
+    /// <see cref="NodeType.GenericIdentifier"/> that at least handles "Ascii letter[Ascii letter or digit]*",
+    /// <see cref="NodeType.DoubleQuote"/>, <see cref="NodeType.OpenAngleBracket"/> and <see cref="NodeType.SemiColon"/>
+    /// must be handled.
+    /// </summary>
+    /// <param name="head">The head.</param>
+    /// <returns>The low level token.</returns>
     public override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         var c = head[0];
         if( char.IsAsciiLetter( c ) )
         {
             int iS = 0;
-            while( ++iS < head.Length && char.IsAsciiLetter( head[iS] ) ) ;
+            while( ++iS < head.Length && char.IsAsciiLetterOrDigit( head[iS] ) ) ;
             return new LowLevelToken( NodeType.GenericIdentifier, iS );
         }
         if( c == '"' )
         {
             return new LowLevelToken( NodeType.DoubleQuote, 1 );
+        }
+        if( c == ';' )
+        {
+            return new LowLevelToken( NodeType.SemiColon, 1 );
         }
         if( c == '<' )
         {
@@ -47,14 +61,102 @@ public abstract class BaseTransformAnalyzer : Analyzer
         return default;
     }
 
-    protected override IAbstractNode? Parse( ref ParserHead head ) => DoParse( ref head );
+    /// <summary>
+    /// Overridden to parse the single top-level statement that is a 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'.
+    /// <para>
+    /// Actual transform statements are handled by <see cref="ParseStatement(ref ParserHead)"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="head">The <see cref="ParserHead"/>.</param>
+    /// <returns>The node (can be a <see cref="TokenErrorNode"/>) or null if not recognized.</returns>
+    protected override sealed IAbstractNode? Parse( ref ParserHead head )
+    {
+        if( head.TryMatchToken( "create", out var create ) )
+        {
+            Language? cLang = _host.Find( head.LowLevelTokenText );
+            if( cLang == null )
+            {
+                return head.CreateError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
+            }
+            var language = head.CreateLowLevelToken();
+            var transformer = head.MatchToken( "transformer" );
+            if( transformer is IErrorNode ) return transformer;
+
+            TokenNode? functionName = null;
+            TokenNode? on = null;
+            AbstractNode? target = null;
+            TokenNode? asT = null;
+            if( !head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
+            {
+                bool hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
+                if( !hasOn && !head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) )
+                {
+                    functionName = head.CreateLowLevelToken();
+                    hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
+                }
+                if( hasOn )
+                {
+                    on = head.CreateLowLevelToken();
+                    if( head.LowLevelTokenType == NodeType.DoubleQuote )
+                    {
+                        target = MatchRawString( ref head );
+                        if( target is not RawString ) return target;
+                    }
+                    else if( head.LowLevelTokenType == NodeType.GenericIdentifier )
+                    {
+                        target = head.CreateLowLevelToken();
+                    }
+                    else
+                    {
+                        return head.CreateError( "Expecting a target after 'on' that can be a string or an identifier." );
+                    }
+                }
+                // The optional "as" token is parsed in the context of the transform generic language.
+                head.TryMatchToken( "as", out asT );
+            }
+            // The begin...end is parsed in the context of the actual transform language.
+            // The leading trivias will be analyzed by the TransformAnalyzer.
+            var headStatements = head.CreateSubHead( cLang.TransformAnalyzer );
+            var endToken = cLang.TransformAnalyzer.ParseStatements( ref headStatements, out TokenNode beginT, out List<ITransformStatement> statements );
+            if( endToken is not TokenNode endT ) return endToken;
+            head.SkipTo( in headStatements );
+            return new TransfomerFunction( create, language, transformer, functionName, on, target, asT, beginT, new NodeList<ITransformStatement>( statements ), endT );
+        }
+        return null;
+    }
+
+
+    internal IAbstractNode ParseStatements( ref ParserHead head, out TokenNode beginT, out List<ITransformStatement> statements )
+    {
+        statements = new List<ITransformStatement>();
+        beginT = head.MatchToken( "begin" );
+        if( beginT is IErrorNode ) return beginT;
+        TokenNode? endT;
+        while( !head.TryMatchToken( "end", out endT ) )
+        {
+            var s = Parse( ref head );
+            if( s is IErrorNode ) return s;
+            if( s == null )
+            {
+                return head.CreateError( $"Expecting '{_language.LanguageName}' statement." );
+            }
+            if( s is not ITransformStatement statement )
+            {
+                return Throw.InvalidOperationException<IAbstractNode>( $"Language '{_language.LanguageName}' parsed a '{s.GetType().ToCSharpName()}' that is not a ITransformStatement." );
+            }
+            statements.Add( statement );
+        }
+        return endT;
+    }
+
 
     /// <summary>
-    /// Current implementation is stateless. This can be static.
+    /// Handles transform statements that apply to any language:
+    /// the <see cref="InjectIntoStatement"/>.
     /// </summary>
-    /// <param name="head"></param>
-    /// <returns></returns>
-    internal static IAbstractNode? DoParse( ref ParserHead head )
+    /// <param name="head">The head.</param>
+    /// <returns>The </returns>
+    protected virtual IAbstractNode? ParseStatement( ref ParserHead head )
     {
         if( head.TryMatchToken( "inject", out var inject ) )
         {
@@ -85,11 +187,10 @@ public abstract class BaseTransformAnalyzer : Analyzer
             if( head.LowLevelTokenType == NodeType.OpenAngleBracket )
             {
                 var sHead = head.Head;
-                int iS = 0;
-                while( ++iS < sHead.Length && char.IsAsciiLetterOrDigit( sHead[iS] ) ) ;
-                if( iS < sHead.Length && sHead[iS] == '>' )
+                int nameLen = TriviaInjectionPointMatcher.GetInsertionPointLength( sHead );
+                if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
                 {
-                    head.AcceptToken( iS, out var text, out var leading, out var trailing );
+                    head.AcceptToken( nameLen + 1, out var text, out var leading, out var trailing );
                     return new InjectionPoint( text, leading, trailing );
                 }
             }

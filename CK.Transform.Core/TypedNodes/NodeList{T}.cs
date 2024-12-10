@@ -1,5 +1,4 @@
 using CK.Core;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -14,15 +13,13 @@ namespace CK.Transform.Core;
 /// <typeparam name="T">The collection item type.</typeparam>
 public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class, IAbstractNode
 {
-    readonly ImmutableArray<AbstractNode> _children;
-
     /// <summary>
     /// Initializes a new list from its children without trivias.
     /// </summary>
     /// <param name="children">The children.</param>
     public NodeList( params IEnumerable<T> children )
+        : base( children.Cast<AbstractNode>().ToImmutableArray() )
     {
-        _children = children.Cast<AbstractNode>().ToImmutableArray();
     }
 
     /// <summary>
@@ -36,16 +33,12 @@ public class NodeList<T> : CollectionNode, IAbstractNodeList<T> where T : class,
     /// <param name="trailing">The trailing trivias.</param>
     /// <param name="uncheckedChildren">The children.</param>
     public NodeList( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, params ImmutableArray<AbstractNode> uncheckedChildren )
-        : base( leading, trailing )
+        : base( leading, trailing, uncheckedChildren )
     {
-        _children = uncheckedChildren;
     }
 
     /// <inheritdoc />
     public T this[int index] => Unsafe.As<T>( _children[index] );
-
-    /// <inheritdoc />
-    public override sealed IReadOnlyList<AbstractNode> ChildrenNodes => _children;
 
     /// <inheritdoc />
     public int Count =>_children.Length;

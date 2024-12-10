@@ -1,4 +1,5 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +24,12 @@ public ref struct ParserHead
     NodeType _lowLevelTokenType;
     int _lastSuccessfulHead;
 
+    /// <summary>
+    /// Initializes a new head on a text.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="behavior">Required <see cref="IParserHeadBehavior"/>.</param>
+    /// <param name="triviaBuilder">Trivia builder to use.</param>
     public ParserHead( ReadOnlyMemory<char> text,
                        IParserHeadBehavior behavior,
                        ImmutableArray<Trivia>.Builder? triviaBuilder = null )
@@ -36,24 +43,25 @@ public ref struct ParserHead
         InitializeLeadingTrivia();
     }
 
-    public ParserHead( ref ParserHead from, IParserHeadBehavior? behavior = null )
+    /// <summary>
+    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="IParserHeadBehavior"/>.
+    /// <para>
+    /// <see cref="SkipTo(ref readonly ParserHead)"/> can be used to resynchronize this head with the subordinated one.
+    /// </para>
+    /// </summary>
+    /// <param name="behavior">Alternative behavior for this new head. When null, the same behavior as this one is used.</param>
+    public readonly ParserHead CreateSubHead( IParserHeadBehavior? behavior = null )
     {
-        _memText = from.GetRemainingText();
-        _text = _memText.Span;
-        _head = _text;
-        _triviaBuilder = from._triviaBuilder;
-        if( behavior != null )
-        {
-            _behavior = behavior;
-            _triviaParser = behavior.ParseTrivia;
-        }
-        else
-        {
-            _behavior = from._behavior;
-            _triviaParser = from._triviaParser;
-        }
+        return new ParserHead( RemainingText, behavior ?? _behavior, _triviaBuilder );
+    }
+
+    public void SkipTo( ref readonly ParserHead subHead )
+    {
+        Throw.CheckArgument( _head.Overlaps( subHead.Text.Span ) );
+        _head = _head.Slice( subHead._lastSuccessfulHead );
         InitializeLeadingTrivia();
     }
+
 
     /// <summary>
     /// Gets the current head to analyze.
@@ -72,7 +80,7 @@ public ref struct ParserHead
     /// </para>
     /// </summary>
     /// <returns></returns>
-    public readonly ReadOnlyMemory<char> GetRemainingText() => _memText.Slice( _lastSuccessfulHead );
+    public readonly ReadOnlyMemory<char> RemainingText => _memText.Slice( _lastSuccessfulHead );
 
     /// <summary>
     /// Gets the enf of input if it has been reached.
@@ -113,15 +121,12 @@ public ref struct ParserHead
         text = _memText.Slice( _text.Length - _head.Length, tokenLength );
         _head = _head.Slice( tokenLength );
         leading = _leadingTrivias;
-        // Resets the current low-level token.
-        _lowLevelTokenType = NodeType.None;
-        _lowLevelTokenText = default;
         var c = new TriviaHead( _head, _memText, _triviaBuilder );
         c.ParseTrailingTrivias( _triviaParser );
+        trailing = _triviaBuilder.DrainToImmutable();
         // Before preloading the leading trivia for the next token, save the
         // current head position. RemainingText is based on this index.
-        _lastSuccessfulHead = _memText.Length - _head.Length;
-        trailing = _triviaBuilder.DrainToImmutable();
+        _lastSuccessfulHead = _memText.Length - _head.Length + c.Length;
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );

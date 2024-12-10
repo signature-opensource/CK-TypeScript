@@ -174,6 +174,7 @@ public ref struct TriviaHead
             {
                 if( _head[iS] == '\n' )
                 {
+                    iS++;
                     eol = true;
                     break;
                 }

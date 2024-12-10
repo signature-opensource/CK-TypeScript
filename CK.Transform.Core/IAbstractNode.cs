@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text;
 
 namespace CK.Transform.Core;
 
@@ -34,7 +34,7 @@ public interface IAbstractNode
     /// Gets the direct children if any.
     /// <para>
     /// A <see cref="TokenNode"/> has no children.
-    /// An empty list may have no children.
+    /// An empty <see cref="CollectionNode"/> may have no children.
     /// To my knowledge, a <see cref="CompositeNode"/> can hardly have no children at all:
     /// that would mean that all its fields are optional... But it is technically possible.
     /// </para>
@@ -80,4 +80,17 @@ public interface IAbstractNode
     /// Gets the number of tokens in <see cref="AllTokens"/>.
     /// </summary>
     int Width { get; }
+
+    /// <summary>
+    /// Writes the full text (all trivias included).
+    /// </summary>
+    /// <param name="b">The target builder.</param>
+    /// <returns>The builder.</returns>
+    StringBuilder Write( StringBuilder b );
+
+    /// <summary>
+    /// Gets the full text (all trivias included).
+    /// </summary>
+    /// <returns>The full text of this node.</returns>
+    string ToString();
 }

@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 public static class TriviaHeadExtensions
 {
     /// <summary>
-    /// A <see cref="NodeType.LineComment"/> is a C-like language comment that starts with a "//" and ends with a new line.
+    /// A line comment that starts with a "//".
     /// <para>
     /// This kind of trivia cannot be on error: if the end of input is reached, the comment is valid.
     /// </para>
@@ -22,7 +22,7 @@ public static class TriviaHeadExtensions
         {
             int iS = 1;
             while( ++iS < c.Head.Length && c.Head[iS] != '\n' ) ;
-            c.Accept( NodeType.SqlComment, iS );
+            c.Accept( NodeTypeExtensions.GetTriviaLineCommentType( 2 ), iS + 1 );
         }
     }
 
@@ -36,7 +36,7 @@ public static class TriviaHeadExtensions
         {
             int iS = 1;
             while( ++iS < c.Head.Length && c.Head[iS] != '\n' ) ;
-            c.Accept( NodeType.SqlComment, iS );
+            c.Accept( NodeTypeExtensions.GetTriviaLineCommentType( 2 ), iS );
         }
     }
 
@@ -54,11 +54,11 @@ public static class TriviaHeadExtensions
             int i = c.Head.IndexOf( "*/" );
             if( i < 0 )
             {
-                c.EndOfInput( NodeType.StarComment );
+                c.EndOfInput( NodeTypeExtensions.GetTriviaBlockCommentType( 2, 2 ) );
             }
             else
             {
-                c.Accept( NodeType.StarComment, i + 2 );
+                c.Accept( NodeTypeExtensions.GetTriviaBlockCommentType( 2, 2 ), i + 2 );
             }
         }
     }
@@ -83,7 +83,7 @@ public static class TriviaHeadExtensions
                 int iE = h.IndexOf( "*/" );
                 if( iE < 0 )
                 {
-                    c.EndOfInput( NodeType.StarComment );
+                    c.EndOfInput( NodeTypeExtensions.GetTriviaBlockCommentType( 2, 2 ) );
                     return;
                 }
                 depth += h.Slice( 0, iE ).Count( "/*" ) - 1;
@@ -91,7 +91,7 @@ public static class TriviaHeadExtensions
                 if( depth == 0 ) break;
             }
             c.Head.Overlaps( h, out var pos );
-            c.Accept( NodeType.StarComment, pos );
+            c.Accept( NodeTypeExtensions.GetTriviaBlockCommentType( 2, 2 ), pos );
         }
     }
 
@@ -106,11 +106,11 @@ public static class TriviaHeadExtensions
             int i = c.Head.IndexOf( "-->" );
             if( i < 0 )
             {
-                c.EndOfInput( NodeType.XmlComment );
+                c.EndOfInput( NodeTypeExtensions.GetTriviaBlockCommentType( 4, 3 ) );
             }
             else
             {
-                c.Accept( NodeType.XmlComment, i + 3 );
+                c.Accept( NodeTypeExtensions.GetTriviaBlockCommentType( 4, 3 ), i + 3 );
             }
         }
     }

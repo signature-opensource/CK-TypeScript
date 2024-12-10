@@ -2,18 +2,25 @@ using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Xml;
 
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A trivia is consecutive whitespaces or a comment.
+/// A trivia is consecutive whitespaces (including newlines) or a comment.
+/// <para>
+/// Comments can be single line (ends with a new line like the C-like //) or multiple lines (like the C-like /* block */).
+/// The <see cref="Content"/> covers the whole trivia (including comment start and end pattern and final new line for line comments).
+/// </para>
+/// <para>
+/// The <see cref="TokenType"/> doesn't encode the kind of trivia (like a "CLikeStarComment" for "/* ... */" comments). Instead,
+/// a bit indicates whether it is a Line vs. Block comment and the length of the start and end patterns are encoded on 3 bits (opening
+/// and closing pattern can be from 1 to 7 characters).
+/// </para>
 /// </summary>
 public readonly struct Trivia : IEquatable<Trivia>
 {
-    readonly NodeType _tokenType;
     readonly ReadOnlyMemory<char> _content;
+    readonly NodeType _tokenType;
 
     public Trivia( NodeType tokenType, string content )
         : this( tokenType, content.AsMemory() )
@@ -40,10 +47,66 @@ public readonly struct Trivia : IEquatable<Trivia>
     public bool IsValid => _tokenType != NodeType.None;
 
     /// <summary>
-    /// Gets the content of this trivia including delimiters like the prefix "//" characters
-    /// for <see cref="NodeType.LineComment"/>.
+    /// Gets the content of this trivia including content delimiters like the "//" comment start characters.
     /// </summary>
     public ReadOnlyMemory<char> Content => _content;
+
+    /// <summary>
+    /// Gets wether this is a whitespace trivia.
+    /// <para>If this is not a whitespace trivia, then it is a comment.</para>
+    /// </summary>
+    public bool IsWhitespace => _tokenType.IsWhitespace();
+
+    /// <summary>
+    /// Gets wether this is a line comment.
+    /// </summary>
+    public bool IsLineComment
+    {
+        get
+        {
+            Throw.DebugAssert( _tokenType.IsTriviaLineComment() == ((_tokenType & NodeType.TriviaCommentStartLengthMask) != 0 && (_tokenType & NodeType.TriviaCommentEndLengthMask) == 0) );
+            return (_tokenType & NodeType.TriviaCommentStartLengthMask) != 0 && (_tokenType & NodeType.TriviaCommentEndLengthMask) == 0;
+        }
+    }
+
+    /// <summary>
+    /// Gets wether this is a block comment.
+    /// </summary>
+    public bool IsBlockComment
+    {
+        get
+        {
+            Throw.DebugAssert( _tokenType.IsTriviaBlockComment() == ((_tokenType & NodeType.TriviaCommentEndLengthMask) != 0) );
+            return (_tokenType & NodeType.TriviaCommentEndLengthMask) != 0;
+        }
+    }
+
+    /// <summary>
+    /// Gets the length of the comment start.
+    /// Defaults to 0 if this is not a comment.
+    /// </summary>
+    public int CommentStartLength
+    {
+        get
+        {
+            Throw.DebugAssert( _tokenType.GetTriviaCommentStartLength() == ((int)_tokenType & 3) );
+            return ((int)_tokenType & 3);
+        }
+    }
+
+    /// <summary>
+    /// Gets the length of the comment end.
+    /// Defaults to 0 if this is not a block comment.
+    /// </summary>
+    public int CommentEndLength
+    {
+        get
+        {
+            Throw.DebugAssert( _tokenType.GetTriviaCommentEndLength() == (((int)_tokenType >> 3) & 3) );
+            return ((int)_tokenType >> 3) & 3;
+        }
+    }
+
 
     /// <summary>
     /// Overridden to return the <see cref="Content"/>.

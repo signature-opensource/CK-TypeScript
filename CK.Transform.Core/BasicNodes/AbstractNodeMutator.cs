@@ -1,4 +1,3 @@
-using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -116,5 +115,6 @@ public class AbstractNodeMutator
     {
         Debug.Fail( "Never called on AbstractNodeMutator." );
     }
+
 }
 

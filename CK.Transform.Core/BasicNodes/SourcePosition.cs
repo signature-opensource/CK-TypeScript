@@ -1,7 +1,5 @@
 using CK.Core;
 using System;
-using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace CK.Transform.Core;
 

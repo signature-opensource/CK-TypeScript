@@ -1,6 +1,5 @@
-using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 
 namespace CK.Transform.Core;
 
@@ -10,22 +9,31 @@ namespace CK.Transform.Core;
 /// </summary>
 public abstract partial class CollectionNode : SyntaxNode
 {
+    internal readonly ImmutableArray<AbstractNode> _children;
+
+    /// <summary>
+    /// Initializes a new <see cref="CollectionNode"/> from its children and no trivias.
+    /// </summary>
+    /// <param name="uncheckedChildren">The children.</param>
+    public CollectionNode( params ImmutableArray<AbstractNode> uncheckedChildren )
+    {
+        _children = uncheckedChildren;
+    }
+
     /// <summary>
     /// Initializes a new <see cref="CollectionNode"/>.
     /// </summary>
     /// <param name="leading">The leading trivias.</param>
     /// <param name="trailing">The trailing trivias.</param>
-    protected CollectionNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
+    /// <param name="uncheckedChildren">The children.</param>
+    protected CollectionNode( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing, params ImmutableArray<AbstractNode> uncheckedChildren )
         : base( leading, trailing )
     {
+        _children = uncheckedChildren;
     }
 
-    /// <summary>
-    /// Initializes a new <see cref="CollectionNode"/> with no trivias.
-    /// </summary>
-    protected CollectionNode()
-    {
-    }
+    /// <inheritdoc />
+    public override sealed IReadOnlyList<AbstractNode> ChildrenNodes => _children;
 
     /// <inheritdoc />
     public override CollectionNodeMutator CreateMutator() => new CollectionNodeMutator( this );
