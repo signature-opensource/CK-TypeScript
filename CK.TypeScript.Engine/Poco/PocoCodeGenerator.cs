@@ -519,24 +519,27 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                                         {
                                             if( o[0] === 0 ) return SimpleUserMessage.invalid;
                                         }
-                                        else if( o.length == 3 )
+                                        else if( o.length === 3 || o.length === 8 )
                                         {
                                             const level = o[0];
                                             if( level === UserMessageLevel.Info || level === UserMessageLevel.Warn || level === UserMessageLevel.Error )
                                             {
-                                                const msg = o[1];
-                                                if( typeof msg == "string" )
+                                                let msg = o[1];
+                                                let d = o[2];
+                                                if( typeof msg === "number" )
                                                 {
-                                                    const d = o[2];
-                                                    if( typeof d === "number" && d >= 0 && d <= 255 )
-                                                    {
-                                                        return new SimpleUserMessage( level, msg, d );
-                                                    }
+                                                    // This is a UserMessage (o.length === 8). 
+                                                    msg = d;
+                                                    d = o[1];
+                                                }
+                                                if( typeof d === "number" && d >= 0 && d <= 255 )
+                                                {
+                                                    return new SimpleUserMessage( level, msg, d );
                                                 }
                                             }
                                         }
                                     }
-                                    throw new Error( `Unable to parse '{{o}}' as SimpleUserMessage.` );
+                                    throw new Error( `Unable to parse '{{o}}' as a SimpleUserMessage.` );
                                 }
                             """ );
                     return true;

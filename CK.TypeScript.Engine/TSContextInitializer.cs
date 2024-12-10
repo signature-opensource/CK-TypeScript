@@ -90,6 +90,7 @@ sealed class TSContextInitializer
             // (that will be handled as any other named record) is TypeScript compliant.
             //
             // The UserMessage is accepted: we map it to the SimpleUserMessage type.
+            //
             if( binPathConfiguration.TypeFilterName != "None" )
             {
                 var include = regTypes.Values.Select( r => r.PocoType ).Where( p => p != null );
