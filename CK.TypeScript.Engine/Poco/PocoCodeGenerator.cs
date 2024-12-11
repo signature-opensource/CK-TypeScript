@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -139,6 +140,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
             // - The complex types (AbstractPoco, PrimaryPoco, Record) to use the "builder" capabilities of the "by type" event instead
             //   of being restricted to set the final ResolvedType that this "by object" event supports: they need to defer their
             //   implementation generation.
+            // - This also implements the mapping UserMessage to SimpleUserMessage.
             if( t.Kind is PocoTypeKind.Basic
                           or PocoTypeKind.Any
                           or PocoTypeKind.Enum
@@ -146,7 +148,9 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                           or PocoTypeKind.AbstractPoco
                           or PocoTypeKind.Record )
             {
-                ts = tsTypeManager.ResolveTSType( monitor, t.Type );
+                var tMap = t.Type;
+                if( tMap == typeof( UserMessage ) ) tMap = typeof( SimpleUserMessage );
+                ts = tsTypeManager.ResolveTSType( monitor, tMap );
             }
             else
             {
@@ -349,7 +353,13 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
             }
             else if( t.Kind == PocoTypeKind.Basic )
             {
-                if( builder.Type == typeof( ExtendedCultureInfo ) )
+                if( builder.Type == typeof( UserMessage ) )
+                {
+                    // This should not happen: PocoType are first resolved by OnResolveObjectKey that does
+                    // the mapping UserMessage => SimpleUserMessage.
+                    builder.ResolvedType = _typeScriptContext.Root.TSTypes.ResolveTSType( monitor, typeof( SimpleUserMessage ) );
+                }
+                else if( builder.Type == typeof( ExtendedCultureInfo ) )
                 {
                     builder.DefaultValueSource = "NormalizedCultureInfo.codeDefault";
                     builder.TryWriteValueImplementation = ExtendedCultureInfoWrite;
@@ -451,6 +461,14 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                          .Append( m.Depth );
                         return true;
                     }
+                    if( o is UserMessage uM )
+                    {
+                        w.Append( "new SimpleUserMessage( " )
+                         .Append( uM.Level ).Append( ", " )
+                         .AppendSourceString( uM.Text ).Append( ", " )
+                         .Append( uM.Depth );
+                        return true;
+                    }
                     return false;
                 }
 
@@ -501,24 +519,27 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                                         {
                                             if( o[0] === 0 ) return SimpleUserMessage.invalid;
                                         }
-                                        else if( o.length == 3 )
+                                        else if( o.length === 3 || o.length === 8 )
                                         {
                                             const level = o[0];
                                             if( level === UserMessageLevel.Info || level === UserMessageLevel.Warn || level === UserMessageLevel.Error )
                                             {
-                                                const msg = o[1];
-                                                if( typeof msg == "string" )
+                                                let msg = o[1];
+                                                let d = o[2];
+                                                if( typeof msg === "number" )
                                                 {
-                                                    const d = o[2];
-                                                    if( typeof d === "number" && d >= 0 && d <= 255 )
-                                                    {
-                                                        return new SimpleUserMessage( level, msg, d );
-                                                    }
+                                                    // This is a UserMessage (o.length === 8). 
+                                                    msg = d;
+                                                    d = o[1];
+                                                }
+                                                if( typeof d === "number" && d >= 0 && d <= 255 )
+                                                {
+                                                    return new SimpleUserMessage( level, msg, d );
                                                 }
                                             }
                                         }
                                     }
-                                    throw new Error( `Unable to parse '{{o}}' as SimpleUserMessage.` );
+                                    throw new Error( `Unable to parse '{{o}}' as a SimpleUserMessage.` );
                                 }
                             """ );
                     return true;

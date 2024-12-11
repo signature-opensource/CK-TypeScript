@@ -47,12 +47,14 @@ public sealed partial class CTSTypeSystem
             // see https://github.com/dotnet/runtime/issues/28862#issuecomment-1273503317
             // (And frankly, the ISO duration is a PITA. See https://github.com/moment/luxon/issues/1514 for instance.)
             // The TimeSpan is handled explicitly (from .Net 10th of microseconds to milliseconds).
+            //
+            // The C# UserMessage type being mapped to SimpleUserMessage, it has a toJson.
             var tt = t.Type;
             return tt == typeof( Guid )
                    || tt == typeof( Decimal )
                    || tt == typeof( DateTime ) || tt == typeof( DateTimeOffset )
                    || tt == typeof( ExtendedCultureInfo ) || tt == typeof( NormalizedCultureInfo )
-                   || tt == typeof( SimpleUserMessage );
+                   || tt == typeof( SimpleUserMessage ) || tt == typeof( UserMessage );
         }
 
         public bool Contains( IPocoType t )
