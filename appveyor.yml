@@ -1,9 +1,6 @@
 version: build{build}
 image: Visual Studio 2022
-clone_folder: C:\CKli-World\CK-Crs-Projects\CK-StObj-TypeScript
-# Appveyor now installs Node 23 (x64). This is no more required.
-#install:
-#- ps: Install-Product node 20 x64
+clone_folder: C:\CKli-World\CK-Crs-Projects\CK-TypeScript
 environment:
   CODECAKEBUILDER_SECRET_KEY:
     secure: 8VAzdXgUQaJyFoU3WLf2iPFV/8zPDm9qV4TfOpx8/rg=

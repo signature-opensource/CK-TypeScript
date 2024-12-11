@@ -3,6 +3,7 @@ using Cake.Common.IO;
 using Cake.Common.Solution;
 using Cake.Common.Tools.DotNet;
 using Cake.Common.Tools.DotNet.Build;
+using Cake.Common.Tools.DotNet.MSBuild;
 using Cake.Common.Tools.DotNet.Test;
 using Cake.Common.Tools.NUnit;
 using Cake.Core;
@@ -15,7 +16,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using Cake.Common.Tools.DotNet.MSBuild;
 
 namespace CodeCake;
 
