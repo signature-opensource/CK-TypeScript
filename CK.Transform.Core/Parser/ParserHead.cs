@@ -18,6 +18,7 @@ public ref struct ParserHead
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     readonly IParserHeadBehavior _behavior;
     TriviaParser _triviaParser;
+    ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
     EndOfInputToken? _endOfInput;
     ReadOnlySpan<char> _lowLevelTokenText;
@@ -50,15 +51,17 @@ public ref struct ParserHead
     /// </para>
     /// </summary>
     /// <param name="behavior">Alternative behavior for this new head. When null, the same behavior as this one is used.</param>
-    public readonly ParserHead CreateSubHead( IParserHeadBehavior? behavior = null )
+    public readonly ParserHead CreateSubHead( out int safetyToken, IParserHeadBehavior? behavior = null )
     {
+        safetyToken = _lastSuccessfulHead;
         return new ParserHead( RemainingText, behavior ?? _behavior, _triviaBuilder );
     }
 
-    public void SkipTo( ref readonly ParserHead subHead )
+    public void SkipTo( int safetyToken, ref readonly ParserHead subHead )
     {
-        Throw.CheckArgument( _head.Overlaps( subHead.Text.Span ) );
-        _head = _head.Slice( subHead._lastSuccessfulHead );
+        Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
+        Throw.CheckState( _lastSuccessfulHead == safetyToken );
+        _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
         InitializeLeadingTrivia();
     }
 
@@ -126,6 +129,7 @@ public ref struct ParserHead
         trailing = _triviaBuilder.DrainToImmutable();
         // Before preloading the leading trivia for the next token, save the
         // current head position. RemainingText is based on this index.
+        _headBeforeTrivia = c.Head;
         _lastSuccessfulHead = _memText.Length - _head.Length + c.Length;
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
@@ -232,6 +236,7 @@ public ref struct ParserHead
     {
         // Creates the Trivia head and collects every possible trivias thanks to the
         // current trivia parser.
+        _headBeforeTrivia = _head;
         var c = new TriviaHead( _head, _memText, _triviaBuilder );
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();

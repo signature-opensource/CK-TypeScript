@@ -78,7 +78,7 @@ sealed class TriviaInjectionPointVisitor : TransformVisitor
         }
         if( VisitContext.Depth == 0 && _inserter.MatchCount == 0 )
         {
-            Monitor.Error( $"Unable to find injection point '{_injectInto.Target.Text}'." );
+            Monitor.Error( $"Unable to find injection point '<{_injectInto.Target.Name}/>'." );
         }
         return e;
     }

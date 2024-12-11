@@ -165,7 +165,6 @@ sealed partial class TriviaInjectionPointMatcher
             head = head.Slice( 1 );
             injectDef = head;
         }
-        head = head.Slice( isClosing ? 2 : 1 );
         // Name match the <InjectionPoint>.
         int nameLen = GetInsertionPointLength( head );
         if( nameLen == 0 || !head.TryMatch( _injectionPoint.Name ) ) return false;
@@ -175,7 +174,6 @@ sealed partial class TriviaInjectionPointMatcher
         if( injectDef.Length > 0 )
         {
             injectDef.Overlaps( head, out int injectDefLength );
-            Throw.DebugAssert( "Name + at least one whitesape + at least revert.Length", injectDefLength > nameLen + 1 + 6 );
             injectDef = injectDef.Slice( 0, injectDefLength );
         }
         if( isRevert ) head = head.TrimStart();

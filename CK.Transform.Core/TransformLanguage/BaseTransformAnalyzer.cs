@@ -116,10 +116,10 @@ public abstract class BaseTransformAnalyzer : Analyzer
             }
             // The begin...end is parsed in the context of the actual transform language.
             // The leading trivias will be analyzed by the TransformAnalyzer.
-            var headStatements = head.CreateSubHead( cLang.TransformAnalyzer );
+            var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformAnalyzer );
             var endToken = cLang.TransformAnalyzer.ParseStatements( ref headStatements, out TokenNode beginT, out List<ITransformStatement> statements );
             if( endToken is not TokenNode endT ) return endToken;
-            head.SkipTo( in headStatements );
+            head.SkipTo( safetyToken, in headStatements );
             return new TransfomerFunction( create, language, transformer, functionName, on, target, asT, beginT, new NodeList<ITransformStatement>( statements ), endT );
         }
         return null;
@@ -134,7 +134,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
         TokenNode? endT;
         while( !head.TryMatchToken( "end", out endT ) )
         {
-            var s = Parse( ref head );
+            var s = ParseStatement( ref head );
             if( s is IErrorNode ) return s;
             if( s == null )
             {

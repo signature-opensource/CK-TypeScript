@@ -12,23 +12,29 @@ public class InjectIntoTests
         """
         create transform transformer
         begin
-            //<FirstInjectionPointEver>
+        //<FirstInjectionPointEver/>
         end
         """,
+        """"
+        create transform transformer
+        begin
+            inject """
+                   // First injection ever...
+
+                   """ into <FirstInjectionPointEver>;
+            inject """
+                   // ...and another one.
+
+                   """ into <FirstInjectionPointEver>;
+        end
+        """",
         """
         create transform transformer
         begin
-            inject "// First injection ever..." into <FirstInjectionPointEver>;
-            inject "// ...and another one." into <FirstInjectionPointEver>;
-        end
-        """,
-        """
-        create transform transformer
-        begin
-            //<FirstInjectionPointEver>
+        //<FirstInjectionPointEver>
         // First injection ever...
         // ...and another one.
-            //</FirstInjectionPointEver>
+        //</FirstInjectionPointEver>
         end
         """
         )]
