@@ -10,13 +10,13 @@ namespace CK.Transform.Core;
 public static class TriviaHeadExtensions
 {
     /// <summary>
-    /// A line comment that starts with a "//".
+    /// A line comment that starts with a "//" and ends with a newline (or the end of the input).
     /// <para>
     /// This kind of trivia cannot be on error: if the end of input is reached, the comment is valid.
     /// </para>
     /// </summary>
     /// <param name="c">This head.</param>
-    public static void AcceptLineComment( this ref TriviaHead c )
+    public static void AcceptCLikeLineComment( this ref TriviaHead c )
     {
         if( c.Head.StartsWith( "//" ) )
         {
@@ -27,7 +27,7 @@ public static class TriviaHeadExtensions
     }
 
     /// <summary>
-    /// Same as <see cref="LineComment(ref TriviaCollector)"/> but with a starting "--".
+    /// Same as <see cref="AcceptCLikeLineComment(ref TriviaHead)"/> but with a starting "--".
     /// </summary>
     /// <param name="c">This head.</param>
     public static void AcceptSqlComment( this ref TriviaHead c )
@@ -41,13 +41,13 @@ public static class TriviaHeadExtensions
     }
 
     /// <summary>
-    /// A <see cref="NodeType.StarComment"/> is a C-like language block comment that starts with a "/*" and ends "*/".
+    /// A C-like language block comment that starts with a "/*" and ends "*/".
     /// <para>
     /// This kind of trivia can be on error when the end of input is reached before the terminator.
     /// </para>
     /// </summary>
     /// <param name="c">This head.</param>
-    public static void AcceptStartComment( this ref TriviaHead c )
+    public static void AcceptCLikeStarComment( this ref TriviaHead c )
     {
         if( c.Head.StartsWith( "/*" ) )
         {
@@ -64,14 +64,14 @@ public static class TriviaHeadExtensions
     }
 
     /// <summary>
-    /// A <see cref="NodeType.StarComment"/> that is a C-like language block comment that starts with a "/*" and ends "*/"
+    /// A C-like language block comment that starts with a "/*" and ends "*/"
     /// and can contain nested  "/* ... */" comments.
     /// <para>
     /// This kind of trivia can be on error when the end of input is reached before the terminator.
     /// </para>
     /// </summary>
     /// <param name="c">This head.</param>
-    public static void AcceptRecursiveStartComment( this ref TriviaHead c )
+    public static void AcceptCLikeRecursiveStarComment( this ref TriviaHead c )
     {
         var h = c.Head;
         if( h.StartsWith( "/*" ) )

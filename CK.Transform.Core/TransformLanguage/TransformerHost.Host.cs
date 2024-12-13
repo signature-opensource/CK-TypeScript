@@ -12,17 +12,12 @@ public sealed partial class TransformerHost
     /// Hosts transformation of immutable <see cref="AbstractNode"/> by tracking
     /// the changed root and handling range selection.
     /// </summary>
-    sealed class Host
+    public sealed class Host
     {
         LocationRoot _root;
         Language _currentLanguage;
 
-        /// <summary>
-        /// Initializes a new <see cref="Host"/>
-        /// </summary>
-        /// <param name="language">The initial target language.</param>
-        /// <param name="root">The initial root node.</param>
-        public Host( Language language, AbstractNode root )
+        internal Host( Language language, AbstractNode root )
         {
             Throw.CheckNotNullArgument( root );
             _root = new LocationRoot( root, false );

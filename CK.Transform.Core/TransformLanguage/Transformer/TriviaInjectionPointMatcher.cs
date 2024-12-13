@@ -8,7 +8,7 @@ namespace CK.Transform.TransformLanguage;
 /// Handles trivia extension point match in a way that enables reuse of <see cref="LocationInserter"/>
 /// algorithm and code.
 /// </summary>
-sealed partial class TriviaInjectionPointMatcher
+sealed class TriviaInjectionPointMatcher
 {
     readonly IActivityMonitor _monitor;
     readonly InjectionPoint _injectionPoint;
@@ -169,10 +169,11 @@ sealed partial class TriviaInjectionPointMatcher
         int nameLen = GetInsertionPointLength( head );
         if( nameLen == 0 || !head.TryMatch( _injectionPoint.Name ) ) return false;
         head = head.TrimStart();
-        // "revert(t|se)"
-        isRevert = head.TryMatch( "revert", StringComparison.OrdinalIgnoreCase ) || head.TryMatch( "reverse", StringComparison.OrdinalIgnoreCase );
+        // "revert"
+        isRevert = head.TryMatch( "revert", StringComparison.OrdinalIgnoreCase );
         if( injectDef.Length > 0 )
         {
+            // Capturing the opening tag this way suport any future "attribute". 
             injectDef.Overlaps( head, out int injectDefLength );
             injectDef = injectDef.Slice( 0, injectDefLength );
         }

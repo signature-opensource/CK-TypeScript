@@ -13,7 +13,7 @@ sealed class LocationInserter
     int _matchCount;
     bool _hasError;
 
-    public class MatchedNode
+    public sealed class MatchedNode
     {
         public readonly int Position;
         public readonly AbstractNode Node;

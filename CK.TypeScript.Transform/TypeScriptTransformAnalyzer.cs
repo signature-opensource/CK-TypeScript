@@ -1,0 +1,21 @@
+﻿using CK.Transform.Core;
+using CK.Transform.TransformLanguage;
+
+namespace CK.TypeScript.Transform;
+
+sealed class TypeScriptTransformAnalyzer : BaseTransformAnalyzer
+{
+    readonly TransformerHost _host;
+
+    public TypeScriptTransformAnalyzer( TransformerHost host, TypeScriptLanguage language )
+        : base( host, language )
+    {
+        _host = host;
+    }
+
+    protected override IAbstractNode? ParseStatement( ref ParserHead head )
+    {
+        return base.ParseStatement( ref head );
+    }
+
+}

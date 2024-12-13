@@ -25,14 +25,14 @@ public abstract class BaseTransformAnalyzer : Analyzer
 
     public override sealed void ParseTrivia( ref TriviaHead c )
     {
-        c.AcceptRecursiveStartComment();
-        c.AcceptLineComment();
+        c.AcceptCLikeRecursiveStarComment();
+        c.AcceptCLikeLineComment();
     }
 
     /// <summary>
     /// Implements minimal support required by any Transform language:
     /// <see cref="NodeType.GenericIdentifier"/> that at least handles "Ascii letter[Ascii letter or digit]*",
-    /// <see cref="NodeType.DoubleQuote"/>, <see cref="NodeType.OpenAngleBracket"/> and <see cref="NodeType.SemiColon"/>
+    /// <see cref="NodeType.DoubleQuote"/>, <see cref="NodeType.LessThan"/> and <see cref="NodeType.SemiColon"/>
     /// must be handled.
     /// </summary>
     /// <param name="head">The head.</param>
@@ -56,7 +56,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
         }
         if( c == '<' )
         {
-            return new LowLevelToken( NodeType.OpenAngleBracket, 1 );
+            return new LowLevelToken( NodeType.LessThan, 1 );
         }
         return default;
     }
@@ -184,7 +184,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
 
         static AbstractNode MatchInjectionPoint( ref ParserHead head )
         {
-            if( head.LowLevelTokenType == NodeType.OpenAngleBracket )
+            if( head.LowLevelTokenType == NodeType.LessThan )
             {
                 var sHead = head.Head;
                 int nameLen = TriviaInjectionPointMatcher.GetInsertionPointLength( sHead );

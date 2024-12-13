@@ -90,10 +90,46 @@ public enum BasicNodeType : byte
     GenericNumber,
 
     /// <summary>
+    /// A regular expression. This can be used by language parsers if
+    /// it can avoid creating a specific token type.
+    /// </summary>
+    GenericRegularExpression,
+
+    /// <summary>
+    /// Opening <c>[</c>.
+    /// </summary>
+    OpenBracket,
+
+    /// <summary>
+    /// Closing <c>]</c>.
+    /// </summary>
+    CloseBracket,
+
+    /// <summary>
+    /// Opening <c>(</c>.
+    /// </summary>
+    OpenParen,
+
+    /// <summary>
+    /// Closing <c>)</c>.
+    /// </summary>
+    CloseParen,
+
+    /// <summary>
+    /// Opening <c>{</c>.
+    /// </summary>
+    OpenBrace,
+
+    /// <summary>
+    /// Closing <c>}</c>.
+    /// </summary>
+    CloseBrace,
+
+    /// <summary>
     /// A comma <c>,</c> is often used with a the only semantics to separate items in list.
     /// Note that when expressions must be analyzed, this may (depending on the language and
-    /// the way the parser is written) need to be considered as an operator and associated to
-    /// a priority.
+    /// the way the parser is written) need to be considered as an operator (with an
+    /// associated priority).
     /// </summary>
     Comma,
 
@@ -118,43 +154,70 @@ public enum BasicNodeType : byte
     SingleQuote,
 
     /// <summary>
-    /// Opening <c>[</c>.
+    /// The back tick <c>`</c>.
     /// </summary>
-    OpenBracket,
-
+    BackTick,
+    Ampersand,
+    AmpersandEquals,
+    AmpersandAmpersand,
     /// <summary>
-    /// Closing <c>]</c>.
+    /// <c>&&=</c> has been introduces in ECMAScript 2020.
     /// </summary>
-    CloseBracket,
-
+    AmpersandAmpersandEquals,
+    Asterisk,
+    AsteriskEquals,
+    Bar,
+    BarEquals,
+    BarBar,
     /// <summary>
-    /// Opening <c>(</c>.
+    /// <c>||=</c> has been introduces in ECMAScript 2020.
     /// </summary>
-    OpenPar,
-
+    BarBarEquals, 
+    Caret,
+    CaretEquals,
+    Dot,
+    DotDot,
+    DotDotDot,
+    Equals,
+    EqualsEquals,
+    EqualsEqualsEquals,
+    EqualsGreaterThan,
+    Exclamation,
+    ExclamationEquals,
+    ExclamationEqualsEquals,
+    Percent,
+    PercentEquals,
+    Minus,
+    MinusEquals,
+    MinusMinus,
+    Plus,
+    PlusEquals,
+    PlusPlus,
+    Question,
+    QuestionQuestionEquals,
+    Slash,
+    SlashEquals,
+    LessThanLessThanEquals,
     /// <summary>
-    /// Closing <c>)</c>.
+    /// GreaterThan <c>&gt;</c> (could have been CloseAngleBracket).
     /// </summary>
-    ClosePar,
-
+    GreaterThan,
+    GreaterThanGreaterThanEquals,
+    GreaterThanGreaterThanGreaterThanEquals,
+    GreaterThanEquals,
+    GreaterThanGreaterThan,
+    GreaterThanGreaterThanGreaterThan,
     /// <summary>
-    /// Opening <c>{</c>.
+    /// LessThan <c>&lt;</c> (could have been OpenAngleBracket).
     /// </summary>
-    OpenBrace,
-
-    /// <summary>
-    /// Closing <c>}</c>.
-    /// </summary>
-    CloseBrace,
-
-    /// <summary>
-    /// Opening <c>&lt;</c>.
-    /// </summary>
-    OpenAngleBracket,
-
-    /// <summary>
-    /// Closing <c>&lt;</c>.
-    /// </summary>
-    CloseAngleBracket,
+    LessThan,
+    LessThanEquals,
+    LessThanLessThan,
+    LessThanLessThanLessThan,
+    BackSlash,
+    Dollar,
+    AtSign,
+    Hash,
+    Tilde,
 }
 
