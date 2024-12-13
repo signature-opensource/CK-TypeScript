@@ -342,4 +342,64 @@ public class CommandLikeTests
             """.ReplaceLineEndings() );
 
     }
+
+
+    public interface ISomeResult : IStandardResultPart
+    {
+    }
+
+    public interface IWithStandardResultCommand : ICommand<ISomeResult>
+    {
+        int Value { get; set; }
+    }
+
+    [Test]
+    public async Task command_with_IStandardResultPart_Async()
+    {
+        var targetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
+
+        var tsTypes = new[] { typeof( IWithStandardResultCommand ), typeof( ISomeResult ) };
+
+        // We don't need any C# backend here.
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+        engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, tsTypes );
+
+        // Registers IAspNetXXX and IUbiquitousValues only as Poco type: it is the
+        // FakeTypeScriptCrisCommandGeneratorImpl that ensures that they belong to
+        // the TypeScriptSet.
+        engineConfig.FirstBinPath.Types.Add( tsTypes )
+                                       .Add( typeof( IAspNetCrisResult ),
+                                             typeof( IAspNetCrisResultError ),
+                                             typeof( IUbiquitousValues ),
+                                             typeof( FakeTypeScriptCrisCommandGenerator ) );
+        await engineConfig.RunSuccessfullyAsync();
+
+        var p = targetProjectPath.Combine( "ck-gen" );
+        var tS = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/SomeResult.ts" ) ).ReplaceLineEndings();
+        tS.Should().Contain( """
+            export class SomeResult implements IStandardResultPart {
+            /**
+             * Whether the command succeeded or failed.
+             * Defaults to true.
+             **/
+            public success: boolean;
+            /**
+             * A mutable list of user messages.
+             **/
+            public readonly userMessages: Array<SimpleUserMessage>;
+            public constructor()
+            public constructor(
+            success?: boolean,
+            userMessages?: Array<SimpleUserMessage>)
+            constructor(
+            success?: boolean,
+            userMessages?: Array<SimpleUserMessage>)
+            {
+            this.success = success ?? true;
+            this.userMessages = userMessages ?? [];
+            }
+            readonly _brand!: IStandardResultPart["_brand"] & {"3":any};
+            }
+            """.ReplaceLineEndings() );
+    }
 }

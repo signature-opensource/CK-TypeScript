@@ -2,7 +2,7 @@
   <SimpleGitVersion StartingVersion="0.20.0-alpha">
     <Branches>
       <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
-      <Branch Name="temp-testing-branch" CIVersionMode="ZeroTimed" VersionName="explo" UseReleaseBuildConfigurationFrom="CI" />
+      <Branch Name="(Simple)UserMessage" CIVersionMode="ZeroTimed" VersionName="explo" />
     </Branches>
   </SimpleGitVersion>
 </RepositoryInfo>
