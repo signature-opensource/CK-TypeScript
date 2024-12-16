@@ -13,9 +13,9 @@ public static class NodeTypeExtensions
         /* 2*/ 0,0,0,0,0,0,0,0,
         /* 3*/ 0,0,0,0,0,0,0,0,
         /* 4*/ 0,(byte)NodeType.Exclamation,(byte)NodeType.DoubleQuote,(byte)NodeType.Hash,(byte)NodeType.Dollar,(byte)NodeType.Percent,(byte)NodeType.Ampersand,(byte)NodeType.SingleQuote,
-        /* 5*/ (byte)NodeType.OpenParen,(byte)NodeType.CloseParen,(byte)NodeType.Asterisk,(byte)NodeType.Plus,0,(byte)NodeType.Minus,(byte)NodeType.Dot,(byte)NodeType.Slash,
+        /* 5*/ (byte)NodeType.OpenParen,(byte)NodeType.CloseParen,(byte)NodeType.Asterisk,(byte)NodeType.Plus,(byte)NodeType.Comma,(byte)NodeType.Minus,(byte)NodeType.Dot,(byte)NodeType.Slash,
         /* 6*/ 0,0,0,0,0,0,0,0,
-        /* 7*/ 0,0,0,0,(byte)NodeType.LessThan,(byte)NodeType.Equals,(byte)NodeType.GreaterThan,(byte)NodeType.Question,
+        /* 7*/ 0,0,(byte)NodeType.Colon,(byte)NodeType.SemiColon,(byte)NodeType.LessThan,(byte)NodeType.Equals,(byte)NodeType.GreaterThan,(byte)NodeType.Question,
         /* 8*/ (byte)NodeType.AtSign,0,0,0,0,0,0,0,
         /* 9*/ 0,0,0,0,0,0,0,0,
         /*10*/ 0,0,0,0,0,0,0,0,
@@ -23,7 +23,7 @@ public static class NodeTypeExtensions
         /*12*/ (byte)NodeType.BackTick,0,0,0,0,0,0,0,
         /*13*/ 0,0,0,0,0,0,0,0,
         /*14*/ 0,0,0,0,0,0,0,0,
-        /*15*/ 0,0,0,0,(byte)NodeType.Bar,0,(byte)NodeType.Tilde,0,
+        /*15*/ 0,0,0,(byte)NodeType.OpenBrace,(byte)NodeType.Bar,(byte)NodeType.CloseBrace,(byte)NodeType.Tilde,0,
         ];
 
     static NodeTypeExtensions()
@@ -36,29 +36,34 @@ public static class NodeTypeExtensions
         Throw.DebugAssert( _basicNodeType[']'] == (byte)NodeType.CloseBracket );
         Throw.DebugAssert( _basicNodeType['('] == (byte)NodeType.OpenParen );
         Throw.DebugAssert( _basicNodeType[')'] == (byte)NodeType.CloseParen );
+        Throw.DebugAssert( _basicNodeType['{'] == (byte)NodeType.OpenBrace );
+        Throw.DebugAssert( _basicNodeType['}'] == (byte)NodeType.CloseBrace );
         Throw.DebugAssert( _basicNodeType['<'] == (byte)NodeType.LessThan );
         Throw.DebugAssert( _basicNodeType['>'] == (byte)NodeType.GreaterThan );
 
-        Throw.DebugAssert( _basicNodeType['='] == (byte)NodeType.Equals );
-        Throw.DebugAssert( _basicNodeType['\"'] == (byte)NodeType.DoubleQuote );
-        Throw.DebugAssert( _basicNodeType['\''] == (byte)NodeType.SingleQuote );
+        Throw.DebugAssert( _basicNodeType['&'] == (byte)NodeType.Ampersand );
+        Throw.DebugAssert( _basicNodeType['*'] == (byte)NodeType.Asterisk );
+        Throw.DebugAssert( _basicNodeType['@'] == (byte)NodeType.AtSign );
+        Throw.DebugAssert( _basicNodeType['\\'] == (byte)NodeType.BackSlash );
         Throw.DebugAssert( _basicNodeType['`'] == (byte)NodeType.BackTick );
-        Throw.DebugAssert( _basicNodeType['.'] == (byte)NodeType.Dot );
-        Throw.DebugAssert( _basicNodeType['?'] == (byte)NodeType.Question );
         Throw.DebugAssert( _basicNodeType['|'] == (byte)NodeType.Bar );
         Throw.DebugAssert( _basicNodeType['^'] == (byte)NodeType.Caret );
-        Throw.DebugAssert( _basicNodeType['+'] == (byte)NodeType.Plus );
-        Throw.DebugAssert( _basicNodeType['-'] == (byte)NodeType.Minus );
-        Throw.DebugAssert( _basicNodeType['*'] == (byte)NodeType.Asterisk );
-        Throw.DebugAssert( _basicNodeType['/'] == (byte)NodeType.Slash );
-        Throw.DebugAssert( _basicNodeType['\\'] == (byte)NodeType.BackSlash );
-        Throw.DebugAssert( _basicNodeType['%'] == (byte)NodeType.Percent );
+        Throw.DebugAssert( _basicNodeType[':'] == (byte)NodeType.Colon );
+        Throw.DebugAssert( _basicNodeType[','] == (byte)NodeType.Comma );
         Throw.DebugAssert( _basicNodeType['$'] == (byte)NodeType.Dollar );
-        Throw.DebugAssert( _basicNodeType['@'] == (byte)NodeType.AtSign );
-        Throw.DebugAssert( _basicNodeType['#'] == (byte)NodeType.Hash );
-        Throw.DebugAssert( _basicNodeType['&'] == (byte)NodeType.Ampersand );
-        Throw.DebugAssert( _basicNodeType['~'] == (byte)NodeType.Tilde );
+        Throw.DebugAssert( _basicNodeType['.'] == (byte)NodeType.Dot );
+        Throw.DebugAssert( _basicNodeType['\"'] == (byte)NodeType.DoubleQuote );
+        Throw.DebugAssert( _basicNodeType['='] == (byte)NodeType.Equals );
         Throw.DebugAssert( _basicNodeType['!'] == (byte)NodeType.Exclamation);
+        Throw.DebugAssert( _basicNodeType['#'] == (byte)NodeType.Hash );
+        Throw.DebugAssert( _basicNodeType['-'] == (byte)NodeType.Minus );
+        Throw.DebugAssert( _basicNodeType['%'] == (byte)NodeType.Percent );
+        Throw.DebugAssert( _basicNodeType['+'] == (byte)NodeType.Plus );
+        Throw.DebugAssert( _basicNodeType['?'] == (byte)NodeType.Question );
+        Throw.DebugAssert( _basicNodeType[';'] == (byte)NodeType.SemiColon );
+        Throw.DebugAssert( _basicNodeType['\''] == (byte)NodeType.SingleQuote );
+        Throw.DebugAssert( _basicNodeType['/'] == (byte)NodeType.Slash );
+        Throw.DebugAssert( _basicNodeType['~'] == (byte)NodeType.Tilde );
     }
 
     /// <summary>

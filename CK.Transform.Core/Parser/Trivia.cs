@@ -22,6 +22,8 @@ public readonly struct Trivia : IEquatable<Trivia>
     readonly ReadOnlyMemory<char> _content;
     readonly NodeType _tokenType;
 
+    public static ImmutableArray<Trivia> OneSpace => Analyzer.OneSpace;
+
     public Trivia( NodeType tokenType, string content )
         : this( tokenType, content.AsMemory() )
     {

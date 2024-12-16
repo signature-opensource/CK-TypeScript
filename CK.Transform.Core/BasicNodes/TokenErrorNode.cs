@@ -8,7 +8,7 @@ namespace CK.Transform.Core;
 /// Can capture any error as a <see cref="TokenNode"/> (hence as an <see cref="AbstractNode"/>): this may
 /// appear anywhere in the AST.
 /// </summary>
-public class TokenErrorNode : TokenNode
+public class TokenErrorNode : TokenNode, IErrorNode
 {
     readonly string _errorMessage;
     readonly SourcePosition _sourcePosition;
@@ -59,4 +59,7 @@ public class TokenErrorNode : TokenNode
     /// Gets the position of the error in the source.
     /// </summary>
     public SourcePosition SourcePosition => _sourcePosition;
+
+    public override string ToString() => $"{_errorMessage} @{_sourcePosition.Line},{_sourcePosition.Column}";
+
 }

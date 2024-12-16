@@ -147,10 +147,7 @@ public class TokenNode : AbstractNode, IEnumerable<TokenNode>
     /// <summary>
     /// Gets the <see cref="Text"/> as a string.
     /// This should be used in debug session only (this allocates a string).
-    /// <para>
-    /// This is sealed: the ToString() of a Token must always be its Text.
-    /// </para>
     /// </summary>
     /// <returns></returns>
-    public override sealed string ToString() => _text.ToString();
+    public override string ToString() => _text.ToString();
 }

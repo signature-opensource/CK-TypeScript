@@ -19,6 +19,7 @@ public sealed class TransfomerFunction : CompositeNode
     static readonly RequiredChild<TokenNode> _endT = new( 9 );
 
     string? _name;
+    string? _externalName;
 
     protected override void DoCheckInvariants( int storeLength )
     {
@@ -54,12 +55,41 @@ public sealed class TransfomerFunction : CompositeNode
     /// Gets this transformer function name.
     /// Defaults to the empty string.
     /// </summary>
-    public string Name =>  _name ??= _functionName.Get( this )?.Text.ToString() ?? "";
+    public string Name => _name ??= _functionName.Get( this )?.Text.ToString() ?? "";
 
     /// <summary>
     /// Gets the language name.
     /// </summary>
     public ReadOnlySpan<char> LanguageName => _languageName.Get( this ).Text.Span;
+
+    public TransfomerFunction SetName( string? name )
+    {
+        if( string.IsNullOrEmpty( name ) ) name = "";
+        var n = Name;
+        if( n == name ) return this;
+        var mutator = CreateMutator();
+        if( name.Length == 0 )
+        {
+            mutator.RawItems[_onT.Index] = null;
+            mutator.RawItems[_functionName.Index] = null;
+        }
+        else
+        {
+            var on = _onT.Get( this );
+            if( on == null )
+            {
+                mutator.RawItems[_onT.Index] = new TokenNode( NodeType.GenericIdentifier, "on".AsMemory(), Analyzer.OneSpace );
+                mutator.RawItems[_functionName.Index] = new TokenNode( NodeType.GenericIdentifier, name.AsMemory(), Analyzer.OneSpace );
+            }
+            else
+            {
+                var current = _functionName.Get( this );
+                Throw.DebugAssert( current != null );
+                mutator.RawItems[_functionName.Index] = new TokenNode( current.NodeType, name.AsMemory(), current.LeadingTrivias, current.TrailingTrivias );
+            }
+        }
+        return (TransfomerFunction)mutator.Clone();
+    }
 
     /// <summary>
     /// Gets the target address or name if it is specified.

@@ -112,6 +112,9 @@ public abstract partial class CompositeNode : SyntaxNode
     protected readonly struct OptionalChild<T> where T : class, IAbstractNode
     {
         readonly int _index;
+
+        public int Index => _index;
+
         public OptionalChild( int index ) => _index = index;
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
@@ -132,6 +135,8 @@ public abstract partial class CompositeNode : SyntaxNode
     {
         readonly int _index;
         public RequiredChild( int index ) => _index = index;
+
+        public int Index => _index;
 
         public T Check( CompositeNode n, string propertName, Action<T>? moreChecks = null )
         {

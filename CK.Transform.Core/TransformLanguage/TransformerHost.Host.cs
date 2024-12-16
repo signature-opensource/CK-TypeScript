@@ -86,7 +86,7 @@ public sealed partial class TransformerHost
             Throw.CheckNotNullArgument( transformer );
             if( transformer.Target != null )
             {
-                NodeScopeBuilder? scopeTarget = _currentLanguage.TransformLanguage.HandleTransformerTarget( transformer.Target );
+                NodeScopeBuilder? scopeTarget = _currentLanguage.TransformLanguage.HandleTransformerTarget( monitor, transformer.Target );
                 if( scope == null ) scope = scopeTarget;
                 else if( scopeTarget != null )
                 {

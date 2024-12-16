@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
@@ -35,9 +36,6 @@ sealed partial class TypeScriptAnalyzer : Analyzer
     {
         switch( head.LowLevelTokenType )
         {
-            case NodeType.None:
-                _lastToken = head.CreateError( "Unrecognized token." );
-                break;
             case NodeType.GenericInterpolatedStringStart:
                 _lastToken = head.CreateLowLevelToken();
                 _interpolated.Push( ++_braceDepth );
@@ -90,6 +88,13 @@ sealed partial class TypeScriptAnalyzer : Analyzer
                 {
                     _lastToken = head.CreateLowLevelToken();
                 }
+                break;
+            case NodeType.None:
+                _lastToken = head.CreateError( "Unrecognized token." );
+                break;
+            case NodeType.EndOfInput:
+                Throw.DebugAssert( head.EndOfInput is not null );
+                _lastToken = head.EndOfInput;
                 break;
             default:
                 _lastToken = head.CreateLowLevelToken();

@@ -17,6 +17,6 @@ public sealed partial class TransformerHost
 
         internal protected override Analyzer CreateTargetAnalyzer() => new TAnalyzer( _host );
 
-        internal protected override BaseTransformAnalyzer CreateTransformAnalyzer() => _host._transformAnalyzer;
+        internal protected override BaseTransformAnalyzer CreateTransformAnalyzer(  TransformerHost host ) => _host._transformAnalyzer;
     }
 }

@@ -15,5 +15,6 @@ const ckGenInjected: CKGenInjected = [LoginComponent];
 export class AppComponent {
   title = 'Demo';
   authService = inject(SomeAuthService);
+  // <Constructor>
 }
 

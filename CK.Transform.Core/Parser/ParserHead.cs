@@ -172,7 +172,7 @@ public ref struct ParserHead
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );
         // Resets the current low-level token.
-        _lowLevelTokenType = NodeType.None;
+        _lowLevelTokenType = NodeType.EndOfInput;
         _lowLevelTokenText = default;
         if( c.IsEndOfInput ) _endOfInput = new EndOfInputToken( _leadingTrivias );
         else InitializeLowLevelToken();

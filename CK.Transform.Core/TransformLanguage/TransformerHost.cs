@@ -47,10 +47,10 @@ public sealed partial class TransformerHost
         /// </summary>
         public TransformLanguage TransformLanguage => _language;
 
-        internal Language( TransformLanguage language )
+        internal Language( TransformerHost host, TransformLanguage language )
         {
             _language = language;
-            _transformAnalyzer = language.CreateTransformAnalyzer();
+            _transformAnalyzer = language.CreateTransformAnalyzer( host );
             _targetAnalyzer = language.CreateTargetAnalyzer();
         }
     }
@@ -67,7 +67,7 @@ public sealed partial class TransformerHost
         foreach( var language in languages ) EnsureLanguage( language );
         if( Find( _languages, _transformLanguage.LanguageName ) == null ) 
         {
-            _languages.Add( new Language( _transformLanguage ) );
+            _languages.Add( new Language( this, _transformLanguage ) );
         }
     }
 
@@ -101,7 +101,7 @@ public sealed partial class TransformerHost
         var l = _languages.FirstOrDefault( l => l.LanguageName == language.LanguageName );
         if( l == null )
         {
-            _languages.Add( new Language( language ) );
+            _languages.Add( new Language( this, language ) );
         }
     }
 
@@ -222,6 +222,7 @@ public sealed partial class TransformerHost
         var target = language.TargetAnalyzer.ParseAll();
         if( target is IErrorNode e )
         {
+
             monitor.Error( $"""
                             Unable to parse target text. {e}:
                             {text}

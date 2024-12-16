@@ -311,17 +311,17 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     File.WriteAllText( filePath, """
                         <h1>Hello, {{ title }}</h1>
 
-                        <!-- #PrePublic revert="true" -->
+                        <!-- <PrePublic revert> -->
                         <router-outlet />
-                        <!-- #PostPublic -->
+                        <!-- <PostPublic> -->
                         """ );
                     monitor.Trace( """
                                    File 'app.component.html' is:
                                    <h1>Hello, {{ title }}</h1>
 
-                                   <!-- #PrePublic revert="true" -->
+                                   <!-- <PrePublic revert> -->
                                    <router-outlet />
-                                   <!-- #PostPublic -->
+                                   <!-- <PostPublic> -->
                                    """ );
                     return true;
                 }

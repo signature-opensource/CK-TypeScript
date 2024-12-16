@@ -14,6 +14,9 @@ public abstract partial class Analyzer : IParserHeadBehavior
     internal readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     ReadOnlyMemory<char> _head;
 
+    // This cannot be defined in Trivia (TypeLoadException). To be investigated.
+    internal static ImmutableArray<Trivia> OneSpace => ImmutableArray.Create( new Trivia( NodeType.Whitespace, " " ) );
+
     /// <summary>
     /// Initializes a new analyzer.
     /// </summary>
@@ -71,13 +74,13 @@ public abstract partial class Analyzer : IParserHeadBehavior
         for(; ; )
         {
             var node = Unsafe.As<AbstractNode>( Parse( ref head ) );
+            if( head.EndOfInput != null )
+            {
+                if( multiResult != null ) return new RawNodeList( NodeType.GenericNode, multiResult.DrainToImmutable() );
+                if( singleResult != null ) return singleResult;
+            }
             if( node == null )
             {
-                if( head.EndOfInput != null )
-                {
-                    if( multiResult != null ) return new RawNodeList( NodeType.GenericNode, multiResult.DrainToImmutable() );
-                    if( singleResult != null ) return singleResult;
-                }
                 return head.CreateError( "Empty or unrecognized text." );
             }
             if( node.NodeType.IsError() )
