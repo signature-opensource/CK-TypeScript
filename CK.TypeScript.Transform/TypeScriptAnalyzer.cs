@@ -1,170 +1,28 @@
 using CK.Transform.Core;
 using System;
-using System.Security.Cryptography;
-using static CK.Core.ActivityMonitorErrorCounter;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.TypeScript.Transform;
 
-sealed class TypeScriptAnalyzer : Analyzer
+sealed partial class TypeScriptAnalyzer : Analyzer
 {
-    public override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
+    TokenNode? _lastToken;
+    // Keeps the brace depth of interpolated starts.
+    readonly Stack<int> _interpolated;
+    int _braceDepth;
+
+    public TypeScriptAnalyzer()
     {
-        var c = head[0];
-        // If any single char node type is also s valid identifier start, the
-        // identifier must be considered in priority.
-        if( IsIdentifierStart( c ) )
-        {
-            int iS = 0;
-            while( ++iS < head.Length && IsIdentifierPart( head[iS] ) ) ;
-            return new LowLevelToken( NodeType.GenericIdentifier, iS );
-        }
-        var knownSingle = NodeTypeExtensions.GetSingleCharType( c );
-        if( knownSingle != NodeType.None )
-        {
-            if( head.Length > 1 )
-            {
-                c = head[1];
-                switch( knownSingle )
-                {
-                    case NodeType.Ampersand:
-                        if( c == '&' ) return new LowLevelToken( NodeType.AmpersandAmpersand, 2 );
-                        if( c == '=' ) return new LowLevelToken( NodeType.AmpersandEquals, 2 );
-                        break;
-                    case NodeType.Asterisk:
-                        if( c == '=' ) return new LowLevelToken( NodeType.AsteriskEquals, 2 );
-                        break;
-                    case NodeType.Bar:
-                        if( c == '|' ) return new LowLevelToken( NodeType.BarBar, 2 );
-                        if( c == '=' ) return new LowLevelToken( NodeType.BarEquals, 2 );
-                        break;
-                    case NodeType.Caret:
-                        if( c == '=' ) return new LowLevelToken( NodeType.CaretEquals, 2 );
-                        break;
-                    case NodeType.Dot:
-                        if( c == '.' )
-                        {
-                            if( head.Length > 2 && head[2] == '.' )
-                            {
-                                return new LowLevelToken( NodeType.DotDotDot, 3 );
-                            }
-                            return new LowLevelToken( NodeType.DotDot, 2 );
-                        }
-                        break;
-                    case NodeType.Equals:
-                        if( c == '=' )
-                        {
-                            if( head.Length > 2 && head[2] == '=' )
-                            {
-                                return new LowLevelToken( NodeType.EqualsEqualsEquals, 3 );
-                            }
-                            return new LowLevelToken( NodeType.EqualsEquals, 2 );
-                        }
-                        if( c == '>' )
-                        {
-                            return new LowLevelToken( NodeType.EqualsGreaterThan, 2 );
-                        }
-                        break;
-                    case NodeType.Exclamation:
-                        if( c == '=' )
-                        {
-                            if( head.Length > 2 && head[2] == '=' )
-                            {
-                                return new LowLevelToken( NodeType.ExclamationEqualsEquals, 3 );
-                            }
-                            return new LowLevelToken( NodeType.ExclamationEquals, 2 );
-                        }
-                        break;
-                    case NodeType.Percent:
-                        if( c == '=' ) return new LowLevelToken( NodeType.PercentEquals, 2 );
-                        break;
-                    case NodeType.Minus:
-                        if( c == '=' ) return new LowLevelToken( NodeType.MinusEquals, 2 );
-                        if( c == '-' ) return new LowLevelToken( NodeType.MinusMinus, 2 );
-                        break;
-                    case NodeType.Plus:
-                        if( c == '=' ) return new LowLevelToken( NodeType.PlusEquals, 2 );
-                        if( c == '+' ) return new LowLevelToken( NodeType.PlusPlus, 2 );
-                        break;
-                    case NodeType.Slash:
-                        if( c == '=' ) return new LowLevelToken( NodeType.SlashEquals, 2 );
-                        break;
-                    case NodeType.LessThan:
-                        if( c == '<' )
-                        {
-                            if( head.Length > 2 )
-                            {
-                                if( head[2] == '<' ) return new LowLevelToken( NodeType.LessThanLessThanLessThan, 3 );
-                                if( head[2] == '=' ) return new LowLevelToken( NodeType.LessThanLessThanEquals, 3 );
-                            }
-                            return new LowLevelToken( NodeType.LessThanLessThan, 2 );
-                        }
-                        if( c == '=' )
-                        {
-                            return new LowLevelToken( NodeType.LessThanEquals, 2 );
-                        }
-                        break;
-                    case NodeType.GreaterThan:
-                        if( c == '>' )
-                        {
-                            if( head.Length > 2 )
-                            {
-                                if( head[2] == '>' )
-                                {
-                                    if( head.Length > 3 )
-                                    {
-                                        if( head[3] == '=' ) return new LowLevelToken( NodeType.GreaterThanGreaterThanGreaterThanEquals, 4);
-                                    }
-                                    return new LowLevelToken( NodeType.GreaterThanGreaterThanGreaterThan, 3 );
-                                }
-                                if( head[2] == '=' ) return new LowLevelToken( NodeType.GreaterThanGreaterThanEquals, 3 );
-                            }
-                            return new LowLevelToken( NodeType.GreaterThanGreaterThan, 2 );
-                        }
-                        if( c == '=' )
-                        {
-                            return new LowLevelToken( NodeType.GreaterThanEquals, 2 );
-                        }
-                        break;
+        _interpolated = new Stack<int>();
+    }
 
-                }
-            }
-            return new LowLevelToken( knownSingle, 1 );
-        }
-        return default;
-
-        // As per ECMAScript Language Specification 5th Edition, Section 7.6: Identifier Names and Identifiers
-        //    IdentifierStart :: Can contain Unicode 6.2  categories “Uppercase letter (Lu)”, “Lowercase letter (Ll)”, “Titlecase letter (Lt)”, 
-        //                       “Modifier letter (Lm)”, “Other letter (Lo)”, or “Letter number (Nl)”.
-        //    IdentifierPart :: Can contain IdentifierStart + Unicode 6.2  categories “Non-spacing mark (Mn)”, “Combining spacing mark (Mc)”, 
-        //                       “Decimal number (Nd)”, “Connector punctuation (Pc)”, <ZWNJ>, or <ZWJ>.
-        static bool IsIdentifierStart( char c )
-        {
-            var cat = char.GetUnicodeCategory( c );
-            return cat == System.Globalization.UnicodeCategory.UppercaseLetter
-                   || cat == System.Globalization.UnicodeCategory.LowercaseLetter
-                   || cat == System.Globalization.UnicodeCategory.TitlecaseLetter
-                   || cat == System.Globalization.UnicodeCategory.ModifierLetter
-                   || cat == System.Globalization.UnicodeCategory.OtherLetter
-                   || cat == System.Globalization.UnicodeCategory.LetterNumber;
-        }
-
-        static bool IsIdentifierPart( char c )
-        {
-            var cat = char.GetUnicodeCategory( c );
-            return cat == System.Globalization.UnicodeCategory.UppercaseLetter
-                   || cat == System.Globalization.UnicodeCategory.LowercaseLetter
-                   || cat == System.Globalization.UnicodeCategory.TitlecaseLetter
-                   || cat == System.Globalization.UnicodeCategory.ModifierLetter
-                   || cat == System.Globalization.UnicodeCategory.OtherLetter
-                   || cat == System.Globalization.UnicodeCategory.LetterNumber
-                   || cat == System.Globalization.UnicodeCategory.NonSpacingMark
-                   || cat == System.Globalization.UnicodeCategory.SpacingCombiningMark
-                   || cat == System.Globalization.UnicodeCategory.DecimalDigitNumber
-                   || cat == System.Globalization.UnicodeCategory.ConnectorPunctuation
-                   || c == '\u200C'  // Zero-width non-joiner
-                   || c == '\u200D'; // Zero-width joiner
-        }
+    public override void Reset( ReadOnlyMemory<char> text )
+    {
+        _lastToken = null;
+        _braceDepth = 0;
+        _interpolated.Clear();
+        base.Reset( text );
     }
 
     public override void ParseTrivia( ref TriviaHead c )
@@ -173,13 +31,88 @@ sealed class TypeScriptAnalyzer : Analyzer
         c.AcceptCLikeStarComment();
     }
 
+    TokenNode Scan( ref ParserHead head )
+    {
+        switch( head.LowLevelTokenType )
+        {
+            case NodeType.None:
+                _lastToken = head.CreateError( "Unrecognized token." );
+                break;
+            case NodeType.GenericInterpolatedStringStart:
+                _lastToken = head.CreateLowLevelToken();
+                _interpolated.Push( ++_braceDepth );
+                break;
+            case NodeType.OpenBrace:
+                _lastToken = head.CreateLowLevelToken();
+                ++_braceDepth;
+                break;
+            case NodeType.CloseBrace:
+                if( _interpolated.TryPeek( out var depth ) && depth == _braceDepth )
+                {
+                    var t = ReadInterpolatedSegment( head.Head, false );
+                    if( t.NodeType == NodeType.GenericInterpolatedStringEnd )
+                    {
+                        --_braceDepth;
+                    }
+                    _interpolated.Pop();
+                    _lastToken = head.CreateToken( t.NodeType, t.Length );
+                }
+                else
+                {
+                    _lastToken = --_braceDepth < 0
+                                    ? head.CreateError( "Unbalanced {{brace}." )
+                                    : head.CreateLowLevelToken();
+                }
+                break;
+            case NodeType.Slash or NodeType.SlashEquals:
+                if( _lastToken != null )
+                {
+                    var type = _lastToken.NodeType;
+                    if( type is not NodeType.GenericIdentifier
+                            and not NodeType.GenericNumber
+                            and not NodeType.GenericString
+                            and not NodeType.GenericRegularExpression
+                            and not NodeType.PlusPlus
+                            and not NodeType.MinusMinus
+                            and not NodeType.CloseParen
+                            and not NodeType.CloseBrace
+                            and not NodeType.CloseBracket )
+                    {
+                        var t = TryParseRegex( new LowLevelToken( head.LowLevelTokenType, head.LowLevelTokenText.Length ), head.Head );
+                        _lastToken = head.CreateToken( t.NodeType, t.Length );
+                    }
+                    else
+                    {
+                        _lastToken = head.CreateLowLevelToken();
+                    }
+                }
+                else
+                {
+                    _lastToken = head.CreateLowLevelToken();
+                }
+                break;
+            default:
+                _lastToken = head.CreateLowLevelToken();
+                break;
+        }
+        return _lastToken;
+    }
+
     protected override IAbstractNode? Parse( ref ParserHead head )
     {
-        throw new NotImplementedException();
+        var b = ImmutableArray.CreateBuilder<AbstractNode>();
+        for( ; ; )
+        {
+            var t = Scan( ref head );
+            if( t is TokenErrorNode ) return t;
+            if( t is EndOfInputToken )
+            {
+                return b.Count > 0
+                        ? new RawNodeList( NodeType.SyntaxNode, b.DrainToImmutable() )
+                        : t;
+            }
+            b.Add( t );
+        }
     }
-}
-
-public static class NumberScanner
-{
 }
 

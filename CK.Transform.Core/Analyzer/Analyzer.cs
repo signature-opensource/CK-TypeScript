@@ -105,7 +105,7 @@ public abstract partial class Analyzer : IParserHeadBehavior
     /// </para>
     /// <para>
     /// The notion of "top-level" is totally language dependent. A language can perfectly decide that a list of statements must be handled
-    /// as a top-level node.
+    /// as a top-level node or that the only construct is a <see cref="RawNodeList"/> of tokens up to the end of the input.
     /// </para>
     /// </summary>
     /// <param name="head">The <see cref="ParserHead"/>.</param>

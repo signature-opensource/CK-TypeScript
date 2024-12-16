@@ -97,8 +97,6 @@ public enum NodeType
     /// </summary>
     ErrorUnterminatedString = ErrorClassBit | GenericString,
 
-
-
     /// <inheritdoc cref="BasicNodeType.SyntaxNode"/>
     SyntaxNode = BasicNodeType.SyntaxNode,
     /// <inheritdoc cref="BasicNodeType.SyntaxErrorNode"/>
@@ -107,12 +105,21 @@ public enum NodeType
     GenericNode = BasicNodeType.GenericNode,
     /// <inheritdoc cref="BasicNodeType.GenericUnexpectedToken"/>
     GenericUnexpectedToken = BasicNodeType.GenericUnexpectedToken,
+
     /// <inheritdoc cref="BasicNodeType.GenericMissingToken"/>
     GenericMissingToken = BasicNodeType.GenericMissingToken,
     /// <inheritdoc cref="BasicNodeType.GenericMarkerToken"/>
     GenericMarkerToken = BasicNodeType.GenericMarkerToken,
+
     /// <inheritdoc cref="BasicNodeType.GenericString"/>
     GenericString = BasicNodeType.GenericString,
+    /// <inheritdoc cref="BasicNodeType.GenericInterpolatedStringStart"/>
+    GenericInterpolatedStringStart,
+    /// <inheritdoc cref="BasicNodeType.GenericInterpolatedStringSegment"/>
+    GenericInterpolatedStringSegment,
+    /// <inheritdoc cref="BasicNodeType.GenericInterpolatedStringEnd"/>
+    GenericInterpolatedStringEnd,
+
     /// <inheritdoc cref="BasicNodeType.GenericIdentifier"/>
     GenericIdentifier = BasicNodeType.GenericIdentifier,
     /// <inheritdoc cref="BasicNodeType.GenericKeyword"/>
@@ -138,67 +145,91 @@ public enum NodeType
     OpenBrace = BasicNodeType.OpenBrace,
     /// <inheritdoc cref="BasicNodeType.CloseBrace"/>
     CloseBrace = BasicNodeType.CloseBrace,
-    /// <inheritdoc cref="BasicNodeType.LessThan"/>
-    LessThan = BasicNodeType.LessThan,
-    /// <inheritdoc cref="BasicNodeType.GreaterThan"/>
-    GreaterThan = BasicNodeType.GreaterThan,
-    /// <inheritdoc cref="BasicNodeType.Comma"/>
-    Comma = BasicNodeType.Comma,
-    /// <inheritdoc cref="BasicNodeType.SemiColon"/>
-    SemiColon = BasicNodeType.SemiColon,
-    /// <inheritdoc cref="BasicNodeType.Colon"/>
-    Colon = BasicNodeType.Colon,
-    /// <inheritdoc cref="BasicNodeType.DoubleQuote"/>
-    DoubleQuote = BasicNodeType.DoubleQuote,
-    /// <inheritdoc cref="BasicNodeType.SingleQuote"/>
-    SingleQuote = BasicNodeType.SingleQuote,
+
+    Ampersand = BasicNodeType.Ampersand,
+    AmpersandEquals = BasicNodeType.AmpersandEquals,
+    AmpersandAmpersand = BasicNodeType.AmpersandAmpersand,
+    AmpersandAmpersandEquals = BasicNodeType.AmpersandAmpersandEquals,
+
+    Asterisk = BasicNodeType.Asterisk,
+    AsteriskEquals = BasicNodeType.AsteriskEquals,
+
+    AtSign = BasicNodeType.AtSign,
+
+    BackSlash = BasicNodeType.BackSlash,
     /// <inheritdoc cref="BasicNodeType.BackTick"/>
     BackTick = BasicNodeType.BackTick,
 
-    Equals = BasicNodeType.Equals,
-    PlusEquals = BasicNodeType.PlusEquals,
-    MinusEquals = BasicNodeType.MinusEquals,
-    AsteriskEquals = BasicNodeType.AsteriskEquals,
-    SlashEquals = BasicNodeType.SlashEquals,
-    PercentEquals = BasicNodeType.PercentEquals,
-    AmpersandEquals = BasicNodeType.AmpersandEquals,
-    CaretEquals = BasicNodeType.CaretEquals,
-    BarEquals = BasicNodeType.BarEquals,
-    LessThanLessThanEquals = BasicNodeType.LessThanLessThanEquals,
-    GreaterThanGreaterThanEquals = BasicNodeType.GreaterThanGreaterThanEquals,
-    GreaterThanGreaterThanGreaterThanEquals = BasicNodeType.GreaterThanGreaterThanGreaterThanEquals,
-    Question = BasicNodeType.Question,
-    BarBar = BasicNodeType.BarBar,
-    AmpersandAmpersand = BasicNodeType.AmpersandAmpersand,
     Bar = BasicNodeType.Bar,
+    BarBar = BasicNodeType.BarBar,
+    BarEquals = BasicNodeType.BarEquals,
+    BarBarEquals = BasicNodeType.BarBarEquals,
+
     Caret = BasicNodeType.Caret,
-    EqualsEquals = BasicNodeType.EqualsEquals,
-    EqualsEqualsEquals = BasicNodeType.EqualsEqualsEquals,
-    LessThanEquals = BasicNodeType.LessThanEquals,
-    GreaterThanEquals = BasicNodeType.GreaterThanEquals,
-    LessThanLessThan = BasicNodeType.LessThanLessThan,
-    LessThanLessThanLessThan = BasicNodeType.LessThanLessThanLessThan,
-    GreaterThanGreaterThan = BasicNodeType.GreaterThanGreaterThan,
-    GreaterThanGreaterThanGreaterThan = BasicNodeType.GreaterThanGreaterThanGreaterThan,
-    Plus = BasicNodeType.Plus,
-    Minus = BasicNodeType.Minus,
-    Asterisk = BasicNodeType.Asterisk,
-    Slash = BasicNodeType.Slash,
-    BackSlash = BasicNodeType.BackSlash,
-    Percent = BasicNodeType.Percent,
+    CaretEquals = BasicNodeType.CaretEquals,
+
+    /// <inheritdoc cref="BasicNodeType.Colon"/>
+    Colon = BasicNodeType.Colon,
+    /// <inheritdoc cref="BasicNodeType.Comma"/>
+    Comma = BasicNodeType.Comma,
+
     Dollar = BasicNodeType.Dollar,
-    AtSign = BasicNodeType.AtSign,
-    Hash = BasicNodeType.Hash,
-    Ampersand = BasicNodeType.Ampersand,
-    Tilde = BasicNodeType.Tilde,
-    Exclamation = BasicNodeType.Exclamation,
-    ExclamationEquals = BasicNodeType.ExclamationEquals,
-    ExclamationEqualsEquals = BasicNodeType.ExclamationEqualsEquals,
-    PlusPlus = BasicNodeType.PlusPlus,
-    MinusMinus = BasicNodeType.MinusMinus,
+    /// <inheritdoc cref="BasicNodeType.DoubleQuote"/>
+    DoubleQuote = BasicNodeType.DoubleQuote,
+
     Dot = BasicNodeType.Dot,
     DotDot = BasicNodeType.DotDot,
     DotDotDot = BasicNodeType.DotDotDot,
+
+    Equals = BasicNodeType.Equals,
+    EqualsEquals = BasicNodeType.EqualsEquals,
+    EqualsEqualsEquals = BasicNodeType.EqualsEqualsEquals,
     EqualsGreaterThan = BasicNodeType.EqualsGreaterThan,
+
+    Exclamation = BasicNodeType.Exclamation,
+    ExclamationEquals = BasicNodeType.ExclamationEquals,
+    ExclamationEqualsEquals = BasicNodeType.ExclamationEqualsEquals,
+
+    /// <inheritdoc cref="BasicNodeType.GreaterThan"/>
+    GreaterThan = BasicNodeType.GreaterThan,
+    GreaterThanEquals = BasicNodeType.GreaterThanEquals,
+    GreaterThanGreaterThan = BasicNodeType.GreaterThanGreaterThan,
+    GreaterThanGreaterThanEquals = BasicNodeType.GreaterThanGreaterThanEquals,
+    GreaterThanGreaterThanGreaterThan = BasicNodeType.GreaterThanGreaterThanGreaterThan,
+    GreaterThanGreaterThanGreaterThanEquals = BasicNodeType.GreaterThanGreaterThanGreaterThanEquals,
+
+    Hash = BasicNodeType.Hash,
+
+    /// <inheritdoc cref="BasicNodeType.LessThan"/>
+    LessThan = BasicNodeType.LessThan,
+    LessThanEquals = BasicNodeType.LessThanEquals,
+    LessThanLessThan = BasicNodeType.LessThanLessThan,
+    LessThanLessThanEquals = BasicNodeType.LessThanLessThanEquals,
+    LessThanLessThanLessThan = BasicNodeType.LessThanLessThanLessThan,
+
+    Minus = BasicNodeType.Minus,
+    MinusMinus = BasicNodeType.MinusMinus,
+    MinusEquals = BasicNodeType.MinusEquals,
+
+    Percent = BasicNodeType.Percent,
+    PercentEquals = BasicNodeType.PercentEquals,
+
+    Plus = BasicNodeType.Plus,
+    PlusPlus = BasicNodeType.PlusPlus,
+    PlusEquals = BasicNodeType.PlusEquals,
+
+    Question = BasicNodeType.Question,
+    QuestionQuestionEquals = BasicNodeType.QuestionQuestionEquals,
+
+    /// <inheritdoc cref="BasicNodeType.SemiColon"/>
+    SemiColon = BasicNodeType.SemiColon,
+
+    /// <inheritdoc cref="BasicNodeType.SingleQuote"/>
+    SingleQuote = BasicNodeType.SingleQuote,
+
+    Slash = BasicNodeType.Slash,
+    SlashEquals = BasicNodeType.SlashEquals,
+
+    Tilde = BasicNodeType.Tilde,
 }
 

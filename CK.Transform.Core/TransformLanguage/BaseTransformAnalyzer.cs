@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using static CK.Transform.TransformLanguage.TransformerHost;
 
 namespace CK.Transform.TransformLanguage;

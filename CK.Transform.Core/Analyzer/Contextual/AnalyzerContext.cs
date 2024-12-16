@@ -19,7 +19,7 @@ public abstract class AnalyzerContext<TSelf> where TSelf : AnalyzerContext<TSelf
     }
 
     /// <summary>
-    /// Initializes a new sunbrdinated context.
+    /// Initializes a new subordinated context.
     /// </summary>
     protected AnalyzerContext( TSelf parent )
     {

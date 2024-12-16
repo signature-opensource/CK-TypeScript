@@ -12,7 +12,7 @@ namespace CK.Transform.TransformLanguage;
 ///     <item>A single quote opens a "single-line string": the closing quote must appear before the end-of-line.</item>
 ///     <item>Two consecutive quotes is the empty string "".</item>
 ///     <item>
-///     Three quotes or more opens a single ot multi-line string that can contain consecutive quotes sequence shorter than the opening quotes.
+///     Three quotes or more opens a single or multi-line string that can contain consecutive quotes sequence shorter than the opening quotes.
 ///     (This string can be on a single line: """Hello "World"!""" is valid.)
 ///     </item>
 /// </list>

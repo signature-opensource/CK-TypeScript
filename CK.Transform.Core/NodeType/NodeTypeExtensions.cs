@@ -160,6 +160,7 @@ public static class NodeTypeExtensions
 
     /// <summary>
     /// Gets a one char known <see cref="NodeType"/> or <see cref="NodeType.None"/> if it is not defined.
+    /// This is the starting point of the <see cref="LowLevelToken.GetBasicTokenType(ReadOnlySpan{char})"/>.
     /// </summary>
     /// <param name="c">The character.</param>
     /// <returns>A known one character node type.</returns>

@@ -60,6 +60,21 @@ public enum BasicNodeType : byte
     GenericString,
 
     /// <summary>
+    /// Generic interpolated string start: the first part from the delimiter to the first code part.
+    /// </summary>
+    GenericInterpolatedStringStart,
+
+    /// <summary>
+    /// Generic interpolated string segment: between two code parts.
+    /// </summary>
+    GenericInterpolatedStringSegment,
+
+    /// <summary>
+    /// Generic interpolated string segment: from the last code part to the ending delimiter.
+    /// </summary>
+    GenericInterpolatedStringEnd,
+
+    /// <summary>
     /// An identifier can have a lot of representations. This can be used by language parsers if
     /// it can avoid creating a specific token type.
     /// </summary>
@@ -125,6 +140,42 @@ public enum BasicNodeType : byte
     /// </summary>
     CloseBrace,
 
+    Ampersand,
+    AmpersandEquals,
+    AmpersandAmpersand,
+    /// <summary>
+    /// <c>&&=</c> has been introduces in ECMAScript 2020.
+    /// </summary>
+    AmpersandAmpersandEquals,
+
+    AtSign,
+
+    Asterisk,
+    AsteriskEquals,
+
+    Bar,
+    BarEquals,
+    BarBar,
+    /// <summary>
+    /// <c>||=</c> has been introduces in ECMAScript 2020.
+    /// </summary>
+    BarBarEquals, 
+
+    BackSlash,
+    /// <summary>
+    /// The back tick <c>`</c>.
+    /// </summary>
+
+    BackTick,
+
+    Caret,
+    CaretEquals,
+
+    /// <summary>
+    /// A colon <c>:</c>.
+    /// </summary>
+    Colon,
+
     /// <summary>
     /// A comma <c>,</c> is often used with a the only semantics to separate items in list.
     /// Note that when expressions must be analyzed, this may (depending on the language and
@@ -133,71 +184,26 @@ public enum BasicNodeType : byte
     /// </summary>
     Comma,
 
-    /// <summary>
-    /// A semi-colon <c>;</c>.
-    /// </summary>
-    SemiColon,
+    Dollar,
 
-    /// <summary>
-    /// A colon <c>:</c>.
-    /// </summary>
-    Colon,
+    Dot,
+    DotDot,
+    DotDotDot,
 
     /// <summary>
     /// A double quote <c>"</c>.
     /// </summary>
     DoubleQuote,
 
-    /// <summary>
-    /// A single quote <c>'</c>.
-    /// </summary>
-    SingleQuote,
-
-    /// <summary>
-    /// The back tick <c>`</c>.
-    /// </summary>
-    BackTick,
-    Ampersand,
-    AmpersandEquals,
-    AmpersandAmpersand,
-    /// <summary>
-    /// <c>&&=</c> has been introduces in ECMAScript 2020.
-    /// </summary>
-    AmpersandAmpersandEquals,
-    Asterisk,
-    AsteriskEquals,
-    Bar,
-    BarEquals,
-    BarBar,
-    /// <summary>
-    /// <c>||=</c> has been introduces in ECMAScript 2020.
-    /// </summary>
-    BarBarEquals, 
-    Caret,
-    CaretEquals,
-    Dot,
-    DotDot,
-    DotDotDot,
     Equals,
     EqualsEquals,
     EqualsEqualsEquals,
     EqualsGreaterThan,
+
     Exclamation,
     ExclamationEquals,
     ExclamationEqualsEquals,
-    Percent,
-    PercentEquals,
-    Minus,
-    MinusEquals,
-    MinusMinus,
-    Plus,
-    PlusEquals,
-    PlusPlus,
-    Question,
-    QuestionQuestionEquals,
-    Slash,
-    SlashEquals,
-    LessThanLessThanEquals,
+
     /// <summary>
     /// GreaterThan <c>&gt;</c> (could have been CloseAngleBracket).
     /// </summary>
@@ -207,17 +213,45 @@ public enum BasicNodeType : byte
     GreaterThanEquals,
     GreaterThanGreaterThan,
     GreaterThanGreaterThanGreaterThan,
+
+    Hash,
+
     /// <summary>
     /// LessThan <c>&lt;</c> (could have been OpenAngleBracket).
     /// </summary>
     LessThan,
     LessThanEquals,
     LessThanLessThan,
+    LessThanLessThanEquals,
     LessThanLessThanLessThan,
-    BackSlash,
-    Dollar,
-    AtSign,
-    Hash,
+
+    Minus,
+    MinusEquals,
+    MinusMinus,
+
+    Percent,
+    PercentEquals,
+
+    Plus,
+    PlusEquals,
+    PlusPlus,
+
+    Question,
+    QuestionQuestionEquals,
+
+    /// <summary>
+    /// A semi-colon <c>;</c>.
+    /// </summary>
+    SemiColon,
+
+    /// <summary>
+    /// A single quote <c>'</c>.
+    /// </summary>
+    SingleQuote,
+
+    Slash,
+    SlashEquals,
+
     Tilde,
 }
 

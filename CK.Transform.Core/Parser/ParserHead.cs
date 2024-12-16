@@ -1,5 +1,4 @@
 using CK.Core;
-using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -47,9 +46,10 @@ public ref struct ParserHead
     /// <summary>
     /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="IParserHeadBehavior"/>.
     /// <para>
-    /// <see cref="SkipTo(ref readonly ParserHead)"/> can be used to resynchronize this head with the subordinated one.
+    /// <see cref="SkipTo(int,ref readonly ParserHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
+    /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
     /// <param name="behavior">Alternative behavior for this new head. When null, the same behavior as this one is used.</param>
     public readonly ParserHead CreateSubHead( out int safetyToken, IParserHeadBehavior? behavior = null )
     {
@@ -57,6 +57,11 @@ public ref struct ParserHead
         return new ParserHead( RemainingText, behavior ?? _behavior, _triviaBuilder );
     }
 
+    /// <summary>
+    /// Skips this head up to the <paramref name="subHead"/>.
+    /// </summary>
+    /// <param name="safetyToken">Token provided by <see cref="CreateSubHead(out int, IParserHeadBehavior?)"/>.</param>
+    /// <param name="subHead">Subordinated head.</param>
     public void SkipTo( int safetyToken, ref readonly ParserHead subHead )
     {
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
@@ -64,7 +69,6 @@ public ref struct ParserHead
         _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
         InitializeLeadingTrivia();
     }
-
 
     /// <summary>
     /// Gets the current head to analyze.
@@ -102,10 +106,43 @@ public ref struct ParserHead
     public readonly ReadOnlySpan<char> LowLevelTokenText => _lowLevelTokenText;
 
     /// <summary>
+    /// Creates a token error node at the current <see cref="Head"/> position with an error message.
+    /// </summary>
+    /// <param name="errorMessage">The error message.</param>
+    /// <param name="errorType">The error token type.</param>
+    /// <returns>A token error node.</returns>
+    public readonly TokenErrorNode CreateError( string errorMessage, NodeType errorType = NodeType.SyntaxErrorNode | NodeType.ErrorClassBit )
+    {
+        Throw.CheckArgument( errorType.IsError() );
+        Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
+        return new TokenErrorNode( errorType, errorMessage, CreateSourcePosition(), _leadingTrivias, ImmutableArray<Trivia>.Empty );
+    }
+
+    /// <summary>
+    /// Creates a token error node at the current <see cref="Head"/> with a length of text and fowards the head.
+    /// <para>
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
+    /// </summary>
+    /// <param name="errorType">The error token type.</param>
+    /// <param name="length">The length of the text. Must be positive.</param>
+    /// <param name="errorMessage">The error message. When not specified, the message is the text content.</param>
+    /// <returns>A token error node.</returns>
+    public TokenErrorNode CreateError( NodeType errorType, int length, string? errorMessage = null )
+    {
+        Throw.CheckArgument( errorType.IsError() );
+        Throw.CheckArgument( length > 0 );
+        Throw.CheckState( EndOfInput is null );
+        AcceptToken( length, out var text, out var leading, out var trailing );
+        if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
+        return new TokenErrorNode( errorType, text, errorMessage, CreateSourcePosition(), leading, trailing );
+    }
+
+    /// <summary>
     /// Validates the <see cref="Head"/> first <paramref name="tokenLength"/> characters. A <see cref="TokenNode"/> should be
     /// created with the final <paramref name="text"/>, <paramref name="leading"/> and <paramref name="trailing"/> data.
     /// <para>
-    /// This must not be call if a <see cref="FinalError"/> exists: the final error is the only token node that can exist. 
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
     /// </summary>
     /// <param name="tokenLength">The length of the token. Must be positive.</param>
@@ -142,10 +179,11 @@ public ref struct ParserHead
     }
 
     /// <summary>
-    /// Accepts the current <see cref="Head"/> and creates a basic <see cref="TokenNode"/> of the <paramref name="type"/>
+    /// Accepts the current <see cref="Head"/> with a positive <paramref name="tokenLength"/> and creates a
+    /// basic <see cref="TokenNode"/> of the <paramref name="type"/>
     /// and forwards the head.
     /// <para>
-    /// If <see cref="EndOfInput"/> exists, it is returned instead.
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
     /// </summary>
     /// <param name="type">The <see cref="TokenNode.NodeType"/> to create.</param>
@@ -153,7 +191,6 @@ public ref struct ParserHead
     /// <returns>The token node.</returns>
     public TokenNode CreateToken( NodeType type, int tokenLength )
     {
-        if( EndOfInput != null ) return EndOfInput;
         Throw.CheckArgument( !type.IsError() &&  !type.IsTrivia() );
         AcceptToken( tokenLength, out var text, out var leading, out var trailing );
         // Use the internal unchecked constructor as every parameters have been checked.
@@ -161,9 +198,10 @@ public ref struct ParserHead
     }
 
     /// <summary>
-    /// Accepts the <see cref="LowLevelToken"/>, creates a basic <see cref="TokenNode"/>and forwards the head.
+    /// Accepts the <see cref="LowLevelTokenText"/>, creates a basic <see cref="TokenNode"/> or a <see cref="TokenErrorNode"/>
+    /// if the <see cref="LowLevelTokenType"/> (or the <paramref name="type"/>) is an error.
     /// <para>
-    /// If a <see cref="EndOfInput"/> exists, it is returned instead.
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
     /// </summary>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
@@ -172,7 +210,9 @@ public ref struct ParserHead
     {
         Throw.CheckState( _lowLevelTokenText.Length > 0 );
         if( type == NodeType.None ) type = _lowLevelTokenType;
-        return CreateToken( type, _lowLevelTokenText.Length );
+        return type.IsError()
+                ? CreateError( type, _lowLevelTokenText.Length )
+                : CreateToken( type, _lowLevelTokenText.Length );
     }
 
     /// <summary>
@@ -198,19 +238,6 @@ public ref struct ParserHead
         }
         result = null;
         return false;
-    }
-
-    /// <summary>
-    /// Creates a token error node at the current <see cref="Head"/> position.
-    /// </summary>
-    /// <param name="errorMessage">The error message.</param>
-    /// <param name="errorType">The error token type.</param>
-    /// <returns>A token error node.</returns>
-    public readonly TokenErrorNode CreateError( string errorMessage, NodeType errorType = NodeType.SyntaxErrorNode|NodeType.ErrorClassBit )
-    {
-        Throw.CheckArgument( errorType.IsError() );
-        Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
-        return new TokenErrorNode( errorType, errorMessage, CreateSourcePosition(), _leadingTrivias, ImmutableArray<Trivia>.Empty );
     }
 
     /// <summary>

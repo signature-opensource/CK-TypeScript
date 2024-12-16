@@ -31,6 +31,25 @@ public class TokenErrorNode : TokenNode
         _sourcePosition = sourcePosition;
     }
 
+    internal TokenErrorNode( NodeType error,
+                             ReadOnlyMemory<char> text,
+                             string errorMessage,
+                             SourcePosition sourcePosition,
+                             ImmutableArray<Trivia> leading,
+                             ImmutableArray<Trivia> trailing )
+        : base( leading,
+                trailing,
+                error,
+                text )
+    {
+        Throw.DebugAssert( error.IsError() );
+        Throw.DebugAssert( !leading.IsDefault );
+        Throw.DebugAssert( !trailing.IsDefault );
+        Throw.DebugAssert( !string.IsNullOrWhiteSpace( errorMessage ) );
+        _errorMessage = errorMessage;
+        _sourcePosition = sourcePosition;
+    }
+
     /// <summary>
     /// Gets the error message.
     /// </summary>
