@@ -3,6 +3,8 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using static CK.Core.CheckedWriteStream;
 
 namespace CK.TypeScript.Transform;
 
@@ -32,6 +34,7 @@ sealed partial class TypeScriptAnalyzer : Analyzer
         c.AcceptCLikeStarComment();
     }
 
+    [MemberNotNull( nameof( _lastToken ) )]
     TokenNode Scan( ref ParserHead head )
     {
         switch( head.LowLevelTokenType )
@@ -105,19 +108,21 @@ sealed partial class TypeScriptAnalyzer : Analyzer
 
     protected override IAbstractNode? Parse( ref ParserHead head )
     {
-        var b = ImmutableArray.CreateBuilder<AbstractNode>();
-        for( ; ; )
+        var imports = new List<int>();
+        var allNodes = ImmutableArray.CreateBuilder<AbstractNode>();
+        for(; ; )
         {
             var t = Scan( ref head );
             if( t is TokenErrorNode ) return t;
             if( t is EndOfInputToken )
             {
-                return b.Count > 0
-                        ? new RawNodeList( NodeType.SyntaxNode, b.DrainToImmutable() )
+                return allNodes.Count > 0
+                        ? new RawNodeList( NodeType.SyntaxNode, allNodes.DrainToImmutable() )
                         : t;
             }
-            b.Add( t );
+            allNodes.Add( t );
         }
-    }
-}
 
+    }
+
+}

@@ -154,7 +154,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
     /// the <see cref="InjectIntoStatement"/>.
     /// </summary>
     /// <param name="head">The head.</param>
-    /// <returns>The </returns>
+    /// <returns>The handled statements or null.</returns>
     protected virtual IAbstractNode? ParseStatement( ref ParserHead head )
     {
         if( head.TryMatchToken( "inject", out var inject ) )

@@ -242,11 +242,11 @@ public ref struct ParserHead
 
     /// <summary>
     /// Matches the <see cref="LowLevelTokenText"/> and return a <see cref="TokenNode"/> on success
-    /// or a <see cref="TokenErrorNode"/> on failure.
+    /// or a <see cref="TokenErrorNode"/> "Expected '<paramref name="expected"/>'." on failure.
     /// </summary>
-    /// <param name="expected"></param>
+    /// <param name="expected">The expected characters.</param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
-    /// <returns></returns>
+    /// <returns>The Token or TokenError node.</returns>
     public TokenNode MatchToken( ReadOnlySpan<char> expected,
                                  NodeType type = NodeType.None,
                                  StringComparison comparisonType = StringComparison.Ordinal )
@@ -254,6 +254,39 @@ public ref struct ParserHead
         return TryMatchToken( expected, out var n, type, comparisonType )
                 ? n
                 : CreateError( $"Expected '{expected}'." );
+    }
+
+    /// <summary>
+    /// Helper function for easy case that matches the <see cref="LowLevelTokenType"/> and
+    /// creates a <see cref="TokenNode"/> on success.
+    /// </summary>
+    /// <param name="type">The expected <see cref="LowLevelTokenType"/>.</param>
+    /// <param name="result">The non null TokenNode on success.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    public bool TryMatchToken( NodeType type, [NotNullWhen( true )] out TokenNode? result )
+    {
+        Throw.DebugAssert( type != NodeType.None && type.IsError() is false );
+        if( _lowLevelTokenType == type )
+        {
+            result = CreateToken( type, _lowLevelTokenText.Length );
+            return true;
+        }
+        result = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Matches the <see cref="LowLevelTokenType"/> and return a <see cref="TokenNode"/> on success
+    /// or a <see cref="TokenErrorNode"/> "Expected '<paramref name="tokenDescription"/>'." on failure.
+    /// </summary>
+    /// <param name="type">The expected token type.</param>
+    /// <param name="tokenDescription">Description that will appear in "Expected '<paramref name="tokenDescription"/>'." error.</param>
+    /// <returns>The Token or TokenError node.</returns>
+    public TokenNode MatchToken( NodeType type, string tokenDescription )
+    {
+        return TryMatchToken( type, out var n )
+                ? n
+                : CreateError( $"Expected '{tokenDescription}'." );
     }
 
 
