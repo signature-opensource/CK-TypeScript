@@ -7,10 +7,10 @@ namespace CK.Transform.TransformLanguage;
 /// <summary>
 /// An injection point <see cref="Name"/> is defined between angle brackets: &lt;Name&gt;.
 /// </summary>
-public sealed class InjectionPoint : Token
+public sealed class InjectionPointOld : TokenNode
 {
-    internal InjectionPoint( ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
-        : base( TokenType.GenericIdentifier, leading, text, trailing )
+    internal InjectionPointOld( ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
+        : base( TokenType.GenericIdentifier, text, leading, trailing )
     {
     }
 

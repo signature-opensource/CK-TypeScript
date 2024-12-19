@@ -11,7 +11,7 @@ public class TransformerParsingTests
     [Test]
     public void Empty_minimal_function()
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( "create transform transformer as begin end" );
         f.Statements.Should().HaveCount( 0 );
     }
@@ -19,7 +19,7 @@ public class TransformerParsingTests
     [Test]
     public void named_function()
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( "create transform transformer MyTransformer as begin end" );
         f.Name.Should().Be( "MyTransformer" );
         f.Target.Should().BeNull();
@@ -28,10 +28,10 @@ public class TransformerParsingTests
     [Test]
     public void named_with_empty_target_function()
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( """create transform transformer MyTransformer on "" as begin end""" );
         f.Name.Should().Be( "MyTransformer" );
-        var t = f.Target as RawString;
+        var t = f.Target as RawStringOld;
         Throw.DebugAssert( t != null );
         t.MemoryLines.Should().HaveCount( 1 );
         t.Lines[0].Should().Be( "" );
@@ -40,10 +40,10 @@ public class TransformerParsingTests
     [Test]
     public void with_target_function()
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( """create transform transformer on "the target!" as begin end""" );
         f.Name.Should().Be( "" );
-        var t = f.Target as RawString;
+        var t = f.Target as RawStringOld;
         Throw.DebugAssert( t != null );
         t.Lines.Should().HaveCount( 1 );
         t.Lines[0].Should().Be( "the target!" );
@@ -52,7 +52,7 @@ public class TransformerParsingTests
     [Test]
     public void with_multi_but_singleline_text_target_function()
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( """""
                     create transform transformer on """
                                          create transform transformer as begin end
@@ -61,7 +61,7 @@ public class TransformerParsingTests
                     end
                     """"" );
         f.Name.Should().Be( "" );
-        var t = f.Target as RawString;
+        var t = f.Target as RawStringOld;
         Throw.DebugAssert( t != null );
         t.Lines.Should().HaveCount( 1 );
         t.Lines[0].Should().Be( "create transform transformer as begin end" );

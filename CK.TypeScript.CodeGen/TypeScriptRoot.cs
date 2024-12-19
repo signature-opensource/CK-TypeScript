@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -313,25 +314,17 @@ public sealed class TypeScriptRoot
     public string ToIdentifier( string name ) => ToIdentifier( name, PascalCase );
 
     /// <summary>
-    /// Ensures that an identifier follows the PascalCase xor camelCase convention.
-    /// Only the first character is handled.
+    /// Ensures that an identifier follows the C# PascalCase xor camelCase convention.
+    /// When <paramref name="pascalCase"/> is false, <see cref="JsonNamingPolicy.CamelCase"/> is used.
     /// </summary>
     /// <param name="name">The identifier.</param>
     /// <param name="pascalCase">The target casing.</param>
     /// <returns>A formatted identifier.</returns>
     public static string ToIdentifier( string name, bool pascalCase )
     {
-        if( name.Length != 0 && Char.IsUpper( name, 0 ) != pascalCase )
-        {
-            return pascalCase
-                    ? (name.Length == 1
-                        ? name.ToUpperInvariant()
-                        : Char.ToUpperInvariant( name[0] ) + name.Substring( 1 ))
-                    : (name.Length == 1
-                        ? name.ToLowerInvariant()
-                        : Char.ToLowerInvariant( name[0] ) + name.Substring( 1 ));
-        }
-        return name;
+        return pascalCase
+                ? name
+                : JsonNamingPolicy.CamelCase.ConvertName( name );
     }
 
 }

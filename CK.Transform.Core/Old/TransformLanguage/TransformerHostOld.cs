@@ -12,60 +12,60 @@ namespace CK.Transform.TransformLanguage;
 /// Hosts multiple <see cref="TransformLanguageOld"/>.
 /// This is NOT thread safe and should never be used concurrently.
 /// </summary>
-public sealed partial class TransformerHost
+public sealed partial class TransformerHostOld
 {
     readonly List<Language> _languages;
-    readonly RootTransformLanguage _transformLanguage;
-    readonly TransformParser _transformParser;
+    readonly TLanguage _transformLanguage;
+    readonly TAnalyzer _transformAnalyzer;
 
     /// <summary>
     /// Cached instance of a <see cref="TransformLanguage"/> for this host.
     /// </summary>
     public sealed class Language
     {
-        readonly TransformLanguage _language;
-        readonly BaseTransformParser _transformTokenizer;
-        readonly Tokenizer _targetAnalyzer;
+        readonly TransformLanguageOld _language;
+        readonly BaseTransformAnalyzer _transformAnalyzer;
+        readonly Analyzer _targetAnalyzer;
 
         /// <summary>
-        /// Gets the <see cref="TransformLanguage.LanguageName"/>.
+        /// Gets the <see cref="TransformLanguageOld.LanguageName"/>.
         /// </summary>
         public string LanguageName => _language.LanguageName;
 
         /// <summary>
         /// Gets the analyzer for the transform language.
         /// </summary>
-        public BaseTransformParser TransformTokenizer => _transformTokenizer;
+        public BaseTransformAnalyzer TransformAnalyzer => _transformAnalyzer;
 
         /// <summary>
         /// Gets the target language annalyzer.
         /// </summary>
-        public Tokenizer TargetTokenizer => _targetAnalyzer;
+        public Analyzer TargetAnalyzer => _targetAnalyzer;
 
         /// <summary>
         /// Gets the transform language.
         /// </summary>
-        public TransformLanguage TransformLanguage => _language;
+        public TransformLanguageOld TransformLanguage => _language;
 
-        internal Language( TransformerHost host, TransformLanguage language )
+        internal Language( TransformerHostOld host, TransformLanguageOld language )
         {
             _language = language;
-            _transformTokenizer = language.CreateTransformParser( host );
+            _transformAnalyzer = language.CreateTransformAnalyzer( host );
             _targetAnalyzer = language.CreateTargetAnalyzer();
         }
     }
 
     /// <summary>
-    /// Initializes a host with at least the <see cref="RootTransformLanguage"/>.
+    /// Initializes a host with at least the <see cref="TLanguage"/>.
     /// </summary>
     /// <param name="languages">Languages to register.</param>
-    public TransformerHost( params TransformLanguage[] languages )
+    public TransformerHostOld( params TransformLanguageOld[] languages )
     {
-        _transformLanguage = new RootTransformLanguage( this );
-        _transformParser = new TransformParser( this );
+        _transformLanguage = new TLanguage( this );
+        _transformAnalyzer = new TAnalyzer( this );
         _languages = new List<Language>();
         foreach( var language in languages ) EnsureLanguage( language );
-        if( Find( _languages, _transformLanguage.LanguageName ) == null )
+        if( Find( _languages, _transformLanguage.LanguageName ) == null ) 
         {
             _languages.Add( new Language( this, _transformLanguage ) );
         }
@@ -81,7 +81,7 @@ public sealed partial class TransformerHost
     /// </summary>
     /// <param name="language">The language to remove.</param>
     /// <returns>Tre if the language has been removed, false if it was not found.</returns>
-    public bool RemoveLanguage( TransformLanguage language )
+    public bool RemoveLanguage( TransformLanguageOld language )
     {
         var idx = _languages.FindIndex( l => l.TransformLanguage != _transformLanguage && l.LanguageName == language.LanguageName );
         if( idx >= 0 )
@@ -96,7 +96,7 @@ public sealed partial class TransformerHost
     /// Adds a language if it is not already registered.
     /// </summary>
     /// <param name="language">The language to add.</param>
-    public void EnsureLanguage( TransformLanguage language )
+    public void EnsureLanguage( TransformLanguageOld language )
     {
         var l = _languages.FirstOrDefault( l => l.LanguageName == language.LanguageName );
         if( l == null )
@@ -112,15 +112,24 @@ public sealed partial class TransformerHost
     /// <returns>The language or null if not found.</returns>
     public Language? Find( ReadOnlySpan<char> name ) => Find( _languages, name );
 
-    /// <inheritdoc cref="TryParseFunction(IActivityMonitor,ReadOnlyMemory{char})"/>
-    public TransfomerFunction? TryParseFunction( IActivityMonitor monitor, string text ) => TryParseFunction( monitor, text.AsMemory() );
+    /// <inheritdoc cref="ParseFunction(ReadOnlyMemory{char})"/>
+    public TransfomerFunctionOld ParseFunction( string text ) => ParseFunction( text.AsMemory() );
 
     /// <summary>
-    /// Parses a <see cref="TransfomerFunction"/> or throws if it cannot be parsed.
+    /// Parses a <see cref="TransfomerFunctionOld"/> or throws if it cannot be parsed.
     /// </summary>
     /// <param name="text">the text to parse.</param>
     /// <returns>The function.</returns>
-    public TransfomerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text ) => _transformParser.TryParse( monitor, text );
+    public TransfomerFunctionOld ParseFunction( ReadOnlyMemory<char> text )
+    {
+        var head = new ParserHead( text, _transformAnalyzer );
+        var n = _transformAnalyzer.ParseExpectedFunction( ref head );
+        if( n is not TransfomerFunctionOld f )
+        {
+            return Throw.ArgumentException<TransfomerFunctionOld>( nameof( text ), n.ToString() );
+        }
+        return f;
+    }
 
     /// <summary>
     /// Applies a sequence of transformers to an initial <paramref name="text"/>.
@@ -209,7 +218,7 @@ public sealed partial class TransformerHost
 
     static AbstractNode? ParseTarget( IActivityMonitor monitor, string text, Language language )
     {
-        language.TargetTokenizer.Reset( text.AsMemory() );
+        language.TargetAnalyzer.Reset( text.AsMemory() );
         var target = language.TargetAnalyzer.ParseAll();
         if( target is IErrorNode e )
         {
@@ -222,37 +231,4 @@ public sealed partial class TransformerHost
         }
         return Unsafe.As<AbstractNode>( target );
     }
-
-    /// <summary>
-    /// Transform language parser itself.
-    /// One instance is the TransformParser used by the host, another instance
-    /// is used to transform a transformer.
-    /// </summary>
-    sealed class TransformParser : BaseTransformParser
-    {
-        public TransformParser( TransformerHost host )
-            : base( host, host._transformLanguage )
-        {
-        }
-    }
-
-    /// <summary>
-    /// Transform language itself: the tokenizer (or analyzer) is an independent TransformParse instance and the
-    /// transform parser itself is an instance held by the host.
-    /// </summary>
-    sealed class RootTransformLanguage : TransformLanguage
-    {
-        readonly TransformerHost _host;
-
-        internal RootTransformLanguage( TransformerHost host )
-            : base( "Transform" )
-        {
-            _host = host;
-        }
-
-        protected internal override Tokenizer CreateTargetAnalyzer() => new TransformParser( _host );
-
-        protected internal override BaseTransformParser CreateTransformParser( TransformerHost host ) => _host._transformParser;
-    }
-
 }

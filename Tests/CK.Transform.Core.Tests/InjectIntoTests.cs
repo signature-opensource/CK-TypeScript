@@ -40,7 +40,7 @@ public class InjectIntoTests
         )]
     public void first_injection_ever( string source, string transformer, string result )
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var r = h.Transform( TestHelper.Monitor, source, transformer );
         r.Should().Be( result );
     }

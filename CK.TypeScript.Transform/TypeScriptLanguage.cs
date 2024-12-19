@@ -3,7 +3,7 @@ using CK.Transform.TransformLanguage;
 
 namespace CK.TypeScript.Transform;
 
-public sealed class TypeScriptLanguage : TransformLanguage
+public sealed class TypeScriptLanguage : TransformLanguageOld
 {
     public TypeScriptLanguage()
         : base( "TypeScript" )
@@ -12,5 +12,5 @@ public sealed class TypeScriptLanguage : TransformLanguage
 
     protected override Analyzer CreateTargetAnalyzer() => new TypeScriptAnalyzer();
 
-    protected override BaseTransformAnalyzer CreateTransformAnalyzer(TransformerHost host) => new TypeScriptTransformAnalyzer( host, this );
+    protected override BaseTransformAnalyzer CreateTransformAnalyzer(TransformerHostOld host) => new TypeScriptTransformAnalyzer( host, this );
 }

@@ -6,9 +6,9 @@ namespace CK.TypeScript.Transform;
 
 sealed class TypeScriptTransformAnalyzer : BaseTransformAnalyzer
 {
-    readonly TransformerHost _host;
+    readonly TransformerHostOld _host;
 
-    internal TypeScriptTransformAnalyzer( TransformerHost host, TypeScriptLanguage language )
+    internal TypeScriptTransformAnalyzer( TransformerHostOld host, TypeScriptLanguage language )
         : base( host, language )
     {
         _host = host;
@@ -17,8 +17,8 @@ sealed class TypeScriptTransformAnalyzer : BaseTransformAnalyzer
     public override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         var c = head[0];
-        if( c == '{' ) return new LowLevelToken( NodeType.OpenBrace, 1 );
-        if( c == '}' ) return new LowLevelToken( NodeType.CloseBrace, 1 );
+        if( c == '{' ) return new LowLevelToken( TokenType.OpenBrace, 1 );
+        if( c == '}' ) return new LowLevelToken( TokenType.CloseBrace, 1 );
         return base.LowLevelTokenize( head );
     }
 
@@ -40,21 +40,21 @@ sealed class TypeScriptTransformAnalyzer : BaseTransformAnalyzer
             // But after a namespace declaration, no default import is allowed. This is invalid:
             //      import * as DefImport2, DefImport1 from '@angular/core';
             //
-            if( head.TryMatchToken( NodeType.GenericIdentifier, out var defaultImport ) )
+            if( head.TryMatchToken( TokenType.GenericIdentifier, out var defaultImport ) )
             {
-                head.TryMatchToken( NodeType.Comma, out defaultImportComma );               
+                head.TryMatchToken( TokenType.Comma, out defaultImportComma );               
             }
 
             TokenNode? asT = null;
             TokenNode? asNamespace = null;
-            if( head.TryMatchToken(NodeType.Asterisk, out var asterisk ) )
+            if( head.TryMatchToken(TokenType.Asterisk, out var asterisk ) )
             {
                 asT = head.MatchToken( "as" );
                 if( asT is TokenErrorNode ) return asT;
-                asNamespace = head.MatchToken( NodeType.GenericIdentifier, "namespace" );
+                asNamespace = head.MatchToken( TokenType.GenericIdentifier, "namespace" );
                 if( asNamespace is TokenErrorNode ) return asNamespace;
             }
-            else if( head.TryMatchToken( NodeType.OpenBrace, out var openBrace ) )
+            else if( head.TryMatchToken( TokenType.OpenBrace, out var openBrace ) )
             {
 
             }

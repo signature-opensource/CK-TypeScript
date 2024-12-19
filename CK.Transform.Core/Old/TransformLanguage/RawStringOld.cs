@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Immutable;
@@ -23,18 +23,18 @@ namespace CK.Transform.TransformLanguage;
 /// Note that in C#, <c>"""raw "string""""</c> is not valid (but valid for us).
 /// </para>
 /// </summary>
-public sealed class RawString : Token
+public sealed class RawStringOld : TokenNode
 {
     readonly ReadOnlyMemory<char> _innerText;
     readonly ImmutableArray<ReadOnlyMemory<char>> _lines;
     ImmutableArray<string> _sLines;
 
     // Single-line.
-    internal RawString( ReadOnlyMemory<char> text,
+    internal RawStringOld( ReadOnlyMemory<char> text,
                         ReadOnlyMemory<char> innerText,
                         ImmutableArray<Trivia> leading,
                         ImmutableArray<Trivia> trailing )
-        : base( TokenType.GenericString, leading, text, trailing )
+        : base( TokenType.GenericString, text, leading, trailing )
     {
         Throw.DebugAssert( text.Length > innerText.Length && text.Span.Contains( innerText.Span, StringComparison.Ordinal ) );
         _innerText = innerText;
@@ -42,12 +42,12 @@ public sealed class RawString : Token
         _lines = [innerText];
     }
 
-    internal RawString( ReadOnlyMemory<char> text,
+    internal RawStringOld( ReadOnlyMemory<char> text,
                         ReadOnlyMemory<char> innerText,
                         ImmutableArray<ReadOnlyMemory<char>> memoryLines,
                         ImmutableArray<Trivia> leading,
                         ImmutableArray<Trivia> trailing )
-        : base( TokenType.GenericString, leading, text, trailing )
+        : base( TokenType.GenericString, text, leading, trailing )
     {
         Throw.DebugAssert( text.Length > innerText.Length && text.Span.Contains( innerText.Span, StringComparison.Ordinal ) );
         _innerText = innerText;

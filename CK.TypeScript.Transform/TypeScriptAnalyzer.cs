@@ -39,19 +39,19 @@ sealed partial class TypeScriptAnalyzer : Analyzer
     {
         switch( head.LowLevelTokenType )
         {
-            case NodeType.GenericInterpolatedStringStart:
+            case TokenType.GenericInterpolatedStringStart:
                 _lastToken = head.CreateLowLevelToken();
                 _interpolated.Push( ++_braceDepth );
                 break;
-            case NodeType.OpenBrace:
+            case TokenType.OpenBrace:
                 _lastToken = head.CreateLowLevelToken();
                 ++_braceDepth;
                 break;
-            case NodeType.CloseBrace:
+            case TokenType.CloseBrace:
                 if( _interpolated.TryPeek( out var depth ) && depth == _braceDepth )
                 {
                     var t = ReadInterpolatedSegment( head.Head, false );
-                    if( t.NodeType == NodeType.GenericInterpolatedStringEnd )
+                    if( t.NodeType == TokenType.GenericInterpolatedStringEnd )
                     {
                         --_braceDepth;
                     }
@@ -65,19 +65,19 @@ sealed partial class TypeScriptAnalyzer : Analyzer
                                     : head.CreateLowLevelToken();
                 }
                 break;
-            case NodeType.Slash or NodeType.SlashEquals:
+            case TokenType.Slash or TokenType.SlashEquals:
                 if( _lastToken != null )
                 {
                     var type = _lastToken.NodeType;
-                    if( type is not NodeType.GenericIdentifier
-                            and not NodeType.GenericNumber
-                            and not NodeType.GenericString
-                            and not NodeType.GenericRegularExpression
-                            and not NodeType.PlusPlus
-                            and not NodeType.MinusMinus
-                            and not NodeType.CloseParen
-                            and not NodeType.CloseBrace
-                            and not NodeType.CloseBracket )
+                    if( type is not TokenType.GenericIdentifier
+                            and not TokenType.GenericNumber
+                            and not TokenType.GenericString
+                            and not TokenType.GenericRegularExpression
+                            and not TokenType.PlusPlus
+                            and not TokenType.MinusMinus
+                            and not TokenType.CloseParen
+                            and not TokenType.CloseBrace
+                            and not TokenType.CloseBracket )
                     {
                         var t = TryParseRegex( new LowLevelToken( head.LowLevelTokenType, head.LowLevelTokenText.Length ), head.Head );
                         _lastToken = head.CreateToken( t.NodeType, t.Length );
@@ -92,10 +92,10 @@ sealed partial class TypeScriptAnalyzer : Analyzer
                     _lastToken = head.CreateLowLevelToken();
                 }
                 break;
-            case NodeType.None:
+            case TokenType.None:
                 _lastToken = head.CreateError( "Unrecognized token." );
                 break;
-            case NodeType.EndOfInput:
+            case TokenType.EndOfInput:
                 Throw.DebugAssert( head.EndOfInput is not null );
                 _lastToken = head.EndOfInput;
                 break;
@@ -117,7 +117,7 @@ sealed partial class TypeScriptAnalyzer : Analyzer
             if( t is EndOfInputToken )
             {
                 return allNodes.Count > 0
-                        ? new RawNodeList( NodeType.SyntaxNode, allNodes.DrainToImmutable() )
+                        ? new RawNodeList( TokenType.SyntaxNode, allNodes.DrainToImmutable() )
                         : t;
             }
             allNodes.Add( t );

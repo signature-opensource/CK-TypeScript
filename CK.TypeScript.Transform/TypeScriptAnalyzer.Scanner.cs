@@ -23,24 +23,24 @@ sealed partial class TypeScriptAnalyzer
         Throw.DebugAssert( head.Length > 0 );
         // Since numbers can start with a dot, let's start with numbers.
         var t = TryReadNumber( head );
-        if( t.NodeType != NodeType.None ) return t;
+        if( t.NodeType != TokenType.None ) return t;
         // It's not a number. Use the standard basic tokens.
         // If it's a / or a /= then it may be a /regex/ but this cannot be determined here.
         t = LowLevelToken.GetBasicTokenType( head );
-        if( t.NodeType != NodeType.None )
+        if( t.NodeType != TokenType.None )
         {
             if( head.Length > 1 )
             {
                 // Handle private #field and @decorator as identifiers.
-                if( t.NodeType is NodeType.Hash or NodeType.AtSign )
+                if( t.NodeType is TokenType.Hash or TokenType.AtSign )
                 {
                     return ReadIdentifier( head, 1 );
                 }
-                if( t.NodeType is NodeType.DoubleQuote or NodeType.SingleQuote )
+                if( t.NodeType is TokenType.DoubleQuote or TokenType.SingleQuote )
                 {
                     return ReadString( head );
                 }
-                if( t.NodeType is NodeType.BackTick )
+                if( t.NodeType is TokenType.BackTick )
                 {
                     return ReadInterpolatedSegment( head, true );
                 }
@@ -54,7 +54,7 @@ sealed partial class TypeScriptAnalyzer
         {
             if( !IsIdentifierStart( head[iS] ) ) return default;
             while( ++iS < head.Length && IsIdentifierPart( head[iS] ) ) ;
-            return new LowLevelToken( NodeType.GenericIdentifier, iS );
+            return new LowLevelToken( TokenType.GenericIdentifier, iS );
         }
 
         // Real code: https://github.com/microsoft/TypeScript/blob/main/src/compiler/scanner.ts#L1232
@@ -82,7 +82,7 @@ sealed partial class TypeScriptAnalyzer
                         EatDigits( ref iS, head, _hexadecimal );
                         // BigInt notation.
                         if( iS < head.Length && head[iS] == 'n' ) ++iS;
-                        return new LowLevelToken( NodeType.GenericNumber, iS );
+                        return new LowLevelToken( TokenType.GenericNumber, iS );
                     }
                     if( c == 'b' || c == 'B' )
                     {
@@ -90,7 +90,7 @@ sealed partial class TypeScriptAnalyzer
                         EatDigits( ref iS, head, _binary );
                         // BigInt notation.
                         if( iS < head.Length && head[iS] == 'n' ) ++iS;
-                        return new LowLevelToken( NodeType.GenericNumber, iS );
+                        return new LowLevelToken( TokenType.GenericNumber, iS );
                     }
                     if( c == 'o' || c == 'O' )
                     {
@@ -98,7 +98,7 @@ sealed partial class TypeScriptAnalyzer
                         EatDigits( ref iS, head, _octal );
                         // BigInt notation.
                         if( iS < head.Length && head[iS] == 'n' ) ++iS;
-                        return new LowLevelToken( NodeType.GenericNumber, iS );
+                        return new LowLevelToken( TokenType.GenericNumber, iS );
                     }
                 }
                 EatDigits( ref iS, head, _decimal );
@@ -122,26 +122,26 @@ sealed partial class TypeScriptAnalyzer
                 if( !isFloat && c == '.' )
                 {
                     EatDigits( ref iS, head, _decimal );
-                    if( iS == head.Length ) return new LowLevelToken( NodeType.GenericNumber, iS );
+                    if( iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
                     c = head[iS];
                     isFloat = true;
                 }
                 if( c == 'e' || c == 'E' )
                 {
-                    if( ++iS == head.Length ) return new LowLevelToken( NodeType.GenericNumber, iS );
+                    if( ++iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
                     c = head[iS];
-                    if( c != '+' && c != '-' && !char.IsAsciiDigit( c ) ) return new LowLevelToken( NodeType.GenericNumber, iS );
+                    if( c != '+' && c != '-' && !char.IsAsciiDigit( c ) ) return new LowLevelToken( TokenType.GenericNumber, iS );
                     EatDigits( ref iS, head, _decimal );
                     isFloat = true;
                 }
             }
             if( !isFloat )
             {
-                if( ++iS == head.Length ) return new LowLevelToken( NodeType.GenericNumber, iS );
+                if( ++iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
                 // BigInt notation.
                 if( head[iS] == 'n' ) ++iS;
             }
-            return new LowLevelToken( NodeType.GenericNumber, iS );
+            return new LowLevelToken( TokenType.GenericNumber, iS );
         }
 
         // Very simple because here again we don't validate anything. The \ escaper simply skips the next char.
@@ -153,10 +153,10 @@ sealed partial class TypeScriptAnalyzer
             bool escape = false;
             for(; ; )
             {
-                if( ++iS == head.Length ) return new LowLevelToken( NodeType.ErrorUnterminatedString, iS );
+                if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
                 var c = head[iS];
                 if( escape ) continue;
-                if( c == q ) return new LowLevelToken( NodeType.GenericString, iS + 1 );
+                if( c == q ) return new LowLevelToken( TokenType.GenericString, iS + 1 );
                 escape = c == '\\';
             }
         }
@@ -171,14 +171,14 @@ sealed partial class TypeScriptAnalyzer
         bool mayBeHole = false;
         for(; ; )
         {
-            if( ++iS == head.Length ) return new LowLevelToken( NodeType.ErrorUnterminatedString, iS );
+            if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
             var c = head[iS];
             if( escape ) continue;
             if( mayBeHole && c == '{' )
             {
-                return new LowLevelToken( start ? NodeType.GenericInterpolatedStringStart : NodeType.GenericInterpolatedStringSegment, iS + 1 );
+                return new LowLevelToken( start ? TokenType.GenericInterpolatedStringStart : TokenType.GenericInterpolatedStringSegment, iS + 1 );
             }
-            if( c == '`' ) return new LowLevelToken( start ? NodeType.GenericString : NodeType.GenericInterpolatedStringStart, iS + 1 );
+            if( c == '`' ) return new LowLevelToken( start ? TokenType.GenericString : TokenType.GenericInterpolatedStringStart, iS + 1 );
             escape = c == '\\';
             mayBeHole = !escape && c == '$';
         }
@@ -186,7 +186,7 @@ sealed partial class TypeScriptAnalyzer
 
     LowLevelToken TryParseRegex( LowLevelToken slash, ReadOnlySpan<char> head )
     {
-        Throw.DebugAssert( slash.NodeType is NodeType.Slash or NodeType.SlashEquals );
+        Throw.DebugAssert( slash.NodeType is TokenType.Slash or TokenType.SlashEquals );
         // From https://github.com/microsoft/TypeScript/blob/main/src/compiler/scanner.ts#L2466.
         int iS = slash.Length;
         var inEscape = false;
@@ -232,7 +232,7 @@ sealed partial class TypeScriptAnalyzer
         }
         // Consume the slash character and forward past the last allowed flag.
         while( ++iS < head.Length && _regexFlags.Contains( head[iS] ) ) ;
-        return new LowLevelToken( NodeType.GenericRegularExpression, iS );
+        return new LowLevelToken( TokenType.GenericRegularExpression, iS );
     }
 
     static bool IsIdentifierStart( char c )

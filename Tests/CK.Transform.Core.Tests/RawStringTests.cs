@@ -17,9 +17,9 @@ public class RawStringTests
     [TestCase( """ /*No backslash escape!*/ "This \n works (with the backslash)" """, "This \\n works (with the backslash)" )]
     public void valid_single_line_RawString_tests( string code, string expected )
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( $"create transform transformer on {code} begin end " );
-        var t = f.Target as RawString;
+        var t = f.Target as RawStringOld;
         Throw.DebugAssert( t != null );
         var expectedLines = expected.Split( Environment.NewLine );
         t.Lines.Should().BeEquivalentTo( expectedLines );
@@ -34,7 +34,7 @@ public class RawStringTests
                """, "Single-line string must not contain end of line. (Parameter 'text')" )]
     public void invalid_single_line_RawString_tests( string code, string errorMessage )
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         FluentActions.Invoking( () => h.ParseFunction( $"create transform transformer on {code} begin end " ) )
             .Should().Throw<Exception>().WithMessage( errorMessage );
     }
@@ -94,9 +94,9 @@ public class RawStringTests
                            """"""" )]
     public void valid_multi_line_RawString_tests( string code, string expected )
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         var f = h.ParseFunction( $"create transform transformer on {code} begin end " );
-        var t = f.Target as RawString;
+        var t = f.Target as RawStringOld;
         Throw.DebugAssert( t != null );
         var expectedLines = expected.Split( Environment.NewLine );
         t.Lines.Should().BeEquivalentTo( expectedLines );
@@ -143,7 +143,7 @@ public class RawStringTests
                """""""", "Invalid multi-line raw string: there must be no character before column 5 in '    XSome'.*" )]
     public void invalid_multi_line_RawString_tests( string code, string errorMessage )
     {
-        var h = new TransformerHost();
+        var h = new TransformerHostOld();
         FluentActions.Invoking( () => h.ParseFunction( $"create transform transformer on {code} begin end " ) )
             .Should().Throw<Exception>().WithMessage( errorMessage );
     }
