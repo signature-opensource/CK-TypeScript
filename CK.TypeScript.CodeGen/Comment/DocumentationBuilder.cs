@@ -14,7 +14,7 @@ namespace CK.TypeScript.CodeGen;
 /// Helper to build documentation. This object is always available on <see cref="TypeScriptRoot.DocBuilder"/>
 /// even if <see cref="GenerateDocumentation"/> is false.
 /// </summary>
-public sealed class DocumentationBuilder
+public sealed partial class DocumentationBuilder
 {
     readonly StringBuilder _b;
     readonly bool _withStars;
@@ -495,17 +495,25 @@ public sealed class DocumentationBuilder
         if( _finalResult != null ) throw new InvalidOperationException( nameof( GetFinalText ) );
     }
 
-    static readonly Regex _rGetSet = new Regex( @"^\s*Gets?(\s+(or\s+)?sets?)?\s+", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
-
     static string RemoveGetsOrSetsPrefix( string text )
     {
-        var m = _rGetSet.Match( text );
-        if( m.Success )
+        var m = getsOrSetsRegex().Match( text );
+        if( m.Success && m.Length < text.Length )
         {
-            text = text.Substring( m.Length );
-            text = TypeScriptRoot.ToIdentifier( text, true );
+            char initial = text[m.Length];
+            if( char.IsLower( initial ) )
+            {
+                initial = char.ToUpper( initial );
+                text = initial + text.Substring( m.Length + 1 );
+            }
+            else
+            {
+                text = text.Substring( m.Length );
+            }
         }
         return text;
     }
 
+    [GeneratedRegex( @"^\s*Gets?(\s+(or\s+)?sets?)?\s+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant )]
+    private static partial Regex getsOrSetsRegex();
 }
