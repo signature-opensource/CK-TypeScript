@@ -1,4 +1,4 @@
-﻿namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.TransformLanguage;
 
 /// <summary>
 /// Base class for all transform statement.

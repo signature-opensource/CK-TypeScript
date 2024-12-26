@@ -27,24 +27,18 @@ public abstract class TransformLanguage
     public string LanguageName => _languageName;
 
     /// <summary>
-    /// Must create a new transform language parser instance.
+    /// Must create a new transform language analyzer instance.
     /// </summary>
     /// <param name="host">The transformer host.</param>
     /// <returns>A transform language analyzer.</returns>
-    internal protected abstract BaseTransformParser CreateTransformParser( TransformerHost host );
+    internal protected abstract TransformStatementAnalyzer CreateTransformStatementAnalyzer( TransformerHost host );
 
     /// <summary>
-    /// Must create a target language "analyzer" that can be a simple tokenizer or a more complex
+    /// Must create a target language analyzer that can be a simple tokenizer or a more complex
     /// beast. 
     /// </summary>
-    /// <returns>The analyzer.</returns>
-    internal protected abstract Tokenizer CreateTargetAnalyzer();
-
-    /// <summary>
-    /// Overridden to return the <see cref="LanguageName"/>.
-    /// </summary>
-    /// <returns></returns>
-    public override string ToString() => _languageName;
+    /// <returns>A new analyzer.</returns>
+    internal protected abstract IAnalyzer<object> CreateTargetAnalyzer();
 
     /// <summary>
     /// Optional extension point that can handle the "on ...." specifier.
@@ -54,5 +48,11 @@ public abstract class TransformLanguage
     /// <param name="target">A <see cref="Token"/> that describes the target.</param>
     /// <returns>A <see cref="NodeScopeBuilder"/>or null.</returns>
     internal protected virtual NodeScopeBuilder? HandleTransformerTarget( IActivityMonitor monitor, Token target ) => null;
+
+    /// <summary>
+    /// Overridden to return the <see cref="LanguageName"/>.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString() => _languageName;
 
 }

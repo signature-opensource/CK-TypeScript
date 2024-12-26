@@ -1,53 +1,34 @@
-using CK.Core;
+using CK.Transform.TransformLanguage;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace CK.Transform.Core;
 
-
 /// <summary>
-/// An Analyzer can produce a <see cref="IAnalyzed"/> from a text.
+/// Non generic <see cref="IAnalyzerResult{T}"/>.
 /// </summary>
-/// <typeparam name="T">The result type.</typeparam>
-public interface IAnalyzer<out T> where T : class, IAnalyzed
+public interface IAnalyzerResult
 {
     /// <summary>
-    /// 
+    /// Gets whether <see cref="Error"/> is null and no <see cref="TokenError"/> exist in the <see cref="Tokens"/>.
     /// </summary>
-    /// <param name="monitor"></param>
-    /// <param name="text"></param>
-    /// <returns></returns>
-    IAnalyzerOutcome<T> Parse( ReadOnlyMemory<char> text );
-}
+    bool Success { get; }
 
-/// <summary>
-/// Non generic root for <see cref="IAnalyzer{T}"/>.
-/// </summary>
-public interface IAnalyzer : IAnalyzer<IAnalyzed>
-{
-}
-
-/// <summary>
-/// The result of an analyzer can be anything that exposes its tokens.
-/// </summary>
-public interface IAnalyzed
-{
     /// <summary>
-    /// Gets the tokens.
+    /// Gets a potentially complex result if this analyzer is more than a <see cref="Tokenizer"/>.
+    /// This is typically the root node of an Abstract Syntax Tree.
     /// </summary>
-    IReadOnlyList<Token> AllTokens { get; }
-}
+    object? Result { get; }
 
-/// <summary>
-/// The result of an analyzer can be anything that exposes its tokens.
-/// </summary>
-public interface IAnalyzerOutcome<out T> where T : class, IAnalyzed
-{
-    T? Result { get; }
-    TokenErrorNode? Error { get; }
+    /// <summary>
+    /// Gets a "hard failure" error that stopped the analysis.
+    /// </summary>
+    TokenError? Error { get; }
+
+    /// <summary>
+    /// Gets the tokens. Empty if <see cref="Error"/> is not null.
+    /// </summary>
     ImmutableArray<Token> Tokens { get; }
 }
+

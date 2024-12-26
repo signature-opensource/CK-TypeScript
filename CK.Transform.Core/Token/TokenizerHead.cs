@@ -15,7 +15,7 @@ public ref struct TokenizerHead
     readonly ReadOnlySpan<char> _text;
     readonly ReadOnlyMemory<char> _memText;
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
-    readonly ITokenizerHeadBehavior _behavior;
+    readonly ILowLevelTokenizer _lowLevelTokenizer;
     readonly ImmutableArray<Token>.Builder _tokens;
     TriviaParser _triviaParser;
     ReadOnlySpan<char> _headBeforeTrivia;
@@ -39,28 +39,73 @@ public ref struct TokenizerHead
                           ImmutableArray<Trivia>.Builder? triviaBuilder = null )
     {
         Throw.CheckNotNullArgument( behavior );
+        _lowLevelTokenizer = behavior;
+        _triviaParser = behavior.ParseTrivia;
+
+        Throw.CheckNotNullArgument( tokens );
         _memText = text;
         _text = _memText.Span;
         _head = _text;
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
-        _behavior = behavior;
         _tokens = tokens;
-        _triviaParser = behavior.ParseTrivia;
         InitializeLeadingTrivia();
     }
 
     /// <summary>
-    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="IParserHeadBehavior"/>.
+    /// Initializes a new head on a text.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="triviaParser">Required <see cref="TriviaParser"/>.</param>
+    /// <param name="lowLevelTokenizer">Required <see cref="ILowLevelTokenizer"/>.</param>
+    /// <param name="tokens">Required tokens collector.</param>
+    /// <param name="triviaBuilder">Trivia builder to use.</param>
+    public TokenizerHead( ReadOnlyMemory<char> text,
+                          TriviaParser triviaParser,
+                          ILowLevelTokenizer lowLevelTokenizer,
+                          ImmutableArray<Token>.Builder tokens,
+                          ImmutableArray<Trivia>.Builder? triviaBuilder = null )
+    {
+        Throw.CheckNotNullArgument( triviaParser );
+        Throw.CheckNotNullArgument( lowLevelTokenizer );
+        _lowLevelTokenizer = lowLevelTokenizer;
+        _triviaParser = triviaParser;
+
+        Throw.CheckNotNullArgument( tokens );
+        _memText = text;
+        _text = _memText.Span;
+        _head = _text;
+        _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
+        _tokens = tokens;
+        InitializeLeadingTrivia();
+    }
+
+    /// <summary>
+    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="IParserHeadBehavior"/>:
+    /// both trivia handling and low level tokenizer are different.
     /// <para>
-    /// <see cref="SkipTo(int,ref readonly ParserHead)"/> can be used to resynchronize this head with the subordinated one.
+    /// <see cref="SkipTo(int,ref readonly TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
     /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
-    /// <param name="behavior">Alternative behavior for this new head. When null, the same behavior as this one is used.</param>
-    public readonly TokenizerHead CreateSubHead( out int safetyToken, ITokenizerHeadBehavior? behavior = null )
+    /// <param name="behavior">Alternative behavior for this new head.</param>
+    public readonly TokenizerHead CreateSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
     {
         safetyToken = _lastSuccessfulHead;
-        return new TokenizerHead( RemainingText, behavior ?? _behavior, ImmutableArray.CreateBuilder<Token>(), triviaBuilder: _triviaBuilder );
+        return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, ImmutableArray.CreateBuilder<Token>(), triviaBuilder: _triviaBuilder );
+    }
+
+    /// <summary>
+    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="ILowLevelTokenizer"/>.
+    /// <para>
+    /// <see cref="SkipTo(int,ref readonly TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
+    /// </para>
+    /// </summary>
+    /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
+    /// <param name="lowLevelTokenizer">Alternative low level tokenizer for this new head. When null, the same low level tokenizer as this one is used.</param>
+    public readonly TokenizerHead CreateSubHead( out int safetyToken, ILowLevelTokenizer? lowLevelTokenizer = null )
+    {
+        safetyToken = _lastSuccessfulHead;
+        return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, ImmutableArray.CreateBuilder<Token>(), triviaBuilder: _triviaBuilder );
     }
 
     /// <summary>
@@ -427,7 +472,7 @@ public ref struct TokenizerHead
     void InitializeLowLevelToken()
     {
         // Initializes the low-level token.
-        var t = _behavior.LowLevelTokenize( _head );
+        var t = _lowLevelTokenizer.LowLevelTokenize( _head );
         _lowLevelTokenType = t.NodeType;
         if( t.Length != 0 )
         {

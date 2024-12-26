@@ -7,12 +7,16 @@ namespace CK.Transform.TransformLanguage;
 
 public sealed class TransfomerFunction
 {
-    public TransfomerFunction( TransformLanguage language, List<TransformStatement>? statements = null, string? name = null, string? target = null )
+    public TransfomerFunction( TransformLanguage language,
+                               List<TransformStatement>? statements = null,
+                               string? name = null,
+                               string? target = null )
     {
         Language = language;
         Name = name;
         Target = target;
         Statements = statements ?? new List<TransformStatement>();
+        Tokens = ImmutableArray<Token>.Empty;
     }
 
     /// <summary>

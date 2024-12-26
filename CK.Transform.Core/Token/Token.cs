@@ -77,4 +77,3 @@ public class Token
     public override string ToString() => _text.ToString();
 
 }
-
