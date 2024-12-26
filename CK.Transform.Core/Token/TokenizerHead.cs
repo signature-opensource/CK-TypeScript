@@ -25,6 +25,7 @@ public ref struct TokenizerHead
     TokenType _lowLevelTokenType;
     int _lastSuccessfulHead;
     int _inlineErrorCount;
+    int _tokenCountOffset;
 
     /// <summary>
     /// Initializes a new head on a text.
@@ -48,22 +49,17 @@ public ref struct TokenizerHead
         _head = _text;
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
         _tokens = tokens;
+        _tokenCountOffset = -1;
         InitializeLeadingTrivia();
     }
 
-    /// <summary>
-    /// Initializes a new head on a text.
-    /// </summary>
-    /// <param name="text">The text to parse.</param>
-    /// <param name="triviaParser">Required <see cref="TriviaParser"/>.</param>
-    /// <param name="lowLevelTokenizer">Required <see cref="ILowLevelTokenizer"/>.</param>
-    /// <param name="tokens">Required tokens collector.</param>
-    /// <param name="triviaBuilder">Trivia builder to use.</param>
-    public TokenizerHead( ReadOnlyMemory<char> text,
-                          TriviaParser triviaParser,
-                          ILowLevelTokenizer lowLevelTokenizer,
-                          ImmutableArray<Token>.Builder tokens,
-                          ImmutableArray<Trivia>.Builder? triviaBuilder = null )
+    // Private constructor for CreateSubHead.
+    TokenizerHead( ReadOnlyMemory<char> text,
+                   TriviaParser triviaParser,
+                   ILowLevelTokenizer lowLevelTokenizer,
+                   ImmutableArray<Token>.Builder tokens,
+                   ImmutableArray<Trivia>.Builder triviaBuilder,
+                   int tokenCountOffset )
     {
         Throw.CheckNotNullArgument( triviaParser );
         Throw.CheckNotNullArgument( lowLevelTokenizer );
@@ -74,8 +70,9 @@ public ref struct TokenizerHead
         _memText = text;
         _text = _memText.Span;
         _head = _text;
-        _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
+        _triviaBuilder = triviaBuilder;
         _tokens = tokens;
+        _tokenCountOffset = tokenCountOffset;
         InitializeLeadingTrivia();
     }
 
@@ -91,7 +88,7 @@ public ref struct TokenizerHead
     public readonly TokenizerHead CreateSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
     {
         safetyToken = _lastSuccessfulHead;
-        return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, ImmutableArray.CreateBuilder<Token>(), triviaBuilder: _triviaBuilder );
+        return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, ImmutableArray.CreateBuilder<Token>(), _triviaBuilder, LastTokenIndex );
     }
 
     /// <summary>
@@ -105,7 +102,7 @@ public ref struct TokenizerHead
     public readonly TokenizerHead CreateSubHead( out int safetyToken, ILowLevelTokenizer? lowLevelTokenizer = null )
     {
         safetyToken = _lastSuccessfulHead;
-        return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, ImmutableArray.CreateBuilder<Token>(), triviaBuilder: _triviaBuilder );
+        return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, ImmutableArray.CreateBuilder<Token>(), _triviaBuilder, LastTokenIndex );
     }
 
     /// <summary>
@@ -134,7 +131,8 @@ public ref struct TokenizerHead
     public readonly ReadOnlyMemory<char> Text => _memText;
 
     /// <summary>
-    /// Gets the tokens accepted so far.
+    /// Gets the tokens accepted so far by this head: if this is a subordinated head, this doesn't contain
+    /// the tokens from the parent head.
     /// </summary>
     public readonly IReadOnlyList<Token> Tokens => _tokens;
 
@@ -142,6 +140,14 @@ public ref struct TokenizerHead
     /// Gets the last accepted token.
     /// </summary>
     public readonly Token? LastToken => _tokens.Count > 0 ? _tokens[_tokens.Count-1] : null;
+
+    /// <summary>
+    /// Gets the last token index, accounting parent's tokens if this is a subordinated head.
+    /// <para>
+    /// This is -1 when no token have been accepted so far.
+    /// </para>
+    /// </summary>
+    public readonly int LastTokenIndex => _tokenCountOffset + _tokens.Count;
 
     /// <summary>
     /// Extracts the tokens accepted so far. <see cref="Tokens"/> is emptied.
