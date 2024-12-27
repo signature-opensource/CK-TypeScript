@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Transform.TransformLanguage;
-using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -32,59 +31,4 @@ public interface IAnalyzerResult
     /// Gets the tokens. Empty if <see cref="Error"/> is not null.
     /// </summary>
     ImmutableArray<Token> Tokens { get; }
-}
-
-/// <summary>
-/// Node abstraction.
-/// </summary>
-public interface ITokenNode
-{
-    /// <summary>
-    /// Gets the number of tokens
-    /// </summary>
-    int Width { get; }
-
-    ITokenNode? Visit( TokenNodeVisitor visitor );
-}
-
-public class RootNode : ITokenNode
-{
-    readonly ImmutableArray<Token> _tokens;
-    readonly ImmutableArray<ITokenNode> _nodes;
-
-    internal RootNode( ImmutableArray<Token> tokens, ImmutableArray<ITokenNode> nodes )
-    {
-        Throw.DebugAssert( nodes.IsDefault || nodes.Sum( n => n.Width ) == tokens.Length );
-        _tokens = tokens;
-        _nodes = nodes;
-    }
-
-    public int Width => _tokens.Length;
-
-    public ITokenNode? Visit( TokenNodeVisitor visitor )
-    {
-        if( _nodes.IsDefault )
-        {
-            ImmutableArray<ITokenNode>.Builder? b = null;
-            int idx = 0;
-            foreach( var t in _tokens )
-            {
-                var t2 = t.Visit( visitor );
-                if( t2 != t )
-                {
-                    if( b == null )
-                    {
-                        b = ImmutableArray.CreateBuilder<ITokenNode>( _tokens.Length );
-                        b.AddRange()
-                    }
-                }
-                idx++;
-            }
-        }
-    }
-}
-
-public abstract class TokenNodeVisitor
-{
-    public Token? VisitToken( Token t ) => t;
 }
