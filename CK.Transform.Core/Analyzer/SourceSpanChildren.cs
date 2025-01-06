@@ -34,24 +34,27 @@ public class SourceSpanChildren : IEnumerable<SourceSpan>
     /// </summary>
     public TokenSpan CoveringSpan => HasChildren ? new TokenSpan( _firstChild.Span.Beg, _lastChild.Span.End ) : default;
 
-    internal SourceSpanChildren ExtractAndReset() 
-    {
-        var r = new SourceSpanChildren();
-        r._firstChild = _firstChild;
-        r._lastChild = _lastChild;
-        Reset();
-        return r;
-    }
-
-    internal void Reset() 
-    {
-        _firstChild = _lastChild = null;
-    }
-
     internal void Clear()
     {
         while( _firstChild != null ) _firstChild.Detach( withChildren: true );
     }
+
+    internal SourceSpan? DepthFirstChild
+    {
+        get
+        {
+            var c = _firstChild;
+            if( c == null ) return null;
+            var d = c._children._firstChild;
+            while( d != null )
+            {
+                c = d;
+                d = d._children._firstChild;
+            }
+            return c;
+        }
+    }
+
 
     public struct Enumerator : IEnumerator<SourceSpan>
     {

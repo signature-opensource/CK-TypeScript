@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -9,44 +10,104 @@ namespace CK.Transform.Core;
 
 public sealed class SourceCode
 {
-    readonly SourceSpanChildren _children;
+    readonly SourceSpanRoot _spans;
     readonly TokenList _tokens;
 
     public SourceCode()
     {
-        _children = new SourceSpanChildren();
+        _spans = new SourceSpanRoot();
         _tokens = new TokenList( this );
     }
 
+    internal SourceCode( List<Token> tokens, SourceSpanRoot spans )
+    {
+        _spans = new SourceSpanRoot();
+        if( spans._children._firstChild != null ) spans.TransferTo( _spans );
+        _tokens = new TokenList( this, tokens );
+    }
+
     /// <summary>
-    /// Gets the children.
+    /// Gets the spans.
     /// </summary>
-    public SourceSpanChildren Children => _children;
+    public SourceSpanRoot Spans => _spans;
 
     /// <summary>
     /// Gets the tokens.
     /// </summary>
     public TokenList Tokens => _tokens;
 
-    /// <summary>
-    /// Adds a span or throws if it intersects any existing <see cref="Children"/>.
-    /// </summary>
-    /// <param name="newOne">The span to add.</param>
-    public void Add( SourceSpan newOne )
+
+    sealed class SourceCodeEnumerator : ISourceTokenEnumerator
     {
-        Throw.CheckArgument( newOne.IsDetached );
-        if( !_children.TryAdd( null, newOne ) )
+        readonly SourceCode _code;
+        int _index;
+        Token? _token;
+        SourceSpan? _nextSpan;
+        SourceSpan? _span;
+
+        public SourceCodeEnumerator( SourceCode code )
         {
-            Throw.ArgumentException( nameof( newOne ), $"Invalid new '{newOne}'." );
+            _code = code;
+            _index = -1;
+            _nextSpan = code._spans._children._firstChild;
+        }
+
+        public int Index => _index;
+
+        public Token Token => _token!;
+
+        public SourceSpan? Span => _span;
+
+        public bool MoveNext()
+        {
+            if( _index++ >= _code._tokens.Count ) return false;
+            _token = _code._tokens[_index];
+            if( _span == null )
+            {
+                if( _hasSpans && _topLevelSpan != null )
+                {
+
+                    _topLevelSpan = GetNextTopLevelSpan( _topLevelSpan, _index );
+                    _span = _topLevelSpan.GetBestChildAt( _index );
+                }
+            }
+            else 
+            {
+                if( _index < _span.Span.End )
+                {
+                    _span = _span.GetBestChildAt( _index );
+                }
+                else
+                {
+                    _span = GetNextSpan( _span );
+                }
+            }
+            return true;
+
+        }
+
+        SourceSpan? GetNextSpan( SourceSpan current )
+        {
+            var n = current._nextSibling;
+            while( n != null )
+            {
+                if( n.Span.Contains( _index ) )
+                {
+                    return n.GetBestChildAt( _index );
+                }
+                n = n._nextSibling;
+            }
+            n = current._parent;
+            while( n != null )
+            {
+                if( n.Span.Contains( _index ) )
+                {
+                    return n.GetBestChildAt( _index );
+                }
+                n = n._parent;
+            }
         }
     }
-
-    /// <summary>
-    /// Adds a span if it doesn't intersect any existing <see cref="Children"/>.
-    /// </summary>
-    /// <param name="newOne">The span to add.</param>
-    /// <returns>True on success, false if the span intersects an existing span.</returns>
-    public bool TryAdd( SourceSpan newOne ) => _children.TryAdd( null, newOne );
 
     internal void OnInsertToken( int index )
     {
