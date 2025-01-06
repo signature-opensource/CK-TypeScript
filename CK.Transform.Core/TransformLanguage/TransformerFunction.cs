@@ -5,18 +5,20 @@ using System.Collections.Immutable;
 
 namespace CK.Transform.TransformLanguage;
 
-public sealed class TransfomerFunction
+public sealed class TransformerFunction : SourceSpan
 {
-    public TransfomerFunction( TransformLanguage language,
-                               List<TransformStatement>? statements = null,
-                               string? name = null,
-                               string? target = null )
+    public TransformerFunction( int createTokenIndex,
+                                int endTokenIndex,
+                                TransformLanguage language,
+                                List<TransformStatement>? statements = null,
+                                string? name = null,
+                                string? target = null )
+        : base( createTokenIndex, endTokenIndex )
     {
         Language = language;
         Name = name;
         Target = target;
         Statements = statements ?? new List<TransformStatement>();
-        Tokens = ImmutableArray<Token>.Empty;
     }
 
     /// <summary>
@@ -38,9 +40,4 @@ public sealed class TransfomerFunction
     /// Gets the transform statements.
     /// </summary>
     public List<TransformStatement> Statements { get; }
-
-    /// <summary>
-    /// Gets the initial tokens if this transformer has been parsed.
-    /// </summary>
-    public ImmutableArray<Token> Tokens { get; internal set; }
 }

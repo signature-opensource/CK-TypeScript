@@ -13,12 +13,12 @@ public sealed partial class TransformerHost
     /// Transform language analyzer itself. This handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'.
     /// Statements analysis is delegated to <see cref="Language.TransformStatementAnalyzer"/>.
     /// </summary>
-    sealed class RootTransformAnalyzer : Tokenizer, IAnalyzer<TransfomerFunction>
+    sealed class RootTransformAnalyzer : Tokenizer, IAnalyzer
     {
         readonly TransformerHost _host;
         // We only parse one statement at a time here: the side channel
         // doesn't need to be a collector.
-        TransfomerFunction? _result;
+        TransformerFunction? _result;
 
         public RootTransformAnalyzer( TransformerHost host )
         {
@@ -118,17 +118,18 @@ public sealed partial class TransformerHost
                 var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
                 var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
                 head.SkipTo( safetyToken, in headStatements );
-                _result = new TransfomerFunction( cLang.TransformLanguage, statements, functionName?.ToString(), target?.ToString() );
+                _result = new TransformerFunction( cLang.TransformLanguage, statements, functionName?.ToString(), target?.ToString() );
             }
             return null;
         }
 
-        public IAnalyzerResult<TransfomerFunction> Parse( ReadOnlyMemory<char> text )
+        public AnalyzerResult Parse( ReadOnlyMemory<char> text )
         {
             bool success = Tokenize( out var tokens, out var error );
+            return new AnalyzerResult( success, )
             return success
-                    ? AnalyzerResult.Create( tokens, _result )
-                    : AnalyzerResult.CreateFailed<TransfomerFunction>( tokens, error );
+                    ? new AnalyzerResult( AnalyzerResult.Create( tokens, _result )
+                    : AnalyzerResult.CreateFailed<TransformerFunction>( tokens, error );
         }
     }
 

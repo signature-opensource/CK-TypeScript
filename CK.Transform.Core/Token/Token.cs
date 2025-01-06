@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// This can be specialized.
 /// </para>
 /// </summary>
-public class Token : ITokenNode
+public class Token
 {
     readonly ReadOnlyMemory<char> _text;
     readonly ImmutableArray<Trivia> _leadingTrivias;
@@ -75,8 +75,4 @@ public class Token : ITokenNode
     /// </summary>
     /// <returns></returns>
     public override string ToString() => _text.ToString();
-
-    public int Width => 1;
-
-    public ITokenNode? Visit( TokenNodeVisitor visitor ) => visitor.VisitToken( this );
 }

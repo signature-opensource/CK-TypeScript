@@ -1,8 +1,9 @@
-﻿namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.TransformLanguage;
 
 public sealed class InjectIntoStatement : TransformStatement
 {
-    public InjectIntoStatement( RawString content, InjectionPoint target )
+    public InjectIntoStatement( int beg, int end, RawString content, InjectionPoint target )
+        : base( beg, end )
     {
         Content = content;
         Target = target;

@@ -102,10 +102,10 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
     /// Computes the relationship between two spans.
     /// When <see cref="SpanRelationship.Swapped"/> bit is set, the two spans MUST be exchanged.
     /// </summary>
-    /// <param name="r1">First span.</param>
-    /// <param name="s">Second span.</param>
+    /// <param name="s1">First span.</param>
+    /// <param name="s2">Second span.</param>
     /// <returns>The relationship between the first and the second span.</returns>
-    public static SpanRelationship GetRelationship( TokenSpan r1, TokenSpan r2 ) => GetRelationship( ref r1, ref s );
+    public static SpanRelationship GetRelationship( TokenSpan s1, TokenSpan s2 ) => GetRelationship( ref s1, ref s2 );
 
     /// <summary>
     /// Computes the relationship between two spans.

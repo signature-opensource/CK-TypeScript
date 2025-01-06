@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace CK.Transform.Core;
 
@@ -16,7 +17,8 @@ public ref struct TokenizerHead
     readonly ReadOnlyMemory<char> _memText;
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     readonly ILowLevelTokenizer _lowLevelTokenizer;
-    readonly ImmutableArray<Token>.Builder _tokens;
+    SourceSpanRoot _spans;
+    List<Token> _tokens;
     TriviaParser _triviaParser;
     ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
@@ -32,23 +34,21 @@ public ref struct TokenizerHead
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="behavior">Required <see cref="ITokenizerHeadBehavior"/>.</param>
-    /// <param name="tokens">Required tokens collector.</param>
     /// <param name="triviaBuilder">Trivia builder to use.</param>
     public TokenizerHead( ReadOnlyMemory<char> text,
                           ITokenizerHeadBehavior behavior,
-                          ImmutableArray<Token>.Builder tokens,
                           ImmutableArray<Trivia>.Builder? triviaBuilder = null )
     {
         Throw.CheckNotNullArgument( behavior );
         _lowLevelTokenizer = behavior;
         _triviaParser = behavior.ParseTrivia;
 
-        Throw.CheckNotNullArgument( tokens );
         _memText = text;
         _text = _memText.Span;
         _head = _text;
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
-        _tokens = tokens;
+        _spans = new SourceSpanRoot();
+        _tokens = new List<Token>();
         _tokenCountOffset = -1;
         InitializeLeadingTrivia();
     }
@@ -57,7 +57,6 @@ public ref struct TokenizerHead
     TokenizerHead( ReadOnlyMemory<char> text,
                    TriviaParser triviaParser,
                    ILowLevelTokenizer lowLevelTokenizer,
-                   ImmutableArray<Token>.Builder tokens,
                    ImmutableArray<Trivia>.Builder triviaBuilder,
                    int tokenCountOffset )
     {
@@ -66,12 +65,12 @@ public ref struct TokenizerHead
         _lowLevelTokenizer = lowLevelTokenizer;
         _triviaParser = triviaParser;
 
-        Throw.CheckNotNullArgument( tokens );
         _memText = text;
         _text = _memText.Span;
         _head = _text;
         _triviaBuilder = triviaBuilder;
-        _tokens = tokens;
+        _spans = new SourceSpanRoot();
+        _tokens = new List<Token>();
         _tokenCountOffset = tokenCountOffset;
         InitializeLeadingTrivia();
     }
@@ -88,7 +87,7 @@ public ref struct TokenizerHead
     public readonly TokenizerHead CreateSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
     {
         safetyToken = _lastSuccessfulHead;
-        return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, ImmutableArray.CreateBuilder<Token>(), _triviaBuilder, LastTokenIndex );
+        return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, _triviaBuilder, LastTokenIndex );
     }
 
     /// <summary>
@@ -102,21 +101,27 @@ public ref struct TokenizerHead
     public readonly TokenizerHead CreateSubHead( out int safetyToken, ILowLevelTokenizer? lowLevelTokenizer = null )
     {
         safetyToken = _lastSuccessfulHead;
-        return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, ImmutableArray.CreateBuilder<Token>(), _triviaBuilder, LastTokenIndex );
+        return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, _triviaBuilder, LastTokenIndex );
     }
 
     /// <summary>
     /// Skips this head up to the <paramref name="subHead"/>.
     /// </summary>
-    /// <param name="safetyToken">Token provided by <see cref="CreateSubHead(out int, IParserHeadBehavior?)"/>.</param>
+    /// <param name="safetyToken">Token provided by CreateSubHead methods.</param>
     /// <param name="subHead">Subordinated head.</param>
-    public void SkipTo( int safetyToken, ref readonly TokenizerHead subHead )
+    public void SkipTo( int safetyToken, ref TokenizerHead subHead )
     {
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
         Throw.CheckState( _lastSuccessfulHead == safetyToken );
         _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
-        _tokens.AddRange( subHead._tokens );
         _inlineErrorCount += subHead._inlineErrorCount;
+
+        _tokens.AddRange( CollectionsMarshal.AsSpan( subHead._tokens ) );
+        subHead._inlineErrorCount = 0;
+        subHead._tokens.Clear();
+
+        subHead._spans.TransferTo( _spans );
+
         InitializeLeadingTrivia();
     }
 
@@ -137,6 +142,12 @@ public ref struct TokenizerHead
     public readonly IReadOnlyList<Token> Tokens => _tokens;
 
     /// <summary>
+    /// Gets the spans to which any span can be added.
+    /// If this is a subordinated head, this doesn't contain the spans from the parent head.
+    /// </summary>
+    public readonly SourceSpanRoot Spans => _spans;
+
+    /// <summary>
     /// Gets the last accepted token.
     /// </summary>
     public readonly Token? LastToken => _tokens.Count > 0 ? _tokens[_tokens.Count-1] : null;
@@ -150,13 +161,16 @@ public ref struct TokenizerHead
     public readonly int LastTokenIndex => _tokenCountOffset + _tokens.Count;
 
     /// <summary>
-    /// Extracts the tokens accepted so far. <see cref="Tokens"/> is emptied.
+    /// Extracts the tokens accepted so far, the spans created and the <see cref="InlineErrorCount"/>.
+    /// <see cref="Tokens"/> and <see cref="Spans"/> are emptied, InlineErrorCount is set to 0.
     /// </summary>
-    /// <param name="resetInlineErrorCount">False to keep the current <see cref="InlineErrorCount"/>. By default, it is set to 0.</param>
-    public ImmutableArray<Token> ExtractTokens( bool resetInlineErrorCount = true )
+    /// <param name="code">The collected tokens and spans.</param>
+    /// <param name="inlineErrorCount">Number of inlined errors.</param>
+    public void ExtractResult( out SourceCode code, out int inlineErrorCount )
     {
-        if( resetInlineErrorCount ) _inlineErrorCount = 0;
-        return _tokens.DrainToImmutable();
+        code = new SourceCode( _tokens, _spans );
+        inlineErrorCount = _inlineErrorCount;
+        _inlineErrorCount = 0;
     }
 
     /// <summary>
@@ -358,7 +372,7 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Accepts the <see cref="LowLevelTokenText"/> and creates a <see cref="Token"/> with it.
+    /// Accepts the <see cref="LowLevelTokenText"/> and appends a <see cref="Token"/> with it.
     /// <para>
     /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>

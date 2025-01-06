@@ -74,7 +74,7 @@ public sealed partial class TransformerHost
         /// <param name="scope">An optional scope for the transformation.</param>
         /// <returns>True on success, false on error.</returns>
         public bool Apply( IActivityMonitor monitor,
-                           TransfomerFunction transformer,
+                           TransformerFunction transformer,
                            NodeScopeBuilder? scope = null )
         {
             Throw.CheckNotNullArgument( monitor );

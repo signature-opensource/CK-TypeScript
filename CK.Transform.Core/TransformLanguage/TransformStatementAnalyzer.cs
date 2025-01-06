@@ -9,6 +9,10 @@ namespace CK.Transform.TransformLanguage;
 
 /// <summary>
 /// Base class for transform language analyzer: this parses <see cref="TransformStatement"/>.
+/// <para>
+/// Specializations can implement <see cref="ILowLevelTokenizer"/> if the transform language
+/// requires more than the default low level tokens handled by <see cref="TransformerHost.RootTransformAnalyzer.LowLevelTokenize(ReadOnlySpan{char})"/>.
+/// </para>
 /// </summary>
 public abstract class TransformStatementAnalyzer
 {
@@ -28,6 +32,11 @@ public abstract class TransformStatementAnalyzer
     /// </summary>
     public TransformLanguage Language => _language;
 
+    /// <summary>
+    /// Parses a "begin ... end" block. Statements are parsed by <see cref="ParseStatement(ref TokenizerHead)"/>.
+    /// </summary>
+    /// <param name="head">The head.</param>
+    /// <returns>The list of transform statements.</returns>
     internal List<TransformStatement> ParseStatements( ref TokenizerHead head )
     {
         var statements = new List<TransformStatement>();
@@ -71,12 +80,13 @@ public abstract class TransformStatementAnalyzer
 
     static InjectIntoStatement? MatchInjectIntoStatement( ref TokenizerHead head, Token inject )
     {
+        int startSpan = head.LastTokenIndex;
         var content = MatchRawString( ref head );
         head.MatchToken( "into", inlineError: true );
         var target = MatchInjectionPoint( ref head );
         head.TryMatchToken( ";", out _ );
         return content != null && target != null
-                ? new InjectIntoStatement( content, target )
+                ? new InjectIntoStatement( startSpan, head.LastTokenIndex, content, target )
                 : null;
 
         static InjectionPoint? MatchInjectionPoint( ref TokenizerHead head )
@@ -84,7 +94,7 @@ public abstract class TransformStatementAnalyzer
             if( head.LowLevelTokenType == TokenType.LessThan )
             {
                 var sHead = head.Head;
-                int nameLen = TriviaInjectionPointMatcher.GetInsertionPointLength( sHead );
+                int nameLen = TriviaInjectionPointMatcher.GetInjectionPointLength( sHead );
                 if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
                 {
                     head.PreAcceptToken( nameLen + 1, out var text, out var leading, out var trailing );

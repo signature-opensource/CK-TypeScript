@@ -166,7 +166,7 @@ sealed class TriviaInjectionPointMatcher
             injectDef = head;
         }
         // Name match the <InjectionPoint>.
-        int nameLen = GetInsertionPointLength( head );
+        int nameLen = GetInjectionPointLength( head );
         if( nameLen == 0 || !head.TryMatch( _injectionPoint.Name ) ) return false;
         head = head.TrimStart();
         // "revert"
@@ -185,7 +185,7 @@ sealed class TriviaInjectionPointMatcher
         return head.Length > 0 && head[0] == '>';
     }
 
-    internal static int GetInsertionPointLength( ReadOnlySpan<char> sHead )
+    internal static int GetInjectionPointLength( ReadOnlySpan<char> sHead )
     {
         int iS = 0;
         while( ++iS < sHead.Length && char.IsAsciiLetterOrDigit( sHead[iS] ) ) ;

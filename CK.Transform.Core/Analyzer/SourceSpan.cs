@@ -4,24 +4,25 @@ namespace CK.Transform.Core;
 
 public abstract partial class SourceSpan
 {
-    internal readonly SourceRoot _root;
+    internal readonly SourceCode _root;
     internal SourceSpan? _parent;
-    internal ChildrenSet _children;
+    internal SourceSpanChildren _children;
     internal SourceSpan? _prevSibling;
     internal SourceSpan? _nextSibling;
     internal TokenSpan _span;
 
-    public SourceSpan( SourceRoot root, int index, int width )
+    public SourceSpan( SourceCode root, int index, int width )
     {
         _root = root;
         _span = new TokenSpan( index, index + width );
-        _children = new ChildrenSet();
+        _children = new SourceSpanChildren();
+        root.Add( this );
     }
 
     /// <summary>
     /// Gets the root.
     /// </summary>
-    public SourceRoot Root => _root;
+    public SourceCode Root => _root;
 
     /// <summary>
     /// Gets the token span.
@@ -36,7 +37,7 @@ public abstract partial class SourceSpan
     /// <summary>
     /// Gets the children.
     /// </summary>
-    public ChildrenSet Children => _children;
+    public SourceSpanChildren Children => _children;
 
     /// <summary>
     /// Gets the type name of this span. This should be compared using <see cref="StringComparer.OrdinalIgnoreCase"/>.

@@ -33,7 +33,7 @@ public sealed partial class TransformerHost
 
         public TransformStatementAnalyzer TransformStatementAnalyzer => _thisAnalyzer;
 
-        protected internal override IAnalyzer<TransfomerFunction> CreateTargetAnalyzer() => _rootAnalyzer;
+        protected internal override IAnalyzer<TransformerFunction> CreateTargetAnalyzer() => _rootAnalyzer;
 
         protected internal override TransformStatementAnalyzer CreateTransformStatementAnalyzer( TransformerHost host ) => _thisAnalyzer;
     }

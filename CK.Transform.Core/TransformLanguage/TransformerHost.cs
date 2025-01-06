@@ -24,7 +24,7 @@ public sealed partial class TransformerHost
     {
         readonly TransformLanguage _language;
         readonly TransformStatementAnalyzer _transformStatementAnalyzer;
-        readonly IAnalyzer<object> _targetAnalyzer;
+        readonly IAnalyzer _targetAnalyzer;
 
         /// <summary>
         /// Gets the <see cref="TransformLanguage.LanguageName"/>.
@@ -44,7 +44,7 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Gets the target language annalyzer.
         /// </summary>
-        public IAnalyzer<object> TargetAnalyzer => _targetAnalyzer;
+        public IAnalyzer TargetAnalyzer => _targetAnalyzer;
 
         internal Language( TransformerHost host, TransformLanguage language )
         {
@@ -111,14 +111,17 @@ public sealed partial class TransformerHost
     public Language? Find( ReadOnlySpan<char> name ) => Find( _languages, name );
 
     /// <inheritdoc cref="TryParseFunction(IActivityMonitor,ReadOnlyMemory{char})"/>
-    public TransfomerFunction? TryParseFunction( IActivityMonitor monitor, string text ) => TryParseFunction( monitor, text.AsMemory() );
+    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, string text ) => TryParseFunction( monitor, text.AsMemory() );
 
     /// <summary>
-    /// Parses a <see cref="TransfomerFunction"/> or throws if it cannot be parsed.
+    /// Parses a <see cref="TransformerFunction"/> or throws if it cannot be parsed.
     /// </summary>
     /// <param name="text">the text to parse.</param>
     /// <returns>The function.</returns>
-    public TransfomerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text ) => _transformLanguage.RootAnalyzer.SafeParse( monitor, text )?.Result;
+    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text )
+    {
+        var r =_transformLanguage.RootAnalyzer.SafeParse( monitor, text )?.SourceCode;
+    }
 
     /// <summary>
     /// Applies a sequence of transformers to an initial <paramref name="text"/>.
@@ -129,7 +132,7 @@ public sealed partial class TransformerHost
     /// <returns>The transformed result on success and null if an error occurred.</returns>
     public IAnalyzerResult? Transform( IActivityMonitor monitor,
                                     string text,
-                                    params IEnumerable<TransfomerFunction> transformers )
+                                    params IEnumerable<TransformerFunction> transformers )
     {
         return Transform( monitor, text, null, transformers );
     }
@@ -145,7 +148,7 @@ public sealed partial class TransformerHost
     public IAnalyzerResult? Transform( IActivityMonitor monitor,
                                        string text,
                                        NodeScopeBuilder? scope = null,
-                                       params IEnumerable<TransfomerFunction> transformers )
+                                       params IEnumerable<TransformerFunction> transformers )
     {
         var transformer = transformers.FirstOrDefault();
         Throw.CheckArgument( transformer is not null );
@@ -177,7 +180,7 @@ public sealed partial class TransformerHost
         }
         return h.Node;
 
-        static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransfomerFunction transformer, string text )
+        static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransformerFunction transformer, string text )
         {
             var l = Find( languages, transformer.Language.LanguageName );
             if( l == null )

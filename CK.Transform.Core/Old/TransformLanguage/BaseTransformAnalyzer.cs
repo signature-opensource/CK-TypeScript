@@ -186,7 +186,7 @@ public abstract class BaseTransformAnalyzer : Analyzer
             if( head.LowLevelTokenType == TokenType.LessThan )
             {
                 var sHead = head.Head;
-                int nameLen = TriviaInjectionPointMatcher.GetInsertionPointLength( sHead );
+                int nameLen = TriviaInjectionPointMatcher.GetInjectionPointLength( sHead );
                 if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
                 {
                     head.AcceptToken( nameLen + 1, out var text, out var leading, out var trailing );
