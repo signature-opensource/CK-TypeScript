@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Extends <see cref="IAnalyzerResult{T}"/> and provides helpers.
+/// Captures the result of a <see cref="IAnalyzer.Parse(System.ReadOnlyMemory{char})"/> call.
 /// </summary>
 public sealed class AnalyzerResult
 {

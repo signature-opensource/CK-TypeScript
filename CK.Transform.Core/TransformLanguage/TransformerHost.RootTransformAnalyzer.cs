@@ -11,19 +11,21 @@ public sealed partial class TransformerHost
 {
     /// <summary>
     /// Transform language analyzer itself. This handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'.
-    /// Statements analysis is delegated to <see cref="Language.TransformStatementAnalyzer"/>.
+    /// Statements analysis is delegated to the <see cref="Language.TransformStatementAnalyzer"/>.
     /// </summary>
     sealed class RootTransformAnalyzer : Tokenizer, IAnalyzer
     {
         readonly TransformerHost _host;
-        // We only parse one statement at a time here: the side channel
-        // doesn't need to be a collector.
-        TransformerFunction? _result;
 
         public RootTransformAnalyzer( TransformerHost host )
         {
             _host = host;
         }
+
+        /// <summary>
+        /// Gets the "Transform" language name.
+        /// </summary>
+        public string LanguageName => _host._transformLanguage.LanguageName;
 
         /// <summary>
         /// Transform languages accept <see cref="TriviaHeadExtensions.AcceptCLikeRecursiveStarComment(ref TriviaHead)"/>
@@ -42,9 +44,9 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Implements minimal support required by any Transform language.
         /// <para>
-        /// When overridden, <see cref="TokenType.GenericIdentifier"/> that at least handles "Ascii letter[Ascii letter or digit]*",
-        /// <see cref="TokenType.DoubleQuote"/>, <see cref="TokenType.LessThan"/>, <see cref="TokenType.Dot"/>
-        /// and <see cref="TokenType.SemiColon"/> must be handled.
+        /// When substituted by a <see cref="TransformStatementAnalyzer"/> implementation, <see cref="TokenType.GenericIdentifier"/> that
+        /// at least handles "Ascii letter[Ascii letter or digit]*", <see cref="TokenType.DoubleQuote"/>, <see cref="TokenType.LessThan"/>,
+        /// <see cref="TokenType.Dot"/> and <see cref="TokenType.SemiColon"/> must be handled.
         /// </para>
         /// </summary>
         /// <param name="head">The head.</param>
@@ -78,58 +80,56 @@ public sealed partial class TransformerHost
         }
 
         /// <summary>
-        /// Sealed Tokenize function: this handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'
-        /// and is used by the <see cref="TransformerHost"/>. Specialized parsers mut override <see cref="ParseStatement(ref TokenizerHead)"/>.
+        /// Handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'
+        /// and is used by the <see cref="TransformerHost"/>.
         /// </summary>
         /// <param name="head">The head.</param>
-        /// <returns>Single hard failure is that the target language is not registered. Other errors are inlined.</returns>
-        protected sealed override TokenError? Tokenize( ref TokenizerHead head )
+        /// <returns>Hard failures are that no initial "create" appears or the target language is not registered. Other errors are inlined.</returns>
+        protected override TokenError? Tokenize( ref TokenizerHead head )
         {
-            if( head.TryMatchToken( "create", out var create ) )
-            {
-                var cLang = _host.Find( head.LowLevelTokenText );
-                if( cLang == null )
-                {
-                    return head.CreateError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
-                }
-                var language = head.CreateLowLevelToken();
-                head.MatchToken( "transformer", inlineError: true );
+            var create = head.MatchToken( "create" );
+            if( create is TokenError error ) return error; 
 
-                Token? functionName = null;
-                Token? target = null;
-                if( !head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
-                {
-                    bool hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
-                    if( !hasOn && !head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) )
-                    {
-                        functionName = head.CreateLowLevelToken();
-                        hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
-                    }
-                    if( hasOn )
-                    {
-                        // on
-                        head.CreateLowLevelToken();
-                        target = head.MatchToken( TokenType.GenericIdentifier, "target identifier" );
-                    }
-                    // The optional "as" token is parsed in the context of the transform generic language.
-                    head.TryMatchToken( "as", out _ );
-                }
-                // The begin...end is parsed in the context of the actual transform language.
-                var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
-                var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
-                head.SkipTo( safetyToken, in headStatements );
-                _result = new TransformerFunction( cLang.TransformLanguage, statements, functionName?.ToString(), target?.ToString() );
+            int startFunction = head.LastTokenIndex;
+            var cLang = _host.Find( head.LowLevelTokenText );
+            if( cLang == null )
+            {
+                return head.CreateError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
             }
+            var language = head.CreateLowLevelToken();
+            head.MatchToken( "transformer", inlineError: true );
+
+            Token? functionName = null;
+            Token? target = null;
+            if( !head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
+            {
+                bool hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
+                if( !hasOn && !head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) )
+                {
+                    functionName = head.CreateLowLevelToken();
+                    hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
+                }
+                if( hasOn )
+                {
+                    // on
+                    head.CreateLowLevelToken();
+                    target = head.MatchToken( TokenType.GenericIdentifier, "target identifier" );
+                }
+                // The optional "as" token is parsed in the context of the root transform language.
+                head.TryMatchToken( "as", out _ );
+            }
+            // The begin...end is parsed in the context of the actual transform language.
+            var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
+            var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
+            head.SkipTo( safetyToken, ref headStatements );
+            head.Spans.Add( new TransformerFunction( startFunction, head.LastTokenIndex, cLang.TransformLanguage, statements, functionName?.ToString(), target?.ToString() ) );
             return null;
         }
 
         public AnalyzerResult Parse( ReadOnlyMemory<char> text )
         {
-            bool success = Tokenize( out var tokens, out var error );
-            return new AnalyzerResult( success, )
-            return success
-                    ? new AnalyzerResult( AnalyzerResult.Create( tokens, _result )
-                    : AnalyzerResult.CreateFailed<TransformerFunction>( tokens, error );
+            Reset( text );
+            return Parse();
         }
     }
 

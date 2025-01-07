@@ -120,7 +120,11 @@ public sealed partial class TransformerHost
     /// <returns>The function.</returns>
     public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text )
     {
-        var r =_transformLanguage.RootAnalyzer.SafeParse( monitor, text )?.SourceCode;
+        var r =_transformLanguage.RootAnalyzer.SafeParse( monitor, text );
+        if( r == null ) return null;
+        var f = r.SourceCode.Spans.FirstOrDefault();
+        Throw.DebugAssert( f is TransformerFunction );
+        return Unsafe.As<TransformerFunction>( f );
     }
 
     /// <summary>
@@ -130,9 +134,9 @@ public sealed partial class TransformerHost
     /// <param name="text">The text to transform.</param>
     /// <param name="transformers">The transformers to apply in order.</param>
     /// <returns>The transformed result on success and null if an error occurred.</returns>
-    public IAnalyzerResult? Transform( IActivityMonitor monitor,
-                                    string text,
-                                    params IEnumerable<TransformerFunction> transformers )
+    public SourceCode? Transform( IActivityMonitor monitor,
+                                  string text,
+                                  params IEnumerable<TransformerFunction> transformers )
     {
         return Transform( monitor, text, null, transformers );
     }
@@ -145,40 +149,38 @@ public sealed partial class TransformerHost
     /// <param name="scope">Optional scope. Applies only to the first transformer.</param>
     /// <param name="transformers">The transformers to apply in order.</param>
     /// <returns>The transformed result on success and null if an error occurred.</returns>
-    public IAnalyzerResult? Transform( IActivityMonitor monitor,
-                                       string text,
-                                       NodeScopeBuilder? scope = null,
-                                       params IEnumerable<TransformerFunction> transformers )
+    public SourceCode? Transform( IActivityMonitor monitor,
+                                  string text,
+                                  NodeScopeBuilder? scope = null,
+                                  params IEnumerable<TransformerFunction> transformers )
     {
         var transformer = transformers.FirstOrDefault();
         Throw.CheckArgument( transformer is not null );
 
         Language? language = LocalFind( monitor, _languages, transformer, text );
         if( language == null ) return null;
-        IAnalyzerResult? target = language.TargetAnalyzer.SafeParse( monitor, text.AsMemory() );
-        if( target == null ) return null;
+        AnalyzerResult? r = language.TargetAnalyzer.SafeParse( monitor, text.AsMemory() );
+        if( r == null ) return null;
 
-        var h = new Host( language, target );
-        if( !h.Apply( monitor, transformer, scope ) )
-        {
-            return null;
-        }
+        var codeEditor = new SourceCodeEditor( language.TargetAnalyzer, r.SourceCode );
+        if( !transformer.Apply( monitor, codeEditor ) ) return null;
+
         foreach( var t in transformers.Skip( 1 ) )
         {
             if( !t.Language.LanguageName.Equals( language.LanguageName, StringComparison.OrdinalIgnoreCase ) )
             {
                 language = LocalFind( monitor, _languages, transformer, text );
-                if( language == null || !h.Reparse( monitor ) )
+                if( language == null || !codeEditor.Reparse( monitor, language.TargetAnalyzer ) )
                 {
                     return null;
                 }
             }
-            if( !h.Apply( monitor, transformer, scope: null ) )
+            if( !t.Apply( monitor, codeEditor ) )
             {
                 return null;
             }
         }
-        return h.Node;
+        return codeEditor.SourceCode;
 
         static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransformerFunction transformer, string text )
         {

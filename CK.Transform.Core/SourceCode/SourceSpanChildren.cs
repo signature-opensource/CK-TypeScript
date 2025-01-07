@@ -8,7 +8,7 @@ using System.Reflection;
 namespace CK.Transform.Core;
 
 
-public class SourceSpanChildren : IEnumerable<SourceSpan>
+public partial class SourceSpanChildren : IEnumerable<SourceSpan>
 {
     internal SourceSpan? _firstChild;
     internal SourceSpan? _lastChild;
@@ -39,66 +39,6 @@ public class SourceSpanChildren : IEnumerable<SourceSpan>
         while( _firstChild != null ) _firstChild.Detach( withChildren: true );
     }
 
-    internal SourceSpan? DepthFirstChild
-    {
-        get
-        {
-            var c = _firstChild;
-            if( c == null ) return null;
-            var d = c._children._firstChild;
-            while( d != null )
-            {
-                c = d;
-                d = d._children._firstChild;
-            }
-            return c;
-        }
-    }
-
-
-    public struct Enumerator : IEnumerator<SourceSpan>
-    {
-#pragma warning disable IDE0044 // Not readonly to prevent defensive struct copies.
-        SourceSpan? _firstChild;
-#pragma warning restore IDE0044 // Add readonly modifier
-        SourceSpan? _current;
-
-        internal Enumerator( SourceSpan? firstChild )
-        {
-            _firstChild = firstChild;
-        }
-
-        public readonly SourceSpan Current => _current!;
-
-        object IEnumerator.Current => _current!;
-
-        public void Dispose() { }
-
-        public bool MoveNext()
-        {
-            if( _current == null )
-            {
-                _current = _firstChild;
-                return _current != null;
-            }
-            var c = _current._nextSibling;
-            if( c != null )
-            {
-                _current = c;
-                return true;
-            }
-            return false;
-        }
-
-        public void Reset() => _current = null;
-    }
-
-    public Enumerator GetEnumerator() => new Enumerator( _firstChild );
-
-    IEnumerator<SourceSpan> IEnumerable<SourceSpan>.GetEnumerator() => GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
     internal bool TryAdd( SourceSpan? parent, SourceSpan newOne )
     {
         var c = _firstChild;
@@ -115,7 +55,7 @@ public class SourceSpanChildren : IEnumerable<SourceSpan>
             // newOne is after (or immediately after) the current span: skip to the next span.
             if( newOne._span.Beg >= c._span.End )
             {
-                Throw.DebugAssert( newOne._span.GetRelationship( c._span ) is (SpanRelationship.Continued | SpanRelationship.Swapped)
+                Throw.DebugAssert( newOne._span.GetRelationship( c._span ) is (SpanRelationship.Contiguous | SpanRelationship.Swapped)
                                                                             or (SpanRelationship.Independent | SpanRelationship.Swapped) );
                 c = c._nextSibling;
                 continue;
@@ -123,7 +63,7 @@ public class SourceSpanChildren : IEnumerable<SourceSpan>
             // newOne is before (or immediately before): we found its place.
             if( newOne._span.End <= c._span.Beg )
             {
-                Throw.DebugAssert( newOne._span.GetRelationship( c._span ) is SpanRelationship.Continued
+                Throw.DebugAssert( newOne._span.GetRelationship( c._span ) is SpanRelationship.Contiguous
                                                                             or SpanRelationship.Independent );
                 newOne._nextSibling = c;
                 var prev = c._prevSibling;
@@ -224,6 +164,89 @@ public class SourceSpanChildren : IEnumerable<SourceSpan>
         newOne._parent = parent;
         return true;
 
+    }
+
+    internal SourceSpan? GetSpanAt( int index )
+    {
+        var c = _firstChild;
+        while( c != null )
+        {
+            if( c.Span.Contains( index ) )
+            {
+                return c.GetSpanAt( index );
+            }
+            c = c._nextSibling;
+        }
+        return null;
+    }
+
+    internal void OnAddTokens( int index, int count )
+    {
+        Throw.DebugAssert( index >= 0 && count > 0 );
+        var c = _firstChild;
+        while( c != null )
+        {
+            if( index < c.Span.Beg )
+            {
+                c._span = new TokenSpan( c.Span.Beg + count, c.Span.End );
+                c._children.OnAddTokens( index, count );
+            }
+            else if( index < c.Span.End )
+            {
+                c._span = new TokenSpan( c.Span.Beg, c.Span.End + count );
+                c._children.OnAddTokens( index, count );
+            }
+            c = c._nextSibling;
+        }
+    }
+
+    internal void OnRemoveTokens( TokenSpan removed, ref List<SourceSpan>? toRemove )
+    {
+        var c = _firstChild;
+        while( c != null )
+        {
+            var s = Remove( c.Span, removed );
+            if( s.IsEmpty )
+            {
+                toRemove ??= new List<SourceSpan>();
+                toRemove.Add( c );
+            }
+            else if( s != c.Span )
+            {
+                c._span = s;
+                c._children.OnRemoveTokens( removed, ref toRemove );
+            }
+            c = c._nextSibling;
+        }
+    }
+
+    static TokenSpan Remove( TokenSpan span, TokenSpan removed )
+    {
+        return span.GetRelationship( removed ) switch
+        {
+            // The span must be removed.
+            SpanRelationship.Equal
+                or SpanRelationship.Contained|SpanRelationship.Swapped
+                or SpanRelationship.SameStart
+                or SpanRelationship.SameEnd|SpanRelationship.Swapped => TokenSpan.Empty,
+            // [...][XXX]No change (span is before removed).
+            SpanRelationship.Independent
+                or SpanRelationship.Contiguous => span,
+            // [XXX][...] Offset (removed is before span).
+            SpanRelationship.Independent|SpanRelationship.Swapped
+                or SpanRelationship.Contiguous|SpanRelationship.Swapped => new TokenSpan( span.Beg - removed.Length, span.End - removed.Length ),
+            // [...[XXX]]
+            SpanRelationship.SameEnd => new TokenSpan( span.Beg, removed.Beg ),
+            // [[XXX]...]
+            SpanRelationship.SameStart|SpanRelationship.Swapped => new TokenSpan( removed.End, span.End ),
+            // [...[XXX]...]
+            SpanRelationship.Contained => new TokenSpan( span.Beg, span.End - removed.Length ),
+            // [...[X.X.X]X]
+            SpanRelationship.Overlapped => new TokenSpan( span.Beg, removed.Beg ),
+            // [X[X.X.X]...]
+            SpanRelationship.Overlapped|SpanRelationship.Swapped => new TokenSpan( removed.End, span.End ),
+            _ => Throw.NotSupportedException<TokenSpan>()
+        };
     }
 
     internal void SetRoot( SourceSpanRoot root )

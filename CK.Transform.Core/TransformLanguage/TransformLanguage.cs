@@ -4,8 +4,8 @@ using CK.Transform.Core;
 namespace CK.Transform.TransformLanguage;
 
 /// <summary>
-/// Abstract factory for a target language <see cref="Tokenizer"/> and its associated
-/// transfom <see cref="BaseTransformParser"/>.
+/// Abstract factory for a target language <see cref="IAnalyzer"/> and its associated
+/// transfom <see cref="TransformStatementAnalyzer"/>.
 /// </summary>
 public abstract class TransformLanguage
 {
@@ -34,11 +34,10 @@ public abstract class TransformLanguage
     internal protected abstract TransformStatementAnalyzer CreateTransformStatementAnalyzer( TransformerHost host );
 
     /// <summary>
-    /// Must create a target language analyzer that can be a simple tokenizer or a more complex
-    /// beast. 
+    /// Must create a target language analyzer. 
     /// </summary>
     /// <returns>A new analyzer.</returns>
-    internal protected abstract IAnalyzer<object> CreateTargetAnalyzer();
+    internal protected abstract IAnalyzer CreateTargetAnalyzer();
 
     /// <summary>
     /// Optional extension point that can handle the "on ...." specifier.

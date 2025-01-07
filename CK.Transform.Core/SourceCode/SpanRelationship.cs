@@ -25,7 +25,7 @@ public enum SpanRelationship
     /// <summary>
     /// The first span ends where the second one begins.
     /// </summary>
-    Continued,
+    Contiguous,
 
     /// <summary>
     /// The first span is before the second one and doesn't intersect it.

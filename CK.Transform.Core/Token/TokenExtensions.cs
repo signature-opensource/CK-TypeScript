@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace CK.Transform.Core;
@@ -14,7 +14,7 @@ public static class TokenExtensions
     /// <param name="tokens">These tokens.</param>
     /// <param name="b">The target builder.</param>
     /// <returns>The builder.</returns>
-    public static StringBuilder Write( this ImmutableArray<Token> tokens, StringBuilder b )
+    public static StringBuilder Write( this ImmutableList<Token> tokens, StringBuilder b )
     {
         foreach( var t in tokens )
         {
@@ -31,7 +31,7 @@ public static class TokenExtensions
     /// <param name="tokens">These tokens.</param>
     /// <param name="b">The target builder.</param>
     /// <returns>The builder.</returns>
-    public static StringBuilder WriteCompact( this ImmutableArray<Token> tokens, StringBuilder b )
+    public static StringBuilder WriteCompact( this ImmutableList<Token> tokens, StringBuilder b )
     {
         bool hasWhitespace = true; 
         foreach( var t in tokens )

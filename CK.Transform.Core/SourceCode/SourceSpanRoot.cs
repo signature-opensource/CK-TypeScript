@@ -2,10 +2,11 @@ using CK.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace CK.Transform.Core;
 
-public sealed class SourceSpanRoot
+public sealed class SourceSpanRoot : IEnumerable<SourceSpan>
 {
     internal readonly SourceSpanChildren _children;
 
@@ -13,8 +14,6 @@ public sealed class SourceSpanRoot
     {
         _children = new SourceSpanChildren();
     }
-
-    public IEnumerable<SourceSpan> Spans => _children;
 
     /// <summary>
     /// Adds a span or throws if it intersects any existing <see cref="Children"/>.
@@ -44,6 +43,26 @@ public sealed class SourceSpanRoot
         return false;
     }
 
+    /// <summary>
+    /// Gets the deepest span at a given position.
+    /// <para>
+    /// <see cref="SourceSpan.Parent"/> can be used to retrieve all the parent covering spans.
+    /// </para>
+    /// </summary>
+    /// <param name="index">The token index.</param>
+    /// <returns>The deepest span or null if no span covers the token at this position.</returns>
+    public SourceSpan? GetSpanAt( int index ) => _children.GetSpanAt( index );
+
+    /// <summary>
+    /// Gets a span enumerator.
+    /// </summary>
+    /// <returns>The enumerator.</returns>
+    public SourceSpanChildren.Enumerator GetEnumerator() => _children.GetEnumerator();
+
+    IEnumerator<SourceSpan> IEnumerable<SourceSpan>.GetEnumerator() => _children.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
     internal void TransferTo( SourceSpanRoot target )
     {
         Throw.DebugAssert( "Not called if useless.", _children.HasChildren );
@@ -62,5 +81,21 @@ public sealed class SourceSpanRoot
         }
         _children._firstChild = null;
         _children._lastChild = null;
+    }
+
+    internal void OnAddTokens( int index, int count ) => _children.OnAddTokens( index, count );
+
+    internal void OnRemoveTokens( int index, int count )
+    {
+        Throw.DebugAssert( index >= 0 && count > 0 );
+        List<SourceSpan>? toRemove = null;
+        _children.OnRemoveTokens( new TokenSpan( index, index + count ), ref toRemove );
+        if( toRemove != null )
+        {
+            foreach( var s in toRemove )
+            {
+                s.Detach( withChildren: true );
+            }
+        }
     }
 }

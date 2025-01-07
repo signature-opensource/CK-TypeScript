@@ -141,7 +141,7 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
         }
         if( r1._end == r2._beg )
         {
-            return SpanRelationship.Continued | swap;
+            return SpanRelationship.Contiguous | swap;
         }
         if( r1._end < r2._beg )
         {

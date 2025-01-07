@@ -17,8 +17,8 @@ public ref struct TokenizerHead
     readonly ReadOnlyMemory<char> _memText;
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     readonly ILowLevelTokenizer _lowLevelTokenizer;
-    SourceSpanRoot _spans;
-    List<Token> _tokens;
+    readonly SourceSpanRoot _spans;
+    readonly List<Token> _tokens;
     TriviaParser _triviaParser;
     ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
@@ -34,9 +34,11 @@ public ref struct TokenizerHead
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="behavior">Required <see cref="ITokenizerHeadBehavior"/>.</param>
-    /// <param name="triviaBuilder">Trivia builder to use.</param>
+    /// <param name="tokenCollector">Optional preallocated token collector to use.</param>
+    /// <param name="triviaBuilder">Optional preallocated trivia builder to use.</param>
     public TokenizerHead( ReadOnlyMemory<char> text,
                           ITokenizerHeadBehavior behavior,
+                          List<Token>? tokenCollector = null,
                           ImmutableArray<Trivia>.Builder? triviaBuilder = null )
     {
         Throw.CheckNotNullArgument( behavior );
@@ -46,9 +48,9 @@ public ref struct TokenizerHead
         _memText = text;
         _text = _memText.Span;
         _head = _text;
+        _tokens = tokenCollector ?? new List<Token>();
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
         _spans = new SourceSpanRoot();
-        _tokens = new List<Token>();
         _tokenCountOffset = -1;
         InitializeLeadingTrivia();
     }
@@ -169,6 +171,7 @@ public ref struct TokenizerHead
     public void ExtractResult( out SourceCode code, out int inlineErrorCount )
     {
         code = new SourceCode( _tokens, _spans );
+        Throw.DebugAssert( _tokens.Count == 0 && !_spans._children.HasChildren );
         inlineErrorCount = _inlineErrorCount;
         _inlineErrorCount = 0;
     }

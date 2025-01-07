@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
@@ -40,4 +41,24 @@ public sealed class TransformerFunction : SourceSpan
     /// Gets the transform statements.
     /// </summary>
     public List<TransformStatement> Statements { get; }
+
+    /// <summary>
+    /// Applies the <see cref="Statements"/> to the <paramref name="code"/>.
+    /// </summary>
+    /// <param name="monitor">Required monitor.</param>
+    /// <param name="code">The code to transform.</param>
+    /// <returns>True on success, false on error.</returns>
+    public bool Apply( IActivityMonitor monitor, SourceCodeEditor code )
+    {
+        bool success = true;
+        using( monitor.OnError( () => success = false) )
+        {
+            foreach( var statement in Statements )
+            {
+                statement.Apply( monitor, code );
+            }
+        }
+        return success;
+    }
+
 }

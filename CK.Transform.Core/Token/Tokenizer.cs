@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -12,12 +13,14 @@ namespace CK.Transform.Core;
 /// This is a stateful base object that can encapsulate any parsing related states and must expose its own API:
 /// nothing is public in this base Tokenizer.
 /// </para>
+/// This caches a <see cref="List{T}"/> of <see cref="Token"/> and a <see cref="ImmutableArray{T}.Builder"/> of <see cref="Trivia"/>
+/// that are reusable buffers for the <see cref="TokenizerHead"/>.
 /// </summary>
 public abstract partial class Tokenizer : ITokenizerHeadBehavior
 {
     ReadOnlyMemory<char> _text;
     internal readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
-    readonly ImmutableArray<Token>.Builder _tokens;
+    readonly List<Token> _tokenCollector;
 
     // This cannot be defined in Trivia (TypeLoadException). To be investigated.
     internal static ImmutableArray<Trivia> OneSpace => ImmutableArray.Create( new Trivia( TokenType.Whitespace, " " ) );
@@ -28,7 +31,7 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     protected Tokenizer()
     {
         _triviaBuilder = ImmutableArray.CreateBuilder<Trivia>();
-        _tokens = ImmutableArray.CreateBuilder<Token>();
+        _tokenCollector = new List<Token>();
     }
 
     /// <summary>
@@ -44,47 +47,32 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     {
         _text = text;
         _triviaBuilder.Clear();
-        _tokens.Clear();
+        _tokenCollector.Clear();
     }
 
     /// <summary>
-    /// Helper method that can be used to expose the result of the actual <see cref="Tokenize(ref TokenizerHead)"/> method.
-    /// <para>
-    /// This method is virtual to support specific case such as the <see cref="TransformLanguage.BaseTransformParser"/> that
-    /// overrides this method to throw an <see cref="InvalidOperationException"/> because a Transform parser must only handle
-    /// statements.
-    /// </para>
+    /// Helper method that can be used to expose the result of the actual <see cref="Tokenize(ref TokenizerHead)"/> method as a <see cref="AnalyzerResult"/>.
     /// </summary>
-    /// <param name="tokens">
-    /// The tokens on success or if all errors have been inlined.
-    /// Unavailable (<see cref="ImmutableArray{T}.IsDefault"/> is true) if <paramref name="error"/> is not null.
-    /// </param>
-    /// <param name="error">The error (hard failure) if any.</param>
-    /// <returns>True on success, false if <paramref name="error"/> is not null or at least a <see cref="TokenError"/> appears in the <paramref name="tokens"/>.</returns>
-    protected virtual bool Tokenize( out ImmutableArray<Token> tokens, out TokenError? error )
+    /// <returns>The analyzer result.</returns>
+    protected virtual AnalyzerResult Parse()
     {
         TokenizerHead head = CreateHead();
-        error = Tokenize( ref head );
-        if( error == null )
-        {
-            tokens = head.ExtractTokens( resetInlineErrorCount: false );
-            return head.InlineErrorCount == 0;
-        }
-        tokens = default;
-        return false;
+        var error = Tokenize( ref head );
+        head.ExtractResult( out var code, out var inlineErrorCount );
+        return new AnalyzerResult( success: error == null && inlineErrorCount == 0, code, error );
     }
 
     /// <summary>
     /// Creates an initial head on <see cref="Text"/> with this tokenizer as the <see cref="ITokenizerHeadBehavior"/>.
     /// </summary>
     /// <returns>The tokenizer head.</returns>
-    protected TokenizerHead CreateHead() => new TokenizerHead( _text, this, _tokens, _triviaBuilder );
+    protected TokenizerHead CreateHead() => new TokenizerHead( _text, this, _tokenCollector, _triviaBuilder );
 
     /// <summary>
     /// Implements the tokenization itself.
     /// </summary>
-    /// <param name="head">The head to forward until an error or the end of the input.</param>
-    /// <returns>An optional TokenError on failure: errors cabe accepted and collected in <see cref="TokenizerHead.Tokens"/>.</returns>
+    /// <param name="head">The head to forward until a "hard" error occurs or the end of the input is reached.</param>
+    /// <returns>An optional TokenError on "hard" failure. Errors can also be accepted and collected in <see cref="TokenizerHead.Tokens"/>.</returns>
     protected abstract TokenError? Tokenize( ref TokenizerHead head );
 
     /// <summary>
@@ -101,5 +89,5 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     /// <param name="c">The head.</param>
     protected abstract LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
 
-    LowLevelToken ITokenizerHeadBehavior.LowLevelTokenize( ReadOnlySpan<char> head ) => LowLevelTokenize( head );
+    LowLevelToken ILowLevelTokenizer.LowLevelTokenize( ReadOnlySpan<char> head ) => LowLevelTokenize( head );
 }

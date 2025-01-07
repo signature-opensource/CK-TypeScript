@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Transform.Core;
 
 namespace CK.Transform.TransformLanguage;
@@ -16,4 +17,6 @@ public abstract class TransformStatement : SourceSpan
         : base( beg, end )
     {
     }
+
+    public abstract void Apply( IActivityMonitor monitor, SourceCodeEditor code );
 }

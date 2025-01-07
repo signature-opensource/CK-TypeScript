@@ -20,6 +20,15 @@ public sealed partial class TransformerHost
                 : base( language )
             {
             }
+
+            /// <summary>
+            /// There is currently no specific statements to transform transformers: the base
+            /// ParseStatement is fine.
+            /// </summary>
+            //protected override TransformStatement? ParseStatement( ref TokenizerHead head )
+            //{
+            //    return base.ParseStatement( ref head );
+            //}
         }
 
         internal RootTransformLanguage( TransformerHost host )
@@ -33,7 +42,7 @@ public sealed partial class TransformerHost
 
         public TransformStatementAnalyzer TransformStatementAnalyzer => _thisAnalyzer;
 
-        protected internal override IAnalyzer<TransformerFunction> CreateTargetAnalyzer() => _rootAnalyzer;
+        protected internal override IAnalyzer CreateTargetAnalyzer() => _rootAnalyzer;
 
         protected internal override TransformStatementAnalyzer CreateTransformStatementAnalyzer( TransformerHost host ) => _thisAnalyzer;
     }
