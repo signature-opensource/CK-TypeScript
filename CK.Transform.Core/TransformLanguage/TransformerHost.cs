@@ -137,22 +137,6 @@ public sealed partial class TransformerHost
                                   string text,
                                   params IEnumerable<TransformerFunction> transformers )
     {
-        return Transform( monitor, text, null, transformers );
-    }
-
-    /// <summary>
-    /// Applies a sequence of transformers to an initial <paramref name="text"/>.
-    /// </summary>
-    /// <param name="monitor">The monitor that will receive logs and errors.</param>
-    /// <param name="text">The text to transform.</param>
-    /// <param name="scope">Optional scope. Applies only to the first transformer.</param>
-    /// <param name="transformers">The transformers to apply in order.</param>
-    /// <returns>The transformed result on success and null if an error occurred.</returns>
-    public SourceCode? Transform( IActivityMonitor monitor,
-                                  string text,
-                                  NodeScopeBuilder? scope = null,
-                                  params IEnumerable<TransformerFunction> transformers )
-    {
         var transformer = transformers.FirstOrDefault();
         Throw.CheckArgument( transformer is not null );
 

@@ -5,7 +5,7 @@ using System;
 namespace CK.Transform.Core.Tests;
 
 [TestFixture]
-public class NodeTypeTests
+public class TokenTypeTests
 {
     [Test]
     public void TokenType_class_reservation_throws()

@@ -22,7 +22,7 @@ public readonly struct Trivia : IEquatable<Trivia>
     readonly ReadOnlyMemory<char> _content;
     readonly TokenType _tokenType;
 
-    public static ImmutableArray<Trivia> OneSpace => Analyzer.OneSpace;
+    public static ImmutableArray<Trivia> OneSpace => TriviaExtensions.OneSpace;
 
     public Trivia( TokenType tokenType, string content )
         : this( tokenType, content.AsMemory() )
@@ -125,100 +125,4 @@ public readonly struct Trivia : IEquatable<Trivia>
     public static bool operator ==( Trivia left, Trivia right ) => left.Equals( right );
 
     public static bool operator !=( Trivia left, Trivia right ) => !(left == right);
-
-    static public void ToMiddle<TL, TM, TR>( ref TL left, ref TM middle, ref TR right )
-        where TL : class, IAbstractNode
-        where TM : class, IAbstractNode
-        where TR : class, IAbstractNode
-    {
-        ToRight( ref left, ref middle );
-        ToLeft( ref middle, ref right );
-    }
-
-    static public void ToLeft<TL, TR>( ref TL left, ref TR right )
-        where TL : class, IAbstractNode
-        where TR : class, IAbstractNode
-    {
-        var transfer = right.LeadingTrivias;
-        right = right.SetTrivias( ImmutableArray<Trivia>.Empty, right.TrailingTrivias );
-        left = left.SetTrivias( left.LeadingTrivias, left.TrailingTrivias.AddRange( transfer ) );
-    }
-
-    static public void ToRight<TL, TR>( ref TL left, ref TR right )
-        where TL : class, IAbstractNode
-        where TR : class, IAbstractNode
-    {
-        var transfer = left.TrailingTrivias;
-        left = left.SetTrivias( left.LeadingTrivias, ImmutableArray<Trivia>.Empty );
-        right = right.SetTrivias( transfer.AddRange( right.LeadingTrivias ), right.TrailingTrivias );
-    }
-
-    static public void WhiteSpaceToMiddle<TL, TM, TR>( ref TL left, ref TM middle, ref TR right )
-        where TL : class, IAbstractNode
-        where TM : class, IAbstractNode
-        where TR : class, IAbstractNode
-    {
-        WhiteSpaceToRight( ref left, ref middle );
-        WhiteSpaceToLeft( ref middle, ref right );
-    }
-
-    static public Tuple<TL, TM, TR> WhiteSpaceToMiddle<TL, TM, TR>( TL left, TM middle, TR right )
-         where TL : class, IAbstractNode
-         where TM : class, IAbstractNode
-         where TR : class, IAbstractNode
-    {
-        WhiteSpaceToRight( ref left, ref middle );
-        WhiteSpaceToLeft( ref middle, ref right );
-        return Tuple.Create( left, middle, right );
-    }
-
-    static public void WhiteSpaceToRight<TL, TR>( ref TL left, ref TR right )
-        where TL : class, IAbstractNode
-        where TR : class, IAbstractNode
-    {
-        IAbstractNode r = right;
-        left = left.ExtractTrailingTrivias( ( t, idx ) =>
-        {
-            if( t.TokenType == TokenType.Whitespace )
-            {
-                r = r.AddLeadingTrivia( t );
-                return true;
-            }
-            return false;
-        } );
-        right = (TR)r;
-    }
-
-    static public Tuple<TL, TR> WhiteSpaceToRight<TL, TR>( TL left, TR right )
-         where TL : class, IAbstractNode
-         where TR : class, IAbstractNode
-    {
-        WhiteSpaceToRight( ref left, ref right );
-        return Tuple.Create( left, right );
-    }
-
-    static public void WhiteSpaceToLeft<TL, TR>( ref TL left, ref TR right )
-        where TL : class, IAbstractNode
-        where TR : class, IAbstractNode
-    {
-        IAbstractNode l = left;
-        right = right.ExtractLeadingTrivias( ( t, idx ) =>
-        {
-            if( t.TokenType == TokenType.Whitespace )
-            {
-                l = l.AddTrailingTrivia( t );
-                return true;
-            }
-            return false;
-        } );
-        left = (TL)l;
-    }
-
-    static public Tuple<TL, TR> WhiteSpaceToLeft<TL, TR>( TL left, TR right )
-         where TL : class, IAbstractNode
-         where TR : class, IAbstractNode
-    {
-        WhiteSpaceToLeft( ref left, ref right );
-        return Tuple.Create( left, right );
-    }
 }

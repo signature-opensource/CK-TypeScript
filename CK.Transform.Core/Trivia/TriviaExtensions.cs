@@ -8,6 +8,9 @@ namespace CK.Transform.Core;
 /// </summary>
 public static class TriviaExtensions
 {
+    // This cannot be defined in Trivia (TypeLoadException). To be investigated.
+    internal static ImmutableArray<Trivia> OneSpace => ImmutableArray.Create( new Trivia( TokenType.Whitespace, " " ) );
+
     /// <summary>
     /// Writes the trivias.
     /// </summary>

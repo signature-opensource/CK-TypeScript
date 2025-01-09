@@ -39,15 +39,6 @@ public abstract class TransformLanguage
     internal protected abstract (TransformStatementAnalyzer,IAnalyzer) CreateAnalyzers( TransformerHost host );
 
     /// <summary>
-    /// Optional extension point that can handle the "on ...." specifier.
-    /// Returns null at this level.
-    /// </summary>
-    /// <param name="monitor">Monitor to use.</param>
-    /// <param name="target">A <see cref="Token"/> that describes the target.</param>
-    /// <returns>A <see cref="NodeScopeBuilder"/>or null.</returns>
-    internal protected virtual NodeScopeBuilder? HandleTransformerTarget( IActivityMonitor monitor, Token target ) => null;
-
-    /// <summary>
     /// Supports the minimal token set required by any transform language:
     /// <list type="bullet">
     ///     <item><see cref="TokenType.GenericIdentifier"/> that at least handles "Ascii letter[Ascii letter or digit]*".</item>

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace CK.Transform.Core;
 
 /// <summary>
@@ -26,5 +28,14 @@ public sealed class AnalyzerResult
     /// Gets a "hard failure" error that stopped the analysis.
     /// </summary>
     public TokenError? Error { get; }
+
+    /// <summary>
+    /// Gets the first <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/>.
+    /// <para>
+    /// This is always null if <see cref="Success"/> is true and may still be null if a "hard" <see cref="Error"/>
+    /// has been created by the analyzer (and no inline error has been appended).
+    /// </para>
+    /// </summary>
+    public TokenError? FirstInlineError => SourceCode.Tokens.OfType<TokenError>().FirstOrDefault();
 
 }

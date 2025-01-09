@@ -1,4 +1,5 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Linq;
 
@@ -61,4 +62,13 @@ public static class AnalyzerExtensions
         }
         return r.SourceCode;
     }
+
+    /// <inheritdoc cref="IAnalyzer.Parse(ReadOnlyMemory{char})" />
+    public static AnalyzerResult Parse( this IAnalyzer analyzer, string text ) => analyzer.Parse( text.AsMemory() );
+
+    /// <inheritdoc cref="TryParse(IAnalyzer, IActivityMonitor, ReadOnlyMemory{char})" />
+    public static AnalyzerResult? TryParse( this IAnalyzer analyzer, IActivityMonitor monitor, string text ) => TryParse( analyzer, monitor, text.AsMemory() );
+
+    /// <inheritdoc cref="ParseOrThrow(IAnalyzer, ReadOnlyMemory{char})" />
+    public static SourceCode ParseOrThrow( this IAnalyzer analyzer, string text ) => ParseOrThrow( analyzer, text.AsMemory() );
 }

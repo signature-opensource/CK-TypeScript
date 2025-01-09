@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Transform.Core;
+using CK.Transform.Core.Tests.Helpers;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -15,34 +16,35 @@ public class RawStringTests
     // NUnit TestCase fails with these strings. Using TestCaseSource instead.
     public static object[] Source_valid_single_line_RawString_tests =
     [
-        new object[]
+        new []
         {
             """ /*Empty string*/ "" """,
             ""
         },
-        new object[]
+        new []
         {
             """ /*regular string*/ "I'm a regular string..." """,
             "I'm a regular string..."
         },
-        new object[]
+        new []
         {
             " /*String can end with a quote...*/ \"\"\"sticky \"end\"\"\"\"",
             "sticky \"end\""
         },
-        new object[]
+        new []
         {
             """ /*No backslash escape!*/ "This \n works (with the backslash)" """,
             "This \\n works (with the backslash)"
         }
     ];
     [TestCaseSource( nameof( Source_valid_single_line_RawString_tests ) )]
-    public void valid_single_line_RawString_tests( string target, string expected )
+    public void valid_single_line_RawString_tests( string code, string expected )
     {
-        var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, $"create transform transformer on {target} begin end " );
-        Throw.DebugAssert( f != null && f.Target != null );
-        f.Target.Should().BeEquivalentTo( expected );
+        var codeSource = new TestAnalyzer().ParseOrThrow( code );
+        var rawString = codeSource.Tokens[0] as RawString;
+        Throw.DebugAssert( rawString != null );
+        rawString.Lines.Should().HaveCount( 1 );
+        rawString.Lines[0].Should().Be( expected );
     }
 
     [TestCase( """
@@ -50,20 +52,39 @@ public class RawStringTests
 
                     "The closing quote is not on this line!
                     "
-
-               """, "Parsing error: Single-line string must not contain end of line.*" )]
-    public void invalid_single_line_RawString_tests( string target, string errorMessage )
+                    ERROR_TOLERANT
+               """,
+               "Single-line string must not contain end of line.*" )]
+    public void invalid_single_line_RawString_tests( string code, string errorMessage )
     {
-        var h = new TransformerHost();
-        using( TestHelper.Monitor.CollectTexts( out var logs ) )
-        {
-            h.TryParseFunction( TestHelper.Monitor, $"create transform transformer on {target} begin end" )
-                .Should().BeNull();
+        var r = new TestAnalyzer().Parse( code );
+        r.Success.Should().BeFalse();
+        Throw.DebugAssert( r.FirstInlineError != null );
 
-            logs.Should().ContainMatch( errorMessage );
-        }
+        r.SourceCode.Tokens.Should().HaveCount( 2 );
+        r.FirstInlineError.Should().BeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstInlineError.ErrorMessage.Should().Match( errorMessage );
+
+        r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
     }
 
+
+    [TestCase( """Some "no closing quote...  """ )]
+    [TestCase( """"
+               Some """no closing ""quotes""...
+               """" )]
+    public void unterminated_string_covers_the_whole_text( string code )
+    {
+        var r = new TestAnalyzer().Parse( code );
+        r.Success.Should().BeFalse();
+        Throw.DebugAssert( r.FirstInlineError != null );
+        r.SourceCode.Tokens.Should().HaveCount( 2 );
+        r.FirstInlineError.Should().BeSameAs( r.SourceCode.Tokens[1] );
+        r.FirstInlineError.ErrorMessage.Should().Match( "Unterminated string.*" );
+
+        r.SourceCode.Tokens[0].ToString().Should().Be( "Some" );
+        r.SourceCode.Tokens[1].Text.Length.Should().Be( code.Length - 4 - 1 );
+    }
 
     [TestCase( """"
                     /*Single empty line*/
@@ -119,12 +140,10 @@ public class RawStringTests
                            """"""" )]
     public void valid_multi_line_RawString_tests( string code, string expected )
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( $"create transform transformer on {code} begin end " );
-        var t = f.Target as RawStringOld;
-        Throw.DebugAssert( t != null );
-        var expectedLines = expected.Split( Environment.NewLine );
-        t.Lines.Should().BeEquivalentTo( expectedLines );
+        var codeSource = new TestAnalyzer().ParseOrThrow( code );
+        var rawString = codeSource.Tokens[0] as RawString;
+        Throw.DebugAssert( rawString != null );
+        rawString.Lines.Should().BeEquivalentTo( expected.Split( Environment.NewLine ) );
     }
 
     [TestCase( """"
@@ -132,6 +151,7 @@ public class RawStringTests
 
                     """
                     """
+                    ERROR_TOLERANT
 
                """", "Invalid multi-line raw string: at least one line must appear between the \"\"\".*" )]
     [TestCase( """"
@@ -140,6 +160,7 @@ public class RawStringTests
                     """ NOWAY
 
                     """
+                    ERROR_TOLERANT
 
                """", "Invalid multi-line raw string: there must be no character after the opening \"\"\" characters.*" )]
     [TestCase( """"""""
@@ -148,6 +169,7 @@ public class RawStringTests
                     """"""
 
                   X """"""
+                    ERROR_TOLERANT
 
                """""""", "Invalid multi-line raw string: there must be no character on the line before the closing \"\"\"\"\"\" characters.*" )]
     [TestCase( """"""""
@@ -156,6 +178,7 @@ public class RawStringTests
                     """"""
                    X
                     """"""
+                    ERROR_TOLERANT
 
                """""""", "Invalid multi-line raw string: there must be no character before column 5.*" )]
     [TestCase( """"""""
@@ -164,13 +187,20 @@ public class RawStringTests
                     """"""
                    XSome
                     """"""
+                    ERROR_TOLERANT
 
                """""""", "Invalid multi-line raw string: there must be no character before column 5 in '    XSome'.*" )]
     public void invalid_multi_line_RawString_tests( string code, string errorMessage )
     {
-        var h = new TransformerHostOld();
-        FluentActions.Invoking( () => h.ParseFunction( $"create transform transformer on {code} begin end " ) )
-            .Should().Throw<Exception>().WithMessage( errorMessage );
+        var r = new TestAnalyzer().Parse( code );
+        r.Success.Should().BeFalse();
+        Throw.DebugAssert( r.FirstInlineError != null );
+
+        r.SourceCode.Tokens.Should().HaveCount( 2 );
+        r.FirstInlineError.Should().BeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstInlineError.ErrorMessage.Should().Match( errorMessage );
+
+        r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
     }
 
 

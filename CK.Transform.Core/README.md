@@ -11,16 +11,17 @@ target languages, with at least a decent support for:
 - TypeScript.
 - Transformer language itself.
 
-A Parser cound be any `Func<ReadOnlyMemory<char>,AbstractNode?>`. Having no interface or base class
-that defines it enforces the fact that a Parser must be stateless... However we introduce a stateful
-object, the `Analyzer` that can support reusable builders and offer contextual information if needed.
-
-Exceptions are not used for the control flow (they remain exceptional): errors are returned
-thanks to the `TokenErrorNode` that carries an an error token type (negative integer), an error message
+Exceptions should not be used for the control flow (they remain exceptional): errors should be emitted
+via `TokenErrorNode` that carries an error token type (negative integer), an error message
 and the location of the error.
 
-A parser can return a "true" error when it can determine for sure that a syntax error exists or a
-null `AbstractNode?` that states that the parser failed to recognize its language.
+However, nothing prevents exceptions to be (mis-)used and this is the spirit of this library: it tries
+to not impose a single way to parse stuff, it aims to be a lego that can be used to implement multiple
+kind of parsers.
+
+## The basics: Tokens & Trivias
+
+## The Analyzer abstraction
 
 ## Error handling: the hard way
 The `TokenErrorNode` acts as an exception: when encountered, it should bubble up accross the parser

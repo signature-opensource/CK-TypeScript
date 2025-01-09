@@ -86,7 +86,7 @@ public sealed partial class TransformerHost
                     if( head.LowLevelTokenType == TokenType.DoubleQuote )
                     {
                         // Inline error returns null.
-                        var s = TransformStatementAnalyzer.MatchRawString( ref head );
+                        var s = RawString.TryMatch( ref head );
                         if( s != null )
                         {
                             if( s.Lines.Length > 1 )

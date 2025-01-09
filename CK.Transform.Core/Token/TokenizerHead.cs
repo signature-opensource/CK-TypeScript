@@ -500,7 +500,8 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Appends a missing <see cref="TokenError"/> with "Missing '<paramref name="missingDescription"/>'." error message.
+    /// Appends a missing <see cref="TokenError"/> with "Missing '<paramref name="missingDescription"/>'." error message
+    /// and a length of 0 (the head stays where it is).
     /// </summary>
     /// <param name="missingDescription">Describes what is missing, for example "target (string or identifier)".</param>
     /// <param name="errorType">Specific missing error type if required.</param>
@@ -515,6 +516,7 @@ public ref struct TokenizerHead
     /// </summary>
     /// <param name="errorType">Specific missing error type if required.</param>
     /// <returns>The inlined error.</returns>
+    [MemberNotNull( nameof( LastToken ) )]
     public TokenError AppendUnexpectedToken( TokenType errorType = TokenType.GenericUnexpectedToken )
     {
         return CreateInlineError( $"Unexpected token.", _lowLevelTokenText.Length, errorType );
