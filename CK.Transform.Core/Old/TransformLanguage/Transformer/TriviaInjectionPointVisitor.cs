@@ -2,7 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System.Diagnostics;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 sealed class TriviaInjectionPointVisitor : TransformVisitor

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// (first [+ n] [out of n] 

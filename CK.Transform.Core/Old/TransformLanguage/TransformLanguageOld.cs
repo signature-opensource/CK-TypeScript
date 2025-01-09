@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Abstract factory for a target language <see cref="Analyzer"/> and its associated

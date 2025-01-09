@@ -2,7 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Handles trivia extension point match in a way that enables reuse of <see cref="LocationInserter"/>

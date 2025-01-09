@@ -1,7 +1,7 @@
 ﻿using CK.Transform.Core;
 using System;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Captures operational information to target one or more nodes.

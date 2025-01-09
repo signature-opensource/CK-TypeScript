@@ -1,6 +1,6 @@
 using CK.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Base context exposes the <see cref="LocationManager"/>, the <see cref="Monitor"/>

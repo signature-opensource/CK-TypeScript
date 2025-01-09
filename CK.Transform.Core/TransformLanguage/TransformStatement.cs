@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Base class for all transform statement.
@@ -18,5 +18,11 @@ public abstract class TransformStatement : SourceSpan
     {
     }
 
-    public abstract void Apply( IActivityMonitor monitor, SourceCodeEditor code );
+    /// <summary>
+    /// Must apply the transformation. 
+    /// </summary>
+    /// <param name="monitor">Required monitor.</param>
+    /// <param name="editor">The code to transform.</param>
+    /// <returns>True on success, false on error. Any error must be logged.</returns>
+    public abstract bool Apply( IActivityMonitor monitor, SourceCodeEditor editor );
 }

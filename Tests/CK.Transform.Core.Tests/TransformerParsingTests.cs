@@ -1,7 +1,8 @@
 using CK.Core;
-using CK.Transform.TransformLanguage;
+using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
 
@@ -11,16 +12,18 @@ public class TransformerParsingTests
     [Test]
     public void Empty_minimal_function()
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( "create transform transformer as begin end" );
-        f.Statements.Should().HaveCount( 0 );
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" );
+        Throw.DebugAssert( f != null );
+        f.Body.Statements.Should().HaveCount( 0 );
     }
 
     [Test]
     public void named_function()
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( "create transform transformer MyTransformer as begin end" );
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" );
+        Throw.DebugAssert( f != null );
         f.Name.Should().Be( "MyTransformer" );
         f.Target.Should().BeNull();
     }
@@ -28,43 +31,57 @@ public class TransformerParsingTests
     [Test]
     public void named_with_empty_target_function()
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( """create transform transformer MyTransformer on "" as begin end""" );
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" );
+        Throw.DebugAssert( f != null );
         f.Name.Should().Be( "MyTransformer" );
-        var t = f.Target as RawStringOld;
-        Throw.DebugAssert( t != null );
-        t.MemoryLines.Should().HaveCount( 1 );
-        t.Lines[0].Should().Be( "" );
+        f.Target.Should().NotBeNull().And.BeEmpty();
     }
 
     [Test]
     public void with_target_function()
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( """create transform transformer on "the target!" as begin end""" );
-        f.Name.Should().Be( "" );
-        var t = f.Target as RawStringOld;
-        Throw.DebugAssert( t != null );
-        t.Lines.Should().HaveCount( 1 );
-        t.Lines[0].Should().Be( "the target!" );
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer on "the target!" as begin end""" );
+        Throw.DebugAssert( f != null );
+        f.Name.Should().BeNull();
+        f.Target.Should().Be( "the target!" );
     }
 
     [Test]
     public void with_multi_but_singleline_text_target_function()
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( """""
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, """""
                     create transform transformer on """
-                                         create transform transformer as begin end
+                                         Some one-line text.
                                          """
                     begin
                     end
                     """"" );
-        f.Name.Should().Be( "" );
-        var t = f.Target as RawStringOld;
-        Throw.DebugAssert( t != null );
-        t.Lines.Should().HaveCount( 1 );
-        t.Lines[0].Should().Be( "create transform transformer as begin end" );
+        Throw.DebugAssert( f != null );
+        f.Name.Should().BeNull();
+        f.Target.Should().Be( "Some one-line text." );
+    }
+
+    [Test]
+    public void target_cannot_be_multiline()
+    {
+        var h = new TransformerHost();
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            h.TryParseFunction( TestHelper.Monitor, """""
+                    create transform transformer on """
+                                         More than
+                                         one-line
+                                         text.
+                                         """
+                    begin
+                    end
+                    """"" )
+            .Should().BeNull();
+            logs.Should().ContainMatch( "Parsing error: Transformer target must be a single line string.*" );
+        }
     }
 
 }

@@ -5,13 +5,12 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Low-level token is a candidate token.
 /// </summary>
-/// <param name="NodeType">The detected candidate node type. Defaults to <see cref="TokenType.None"/>.</param>
+/// <param name="TokenType">The detected candidate node type. Defaults to <see cref="TokenType.None"/>.</param>
 /// <param name="Length">The candidate token length. Defaults to 0.</param>
-public readonly record struct LowLevelToken( TokenType NodeType, int Length )
+public readonly record struct LowLevelToken( TokenType TokenType, int Length )
 {
-
     /// <summary>
-    /// Handles basic tokens.
+    /// Handles basic tokens from <see cref="BasicTokenType"/>.
     /// </summary>
     /// <param name="head">The head.</param>
     /// <returns>The low level token.</returns>

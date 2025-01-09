@@ -111,7 +111,7 @@ public ref struct ParserHead
     /// <param name="errorMessage">The error message.</param>
     /// <param name="errorType">The error token type.</param>
     /// <returns>A token error node.</returns>
-    public readonly TokenErrorNode CreateError( string errorMessage, TokenType errorType = TokenType.SyntaxErrorNode | TokenType.ErrorClassBit )
+    public readonly TokenErrorNode CreateError( string errorMessage, TokenType errorType = TokenType.GenericError )
     {
         Throw.CheckArgument( errorType.IsError() );
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
@@ -245,7 +245,7 @@ public ref struct ParserHead
     /// or a <see cref="TokenErrorNode"/> "Expected '<paramref name="expected"/>'." on failure.
     /// </summary>
     /// <param name="expected">The expected characters.</param>
-    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
+    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.TokenType"/>.</param>
     /// <returns>The Token or TokenError node.</returns>
     public TokenNode MatchToken( ReadOnlySpan<char> expected,
                                  TokenType type = TokenType.None,
@@ -309,7 +309,7 @@ public ref struct ParserHead
     {
         // Initializes the low-level token.
         var t = _behavior.LowLevelTokenize( _head );
-        _lowLevelTokenType = t.NodeType;
+        _lowLevelTokenType = t.TokenType;
         if( t.Length != 0 )
         {
             Throw.CheckState( t.Length >= 0 );

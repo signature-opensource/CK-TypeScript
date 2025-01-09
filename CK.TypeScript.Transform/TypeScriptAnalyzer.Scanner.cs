@@ -2,10 +2,11 @@ using CK.Core;
 using CK.Transform.Core;
 using System.Buffers;
 using System;
+using System.Collections.Generic;
 
 namespace CK.TypeScript.Transform;
 
-sealed partial class TypeScriptAnalyzer
+sealed partial class TypeScriptAnalyzer // Scanner
 {
     static ReadOnlySpan<char> _regexFlags => "dgimsuvy";
     static ReadOnlySpan<char> _binaryDigits => "01_";
@@ -18,29 +19,105 @@ sealed partial class TypeScriptAnalyzer
     static SearchValues<char> _decimal = SearchValues.Create( _decimalDigits );
     static SearchValues<char> _hexadecimal = SearchValues.Create( _hexadecimalDigits );
 
-    public override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
+    // Keeps the brace depth of interpolated starts.
+    readonly Stack<int> _interpolated;
+    int _braceDepth;
+
+    /// <summary>
+    /// Handles interpolated strings and /regular expressions/.
+    /// </summary>
+    /// <param name="head">The head.</param>
+    /// <returns>Next token.</returns>
+    Token Scan( ref TokenizerHead head )
+    {
+        switch( head.LowLevelTokenType )
+        {
+            case TokenType.GenericInterpolatedStringStart:
+                head.AcceptLowLevelToken();
+                _interpolated.Push( ++_braceDepth );
+                break;
+            case TokenType.OpenBrace:
+                head.AcceptLowLevelToken();
+                ++_braceDepth;
+                break;
+            case TokenType.CloseBrace:
+                if( _interpolated.TryPeek( out var depth ) && depth == _braceDepth )
+                {
+                    var t = ReadInterpolatedSegment( head.Head, false );
+                    if( t.TokenType == TokenType.GenericInterpolatedStringEnd )
+                    {
+                        --_braceDepth;
+                    }
+                    _interpolated.Pop();
+                    head.AcceptToken( t.TokenType, t.Length );
+                }
+                else
+                {
+                    if( --_braceDepth < 0 )
+                    {
+                        return head.CreateError( "Unbalanced {{brace}." );
+                    }
+                    head.AcceptLowLevelToken();
+                }
+                break;
+            case TokenType.Slash or TokenType.SlashEquals:
+                if( head.LastToken != null && head.LastToken.TokenType is not TokenType.GenericIdentifier
+                                                                      and not TokenType.GenericNumber
+                                                                      and not TokenType.GenericString
+                                                                      and not TokenType.GenericRegularExpression
+                                                                      and not TokenType.PlusPlus
+                                                                      and not TokenType.MinusMinus
+                                                                      and not TokenType.CloseParen
+                                                                      and not TokenType.CloseBrace
+                                                                      and not TokenType.CloseBracket )
+                {
+                    var t = TryParseRegex( new LowLevelToken( head.LowLevelTokenType, head.LowLevelTokenText.Length ), head.Head );
+                    head.AcceptToken( t.TokenType, t.Length );
+                }
+                else
+                {
+                    head.AcceptLowLevelToken();
+                }
+                break;
+            case TokenType.None:
+                return head.CreateError( "Unrecognized token." );
+            case TokenType.EndOfInput:
+                Throw.DebugAssert( head.EndOfInput is not null );
+                if( _braceDepth > 0 )
+                {
+                    return head.CreateError( "Missing closing '}'." );
+                }
+                return head.EndOfInput;
+            default:
+                head.AcceptLowLevelToken();
+                break;
+        }
+        return head.LastToken;
+    }
+
+    protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         Throw.DebugAssert( head.Length > 0 );
         // Since numbers can start with a dot, let's start with numbers.
         var t = TryReadNumber( head );
-        if( t.NodeType != TokenType.None ) return t;
+        if( t.TokenType != TokenType.None ) return t;
         // It's not a number. Use the standard basic tokens.
         // If it's a / or a /= then it may be a /regex/ but this cannot be determined here.
         t = LowLevelToken.GetBasicTokenType( head );
-        if( t.NodeType != TokenType.None )
+        if( t.TokenType != TokenType.None )
         {
             if( head.Length > 1 )
             {
                 // Handle private #field and @decorator as identifiers.
-                if( t.NodeType is TokenType.Hash or TokenType.AtSign )
+                if( t.TokenType is TokenType.Hash or TokenType.AtSign )
                 {
                     return ReadIdentifier( head, 1 );
                 }
-                if( t.NodeType is TokenType.DoubleQuote or TokenType.SingleQuote )
+                if( t.TokenType is TokenType.DoubleQuote or TokenType.SingleQuote )
                 {
                     return ReadString( head );
                 }
-                if( t.NodeType is TokenType.BackTick )
+                if( t.TokenType is TokenType.BackTick )
                 {
                     return ReadInterpolatedSegment( head, true );
                 }
@@ -160,8 +237,6 @@ sealed partial class TypeScriptAnalyzer
                 escape = c == '\\';
             }
         }
-
-
     }
 
     static LowLevelToken ReadInterpolatedSegment( ReadOnlySpan<char> head, bool start )
@@ -178,15 +253,15 @@ sealed partial class TypeScriptAnalyzer
             {
                 return new LowLevelToken( start ? TokenType.GenericInterpolatedStringStart : TokenType.GenericInterpolatedStringSegment, iS + 1 );
             }
-            if( c == '`' ) return new LowLevelToken( start ? TokenType.GenericString : TokenType.GenericInterpolatedStringStart, iS + 1 );
+            if( c == '`' ) return new LowLevelToken( start ? TokenType.GenericString : TokenType.GenericInterpolatedStringEnd, iS + 1 );
             escape = c == '\\';
             mayBeHole = !escape && c == '$';
         }
     }
 
-    LowLevelToken TryParseRegex( LowLevelToken slash, ReadOnlySpan<char> head )
+    static LowLevelToken TryParseRegex( LowLevelToken slash, ReadOnlySpan<char> head )
     {
-        Throw.DebugAssert( slash.NodeType is TokenType.Slash or TokenType.SlashEquals );
+        Throw.DebugAssert( slash.TokenType is TokenType.Slash or TokenType.SlashEquals );
         // From https://github.com/microsoft/TypeScript/blob/main/src/compiler/scanner.ts#L2466.
         int iS = slash.Length;
         var inEscape = false;

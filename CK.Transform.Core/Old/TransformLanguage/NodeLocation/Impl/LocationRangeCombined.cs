@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 internal sealed class LocationRangeCombined : INodeLocationRangeInternal
 {

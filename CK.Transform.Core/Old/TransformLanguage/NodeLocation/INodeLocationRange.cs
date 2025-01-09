@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Generalization of a range: it is always an enumerable of <see cref="NodeLocationRange"/>

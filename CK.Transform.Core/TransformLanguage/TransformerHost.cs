@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 /// <summary>
@@ -49,8 +49,7 @@ public sealed partial class TransformerHost
         internal Language( TransformerHost host, TransformLanguage language )
         {
             _language = language;
-            _transformStatementAnalyzer = language.CreateTransformStatementAnalyzer( host );
-            _targetAnalyzer = language.CreateTargetAnalyzer();
+            (_transformStatementAnalyzer,_targetAnalyzer) = language.CreateAnalyzers( host );
         }
     }
 
@@ -63,7 +62,7 @@ public sealed partial class TransformerHost
         _transformLanguage = new RootTransformLanguage( this );
         _languages = new List<Language>();
         foreach( var language in languages ) EnsureLanguage( language );
-        if( Find( _languages, _transformLanguage.LanguageName ) == null )
+        if( Find( _languages, RootTransformLanguage._languageName ) == null )
         {
             _languages.Add( new Language( this, _transformLanguage ) );
         }
@@ -120,7 +119,7 @@ public sealed partial class TransformerHost
     /// <returns>The function.</returns>
     public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text )
     {
-        var r =_transformLanguage.RootAnalyzer.SafeParse( monitor, text );
+        var r =_transformLanguage.RootAnalyzer.TryParse( monitor, text );
         if( r == null ) return null;
         var f = r.SourceCode.Spans.FirstOrDefault();
         Throw.DebugAssert( f is TransformerFunction );
@@ -159,7 +158,7 @@ public sealed partial class TransformerHost
 
         Language? language = LocalFind( monitor, _languages, transformer, text );
         if( language == null ) return null;
-        AnalyzerResult? r = language.TargetAnalyzer.SafeParse( monitor, text.AsMemory() );
+        AnalyzerResult? r = language.TargetAnalyzer.TryParse( monitor, text.AsMemory() );
         if( r == null ) return null;
 
         var codeEditor = new SourceCodeEditor( language.TargetAnalyzer, r.SourceCode );

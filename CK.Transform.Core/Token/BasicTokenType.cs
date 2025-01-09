@@ -21,28 +21,12 @@ public enum BasicTokenType : byte
     GenericAny,
 
     /// <summary>
-    /// Default node type for <see cref="Core.SyntaxNode"/>.
-    /// </summary>
-    SyntaxNode,
-
-    /// <summary>
-    /// The node type for <see cref="ErrorTolerant.SyntaxErrorNode"/>.
-    /// </summary>
-    SyntaxErrorNode,
-
-    /// <summary>
-    /// Can be used by error tolerant parsers to denote an unrecognized (or skipped) token (for the <see cref="ErrorTolerant.UnexpectedTokenNode"/>).
-    /// <para>
-    /// An unrecognized token would be an error in a regular parser.
-    /// </para>
+    /// Can be used by error tolerant parsers to denote an unrecognized (or skipped) token.
     /// </summary>
     GenericUnexpectedToken,
 
     /// <summary>
-    /// Can be used by error tolerant parsers to denote a missing token (for the <see cref="ErrorTolerant.MissingTokenNode"/>).
-    /// <para>
-    /// An missing token would be an error in a regular parser.
-    /// </para>
+    /// Can be used by error tolerant parsers to denote a missing token.
     /// </summary>
     GenericMissingToken,
 

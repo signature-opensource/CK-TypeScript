@@ -3,7 +3,7 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 public sealed partial class TransformerHostOld

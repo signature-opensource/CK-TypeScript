@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Editor for <see cref="SourceCode"/>.
 /// </summary>
-public sealed class SourceCodeEditor
+public sealed class SourceCodeEditor : IEnumerable<SourceToken>
 {
     readonly SourceCode _code;
     readonly ImmutableList<Token>.Builder _tokens;
@@ -46,6 +47,27 @@ public sealed class SourceCodeEditor
     public SourceCode SourceCode => _code;
 
     /// <summary>
+    /// Enumerates the scoped <see cref="SourceToken"/>.
+    /// <para>
+    /// Note that the enumerator MUST be disposed once done with it because it contains a <see cref="ImmutableList{T}.Enumerator"/>
+    /// that must be disposed.
+    /// </para>
+    /// </summary>
+    public IEnumerable<SourceToken> SourceTokens => this;
+
+    IEnumerator<SourceToken> IEnumerable<SourceToken>.GetEnumerator() => CreateTokenSourceEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => CreateTokenSourceEnumerator();
+
+    IEnumerator<SourceToken> CreateTokenSourceEnumerator()
+    {
+        var e = _code.SourceTokens.GetEnumerator();
+        // Combine filters.
+        return e;
+    }
+
+
+    /// <summary>
     /// Gets the analyzer that is used by <see cref="Reparse(IActivityMonitor)"/>.
     /// </summary>
     public IAnalyzer Analyzer => _analyzer;
@@ -75,8 +97,8 @@ public sealed class SourceCodeEditor
                 monitor.Trace( $"Changing language from '{_analyzer.LanguageName}' to '{newAnalyzer.LanguageName}'." );
                 _analyzer = newAnalyzer;
             }
-            string text = _code.Tokens.Write( new StringBuilder() ).ToString();
-            var r = _analyzer.SafeParse( monitor, text.AsMemory() );
+            string text = _code.ToString();
+            var r = _analyzer.TryParse( monitor, text.AsMemory() );
             if( r == null ) return false;
             r.SourceCode.TransferTo( _code );
             _needReparse = false;
@@ -95,22 +117,14 @@ public sealed class SourceCodeEditor
     public void SetNeedReparse() => _needReparse = true;
 
     /// <summary>
-    /// Creates a <see cref="ISourceTokenEnumerator"/> on all <see cref="Tokens"/>.
-    /// </summary>
-    /// <returns>An enumerator with index, token and spans covering the token.</returns>
-    public ISourceTokenEnumerator CreateSourceTokenEnumerator()
-    {
-        var e = _code.CreateSourceTokenEnumerator();
-        // Combine filters.
-        return e;
-    }
-
-    /// <summary>
     /// Applies all the change at once. <see cref="SourceCode"/> is updated.
-    /// If <see cref="NeedReparse"/> is true, this calls <see cref="Reparse(IActivityMonitor)"/>.
+    /// <para>
+    /// If no pending changes exist, this does nothing.
+    /// </para>
     /// </summary>
-    public void Apply( IActivityMonitor monitor )
+    public void ApplyChanges()
     {
+        if( _mods.Count ==  0 ) return;
         int offset = 0;
         foreach( var m in CollectionsMarshal.AsSpan( _mods ) )
         {
@@ -130,13 +144,12 @@ public sealed class SourceCodeEditor
         }
         _mods.Clear();
         _code.SetTokens( _tokens.ToImmutableList() );
-        if( _needReparse ) Reparse( monitor );
     }
 
     /// <summary>
     /// Replaces one or more tokens with any number of tokens.
     /// <para>
-    /// Changes are not visible until <see cref="Apply"/> is called. The range (<paramref name="index"/> and <paramref name="count"/>)
+    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The range (<paramref name="index"/> and <paramref name="count"/>)
     /// is relative to the current <see cref="SourceCode.Tokens"/>, independent of any previous replace, insert, remove not yet applied.
     /// The range must not intersect any previously modified ranges not yet applied.
     /// </para>
@@ -150,12 +163,22 @@ public sealed class SourceCodeEditor
         Throw.CheckArgument( tokens.Length > 0 );
         var d = new TokenSpan( index, index + count );
         int idx = 0;
-        foreach( var m in CollectionsMarshal.AsSpan( _mods ) )
+        var mods = CollectionsMarshal.AsSpan( _mods );
+        foreach( var m in mods )
         {
             if( m.Count > 0 )
             {
                 TokenSpan mSpan = new TokenSpan( m.Index, m.Index + m.Count );
                 var r = d.GetRelationship( mSpan );
+                if( r is SpanRelationship.Equal && m.Delta == 0 && tokens.Length == count )
+                {
+                    // The exact same range of tokens has previously been overwritten and we are overwriting it again.
+                    // We consider that the new overwrite is an addition.
+                    // We may extend this semantics to the SpanRelationShips.SameStart and even allow any replaced tokens' length...
+                    // For the moment, we keep this "minimal" allowed combination.
+                    mods[idx] = new Mod( m.Index, m.Count, m.Tokens.Concat( tokens ).ToArray() );
+                    return;
+                }
                 if( (r & ~SpanRelationship.Swapped) is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
                 {
                     Throw.InvalidOperationException( $"Span '{d}' intersects an already modified token span '{mSpan}'." );
@@ -163,15 +186,54 @@ public sealed class SourceCodeEditor
                 // d is before m.OriginalSpan: we found the insertion point.
                 if( (r & SpanRelationship.Swapped) == 0 ) break;
             }
+            else 
+            {
+                // m is a pure insertion.
+                if( d.End < m.Index )
+                {
+                    // d is before the insertion point: we found the insertion point.
+                    break;
+                }
+                if( d.Contains( m.Index ) )
+                {
+                    // We are replacing a span of tokens in which some tokens have been inserted.
+                    // It is hard to find a semantically correct semantics for this.
+                    Throw.InvalidOperationException( $"Span '{d}' contains {m.Tokens.Length} previously inserted tokens." );
+                }
+            }
             ++idx;
         }
         _mods.Insert( idx, new Mod( index, count, tokens ) );
     }
 
     /// <summary>
+    /// Overwrites the given number of tokens starting at <paramref name="index"/>.
+    /// </summary>
+    /// <param name="index">The index of the first token that must be replaced.</param>
+    /// <param name="tokens">Updated tokens. Must not be empty.</param>
+    public void Overwrite( int index, params Token[] tokens ) => Replace( index, tokens.Length, tokens );
+
+    /// <summary>
+    /// Immediatly overwrites the given number of tokens starting at <paramref name="index"/>.
+    /// This shortcuts <see cref="ApplyChanges()"/>, <see cref="SourceCode.Tokens"/> is updated
+    /// but the effect is not observable on existing enumerators: new enumerators must be obtained
+    /// for this change to be visible.
+    /// </summary>
+    /// <param name="index">The index of the first token that must be replaced.</param>
+    /// <param name="tokens">Updated tokens. Must not be empty.</param>
+    public void InPlaceOverwrite( int index, params Token[] tokens )
+    {
+        Throw.CheckArgument( index >= 0 && index + tokens.Length <= _tokens.Count );
+        Throw.CheckArgument( tokens.Length > 0 );
+        _tokens.RemoveRange( index, tokens.Length );
+        _tokens.InsertRange( index, tokens );
+        _code.SetTokens( _tokens.ToImmutableList() );
+    }
+
+    /// <summary>
     /// Inserts new tokens.
     /// <para>
-    /// Changes are not visible until <see cref="Apply"/> is called. The <paramref name="index"/> is relative to the
+    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The <paramref name="index"/> is relative to the
     /// current <see cref="SourceCode.Tokens"/> and must not fall into any previously modified ranges not yet applied.
     /// </para>
     /// </summary>
@@ -220,7 +282,7 @@ public sealed class SourceCodeEditor
     /// <summary>
     /// Removes a token at a specified index.
     /// <para>
-    /// Changes are not visible until <see cref="Apply"/> is called. The <paramref name="index"/> is relative to the
+    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The <paramref name="index"/> is relative to the
     /// current <see cref="SourceCode.Tokens"/> and must not fall into any previously modified ranges not yet applied.
     /// </para>
     /// </summary>
@@ -230,7 +292,7 @@ public sealed class SourceCodeEditor
     /// <summary>
     /// Removes a range of tokens.
     /// <para>
-    /// Changes are not visible until <see cref="Apply"/> is called. The range (<paramref name="index"/> and <paramref name="count"/>)
+    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The range (<paramref name="index"/> and <paramref name="count"/>)
     /// is relative to the current <see cref="SourceCode.Tokens"/>, independent of any previous replace, insert, remove not yet applied.
     /// The range must not intersect any previously modified ranges not yet applied.
     /// </para>
@@ -238,4 +300,5 @@ public sealed class SourceCodeEditor
     /// <param name="index">The index of the first token to remove.</param>
     /// <param name="count">The number of tokens to remove.</param>
     public void RemoveRange( int index, int count ) => Replace( index, count );
+
 }

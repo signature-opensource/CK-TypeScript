@@ -7,7 +7,7 @@ using System.Collections;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Checks the number of ranges and/or selects among them.

@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
+
 
 /// <summary>
 /// Base class for transform language analyzer: this parses <see cref="TransformStatement"/>.
@@ -37,12 +38,13 @@ public abstract class TransformStatementAnalyzer
     /// </summary>
     /// <param name="head">The head.</param>
     /// <returns>The list of transform statements.</returns>
-    internal List<TransformStatement> ParseStatements( ref TokenizerHead head )
+    internal TransformStatementBlock ParseStatements( ref TokenizerHead head )
     {
         var statements = new List<TransformStatement>();
         head.MatchToken( "begin", inlineError: true );
+        int begBlock = head.LastTokenIndex;
         Token? foundEnd = null;
-        while( head.EndOfInput == null && !head.TryMatchToken( "end", out foundEnd ) )
+        while( head.EndOfInput == null && !head.TryAcceptToken( "end", out foundEnd ) )
         {
             var s = ParseStatement( ref head );
             if( s != null )
@@ -56,7 +58,7 @@ public abstract class TransformStatementAnalyzer
             }
         }
         if( foundEnd == null ) head.CreateInlineError( "Expected 'end'." );
-        return statements;
+        return new TransformStatementBlock( begBlock, head.LastTokenIndex, statements );
     }
 
     /// <summary>
@@ -71,7 +73,7 @@ public abstract class TransformStatementAnalyzer
     /// <returns>The parsed statement or null.</returns>
     protected virtual TransformStatement? ParseStatement( ref TokenizerHead head )
     {
-        if( head.TryMatchToken( "inject", out var inject ) )
+        if( head.TryAcceptToken( "inject", out var inject ) )
         {
             return MatchInjectIntoStatement( ref head, inject );
         }
@@ -84,7 +86,7 @@ public abstract class TransformStatementAnalyzer
         var content = MatchRawString( ref head );
         head.MatchToken( "into", inlineError: true );
         var target = MatchInjectionPoint( ref head );
-        head.TryMatchToken( ";", out _ );
+        head.TryAcceptToken( ";", out _ );
         return content != null && target != null
                 ? new InjectIntoStatement( startSpan, head.LastTokenIndex, content, target )
                 : null;
@@ -94,7 +96,7 @@ public abstract class TransformStatementAnalyzer
             if( head.LowLevelTokenType == TokenType.LessThan )
             {
                 var sHead = head.Head;
-                int nameLen = TriviaInjectionPointMatcher.GetInjectionPointLength( sHead );
+                int nameLen = InjectIntoStatement.GetInjectionPointLength( sHead );
                 if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
                 {
                     head.PreAcceptToken( nameLen + 1, out var text, out var leading, out var trailing );

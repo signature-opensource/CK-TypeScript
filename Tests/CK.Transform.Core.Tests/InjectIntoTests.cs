@@ -1,4 +1,5 @@
-using CK.Transform.TransformLanguage;
+using CK.Core;
+using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
@@ -40,9 +41,12 @@ public class InjectIntoTests
         )]
     public void first_injection_ever( string source, string transformer, string result )
     {
-        var h = new TransformerHostOld();
-        var r = h.Transform( TestHelper.Monitor, source, transformer );
-        r.Should().Be( result );
+        var h = new TransformerHost();
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
+        Throw.DebugAssert( function != null );
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
+        Throw.DebugAssert( sourceCode != null );
+        sourceCode.ToString().Should().Be( result );
     }
 
 }

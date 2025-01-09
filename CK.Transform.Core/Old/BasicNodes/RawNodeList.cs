@@ -16,7 +16,7 @@ public class RawNodeList : CollectionNode, IAbstractNodeList<AbstractNode>
     /// <summary>
     /// Initializes a new list from its children without trivias.
     /// </summary>
-    /// <param name="nodeType">The node type. <see cref="TokenType.GenericNode"/> can be used.</param>
+    /// <param name="nodeType">The node type. <see cref="TokenType.GenericAny"/> can be used.</param>
     /// <param name="children">The children.</param>
     public RawNodeList( TokenType nodeType, params ImmutableArray<AbstractNode> children )
         : base( children )
@@ -27,7 +27,7 @@ public class RawNodeList : CollectionNode, IAbstractNodeList<AbstractNode>
     /// <summary>
     /// Initializes a new list from its children and trivias.
     /// </summary>
-    /// <param name="nodeType">The node type. <see cref="TokenType.GenericNode"/> can be used.</param>
+    /// <param name="nodeType">The node type. <see cref="TokenType.GenericAny"/> can be used.</param>
     /// <param name="leading">The leading trivias.</param>
     /// <param name="trailing">The trailing trivias.</param>
     /// <param name="children">The children.</param>

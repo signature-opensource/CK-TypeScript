@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 
 namespace CK.Transform.Core;
 
@@ -13,8 +14,10 @@ namespace CK.Transform.Core;
 public class Token
 {
     readonly ReadOnlyMemory<char> _text;
-    readonly ImmutableArray<Trivia> _leadingTrivias;
-    readonly ImmutableArray<Trivia> _trailingTrivias;
+    // Not readonly for the CloneWithTrivias that uses MemberwiseClone so
+    // no extra virtual/override is required.
+    ImmutableArray<Trivia> _leadingTrivias;
+    ImmutableArray<Trivia> _trailingTrivias;
     readonly TokenType _tokenType;
 
     /// <summary>
@@ -68,6 +71,16 @@ public class Token
     /// Gets the leading <see cref="Trivia"/>.
     /// </summary>
     public ImmutableArray<Trivia> TrailingTrivias => _trailingTrivias;
+
+    internal Token CloneForTrivias( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
+    {
+        Throw.DebugAssert( !leading.IsDefault );
+        Throw.DebugAssert( !trailing.IsDefault );
+        var c = Unsafe.As<Token>( MemberwiseClone() );
+        c._leadingTrivias = leading;
+        c._trailingTrivias = trailing;
+        return c;
+    }
 
     /// <summary>
     /// Gets the <see cref="Text"/> as a string.

@@ -39,7 +39,7 @@ public abstract class SyntaxNode : AbstractNode
     /// <summary>
     /// Defaults to <see cref="Core.TokenType.SyntaxNode"/>.
     /// </summary>
-    public override TokenType NodeType => TokenType.SyntaxNode;
+    public override TokenType NodeType => TokenType.Asterisk;// TokenType.SyntaxNode;
 
     /// <summary>
     /// Gets the total number of token that this element contains.

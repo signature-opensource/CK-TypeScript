@@ -1,6 +1,6 @@
 using System;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Describes the <see cref="IVisitContext.RangeFilterStatus" />.

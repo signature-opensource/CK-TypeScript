@@ -1,6 +1,6 @@
 using CK.Transform.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 public sealed partial class TransformerHost
@@ -11,6 +11,8 @@ public sealed partial class TransformerHost
     /// </summary>
     sealed class RootTransformLanguage : TransformLanguage
     {
+        internal const string _languageName = "Transform";
+
         readonly RootTransformAnalyzer _rootAnalyzer;
         readonly TransformStatementAnalyzer _thisAnalyzer;
 
@@ -32,7 +34,7 @@ public sealed partial class TransformerHost
         }
 
         internal RootTransformLanguage( TransformerHost host )
-            : base( "Transform" )
+            : base( _languageName )
         {
             _thisAnalyzer = new ThisStatementAnalyzer( this );
             _rootAnalyzer = new RootTransformAnalyzer( host );
@@ -42,9 +44,7 @@ public sealed partial class TransformerHost
 
         public TransformStatementAnalyzer TransformStatementAnalyzer => _thisAnalyzer;
 
-        protected internal override IAnalyzer CreateTargetAnalyzer() => _rootAnalyzer;
-
-        protected internal override TransformStatementAnalyzer CreateTransformStatementAnalyzer( TransformerHost host ) => _thisAnalyzer;
+        protected internal override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host ) => (_thisAnalyzer, _rootAnalyzer);
     }
 
 }

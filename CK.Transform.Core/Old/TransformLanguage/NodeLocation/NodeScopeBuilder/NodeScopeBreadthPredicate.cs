@@ -3,7 +3,7 @@ using CK.Transform.Core;
 using System;
 using System.Diagnostics;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Builds scopes based on a node predicate. This is a breadth-first matcher: as soon as a node match,

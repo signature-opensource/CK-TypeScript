@@ -1,4 +1,4 @@
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Captures a normalized cardinality for multi (all, each) and single (first, last, single) matches.

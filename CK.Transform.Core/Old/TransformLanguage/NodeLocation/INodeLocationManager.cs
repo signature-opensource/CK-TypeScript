@@ -1,6 +1,6 @@
 using CK.Transform.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Exposes everything needed to manage location of nodes below a <see cref="Root"/>.

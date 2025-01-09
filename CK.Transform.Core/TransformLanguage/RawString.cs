@@ -1,16 +1,16 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// A raw string follows the same rules as the C# raw string: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/raw-string.
 /// <list type="bullet">
-///     <item>A single quote opens a "single-line string": the closing quote must appear before the end-of-line.</item>
-///     <item>Two consecutive quotes is the empty string "".</item>
+///     <item>A single quote opens a <c>"single-line string"</c>: the closing quote must appear before the end-of-line.</item>
+///     <item>Two consecutive quotes is the empty string <c>""</c>.</item>
 ///     <item>
 ///     Three quotes or more opens a single or multi-line string that can contain consecutive quotes sequence shorter than the opening quotes.
 ///     (This string can be on a single line: """Hello "World"!""" is valid.)
@@ -20,7 +20,7 @@ namespace CK.Transform.TransformLanguage;
 /// Escape character '\' is NOT handled in a single-line string. If a '"' must apear, use a multi-quoted string.
 /// </para>
 /// <para>
-/// Note that in C#, <c>"""raw "string""""</c> is not valid (but valid for us).
+/// Note that in C#, <c>"""raw "string""""</c> is not valid but this is valid for us (the string is <c>raw "string"</c>).
 /// </para>
 /// </summary>
 public sealed class RawString : Token

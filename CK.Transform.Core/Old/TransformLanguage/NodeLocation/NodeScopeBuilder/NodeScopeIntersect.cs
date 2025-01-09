@@ -1,7 +1,7 @@
 using CK.Core;
 using System.Diagnostics;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 /// <summary>

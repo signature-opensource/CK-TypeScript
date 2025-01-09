@@ -76,7 +76,7 @@ public abstract partial class Analyzer : IParserHeadBehavior
             var node = Unsafe.As<AbstractNode>( Parse( ref head ) );
             if( head.EndOfInput != null )
             {
-                if( multiResult != null ) return new RawNodeList( TokenType.GenericNode, multiResult.DrainToImmutable() );
+                if( multiResult != null ) return new RawNodeList( TokenType.GenericAny, multiResult.DrainToImmutable() );
                 if( singleResult != null ) return singleResult;
             }
             if( node == null )

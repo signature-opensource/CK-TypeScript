@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 sealed class LocationInserter
 {

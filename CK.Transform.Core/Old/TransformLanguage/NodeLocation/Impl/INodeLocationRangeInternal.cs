@@ -1,4 +1,4 @@
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 internal interface INodeLocationRangeInternal : INodeLocationRange
 {

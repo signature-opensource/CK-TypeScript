@@ -1,6 +1,6 @@
 using CK.Transform.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// This context is available on <see cref="TransformVisitor.VisitContext"/> property.

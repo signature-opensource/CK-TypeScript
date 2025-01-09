@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 /// <summary>

@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -10,6 +11,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Tokenizer head.
 /// </summary>
+[DebuggerDisplay("{_head}")]
 public ref struct TokenizerHead
 {
     ReadOnlySpan<char> _head;
@@ -19,10 +21,11 @@ public ref struct TokenizerHead
     readonly ILowLevelTokenizer _lowLevelTokenizer;
     readonly SourceSpanRoot _spans;
     readonly List<Token> _tokens;
+    Token? _lastToken;
     TriviaParser _triviaParser;
     ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
-    Token? _endOfInput;
+    TokenError? _endOfInput;
     ReadOnlySpan<char> _lowLevelTokenText;
     TokenType _lowLevelTokenType;
     int _lastSuccessfulHead;
@@ -117,12 +120,13 @@ public ref struct TokenizerHead
         Throw.CheckState( _lastSuccessfulHead == safetyToken );
         _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
         _inlineErrorCount += subHead._inlineErrorCount;
-
         _tokens.AddRange( CollectionsMarshal.AsSpan( subHead._tokens ) );
+        _lastToken = subHead._lastToken;
+
         subHead._inlineErrorCount = 0;
         subHead._tokens.Clear();
-
-        subHead._spans.TransferTo( _spans );
+        subHead._lastToken = null;
+        if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
 
         InitializeLeadingTrivia();
     }
@@ -152,7 +156,7 @@ public ref struct TokenizerHead
     /// <summary>
     /// Gets the last accepted token.
     /// </summary>
-    public readonly Token? LastToken => _tokens.Count > 0 ? _tokens[_tokens.Count-1] : null;
+    public readonly Token? LastToken => _lastToken;
 
     /// <summary>
     /// Gets the last token index, accounting parent's tokens if this is a subordinated head.
@@ -161,20 +165,6 @@ public ref struct TokenizerHead
     /// </para>
     /// </summary>
     public readonly int LastTokenIndex => _tokenCountOffset + _tokens.Count;
-
-    /// <summary>
-    /// Extracts the tokens accepted so far, the spans created and the <see cref="InlineErrorCount"/>.
-    /// <see cref="Tokens"/> and <see cref="Spans"/> are emptied, InlineErrorCount is set to 0.
-    /// </summary>
-    /// <param name="code">The collected tokens and spans.</param>
-    /// <param name="inlineErrorCount">Number of inlined errors.</param>
-    public void ExtractResult( out SourceCode code, out int inlineErrorCount )
-    {
-        code = new SourceCode( _tokens, _spans );
-        Throw.DebugAssert( _tokens.Count == 0 && !_spans._children.HasChildren );
-        inlineErrorCount = _inlineErrorCount;
-        _inlineErrorCount = 0;
-    }
 
     /// <summary>
     /// Incremented each time <see cref="CreateInlineError(string, int, TokenType)"/> is called.
@@ -193,7 +183,7 @@ public ref struct TokenizerHead
     /// <summary>
     /// Gets the enf of input if it has been reached.
     /// </summary>
-    public readonly Token? EndOfInput => _endOfInput;
+    public readonly TokenError? EndOfInput => _endOfInput;
 
     /// <summary>
     /// Gets the low-level token type.
@@ -205,6 +195,25 @@ public ref struct TokenizerHead
     /// Gets the <see cref="LowLevelToken"/> text.
     /// </summary>
     public readonly ReadOnlySpan<char> LowLevelTokenText => _lowLevelTokenText;
+
+    /// <summary>
+    /// Extracts the tokens accepted so far, the spans created and the <see cref="InlineErrorCount"/>.
+    /// <see cref="Tokens"/> and <see cref="Spans"/> are emptied, InlineErrorCount is set to 0.
+    /// </summary>
+    /// <param name="code">The collected tokens and spans.</param>
+    /// <param name="inlineErrorCount">Number of inlined errors.</param>
+    public void ExtractResult( out SourceCode code, out int inlineErrorCount )
+    {
+        if( MemoryMarshal.TryGetString( _memText, out var sourceText, out var start, out var length ) )
+        {
+            // This will always be more efficient than rewriting the string.
+            if( length < sourceText.Length ) sourceText = sourceText.Substring( start, length );
+        }
+        code = new SourceCode( _tokens, _spans, sourceText );
+        Throw.DebugAssert( _tokens.Count == 0 && !_spans._children.HasChildren );
+        inlineErrorCount = _inlineErrorCount;
+        _inlineErrorCount = 0;
+    }
 
     /// <summary>
     /// Helper that calls <see cref="CreateError(string, TokenType)"/> or <see cref="CreateInlineError(string, int, TokenType)"/>
@@ -232,71 +241,6 @@ public ref struct TokenizerHead
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
         var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
         return new TokenError( errorType, default, errorMessage, p, _leadingTrivias, ImmutableArray<Trivia>.Empty );
-    }
-
-    /// <summary>
-    /// Creates and accepts a token error node at the current <see cref="Head"/> with an optional length of text.
-    /// <para>
-    /// When <paramref name="length"/> is positive, the returned error token has the leading and trailing trivias
-    /// and the head is forwarded.
-    /// When length is 0, the error has the current leading trivias (and no trailing trivias), the next token will
-    /// have no leading trivias.
-    /// </para>
-    /// <para>
-    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
-    /// </para>
-    /// </summary>
-    /// <param name="errorMessage">The error message. When not specified, the message is the text content.</param>
-    /// <param name="length">The length of the token that is "covered" with the error.</param>
-    /// <param name="errorType">The error token type.</param>
-    /// <returns>An error token.</returns>
-    public TokenError CreateInlineError( string errorMessage, int length = 0, TokenType errorType = TokenType.GenericError )
-    {
-        Throw.CheckArgument( errorType.IsError() );
-        Throw.CheckState( EndOfInput is null );
-
-        _inlineErrorCount++;
-        ReadOnlyMemory<char> text;
-        ImmutableArray<Trivia> leading;
-        ImmutableArray<Trivia> trailing;
-        if( length > 0 )
-        {
-            PreAcceptToken( length, out text, out leading, out trailing );
-        }
-        else
-        {
-            text = default;
-            leading = _leadingTrivias;
-            _leadingTrivias = ImmutableArray<Trivia>.Empty;
-            trailing = ImmutableArray<Trivia>.Empty;
-        }
-        if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
-        var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
-        var t = new TokenError( errorType, text, errorMessage, p, leading, trailing );
-        _tokens.Add( t );
-        return t;
-    }
-
-    /// <summary>
-    /// Accepts the <see cref="Head"/> first <paramref name="tokenLength"/> characters, calls a token factory and accepts it.
-    /// <para>
-    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
-    /// </para>
-    /// <para>
-    /// This often supposes a closure. To avoid such closure <see cref="PreAcceptToken(int, out ReadOnlyMemory{char}, out ImmutableArray{Trivia}, out ImmutableArray{Trivia})"/>
-    /// and <see cref="Accept(Token)"/> can be used.
-    /// </para>
-    /// </summary>
-    /// <param name="tokenLength">The length of the token. Must be positive.</param>
-    /// <param name="tokenFactory">The token factory.</param>
-    /// <returns>The created and accepted token.</returns>
-    public Token AcceptToken( int tokenLength,
-                              Func<ImmutableArray<Trivia>, ReadOnlyMemory<char>, ImmutableArray<Trivia>, Token> tokenFactory )
-    {
-        PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
-        var t = tokenFactory( leading, text, trailing );
-        _tokens.Add( t );
-        return t;
     }
 
     /// <summary>
@@ -342,15 +286,89 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
+    /// Creates and accepts a token error node at the current <see cref="Head"/> with an optional length of text.
+    /// <para>
+    /// When <paramref name="length"/> is positive, the returned error token has the leading and trailing trivias
+    /// and the head is forwarded.
+    /// When length is 0, the error has the current leading trivias (and no trailing trivias), the next token will
+    /// have no leading trivias.
+    /// </para>
+    /// <para>
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
+    /// </summary>
+    /// <param name="errorMessage">The error message. When not specified, the message is the text content.</param>
+    /// <param name="length">The length of the token that is "covered" with the error.</param>
+    /// <param name="errorType">The error token type.</param>
+    /// <returns>An error token.</returns>
+    [MemberNotNull( nameof( LastToken ) )]
+    public TokenError CreateInlineError( string errorMessage, int length = 0, TokenType errorType = TokenType.GenericError )
+    {
+        Throw.CheckArgument( errorType.IsError() );
+        Throw.CheckState( EndOfInput is null );
+
+        _inlineErrorCount++;
+        ReadOnlyMemory<char> text;
+        ImmutableArray<Trivia> leading;
+        ImmutableArray<Trivia> trailing;
+        if( length > 0 )
+        {
+            PreAcceptToken( length, out text, out leading, out trailing );
+        }
+        else
+        {
+            text = default;
+            leading = _leadingTrivias;
+            _leadingTrivias = ImmutableArray<Trivia>.Empty;
+            trailing = ImmutableArray<Trivia>.Empty;
+        }
+        if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
+        var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
+        var t = new TokenError( errorType, text, errorMessage, p, leading, trailing );
+        _tokens.Add( t );
+        _lastToken = t;
+        Throw.DebugAssert( LastToken != null );
+        return t;
+    }
+
+    /// <summary>
+    /// Accepts the <see cref="Head"/> first <paramref name="tokenLength"/> characters, calls a token factory and accepts it.
+    /// <para>
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
+    /// <para>
+    /// This often supposes a closure. To avoid such closure <see cref="PreAcceptToken(int, out ReadOnlyMemory{char}, out ImmutableArray{Trivia}, out ImmutableArray{Trivia})"/>
+    /// and <see cref="Accept(Token)"/> can be used.
+    /// </para>
+    /// </summary>
+    /// <param name="tokenLength">The length of the token. Must be positive.</param>
+    /// <param name="tokenFactory">The token factory.</param>
+    /// <returns>The created and accepted token.</returns>
+    [MemberNotNull( nameof( LastToken ) )]
+    public Token AcceptToken( int tokenLength,
+                              Func<ImmutableArray<Trivia>, ReadOnlyMemory<char>, ImmutableArray<Trivia>, Token> tokenFactory )
+    {
+        PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
+        var t = tokenFactory( leading, text, trailing );
+        _tokens.Add( t );
+        _lastToken = t;
+        Throw.DebugAssert( LastToken != null );
+        return t;
+    }
+
+    /// <summary>
     /// Accepts a token externally created after a call to <see cref="PreAcceptToken(int, out ReadOnlyMemory{char}, out ImmutableArray{Trivia}, out ImmutableArray{Trivia})"/>.
     /// </summary>
     /// <param name="token">The token. This MUST be based on the PreAccept result.</param>
     /// <returns>The <paramref name="token"/>.</returns>
+    [MemberNotNull( nameof( LastToken ), nameof( _lastToken ) )]
     public T Accept<T>( T token ) where T : Token
     {
         Throw.CheckNotNullArgument( token );
         Throw.CheckState( LastToken != token );
         _tokens.Add( token );
+        _lastToken = token;
+        Throw.DebugAssert( LastToken != null );
         return token;
     }
 
@@ -364,13 +382,16 @@ public ref struct TokenizerHead
     /// <param name="type">The <see cref="Token.TokenType"/> to create.</param>
     /// <param name="tokenLength">The length of the token. Must be positive.</param>
     /// <returns>The token.</returns>
-    public Token CreateToken( TokenType type, int tokenLength )
+    [MemberNotNull( nameof( LastToken ), nameof( _lastToken ) )]
+    public Token AcceptToken( TokenType type, int tokenLength )
     {
-        Throw.CheckArgument( !type.IsError() &&  !type.IsTrivia() );
+        Throw.CheckArgument( !type.IsError() && !type.IsTrivia() );
         PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
         // Use the internal unchecked constructor as every parameters have been checked.
         var t = new Token( type, leading, text, trailing );
         _tokens.Add( t );
+        _lastToken = t;
+        Throw.DebugAssert( LastToken != null );
         return t;
     }
 
@@ -382,32 +403,53 @@ public ref struct TokenizerHead
     /// </summary>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
     /// <returns>The token.</returns>
-    public Token CreateLowLevelToken( TokenType type = TokenType.None )
+    [MemberNotNull( nameof( LastToken ) )]
+    public Token AcceptLowLevelToken( TokenType type = TokenType.None )
     {
         Throw.CheckState( _lowLevelTokenText.Length > 0 );
         if( type == TokenType.None ) type = _lowLevelTokenType;
-        return CreateToken( type, _lowLevelTokenText.Length );
+        return AcceptToken( type, _lowLevelTokenText.Length );
     }
 
     /// <summary>
     /// Helper function for easy case that matches the <see cref="LowLevelTokenText"/> and
-    /// creates a <see cref="Token"/> on success.
+    /// accepts the low level token on success.
     /// </summary>
     /// <param name="expectedText">The text that must match the <see cref="LowLevelTokenText"/>. Must not be empty.</param>
     /// <param name="result">The non null TokenNode on success.</param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
     /// <param name="comparisonType">Optional comparison type.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TryMatchToken( ReadOnlySpan<char> expectedText,
-                               [NotNullWhen( true )] out Token? result,
-                               TokenType type = TokenType.None,
-                               StringComparison comparisonType = StringComparison.Ordinal )
+    public bool TryAcceptToken( ReadOnlySpan<char> expectedText,
+                                [NotNullWhen( true )] out Token? result,
+                                TokenType type = TokenType.None,
+                                StringComparison comparisonType = StringComparison.Ordinal )
     {
         Throw.CheckArgument( expectedText.Length > 0 );
         if( _lowLevelTokenText.Equals( expectedText, comparisonType ) )
         {
             if( type == TokenType.None ) type = _lowLevelTokenType;
-            result = CreateToken( type, expectedText.Length );
+            result = AcceptToken( type, expectedText.Length );
+            return true;
+        }
+        result = null;
+        return false;
+    }
+
+
+    /// <summary>
+    /// Helper function for easy case that matches the <see cref="LowLevelTokenType"/> and
+    /// accepts the low level token on success.
+    /// </summary>
+    /// <param name="type">The expected <see cref="LowLevelTokenType"/>.</param>
+    /// <param name="result">The non null TokenNode on success.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    public bool TryAcceptToken( TokenType type, [NotNullWhen( true )] out Token? result )
+    {
+        Throw.DebugAssert( type != TokenType.None && type.IsError() is false );
+        if( _lowLevelTokenType == type )
+        {
+            result = AcceptToken( type, _lowLevelTokenText.Length );
             return true;
         }
         result = null;
@@ -419,7 +461,7 @@ public ref struct TokenizerHead
     /// or a <see cref="TokenError"/> "Expected '<paramref name="expected"/>'." on failure.
     /// </summary>
     /// <param name="expected">The expected characters.</param>
-    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.NodeType"/>.</param>
+    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.TokenType"/>.</param>
     /// <param name="inlineError">True to accept the error token.</param>
     /// <param name="errorType">By default, the error type is the expected <paramref name="type"/> | <see cref="TokenType.ErrorClassBit"/>.</param>
     /// <returns>The Token or <see cref="TokenError"/>.</returns>
@@ -429,32 +471,13 @@ public ref struct TokenizerHead
                              bool inlineError = false,
                              TokenType errorType = TokenType.None )
     {
-        if( TryMatchToken( expected, out var n, type, comparisonType ) ) return n;
+        if( TryAcceptToken( expected, out var n, type, comparisonType ) ) return n;
         var m = $"Expected '{expected}'.";
         if( type == TokenType.None ) type = _lowLevelTokenType;
         if( errorType == TokenType.None ) errorType = type | TokenType.ErrorClassBit;
         return inlineError
                     ? CreateInlineError( m, _lowLevelTokenText.Length, errorType )
                     : CreateError( m, errorType );
-    }
-
-    /// <summary>
-    /// Helper function for easy case that matches the <see cref="LowLevelTokenType"/> and
-    /// creates a <see cref="TokenNode"/> on success.
-    /// </summary>
-    /// <param name="type">The expected <see cref="LowLevelTokenType"/>.</param>
-    /// <param name="result">The non null TokenNode on success.</param>
-    /// <returns>True on success, false otherwise.</returns>
-    public bool TryMatchToken( TokenType type, [NotNullWhen( true )] out Token? result )
-    {
-        Throw.DebugAssert( type != TokenType.None && type.IsError() is false );
-        if( _lowLevelTokenType == type )
-        {
-            result = CreateToken( type, _lowLevelTokenText.Length );
-            return true;
-        }
-        result = null;
-        return false;
     }
 
     /// <summary>
@@ -468,7 +491,7 @@ public ref struct TokenizerHead
     /// <returns>The Token or <see cref="TokenError"/>.</returns>
     public Token MatchToken( TokenType type, string tokenDescription, bool inlineError = false, TokenType errorType = TokenType.None )
     {
-        if( TryMatchToken( type, out var n ) ) return n;
+        if( TryAcceptToken( type, out var n ) ) return n;
         var m = $"Expected '{tokenDescription}'.";
         if( errorType == TokenType.None ) errorType = type | TokenType.ErrorClassBit;
         return inlineError
@@ -476,6 +499,26 @@ public ref struct TokenizerHead
                     : CreateError( m, errorType );
     }
 
+    /// <summary>
+    /// Appends a missing <see cref="TokenError"/> with "Missing '<paramref name="missingDescription"/>'." error message.
+    /// </summary>
+    /// <param name="missingDescription">Describes what is missing, for example "target (string or identifier)".</param>
+    /// <param name="errorType">Specific missing error type if required.</param>
+    /// <returns>The inlined error.</returns>
+    public TokenError AppendMissingToken( string missingDescription, TokenType errorType = TokenType.GenericMissingToken )
+    {
+        return CreateInlineError( $"Missing '{missingDescription}'.", 0, errorType );
+    }
+
+    /// <summary>
+    /// Appends the current <see cref="LowLevelTokenText"/> as an error.
+    /// </summary>
+    /// <param name="errorType">Specific missing error type if required.</param>
+    /// <returns>The inlined error.</returns>
+    public TokenError AppendUnexpectedToken( TokenType errorType = TokenType.GenericUnexpectedToken )
+    {
+        return CreateInlineError( $"Unexpected token.", _lowLevelTokenText.Length, errorType );
+    }
 
     #region Internal & private
 
@@ -496,7 +539,7 @@ public ref struct TokenizerHead
     {
         // Initializes the low-level token.
         var t = _lowLevelTokenizer.LowLevelTokenize( _head );
-        _lowLevelTokenType = t.NodeType;
+        _lowLevelTokenType = t.TokenType;
         if( t.Length != 0 )
         {
             Throw.CheckState( t.Length >= 0 );
@@ -506,7 +549,7 @@ public ref struct TokenizerHead
 
     void SetEndOfInput()
     {
-        _endOfInput = new Token( TokenType.EndOfInput, _leadingTrivias, default, ImmutableArray<Trivia>.Empty );
+        _endOfInput = CreateError( "End of input.", TokenType.EndOfInput );
     }
 
     #endregion

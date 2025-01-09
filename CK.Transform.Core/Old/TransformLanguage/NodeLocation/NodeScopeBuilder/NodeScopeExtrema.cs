@@ -1,6 +1,6 @@
 using CK.Core;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Builds a unique range on the extrema of the inner range(s).

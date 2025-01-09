@@ -38,7 +38,7 @@ public enum TokenType
     /// <summary>
     /// A generic error type.
     /// </summary>
-    GenericError = BasicTokenType.GenericAny | ErrorClassBit,
+    GenericError = GenericAny | ErrorClassBit,
 
     /// <summary>
     /// Class for trivias (whitespace and comments).
@@ -83,30 +83,23 @@ public enum TokenType
     #endregion
 
     /// <summary>
-    /// The end of input has only the most significant bit set.
-    /// This can be understood as the combination of the <see cref="ErrorClassBit"/>
-    /// and <see cref="None"/>.
-    /// Used by <see cref="NodeLocation.EndOfInput"/> and any <see cref="ParserHead.EndOfInput"/> tokens.
+    /// End of input is classified as an error.
     /// </summary>
-    EndOfInput = ErrorClassBit,
+    EndOfInput = ErrorClassBit | GenericMissingToken,
 
     /// <summary>
-    /// Beginning of the input (the fact that this is clasified as an error is meaningless).
-    /// Used by <see cref="NodeLocation.BegOfInput"/>.
+    /// Beginning of the input has only the most significant bit set.
+    /// The fact that this is clasified as an error is meaningless.
     /// </summary>
-    BegOfInput = ErrorClassBit | SyntaxErrorNode,
+    BegOfInput = ErrorClassBit | GenericAny,
 
     /// <summary>
     /// An unterminated string: the end-of-input has been reached before the closing "quote" (whatever it is).
     /// </summary>
     ErrorUnterminatedString = ErrorClassBit | GenericString,
 
-    /// <inheritdoc cref="BasicTokenType.SyntaxNode"/>
-    SyntaxNode = BasicTokenType.SyntaxNode,
-    /// <inheritdoc cref="BasicTokenType.SyntaxErrorNode"/>
-    SyntaxErrorNode = BasicTokenType.SyntaxErrorNode,
     /// <inheritdoc cref="BasicTokenType.GenericAny"/>
-    GenericNode = BasicTokenType.GenericAny,
+    GenericAny = BasicTokenType.GenericAny,
     /// <inheritdoc cref="BasicTokenType.GenericUnexpectedToken"/>
     GenericUnexpectedToken = BasicTokenType.GenericUnexpectedToken,
 

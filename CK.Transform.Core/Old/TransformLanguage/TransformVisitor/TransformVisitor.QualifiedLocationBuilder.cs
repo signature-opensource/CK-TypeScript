@@ -2,7 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System.Collections.Generic;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 public partial class TransformVisitor
 {

@@ -2,9 +2,8 @@ using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Linq;
-using System.Threading;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 public sealed partial class TransformerHost
@@ -25,7 +24,7 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Gets the "Transform" language name.
         /// </summary>
-        public string LanguageName => _host._transformLanguage.LanguageName;
+        public string LanguageName => RootTransformLanguage._languageName;
 
         /// <summary>
         /// Transform languages accept <see cref="TriviaHeadExtensions.AcceptCLikeRecursiveStarComment(ref TriviaHead)"/>
@@ -42,42 +41,12 @@ public sealed partial class TransformerHost
         }
 
         /// <summary>
-        /// Implements minimal support required by any Transform language.
-        /// <para>
-        /// When substituted by a <see cref="TransformStatementAnalyzer"/> implementation, <see cref="TokenType.GenericIdentifier"/> that
-        /// at least handles "Ascii letter[Ascii letter or digit]*", <see cref="TokenType.DoubleQuote"/>, <see cref="TokenType.LessThan"/>,
-        /// <see cref="TokenType.Dot"/> and <see cref="TokenType.SemiColon"/> must be handled.
-        /// </para>
+        /// Calls the public <see cref="TransformLanguage.MinimalTransformerLowLevelTokenize(ReadOnlySpan{char})"/> that
+        /// implements minimal support required by any Transform language.
         /// </summary>
         /// <param name="head">The head.</param>
         /// <returns>The low level token.</returns>
-        protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
-        {
-            var c = head[0];
-            if( char.IsAsciiLetter( c ) )
-            {
-                int iS = 0;
-                while( ++iS < head.Length && char.IsAsciiLetterOrDigit( head[iS] ) ) ;
-                return new LowLevelToken( TokenType.GenericIdentifier, iS );
-            }
-            if( c == '"' )
-            {
-                return new LowLevelToken( TokenType.DoubleQuote, 1 );
-            }
-            if( c == '.' )
-            {
-                return new LowLevelToken( TokenType.Dot, 1 );
-            }
-            if( c == ';' )
-            {
-                return new LowLevelToken( TokenType.SemiColon, 1 );
-            }
-            if( c == '<' )
-            {
-                return new LowLevelToken( TokenType.LessThan, 1 );
-            }
-            return default;
-        }
+        protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head ) => TransformLanguage.MinimalTransformerLowLevelTokenize( head );
 
         /// <summary>
         /// Handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'
@@ -96,33 +65,61 @@ public sealed partial class TransformerHost
             {
                 return head.CreateError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
             }
-            var language = head.CreateLowLevelToken();
+            var language = head.AcceptLowLevelToken();
             head.MatchToken( "transformer", inlineError: true );
 
             Token? functionName = null;
-            Token? target = null;
+            string? target = null;
             if( !head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
             {
                 bool hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
                 if( !hasOn && !head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) )
                 {
-                    functionName = head.CreateLowLevelToken();
+                    functionName = head.AcceptLowLevelToken();
                     hasOn = head.LowLevelTokenText.Equals( "on", StringComparison.Ordinal );
                 }
                 if( hasOn )
                 {
                     // on
-                    head.CreateLowLevelToken();
-                    target = head.MatchToken( TokenType.GenericIdentifier, "target identifier" );
+                    head.AcceptLowLevelToken();
+                    // Either an identifier or a single-line string.
+                    if( head.LowLevelTokenType == TokenType.DoubleQuote )
+                    {
+                        // Inline error returns null.
+                        var s = TransformStatementAnalyzer.MatchRawString( ref head );
+                        if( s != null )
+                        {
+                            if( s.Lines.Length > 1 )
+                            {
+                                head.CreateInlineError( "Transformer target must be a single line string." );
+                            }
+                            target = s.Lines[0];
+                        }
+                    }
+                    else if( head.LowLevelTokenType == TokenType.GenericIdentifier )
+                    {
+                        target = head.AcceptLowLevelToken().ToString();
+                    }
+                    else
+                    {
+                        if( head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) || head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
+                        {
+                            head.AppendMissingToken( "target (identifier or one-line string)" );
+                        }
+                        else
+                        {
+                            head.AppendUnexpectedToken();
+                        }
+                    }
                 }
                 // The optional "as" token is parsed in the context of the root transform language.
-                head.TryMatchToken( "as", out _ );
+                head.TryAcceptToken( "as", out _ );
             }
             // The begin...end is parsed in the context of the actual transform language.
             var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
             var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
             head.SkipTo( safetyToken, ref headStatements );
-            head.Spans.Add( new TransformerFunction( startFunction, head.LastTokenIndex, cLang.TransformLanguage, statements, functionName?.ToString(), target?.ToString() ) );
+            head.Spans.Add( new TransformerFunction( startFunction, head.LastTokenIndex, cLang.TransformLanguage, statements, functionName?.ToString(), target ) );
             return null;
         }
 

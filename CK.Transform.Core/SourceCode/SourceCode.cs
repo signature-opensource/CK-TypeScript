@@ -1,23 +1,26 @@
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
+using System.Text;
 
 namespace CK.Transform.Core;
 
-public sealed class SourceCode
+/// <summary>
+/// Source code is created by a <see cref="TokenizerHead"/> and can be mutated by a <see cref="SourceCodeEditor"/>.
+/// </summary>
+public sealed class SourceCode : IEnumerable<SourceToken>
 {
     readonly SourceSpanRoot _spans;
     ImmutableList<Token> _tokens;
+    string? _toString;
 
-    internal SourceCode( List<Token> tokens, SourceSpanRoot spans )
+    internal SourceCode( List<Token> tokens, SourceSpanRoot spans, string? sourceText )
     {
         _spans = new SourceSpanRoot();
         if( spans._children._firstChild != null ) spans.TransferTo( _spans );
         _tokens = ImmutableList.CreateRange( tokens );
         tokens.Clear();
+        _toString = sourceText;
     }
 
     /// <summary>
@@ -31,39 +34,51 @@ public sealed class SourceCode
     public ImmutableList<Token> Tokens => _tokens;
 
     /// <summary>
-    /// Creates a <see cref="ISourceTokenEnumerator"/> on all <see cref="Tokens"/>.
+    /// Enumerates all <see cref="Tokens"/> with their index and deepest span in an optimized way.
+    /// <para>
+    /// Note that the enumerator MUST be disposed once done with it because it contains a <see cref="ImmutableList{T}.Enumerator"/>
+    /// that must be disposed.
+    /// </para>
     /// </summary>
-    /// <returns>An enumerator with index, token and spans covering the token.</returns>
-    public ISourceTokenEnumerator CreateSourceTokenEnumerator() => new SourceTokenEnumerator( this );
+    public IEnumerable<SourceToken> SourceTokens => this;
 
-    internal void SetTokens( ImmutableList<Token> tokens ) => _tokens = tokens;
+    IEnumerator<SourceToken> IEnumerable<SourceToken>.GetEnumerator() => new SourceTokenEnumerator( this );
+
+    IEnumerator IEnumerable.GetEnumerator() => new SourceTokenEnumerator( this );
+
+    internal void SetTokens( ImmutableList<Token> tokens )
+    {
+        _tokens = tokens;
+        _toString = null;
+    }
 
     internal void TransferTo( SourceCode code )
     {
         code.SetTokens( _tokens );
+        code._spans._children.Clear();
         if( _spans._children.HasChildren ) _spans.TransferTo( code._spans );
     }
 
-    sealed class SourceTokenEnumerator : ISourceTokenEnumerator
+    sealed class SourceTokenEnumerator : IEnumerator<SourceToken>
     {
         ImmutableList<Token>.Enumerator _tokenEnumerator;
         Token? _token;
         SourceSpan? _nextSpan;
         SourceSpan? _span;
         int _index;
+        readonly SourceCode _code;
 
         public SourceTokenEnumerator( SourceCode code )
         {
+            _code = code;
             _index = -1;
             _nextSpan = code._spans._children._firstChild;
             _tokenEnumerator = code._tokens.GetEnumerator();
         }
 
-        public int Index => _index;
+        public SourceToken Current => new SourceToken( _token!, _span, _index );
 
-        public Token Token => _token!;
-
-        public SourceSpan? Span => _span;
+        object IEnumerator.Current => Current;
 
         public bool MoveNext()
         {
@@ -83,7 +98,7 @@ public sealed class SourceCode
                     _nextSpan = _span._nextSibling ?? _span._parent;
                 }
             }
-            else 
+            else
             {
                 // Still in the current span. We may enter a child.
                 if( _index < _span.Span.End )
@@ -97,5 +112,17 @@ public sealed class SourceCode
 
         public void Dispose() => _tokenEnumerator.Dispose();
 
+        public void Reset()
+        {
+            _tokenEnumerator.Reset();
+            _index = -1;
+            _nextSpan = _code._spans._children._firstChild;
+        }
     }
+
+    /// <summary>
+    /// Overridden to return the text of the source.
+    /// </summary>
+    /// <returns>The text.</returns>
+    public override string ToString() => _toString ??= _tokens.Write( new StringBuilder() ).ToString();
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 public static class NodelocationRangeExtensions
 {

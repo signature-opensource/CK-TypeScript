@@ -1,17 +1,15 @@
 using CK.Core;
 using CK.Transform.Core;
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 public sealed class TransformerFunction : SourceSpan
 {
     public TransformerFunction( int createTokenIndex,
                                 int endTokenIndex,
                                 TransformLanguage language,
-                                List<TransformStatement>? statements = null,
+                                TransformStatementBlock statements,
                                 string? name = null,
                                 string? target = null )
         : base( createTokenIndex, endTokenIndex )
@@ -19,7 +17,7 @@ public sealed class TransformerFunction : SourceSpan
         Language = language;
         Name = name;
         Target = target;
-        Statements = statements ?? new List<TransformStatement>();
+        Body = statements;
     }
 
     /// <summary>
@@ -38,27 +36,18 @@ public sealed class TransformerFunction : SourceSpan
     public string? Target { get; set; }
 
     /// <summary>
-    /// Gets the transform statements.
+    /// Gets the body.
     /// </summary>
-    public List<TransformStatement> Statements { get; }
+    public TransformStatementBlock Body { get; }
 
     /// <summary>
-    /// Applies the <see cref="Statements"/> to the <paramref name="code"/>.
+    /// Applies the <see cref="Body"/> to the <paramref name="editor"/>.
     /// </summary>
     /// <param name="monitor">Required monitor.</param>
-    /// <param name="code">The code to transform.</param>
+    /// <param name="editor">The code to transform.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool Apply( IActivityMonitor monitor, SourceCodeEditor code )
+    public bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        bool success = true;
-        using( monitor.OnError( () => success = false) )
-        {
-            foreach( var statement in Statements )
-            {
-                statement.Apply( monitor, code );
-            }
-        }
-        return success;
+        return Body.Apply( monitor, editor ) && (!editor.NeedReparse || editor.Reparse( monitor ));
     }
-
 }

@@ -2,7 +2,7 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Immutable;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// An injection point <see cref="Name"/> is defined between angle brackets: &lt;Name&gt;.

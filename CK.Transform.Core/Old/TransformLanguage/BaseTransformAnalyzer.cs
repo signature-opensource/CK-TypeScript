@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using static CK.Transform.TransformLanguage.TransformerHostOld;
+using static CK.Transform.Core.TransformerHostOld;
 
-namespace CK.Transform.TransformLanguage;
+namespace CK.Transform.Core;
 
 
 public abstract class BaseTransformAnalyzer : Analyzer

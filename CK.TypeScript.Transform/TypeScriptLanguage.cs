@@ -1,16 +1,21 @@
 using CK.Transform.Core;
-using CK.Transform.TransformLanguage;
+using CK.Transform.Core;
 
 namespace CK.TypeScript.Transform;
 
-public sealed class TypeScriptLanguage : TransformLanguageOld
+public sealed class TypeScriptLanguage : TransformLanguage
 {
+    internal const string _languageName = "TypeScript";
+
     public TypeScriptLanguage()
-        : base( "TypeScript" )
+        : base( _languageName )
     {
     }
 
-    protected override Analyzer CreateTargetAnalyzer() => new TypeScriptAnalyzer();
-
-    protected override BaseTransformAnalyzer CreateTransformAnalyzer(TransformerHostOld host) => new TypeScriptTransformAnalyzer( host, this );
+    protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
+    {
+        var a = new TypeScriptAnalyzer();
+        var t = new TypeScriptTransformStatementAnalyzer( this, a );
+        return (t, a);
+    }
 }

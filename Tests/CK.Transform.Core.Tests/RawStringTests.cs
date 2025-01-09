@@ -1,8 +1,9 @@
 using CK.Core;
-using CK.Transform.TransformLanguage;
+using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
 
@@ -11,18 +12,37 @@ namespace CK.Transform.Core.Tests;
 [TestFixture]
 public class RawStringTests
 {
-    [TestCase( """ /*Empty string*/ "" """, "" )]
-    [TestCase( """ /*regular string*/ "I'm a regular string..." """, "I'm a regular string..." )]
-    [TestCase( " /*String can end with a quote...*/ \"\"\"sticky \"end\"\"\"\"", "sticky \"end\"" )]
-    [TestCase( """ /*No backslash escape!*/ "This \n works (with the backslash)" """, "This \\n works (with the backslash)" )]
-    public void valid_single_line_RawString_tests( string code, string expected )
+    // NUnit TestCase fails with these strings. Using TestCaseSource instead.
+    public static object[] Source_valid_single_line_RawString_tests =
+    [
+        new object[]
+        {
+            """ /*Empty string*/ "" """,
+            ""
+        },
+        new object[]
+        {
+            """ /*regular string*/ "I'm a regular string..." """,
+            "I'm a regular string..."
+        },
+        new object[]
+        {
+            " /*String can end with a quote...*/ \"\"\"sticky \"end\"\"\"\"",
+            "sticky \"end\""
+        },
+        new object[]
+        {
+            """ /*No backslash escape!*/ "This \n works (with the backslash)" """,
+            "This \\n works (with the backslash)"
+        }
+    ];
+    [TestCaseSource( nameof( Source_valid_single_line_RawString_tests ) )]
+    public void valid_single_line_RawString_tests( string target, string expected )
     {
-        var h = new TransformerHostOld();
-        var f = h.ParseFunction( $"create transform transformer on {code} begin end " );
-        var t = f.Target as RawStringOld;
-        Throw.DebugAssert( t != null );
-        var expectedLines = expected.Split( Environment.NewLine );
-        t.Lines.Should().BeEquivalentTo( expectedLines );
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, $"create transform transformer on {target} begin end " );
+        Throw.DebugAssert( f != null && f.Target != null );
+        f.Target.Should().BeEquivalentTo( expected );
     }
 
     [TestCase( """
@@ -31,12 +51,17 @@ public class RawStringTests
                     "The closing quote is not on this line!
                     "
 
-               """, "Single-line string must not contain end of line. (Parameter 'text')" )]
-    public void invalid_single_line_RawString_tests( string code, string errorMessage )
+               """, "Parsing error: Single-line string must not contain end of line.*" )]
+    public void invalid_single_line_RawString_tests( string target, string errorMessage )
     {
-        var h = new TransformerHostOld();
-        FluentActions.Invoking( () => h.ParseFunction( $"create transform transformer on {code} begin end " ) )
-            .Should().Throw<Exception>().WithMessage( errorMessage );
+        var h = new TransformerHost();
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            h.TryParseFunction( TestHelper.Monitor, $"create transform transformer on {target} begin end" )
+                .Should().BeNull();
+
+            logs.Should().ContainMatch( errorMessage );
+        }
     }
 
 
