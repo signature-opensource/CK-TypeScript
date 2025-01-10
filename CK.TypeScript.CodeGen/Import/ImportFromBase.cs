@@ -42,7 +42,7 @@ abstract class ImportFromBase : ITSImportLine
                 int idx = n.IndexOf( " as " );
                 TSImportedName name = idx >= 0
                                         ? new TSImportedName( n.Substring( 0, idx ).TrimEnd(), n.Substring( idx + 4 ).TrimStart() )
-                                        : new TSImportedName( n );
+                                        : new TSImportedName( n, null );
                 AddImportedName( name );
             }
         }
@@ -103,8 +103,8 @@ abstract class ImportFromBase : ITSImportLine
             {
                 if( hasNames ) b.Builder.Append( ", " );
                 hasNames = true;
-                if( n.HasAlias ) b.Builder.Append( n.SourceName ).Append( " as " ).Append( n.LocalName );
-                else b.Builder.Append( n.SourceName );
+                if( n.IsAliased ) b.Builder.Append( n.ExportedName ).Append( " as " ).Append( n.ImportedName );
+                else b.Builder.Append( n.ExportedName );
             }
             b.Builder.Append( " }" );
         }
