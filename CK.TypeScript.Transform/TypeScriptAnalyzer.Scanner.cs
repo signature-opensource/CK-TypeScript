@@ -25,6 +25,8 @@ sealed partial class TypeScriptAnalyzer // Scanner
 
     /// <summary>
     /// Handles interpolated strings and /regular expressions/.
+    /// <see cref="LowLevelTokenize(ReadOnlySpan{char})"/> handles numbers, "string", 'string', identifiers (including @identifier and #identifier)
+    /// and `start of interpolated string` (GenericInterpolatedStringStart).
     /// </summary>
     /// <param name="head">The head.</param>
     /// <returns>Next token.</returns>
@@ -231,8 +233,8 @@ sealed partial class TypeScriptAnalyzer // Scanner
             for(; ; )
             {
                 if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
-                var c = head[iS];
                 if( escape ) continue;
+                var c = head[iS];
                 if( c == q ) return new LowLevelToken( TokenType.GenericString, iS + 1 );
                 escape = c == '\\';
             }

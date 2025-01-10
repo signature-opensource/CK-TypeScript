@@ -66,6 +66,7 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
                 var prev = c._prevSibling;
                 newOne._prevSibling = prev;
                 if( prev == null ) _firstChild = newOne;
+                else prev._nextSibling = newOne;
                 c._prevSibling = newOne;
                 newOne._parent = parent;
                 return true;
@@ -177,21 +178,21 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         return null;
     }
 
-    internal void OnAddTokens( int index, int count )
+    internal void OnInsertTokens( int index, int count, bool addBefore )
     {
         Throw.DebugAssert( index >= 0 && count > 0 );
         var c = _firstChild;
         while( c != null )
         {
-            if( index < c.Span.Beg )
+            if( index < c.Span.Beg || (addBefore && index == c.Span.Beg) )
             {
                 c._span = new TokenSpan( c.Span.Beg + count, c.Span.End );
-                c._children.OnAddTokens( index, count );
+                c._children.OnInsertTokens( index, count, addBefore );
             }
             else if( index < c.Span.End )
             {
                 c._span = new TokenSpan( c.Span.Beg, c.Span.End + count );
-                c._children.OnAddTokens( index, count );
+                c._children.OnInsertTokens( index, count, addBefore );
             }
             c = c._nextSibling;
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Text;
 
@@ -10,6 +11,7 @@ public static class TriviaExtensions
 {
     // This cannot be defined in Trivia (TypeLoadException). To be investigated.
     internal static ImmutableArray<Trivia> OneSpace => ImmutableArray.Create( new Trivia( TokenType.Whitespace, " " ) );
+    internal static ImmutableArray<Trivia> NewLine => ImmutableArray.Create( new Trivia( TokenType.Whitespace, Environment.NewLine ) );
 
     /// <summary>
     /// Writes the trivias.

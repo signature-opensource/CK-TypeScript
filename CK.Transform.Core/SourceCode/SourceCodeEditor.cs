@@ -20,7 +20,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     bool _needReparse;
 
     // Cannot use a TokenSpan here since Count is 0 for an insertion.
-    readonly record struct Mod( int Index, int Count, params Token[] Tokens )
+    readonly record struct Mod( int Index, int Count, Token[] Tokens, bool InsertBefore )
     {
         public int Delta => Tokens.Length - Count;
     }
@@ -138,9 +138,17 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
                 _tokens.InsertRange( oIdx, m.Tokens );
             }
             int delta = m.Delta;
-            if( delta > 0 ) _code.Spans.OnAddTokens( oIdx, delta );
-            else if( delta < 0 ) _code.Spans.OnRemoveTokens( oIdx + delta, -delta );
-            offset += m.Delta;
+            if( delta > 0 )
+            {
+                _code.Spans.OnInsertTokens( oIdx, delta, m.InsertBefore );
+            }
+            else if( delta < 0 )
+            {
+                Throw.DebugAssert( m.InsertBefore is false );
+                _code.Spans.OnRemoveTokens( oIdx + delta, -delta );
+            }
+
+            offset += delta;
         }
         _mods.Clear();
         _code.SetTokens( _tokens.ToImmutableList() );
@@ -176,7 +184,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
                     // We consider that the new overwrite is an addition.
                     // We may extend this semantics to the SpanRelationShips.SameStart and even allow any replaced tokens' length...
                     // For the moment, we keep this "minimal" allowed combination.
-                    mods[idx] = new Mod( m.Index, m.Count, m.Tokens.Concat( tokens ).ToArray() );
+                    mods[idx] = new Mod( m.Index, m.Count, m.Tokens.Concat( tokens ).ToArray(), false );
                     return;
                 }
                 if( (r & ~SpanRelationship.Swapped) is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
@@ -194,7 +202,10 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
                     // d is before the insertion point: we found the insertion point.
                     break;
                 }
-                if( d.Contains( m.Index ) )
+                // if the replaced range d contains the insertion m then its bad...
+                // ...except if d starts exactly at m and is an InsertBefore: we can
+                // both insert before AND the replaced range d.
+                if( d.Contains( m.Index ) && !(d.Beg == m.Index && m.InsertBefore) )
                 {
                     // We are replacing a span of tokens in which some tokens have been inserted.
                     // It is hard to find a semantically correct semantics for this.
@@ -203,7 +214,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
             }
             ++idx;
         }
-        _mods.Insert( idx, new Mod( index, count, tokens ) );
+        _mods.Insert( idx, new Mod( index, count, tokens, false ) );
     }
 
     /// <summary>
@@ -247,11 +258,12 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
         var mods = CollectionsMarshal.AsSpan( _mods );
         foreach( var m in mods )
         {
-            if( index >= m.Index )
+            if( index > m.Index || index == m.Index && !m.InsertBefore )
             {
                 if( index == m.Index )
                 {
-                    mods[idx] = new Mod( m.Index, m.Count, tokens.Concat( m.Tokens ).ToArray() );
+                    Throw.DebugAssert( m.InsertBefore is false );
+                    mods[idx] = new Mod( m.Index, m.Count, tokens.Concat( m.Tokens ).ToArray(), m.InsertBefore );
                     return;
                 }
                 if( m.Count > 0 )
@@ -261,7 +273,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
                     {
                         if( index == mEnd )
                         {
-                            mods[idx] = new Mod( m.Index, m.Count, m.Tokens.Concat( tokens ).ToArray() );
+                            mods[idx] = new Mod( m.Index, m.Count, m.Tokens.Concat( tokens ).ToArray(), false );
                             return;
                         }
                         Throw.InvalidOperationException( $"Inserting at '{index}' is inside an already modified token span '[{m.Index},{mEnd}['." );
@@ -276,7 +288,53 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
             }
             ++idx;
         }
-        _mods.Insert( idx, new Mod( index, 0, tokens ) );
+        _mods.Insert( idx, new Mod( index, 0, tokens, false ) );
+    }
+
+    public void InsertBefore( int index, params Token[] tokens )
+    {
+        Throw.CheckArgument( index >= 0 && index < _tokens.Count );
+        Throw.CheckArgument( tokens.Length > 0 );
+        int idx = 0;
+        var mods = CollectionsMarshal.AsSpan( _mods );
+        foreach( var m in mods )
+        {
+            if( index >= m.Index )
+            {
+                if( index == m.Index )
+                {
+                    if( m.InsertBefore )
+                    {
+                        mods[idx] = new Mod( m.Index, m.Count, tokens.Concat( m.Tokens ).ToArray(), true );
+                        return;
+                    }
+                    // m is a regular insert (after).
+                    // This InsertBefore must be before.
+                    break;
+                }
+                if( m.Count > 0 )
+                {
+                    int mEnd = m.Index + m.Count;
+                    if( index <= mEnd )
+                    {
+                        if( index == mEnd )
+                        {
+                            mods[idx] = new Mod( m.Index, m.Count, m.Tokens.Concat( tokens ).ToArray(), true );
+                            return;
+                        }
+                        Throw.InvalidOperationException( $"Inserting at '{index}' is inside an already modified token span '[{m.Index},{mEnd}['." );
+                    }
+                }
+                // index is after m: continue the loop.
+            }
+            else
+            {
+                // index is before m: we found the insertion point.
+                break;
+            }
+            ++idx;
+        }
+        _mods.Insert( idx, new Mod( index, 0, tokens, true ) );
     }
 
     /// <summary>

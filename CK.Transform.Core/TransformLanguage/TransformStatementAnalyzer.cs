@@ -58,7 +58,7 @@ public abstract class TransformStatementAnalyzer
             }
         }
         if( foundEnd == null ) head.AppendError( "Expected 'end'." );
-        return new TransformStatementBlock( begBlock, head.LastTokenIndex, statements );
+        return new TransformStatementBlock( begBlock, head.LastTokenIndex + 1, statements );
     }
 
     /// <summary>
@@ -82,13 +82,13 @@ public abstract class TransformStatementAnalyzer
 
     static InjectIntoStatement? MatchInjectIntoStatement( ref TokenizerHead head, Token inject )
     {
-        int startSpan = head.LastTokenIndex;
+        int startStatement = head.LastTokenIndex;
         var content = RawString.TryMatch( ref head );
         head.MatchToken( "into" );
         var target = MatchInjectionPoint( ref head );
         head.TryAcceptToken( ";", out _ );
         return content != null && target != null
-                ? new InjectIntoStatement( startSpan, head.LastTokenIndex, content, target )
+                ? new InjectIntoStatement( startStatement, head.LastTokenIndex + 1, content, target )
                 : null;
 
         static InjectionPoint? MatchInjectionPoint( ref TokenizerHead head )

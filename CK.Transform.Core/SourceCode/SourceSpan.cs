@@ -65,7 +65,6 @@ public abstract partial class SourceSpan
             {
                 _prevSibling._nextSibling = _nextSibling;
             }
-            _nextSibling = null;
             if( _nextSibling == null )
             {
                 pC._lastChild = _prevSibling;
@@ -74,6 +73,7 @@ public abstract partial class SourceSpan
             {
                 _nextSibling._prevSibling = _prevSibling;
             }
+            _nextSibling = null;
             _prevSibling = null;
             _parent = null;
             _root = null;

@@ -154,7 +154,7 @@ public ref struct TriviaHead
     }
 
     /// <summary>
-    /// Collects either whitespaces up to a new line or "pure" whitespaces and at most one trivia.
+    /// Collects either whitespaces up to a new line (included) or "pure" whitespaces and at most one trivia.
     /// <para>
     /// The <paramref name="parser"/> function should not accept more than one trivia.
     /// Regular trailing trivias immediately follow a token up to the end of the line.

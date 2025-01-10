@@ -22,7 +22,15 @@ public readonly struct Trivia : IEquatable<Trivia>
     readonly ReadOnlyMemory<char> _content;
     readonly TokenType _tokenType;
 
+    /// <summary>
+    /// Gets a single whitespace as trivias.
+    /// </summary>
     public static ImmutableArray<Trivia> OneSpace => TriviaExtensions.OneSpace;
+
+    /// <summary>
+    /// Gets the <see cref="Environment.NewLine"/> as trivias.
+    /// </summary>
+    public static ImmutableArray<Trivia> NewLine => TriviaExtensions.NewLine;
 
     public Trivia( TokenType tokenType, string content )
         : this( tokenType, content.AsMemory() )

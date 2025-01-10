@@ -69,6 +69,9 @@ public class Token
 
     /// <summary>
     /// Gets the leading <see cref="Trivia"/>.
+    /// <para>
+    /// By default, this is whitespaces up to a new line (included) or "pure" whitespaces and at most one trivia.
+    /// </para>
     /// </summary>
     public ImmutableArray<Trivia> TrailingTrivias => _trailingTrivias;
 

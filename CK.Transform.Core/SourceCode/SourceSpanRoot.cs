@@ -26,6 +26,22 @@ public sealed class SourceSpanRoot : IEnumerable<SourceSpan>
     }
 
     /// <summary>
+    /// Adds a span with an updated <see cref="SourceSpan.Span"/>.
+    /// Same as <see cref="Add(SourceSpan)"/>: this throws if the updated span intersects
+    /// any existing <see cref="Children"/>.
+    /// </summary>
+    /// <param name="newOne">The span to add.</param>
+    /// <param name="newSpan">Token span to update.</param>
+    public void Add( SourceSpan newOne, TokenSpan newSpan )
+    {
+        newOne._span = newSpan;
+        if( !TryAdd( newOne ) )
+        {
+            Throw.ArgumentException( nameof( newOne ), $"Invalid new '{newOne}'." );
+        }
+    }
+
+    /// <summary>
     /// Adds a span if it doesn't intersect any existing <see cref="Children"/>.
     /// </summary>
     /// <param name="newOne">The span to add.</param>
@@ -81,7 +97,7 @@ public sealed class SourceSpanRoot : IEnumerable<SourceSpan>
         _children._lastChild = null;
     }
 
-    internal void OnAddTokens( int index, int count ) => _children.OnAddTokens( index, count );
+    internal void OnInsertTokens( int index, int count, bool insertBefore ) => _children.OnInsertTokens( index, count, insertBefore );
 
     internal void OnRemoveTokens( int index, int count )
     {

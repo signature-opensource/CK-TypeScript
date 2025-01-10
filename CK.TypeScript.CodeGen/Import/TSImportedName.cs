@@ -15,8 +15,8 @@ public readonly record struct TSImportedName( string ExportedName, string? Impor
     public bool IsAliased => ImportedName != null;
 
     /// <summary>
-    /// Overridden to return the <see cref="ImportedName"/> or the <see cref="ExportedName"/> if it is not aliased.
+    /// Overridden to return "ExportedName as ImportedName" or "ExportedName".
     /// </summary>
-    /// <returns></returns>
-    public override string ToString() => ImportedName ?? ExportedName;
+    /// <returns>The import names.</returns>
+    public override string ToString() => IsAliased ? $"{ExportedName} as {ImportedName}" : ExportedName;
 }

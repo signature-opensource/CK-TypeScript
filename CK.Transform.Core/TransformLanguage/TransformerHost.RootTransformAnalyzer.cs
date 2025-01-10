@@ -110,7 +110,7 @@ public sealed partial class TransformerHost
             var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
             var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
             head.SkipTo( safetyToken, ref headStatements );
-            head.Spans.Add( new TransformerFunction( startFunction, head.LastTokenIndex, cLang.TransformLanguage, statements, functionName?.ToString(), target ) );
+            head.Spans.Add( new TransformerFunction( startFunction, head.LastTokenIndex + 1, cLang.TransformLanguage, statements, functionName?.ToString(), target ) );
             return null;
         }
 

@@ -82,22 +82,27 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="IParserHeadBehavior"/>:
+    /// Creates an independent head on the <see cref="RemainingText"/> that uses an alternative <see cref="IParserHeadBehavior"/>:
     /// both trivia handling and low level tokenizer are different.
+    /// <para>
+    /// Use <see cref="CreateSubHead(out int, ILowLevelTokenizer?)"/> to create a subordinated head with the same trivias parser
+    /// as this one.
+    /// </para>
     /// <para>
     /// <see cref="SkipTo(int,ref readonly TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
     /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
     /// <param name="behavior">Alternative behavior for this new head.</param>
-    public readonly TokenizerHead CreateSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
+    public readonly TokenizerHead CreateFullSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
     {
         safetyToken = _lastSuccessfulHead;
         return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, _triviaBuilder, LastTokenIndex );
     }
 
     /// <summary>
-    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="ILowLevelTokenizer"/>.
+    /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="ILowLevelTokenizer"/>
+    /// but keeps the trivias parser of this head.
     /// <para>
     /// <see cref="SkipTo(int,ref readonly TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
@@ -479,6 +484,22 @@ public ref struct TokenizerHead
         if( type == TokenType.None ) type = _lowLevelTokenType;
         if( errorType == TokenType.None ) errorType = type | TokenType.ErrorClassBit;
         return AppendError( $"Expected '{expected}'.", _lowLevelTokenText.Length, errorType );
+    }
+
+    /// <summary>
+    /// Matches the <see cref="LowLevelTokenType"/> and return a <see cref="Token"/> on success
+    /// or a <see cref="TokenError"/> with "Expected '<paramref name="tokenDescription"/>'." error message on failure.
+    /// </summary>
+    /// <param name="type">The expected token type.</param>
+    /// <param name="tokenDescription">Description that will appear in "Expected '<paramref name="tokenDescription"/>'." error message.</param>
+    /// <param name="errorType">By default, the error type is the expected <paramref name="type"/> | <see cref="TokenType.ErrorClassBit"/>.</param>
+    /// <returns>The Token or <see cref="TokenError"/>.</returns>
+    public Token MatchToken( TokenType type, string tokenDescription, TokenType errorType = TokenType.None )
+    {
+        if( TryAcceptToken( type, out var n ) ) return n;
+        var m = $"Expected '{tokenDescription}'.";
+        if( errorType == TokenType.None ) errorType = type | TokenType.ErrorClassBit;
+        return AppendError( $"Expected '{tokenDescription}'.", _lowLevelTokenText.Length, errorType );
     }
 
     /// <summary>
