@@ -84,8 +84,9 @@ public sealed class RawString : Token
     /// be <see cref="TokenType.DoubleQuote"/> otherwise an <see cref="ArgumentException"/> is thrown.
     /// </summary>
     /// <param name="head">The tokenizer head.</param>
+    /// <param name="maxLineCount">Optional maximal line count: using 1 allows only a single line string.</param>
     /// <returns>The RawString on success, null if an error has been emitted.</returns>
-    public static RawString? TryMatch( ref TokenizerHead head )
+    public static RawString? TryMatch( ref TokenizerHead head, int maxLineCount = 0 )
     {
         Throw.CheckArgument( head.LowLevelTokenType is TokenType.DoubleQuote );
         var start = head.Head.TrimStart( '"' );
@@ -101,39 +102,39 @@ public sealed class RawString : Token
         {
             return SingleLine( ref head, start );
         }
-        return PossiblyMultiLine( ref head, start, quoteCount );
+        return PossiblyMultiLine( ref head, start, quoteCount, maxLineCount );
 
         static RawString? SingleLine( ref TokenizerHead head, ReadOnlySpan<char> start )
         {
             int idxE = start.IndexOf( '"' );
             if( idxE < 0 )
             {
-                head.CreateInlineError( "Unterminated string.", head.Head.Length );
+                head.AppendError( "Unterminated string.", head.Head.Length );
                 return null;
             }
             start = start.Slice( 0, idxE );
             if( start.Contains( '\n' ) )
             {
-                head.CreateInlineError( "Single-line string must not contain end of line.", idxE + 2 );
+                head.AppendError( "Single-line string must not contain end of line.", idxE + 2 );
                 return null;
             }
             head.PreAcceptToken( idxE + 2, out var text, out var leading, out var trailing );
             return head.Accept( new RawString( text, text.Slice( 1, start.Length ), leading, trailing ) );
         }
 
-        static RawString? PossiblyMultiLine( ref TokenizerHead head, ReadOnlySpan<char> start, int quoteCount )
+        static RawString? PossiblyMultiLine( ref TokenizerHead head, ReadOnlySpan<char> start, int quoteCount, int maxLineCount )
         {
             int idxE = start.IndexOf( head.Head.Slice( 0, quoteCount ) );
             if( idxE < 0 )
             {
-                head.CreateInlineError( "Unterminated string.", head.Head.Length );
+                head.AppendError( "Unterminated string.", head.Head.Length );
                 return null;
             }
             var lineOrMultiLine = start.Slice( 0, idxE );
             int idxFirstEndOfLine = lineOrMultiLine.IndexOf( "\n" );
             if( idxFirstEndOfLine >= 0 )
             {
-                return MultiLine( ref head, lineOrMultiLine, quoteCount, idxFirstEndOfLine );
+                return MultiLine( ref head, lineOrMultiLine, quoteCount, idxFirstEndOfLine, maxLineCount );
             }
             // Single line case.
             int idxEndQuotes = idxE + quoteCount;
@@ -144,7 +145,7 @@ public sealed class RawString : Token
                 idxEndQuotes++;
                 if( ++offset >= quoteCount )
                 {
-                    head.CreateInlineError( "Invalid raw string terminator: too many closing \".", idxE + 2*quoteCount );
+                    head.AppendError( "Invalid raw string terminator: too many closing \".", idxE + 2*quoteCount );
                     return null;
                 }
             }
@@ -154,7 +155,7 @@ public sealed class RawString : Token
             return head.Accept( new RawString( text, text.Slice( quoteCount, start.Length ), leading, trailing ) );
         }
 
-        static RawString? MultiLine( ref TokenizerHead head, ReadOnlySpan<char> multiLine, int quoteCount, int idxFirstEndOfLine )
+        static RawString? MultiLine( ref TokenizerHead head, ReadOnlySpan<char> multiLine, int quoteCount, int idxFirstEndOfLine, int maxLineCount )
         {
             int contentLength = multiLine.Length;
             int tokenLength = 2 * quoteCount + contentLength;
@@ -164,7 +165,7 @@ public sealed class RawString : Token
                 mustBeEmpty = multiLine.Slice( 0, idxFirstEndOfLine );
                 if( mustBeEmpty.ContainsAnyExcept( " \r\t" ) )
                 {
-                    head.CreateInlineError( $"Invalid multi-line raw string: there must be no character after the opening {head.Head.Slice( 0, quoteCount )} characters.", tokenLength );
+                    head.AppendError( $"Invalid multi-line raw string: there must be no character after the opening {head.Head.Slice( 0, quoteCount )} characters.", tokenLength );
                     return null;
                 }
                 multiLine = multiLine.Slice( idxFirstEndOfLine + 1 );
@@ -172,13 +173,13 @@ public sealed class RawString : Token
             int idxLastEndOfLine = multiLine.LastIndexOf( '\n' );
             if( idxLastEndOfLine < 0 )
             {
-                head.CreateInlineError( $"Invalid multi-line raw string: at least one line must appear between the {head.Head.Slice( 0, quoteCount )}.", tokenLength );
+                head.AppendError( $"Invalid multi-line raw string: at least one line must appear between the {head.Head.Slice( 0, quoteCount )}.", tokenLength );
                 return null;
             }
             mustBeEmpty = multiLine.Slice( idxLastEndOfLine + 1 );
             if( mustBeEmpty.ContainsAnyExcept( " \t" ) )
             {
-                head.CreateInlineError( $"Invalid multi-line raw string: there must be no character on the line before the closing {head.Head.Slice( 0, quoteCount )} characters.", tokenLength );
+                head.AppendError( $"Invalid multi-line raw string: there must be no character on the line before the closing {head.Head.Slice( 0, quoteCount )} characters.", tokenLength );
                 return null;
             }
             int prefixLength = mustBeEmpty.Length;
@@ -201,7 +202,7 @@ public sealed class RawString : Token
                 {
                     if( line.Slice( 0, prefixLength ).ContainsAnyExcept( " \t" ) )
                     {
-                        head.CreateInlineError( $"Invalid multi-line raw string: there must be no character before column {prefixLength} in '{line}'.", tokenLength );
+                        head.AppendError( $"Invalid multi-line raw string: there must be no character before column {prefixLength} in '{line}'.", tokenLength );
                         return null;
                     }
                     Throw.DebugAssert( multiLine.Overlaps( line ) );
@@ -212,11 +213,18 @@ public sealed class RawString : Token
                 {
                     if( line.ContainsAnyExcept( " \t" ) )
                     {
-                        head.CreateInlineError( $"Invalid multi-line raw string: there must be no character before column {prefixLength}.", tokenLength );
+                        head.AppendError( $"Invalid multi-line raw string: there must be no character before column {prefixLength}.", tokenLength );
                         return null;
                     }
                     hasEmptyLine = true;
                 }
+            }
+            if( maxLineCount > 0 && builder.Count > maxLineCount )
+            {
+                head.AppendError( maxLineCount == 1
+                                    ? $"Expected single line (found {builder.Count} lines)."
+                                    : $"Expected at most {maxLineCount} lines (found {builder.Count} lines).", tokenLength );
+                return null;
             }
             head.PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
             return head.Accept( new RawString( text, text.Slice( quoteCount, contentLength - quoteCount ), builder.DrainToImmutable(), leading, trailing ) );

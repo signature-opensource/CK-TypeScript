@@ -59,11 +59,11 @@ public class RawStringTests
     {
         var r = new TestAnalyzer().Parse( code );
         r.Success.Should().BeFalse();
-        Throw.DebugAssert( r.FirstInlineError != null );
+        Throw.DebugAssert( r.FirstError != null );
 
         r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstInlineError.Should().BeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstInlineError.ErrorMessage.Should().Match( errorMessage );
+        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstError.ErrorMessage.Should().Match( errorMessage );
 
         r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
     }
@@ -77,10 +77,10 @@ public class RawStringTests
     {
         var r = new TestAnalyzer().Parse( code );
         r.Success.Should().BeFalse();
-        Throw.DebugAssert( r.FirstInlineError != null );
+        Throw.DebugAssert( r.FirstError != null );
         r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstInlineError.Should().BeSameAs( r.SourceCode.Tokens[1] );
-        r.FirstInlineError.ErrorMessage.Should().Match( "Unterminated string.*" );
+        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[1] );
+        r.FirstError.ErrorMessage.Should().Match( "Unterminated string.*" );
 
         r.SourceCode.Tokens[0].ToString().Should().Be( "Some" );
         r.SourceCode.Tokens[1].Text.Length.Should().Be( code.Length - 4 - 1 );
@@ -194,11 +194,11 @@ public class RawStringTests
     {
         var r = new TestAnalyzer().Parse( code );
         r.Success.Should().BeFalse();
-        Throw.DebugAssert( r.FirstInlineError != null );
+        Throw.DebugAssert( r.FirstError != null );
 
         r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstInlineError.Should().BeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstInlineError.ErrorMessage.Should().Match( errorMessage );
+        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstError.ErrorMessage.Should().Match( errorMessage );
 
         r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
     }

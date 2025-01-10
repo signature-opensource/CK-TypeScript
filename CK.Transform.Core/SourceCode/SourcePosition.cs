@@ -115,7 +115,7 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     /// Provides a string representation for <see cref="SourcePosition"/>.
     /// </summary>
     /// <example>0,10</example>
-    public override string ToString() => Line + "," + Column;
+    public override string ToString() => $"{Line + 1},{Column + 1}";
 
     /// <summary>
     /// Compares the two positions.

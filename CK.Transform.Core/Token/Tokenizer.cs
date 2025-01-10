@@ -54,9 +54,9 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     protected virtual AnalyzerResult Parse()
     {
         TokenizerHead head = CreateHead();
-        var error = Tokenize( ref head );
+        var hardError = Tokenize( ref head );
         head.ExtractResult( out var code, out var inlineErrorCount );
-        return new AnalyzerResult( success: error == null && inlineErrorCount == 0, code, error );
+        return new AnalyzerResult( code, hardError, head.FirstError, inlineErrorCount );
     }
 
     /// <summary>

@@ -41,7 +41,7 @@ public abstract class TransformStatementAnalyzer
     internal TransformStatementBlock ParseStatements( ref TokenizerHead head )
     {
         var statements = new List<TransformStatement>();
-        head.MatchToken( "begin", inlineError: true );
+        head.MatchToken( "begin" );
         int begBlock = head.LastTokenIndex;
         Token? foundEnd = null;
         while( head.EndOfInput == null && !head.TryAcceptToken( "end", out foundEnd ) )
@@ -53,11 +53,11 @@ public abstract class TransformStatementAnalyzer
             }
             else
             {
-                head.CreateInlineError( $"Failed to parse a transform '{_language.LanguageName}' language statement." );
+                head.AppendError( $"Failed to parse a transform '{_language.LanguageName}' language statement." );
                 break;
             }
         }
-        if( foundEnd == null ) head.CreateInlineError( "Expected 'end'." );
+        if( foundEnd == null ) head.AppendError( "Expected 'end'." );
         return new TransformStatementBlock( begBlock, head.LastTokenIndex, statements );
     }
 
@@ -84,7 +84,7 @@ public abstract class TransformStatementAnalyzer
     {
         int startSpan = head.LastTokenIndex;
         var content = RawString.TryMatch( ref head );
-        head.MatchToken( "into", inlineError: true );
+        head.MatchToken( "into" );
         var target = MatchInjectionPoint( ref head );
         head.TryAcceptToken( ";", out _ );
         return content != null && target != null
@@ -103,7 +103,7 @@ public abstract class TransformStatementAnalyzer
                     return head.Accept( new InjectionPoint( text, leading, trailing ) );
                 }
             }
-            head.CreateInlineError( "Expected <InjectionPoint>." );
+            head.AppendError( "Expected <InjectionPoint>." );
             return null;
         }
     }

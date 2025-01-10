@@ -7,17 +7,18 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class AnalyzerResult
 {
-    internal AnalyzerResult( bool success, SourceCode result, TokenError? error )
+    internal AnalyzerResult( SourceCode result, TokenError? hardError, TokenError? firstError, int errorCount )
     {
-        Success = success;
         SourceCode = result;
-        Error = error;
+        HardError = hardError;
+        FirstError = firstError;
+        TotalErrorCount = hardError == null ? errorCount : errorCount + 1;
     }
 
     /// <summary>
-    /// Gets whether <see cref="Error"/> is null and no <see cref="TokenError"/> exist in the <see cref="SourceCode.Tokens"/>.
+    /// Gets whether <see cref="HardError"/> is null and no <see cref="TokenError"/> exist in the <see cref="SourceCode.Tokens"/>.
     /// </summary>
-    public bool Success { get; }
+    public bool Success => TotalErrorCount == 0;
 
     /// <summary>
     /// Gets the result with the tokens and source spans.
@@ -27,15 +28,19 @@ public sealed class AnalyzerResult
     /// <summary>
     /// Gets a "hard failure" error that stopped the analysis.
     /// </summary>
-    public TokenError? Error { get; }
+    public TokenError? HardError { get; }
 
     /// <summary>
     /// Gets the first <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/>.
     /// <para>
-    /// This is always null if <see cref="Success"/> is true and may still be null if a "hard" <see cref="Error"/>
-    /// has been created by the analyzer (and no inline error has been appended).
+    /// This is always null if <see cref="Success"/> is true and may still be null if <see cref="HardError"/>
+    /// has been returned by the tokenizer (and no error has been appended).
     /// </para>
     /// </summary>
-    public TokenError? FirstInlineError => SourceCode.Tokens.OfType<TokenError>().FirstOrDefault();
+    public TokenError? FirstError { get; }
 
+    /// <summary>
+    /// Gets the number of <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/> plus one if <see cref="HardError"/> is not null.
+    /// </summary>
+    public int TotalErrorCount { get; }
 }

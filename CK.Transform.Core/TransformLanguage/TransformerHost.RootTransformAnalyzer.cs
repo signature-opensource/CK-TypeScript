@@ -63,10 +63,10 @@ public sealed partial class TransformerHost
             var cLang = _host.Find( head.LowLevelTokenText );
             if( cLang == null )
             {
-                return head.CreateError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
+                return head.AppendError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
             }
             var language = head.AcceptLowLevelToken();
-            head.MatchToken( "transformer", inlineError: true );
+            head.MatchToken( "transformer" );
 
             Token? functionName = null;
             string? target = null;
@@ -80,25 +80,16 @@ public sealed partial class TransformerHost
                 }
                 if( hasOn )
                 {
-                    // on
+                    // Eats "on".
                     head.AcceptLowLevelToken();
                     // Either an identifier or a single-line string.
-                    if( head.LowLevelTokenType == TokenType.DoubleQuote )
-                    {
-                        // Inline error returns null.
-                        var s = RawString.TryMatch( ref head );
-                        if( s != null )
-                        {
-                            if( s.Lines.Length > 1 )
-                            {
-                                head.CreateInlineError( "Transformer target must be a single line string." );
-                            }
-                            target = s.Lines[0];
-                        }
-                    }
-                    else if( head.LowLevelTokenType == TokenType.GenericIdentifier )
+                    if( head.LowLevelTokenType == TokenType.GenericIdentifier )
                     {
                         target = head.AcceptLowLevelToken().ToString();
+                    }
+                    else if( head.LowLevelTokenType == TokenType.DoubleQuote )
+                    {
+                        target = RawString.TryMatch( ref head, maxLineCount: 1 )?.Lines[0];
                     }
                     else
                     {

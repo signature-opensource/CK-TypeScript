@@ -80,7 +80,7 @@ public class TransformerParsingTests
                     end
                     """"" )
             .Should().BeNull();
-            logs.Should().ContainMatch( "Parsing error: Transformer target must be a single line string.*" );
+            logs.Should().ContainMatch( "Expected single line (found 3 lines). @1,33 while parsing:*" );
         }
     }
 

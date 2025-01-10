@@ -6,8 +6,8 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Specialized error <see cref="Token"/>. This can only be created by
-/// <see cref="TokenizerHead.CreateInlineError(string, int, TokenType)"/> or
-/// <see cref="TokenizerHead.CreateError(string, TokenType)"/>.
+/// <see cref="TokenizerHead.AppendError(string, int, TokenType)"/> or
+/// <see cref="TokenizerHead.CreateHardError(string, TokenType)"/>.
 /// </summary>
 public sealed class TokenError : Token
 {
@@ -47,6 +47,6 @@ public sealed class TokenError : Token
     /// Overridden to return the error message and position.
     /// </summary>
     /// <returns>The error message and position.</returns>
-    public override string ToString() => $"{_errorMessage} @{_sourcePosition.Line},{_sourcePosition.Column}";
+    public override string ToString() => $"{_errorMessage} @{_sourcePosition.Line + 1},{_sourcePosition.Column + 1}";
 
 }

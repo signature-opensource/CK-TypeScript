@@ -24,9 +24,9 @@ public static class AnalyzerExtensions
             var r = analyzer.Parse( text );
             if( !r.Success )
             {
-                var error = r.Error ?? r.SourceCode.Tokens.OfType<TokenError>().First();
+                var error = r.HardError ?? r.SourceCode.Tokens.OfType<TokenError>().First();
                 monitor.Error( $"""
-                        Parsing error: {error.ErrorMessage} - @{error.SourcePosition.Line + 1},{error.SourcePosition.Column + 1} while parsing:
+                        {error.ErrorMessage} @{error.SourcePosition.Line + 1},{error.SourcePosition.Column + 1} while parsing:
                         {text}
                         """ );
                 return null;
@@ -54,7 +54,7 @@ public static class AnalyzerExtensions
         var r = analyzer.Parse( text );
         if( !r.Success )
         {
-            var error = r.Error ?? r.SourceCode.Tokens.OfType<TokenError>().First();
+            var error = r.HardError ?? r.SourceCode.Tokens.OfType<TokenError>().First();
             Throw.InvalidDataException( $"""
                     Parsing error {error.ErrorMessage} - @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
                     {text}

@@ -55,7 +55,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 {
                     if( --_braceDepth < 0 )
                     {
-                        return head.CreateError( "Unbalanced {{brace}." );
+                        return head.CreateHardError( "Unbalanced {{brace}." );
                     }
                     head.AcceptLowLevelToken();
                 }
@@ -80,12 +80,12 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 }
                 break;
             case TokenType.None:
-                return head.CreateError( "Unrecognized token." );
+                return head.CreateHardError( "Unrecognized token." );
             case TokenType.EndOfInput:
                 Throw.DebugAssert( head.EndOfInput is not null );
                 if( _braceDepth > 0 )
                 {
-                    return head.CreateError( "Missing closing '}'." );
+                    return head.CreateHardError( "Missing closing '}'." );
                 }
                 return head.EndOfInput;
             default:

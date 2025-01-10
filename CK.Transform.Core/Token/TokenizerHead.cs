@@ -26,6 +26,7 @@ public ref struct TokenizerHead
     ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
     TokenError? _endOfInput;
+    TokenError? _firstError;
     ReadOnlySpan<char> _lowLevelTokenText;
     TokenType _lowLevelTokenType;
     int _lastSuccessfulHead;
@@ -119,14 +120,16 @@ public ref struct TokenizerHead
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
         Throw.CheckState( _lastSuccessfulHead == safetyToken );
         _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
-        _inlineErrorCount += subHead._inlineErrorCount;
         _tokens.AddRange( CollectionsMarshal.AsSpan( subHead._tokens ) );
         _lastToken = subHead._lastToken;
+        _firstError ??= subHead._firstError;
+        _inlineErrorCount += subHead._inlineErrorCount;
 
-        subHead._inlineErrorCount = 0;
         subHead._tokens.Clear();
         subHead._lastToken = null;
         if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
+        subHead._firstError = null;
+        subHead._inlineErrorCount = 0;
 
         InitializeLeadingTrivia();
     }
@@ -167,7 +170,7 @@ public ref struct TokenizerHead
     public readonly int LastTokenIndex => _tokenCountOffset + _tokens.Count;
 
     /// <summary>
-    /// Incremented each time <see cref="CreateInlineError(string, int, TokenType)"/> is called.
+    /// Incremented each time <see cref="AppendError(string, int, TokenType)"/> is called.
     /// </summary>
     public readonly int InlineErrorCount => _inlineErrorCount;
 
@@ -181,9 +184,14 @@ public ref struct TokenizerHead
     public readonly ReadOnlyMemory<char> RemainingText => _memText.Slice( _lastSuccessfulHead );
 
     /// <summary>
-    /// Gets the enf of input if it has been reached.
+    /// Gets the end of input if it has been reached.
     /// </summary>
     public readonly TokenError? EndOfInput => _endOfInput;
+
+    /// <summary>
+    /// Gets the first error that has been appended.
+    /// </summary>
+    public readonly TokenError? FirstError => _firstError;
 
     /// <summary>
     /// Gets the low-level token type.
@@ -216,26 +224,13 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Helper that calls <see cref="CreateError(string, TokenType)"/> or <see cref="CreateInlineError(string, int, TokenType)"/>
-    /// (with a 0 length).
+    /// Creates an error token at the current <see cref="Head"/> position with an error message that is not added to the <see cref="Tokens"/>.
+    /// This independent error must be returned by tokenizer functions and stops the process. It eventually is <see cref="AnalyzerResult.HardError"/>.
     /// </summary>
     /// <param name="errorMessage">The error message. Must not be empty.</param>
     /// <param name="errorType">The error token type.</param>
     /// <returns>An error token.</returns>
-    public TokenError CreateError( string errorMessage, bool inlineError, TokenType errorType = TokenType.GenericError )
-    {
-        return inlineError
-                ? CreateInlineError( errorMessage, 0, errorType )
-                : CreateError( errorMessage, errorType );
-    }
-
-    /// <summary>
-    /// Creates an error token at the current <see cref="Head"/> position with an error message.
-    /// </summary>
-    /// <param name="errorMessage">The error message. Must not be empty.</param>
-    /// <param name="errorType">The error token type.</param>
-    /// <returns>An error token.</returns>
-    public readonly TokenError CreateError( string errorMessage, TokenType errorType = TokenType.GenericError )
+    public readonly TokenError CreateHardError( string errorMessage, TokenType errorType = TokenType.GenericError )
     {
         Throw.CheckArgument( errorType.IsError() );
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
@@ -246,7 +241,7 @@ public ref struct TokenizerHead
     /// <summary>
     /// Validates the <see cref="Head"/> first <paramref name="tokenLength"/> characters. A <see cref="Token"/> MUST be
     /// created with the final <paramref name="text"/>, <paramref name="leading"/> and <paramref name="trailing"/> data
-    /// and <see cref="Accept(Token)"/> MUST be called.
+    /// and <see cref="Accept{T}(T)"/> MUST be called.
     /// <para>
     /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
@@ -302,15 +297,15 @@ public ref struct TokenizerHead
     /// <param name="errorType">The error token type.</param>
     /// <returns>An error token.</returns>
     [MemberNotNull( nameof( LastToken ) )]
-    public TokenError CreateInlineError( string errorMessage, int length = 0, TokenType errorType = TokenType.GenericError )
+    public TokenError AppendError( string errorMessage, int length = 0, TokenType errorType = TokenType.GenericError )
     {
         Throw.CheckArgument( errorType.IsError() );
         Throw.CheckState( EndOfInput is null );
 
-        _inlineErrorCount++;
         ReadOnlyMemory<char> text;
         ImmutableArray<Trivia> leading;
         ImmutableArray<Trivia> trailing;
+        SourcePosition p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
         if( length > 0 )
         {
             PreAcceptToken( length, out text, out leading, out trailing );
@@ -323,10 +318,11 @@ public ref struct TokenizerHead
             trailing = ImmutableArray<Trivia>.Empty;
         }
         if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
-        var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
         var t = new TokenError( errorType, text, errorMessage, p, leading, trailing );
         _tokens.Add( t );
         _lastToken = t;
+        _firstError ??= t;
+        _inlineErrorCount++;
         Throw.DebugAssert( LastToken != null );
         return t;
     }
@@ -352,6 +348,11 @@ public ref struct TokenizerHead
         var t = tokenFactory( leading, text, trailing );
         _tokens.Add( t );
         _lastToken = t;
+        if( t is TokenError error )
+        {
+            _firstError ??= error;
+            ++_inlineErrorCount;
+        }
         Throw.DebugAssert( LastToken != null );
         return t;
     }
@@ -369,6 +370,11 @@ public ref struct TokenizerHead
         _tokens.Add( token );
         _lastToken = token;
         Throw.DebugAssert( LastToken != null );
+        if( token is TokenError error )
+        {
+            _firstError ??= error;
+            ++_inlineErrorCount;
+        }
         return token;
     }
 
@@ -457,46 +463,22 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Matches the <see cref="LowLevelTokenText"/> and return a <see cref="Token"/> on success
-    /// or a <see cref="TokenError"/> "Expected '<paramref name="expected"/>'." on failure.
+    /// Matches the <see cref="LowLevelTokenText"/> and returns a <see cref="Token"/> on success
+    /// or emit a <see cref="TokenError"/> "Expected '<paramref name="expected"/>'." on failure.
     /// </summary>
     /// <param name="expected">The expected characters.</param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.TokenType"/>.</param>
-    /// <param name="inlineError">True to accept the error token.</param>
     /// <param name="errorType">By default, the error type is the expected <paramref name="type"/> | <see cref="TokenType.ErrorClassBit"/>.</param>
     /// <returns>The Token or <see cref="TokenError"/>.</returns>
     public Token MatchToken( ReadOnlySpan<char> expected,
                              TokenType type = TokenType.None,
                              StringComparison comparisonType = StringComparison.Ordinal,
-                             bool inlineError = false,
                              TokenType errorType = TokenType.None )
     {
         if( TryAcceptToken( expected, out var n, type, comparisonType ) ) return n;
-        var m = $"Expected '{expected}'.";
         if( type == TokenType.None ) type = _lowLevelTokenType;
         if( errorType == TokenType.None ) errorType = type | TokenType.ErrorClassBit;
-        return inlineError
-                    ? CreateInlineError( m, _lowLevelTokenText.Length, errorType )
-                    : CreateError( m, errorType );
-    }
-
-    /// <summary>
-    /// Matches the <see cref="LowLevelTokenType"/> and return a <see cref="Token"/> on success
-    /// or a <see cref="TokenError"/> with "Expected '<paramref name="tokenDescription"/>'." error message on failure.
-    /// </summary>
-    /// <param name="type">The expected token type.</param>
-    /// <param name="tokenDescription">Description that will appear in "Expected '<paramref name="tokenDescription"/>'." error message.</param>
-    /// <param name="inlineError">True to accept the error token.</param>
-    /// <param name="errorType">By default, the error type is the expected <paramref name="type"/> | <see cref="TokenType.ErrorClassBit"/>.</param>
-    /// <returns>The Token or <see cref="TokenError"/>.</returns>
-    public Token MatchToken( TokenType type, string tokenDescription, bool inlineError = false, TokenType errorType = TokenType.None )
-    {
-        if( TryAcceptToken( type, out var n ) ) return n;
-        var m = $"Expected '{tokenDescription}'.";
-        if( errorType == TokenType.None ) errorType = type | TokenType.ErrorClassBit;
-        return inlineError
-                    ? CreateInlineError( m, _lowLevelTokenText.Length,  errorType )
-                    : CreateError( m, errorType );
+        return AppendError( $"Expected '{expected}'.", _lowLevelTokenText.Length, errorType );
     }
 
     /// <summary>
@@ -508,7 +490,7 @@ public ref struct TokenizerHead
     /// <returns>The inlined error.</returns>
     public TokenError AppendMissingToken( string missingDescription, TokenType errorType = TokenType.GenericMissingToken )
     {
-        return CreateInlineError( $"Missing '{missingDescription}'.", 0, errorType );
+        return AppendError( $"Missing '{missingDescription}'.", 0, errorType );
     }
 
     /// <summary>
@@ -519,7 +501,7 @@ public ref struct TokenizerHead
     [MemberNotNull( nameof( LastToken ) )]
     public TokenError AppendUnexpectedToken( TokenType errorType = TokenType.GenericUnexpectedToken )
     {
-        return CreateInlineError( $"Unexpected token.", _lowLevelTokenText.Length, errorType );
+        return AppendError( $"Unexpected token.", _lowLevelTokenText.Length, errorType );
     }
 
     #region Internal & private
@@ -551,7 +533,7 @@ public ref struct TokenizerHead
 
     void SetEndOfInput()
     {
-        _endOfInput = CreateError( "End of input.", TokenType.EndOfInput );
+        _endOfInput = CreateHardError( "End of input.", TokenType.EndOfInput );
     }
 
     #endregion
