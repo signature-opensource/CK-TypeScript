@@ -4,8 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Text;
+using static CK.Core.ActivityMonitor;
 
 namespace CK.Transform.Core;
 
@@ -107,6 +109,53 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     }
 
     /// <summary>
+    /// Gets whether changes are pending.
+    /// </summary>
+    public bool HasPendingChanges => _mods.Count > 0;
+
+    /// <summary>
+    /// Applies all the change at once.
+    /// <see cref="SourceCode"/> is updated: <see cref="SourceCode.Tokens"/> and <see cref="SourceCode.Spans"/>.
+    /// <para>
+    /// If no pending changes exist, this does nothing.
+    /// </para>
+    /// </summary>
+    public ImmutableList<Token> ApplyChanges()
+    {
+        if( _mods.Count ==  0 ) return _code.Tokens;
+        int offset = 0;
+        foreach( var m in CollectionsMarshal.AsSpan( _mods ) )
+        {
+            int oIdx = m.Index + offset;
+            if( m.Count > 0 )
+            {
+                Throw.DebugAssert( m.InsertBefore is false );
+                _tokens.RemoveRange( oIdx, m.Count );
+            }
+            if( m.Tokens.Length > 0 )
+            {
+                _tokens.InsertRange( oIdx, m.Tokens );
+            }
+            int delta = m.Delta;
+            if( delta > 0 )
+            {
+                _code._spans.OnInsertTokens( oIdx, delta, m.InsertBefore );
+            }
+            else if( delta < 0 )
+            {
+                Throw.DebugAssert( m.InsertBefore is false );
+                _code._spans.OnRemoveTokens( oIdx + delta, -delta );
+            }
+
+            offset += delta;
+        }
+        _mods.Clear();
+        var newTokens = _tokens.ToImmutableList();
+        _code.SetTokens( newTokens );
+        return newTokens;
+    }
+
+    /// <summary>
     /// Gets whether <see cref="Reparse(IActivityMonitor, IAnalyzer?)"/> must be called.
     /// </summary>
     public bool NeedReparse => _needReparse;
@@ -117,42 +166,51 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     public void SetNeedReparse() => _needReparse = true;
 
     /// <summary>
-    /// Applies all the change at once. <see cref="SourceCode"/> is updated.
-    /// <para>
-    /// If no pending changes exist, this does nothing.
-    /// </para>
+    /// Adds a span. This throws if the span is attached to a root or
+    /// if it intersects an existing existing span.
     /// </summary>
-    public void ApplyChanges()
+    /// <remarks>
+    /// The new span MUST not be updated by subsequent ApplyChanges.
+    /// We first call <see cref="ApplyChanges()"/>.
+    /// <para>
+    /// To avoid this the immutable road seems to be a dead end as it will
+    /// require the SourceSpan to support deep cloning or to be immutable.
+    /// <para>
+    /// (Deep cloning is not a good idea.)
+    /// </para>
+    /// Having immutable SourceSpan can be done IF the begin...end
+    /// "transaction" appears to be crucial.
+    /// SourceSpans are conceptually in a tree and, first, additions are
+    /// by design made from the root and, second, a mutation visitor
+    /// with a Replace( Func&lt;SourceSpan,SourceSpan?&gt; ) would do the job.
+    /// <para>
+    /// Unfortunately, adding a token at the start, implies the recreation
+    /// of the whole tree (to offset the spans).
+    /// Making the only the Span falsely immutable?
+    /// This would require 2 spans (_committed and _editing) and exposing them
+    /// (odd!) or accessing them through a codeSource.GetSpan( SourceSpan s ) and
+    /// a editor.GetSpan( SourceSpan s ) that would return the right one.
+    /// This could be a way...
+    /// </para>
+    /// For the moment, we keep the mutable SourceSpan. Thanks to the ISourceSpanRoot,
+    /// and this AddSourceSpan (on the editor) the API is compatible whith an
+    /// immutable implementation.
+    /// </para>
+    /// </remarks>
+    /// <param name="newOne">The span to add.</param>
+    public void AddSourceSpan( SourceSpan newOne )
     {
-        if( _mods.Count ==  0 ) return;
-        int offset = 0;
-        foreach( var m in CollectionsMarshal.AsSpan( _mods ) )
-        {
-            int oIdx = m.Index + offset;
-            if( m.Count > 0 )
-            {
-                _tokens.RemoveRange( oIdx, m.Count );
-            }
-            if( m.Tokens.Length > 0 )
-            {
-                _tokens.InsertRange( oIdx, m.Tokens );
-            }
-            int delta = m.Delta;
-            if( delta > 0 )
-            {
-                _code.Spans.OnInsertTokens( oIdx, delta, m.InsertBefore );
-            }
-            else if( delta < 0 )
-            {
-                Throw.DebugAssert( m.InsertBefore is false );
-                _code.Spans.OnRemoveTokens( oIdx + delta, -delta );
-            }
 
-            offset += delta;
-        }
-        _mods.Clear();
-        _code.SetTokens( _tokens.ToImmutableList() );
+        if( HasPendingChanges ) ApplyChanges();
+        _code._spans.Add( newOne );
     }
+
+    /// <summary>
+    /// Replaces the tokens starting at <paramref name="index"/>.
+    /// </summary>
+    /// <param name="index">The index of the first token that must be replaced.</param>
+    /// <param name="tokens">Updated tokens. Must not be empty.</param>
+    public void Replace( int index, params Token[] tokens ) => Replace( index, tokens.Length, tokens );
 
     /// <summary>
     /// Replaces one or more tokens with any number of tokens.
@@ -169,6 +227,11 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     {
         Throw.CheckArgument( index >= 0 && index + count <= _tokens.Count );
         Throw.CheckArgument( tokens.Length > 0 );
+        DoReplace( index, count, tokens );
+    }
+
+    void DoReplace( int index, int count, Token[] tokens )
+    {
         var d = new TokenSpan( index, index + count );
         int idx = 0;
         var mods = CollectionsMarshal.AsSpan( _mods );
@@ -194,7 +257,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
                 // d is before m.OriginalSpan: we found the insertion point.
                 if( (r & SpanRelationship.Swapped) == 0 ) break;
             }
-            else 
+            else
             {
                 // m is a pure insertion.
                 if( d.End < m.Index )
@@ -218,21 +281,14 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     }
 
     /// <summary>
-    /// Overwrites the given number of tokens starting at <paramref name="index"/>.
-    /// </summary>
-    /// <param name="index">The index of the first token that must be replaced.</param>
-    /// <param name="tokens">Updated tokens. Must not be empty.</param>
-    public void Overwrite( int index, params Token[] tokens ) => Replace( index, tokens.Length, tokens );
-
-    /// <summary>
-    /// Immediatly overwrites the given number of tokens starting at <paramref name="index"/>.
+    /// Immediately overwrites the given number of tokens starting at <paramref name="index"/>.
     /// This shortcuts <see cref="ApplyChanges()"/>, <see cref="SourceCode.Tokens"/> is updated
     /// but the effect is not observable on existing enumerators: new enumerators must be obtained
     /// for this change to be visible.
     /// </summary>
     /// <param name="index">The index of the first token that must be replaced.</param>
     /// <param name="tokens">Updated tokens. Must not be empty.</param>
-    public void InPlaceOverwrite( int index, params Token[] tokens )
+    public void InPlaceReplace( int index, params Token[] tokens )
     {
         Throw.CheckArgument( index >= 0 && index + tokens.Length <= _tokens.Count );
         Throw.CheckArgument( tokens.Length > 0 );
@@ -242,7 +298,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     }
 
     /// <summary>
-    /// Inserts new tokens.
+    /// Inserts new tokens. Spans that start at <paramref name="index"/> will contain the inserted tokens.
     /// <para>
     /// Changes are not visible until <see cref="ApplyChanges"/> is called. The <paramref name="index"/> is relative to the
     /// current <see cref="SourceCode.Tokens"/> and must not fall into any previously modified ranges not yet applied.
@@ -250,7 +306,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// </summary>
     /// <param name="index">The index of the inserted tokens.</param>
     /// <param name="tokens">New tokens to insert. Must not be empty.</param>
-    public void Insert( int index, params Token[] tokens )
+    public void InsertAt( int index, params Token[] tokens )
     {
         Throw.CheckArgument( index >= 0 && index < _tokens.Count );
         Throw.CheckArgument( tokens.Length > 0 );
@@ -291,6 +347,15 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
         _mods.Insert( idx, new Mod( index, 0, tokens, false ) );
     }
 
+    /// <summary>
+    /// Inserts new tokens. Spans that start at <paramref name="index"/> will not contain the inserted tokens.
+    /// <para>
+    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The <paramref name="index"/> is relative to the
+    /// current <see cref="SourceCode.Tokens"/> and must not fall into any previously modified ranges not yet applied.
+    /// </para>
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="tokens"></param>
     public void InsertBefore( int index, params Token[] tokens )
     {
         Throw.CheckArgument( index >= 0 && index < _tokens.Count );
@@ -345,7 +410,11 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// </para>
     /// </summary>
     /// <param name="index">The token index to remove.</param>
-    public void RemoveAt( int index ) => Replace( index, 1 );
+    public void RemoveAt( int index )
+    {
+        Throw.CheckArgument( index >= 0 && index < _tokens.Count );
+        DoReplace( index, 1, Array.Empty<Token>() );
+    }
 
     /// <summary>
     /// Removes a range of tokens.
@@ -357,6 +426,9 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// </summary>
     /// <param name="index">The index of the first token to remove.</param>
     /// <param name="count">The number of tokens to remove.</param>
-    public void RemoveRange( int index, int count ) => Replace( index, count );
-
+    public void RemoveRange( int index, int count )
+    {
+        Throw.CheckArgument( index >= 0 && index + count <= _tokens.Count );
+        Replace( index, count, Array.Empty<Token>() );
+    }
 }

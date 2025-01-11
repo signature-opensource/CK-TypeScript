@@ -38,6 +38,29 @@ public class Token
     }
 
     /// <summary>
+    /// Initializes a new <see cref="Token"/>.
+    /// </summary>
+    /// <param name="tokenType">Type of the token. Must not be an error.</param>
+    /// <param name="text">The token text.</param>
+    /// <param name="leading">Leading trivias.</param>
+    /// <param name="trailing">Trailing trivias.</param>
+    public Token( TokenType tokenType, ImmutableArray<Trivia> leading, string text, ImmutableArray<Trivia> trailing )
+    : this( tokenType, leading, text.AsMemory(), trailing )
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="Token"/> without leading trivias.
+    /// </summary>
+    /// <param name="tokenType">Type of the token. Must not be an error.</param>
+    /// <param name="text">The token text.</param>
+    /// <param name="trailing">Trailing trivias.</param>
+    public Token( TokenType tokenType, string text, ImmutableArray<Trivia> trailing )
+    : this( tokenType, ImmutableArray<Trivia>.Empty, text.AsMemory(), trailing )
+    {
+    }
+
+    /// <summary>
     /// Special internal constructor for error and special tokens: <paramref name="tokenType"/> is not checked, <paramref name="text"/> can be empty.
     /// </summary>
     /// <param name="leading">Leading trivias.</param>

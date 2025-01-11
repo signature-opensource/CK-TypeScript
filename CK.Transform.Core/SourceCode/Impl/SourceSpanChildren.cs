@@ -178,21 +178,21 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         return null;
     }
 
-    internal void OnInsertTokens( int index, int count, bool addBefore )
+    internal void OnInsertTokens( int index, int count, bool insertBefore )
     {
         Throw.DebugAssert( index >= 0 && count > 0 );
         var c = _firstChild;
         while( c != null )
         {
-            if( index < c.Span.Beg || (addBefore && index == c.Span.Beg) )
+            if( index < c.Span.Beg || (insertBefore && index == c.Span.Beg) )
             {
-                c._span = new TokenSpan( c.Span.Beg + count, c.Span.End );
-                c._children.OnInsertTokens( index, count, addBefore );
+                c._span = new TokenSpan( c.Span.Beg + count, c.Span.End + count );
+                c._children.OnInsertTokens( index, count, insertBefore );
             }
             else if( index < c.Span.End )
             {
                 c._span = new TokenSpan( c.Span.Beg, c.Span.End + count );
-                c._children.OnInsertTokens( index, count, addBefore );
+                c._children.OnInsertTokens( index, count, insertBefore );
             }
             c = c._nextSibling;
         }

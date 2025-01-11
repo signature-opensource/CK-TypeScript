@@ -1,3 +1,6 @@
+using CK.Core;
+using CK.Transform.Core;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -9,10 +12,27 @@ namespace CK.TypeScript.Transform;
 /// </summary>
 public sealed class ImportLine : IImportLine
 {
+    /// <summary>
+    /// Initializes a new empty (<see cref="SideEffectOnly"/>) import line
+    /// with an empty <see cref="ImportPath"/>.
+    /// </summary>
     public ImportLine()
     {
         NamedImports = new List<NamedImport>();
         ImportPath = string.Empty;
+    }
+
+    /// <summary>
+    /// Copy constructor.
+    /// </summary>
+    /// <param name="l">Source line to clone.</param>
+    public ImportLine( IImportLine l )
+    {
+        TypeOnly = l.TypeOnly;
+        NamedImports = new List<NamedImport>( l.NamedImports );
+        Namespace = l.Namespace;
+        DefaultImport = l.DefaultImport;
+        ImportPath = l.ImportPath;
     }
 
     /// <summary>
@@ -28,6 +48,16 @@ public sealed class ImportLine : IImportLine
         /// </summary>
         [MemberNotNullWhen( true, nameof( ImportedName ) )]
         public bool IsAliased => ImportedName != null;
+
+        /// <summary>
+        /// Gets whether this is the invalid <c>default</c>.
+        /// </summary>
+        public bool IsDefault => ExportedName == null;
+
+        /// <summary>
+        /// Gets the ExportedName if ImportedName is null.
+        /// </summary>
+        public string FinalName => ImportedName ?? ExportedName;
 
         /// <summary>
         /// Overridden to return "ExportedName as ImportedName" or "ExportedName".
@@ -51,9 +81,59 @@ public sealed class ImportLine : IImportLine
     /// <inheritdoc />
     public List<NamedImport> NamedImports { get; }
 
+    /// <summary>
+    /// Gets or sets the import path. Defaults to empty.
+    /// </summary>
     public string ImportPath { get; set; }
 
     IReadOnlyList<NamedImport> IImportLine.NamedImports => NamedImports;
+
+    internal void RemoveTypeOnly( SourceCodeEditor editor, TokenSpan span )
+    {
+        Throw.DebugAssert( TypeOnly );
+        editor.RemoveAt( span.Beg + 1 );
+        TypeOnly = false;
+    }
+
+    internal void SetNamedImportType( SourceCodeEditor editor, TokenSpan span, int index, bool set )
+    {
+        Throw.DebugAssert( index >= 0 && index < NamedImports.Count );
+        var n = NamedImports[index];
+        Throw.DebugAssert( n.Type != set );
+
+        // Updates the NamedImport.Type flag.
+        NamedImports[index] = new NamedImport( n.ExportedName, n.ImportedName, set );
+        if( span.Length == 1 )
+        {
+            var currentToken = editor.SourceCode.Tokens[span.Beg];
+            Token newToken = new Token( currentToken.TokenType, currentToken.LeadingTrivias, ToString(), currentToken.TrailingTrivias );
+            editor.InPlaceReplace( span.Beg, newToken );
+        }
+        else
+        {
+            int offset = 2; // import {
+            if( TypeOnly ) ++offset; // type
+            if( DefaultImport != null ) offset += 2; // DefaultImport,
+            if( Namespace != null ) offset += 2; // Namespace,
+            int idx = 0;
+            foreach( var named in NamedImports )
+            {
+                if( idx == index ) break;
+                if( named.Type ) ++offset;
+                offset += n.IsAliased ? 4 : 2; // A as B, or A,
+                ++idx;
+            }
+            if( set )
+            {
+                Token newToken = new Token( TokenType.GenericIdentifier, "type", Trivia.OneSpace );
+                editor.InsertAt( span.Beg + offset, newToken );
+            }
+            else
+            {
+                editor.RemoveAt( span.Beg + offset );
+            }
+        }
+    }
 
     public StringBuilder Write( StringBuilder b, out int tokenCount )
     {
@@ -126,4 +206,5 @@ public sealed class ImportLine : IImportLine
     }
 
     public override string ToString() => Write( new StringBuilder(), out _ ).ToString();
+
 }

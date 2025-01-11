@@ -19,7 +19,7 @@ namespace CK.TypeScript.Transform;
 ///     <item><c>import { type IUserInfoType, StdKeyType } from './type-system.model';</c> (mixed imports)</item>
 ///     <item><c>import { type IUserInfoType as U, StdKeyType } from './type-system.model';</c> (mixed imports with name alias)</item>
 ///     <item><c>import DEFAULT_IMPORT from './type-system.model';</c> (default import)</item>
-///     <item><c>import type DEFAULT_IMPORT from './type-system.model';</c> (default import)</item>
+///     <item><c>import type DEFAULT_IMPORT from './type-system.model';</c> (default type only import)</item>
 ///     <item><c>import DEFAULT_IMPORT, { IUserInfoType, StdKeyType } from './type-system.model';</c></item>
 ///     <item><c>import DEFAULT_IMPORT, * as NAMESPACE from './type-system.model'; (rather stupid but valid)</c></item>
 ///     <item><c>import type * as NAMESPACE from './type-system.model';</c></item>
@@ -35,6 +35,7 @@ namespace CK.TypeScript.Transform;
 ///     <item><c>import { IUserInfoType }, DEFAULT_IMPORT from './type-system.model';</c></item>
 ///     <item><c>import { IUserInfoType }, * as NAMESPACE_DEFINITION from './type-system.model';</c></item>
 ///     <item><c>import type DEFAULT_IMPORT, { IUserInfoType, StdKeyType } from './type-system.model';</c></item>
+///     <item><c>import type DEFAULT_IMPORT, * as NAMESPACE from './type-system.model';</c></item>
 ///     <item><c>import DEFAULT_IMPORT, * as NAMESPACE_DEFINITION, { IUserInfoType, StdKeyType } from './type-system.model';</c></item>
 /// </list>
 /// </remarks>
@@ -65,6 +66,10 @@ public sealed class ImportStatement : SourceSpan, IImportLine
 
     /// <inheritdoc />
     public string ImportPath { get => _line.ImportPath; set => _line.ImportPath = value; }
+
+    internal void RemoveTypeOnly( SourceCodeEditor editor ) => _line.RemoveTypeOnly( editor, Span );
+
+    internal void SetNamedImportType( SourceCodeEditor editor, int index, bool set ) => _line.SetNamedImportType( editor, Span, index, set );
 
     internal static ImportStatement? TryMatch( Token importToken, ref TokenizerHead head )
     {

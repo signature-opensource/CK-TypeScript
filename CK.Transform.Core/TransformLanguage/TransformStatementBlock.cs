@@ -27,7 +27,6 @@ public sealed class TransformStatementBlock : TransformStatement
             if( success )
             {
                 editor.ApplyChanges();
-                editor.SetNeedReparse();
             }
         }
         return success;

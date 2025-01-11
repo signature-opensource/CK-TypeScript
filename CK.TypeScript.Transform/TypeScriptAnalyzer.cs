@@ -44,7 +44,7 @@ sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
             {
                 var importStatement = ImportStatement.TryMatch( t, ref head );
                 Throw.DebugAssert( "TryMatch doesn't add the span.", importStatement == null || importStatement.IsDetached );
-                if( importStatement != null ) head.Spans.Add( importStatement );
+                if( importStatement != null ) head.AddSourceSpan( importStatement );
             }
         }
     }

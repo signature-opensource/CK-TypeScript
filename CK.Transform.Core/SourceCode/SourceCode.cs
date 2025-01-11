@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class SourceCode : IEnumerable<SourceToken>
 {
-    readonly SourceSpanRoot _spans;
+    internal readonly SourceSpanRoot _spans;
     ImmutableList<Token> _tokens;
     string? _toString;
 
@@ -26,7 +26,7 @@ public sealed class SourceCode : IEnumerable<SourceToken>
     /// <summary>
     /// Gets the spans.
     /// </summary>
-    public SourceSpanRoot Spans => _spans;
+    public ISourceSpanRoot Spans => _spans;
 
     /// <summary>
     /// Gets the tokens.

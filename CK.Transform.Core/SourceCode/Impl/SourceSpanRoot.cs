@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
-public sealed class SourceSpanRoot : IEnumerable<SourceSpan>
+sealed class SourceSpanRoot : ISourceSpanRoot
 {
     internal readonly SourceSpanChildren _children;
 
@@ -67,10 +67,7 @@ public sealed class SourceSpanRoot : IEnumerable<SourceSpan>
     /// <returns>The deepest span or null if no span covers the token at this position.</returns>
     public SourceSpan? GetSpanAt( int index ) => _children.GetSpanAt( index );
 
-    /// <summary>
-    /// Gets a span enumerator.
-    /// </summary>
-    /// <returns>The enumerator.</returns>
+    /// <inheritdoc />
     public SourceSpanChildren.Enumerator GetEnumerator() => _children.GetEnumerator();
 
     IEnumerator<SourceSpan> IEnumerable<SourceSpan>.GetEnumerator() => _children.GetEnumerator();

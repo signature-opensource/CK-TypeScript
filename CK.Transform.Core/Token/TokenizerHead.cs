@@ -156,10 +156,10 @@ public ref struct TokenizerHead
     public readonly IReadOnlyList<Token> Tokens => _tokens;
 
     /// <summary>
-    /// Gets the spans to which any span can be added.
+    /// Gets the spans added so far.
     /// If this is a subordinated head, this doesn't contain the spans from the parent head.
     /// </summary>
-    public readonly SourceSpanRoot Spans => _spans;
+    public readonly ISourceSpanRoot Spans => _spans;
 
     /// <summary>
     /// Gets the last accepted token.
@@ -226,6 +226,16 @@ public ref struct TokenizerHead
         Throw.DebugAssert( _tokens.Count == 0 && !_spans._children.HasChildren );
         inlineErrorCount = _inlineErrorCount;
         _inlineErrorCount = 0;
+    }
+
+    /// <summary>
+    /// Adds a span. This throws if the span is already attached to a root or
+    /// if it intersects an already added existing span.
+    /// </summary>
+    /// <param name="newOne">The span to add.</param>
+    public void AddSourceSpan( SourceSpan newOne )
+    {
+        _spans.Add( newOne );
     }
 
     /// <summary>

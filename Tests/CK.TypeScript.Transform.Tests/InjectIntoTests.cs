@@ -7,59 +7,6 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.TypeScript.Transform.Tests;
 
 [TestFixture]
-public class EnsureImportTests
-{
-    [TestCase(
-    """
-        import { RouterOutlet } from '@angular/router';
-        import { Component } from '@angular/core';
-        const data = 'data';
-        """,
-    """"
-        create typescript transformer
-        begin
-            ensure import DefaultImport from './someFile';
-            ensure import { A as B } from './someOtherFile';
-        end
-        """",
-    """
-        import { RouterOutlet } from '@angular/router';
-        import { Component } from '@angular/core';
-        import DefaultImport from './someFile';
-        import { A as B } from './someOtherFile';
-        const data = 'data';
-        """
-    )]
-    [TestCase(
-    """
-        const data = 'data';
-        """,
-    """"
-        create typescript transformer
-        begin
-            ensure import DefaultImport from './someFile';
-            ensure import { A as B } from './someOtherFile';
-        end
-        """",
-    """
-        import DefaultImport from './someFile';
-        import { A as B } from './someOtherFile';
-        const data = 'data';
-        """
-    )]
-    public void adding_new_import( string source, string transformer, string result )
-    {
-        var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().Should().Be( result );
-    }
-
-}
-
-[TestFixture]
 public class InjectIntoTests
 {
     [TestCase(

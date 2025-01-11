@@ -27,7 +27,7 @@ public abstract partial class SourceSpan
     /// <summary>
     /// Gets the root. Null when <see cref="IsDetached"/> is true.
     /// </summary>
-    public SourceSpanRoot? Root => _root;
+    public ISourceSpanRoot? Root => _root;
 
     /// <summary>
     /// Gets whether this span doesn't belong to a <see cref="SourceCode"/>.
