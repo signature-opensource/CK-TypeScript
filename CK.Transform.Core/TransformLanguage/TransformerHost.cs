@@ -163,7 +163,7 @@ public sealed partial class TransformerHost
                 return null;
             }
         }
-        return codeEditor.SourceCode;
+        return codeEditor._code;
 
         static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransformerFunction transformer, string text )
         {

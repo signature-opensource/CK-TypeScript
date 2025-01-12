@@ -52,7 +52,7 @@ public sealed class InjectIntoStatement : TransformStatement
             }
             else
             {
-                editor.InPlaceReplace( modified.Index, modified.Token );
+                editor.Replace( modified.Index, modified.Token );
                 editor.SetNeedReparse();
             }
         }

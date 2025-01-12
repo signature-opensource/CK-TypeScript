@@ -47,6 +47,6 @@ public sealed class TokenError : Token
     /// Overridden to return the error message and position.
     /// </summary>
     /// <returns>The error message and position.</returns>
-    public override string ToString() => $"{_errorMessage} @{_sourcePosition.Line + 1},{_sourcePosition.Column + 1}";
+    public override string ToString() => $"{_errorMessage} @{_sourcePosition.Line},{_sourcePosition.Column}";
 
 }

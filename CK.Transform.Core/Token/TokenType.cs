@@ -20,7 +20,8 @@ public enum TokenType
     MaxClassNumber = TriviaClassNumber,
 
     /// <summary>
-    /// The mask to consider when challenging classes). 
+    /// The mask to consider when challenging classes, including the <see cref="ErrorClassBit"/>.
+    /// Use <see cref="ClassMaskAllowError"/> to allow the token type to be on error.
     /// </summary>
     ClassMask = -1 << (31 - MaxClassNumber),
 
@@ -34,6 +35,11 @@ public enum TokenType
     /// </para>
     /// </summary>
     ErrorClassBit = 1 << 31,
+
+    /// <summary>
+    /// The mask to consider when challenging classes, ignoring the <see cref="ErrorClassBit"/>.
+    /// </summary>
+    ClassMaskAllowError = ClassMask & ~ErrorClassBit,
 
     /// <summary>
     /// A generic error type.
@@ -61,19 +67,19 @@ public enum TokenType
     /// <summary>
     /// Currently unused bit. Must be 0.
     /// </summary>
-    TriviaUnusedBit = TriviaClassBit | 1 << 6,
+    TriviaUnusedBit = 1 << 6,
 
     /// <summary>
     /// Mask for the length of the comment start. Use <see cref="TokenTypeExtensions.GetTriviaCommentStartLength(TokenType)"/> 
     /// to retrieve this information.
     /// </summary>
-    TriviaCommentStartLengthMask = TriviaClassBit | 3,
+    TriviaCommentStartLengthMask = 3,
 
     /// <summary>
     /// Mask for the length of the comment start. Use <see cref="TokenTypeExtensions.GetTriviaCommentEndLength(TokenType)"/> 
     /// to retrieve this information.
     /// </summary>
-    TriviaCommentEndLengthMask = TriviaClassBit | 7 << 3,
+    TriviaCommentEndLengthMask = 7 << 3,
 
     /// <summary>
     /// Mask for both start and end comment length.

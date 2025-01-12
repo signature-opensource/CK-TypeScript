@@ -54,7 +54,7 @@ public static class TokenExtensions
     }
 
     /// <summary>
-    /// Creates a clone of this token with the new trivias. When let the the <c>default</c>, the current trivias are preserved.
+    /// Creates a clone of this token with the new trivias. When let to the <c>default</c>, the current trivias are preserved.
     /// </summary>
     /// <typeparam name="T">This token type.</typeparam>
     /// <param name="token">This token.</param>

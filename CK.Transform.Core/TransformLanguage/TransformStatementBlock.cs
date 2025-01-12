@@ -24,10 +24,6 @@ public sealed class TransformStatementBlock : TransformStatement
             {
                 success &= statement.Apply( monitor, editor );
             }
-            if( success )
-            {
-                editor.ApplyChanges();
-            }
         }
         return success;
     }

@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace CK.TypeScript.Transform;
 
@@ -71,6 +72,8 @@ public sealed class ImportStatement : SourceSpan, IImportLine
 
     internal void SetNamedImportType( SourceCodeEditor editor, int index, bool set ) => _line.SetNamedImportType( editor, Span, index, set );
 
+    internal void AddNamedImport( SourceCodeEditor editor, ImportLine.NamedImport named ) => _line.AddNamedImport( editor, Span, named );
+
     internal static ImportStatement? TryMatch( Token importToken, ref TokenizerHead head )
     {
         Throw.DebugAssert( importToken.Text.Span.Equals( "import", StringComparison.Ordinal ) );
@@ -125,6 +128,8 @@ public sealed class ImportStatement : SourceSpan, IImportLine
                     if( importedName is TokenError ) return null;
                 }
                 d.NamedImports.Add( new ImportLine.NamedImport( exportedName.ToString(), importedName?.ToString(), isType ) );
+                // Eat the comma.
+                head.TryAcceptToken( TokenType.Comma, out _ );
             }
         }
         // The "from" doesn't appear in a side-effect only import. 
@@ -135,4 +140,5 @@ public sealed class ImportStatement : SourceSpan, IImportLine
         head.TryAcceptToken( ";", out _ );
         return new ImportStatement( begImport, head.LastTokenIndex + 1, d );
     }
+
 }

@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Transform.Core;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -40,8 +41,8 @@ public sealed class ImportLine : IImportLine
     /// </summary>
     /// <param name="ExportedName">Exported name.</param>
     /// <param name="ImportedName">Imported alias name.</param>
-    /// <param name="Type">Whether this is a type only import.</param>
-    public readonly record struct NamedImport( string ExportedName, string? ImportedName, bool Type )
+    /// <param name="TypeOnly">Whether this is a type only import.</param>
+    public readonly record struct NamedImport( string ExportedName, string? ImportedName, bool TypeOnly )
     {
         /// <summary>
         /// Gets whether the <see cref="ExportedName"/> is aliased: <see cref="ImportedName"/> is not null.
@@ -91,120 +92,161 @@ public sealed class ImportLine : IImportLine
     internal void RemoveTypeOnly( SourceCodeEditor editor, TokenSpan span )
     {
         Throw.DebugAssert( TypeOnly );
-        editor.RemoveAt( span.Beg + 1 );
         TypeOnly = false;
+        if( span.Length == 1 )
+        {
+            MonoTokenUpdate( editor, span );
+        }
+        else
+        {
+            editor.RemoveAt( span.Beg + 1 );
+        }
     }
 
     internal void SetNamedImportType( SourceCodeEditor editor, TokenSpan span, int index, bool set )
     {
         Throw.DebugAssert( index >= 0 && index < NamedImports.Count );
         var n = NamedImports[index];
-        Throw.DebugAssert( n.Type != set );
+        Throw.DebugAssert( n.TypeOnly != set );
 
         // Updates the NamedImport.Type flag.
         NamedImports[index] = new NamedImport( n.ExportedName, n.ImportedName, set );
         if( span.Length == 1 )
         {
-            var currentToken = editor.SourceCode.Tokens[span.Beg];
-            Token newToken = new Token( currentToken.TokenType, currentToken.LeadingTrivias, ToString(), currentToken.TrailingTrivias );
-            editor.InPlaceReplace( span.Beg, newToken );
+            MonoTokenUpdate( editor, span );
         }
         else
         {
-            int offset = 2; // import {
-            if( TypeOnly ) ++offset; // type
-            if( DefaultImport != null ) offset += 2; // DefaultImport,
-            if( Namespace != null ) offset += 2; // Namespace,
-            int idx = 0;
-            foreach( var named in NamedImports )
-            {
-                if( idx == index ) break;
-                if( named.Type ) ++offset;
-                offset += n.IsAliased ? 4 : 2; // A as B, or A,
-                ++idx;
-            }
+            int tokenIndex = GetTokenIndexOfNamedIndex( span, index );
             if( set )
             {
                 Token newToken = new Token( TokenType.GenericIdentifier, "type", Trivia.OneSpace );
-                editor.InsertAt( span.Beg + offset, newToken );
+                editor.InsertAt( tokenIndex, newToken );
             }
             else
             {
-                editor.RemoveAt( span.Beg + offset );
+                editor.RemoveAt( tokenIndex );
             }
         }
     }
 
-    public StringBuilder Write( StringBuilder b, out int tokenCount )
+    internal void AddNamedImport( SourceCodeEditor editor, TokenSpan span, NamedImport named )
     {
-        // Account for "import", importPath and ";".
-        tokenCount = 3;
-        b.Append( "import " );
-        if( TypeOnly )
+        if( span.Length == 1 )
         {
-            tokenCount++;
-            b.Append( "type " );
+            NamedImports.Add( named );
+            MonoTokenUpdate( editor, span );
         }
-        if( DefaultImport != null )
+        else
         {
-            tokenCount++;
-            b.Append( DefaultImport );
-        }
+            // The name doesn't exist, GetTokenIndexOfNamedIndex returns the insertion
+            // point (the token before which me must insert).
+            // We start from the previous token.
+            int tokenIndex = GetTokenIndexOfNamedIndex( span, NamedImports.Count ) - 1;
+            bool isSideEffectOnly = SideEffectOnly;
+            // If isSideEffectOnly we are on the "import": we must not add a comma.
+            bool needCommaPrefix = !isSideEffectOnly;
+            bool needBraces = NamedImports.Count == 0;
 
+            // We can add the name now.
+            NamedImports.Add( named );
+            // We replace the previous (to be able to handle the transfer of the trivias for the comma).
+            var b = new TokenListBuilder { editor.Tokens[tokenIndex] };
+            if( needBraces )
+            {
+                if( needCommaPrefix )
+                {
+                    b.RemoveSingleTrailingWhitespace();
+                    b.Add( new Token( TokenType.Comma, ",", Trivia.OneSpace ) );
+                }
+                b.Add( new Token( TokenType.OpenBrace, "{", Trivia.OneSpace ) );
+                needCommaPrefix = false;
+            }
+            if( needCommaPrefix )
+            {
+                b.RemoveSingleTrailingWhitespace();
+                b.Add( new Token( TokenType.Comma, ",", Trivia.OneSpace ) );
+            }
+            b.Add( new Token( TokenType.GenericIdentifier, named.ExportedName, Trivia.OneSpace ) );
+            if( named.IsAliased )
+            {
+                b.Add( new Token( TokenType.GenericIdentifier, "as", Trivia.OneSpace ) );
+                b.Add( new Token( TokenType.GenericIdentifier, named.ImportedName, Trivia.OneSpace ) );
+            }
+            if( needBraces )
+            {
+                b.Add( new Token( TokenType.CloseBrace, "}", Trivia.OneSpace ) );
+                if( isSideEffectOnly )
+                {
+                    b.Add( new Token( TokenType.GenericIdentifier, "from", Trivia.OneSpace ) );
+                }
+            }
+            editor.Replace( tokenIndex, 1, b.ToArray() );
+        }
+    }
+
+    int GetTokenIndexOfNamedIndex( TokenSpan span, int index )
+    {
+        int offset = span.Beg + 1; // import
+        if( TypeOnly ) ++offset; // type
+        if( DefaultImport != null ) ++offset; // DefaultImport
+        Throw.DebugAssert( "Namespace excludes named imports.", Namespace == null );
+        if( NamedImports.Count > 0 )
+        {
+            if( DefaultImport != null ) ++offset; //,
+            ++offset; // {
+            int idx = 0;
+            foreach( var named in NamedImports )
+            {
+                if( idx == index ) return offset;
+                if( idx++ > 0 ) ++offset; // ,
+                if( named.TypeOnly ) ++offset;
+                offset += named.IsAliased ? 3 : 1; // "A as B" or "A"
+                if( idx == NamedImports.Count ) break;
+            }
+        }
+        return offset;
+    }
+
+    void MonoTokenUpdate( SourceCodeEditor editor, TokenSpan span )
+    {
+        var currentToken = editor.Tokens[span.Beg];
+        Token newToken = new Token( currentToken.TokenType, currentToken.LeadingTrivias, ToString(), currentToken.TrailingTrivias );
+        editor.Replace( span.Beg, newToken );
+    }
+
+    public StringBuilder Write( StringBuilder b )
+    {
+        b.Append( "import " );
+        if( TypeOnly ) b.Append( "type " );
+        if( DefaultImport != null ) b.Append( DefaultImport );
         if( Namespace != null )
         {
-            if( DefaultImport != null )
-            {
-                tokenCount++;
-                b.Append( ", " );
-            }
-            tokenCount++;
-            b.Append( Namespace );
+            b.Append( DefaultImport != null ? ", * as " : "* as " ).Append( Namespace );
         }
         if( NamedImports.Count > 0 )
         {
-            if( DefaultImport != null || Namespace != null )
-            {
-                tokenCount++;
-                b.Append( ", " );
-            }
-
-            tokenCount++;
+            if( DefaultImport != null || Namespace != null ) b.Append( ", " );
             b.Append( "{ " );
             bool atLeastOne = false;
             foreach( var namedImport in NamedImports )
             {
-                if( atLeastOne )
-                {
-                    tokenCount++;
-                    b.Append( ", " );
-                }
-
+                if( atLeastOne ) b.Append( ", " );
                 atLeastOne = true;
-                tokenCount++;
                 b.Append( namedImport.ExportedName );
-                if( namedImport.IsAliased )
-                {
-                    tokenCount++;
-                    b.Append( " as " ).Append( namedImport.ImportedName );
-                }
+                if( namedImport.IsAliased ) b.Append( " as " ).Append( namedImport.ImportedName );
             }
-            tokenCount++;
             b.Append( " } " );
         }
         else if( DefaultImport != null || Namespace != null ) 
         {
             b.Append( ' ' );
         }
-        if( !SideEffectOnly )
-        {
-            tokenCount++;
-            b.Append( "from " );
-        }
+        if( !SideEffectOnly ) b.Append( "from " );
         b.Append( '\'' ).Append( ImportPath ).Append( "\';" );
         return b;
     }
 
-    public override string ToString() => Write( new StringBuilder(), out _ ).ToString();
+    public override string ToString() => Write( new StringBuilder() ).ToString();
 
 }

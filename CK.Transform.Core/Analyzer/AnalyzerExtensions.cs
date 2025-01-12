@@ -26,7 +26,7 @@ public static class AnalyzerExtensions
             {
                 var error = r.HardError ?? r.SourceCode.Tokens.OfType<TokenError>().First();
                 monitor.Error( $"""
-                        {error.ErrorMessage} @{error.SourcePosition.Line + 1},{error.SourcePosition.Column + 1} while parsing:
+                        {error.ErrorMessage} @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
                         {text}
                         """ );
                 return null;

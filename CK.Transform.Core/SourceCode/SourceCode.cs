@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text;
 
 namespace CK.Transform.Core;
@@ -8,6 +9,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Source code is created by a <see cref="TokenizerHead"/> and can be mutated by a <see cref="SourceCodeEditor"/>.
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public sealed class SourceCode : IEnumerable<SourceToken>
 {
     internal readonly SourceSpanRoot _spans;

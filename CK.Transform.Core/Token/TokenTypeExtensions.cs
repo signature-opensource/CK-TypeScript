@@ -98,26 +98,26 @@ public static class TokenTypeExtensions
     /// Gets whether this token type is a <see cref="Trivia"/>, including
     /// <see cref="TokenType.Whitespace"/>.
     /// <para>
-    /// Only Trivia (not <see cref="TokenNode"/>) can carry a trivia token type.
+    /// Only Trivia (not <see cref="Token"/>) can carry a trivia token type.
     /// </para>
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is a trivia.</returns>
-    public static bool IsTrivia( this TokenType type ) => (type & TokenType.TriviaClassMask) == TokenType.TriviaClassBit;
+    public static bool IsTrivia( this TokenType type ) => (type & TokenType.ClassMaskAllowError) == TokenType.TriviaClassBit;
 
     /// <summary>
     /// Gets whether this is a whitespace trivia.
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    public static bool IsWhitespace( this TokenType type ) => type == TokenType.Whitespace;
+    public static bool IsTriviaWhitespace( this TokenType type ) => type == TokenType.Whitespace;
 
     /// <summary>
     /// Gets whether this is a comment trivia.
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is a line comment.</returns>
-    public static bool IsTriviaComment( this TokenType type ) => (type & TokenType.TriviaClassMask) == TokenType.TriviaClassMask
+    public static bool IsTriviaComment( this TokenType type ) => (type & TokenType.ClassMaskAllowError) == TokenType.TriviaClassMask
                                                                 && (type & TokenType.TriviaCommentMask) != 0;
 
     /// <summary>
@@ -125,7 +125,7 @@ public static class TokenTypeExtensions
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is a line comment.</returns>
-    public static bool IsTriviaLineComment( this TokenType type ) => (type & TokenType.TriviaClassMask) == TokenType.TriviaClassMask
+    public static bool IsTriviaLineComment( this TokenType type ) => (type & TokenType.ClassMaskAllowError) == TokenType.TriviaClassBit
                                                                     && (type & TokenType.TriviaCommentStartLengthMask) != 0
                                                                     && (type & TokenType.TriviaCommentEndLengthMask) == 0;
 
@@ -134,7 +134,7 @@ public static class TokenTypeExtensions
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is a line comment.</returns>
-    public static bool IsTriviaBlockComment( this TokenType type ) => (type & TokenType.TriviaClassMask) == TokenType.TriviaClassMask
+    public static bool IsTriviaBlockComment( this TokenType type ) => (type & TokenType.ClassMaskAllowError) == TokenType.TriviaClassBit
                                                                      && (type & TokenType.TriviaCommentEndLengthMask) != 0;
     /// <summary>
     /// Computes a type for a line comment with a given start delimiter length.
@@ -159,9 +159,19 @@ public static class TokenTypeExtensions
         return GetTriviaLineCommentType( commentStartLength ) | (TokenType)(commentEndLength << 3);
     }
 
-    internal static int GetTriviaCommentStartLength( this TokenType type ) => IsTrivia( type ) ? ((int)type & 3) : 0;
+    /// <summary>
+    /// Gets the comment start length.
+    /// </summary>
+    /// <param name="type">this token type.</param>
+    /// <returns>The number of characters of the starting delimiter. 0 if this is not a comment trivia type.</returns>
+    public static int GetTriviaCommentStartLength( this TokenType type ) => IsTrivia( type ) ? ((int)type & 7) : 0;
 
-    internal static int GetTriviaCommentEndLength( this TokenType type ) => IsTrivia( type ) ? (((int)type >> 3) & 3) : 0;
+    /// <summary>
+    /// Gets the comment end length.
+    /// </summary>
+    /// <param name="type">this token type.</param>
+    /// <returns>The number of characters of the ending delimiter. 0 if this is not a block comment trivia type.</returns>
+    public static int GetTriviaCommentEndLength( this TokenType type ) => IsTrivia( type ) ? (((int)type >> 3) & 7) : 0;
 
     /// <summary>
     /// Gets a one char known <see cref="TokenType"/> or <see cref="TokenType.None"/> if it is not defined.

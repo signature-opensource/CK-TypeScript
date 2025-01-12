@@ -1,7 +1,10 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
+using System.Data.Common;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace CK.Transform.Core;
 
@@ -56,7 +59,7 @@ public class Token
     /// <param name="text">The token text.</param>
     /// <param name="trailing">Trailing trivias.</param>
     public Token( TokenType tokenType, string text, ImmutableArray<Trivia> trailing )
-    : this( tokenType, ImmutableArray<Trivia>.Empty, text.AsMemory(), trailing )
+    : this( tokenType, Trivia.Empty, text.AsMemory(), trailing )
     {
     }
 
@@ -97,6 +100,159 @@ public class Token
     /// </para>
     /// </summary>
     public ImmutableArray<Trivia> TrailingTrivias => _trailingTrivias;
+
+    /// <summary>
+    /// Gets whether this is a detached trivia that has not been parsed: its <see cref="Text"/> is not a part
+    /// of a wider string.
+    /// </summary>
+    public bool IsDetachedToken => GetContainingSpan(_text, out var start ).Length == _text.Length;
+
+    /// <summary>
+    /// Gets the 1-based column of this token in its containing text.
+    /// <para>
+    /// This really applies to tokens that have been parsed. For explicitly created token, this
+    /// only analyze the leading trivias.
+    /// </para>
+    /// </summary>
+    /// <returns>The 1-based column number of this token.</returns>
+    public int GetColumnNumber()
+    {
+        int column = 1;
+        ReadOnlySpan<char> span = default;
+        int idx;
+        // Analyze the leading trivias in reverse order to find first new line.
+        for( int i = _leadingTrivias.Length - 1; i >= 0; i-- )
+        {
+            var t = _leadingTrivias[i];
+            // If it's a line comment, we are done.
+            if( t.TokenType.IsTriviaLineComment() )
+            {
+                return column;
+            }
+            // Block comment or whitespace: we try to find the last \n in it.
+            span = t.Content.Span;
+            idx = span.LastIndexOf( '\n' );
+            if( idx >= 0 )
+            {
+                if( idx > 0 && span[idx - 1] == '\r' ) ++idx;
+                column += span.Length - idx;
+                return column;
+            }
+            // No luck.
+            column += span.Length;
+        }
+        // The leading trivias don't have a \n.
+        span = GetContainingSpan( _text, out var start );
+        // Skip the leading trivias work (useless to reprocess them).
+        start -= column - 1;
+        // If start is before the containing span, this is a detached token
+        // and we have nothing to do.
+        if( start > 0 )
+        {
+            span = span.Slice( 0, start );
+            idx = span.LastIndexOf( '\n' );
+            if( idx >= 0 )
+            {
+                if( idx > 0 && span[idx - 1] == '\r' ) ++idx;
+                column += span.Length - idx;
+            }
+        }
+        return column;
+    }
+
+    /// <summary>
+    /// Gets the <see cref="SourcePosition"/> of this token in its containg text.
+    /// <para>
+    /// This really applies to tokens that have been parsed. For explicitly created token, this
+    /// only analyze the leading trivias.
+    /// </para>
+    /// </summary>
+    /// <returns>The source position of this token.</returns>
+    public SourcePosition GetSourcePosition()
+    {
+        var s = GetContainingSpan( _text, out var start );
+        // Special handling for detached tokens.
+        if( s.Length == _text.Length )
+        {
+            return _leadingTrivias.IsEmpty
+                    ? new SourcePosition( 1, 1 )
+                    : GetDetachedTokenSourcePosition();
+        }
+        return SourcePosition.GetSourcePosition( s, start );
+    }
+
+    SourcePosition GetDetachedTokenSourcePosition()
+    {
+        Throw.DebugAssert( _leadingTrivias.Length > 0 );
+        int column = 1;
+        int line = 1;
+        bool knownColum = false;
+        int idx;
+        Trivia t = _leadingTrivias[_leadingTrivias.Length - 1];
+        ReadOnlySpan<char> span = t.Content.Span;
+        if( t.TokenType.IsTriviaLineComment() )
+        {
+            knownColum = true;
+            ++line;
+        }
+        else
+        {
+            // Block comment or whitespace: we try to find the last \n in it.
+            idx = span.LastIndexOf( '\n' );
+            if( idx >= 0 )
+            {
+                column += span.Length - idx;
+                if( idx > 0 && span[idx - 1] == '\r' ) --column;
+                knownColum = true;
+                line += 1 + span.Slice( 0, idx ).Count( '\n' );
+            }
+            else
+            {
+                column += span.Length;
+            }
+        }
+        for( int i = _leadingTrivias.Length - 2; i >= 0; i-- )
+        {
+            t = _leadingTrivias[i];
+            span = t.Content.Span;
+            if( t.TokenType.IsTriviaLineComment() )
+            {
+                ++line;
+                knownColum = true;
+            }
+            else
+            {
+                if( !knownColum )
+                {
+                    idx = span.LastIndexOf( '\n' );
+                    if( idx >= 0 )
+                    {
+                        column += span.Length - idx;
+                        if( idx > 0 && span[idx - 1] == '\r' ) --column;
+                        knownColum = true;
+                        ++line;
+                        span = span.Slice( 0, idx );
+                    }
+                    else
+                    {
+                        column += span.Length;
+                    }
+                }
+                line += span.Count( '\n' );
+            }
+        }
+        return new SourcePosition( line, column );
+    }
+
+    static ReadOnlySpan<char> GetContainingSpan( ReadOnlyMemory<char> text, out int start )
+    {
+        if( MemoryMarshal.TryGetString( text, out var str, out start, out _ ) )
+        {
+            return str;
+        }
+        Throw.InvalidOperationException( "Token is not backed by a string." );
+        return default;
+    }
 
     internal Token CloneForTrivias( ImmutableArray<Trivia> leading, ImmutableArray<Trivia> trailing )
     {

@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection.Metadata;
 
 namespace CK.Transform.Core;
 
@@ -32,29 +33,84 @@ public readonly struct Trivia : IEquatable<Trivia>
     /// </summary>
     public static ImmutableArray<Trivia> NewLine => TriviaExtensions.NewLine;
 
-    public Trivia( TokenType tokenType, string content )
-        : this( tokenType, content.AsMemory() )
+    /// <summary>
+    /// Gets empty trivias.
+    /// </summary>
+    public static ImmutableArray<Trivia> Empty => ImmutableArray<Trivia>.Empty;
+
+    /// <summary>
+    /// Initializes a new Trivia. The <paramref name="content"/> is checked by default:
+    /// it must be compatible with the <paramref name="tokenType"/>:
+    /// <list type="bullet">
+    ///     <item>For a block comment, its length must be greater than the <see cref="CommentStartLength"/> + <see cref="CommentEndLength"/>.</item>
+    ///     <item>For a line comment, it must at least contain <see cref="CommentStartLength"/> characters and ends with a <see cref="Environment.NewLine"/>.</item>
+    /// </list>
+    /// Checks are always skipped if the token type is on error.
+    /// Note that <see cref="TokenType.Whitespace"/> are free to contain other characters than white spaces. it is considered as a whitespace but
+    /// may contain actual characters.
+    /// </summary>
+    /// <param name="tokenType">The token type. Must be a Trivia (may be on error).</param>
+    /// <param name="content">The raw content.</param>
+    /// <param name="checkContent">False to skip the check of the content.</param>
+    public Trivia( TokenType tokenType, string content, bool checkContent = true )
+        : this( tokenType, content.AsMemory(), checkContent )
     {
     }
 
-    public Trivia( TokenType tokenType, ReadOnlyMemory<char> content )
+    /// <summary>
+    /// Initializes a new Trivia. The <paramref name="content"/> is NOT checked by default:
+    /// it must be compatible with the <paramref name="tokenType"/>:
+    /// <list type="bullet">
+    ///     <item>For a block comment, its length must be greater than the <see cref="CommentStartLength"/> + <see cref="CommentEndLength"/>.</item>
+    ///     <item>For a line comment, it must at least contain <see cref="CommentStartLength"/> characters and ends with a <see cref="Environment.NewLine"/>.</item>
+    /// </list>
+    /// Checks are always skipped if the token type is on error.
+    /// Note that <see cref="TokenType.Whitespace"/> are free to contain other characters than white spaces. it is considered as a whitespace but
+    /// may contain actual characters.
+    /// </summary>
+    /// <param name="tokenType">The token type. Must be a Trivia (may be on error).</param>
+    /// <param name="content">The raw content.</param>
+    /// <param name="checkContent">True to check the content.</param>
+    public Trivia( TokenType tokenType, ReadOnlyMemory<char> content, bool checkContent = false )
     {
         Throw.CheckArgument( tokenType.IsTrivia() );
         Throw.CheckArgument( content.Length > 0 );
         _tokenType = tokenType;
         _content = content;
+        if( checkContent ) DoCheckContent();
+    }
+
+    void DoCheckContent()
+    {
+        if( !IsError && !IsWhitespace )
+        {
+            if( IsLineComment )
+            {
+                Throw.CheckArgument( Content.Span.EndsWith( Environment.NewLine ) );
+                Throw.CheckArgument( Content.Length >= CommentStartLength + Environment.NewLine.Length );
+                return;
+            }
+            Throw.DebugAssert( IsBlockComment );
+            Throw.CheckArgument( Content.Length > CommentStartLength + CommentEndLength );
+        }
     }
 
     /// <summary>
     /// Gets the token type that necessarily belongs to <see cref="TokenType.TriviaClassBit"/>
-    /// or is <see cref="TokenType.None"/> if <see cref="IsValid"/> is false.
+    /// or is <see cref="TokenType.None"/> if <see cref="IsDefault"/> is true.
     /// </summary>
     public TokenType TokenType => _tokenType;
 
     /// <summary>
-    /// Gets whether this trivia is valid.
+    /// Gets whether this trivia is an error.
+    /// (The <see cref="TokenType.ErrorClassBit"/> is set in the <see cref="TokenType"/>.)
     /// </summary>
-    public bool IsValid => _tokenType != TokenType.None;
+    public bool IsError => _tokenType < 0;
+
+    /// <summary>
+    /// Gets whether this trivia is an invalid <c>default</c>.
+    /// </summary>
+    public bool IsDefault => _tokenType == TokenType.None;
 
     /// <summary>
     /// Gets the content of this trivia including content delimiters like the "//" comment start characters.
@@ -65,7 +121,7 @@ public readonly struct Trivia : IEquatable<Trivia>
     /// Gets wether this is a whitespace trivia.
     /// <para>If this is not a whitespace trivia, then it is a comment.</para>
     /// </summary>
-    public bool IsWhitespace => _tokenType.IsWhitespace();
+    public bool IsWhitespace => _tokenType.IsTriviaWhitespace();
 
     /// <summary>
     /// Gets wether this is a line comment.
@@ -99,8 +155,8 @@ public readonly struct Trivia : IEquatable<Trivia>
     {
         get
         {
-            Throw.DebugAssert( _tokenType.GetTriviaCommentStartLength() == ((int)_tokenType & 3) );
-            return ((int)_tokenType & 3);
+            Throw.DebugAssert( _tokenType.GetTriviaCommentStartLength() == ((int)_tokenType & 7) );
+            return ((int)_tokenType & 7);
         }
     }
 
@@ -112,8 +168,8 @@ public readonly struct Trivia : IEquatable<Trivia>
     {
         get
         {
-            Throw.DebugAssert( _tokenType.GetTriviaCommentEndLength() == (((int)_tokenType >> 3) & 3) );
-            return ((int)_tokenType >> 3) & 3;
+            Throw.DebugAssert( _tokenType.GetTriviaCommentEndLength() == (((int)_tokenType >> 3) & 7) );
+            return ((int)_tokenType >> 3) & 7;
         }
     }
 

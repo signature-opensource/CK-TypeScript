@@ -4,9 +4,12 @@ using System;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Line number and column in a source text. This uses 0 based index.
+/// Line number and column in a source text. This uses a 1 based index.
+/// <see cref="IsDefault"/> detects the <c>default</c> value: there is no need to use <see cref="Nullable{T}"/>
+/// for this type.
 /// <para>
-/// <see cref="GetSourceIndex(ReadOnlySpan{char})"/> and <see cref="GetSourcePosition(ReadOnlySpan{char}, int)"/> do the job.
+/// Static helpers <see cref="GetSourceIndex(ReadOnlySpan{char})"/> and <see cref="GetSourcePosition(ReadOnlySpan{char}, int)"/>
+/// associate any position to a character in a text.
 /// </para>
 /// </summary>
 public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<SourcePosition>
@@ -17,12 +20,12 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     /// <summary>
     /// Initializes a new instance of a <see cref="SourcePosition"/>.
     /// </summary>
-    /// <param name="line">Must be 0 (first line) or positive.</param>
-    /// <param name="column">Must be 0 (first character) or positive.</param>
+    /// <param name="line">Must be positive.</param>
+    /// <param name="column">Must be positive.</param>
     public SourcePosition( int line, int column )
     {
-        Throw.CheckOutOfRangeArgument( line >= 0 );
-        Throw.CheckOutOfRangeArgument( column >= 0 );
+        Throw.CheckOutOfRangeArgument( line > 0 );
+        Throw.CheckOutOfRangeArgument( column > 0 );
         _line = line;
         _column = column;
     }
@@ -38,6 +41,11 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     public int Column => _column;
 
     /// <summary>
+    /// Gets whether this is the invalid <c>default</c> (0,0) position.
+    /// </summary>
+    public bool IsDefault => _line != 0;
+
+    /// <summary>
     /// Gets the index in the source text that corresponds to this position or null
     /// if this position doesn't exist.
     /// </summary>
@@ -47,12 +55,11 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     {
         int result = 0;
         var l = _line;
-        while( l > 0 )
+        while( --l > 0 )
         {
             int nextIdx = source.Slice( result ).IndexOf( '\n' );
             if( nextIdx < 0 ) return null;
             result += nextIdx;
-            l--;
         }
         int lineLength = source.Slice( result ).IndexOf( '\n' );
         if( lineLength < 0 ) lineLength = source.Length - result;
@@ -74,6 +81,7 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
         if( lastIndex >= 0 )
         {
             line = before.Count( '\n' );
+            if( lastIndex > 0 && before[lastIndex - 1] == '\r' ) ++lastIndex;
             column = index - lastIndex;
         }
         else
@@ -81,7 +89,7 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
             line = 0;
             column = index;
         }
-        return new SourcePosition( line, column );
+        return new SourcePosition( line + 1, column + 1 );
     }
 
     /// <summary>
@@ -112,10 +120,10 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     public override int GetHashCode() => HashCode.Combine( _line, _column );
 
     /// <summary>
-    /// Provides a string representation for <see cref="SourcePosition"/>.
+    /// Provides a string representation for <see cref="SourcePosition"/>:
+    /// "(1,1)" for the first character.
     /// </summary>
-    /// <example>0,10</example>
-    public override string ToString() => $"{Line + 1},{Column + 1}";
+    public override string ToString() => $"{Line},{Column}";
 
     /// <summary>
     /// Compares the two positions.

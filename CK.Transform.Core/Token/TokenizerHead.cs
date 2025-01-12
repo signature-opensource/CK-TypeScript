@@ -250,7 +250,7 @@ public ref struct TokenizerHead
         Throw.CheckArgument( errorType.IsError() );
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
         var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
-        return new TokenError( errorType, default, errorMessage, p, _leadingTrivias, ImmutableArray<Trivia>.Empty );
+        return new TokenError( errorType, default, errorMessage, p, _leadingTrivias, Trivia.Empty );
     }
 
     /// <summary>
@@ -329,8 +329,8 @@ public ref struct TokenizerHead
         {
             text = default;
             leading = _leadingTrivias;
-            _leadingTrivias = ImmutableArray<Trivia>.Empty;
-            trailing = ImmutableArray<Trivia>.Empty;
+            _leadingTrivias = Trivia.Empty;
+            trailing = Trivia.Empty;
         }
         if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
         var t = new TokenError( errorType, text, errorMessage, p, leading, trailing );

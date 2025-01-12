@@ -58,7 +58,8 @@ public sealed class EnsureImportStatement : TransformStatement
                 Throw.DebugAssert( existingNameIdx >= 0 );
                 var existingName = exists.NamedImports[existingNameIdx];
 
-                // Same import path: this is a serious candidate... IF it is not bound to another exported symbol.
+                // Same module: this is a serious candidate... IF it is not bound to another exported symbol.
+                // And if it is not from the same Module, this is an error.
                 if( exists.ImportPath == toMerge.ImportPath )
                 {
                     if( existingName.ExportedName != named.ExportedName )
@@ -73,7 +74,7 @@ public sealed class EnsureImportStatement : TransformStatement
                         // - If the existing import is not a "type". Nothing to do.
                         // - If the existing type is a "type" (and the toMerge one is not).
                         //   We must remove the "type" from the existing one.
-                        if( existingName.Type && !named.Type )
+                        if( existingName.TypeOnly && !named.TypeOnly )
                         {
                             if( exists.TypeOnly )
                             {
@@ -130,15 +131,46 @@ public sealed class EnsureImportStatement : TransformStatement
         // Cleanup toMerge.
         if( handledNames != null )
         {
-            foreach( var n in handledNames ) toMerge.NamedImports.Remove( n );
+            RemoveHandledNamedImports( toMerge, handledNames );
         }
-        // Second, try to reuse an existing import to avoid a new import statement 
+        // Second, try to reuse an existing import to avoid a new import statement.
         foreach( var named in toMerge.NamedImports )
         {
-            foreach( var import in editor.SourceCode.Spans.OfType<ImportStatement>() )
+            ImportStatement? best = null;
+            foreach( var import in editor.Spans.OfType<ImportStatement>() )
             {
-                if( toMerge.ImportPath != import.ImportPath ) continue;
+                // Namespace excludes named imports.
+                // Even if could merge a regular import in a TypeOnly statement without DefaultImport,
+                // we avoid reverting the type only definition and prefer creating a new statement.
+                if( toMerge.ImportPath == import.ImportPath
+                    && import.Namespace == null
+                    && !(import.TypeOnly && !named.TypeOnly) )
+                {
+                    if( import.DefaultImport == null )
+                    {
+                        // This is the best possible match: no DefaultImport.
+                        best = import;
+                        break;
+                    }
+                    else
+                    {
+                        // Keep the last one as a fallback.
+                        best = import;
+                    }
+                }
             }
+            if( best != null )
+            {
+                best.AddNamedImport( editor, named );
+                // We are good.
+                handledNames ??= new List<ImportLine.NamedImport>();
+                handledNames.Add( named );
+            }
+        }
+        // Cleanup toMerge.
+        if( handledNames != null )
+        {
+            RemoveHandledNamedImports( toMerge, handledNames );
         }
         if( !toMerge.SideEffectOnly || toMergeInitialSideEffectOnly )
         {
@@ -146,9 +178,6 @@ public sealed class EnsureImportStatement : TransformStatement
             // and inserts in the the source code (after the last import or at the beginning of the source).
             var importLine = toMerge.ToString();
             Token newText = new Token( TokenType.GenericAny, importLine, Trivia.NewLine );
-            // Since we rely on the lastImport position to insert the new statement, we must
-            // update any change.
-            editor.ApplyChanges();
             int insertionPoint = lastImport?.Span.End ?? 0;
             editor.InsertBefore( insertionPoint, newText );
             // We then create a brand new (1 token length) ImportStatement with the toMerge line
@@ -168,7 +197,7 @@ public sealed class EnsureImportStatement : TransformStatement
             // Indexed ImportStatement by named imports. 
             existingNamedImports = new Dictionary<string, ImportStatement>();
             lastImport = null;
-            foreach( var import in editor.SourceCode.Spans.OfType<ImportStatement>() )
+            foreach( var import in editor.Spans.OfType<ImportStatement>() )
             {
                 // If we are ensuring a side-effect only "import '...';", we must just check that
                 // the import path doesn't exist.
@@ -286,6 +315,12 @@ public sealed class EnsureImportStatement : TransformStatement
                 lastImport = import;
             }
             return false;
+        }
+
+        static void RemoveHandledNamedImports( ImportLine toMerge, List<ImportLine.NamedImport> handledNames )
+        {
+            foreach( var n in handledNames ) toMerge.NamedImports.Remove( n );
+            handledNames.Clear();
         }
     }
 }
