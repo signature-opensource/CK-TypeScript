@@ -139,24 +139,24 @@ public static class TokenTypeExtensions
     /// <summary>
     /// Computes a type for a line comment with a given start delimiter length.
     /// </summary>
-    /// <param name="commentStartLength">The starting delimiter length. Must be greater than 0 and lower than 8.</param>
+    /// <param name="commentStartLength">The starting delimiter length. Must be greater than 0 and lower than 16.</param>
     /// <returns>The line comment type.</returns>
     public static TokenType GetTriviaLineCommentType( int commentStartLength )
     {
-        Throw.CheckOutOfRangeArgument( commentStartLength >= 1 && commentStartLength < 8 );
+        Throw.CheckOutOfRangeArgument( commentStartLength >= 1 && commentStartLength < 16 );
         return TokenType.TriviaClassBit | (TokenType)commentStartLength;
     }
 
     /// <summary>
     /// Computes a type for a block comment with a given start and end delimiter lengths.
     /// </summary>
-    /// <param name="commentStartLength">The starting delimiter length. Must be greater than 0 and lower than 8.</param>
+    /// <param name="commentStartLength">The starting delimiter length. Must be greater than 0 and lower than 16.</param>
     /// <param name="commentEndLength">The starting delimiter length. Must be greater than 0 and lower than 8.</param>
     /// <returns>The block comment type.</returns>
     public static TokenType GetTriviaBlockCommentType( int commentStartLength, int commentEndLength )
     {
         Throw.CheckOutOfRangeArgument( commentEndLength >= 1 && commentEndLength < 8 );
-        return GetTriviaLineCommentType( commentStartLength ) | (TokenType)(commentEndLength << 3);
+        return GetTriviaLineCommentType( commentStartLength ) | (TokenType)(commentEndLength << 4);
     }
 
     /// <summary>
@@ -164,14 +164,14 @@ public static class TokenTypeExtensions
     /// </summary>
     /// <param name="type">this token type.</param>
     /// <returns>The number of characters of the starting delimiter. 0 if this is not a comment trivia type.</returns>
-    public static int GetTriviaCommentStartLength( this TokenType type ) => IsTrivia( type ) ? ((int)type & 7) : 0;
+    public static int GetTriviaCommentStartLength( this TokenType type ) => IsTrivia( type ) ? ((int)type & 15) : 0;
 
     /// <summary>
     /// Gets the comment end length.
     /// </summary>
     /// <param name="type">this token type.</param>
     /// <returns>The number of characters of the ending delimiter. 0 if this is not a block comment trivia type.</returns>
-    public static int GetTriviaCommentEndLength( this TokenType type ) => IsTrivia( type ) ? (((int)type >> 3) & 7) : 0;
+    public static int GetTriviaCommentEndLength( this TokenType type ) => IsTrivia( type ) ? (((int)type >> 4) & 7) : 0;
 
     /// <summary>
     /// Gets a one char known <see cref="TokenType"/> or <see cref="TokenType.None"/> if it is not defined.

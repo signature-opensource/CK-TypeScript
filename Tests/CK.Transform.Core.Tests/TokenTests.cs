@@ -34,19 +34,33 @@ public class TokenTests
         tLine1.CommentStartLength.Should().Be( 1 );
         tLine1.CommentEndLength.Should().Be( 0 );
 
-        TokenType line7 = TokenTypeExtensions.GetTriviaLineCommentType( 7 );
-        line7.IsTriviaWhitespace().Should().BeFalse();
-        line7.IsTriviaBlockComment().Should().BeFalse();
-        line7.IsTriviaLineComment().Should().BeTrue();
-        line7.GetTriviaCommentStartLength().Should().Be( 7 );
-        line7.GetTriviaCommentEndLength().Should().Be( 0 );
+        TokenType line4 = TokenTypeExtensions.GetTriviaLineCommentType( 4 );
+        line4.IsTriviaWhitespace().Should().BeFalse();
+        line4.IsTriviaBlockComment().Should().BeFalse();
+        line4.IsTriviaLineComment().Should().BeTrue();
+        line4.GetTriviaCommentStartLength().Should().Be( 4 );
+        line4.GetTriviaCommentEndLength().Should().Be( 0 );
 
-        var tLine7 = new Trivia( line7, $"1234567 biggest delimiter is 7 characters long.{Environment.NewLine}" );
-        tLine7.IsWhitespace.Should().BeFalse();
-        tLine7.IsBlockComment.Should().BeFalse();
-        tLine7.IsLineComment.Should().BeTrue();
-        tLine7.CommentStartLength.Should().Be( 7 );
-        tLine7.CommentEndLength.Should().Be( 0 );
+        var tLine4 = new Trivia( line4, $"1234 delimiter.{Environment.NewLine}" );
+        tLine4.IsWhitespace.Should().BeFalse();
+        tLine4.IsBlockComment.Should().BeFalse();
+        tLine4.IsLineComment.Should().BeTrue();
+        tLine4.CommentStartLength.Should().Be( 4 );
+        tLine4.CommentEndLength.Should().Be( 0 );
+
+        TokenType line15 = TokenTypeExtensions.GetTriviaLineCommentType( 15 );
+        line15.IsTriviaWhitespace().Should().BeFalse();
+        line15.IsTriviaBlockComment().Should().BeFalse();
+        line15.IsTriviaLineComment().Should().BeTrue();
+        line15.GetTriviaCommentStartLength().Should().Be( 15 );
+        line15.GetTriviaCommentEndLength().Should().Be( 0 );
+
+        var tLine15 = new Trivia( line15, $"123456156789ABCDEF biggest delimiter is 15 characters long.{Environment.NewLine}" );
+        tLine15.IsWhitespace.Should().BeFalse();
+        tLine15.IsBlockComment.Should().BeFalse();
+        tLine15.IsLineComment.Should().BeTrue();
+        tLine15.CommentStartLength.Should().Be( 15 );
+        tLine15.CommentEndLength.Should().Be( 0 );
 
         TokenType block1 = TokenTypeExtensions.GetTriviaBlockCommentType( 1, 1 );
         block1.IsTriviaWhitespace().Should().BeFalse();
@@ -62,19 +76,47 @@ public class TokenTests
         tBlock1.CommentStartLength.Should().Be( 1 );
         tBlock1.CommentEndLength.Should().Be( 1 );
 
-        TokenType block7 = TokenTypeExtensions.GetTriviaBlockCommentType( 7, 7);
-        block7.IsTriviaWhitespace().Should().BeFalse();
-        block7.IsTriviaBlockComment().Should().BeTrue();
-        block7.IsTriviaLineComment().Should().BeFalse();
-        block7.GetTriviaCommentStartLength().Should().Be( 7 );
-        block7.GetTriviaCommentEndLength().Should().Be( 7 );
+        TokenType block4 = TokenTypeExtensions.GetTriviaBlockCommentType( 4, 4 );
+        block4.IsTriviaWhitespace().Should().BeFalse();
+        block4.IsTriviaBlockComment().Should().BeTrue();
+        block4.IsTriviaLineComment().Should().BeFalse();
+        block4.GetTriviaCommentStartLength().Should().Be( 4 );
+        block4.GetTriviaCommentEndLength().Should().Be( 4 );
 
-        var tBlock7 = new Trivia( block7, $"1234567 smallest delimiter. 1234567" );
-        tBlock7.IsWhitespace.Should().BeFalse();
-        tBlock7.IsBlockComment.Should().BeTrue();
-        tBlock7.IsLineComment.Should().BeFalse();
-        tBlock7.CommentStartLength.Should().Be( 7 );
-        tBlock7.CommentEndLength.Should().Be( 7 );
+        var tBlock4 = new Trivia( block4, $"1234 delimiter. 1234" );
+        tBlock4.IsWhitespace.Should().BeFalse();
+        tBlock4.IsBlockComment.Should().BeTrue();
+        tBlock4.IsLineComment.Should().BeFalse();
+        tBlock4.CommentStartLength.Should().Be( 4 );
+        tBlock4.CommentEndLength.Should().Be( 4 );
+
+        TokenType block15_7 = TokenTypeExtensions.GetTriviaBlockCommentType( 15, 7 );
+        block15_7.IsTriviaWhitespace().Should().BeFalse();
+        block15_7.IsTriviaBlockComment().Should().BeTrue();
+        block15_7.IsTriviaLineComment().Should().BeFalse();
+        block15_7.GetTriviaCommentStartLength().Should().Be( 15 );
+        block15_7.GetTriviaCommentEndLength().Should().Be( 7 );
+
+        var tblock15_7 = new Trivia( block15_7, $"123456789ABCDEF biggest delimiter. 1234567" );
+        tblock15_7.IsWhitespace.Should().BeFalse();
+        tblock15_7.IsBlockComment.Should().BeTrue();
+        tblock15_7.IsLineComment.Should().BeFalse();
+        tblock15_7.CommentStartLength.Should().Be( 15 );
+        tblock15_7.CommentEndLength.Should().Be( 7 );
+
+        TokenType blockCDATA = TokenTypeExtensions.GetTriviaBlockCommentType( 9, 3 );
+        blockCDATA.IsTriviaWhitespace().Should().BeFalse();
+        blockCDATA.IsTriviaBlockComment().Should().BeTrue();
+        blockCDATA.IsTriviaLineComment().Should().BeFalse();
+        blockCDATA.GetTriviaCommentStartLength().Should().Be( 9 );
+        blockCDATA.GetTriviaCommentEndLength().Should().Be( 3 );
+
+        var tBlockCDATA = new Trivia( blockCDATA, $"<![CDATA[ Xml CDATA is 9,3 ]]>" );
+        tBlockCDATA.IsWhitespace.Should().BeFalse();
+        tBlockCDATA.IsBlockComment.Should().BeTrue();
+        tBlockCDATA.IsLineComment.Should().BeFalse();
+        tBlockCDATA.CommentStartLength.Should().Be( 9 );
+        tBlockCDATA.CommentEndLength.Should().Be( 3 );
     }
 
     [Test]

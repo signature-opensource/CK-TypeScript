@@ -155,8 +155,8 @@ public readonly struct Trivia : IEquatable<Trivia>
     {
         get
         {
-            Throw.DebugAssert( _tokenType.GetTriviaCommentStartLength() == ((int)_tokenType & 7) );
-            return ((int)_tokenType & 7);
+            Throw.DebugAssert( _tokenType.GetTriviaCommentStartLength() == ((int)_tokenType & 15) );
+            return ((int)_tokenType & 15);
         }
     }
 
@@ -168,8 +168,8 @@ public readonly struct Trivia : IEquatable<Trivia>
     {
         get
         {
-            Throw.DebugAssert( _tokenType.GetTriviaCommentEndLength() == (((int)_tokenType >> 3) & 7) );
-            return ((int)_tokenType >> 3) & 7;
+            Throw.DebugAssert( _tokenType.GetTriviaCommentEndLength() == (((int)_tokenType >> 4) & 7) );
+            return ((int)_tokenType >> 4) & 7;
         }
     }
 

@@ -65,21 +65,22 @@ public enum TokenType
     Whitespace = TriviaClassBit,
 
     /// <summary>
-    /// Currently unused bit. Must be 0.
-    /// </summary>
-    TriviaUnusedBit = 1 << 6,
-
-    /// <summary>
     /// Mask for the length of the comment start. Use <see cref="TokenTypeExtensions.GetTriviaCommentStartLength(TokenType)"/> 
     /// to retrieve this information.
+    /// <para>
+    /// A comment start can be at most 15 characters long.
+    /// </para>
     /// </summary>
-    TriviaCommentStartLengthMask = 3,
+    TriviaCommentStartLengthMask = 15,
 
     /// <summary>
     /// Mask for the length of the comment start. Use <see cref="TokenTypeExtensions.GetTriviaCommentEndLength(TokenType)"/> 
     /// to retrieve this information.
+    /// <para>
+    /// A comment end can be at most 7 characters long.
+    /// </para>
     /// </summary>
-    TriviaCommentEndLengthMask = 7 << 3,
+    TriviaCommentEndLengthMask = 7 << 4,
 
     /// <summary>
     /// Mask for both start and end comment length.

@@ -96,7 +96,7 @@ public static class TriviaHeadExtensions
     }
 
     /// <summary>
-    /// Xml comment is a block comment that starts with "<!--" and ends with "-->".
+    /// Xml comment is a block comment that starts with "&lt;!--" and ends with "--&gt;".
     /// </summary>
     /// <param name="c">This head.</param>
     public static void AcceptXmlComment( this ref TriviaHead c )
@@ -111,6 +111,26 @@ public static class TriviaHeadExtensions
             else
             {
                 c.Accept( TokenTypeExtensions.GetTriviaBlockCommentType( 4, 3 ), i + 3 );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Xml CDATA is a block comment that starts with "&lt;![CDATA[" and ends with "]]&gt;".
+    /// </summary>
+    /// <param name="c">This head.</param>
+    public static void AcceptXmlCDATA( this ref TriviaHead c )
+    {
+        if( c.Head.StartsWith( "<![CDATA[" ) )
+        {
+            int i = c.Head.IndexOf( "]]>" );
+            if( i < 0 )
+            {
+                c.EndOfInput( TokenTypeExtensions.GetTriviaBlockCommentType( 9, 3 ) );
+            }
+            else
+            {
+                c.Accept( TokenTypeExtensions.GetTriviaBlockCommentType( 9, 3 ), i + 3 );
             }
         }
     }
