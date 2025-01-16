@@ -278,7 +278,7 @@ public ref struct TokenizerHead
         _head = _head.Slice( tokenLength );
         // Trivia handling.
         leading = _leadingTrivias;
-        var c = new TriviaHead( _head, _memText, _triviaBuilder );
+        var c = new TriviaHead( _head, _memText, _triviaBuilder, _lowLevelTokenizer.HandleWhiteSpaceTrivias );
         c.ParseTrailingTrivias( _triviaParser );
         trailing = _triviaBuilder.DrainToImmutable();
         // Before preloading the leading trivia for the next token, save the
@@ -542,7 +542,7 @@ public ref struct TokenizerHead
         // Creates the Trivia head and collects every possible trivias thanks to the
         // current trivia parser.
         _headBeforeTrivia = _head;
-        var c = new TriviaHead( _head, _memText, _triviaBuilder );
+        var c = new TriviaHead( _head, _memText, _triviaBuilder, _lowLevelTokenizer.HandleWhiteSpaceTrivias );
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );

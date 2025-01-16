@@ -12,7 +12,7 @@ public enum TokenType
 
     /// <summary>
     /// There is at most 23 classes of token type.
-    /// The last (and smallest one with only 256 possible values) is the <see cref="TriviaClassNumber"/>.
+    /// The last (and smallest one with only 128 possible values) is the <see cref="TriviaClassNumber"/>.
     /// <para>
     /// Error class number is 0 (this is the signed bit n°31).
     /// </para>
@@ -50,11 +50,21 @@ public enum TokenType
     /// Class for trivias (whitespace and comments).
     /// <para>
     /// This is the token type class n°23 and the last possible class.
+    /// There are only 7 bits available for this class: 3 bits encodes the length of the starting delimiter
+    /// and 4 bits encodes the length of the ending delimiter.
     /// See <see cref="Trivia"/>.
     /// </para>
     /// </summary>
     TriviaClassNumber = 23,
+
+    /// <summary>
+    /// Trivia class bit.
+    /// </summary>
     TriviaClassBit = 1 << (31 - TriviaClassNumber),
+
+    /// <summary>
+    /// Trivia class mask.
+    /// </summary>
     TriviaClassMask = -1 << (31 - TriviaClassNumber),
 
     #region Trivia

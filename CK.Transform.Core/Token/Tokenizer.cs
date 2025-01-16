@@ -25,7 +25,8 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     /// <summary>
     /// Initializes a new Tokenizer.
     /// </summary>
-    protected Tokenizer()
+    /// <param name="handleWhiteSpaceTrivias">False to not handle <see cref="TokenType.Whitespace"/>.</param>
+    protected Tokenizer( bool handleWhiteSpaceTrivias = true )
     {
         _triviaBuilder = ImmutableArray.CreateBuilder<Trivia>();
         _tokenCollector = new List<Token>();

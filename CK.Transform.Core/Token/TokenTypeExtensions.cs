@@ -71,18 +71,22 @@ public static class TokenTypeExtensions
     /// </summary>
     /// <param name="classNumber">The number to reserve.</param>
     /// <param name="tokenClassName">The token class name.</param>
-    public static void ReserveTokenClass( int classNumber, string tokenClassName )
+    /// <returns>The class number.</returns>
+    public static int ReserveTokenClass( int classNumber, string tokenClassName )
     {
         Throw.CheckOutOfRangeArgument( classNumber >= 0 && classNumber <= (int)TokenType.MaxClassNumber );
         Throw.CheckNotNullOrWhiteSpaceArgument( tokenClassName );
-        var already = _classNames[classNumber];
-        if( already != null )
+        lock( _classNames )
         {
-            Throw.InvalidOperationException( $"The class '{tokenClassName}' cannot use n°{classNumber}, this number is already reserved by '{already}'." );
+            var already = _classNames[classNumber];
+            if( already != null )
+            {
+                Throw.InvalidOperationException( $"The class '{tokenClassName}' cannot use n°{classNumber}, this number is already reserved by '{already}'." );
+            }
+            _classNames[classNumber] = tokenClassName;
         }
-        _classNames[classNumber] = tokenClassName;
+        return classNumber;
     }
-
 
     /// <summary>
     /// Gets whether this is <see cref="TokenType.None"/> or <see cref="TokenType.ErrorClassBit"/> is set.
@@ -96,7 +100,7 @@ public static class TokenTypeExtensions
 
     /// <summary>
     /// Gets whether this token type is a <see cref="Trivia"/>, including
-    /// <see cref="TokenType.Whitespace"/>.
+    /// <see cref="TokenType.Whitespace"/> and possibly on error (<see cref="TokenType.ClassMaskAllowError"/> is used).
     /// <para>
     /// Only Trivia (not <see cref="Token"/>) can carry a trivia token type.
     /// </para>

@@ -40,15 +40,13 @@ sealed class TestAnalyzer : Tokenizer, IAnalyzer
     }
 
     /// <summary>
-    /// Accepts nested <c>/* ... /* ... */ ... */</c> comments, classical <c>// line comments</c>
-    /// and <c>&lt;!-- ... --&gt;</c> xml comments.
+    /// Accepts nested <c>/* ... /* ... */ ... */</c> comments and classical <c>// line comments</c>.
     /// </summary>
     /// <param name="c"></param>
     protected override void ParseTrivia( ref TriviaHead c )
     {
         c.AcceptCLikeRecursiveStarComment();
         c.AcceptCLikeLineComment();
-        c.AcceptXmlComment();
     }
 
     protected override TokenError? Tokenize( ref TokenizerHead head )

@@ -15,31 +15,19 @@ public ref struct TriviaHead
 {
     ReadOnlySpan<char> _head;
     readonly ImmutableArray<Trivia>.Builder _collector;
+    readonly bool _handleWhiteSpaceTrivias;
     readonly ReadOnlyMemory<char> _text;
     int _idxText;
     int _length;
 
-    /// <summary>
-    /// Initializes a new head on a text.
-    /// </summary>
-    /// <param name="text">The text to parse.</param>
-    /// <param name="collector">The collector of <see cref="Trivia"/>.</param>
-    /// <param name="start">The starting index to consider in the text.</param>
-    public TriviaHead( ref ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector, int start = 0 )
-    {
-        _head = text.Span.Slice( start );
-        _idxText = start;
-        _text = text;
-        _collector = collector;
-    }
-
-    internal TriviaHead( ReadOnlySpan<char> head, ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector )
+    internal TriviaHead( ReadOnlySpan<char> head, ReadOnlyMemory<char> text, ImmutableArray<Trivia>.Builder collector, bool handleWhiteSpaceTrivias )
     {
         Throw.DebugAssert( text.Length >= head.Length );
         _head = head;
         _idxText = text.Length - head.Length;
         _text = text;
         _collector = collector;
+        _handleWhiteSpaceTrivias = handleWhiteSpaceTrivias;
     }
 
     /// <summary>
@@ -106,7 +94,7 @@ public ref struct TriviaHead
         for(; ; )
         {
             // A leading trivia eats all the whitespaces.
-            ParseWhiteSpaces();
+            if( _handleWhiteSpaceTrivias ) ParseWhiteSpaces();
             if( IsEndOfInput ) return;
             int currentLength = _length;
             parser?.Invoke( ref this );
@@ -140,7 +128,7 @@ public ref struct TriviaHead
     public void ParseAny( params ImmutableArray<TriviaParser> parsers )
     {
         if( IsEndOfInput ) return;
-        ParseWhiteSpaces();
+        if( _handleWhiteSpaceTrivias ) ParseWhiteSpaces();
         foreach( var parser in parsers ) 
         {
             if( IsEndOfInput ) return;
@@ -166,7 +154,7 @@ public ref struct TriviaHead
     {
         if( IsEndOfInput ) return;
         // A trailing trivia stops at the end of line...
-        if( char.IsWhiteSpace( _head[0] ) )
+        if( _handleWhiteSpaceTrivias && char.IsWhiteSpace( _head[0] ) )
         {
             bool eol = false;
             int iS = 0;
