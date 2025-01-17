@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Transform.Core;
-using FluentAssertions;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Html.Transform.Tests;
@@ -38,14 +38,14 @@ public class InjectIntoTests
         ...text.
         """
         )]
-    public void first_injection_ever( string source, string transformer, string result )
+    public async Task first_injection_ever_Async( string source, string transformer, string result )
     {
-        var h = new TransformerHost();
+        var h = new TransformerHost( new HtmlLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer );
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().Should().Be( result );
+        await Assert.That( sourceCode.ToString() ).IsEqualTo( result );
     }
 
 }

@@ -145,4 +145,25 @@ public readonly record struct LowLevelToken( TokenType TokenType, int Length )
         return new LowLevelToken( knownSingle, 1 );
     }
 
+    /// <summary>
+    /// Very simple sting parsing. The first character is the quote (typically ' or " but may be any other
+    /// character) that is used as the closing quote. Backslach \ escapes the following characters whatever it is.
+    /// </summary>
+    /// <param name="head">The head to parse.</param>
+    /// <returns>A token with type <see cref="TokenType.GenericString"/> or <see cref="TokenType.ErrorUnterminatedString"/>.</returns>
+    public static LowLevelToken BasicallyReadQuotedString( ReadOnlySpan<char> head )
+    {
+        var q = head[0];
+        int iS = 0;
+        bool escape = false;
+        for(; ; )
+        {
+            if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
+            if( escape ) continue;
+            var c = head[iS];
+            if( c == q ) return new LowLevelToken( TokenType.GenericString, iS + 1 );
+            escape = c == '\\';
+        }
+    }
+
 }

@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript.Transform;
 
-sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
+public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
 {
     public string LanguageName => TypeScriptLanguage._languageName;
 
@@ -36,7 +36,9 @@ sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
             var t = Scan( ref head );
             if( t is TokenError e )
             {
-                return e.TokenType == TokenType.EndOfInput ? null : e;
+                return e.TokenType is TokenType.EndOfInput or TokenType.None
+                        ? null
+                        : e;
             }
             // Handles import statement (but not import(...) functions).
             if( t.Text.Span.Equals( "import", StringComparison.Ordinal )

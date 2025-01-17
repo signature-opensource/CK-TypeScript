@@ -1,41 +1,41 @@
 using CK.Core;
 using CK.Transform.Core;
-using FluentAssertions;
-using NUnit.Framework;
+using System.Linq;
+using System.Threading.Tasks;
+using TUnit.Assertions.Extensions;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
 
-[TestFixture]
 public class TransformerParsingTests
 {
     [Test]
-    public void Empty_minimal_function()
+    public async Task Empty_minimal_function_Async()
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" );
         Throw.DebugAssert( f != null );
-        f.Body.Statements.Should().HaveCount( 0 );
+        await Assert.That( f.Body.Statements.Count ).IsEqualTo( 0 );
     }
 
     [Test]
-    public void named_function()
+    public async Task named_function_Async()
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" );
         Throw.DebugAssert( f != null );
-        f.Name.Should().Be( "MyTransformer" );
-        f.Target.Should().BeNull();
+        await Assert.That( f.Name ).IsEqualTo( "MyTransformer" );
+        await Assert.That( f.Target ).IsNull();
     }
 
     [Test]
-    public void named_with_empty_target_function()
+    public async Task named_with_empty_target_function_Async()
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" );
         Throw.DebugAssert( f != null );
-        f.Name.Should().Be( "MyTransformer" );
-        f.Target.Should().NotBeNull().And.BeEmpty();
+        await Assert.That( f.Name ).IsEqualTo( "MyTransformer" );
+        await Assert.That( f.Target ).IsNotNull().And.HasLength().Zero;
     }
 
     [Test]
@@ -43,9 +43,9 @@ public class TransformerParsingTests
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer on "the target!" as begin end""" );
-        Throw.DebugAssert( f != null );
-        f.Name.Should().BeNull();
-        f.Target.Should().Be( "the target!" );
+        Throw.CheckState( f != null );
+        Throw.CheckState( f.Name == null );
+        Throw.CheckState( f.Target == "the target!" );
     }
 
     [Test]
@@ -59,9 +59,9 @@ public class TransformerParsingTests
                     begin
                     end
                     """"" );
-        Throw.DebugAssert( f != null );
-        f.Name.Should().BeNull();
-        f.Target.Should().Be( "Some one-line text." );
+        Throw.CheckState( f != null );
+        Throw.CheckState( f.Name == null );
+        Throw.CheckState( f.Target == "Some one-line text." );
     }
 
     [Test]
@@ -70,7 +70,7 @@ public class TransformerParsingTests
         var h = new TransformerHost();
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
-            h.TryParseFunction( TestHelper.Monitor, """""
+            Throw.CheckState( h.TryParseFunction( TestHelper.Monitor, """""
                     create transform transformer on """
                                          More than
                                          one-line
@@ -78,9 +78,8 @@ public class TransformerParsingTests
                                          """
                     begin
                     end
-                    """"" )
-            .Should().BeNull();
-            logs.Should().ContainMatch( "Expected single line (found 3 lines). @1,33 while parsing:*" );
+                    """"" ) == null );
+            Throw.CheckState( logs.Any( l => l.StartsWith( "Expected single line (found 3 lines). @1,33 while parsing:" ) ) );
         }
     }
 

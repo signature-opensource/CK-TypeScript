@@ -9,7 +9,7 @@ namespace CK.Html.Transform;
 
 public sealed class HtmlLanguage : TransformLanguage
 {
-    internal const string _languageName = "TypeScript";
+    internal const string _languageName = "Html";
 
     public HtmlLanguage()
         : base( _languageName )

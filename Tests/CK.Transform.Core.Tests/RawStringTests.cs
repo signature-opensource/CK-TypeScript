@@ -1,102 +1,84 @@
 using CK.Core;
 using CK.Transform.Core;
 using CK.Transform.Core.Tests.Helpers;
-using FluentAssertions;
-using NUnit.Framework;
 using System;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
 
 // Use the TranformFunction on "target" to test the string...
-// Waiting for my brain to decide what a (PEG) Matcher is.
-[TestFixture]
 public class RawStringTests
 {
-    // NUnit TestCase fails with these strings. Using TestCaseSource instead.
-    public static object[] Source_valid_single_line_RawString_tests =
-    [
-        new []
-        {
-            """ /*Empty string*/ "" """,
-            ""
-        },
-        new []
-        {
-            """ /*regular string*/ "I'm a regular string..." """,
-            "I'm a regular string..."
-        },
-        new []
-        {
-            " /*String can end with a quote...*/ \"\"\"sticky \"end\"\"\"\"",
-            "sticky \"end\""
-        },
-        new []
-        {
-            """ /*No backslash escape!*/ "This \n works (with the backslash)" """,
-            "This \\n works (with the backslash)"
-        }
-    ];
-    [TestCaseSource( nameof( Source_valid_single_line_RawString_tests ) )]
+    [Test]
+    [Arguments( """ /*Empty string*/ "" """,
+                "" )]
+    [Arguments( """ /*regular string*/ "I'm a regular string..." """,
+                "I'm a regular string...")]
+    [Arguments( " /*String can end with a quote...*/ \"\"\"sticky \"end\"\"\"\"",
+                "sticky \"end\"" )]
+    [Arguments( """ /*No backslash escape!*/ "This \n works (with the backslash)" """,
+                "This \\n works (with the backslash)" )]
     public void valid_single_line_RawString_tests( string code, string expected )
     {
         var codeSource = new TestAnalyzer().ParseOrThrow( code );
         var rawString = codeSource.Tokens[0] as RawString;
-        Throw.DebugAssert( rawString != null );
-        rawString.Lines.Should().HaveCount( 1 );
-        rawString.Lines[0].Should().Be( expected );
+        Throw.CheckState( rawString != null );
+        Throw.CheckState( rawString.Lines.Length == 1 );
+        Throw.CheckState( rawString.Lines[0] == expected );
     }
 
-    [TestCase( """
+    [Test]
+    public async Task invalid_single_line_RawString_tests_Async()
+    {
+        string code = """
                     /*Invalid end of line!*/
 
                     "The closing quote is not on this line!
                     "
                     ERROR_TOLERANT
-               """,
-               "Single-line string must not contain end of line.*" )]
-    public void invalid_single_line_RawString_tests( string code, string errorMessage )
-    {
+                    """;
         var r = new TestAnalyzer().Parse( code );
-        r.Success.Should().BeFalse();
-        Throw.DebugAssert( r.FirstError != null );
+        Throw.CheckState( r.Success is false );
+        Throw.CheckState( r.FirstError != null );
 
-        r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstError.ErrorMessage.Should().Match( errorMessage );
+        Throw.CheckState( r.SourceCode.Tokens.Count == 2 );
+        Throw.CheckState( r.FirstError == r.SourceCode.Tokens[0] );
+        await Assert.That( r.FirstError.ErrorMessage ).IsEqualTo( "Single-line string must not contain end of line." );
 
-        r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
+        await Assert.That( r.SourceCode.Tokens[1].ToString() ).IsEqualTo( "ERROR_TOLERANT" );
     }
 
-
-    [TestCase( """Some "no closing quote...  """ )]
-    [TestCase( """"
-               Some """no closing ""quotes""...
-               """" )]
+    [Test]
+    [Arguments( """Some "no closing quote...  """ )]
+    [Arguments( """"
+                Some """no closing ""quotes""...
+                """" )]
     public void unterminated_string_covers_the_whole_text( string code )
     {
         var r = new TestAnalyzer().Parse( code );
-        r.Success.Should().BeFalse();
-        Throw.DebugAssert( r.FirstError != null );
-        r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[1] );
-        r.FirstError.ErrorMessage.Should().Match( "Unterminated string.*" );
+        Throw.CheckState( r.Success is false );
+        Throw.CheckState( r.FirstError != null );
+        Throw.CheckState( r.SourceCode.Tokens.Count == 2 );
+        Throw.CheckState( r.FirstError == r.SourceCode.Tokens[1] );
+        Throw.CheckState( r.FirstError.ErrorMessage.StartsWith( "Unterminated string." ) );
 
-        r.SourceCode.Tokens[0].ToString().Should().Be( "Some" );
-        r.SourceCode.Tokens[1].Text.Length.Should().Be( code.Length - 4 - 1 );
+        Throw.CheckState( r.SourceCode.Tokens[0].ToString() == "Some" );
+        Throw.CheckState( r.SourceCode.Tokens[1].Text.Length == code.Length - 4 - 1 );
     }
 
-    [TestCase( """"
+    [Test]
+    [Arguments( """"
                     /*Single empty line*/
 
                     """
 
                     """
 
-               """", """
+                """", """
 
                      """ )]
-    [TestCase( """"
+    [Arguments( """"
                     /*Lines...*/
 
                             """
@@ -109,7 +91,7 @@ public class RawStringTests
 
                     """
 
-               """", """
+                """", """
                      First,
                      Second,
                      
@@ -118,7 +100,7 @@ public class RawStringTests
                          Below2
                      
                      """ )]
-    [TestCase( """"""""""
+    [Arguments( """"""""""
                     /*As many quotes as needed by the content.*/
 
                             """"""
@@ -130,7 +112,7 @@ public class RawStringTests
                     """""Five"""""
                     """"""
 
-               """""""""", """""""
+                """""""""", """""""
                            "",
                            "One",
                            ""Two"",
@@ -138,23 +120,24 @@ public class RawStringTests
                            """"Four"""",
                            """""Five"""""
                            """"""" )]
-    public void valid_multi_line_RawString_tests( string code, string expected )
+    public async Task valid_multi_line_RawString_tests_Async( string code, string expected )
     {
         var codeSource = new TestAnalyzer().ParseOrThrow( code );
         var rawString = codeSource.Tokens[0] as RawString;
-        Throw.DebugAssert( rawString != null );
-        rawString.Lines.Should().BeEquivalentTo( expected.Split( Environment.NewLine ) );
+        Throw.CheckState( rawString != null );
+        await Assert.That( rawString.Lines ).IsEquivalentTo( expected.Split( Environment.NewLine ) );
     }
 
-    [TestCase( """"
+    [Test]
+    [Arguments( """"
                     /*There must be at least one line.*/
 
                     """
                     """
                     ERROR_TOLERANT
 
-               """", "Invalid multi-line raw string: at least one line must appear between the \"\"\".*" )]
-    [TestCase( """"
+                """", "Invalid multi-line raw string: at least one line must appear between the \"\"\"." )]
+    [Arguments( """"
                     /*No trailing chars on the first line.*/
 
                     """ NOWAY
@@ -162,8 +145,8 @@ public class RawStringTests
                     """
                     ERROR_TOLERANT
 
-               """", "Invalid multi-line raw string: there must be no character after the opening \"\"\" characters.*" )]
-    [TestCase( """"""""
+                """", "Invalid multi-line raw string: there must be no character after the opening \"\"\" characters." )]
+    [Arguments( """"""""
                     /*No leading chars on the last line (error messages display the right number of quotes).*/
                
                     """"""
@@ -171,8 +154,8 @@ public class RawStringTests
                   X """"""
                     ERROR_TOLERANT
 
-               """""""", "Invalid multi-line raw string: there must be no character on the line before the closing \"\"\"\"\"\" characters.*" )]
-    [TestCase( """"""""
+                """""""", "Invalid multi-line raw string: there must be no character on the line before the closing \"\"\"\"\"\" characters." )]
+    [Arguments( """"""""
                     /*No  chars before the ending column (1/2).*/
                
                     """"""
@@ -180,8 +163,8 @@ public class RawStringTests
                     """"""
                     ERROR_TOLERANT
 
-               """""""", "Invalid multi-line raw string: there must be no character before column 5.*" )]
-    [TestCase( """"""""
+                 """""""", "Invalid multi-line raw string: there must be no character before column 3." )]
+    [Arguments( """"""""
                     /*No  chars before the ending column (2/2).*/
                
                     """"""
@@ -189,18 +172,18 @@ public class RawStringTests
                     """"""
                     ERROR_TOLERANT
 
-               """""""", "Invalid multi-line raw string: there must be no character before column 5 in '    XSome'.*" )]
-    public void invalid_multi_line_RawString_tests( string code, string errorMessage )
+                """""""", "Invalid multi-line raw string: there must be no character before column 4 in '   XSome'." )]
+    public async Task invalid_multi_line_RawString_tests_Async( string code, string errorMessage )
     {
         var r = new TestAnalyzer().Parse( code );
-        r.Success.Should().BeFalse();
-        Throw.DebugAssert( r.FirstError != null );
+        Throw.CheckState( r.Success is false );
+        Throw.CheckState( r.FirstError != null );
 
-        r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstError.ErrorMessage.Should().Match( errorMessage );
+        await Assert.That( r.SourceCode.Tokens.Count ).IsEqualTo( 2 );
+        Throw.CheckState( r.FirstError == r.SourceCode.Tokens[0] );
+        await Assert.That( r.FirstError.ErrorMessage ).StartsWith( errorMessage );
 
-        r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
+        await Assert.That( r.SourceCode.Tokens[1].ToString() ).IsEqualTo( "ERROR_TOLERANT" );
     }
 
 

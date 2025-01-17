@@ -1,15 +1,13 @@
 using CK.Core;
-using CK.Transform.Core;
-using FluentAssertions;
-using NUnit.Framework;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
 
-[TestFixture]
 public class InjectIntoTests
 {
-    [TestCase(
+    [Test]
+    [Arguments(
         """
         create transform transformer
         begin
@@ -39,14 +37,14 @@ public class InjectIntoTests
         end
         """
         )]
-    public void first_injection_ever( string source, string transformer, string result )
+    public async Task first_injection_ever_Async( string source, string transformer, string result )
     {
         var h = new TransformerHost();
         var function = h.TryParseFunction( TestHelper.Monitor, transformer );
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().Should().Be( result );
+        await Assert.That( sourceCode.ToString() ).IsEqualTo( result );
     }
 
 }

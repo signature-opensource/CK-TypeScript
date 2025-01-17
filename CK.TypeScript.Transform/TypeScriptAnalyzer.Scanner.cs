@@ -81,8 +81,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
                     head.AcceptLowLevelToken();
                 }
                 break;
-            case TokenType.None:
-                return head.CreateHardError( "Unrecognized token." );
+            case TokenType.None when (head.EndOfInput is not null):
             case TokenType.EndOfInput:
                 Throw.DebugAssert( head.EndOfInput is not null );
                 if( _braceDepth > 0 )
@@ -90,6 +89,8 @@ sealed partial class TypeScriptAnalyzer // Scanner
                     return head.CreateHardError( "Missing closing '}'." );
                 }
                 return head.EndOfInput;
+            case TokenType.None when (head.EndOfInput is null):
+                return head.CreateHardError( "Unrecognized token." );
             default:
                 head.AcceptLowLevelToken();
                 break;
@@ -117,7 +118,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 }
                 if( t.TokenType is TokenType.DoubleQuote or TokenType.SingleQuote )
                 {
-                    return ReadString( head );
+                    return LowLevelToken.BasicallyReadQuotedString( head );
                 }
                 if( t.TokenType is TokenType.BackTick )
                 {
@@ -223,22 +224,6 @@ sealed partial class TypeScriptAnalyzer // Scanner
             return new LowLevelToken( TokenType.GenericNumber, iS );
         }
 
-        // Very simple because here again we don't validate anything. The \ escaper simply skips the next char.
-        // This handles the javascript line continuation and any escape sequence by simply ignoring it.
-        static LowLevelToken ReadString( ReadOnlySpan<char> head )
-        {
-            var q = head[0];
-            int iS = 0;
-            bool escape = false;
-            for(; ; )
-            {
-                if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
-                if( escape ) continue;
-                var c = head[iS];
-                if( c == q ) return new LowLevelToken( TokenType.GenericString, iS + 1 );
-                escape = c == '\\';
-            }
-        }
     }
 
     static LowLevelToken ReadInterpolatedSegment( ReadOnlySpan<char> head, bool start )
