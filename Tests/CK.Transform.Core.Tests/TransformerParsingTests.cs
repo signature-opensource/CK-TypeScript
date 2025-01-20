@@ -1,8 +1,8 @@
 using CK.Core;
 using CK.Transform.Core;
+using FluentAssertions;
+using NUnit.Framework;
 using System.Linq;
-using System.Threading.Tasks;
-using TUnit.Assertions.Extensions;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
@@ -10,32 +10,32 @@ namespace CK.Transform.Core.Tests;
 public class TransformerParsingTests
 {
     [Test]
-    public async Task Empty_minimal_function_Async()
+    public void Empty_minimal_function()
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" );
         Throw.DebugAssert( f != null );
-        await Assert.That( f.Body.Statements.Count ).IsEqualTo( 0 );
+        f.Body.Statements.Should().HaveCount( 0 );
     }
 
     [Test]
-    public async Task named_function_Async()
+    public void named_function()
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" );
         Throw.DebugAssert( f != null );
-        await Assert.That( f.Name ).IsEqualTo( "MyTransformer" );
-        await Assert.That( f.Target ).IsNull();
+        f.Name.Should().Be( "MyTransformer" );
+        f.Target.Should().BeNull();
     }
 
     [Test]
-    public async Task named_with_empty_target_function_Async()
+    public void named_with_empty_target_function()
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" );
         Throw.DebugAssert( f != null );
-        await Assert.That( f.Name ).IsEqualTo( "MyTransformer" );
-        await Assert.That( f.Target ).IsNotNull().And.HasLength().Zero;
+        f.Name.Should().Be( "MyTransformer" );
+        f.Target.Should().NotBeNull().And.HaveLength( 0 );
     }
 
     [Test]

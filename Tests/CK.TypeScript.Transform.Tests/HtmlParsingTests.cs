@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
@@ -21,6 +22,7 @@ public class HtmlParsingTests
     {
         var a = new TypeScriptAnalyzer();
         var result = a.Parse( "🙃" );
+        Throw.DebugAssert( result != null && result.HardError != null );
         result.HardError.ErrorMessage.Should().Be( "Unrecognized token." );
     }
 }

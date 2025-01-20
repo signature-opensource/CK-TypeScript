@@ -34,7 +34,7 @@ enum HtmlTokenType
 
     /// <summary>
     /// The token is a starting <c>&lt;tag...</c> element.
-    /// If <see cref="ClosingElement"/> is not set, then the following token is a <see cref="TokenType.GenericIdentifier"/> that is the first attribute name.
+    /// If <see cref="EndingTag"/> is not set, then the following token is a <see cref="TokenType.GenericIdentifier"/> that is the first attribute name.
     /// <para>
     /// Per https://html.spec.whatwg.org/multipage/syntax.html#syntax-tag-name:
     /// <list type="bullet">
@@ -62,11 +62,11 @@ enum HtmlTokenType
     /// allow any characters to follow, up to a whitespace, /, &lt; or &gt;.
     /// </para>
     /// </summary>
-    StartingElement = HtmlClassBit | 1 << 7,
+    StartingTag = HtmlClassBit | 1 << 7,
 
     /// <summary>
-    /// The token is a closing <c>&lt;/element&gt;</c> or an auto-closing element
-    /// <c>&lt;element/&gt;</c> without attributes after it if <see cref="StartingElement"/> is
+    /// The token is a closing <c>&lt;/element&gt;</c> or an <see cref="EmptyElement"/> 
+    /// <c>&lt;element/&gt;</c> without attributes if <see cref="StartingTag"/> is
     /// also set.
     /// <para>
     /// Applying https://html.spec.whatwg.org/multipage/parsing.html#parse-errors:
@@ -76,10 +76,36 @@ enum HtmlTokenType
     /// </list>
     /// </para>
     /// </summary>
-    ClosingElement = HtmlClassBit | 1 << 6,
+    EndingTag = HtmlClassBit | 1 << 6,
 
     /// <summary>
-    /// The token is <c>/&gt;</c> or <c>&gt;</c>. 
+    /// The token is both a <see cref="StartingTag"/> and a <see cref="EndingTag"/>: <c>&lt;element/&gt;</c> without attributes.
+    /// <para>
+    /// In terms of structure, it is the same as a <see cref="EmptyVoidElement"/> but whether the tag is actually one of the void elements
+    /// is not tested.
+    /// </para>
     /// </summary>
-    ClosingTag = HtmlClassBit | 1 << 5
+    EmptyElement = StartingTag | EndingTag,
+
+    /// <summary>
+    /// The token is <c>&lt;element&gt;</c> without attributes.
+    /// It is one of the a <see cref="EmptyVoidElement"/> if <see cref="EmptyElement"/> is also set.
+    /// </summary>
+    StartingEmptyElement = HtmlClassBit | 1 << 5,
+
+    /// <summary>
+    /// The token is <c>/&gt;</c>. 
+    /// </summary>
+    EndTokenTag = HtmlClassBit | 1 << 4,
+
+    /// <summary>
+    /// Void elements are: <c>area</c>, <c>base</c>, <c>br</c>, <c>col</c>, <c>embed</c>, <c>hr</c>,
+    /// <c>img</c>, <c>input</c>, <c>link</c>, <c>meta</c>, <c>source</c>, <c>track</c>, <c>wbr</c>
+    /// </summary>
+    EmptyVoidElement = HtmlClassBit | 1 << 3,
+
+    /// <summary>
+    /// The token starts a void element: <c>&lt;br</c>. There are at least one attribute.
+    /// </summary>
+    StartingVoidElement = StartingTag | EmptyVoidElement
 }

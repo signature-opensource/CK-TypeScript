@@ -1,16 +1,18 @@
 using CK.Core;
 using CK.Transform.Core;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CK.Html.Transform;
 
 
 
-public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
+public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
 {
     bool _inAttribute;
 
@@ -35,6 +37,7 @@ public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
 
     protected override void Reset( ReadOnlyMemory<char> text )
     {
+        _inAttribute = false;
         base.Reset( text );
     }
 
@@ -58,36 +61,65 @@ public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
 
         text:
         while( iS < head.Length && head[iS] != '<' ) iS++;
-        Throw.DebugAssert( head[iS] == '<' );
-        if( ++iS == head.Length ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS );
-        if( !char.IsAsciiLetter( head[iS] ) ) goto text;
-        if( iS > 1 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS );
-
-        // In a tag name: <[a-zA-Z]
+        Throw.DebugAssert( iS == head.Length || head[iS] == '<' );
+        if( iS >= head.Length - 1 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, head.Length );
+        // A tag must start with [A-Za-z].
+        // If the next char is not a ascii letter or the ending slash, continue as text.
+        var c = head[++iS];
+        bool isEnding = c == '/';
+        if( !isEnding )
+        {
+            if( !char.IsAsciiLetter( c ) ) goto text;
+            // If there is text before the <[A-Za-z], emit it. The tag will be processed next time.
+            if( iS > 2 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
+        }
+        else
+        {
+            if( iS >= head.Length - 1 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, head.Length );
+            c = head[++iS];
+            if( !char.IsAsciiLetter( c ) ) goto text;
+            // If there is text before the </[A-Za-z], emit it. The tag will be processed next time.
+            if( iS > 3 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
+        }
+        // In a tag name: <[a-zA-Z] or a closing </[a-zA-Z].
         bool isWhitespace = false;
-        var c = head[iS];
         while( !(isWhitespace = char.IsWhiteSpace( c )) && c != '/' && c != '>' && c != '<' )
         {
-            // End of input: emit the "<tag" as text.
+            // End of input: emit the "<tag" or "</tag" as text.
             if( ++iS == head.Length ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS );
             c = head[iS];
         }
+        // Eats all the white spaces after the tag name.
         int endTagName = iS;
         if( isWhitespace )
         {
             do
             {
-                // End of input: emit the "<tag" (or "<tag     ") as text.
+                // End of input: emit the "<tag" (or "</tag     ") as text.
                 if( ++iS == head.Length ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS );
                 c = head[iS];
             }
             while( char.IsWhiteSpace( c ) && c != '/' && c != '>' && c != '<' );
         }
+        if( isEnding )
+        {
+            for( ; ; )
+            {
+                if( c == '>' )
+                {
+                    return new LowLevelToken( (TokenType)HtmlTokenType.EndingTag, iS + 1 );
+                }
+                if( c == '<' || ++iS == head.Length ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS );
+                c = head[iS];
+            }
+        }
         if( c == '>' ) 
         {
-            // StartingElement (without attributes).
-            // May be one of the a void element (<br> or <area  >) but we don't handle this here.
-            return new LowLevelToken( (TokenType)HtmlTokenType.StartingElement, iS );
+            // StartingEmptyElement or EmptyVoidElement (no attributes).
+            var t = VoidElements().IsMatch( head.Slice( 1, endTagName - 1 ) )
+                        ? HtmlTokenType.EmptyVoidElement
+                        : HtmlTokenType.StartingEmptyElement;
+            return new LowLevelToken( (TokenType)t, iS + 1 );
         }
         if( c == '/' ) // Should now be '>'... but who knows...
         {
@@ -95,7 +127,7 @@ public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
             if( ++iS == head.Length ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS );
             // Invalid "<tag /x" where 'x' is not '>': consider it text.
             if( head[iS] != '>' ) goto text;
-            return new LowLevelToken( (TokenType)HtmlTokenType.StartingElement, iS );
+            return new LowLevelToken( (TokenType)HtmlTokenType.EmptyElement, iS + 1 );
         }
         if( c == '<' )
         {
@@ -105,7 +137,10 @@ public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
         // We are on the start of an attribute name. The next token (GenericIdentifier) will have the whitespace as a Trivia,
         // and the following tokens use regular whitespace trivia handling.
         _inAttribute = true;
-        return new LowLevelToken( (TokenType)HtmlTokenType.StartingElement, endTagName );
+        var tVoid = VoidElements().IsMatch( head.Slice( 1, endTagName - 1 ) )
+            ? HtmlTokenType.StartingVoidElement
+            : HtmlTokenType.StartingTag;
+        return new LowLevelToken( (TokenType)tVoid, endTagName );
     }
 
     LowLevelToken LowLevelTokenizeAttribute( ReadOnlySpan<char> head )
@@ -114,22 +149,22 @@ public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
         if( c == '<' )
         {
             // Here we give up: error.
-            return new LowLevelToken( (TokenType)HtmlTokenType.StartingElement | TokenType.ErrorClassBit, 1 );
+            return new LowLevelToken( (TokenType)HtmlTokenType.StartingTag | TokenType.ErrorClassBit, 1 );
         }
         if( c == '/' )
         {
             if( head.Length == 1 || head[1] != '>' )
             {
                 // Here we give up: error.
-                return new LowLevelToken( (TokenType)HtmlTokenType.ClosingTag | TokenType.ErrorClassBit, 1 );
+                return new LowLevelToken( (TokenType)HtmlTokenType.EndTokenTag | TokenType.ErrorClassBit, 1 );
             }
             _inAttribute = false;
-            return new LowLevelToken( (TokenType)HtmlTokenType.ClosingTag, 2 );
+            return new LowLevelToken( (TokenType)HtmlTokenType.EndTokenTag, 2 );
         }
         if( c == '>' )
         {
             _inAttribute = false;
-            return new LowLevelToken( (TokenType)HtmlTokenType.ClosingTag, 1 );
+            return new LowLevelToken( TokenType.GreaterThan, 1 );
         }
         if( c == '=' ) return new LowLevelToken( TokenType.Equals, 1 );
         if( c == '\'' || c == '"' ) return LowLevelToken.BasicallyReadQuotedString( head );
@@ -167,4 +202,8 @@ public sealed class HtmlAnalyzer : Tokenizer, IAnalyzer
             head.AcceptLowLevelToken();
         }
     }
+
+   
+    [GeneratedRegex( "^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture )]
+    private static partial Regex VoidElements();
 }
