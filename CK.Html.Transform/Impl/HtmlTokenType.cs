@@ -33,8 +33,7 @@ enum HtmlTokenType
     Text = HtmlClassBit,
 
     /// <summary>
-    /// The token is a starting <c>&lt;tag...</c> element.
-    /// If <see cref="EndingTag"/> is not set, then the following token is a <see cref="TokenType.GenericIdentifier"/> that is the first attribute name.
+    /// The token is a starting <c>&lt;tag...</c> element with at least one attribute.
     /// <para>
     /// Per https://html.spec.whatwg.org/multipage/syntax.html#syntax-tag-name:
     /// <list type="bullet">
@@ -65,9 +64,7 @@ enum HtmlTokenType
     StartingTag = HtmlClassBit | 1 << 7,
 
     /// <summary>
-    /// The token is a closing <c>&lt;/element&gt;</c> or an <see cref="EmptyElement"/> 
-    /// <c>&lt;element/&gt;</c> without attributes if <see cref="StartingTag"/> is
-    /// also set.
+    /// The token is a closing <c>&lt;/element&gt;</c>.
     /// <para>
     /// Applying https://html.spec.whatwg.org/multipage/parsing.html#parse-errors:
     /// <list type="bullet">
@@ -79,7 +76,7 @@ enum HtmlTokenType
     EndingTag = HtmlClassBit | 1 << 6,
 
     /// <summary>
-    /// The token is both a <see cref="StartingTag"/> and a <see cref="EndingTag"/>: <c>&lt;element/&gt;</c> without attributes.
+    /// The token is a <c>&lt;element/&gt;</c> without attributes.
     /// <para>
     /// In terms of structure, it is the same as a <see cref="EmptyVoidElement"/> but whether the tag is actually one of the void elements
     /// is not tested.
@@ -89,7 +86,6 @@ enum HtmlTokenType
 
     /// <summary>
     /// The token is <c>&lt;element&gt;</c> without attributes.
-    /// It is one of the a <see cref="EmptyVoidElement"/> if <see cref="EmptyElement"/> is also set.
     /// </summary>
     StartingEmptyElement = HtmlClassBit | 1 << 5,
 
@@ -99,13 +95,14 @@ enum HtmlTokenType
     EndTokenTag = HtmlClassBit | 1 << 4,
 
     /// <summary>
-    /// Void elements are: <c>area</c>, <c>base</c>, <c>br</c>, <c>col</c>, <c>embed</c>, <c>hr</c>,
-    /// <c>img</c>, <c>input</c>, <c>link</c>, <c>meta</c>, <c>source</c>, <c>track</c>, <c>wbr</c>
+    /// Void elements are <c>&lt;tag&gt;</c> without attributes where tag is:
+    /// <c>area</c>, <c>base</c>, <c>br</c>, <c>col</c>, <c>embed</c>, <c>hr</c>, <c>img</c>,
+    /// <c>input</c>, <c>link</c>, <c>meta</c>, <c>source</c>, <c>track</c>, or <c>wbr</c>.
     /// </summary>
     EmptyVoidElement = HtmlClassBit | 1 << 3,
 
     /// <summary>
-    /// The token starts a void element: <c>&lt;br</c>. There are at least one attribute.
+    /// The token starts a void element: <c>&lt;br</c> with at least one attribute.
     /// </summary>
     StartingVoidElement = StartingTag | EmptyVoidElement
 }

@@ -36,16 +36,26 @@ namespace CK.Html.Transform;
 /// </summary>
 public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
 {
+    readonly List<(Token Start, int Index)> _startingTokens;
+
+    /// <summary>
+    /// Get the "Html" language.
+    /// </summary>
     public string LanguageName => HtmlLanguage._languageName;
 
+    /// <summary>
+    /// Initialize a new HtmlAnalyzer.
+    /// </summary>
     public HtmlAnalyzer()
         : base( handleWhiteSpaceTrivias: false  )
     {
+        _startingTokens = new List<(Token,int)>();
     }
 
     protected override void Reset( ReadOnlyMemory<char> text )
     {
         HandleWhiteSpaceTrivias = false;
+        _startingTokens.Clear();
         base.Reset( text );
     }
 
@@ -208,7 +218,56 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
                         ? null
                         : head.CreateHardError( "Invalid markup.", type );
             }
-            head.AcceptLowLevelToken();
+            var token = head.AcceptLowLevelToken();
+            switch( (int)type )
+            {
+                case (int)HtmlTokenType.StartingEmptyElement:
+                case (int)HtmlTokenType.StartingVoidElement:
+                case (int)HtmlTokenType.StartingTag:
+                    _startingTokens.Add( (token, head.LastTokenIndex) );
+                    break;
+                case (int)TokenType.GreaterThan when _startingTokens[^1].Start.TokenType == (TokenType)HtmlTokenType.StartingVoidElement:
+                case (int)HtmlTokenType.EndTokenTag:
+                    Throw.DebugAssert( _startingTokens.Count > 0 );
+                    int startIndex = _startingTokens[^1].Index;
+                    _startingTokens.RemoveAt( _startingTokens.Count - 1 );
+                    head.AddSourceSpan( new HtmlElementSpan( startIndex, head.LastTokenIndex + 1 ) );
+                    break;
+                case (int)HtmlTokenType.EndingTag:
+                    var name = token.GetHtmlTagName();
+                    Throw.DebugAssert( name.Length > 0 );
+                    for( int i = _startingTokens.Count - 1; i >= 0; i-- )
+                    {
+                        var start = _startingTokens[i];
+                        var eName = start.Start.Text.Span;
+                        if( eName.Equals( name, StringComparison.OrdinalIgnoreCase ) )
+                        {
+                            for( int j = _startingTokens.Count - 1; j > i; j-- )
+                            {
+                                var closingStart = _startingTokens[j].Index;
+                                head.AddSourceSpan( new HtmlElementSpan( closingStart, head.LastTokenIndex ) );
+                            }
+                            head.AddSourceSpan( new HtmlElementSpan( start.Index, head.LastTokenIndex + 1 ) );
+                            _startingTokens.RemoveRange( i, _startingTokens.Count - i );
+                            break;
+                        }
+                    }
+                    // If we didn't find a matching element name, we let the unmatched closin tag as-is.
+                    break;
+                // We don't create a 1-length span for <tag/> or <br> (void elements) without attributes.
+                // The token is enough.
+                //
+                // case (int)HtmlTokenType.EmptyElement:
+                // case (int)HtmlTokenType.EmptyVoidElement:
+                //    head.AddSourceSpan( new HtmlElementSpan( head.LastTokenIndex, head.LastTokenIndex + 1 ) );
+                //    break;
+                default:
+                    Throw.DebugAssert( type is TokenType.GenericIdentifier or TokenType.Equals or TokenType.GenericString or TokenType.GreaterThan
+                                            or (TokenType)HtmlTokenType.Text
+                                            or (TokenType)HtmlTokenType.EmptyElement
+                                            or (TokenType)HtmlTokenType.EmptyVoidElement );
+                    break;
+            }
         }
     }
 

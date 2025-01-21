@@ -3,12 +3,7 @@ using CK.Transform.Core;
 namespace CK.Html.Transform;
 
 /// <summary>
-/// Covers an Html element.
-/// When parsed, the last token is not necessarily a <see cref="HtmlTokenType.EndingTag"/>
-/// because of void elements <c>area</c>, <c>base</c>, <c>br</c>, <c>col</c>, <c>embed</c>, <c>hr</c>,
-/// <c>img</c>, <c>input</c>, <c>link</c>, <c>meta</c>, <c>source</c>, <c>track</c>, <c>wbr</c>
-/// (see https://html.spec.whatwg.org/multipage/syntax.html#elements-2) and because
-/// of https://html.spec.whatwg.org/multipage/syntax.html#optional-tags.
+/// Covers an Html element with its attributes, children and closing tag if any.
 /// </summary>
 public class HtmlElementSpan : SourceSpan
 {

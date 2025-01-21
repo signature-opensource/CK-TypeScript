@@ -3,6 +3,39 @@ using System.ComponentModel;
 
 namespace CK.Html.Transform;
 
+public static class TokenExtensions
+{
+    /// <summary>
+    /// Gets the tag name if this token is a html starting or ending tag.
+    /// </summary>
+    /// <param name="t">This token.</param>
+    /// <returns>The tag name.</returns>
+    public static ReadOnlySpan<char> GetHtmlTagName( this Token t )
+    {
+        return (HtmlTokenType)t.TokenType switch
+        {
+            HtmlTokenType.StartingTag
+            or HtmlTokenType.StartingVoidElement
+            or HtmlTokenType.StartingEmptyElement
+            or HtmlTokenType.EmptyElement
+            or HtmlTokenType.EmptyVoidElement => GetName( 1, t ),
+            HtmlTokenType.EndingTag => GetName( 2, t ),
+            _ => default
+        };
+        
+        static ReadOnlySpan<char> GetName( int offset, Token t )
+        {
+            var s = t.Text.Span.Slice( offset );
+            return s.Slice( 0, s.IndexOfAny( ' ', '/', '>' ) );
+        }
+    }
+
+}
+
+
+/// <summary>
+/// Reserves the TokenType class n°22 for "Html" and provides Html token type as predicates.
+/// </summary>
 public static class TokenTypeExtensions
 {
     static TokenTypeExtensions()
