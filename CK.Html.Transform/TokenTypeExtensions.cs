@@ -80,7 +80,7 @@ public static class TokenTypeExtensions
     /// The token starts a void element: <c>&lt;br</c>. There is at least one attribute. The closing tag should be
     /// <c>&gt;</c> but may be <c>/&gt;</c>.
     /// </summary>
-    public static bool IsStartingVoidElement( this TokenType type ) => type == (TokenType)HtmlTokenType.StartingVoidElement;
+    public static bool IsHtmlStartingVoidElement( this TokenType type ) => type == (TokenType)HtmlTokenType.StartingVoidElement;
 
     /// <summary>
     /// The token is <c>/&gt;</c>.

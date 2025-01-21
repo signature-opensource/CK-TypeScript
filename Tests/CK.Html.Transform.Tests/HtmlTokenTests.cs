@@ -166,7 +166,7 @@ public class HtmlTokenTests
             // Embed is a void element.
             var sourceCode = a.ParseOrThrow( "<embed a = 'd' >" );
             sourceCode.Tokens.Should().HaveCount( 5 );
-            sourceCode.Tokens[0].TokenType.IsStartingVoidElement().Should().BeTrue();
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingVoidElement().Should().BeTrue();
             sourceCode.Tokens[0].ToString().Should().Be( "<embed" );
             sourceCode.Tokens[1].TokenType.Should().Be( TokenType.GenericIdentifier );
             sourceCode.Tokens[1].ToString().Should().Be( "a" );
@@ -179,16 +179,16 @@ public class HtmlTokenTests
         }
         {
             // Track is a void element.
-            var sourceCode = a.ParseOrThrow( "<track a = 'd' />" );
+            var sourceCode = a.ParseOrThrow( "<track a = value />" );
             sourceCode.Tokens.Should().HaveCount( 5 );
-            sourceCode.Tokens[0].TokenType.IsStartingVoidElement().Should().BeTrue();
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingVoidElement().Should().BeTrue();
             sourceCode.Tokens[0].ToString().Should().Be( "<track" );
             sourceCode.Tokens[1].TokenType.Should().Be( TokenType.GenericIdentifier );
             sourceCode.Tokens[1].ToString().Should().Be( "a" );
             sourceCode.Tokens[2].TokenType.Should().Be( TokenType.Equals );
             sourceCode.Tokens[2].ToString().Should().Be( "=" );
-            sourceCode.Tokens[3].TokenType.Should().Be( TokenType.GenericString );
-            sourceCode.Tokens[3].ToString().Should().Be( "'d'" );
+            sourceCode.Tokens[3].TokenType.Should().Be( TokenType.GenericIdentifier );
+            sourceCode.Tokens[3].ToString().Should().Be( "value" );
             sourceCode.Tokens[4].TokenType.IsHtmlEndTokenTag().Should().BeTrue();
             sourceCode.Tokens[4].ToString().Should().Be( "/>" );
         }
@@ -223,7 +223,47 @@ public class HtmlTokenTests
             sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().Should().BeTrue();
             sourceCode.Tokens[0].ToString().Should().Be( "</div ignored / />" );
         }
+        {
+            var sourceCode = a.ParseOrThrow( "</div </a </yes>" );
+            sourceCode.Tokens.Should().HaveCount( 3 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
+            sourceCode.Tokens[0].ToString().Should().Be( "</div " );
+            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
+            sourceCode.Tokens[1].ToString().Should().Be( "</a " );
+            sourceCode.Tokens[2].TokenType.IsHtmlEndingTag().Should().BeTrue();
+            sourceCode.Tokens[2].ToString().Should().Be( "</yes>" );
+        }
     }
 
+    [Test]
+    public void tag_errors_and_comments()
+    {
+        var a = new HtmlAnalyzer();
+        {
+            var sourceCode = a.ParseOrThrow( "<some <!-- comment --> Text " );
+            sourceCode.Tokens.Should().HaveCount( 2 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
+            sourceCode.Tokens[0].ToString().Should().Be( "<some " );
+            sourceCode.Tokens[0].TrailingTrivias.Length.Should().Be( 1 );
+            sourceCode.Tokens[0].TrailingTrivias[0].Content.ToString().Should().Be( "<!-- comment -->" );
 
+            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
+            sourceCode.Tokens[1].ToString().Should().Be( " Text " );
+            sourceCode.Tokens[1].LeadingTrivias.Length.Should().Be( 0 );
+            sourceCode.Tokens[1].TrailingTrivias.Length.Should().Be( 0 );
+        }
+        {
+            var sourceCode = a.ParseOrThrow( "</some <!-- comment --> Text " );
+            sourceCode.Tokens.Should().HaveCount( 2 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
+            sourceCode.Tokens[0].ToString().Should().Be( "</some " );
+            sourceCode.Tokens[0].TrailingTrivias.Length.Should().Be( 1 );
+            sourceCode.Tokens[0].TrailingTrivias[0].Content.ToString().Should().Be( "<!-- comment -->" );
+
+            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
+            sourceCode.Tokens[1].ToString().Should().Be( " Text " );
+            sourceCode.Tokens[1].LeadingTrivias.Length.Should().Be( 0 );
+            sourceCode.Tokens[1].TrailingTrivias.Length.Should().Be( 0 );
+        }
+    }
 }

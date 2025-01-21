@@ -10,40 +10,49 @@ using System.Threading.Tasks;
 
 namespace CK.Html.Transform;
 
-
-
+/// <summary>
+/// HtmlAnalyzer swaps between 2 modes:
+/// <list type="bullet">
+///     <item><term>Text</term>
+///     <description>
+///     Whitespaces are not handled in Trivias. Trivias are only <see cref="TriviaHeadExtensions.AcceptXmlComment(ref TriviaHead, bool)"/>
+///     and <see cref="TriviaHeadExtensions.AcceptXmlCDATA(ref TriviaHead)"/>.
+///     Whitespaces appear in <see cref="TokenTypeExtensions.IsHtmlText(TokenType)"/> tokens.
+///     These tokens are not unified: multiple Text tokens can appear consecutively because of commants or CDATA trivias and invalid syntax
+///     (<c>&lt;div &lt;a &lt;br&gt;</c> is analyzed as "&lt;div " and "&lt;a " texts).
+///     </description>
+///     </item>
+///     <item><term>Element</term>
+///     <description>
+///     Between <c>&lt;tag</c> and <c>&gt;</c> or <c>/&gt;</c> and when there is at least one attribute, whitespaces trivias are handled normally
+///     and attached to <see cref="TokenType.GenericIdentifier"/> (for the attribute name), <see cref="TokenType.Equals"/> and <see cref="TokenType.GenericIdentifier"/>
+///     or <see cref="TokenType.GenericString"/> (for the potential attribute value).
+///     <para>
+///     In this mode, no comment nor CDATA are analyzed.
+///     </para>
+///     </description>
+///     </item>
+/// </list>
+/// </summary>
 public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
 {
-    bool _inAttribute;
-
     public string LanguageName => HtmlLanguage._languageName;
 
     public HtmlAnalyzer()
+        : base( handleWhiteSpaceTrivias: false  )
     {
     }
 
-    /// <summary>
-    /// When in attributes, this is true: <see cref="HtmlTokenType.AttributeName"/>, <see cref="TokenType.Equals"/> and <see cref="HtmlTokenType.AttributeValue"/>
-    /// will have regular trivias whith whitespaces.
-    /// <para>
-    /// This is false outside attributes: <see cref="HtmlTokenType.Text"/> contains whitespaces.
-    /// </para>
-    /// <para>
-    /// Note that we skip &lt;!-- comment --&gt; (and CDATA) to appear in attributes as they are invalid there: in attributes,
-    /// only whitespaces trivias will appear.
-    /// </para>
-    /// </summary>
-    public bool HandleWhiteSpaceTrivias => _inAttribute;
-
     protected override void Reset( ReadOnlyMemory<char> text )
     {
-        _inAttribute = false;
+        HandleWhiteSpaceTrivias = false;
         base.Reset( text );
     }
 
     protected override void ParseTrivia( ref TriviaHead c )
     {
-        if( !_inAttribute )
+        
+        if( !HandleWhiteSpaceTrivias )
         {
             c.AcceptXmlComment();
             c.AcceptXmlCDATA();
@@ -54,11 +63,10 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
     {
         int iS = 0;
 
-        if( _inAttribute )
+        if( HandleWhiteSpaceTrivias )
         {
             return LowLevelTokenizeAttribute( head );
         }
-
         text:
         while( iS < head.Length && head[iS] != '<' ) iS++;
         Throw.DebugAssert( iS == head.Length || head[iS] == '<' );
@@ -136,7 +144,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         }
         // We are on the start of an attribute name. The next token (GenericIdentifier) will have the whitespace as a Trivia,
         // and the following tokens use regular whitespace trivia handling.
-        _inAttribute = true;
+        HandleWhiteSpaceTrivias = true;
         var tVoid = VoidElements().IsMatch( head.Slice( 1, endTagName - 1 ) )
             ? HtmlTokenType.StartingVoidElement
             : HtmlTokenType.StartingTag;
@@ -158,16 +166,18 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
                 // Here we give up: error.
                 return new LowLevelToken( (TokenType)HtmlTokenType.EndTokenTag | TokenType.ErrorClassBit, 1 );
             }
-            _inAttribute = false;
+            HandleWhiteSpaceTrivias = false;
             return new LowLevelToken( (TokenType)HtmlTokenType.EndTokenTag, 2 );
         }
         if( c == '>' )
         {
-            _inAttribute = false;
+            HandleWhiteSpaceTrivias = false;
             return new LowLevelToken( TokenType.GreaterThan, 1 );
         }
         if( c == '=' ) return new LowLevelToken( TokenType.Equals, 1 );
         if( c == '\'' || c == '"' ) return LowLevelToken.BasicallyReadQuotedString( head );
+        // Attribute name or value is an identifier: stops at the first whitespace or one of the
+        // other character that have a meaning.
         int iS = 0;
         while( !char.IsWhiteSpace( c )
                && c != '/' && c != '>' && c != '=' && c != '<' && c != '\'' && c != '"' )
@@ -185,14 +195,13 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         return Parse();
     }
 
-
     protected override TokenError? Tokenize( ref TokenizerHead head )
     {
         for( ; ; )
         {
+            var type = head.LowLevelTokenType;
             // Consider low level token errors as hard errors.
             // No need to be error tolerant here.
-            var type = head.LowLevelTokenType;
             if( type.IsError() )
             {
                 return type is TokenType.EndOfInput or TokenType.None

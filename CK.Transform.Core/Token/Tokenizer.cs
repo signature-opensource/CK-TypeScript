@@ -18,6 +18,7 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     ReadOnlyMemory<char> _text;
     internal readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     readonly List<Token> _tokenCollector;
+    bool _handleWhiteSpaceTrivias;
 
     // This cannot be defined in Trivia (TypeLoadException). To be investigated.
     internal static ImmutableArray<Trivia> OneSpace => ImmutableArray.Create( new Trivia( TokenType.Whitespace, " " ) );
@@ -25,11 +26,23 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     /// <summary>
     /// Initializes a new Tokenizer.
     /// </summary>
-    /// <param name="handleWhiteSpaceTrivias">False to not handle <see cref="TokenType.Whitespace"/>.</param>
+    /// <param name="handleWhiteSpaceTrivias">Initial <see cref="ILowLevelTokenizer.HandleWhiteSpaceTrivias"/> value.</param>
     protected Tokenizer( bool handleWhiteSpaceTrivias = true )
     {
         _triviaBuilder = ImmutableArray.CreateBuilder<Trivia>();
         _tokenCollector = new List<Token>();
+        _handleWhiteSpaceTrivias = handleWhiteSpaceTrivias;
+    }
+
+    bool ILowLevelTokenizer.HandleWhiteSpaceTrivias => _handleWhiteSpaceTrivias;
+
+    /// <summary>
+    /// Gets or sets whether whitespaces trivias must be handled.
+    /// </summary>
+    protected bool HandleWhiteSpaceTrivias
+    {
+        get => _handleWhiteSpaceTrivias;
+        set => _handleWhiteSpaceTrivias = value;
     }
 
     /// <summary>
