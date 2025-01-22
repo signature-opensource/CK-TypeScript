@@ -18,6 +18,7 @@
     "@angular/platform-browser": "^18.2",
     "@angular/platform-browser-dynamic": "^18.2",
     "@angular/router": "^18.2",
+    "ng-zorro-antd": "^19",
     "rxjs": "~7.8",
     "tslib": "^2.3",
     "zone.js": "~0.14.10"
