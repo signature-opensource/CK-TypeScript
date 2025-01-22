@@ -83,7 +83,10 @@ public static class YarnHelper
         return SVersion.Create( packageJson.Version.Major, packageJson.Version.Minor, packageJson.Version.Patch );
     }
 
-    internal static NormalizedPath? GetYarnInstallPath( IActivityMonitor monitor, NormalizedPath targetProjectPath, YarnInstallOption option )
+    internal static NormalizedPath? EnsureYarnInstallAndGetPath( IActivityMonitor monitor,
+                                                                 NormalizedPath targetProjectPath,
+                                                                 YarnInstallOption option,
+                                                                 out Version? version )
     {
         var yarnPath = TryFindYarn( targetProjectPath, out var aboveCount );
         if( yarnPath.HasValue )
@@ -91,7 +94,7 @@ public static class YarnHelper
             var current = yarnPath.Value.LastPart;
             if( current.StartsWith( "yarn-" )
                 && current.Length > 5
-                && Version.TryParse( Path.GetFileNameWithoutExtension( current.AsSpan( 5 ) ), out var version ) )
+                && Version.TryParse( Path.GetFileNameWithoutExtension( current.AsSpan( 5 ) ), out version ) )
             {
                 monitor.Info( $"Yarn {version.ToString( 3 )} found at '{yarnPath}'." );
                 if( version < Version.Parse( AutomaticYarnVersion ) )
@@ -100,6 +103,7 @@ public static class YarnHelper
                     {
                         monitor.Info( $"YarnInstall = AutoUpgrade: upgrading to Yarn {AutomaticYarnVersion}." );
                         yarnPath = AutoInstall( monitor, yarnPath.Value.RemoveLastPart( 3 ), yarnPath );
+                        version = Version.Parse( AutomaticYarnVersion );
                     }
                     else
                     {
@@ -117,6 +121,7 @@ public static class YarnHelper
             if( option == YarnInstallOption.None )
             {
                 monitor.Warn( $"No yarn found in '{targetProjectPath}' or above and YarnInstall is None." );
+                version = null;
             }
             else
             {
@@ -135,6 +140,7 @@ public static class YarnHelper
                     monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{yarnRootPath}'." );
                     yarnPath = AutoInstall( monitor, yarnRootPath, yarnPath );
                 }
+                version = Version.Parse( AutomaticYarnVersion );
             }
         }
         if( yarnPath.HasValue )
@@ -143,9 +149,11 @@ public static class YarnHelper
         }
         return yarnPath;
 
-        static NormalizedPath? AutoInstall( IActivityMonitor monitor, NormalizedPath yarnRootPath, NormalizedPath? previousYarnPath )
+        static NormalizedPath AutoInstall( IActivityMonitor monitor,
+                                            NormalizedPath yarnRootPath,
+                                            NormalizedPath? previousYarnPath )
         {
-            NormalizedPath? yarnPath;
+            NormalizedPath yarnPath;
             var yarnBinDir = yarnRootPath.Combine( ".yarn/releases" );
             monitor.Trace( $"Extracting '{_yarnFileName}' to '{yarnBinDir}'." );
             Directory.CreateDirectory( yarnBinDir );

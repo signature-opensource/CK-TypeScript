@@ -21,5 +21,6 @@
   "scripts": {
     "test": "jest"
   },
-  "ckVersion": 1
+  "ckVersion": 1,
+  "packageManager": "yarn@4.6.0"
 }

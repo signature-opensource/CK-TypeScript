@@ -135,7 +135,8 @@ public class TypeScriptFileAttributeTests
               "ckVersion": 1,
               "peerDependencies": {
                 "@stdlib/symbol-ctor": "~0.2.2"
-              }
+              },
+              "packageManager": "yarn@4.6.0"
             }
 
             """.ReplaceLineEndings() );

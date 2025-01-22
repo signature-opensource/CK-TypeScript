@@ -14,7 +14,7 @@ namespace CK.TS.Angular.Tests;
 public class FromScratchTests
 {
     [Test]
-    [Explicit( "Takes around 40 seconds." )]
+    [Explicit( "Takes about 3 minutes!" )]
     public async Task in_a_TempPath_folder_Async()
     {
         NormalizedPath root = FileUtil.CreateUniqueTimedFolder( Path.GetTempPath(), null, DateTime.UtcNow );
