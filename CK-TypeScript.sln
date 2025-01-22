@@ -86,6 +86,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.TypeScript.Transform.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Html.Transform.Tests", "Tests\CK.Html.Transform.Tests\CK.Html.Transform.Tests.csproj", "{5EC00B39-7F32-402A-82D0-BE37A622605A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Angular.Transform", "CK.Angular.Transform\CK.Angular.Transform.csproj", "{CCCD2BBF-B817-4D4E-9172-459875055B81}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -208,6 +210,10 @@ Global
 		{5EC00B39-7F32-402A-82D0-BE37A622605A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EC00B39-7F32-402A-82D0-BE37A622605A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EC00B39-7F32-402A-82D0-BE37A622605A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCCD2BBF-B817-4D4E-9172-459875055B81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCCD2BBF-B817-4D4E-9172-459875055B81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCCD2BBF-B817-4D4E-9172-459875055B81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCCD2BBF-B817-4D4E-9172-459875055B81}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -233,6 +239,7 @@ Global
 		{C62CCE42-6191-4F35-A372-1025ECC67521} = {BDF1A6D5-0D4A-4C52-9F5D-E7BF0F137848}
 		{78D68FDA-1313-495C-8AE2-1AF8809B86CC} = {BDF1A6D5-0D4A-4C52-9F5D-E7BF0F137848}
 		{5EC00B39-7F32-402A-82D0-BE37A622605A} = {BDF1A6D5-0D4A-4C52-9F5D-E7BF0F137848}
+		{CCCD2BBF-B817-4D4E-9172-459875055B81} = {D755A354-5D50-48D2-AF02-DA766FEFFD0E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {99B45435-DA3D-4967-A869-813B52AE2EF2}
