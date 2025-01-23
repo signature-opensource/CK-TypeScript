@@ -1071,7 +1071,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@yarnpkg/sdks@npm:^3.2":
+"@yarnpkg/sdks@npm:^3.2.0":
   version: 3.2.0
   resolution: "@yarnpkg/sdks@npm:3.2.0"
   dependencies:
@@ -2416,15 +2416,13 @@ __metadata:
   dependencies:
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.9"
-    "@yarnpkg/sdks": "npm:^3.2"
+    "@yarnpkg/sdks": "npm:^3.2.0"
     axios: "npm:^1.7.9"
-    jest: "npm:^29.7"
-    jest-environment-jsdom: "npm:^29.7"
+    jest: "npm:^29.7.0"
+    jest-environment-jsdom: "npm:^29.7.0"
     rxjs: "npm:^7.8.1"
     ts-jest: "npm:^29.2.5"
     typescript: "npm:=5.4.5"
-  peerDependencies:
-    rxjs: ^7.8.1
   languageName: unknown
   linkType: soft
 
@@ -2748,7 +2746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-environment-jsdom@npm:^29.7":
+"jest-environment-jsdom@npm:^29.7.0":
   version: 29.7.0
   resolution: "jest-environment-jsdom@npm:29.7.0"
   dependencies:
@@ -3052,7 +3050,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest@npm:^29.7":
+"jest@npm:^29.7.0":
   version: 29.7.0
   resolution: "jest@npm:29.7.0"
   dependencies:
