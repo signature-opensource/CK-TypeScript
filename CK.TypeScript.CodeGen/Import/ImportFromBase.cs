@@ -83,7 +83,10 @@ abstract class ImportFromBase : ITSImportLine
         _importedNames.Clear();
     }
 
-    internal (object? Owner, string? DefaultImportSymbol, TSImportedName[] ImportedNames) GetSnapshot( object? owner ) => (owner, _defaultImportSymbol, _importedNames.ToArray());
+    internal (object? Owner, string? DefaultImportSymbol, TSImportedName[] ImportedNames) GetSnapshot( object? owner )
+    {
+        return (owner, _defaultImportSymbol, _importedNames.ToArray());
+    }
 
     internal bool WriteImportAndSymbols( ref SmarterStringBuilder b )
     {

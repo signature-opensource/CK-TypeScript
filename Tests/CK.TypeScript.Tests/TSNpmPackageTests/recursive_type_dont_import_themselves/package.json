@@ -17,5 +17,6 @@
     "ts-jest": "^29.2.5",
     "typescript": "=5.4.5"
   },
-  "ckVersion": 1
+  "ckVersion": 1,
+  "packageManager": "yarn@4.6.0"
 }

@@ -275,6 +275,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@angular/cdk@npm:^19.0.0":
+  version: 19.1.0
+  resolution: "@angular/cdk@npm:19.1.0"
+  dependencies:
+    parse5: "npm:^7.1.2"
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": ^19.0.0 || ^20.0.0
+    "@angular/core": ^19.0.0 || ^20.0.0
+    rxjs: ^6.5.3 || ^7.4.0
+  dependenciesMeta:
+    parse5:
+      optional: true
+  checksum: 10/cc32e2a10f7a6aba46fc10d189c21e67bebcdb6b77acc47cc44bd7a1ffb9367ba8b4e92eee5f547f009cd4185cf40fd99234f294efe14bf77300ba5831758e95
+  languageName: node
+  linkType: hard
+
 "@angular/cli@npm:^18.2.10":
   version: 18.2.10
   resolution: "@angular/cli@npm:18.2.10"
@@ -423,6 +440,39 @@ __metadata:
     "@angular/platform-browser": 18.2.9
     rxjs: ^6.5.3 || ^7.4.0
   checksum: 10/6aa528b58fc67cf82651960ecd4fc98a726e12d365e01c8428247671a46440e4151a8c468a3f1af19a7ad1ba988c0eac513dc808bf27c26b8fe72d0bfdc31236
+  languageName: node
+  linkType: hard
+
+"@ant-design/colors@npm:^7.0.0":
+  version: 7.2.0
+  resolution: "@ant-design/colors@npm:7.2.0"
+  dependencies:
+    "@ant-design/fast-color": "npm:^2.0.6"
+  checksum: 10/a65047f1d8821cca1f573dd0d24bb575614b23a8001262ce573f1f1400adc63ca2552f205624ebfeeafb6c8f2e5c32b7b8c970cd13a7febecc027c996e32ee3c
+  languageName: node
+  linkType: hard
+
+"@ant-design/fast-color@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "@ant-design/fast-color@npm:2.0.6"
+  dependencies:
+    "@babel/runtime": "npm:^7.24.7"
+  checksum: 10/94167d70e10d4c267875b97bbe282fe32e6a60aabbfb70dd9f3c5500c559e4c91c4881a364168629ec1c150441e37f0da3fa97d34cb3d24373535a792d91e627
+  languageName: node
+  linkType: hard
+
+"@ant-design/icons-angular@npm:^19.0.0":
+  version: 19.0.0
+  resolution: "@ant-design/icons-angular@npm:19.0.0"
+  dependencies:
+    "@ant-design/colors": "npm:^7.0.0"
+    tslib: "npm:^2.0.0"
+  peerDependencies:
+    "@angular/common": ^19.0.0
+    "@angular/core": ^19.0.0
+    "@angular/platform-browser": ^19.0.0
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10/593487a71a0e0e2cbca79c7ac3377e48173f660ab0f53d01bff1cf6ccc2cc7698075da6ec6d33b9f5ed07f426a393956a20515b7134af9712770b85167e4dbbc
   languageName: node
   linkType: hard
 
@@ -1824,6 +1874,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.21.0, @babel/runtime@npm:^7.24.7":
+  version: 7.26.0
+  resolution: "@babel/runtime@npm:7.26.0"
+  dependencies:
+    regenerator-runtime: "npm:^0.14.0"
+  checksum: 10/9f4ea1c1d566c497c052d505587554e782e021e6ccd302c2ad7ae8291c8e16e3f19d4a7726fb64469e057779ea2081c28b7dbefec6d813a22f08a35712c0f699
+  languageName: node
+  linkType: hard
+
 "@babel/runtime@npm:^7.8.4":
   version: 7.25.9
   resolution: "@babel/runtime@npm:7.25.9"
@@ -1873,6 +1932,13 @@ __metadata:
   version: 0.2.3
   resolution: "@bcoe/v8-coverage@npm:0.2.3"
   checksum: 10/1a1f0e356a3bb30b5f1ced6f79c413e6ebacf130421f15fac5fcd8be5ddf98aedb4404d7f5624e3285b700e041f9ef938321f3ca4d359d5b716f96afa120d88d
+  languageName: node
+  linkType: hard
+
+"@ctrl/tinycolor@npm:^3.6.0":
+  version: 3.6.1
+  resolution: "@ctrl/tinycolor@npm:3.6.1"
+  checksum: 10/f3c77b2d29076402d6b94632975cea1ce11942b05ca65d9108c951ff4d61965184dd7e480296e6625cb6df9e7de8b7938ce36a88cf1794c3b8ac83c908af468e
   languageName: node
   linkType: hard
 
@@ -5512,6 +5578,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"date-fns@npm:^2.16.1":
+  version: 2.30.0
+  resolution: "date-fns@npm:2.30.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.21.0"
+  checksum: 10/70b3e8ea7aaaaeaa2cd80bd889622a4bcb5d8028b4de9162cbcda359db06e16ff6e9309e54eead5341e71031818497f19aaf9839c87d1aba1e27bb4796e758a9
+  languageName: node
+  linkType: hard
+
 "debug@npm:2.6.9":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
@@ -5656,6 +5731,7 @@ __metadata:
     jest: "npm:^29.7"
     jest-environment-jsdom: "npm:^29.7"
     jest-preset-angular: "npm:^14.2.4"
+    ng-zorro-antd: "npm:^19"
     rxjs: "npm:~7.8"
     ts-jest: "npm:^29.2.5"
     tslib: "npm:^2.3"
@@ -8971,6 +9047,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ng-zorro-antd@npm:^19":
+  version: 19.0.2
+  resolution: "ng-zorro-antd@npm:19.0.2"
+  dependencies:
+    "@angular/cdk": "npm:^19.0.0"
+    "@ant-design/icons-angular": "npm:^19.0.0"
+    "@ctrl/tinycolor": "npm:^3.6.0"
+    date-fns: "npm:^2.16.1"
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/animations": ^19.0.0
+    "@angular/common": ^19.0.0
+    "@angular/core": ^19.0.0
+    "@angular/forms": ^19.0.0
+    "@angular/platform-browser": ^19.0.0
+    "@angular/router": ^19.0.0
+  checksum: 10/365bc568c0d9043703b325ac2ce29ccfd629c416f8769cdc300ce9b9891e71026b4aa8ac1f3e6c19409514225c58afe975c352f3db8771e6f4bdf2ea77fea3a0
+  languageName: node
+  linkType: hard
+
 "nice-napi@npm:^1.0.2":
   version: 1.0.2
   resolution: "nice-napi@npm:1.0.2"
@@ -9474,6 +9570,15 @@ __metadata:
   dependencies:
     entities: "npm:^4.5.0"
   checksum: 10/49dabfe848f00e8cad8d9198a094d667fbdecbfa5143ddf8fb708e499b5ba76426c16135c8993b1d8e01827b92e8cfab0a9a248afa6ad7cc6f38aecf5bd017e6
+  languageName: node
+  linkType: hard
+
+"parse5@npm:^7.1.2":
+  version: 7.2.1
+  resolution: "parse5@npm:7.2.1"
+  dependencies:
+    entities: "npm:^4.5.0"
+  checksum: 10/fd1a8ad1540d871e1ad6ca9bf5b67e30280886f1ce4a28052c0cb885723aa984d8cb1ec3da998349a6146960c8a84aa87b1a42600eb3b94495c7303476f2f88e
   languageName: node
   linkType: hard
 

@@ -24,9 +24,10 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     internal TypeScriptFile File => _file;
 
-    public ITSImportLine EnsureLibrary( LibraryImport library ) => DoEnsure( library );
 
-    public void ImportFromLibrary( LibraryImport library, string symbolNames ) => EnsureLibrary( library ).Add( symbolNames );
+    public void ImportFromLibrary( LibraryImport library, string symbolNames ) => DoEnsure( library, "" ).Add( symbolNames );
+
+    public void ImportFromLibrary( (LibraryImport Library, string SubPath) source, string symbolNames ) => DoEnsure( source.Library, source.SubPath ).Add( symbolNames );
 
     public ITSImportLine EnsureFile( IMinimalTypeScriptFile file )
     {
@@ -37,15 +38,19 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     public void ImportFromFile( IMinimalTypeScriptFile file, string symbolNames ) => EnsureFile( file ).Add( symbolNames );
 
-    ImportFromLibrary DoEnsure( LibraryImport library )
+    ImportFromLibrary DoEnsure( LibraryImport library, string subPath )
     {
         Throw.CheckNotNullArgument( library );
         _importsFromLibs ??= new List<ImportFromLibrary>();
         ImportFromLibrary line;
-        int idx = _importsFromLibs.IndexOf( i => i.Library == library );
+        if( subPath.Length > 0 && subPath[0] == '/' )
+        {
+            subPath = subPath.Substring( 1 );
+        }
+        int idx = _importsFromLibs.IndexOf( i => i.Library == library && i.SubPath == subPath );
         if( idx < 0 )
         {
-            line = new ImportFromLibrary( this, library );
+            line = new ImportFromLibrary( this, library, subPath );
             _importsFromLibs.Add( line );
         }
         else
@@ -121,7 +126,7 @@ sealed class FileImportCodePart : ITSFileImportSection
             return Util.ActionVoid;
         }
         var snapshot = new List<(object? Owner, string? DefaultImportSymbol, TSImportedName[] ImportedNames)>();
-        if( _importsFromLibs != null ) snapshot.AddRange( _importsFromLibs.Select( i => i.GetSnapshot( i.Library ) ) );
+        if( _importsFromLibs != null ) snapshot.AddRange( _importsFromLibs.Select( i => i.GetSnapshot( (i.Library, i.SubPath) ) ) );
         if( _importsFromFiles != null ) snapshot.AddRange( _importsFromFiles.Select( i => i.GetSnapshot( i.ImportedFile ) ) );
         if( _importFromLocalCKGen != null ) snapshot.Add( _importFromLocalCKGen.GetSnapshot( null ) );
 
@@ -135,7 +140,7 @@ sealed class FileImportCodePart : ITSFileImportSection
         {
             switch( owner )
             {
-                case LibraryImport library: DoEnsure( library ).SetSnapshot( defSymbol, name ); break;
+                case ValueTuple<LibraryImport, string> lib: DoEnsure( lib.Item1, lib.Item2 ).SetSnapshot( defSymbol, name ); break;
                 case IMinimalTypeScriptFile file: DoEnsure( file ).SetSnapshot( defSymbol, name ); break;
                 default:
                     Throw.DebugAssert( owner is null );

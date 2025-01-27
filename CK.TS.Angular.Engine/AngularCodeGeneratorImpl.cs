@@ -17,7 +17,7 @@ namespace CK.TS.Angular.Engine;
 /// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 {
-    const string _defaultAngularCliVersion = "^18.2.0";
+    const string _defaultAngularCliVersion = "^19";
     const string _conflictFolderName = "_ckConflict_";
 
     ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
