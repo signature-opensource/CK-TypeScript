@@ -89,7 +89,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         {
             if( !char.IsAsciiLetter( c ) ) goto text;
             // If there is text before the <[A-Za-z], emit it. The tag will be processed next time.
-            if( iS > 2 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
+            if( iS > 1 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
         }
         else
         {
@@ -97,7 +97,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
             c = head[++iS];
             if( !char.IsAsciiLetter( c ) ) goto text;
             // If there is text before the </[A-Za-z], emit it. The tag will be processed next time.
-            if( iS > 3 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
+            if( iS > 2 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
         }
         // In a tag name: <[a-zA-Z] or a closing </[a-zA-Z].
         bool isWhitespace = false;
@@ -239,7 +239,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
                     for( int i = _startingTokens.Count - 1; i >= 0; i-- )
                     {
                         var start = _startingTokens[i];
-                        var eName = start.Start.Text.Span;
+                        var eName = start.Start.GetHtmlTagName();
                         if( eName.Equals( name, StringComparison.OrdinalIgnoreCase ) )
                         {
                             for( int j = _startingTokens.Count - 1; j > i; j-- )
