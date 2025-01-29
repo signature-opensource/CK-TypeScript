@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Linq;

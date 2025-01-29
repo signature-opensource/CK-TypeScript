@@ -4,12 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using static CK.Core.ActivityMonitor;
 
 namespace CK.Transform.Core;
 
@@ -161,7 +155,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// <param name="tokens">New tokens to insert. Must not be empty.</param>
     public void InsertAt( int index, params Token[] tokens )
     {
-        Throw.CheckArgument( index >= 0 && index < _tokens.Count );
+        Throw.CheckArgument( index >= 0 && index <= _tokens.Count );
         Throw.CheckArgument( tokens.Length > 0 );
         DoReplace( index, 0, tokens );
     }
@@ -169,11 +163,11 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// <summary>
     /// Inserts new tokens. Spans that start at <paramref name="index"/> will not contain the inserted tokens.
     /// </summary>
-    /// <param name="index"></param>
-    /// <param name="tokens"></param>
+    /// <param name="index">The index of the inserted tokens.</param>
+    /// <param name="tokens">New tokens to insert. Must not be empty.</param>
     public void InsertBefore( int index, params Token[] tokens )
     {
-        Throw.CheckArgument( index >= 0 && index < _tokens.Count );
+        Throw.CheckArgument( index >= 0 && index <= _tokens.Count );
         Throw.CheckArgument( tokens.Length > 0 );
         DoReplace( index, 0, tokens, insertBefore: true );
     }
@@ -213,7 +207,7 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
         }
         else if( delta < 0 )
         {
-            _code._spans.OnRemoveTokens( index + delta, -delta );
+            _code._spans.OnRemoveTokens( index, -delta );
         }
         _code.SetTokens( _tokens.ToImmutableList() );
     }

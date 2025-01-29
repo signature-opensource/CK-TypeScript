@@ -184,6 +184,8 @@ public enum TokenType
 
     /// <inheritdoc cref="BasicTokenType.Colon"/>
     Colon = BasicTokenType.Colon,
+    /// <inheritdoc cref="BasicTokenType.ColonColon"/>
+    ColonColon = BasicTokenType.ColonColon,
     /// <inheritdoc cref="BasicTokenType.Comma"/>
     Comma = BasicTokenType.Comma,
 

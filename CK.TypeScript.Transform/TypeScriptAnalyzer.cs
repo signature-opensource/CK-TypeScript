@@ -2,8 +2,6 @@ using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript.Transform;
 

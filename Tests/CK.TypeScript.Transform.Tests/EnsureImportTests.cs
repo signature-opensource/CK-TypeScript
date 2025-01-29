@@ -9,6 +9,18 @@ namespace CK.TypeScript.Transform.Tests;
 [TestFixture]
 public class EnsureImportTests
 {
+    [TestCase( "n°0", "",
+    """"
+        create typescript transformer
+        begin
+            ensure import { A } from './someFile';
+        end
+        """",
+    """
+        import { A } from './someFile';
+
+        """
+    )]
     [TestCase( "n°1",
     """
         const data = 'data';
@@ -221,7 +233,7 @@ public class EnsureImportTests
         const data = 'data';
         """
     )]
-    public void adding_new_import( string nTest, string source, string transformer, string result )
+    public void merging_imports( string nTest, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer );

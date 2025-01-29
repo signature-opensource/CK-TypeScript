@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
-using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Html.Transform.Tests;

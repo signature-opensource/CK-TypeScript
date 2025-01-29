@@ -159,6 +159,11 @@ public enum BasicTokenType : byte
     Colon,
 
     /// <summary>
+    /// A double colon <c>::</c> (C++ namespace separator).
+    /// </summary>
+    ColonColon,
+
+    /// <summary>
     /// A comma <c>,</c> is often used with a the only semantics to separate items in list.
     /// Note that when expressions must be analyzed, this may (depending on the language and
     /// the way the parser is written) need to be considered as an operator (with an

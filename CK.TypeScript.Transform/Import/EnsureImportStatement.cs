@@ -3,9 +3,6 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Xml.Linq;
 
 namespace CK.TypeScript.Transform;
 
@@ -40,7 +37,7 @@ public sealed class EnsureImportStatement : TransformStatement
                         out Dictionary<string, ImportStatement> existingNamedImports,
                         out ImportStatement? lastImport ) )
         {
-            return true;
+            return success;
         }
 
         // Now that the existingNamedImports index has been built, we can handle the named imports.
@@ -88,9 +85,9 @@ public sealed class EnsureImportStatement : TransformStatement
                                 //  
                                 // When other named import exist, we MUST suffer... because a type import cannot coexist
                                 // with regular ones.
-                                // Given:
+                                // Given an exisiting:
                                 //      import { A } from '...';
-                                // None of these are valid:
+                                // None of these can be added to the file:
                                 //      import type { A } from '...';
                                 //      import { type A } from '...';
                                 //

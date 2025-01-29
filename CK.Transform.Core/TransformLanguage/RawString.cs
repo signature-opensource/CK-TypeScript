@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Transform.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;

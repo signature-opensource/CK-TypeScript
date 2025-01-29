@@ -1,12 +1,6 @@
 using CK.Core;
 using CK.Transform.Core;
-using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CK.Html.Transform;
 
@@ -61,7 +55,6 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
 
     protected override void ParseTrivia( ref TriviaHead c )
     {
-        
         if( !HandleWhiteSpaceTrivias )
         {
             c.AcceptXmlComment();
@@ -100,6 +93,8 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
             if( iS > 2 ) return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
         }
         // In a tag name: <[a-zA-Z] or a closing </[a-zA-Z].
+        // Extremely permissive here.
+        // See https://blog.jim-nielsen.com/2023/validity-of-custom-element-tag-names/
         bool isWhitespace = false;
         while( !(isWhitespace = char.IsWhiteSpace( c )) && c != '/' && c != '>' && c != '<' )
         {

@@ -2,13 +2,11 @@ using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace CK.TypeScript.Transform;
 
 /// <summary>
 /// Captures the import statement.
-/// This is also used by the 
 /// </summary>
 /// <remarks>
 /// These are valid patterns:

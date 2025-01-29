@@ -1,5 +1,4 @@
 using CK.Transform.Core;
-using System.ComponentModel;
 
 namespace CK.Html.Transform;
 

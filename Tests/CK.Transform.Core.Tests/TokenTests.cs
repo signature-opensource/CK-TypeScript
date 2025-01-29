@@ -2,7 +2,6 @@ using CK.Transform.Core.Tests.Helpers;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
-using System.Linq;
 
 namespace CK.Transform.Core.Tests;
 

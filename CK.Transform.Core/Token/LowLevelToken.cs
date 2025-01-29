@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace CK.Transform.Core;
 
@@ -54,6 +53,9 @@ public readonly record struct LowLevelToken( TokenType TokenType, int Length )
                     break;
                 case TokenType.Caret:
                     if( c == '=' ) return new LowLevelToken( TokenType.CaretEquals, 2 );
+                    break;
+                case TokenType.Colon:
+                    if( c == ':' ) return new LowLevelToken( TokenType.ColonColon, 2 );
                     break;
                 case TokenType.Dot:
                     if( c == '.' )

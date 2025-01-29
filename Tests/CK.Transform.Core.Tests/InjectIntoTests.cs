@@ -1,7 +1,6 @@
 using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
-using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;

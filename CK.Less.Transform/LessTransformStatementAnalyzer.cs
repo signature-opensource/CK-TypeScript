@@ -1,5 +1,4 @@
 using CK.Transform.Core;
-using System;
 
 namespace CK.Less.Transform;
 
@@ -25,14 +24,12 @@ sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
         if( head.TryAcceptToken( "ensure", out var _ ) )
         {
             var subHead = head.CreateSubHead( out var safetyToken, _lessAnalyzer );
-            var importToken = subHead.MatchToken( "import" );
+            var importToken = subHead.MatchToken( "@import" );
             if( importToken is not TokenError )
             {
-                var importStatement = ImportStatement.TryMatch( importToken, ref subHead );
+                var importStatement = EnsureImportStatement.TryMatch( begStatement, ref subHead );
                 head.SkipTo( safetyToken, ref subHead );
-                return importStatement != null
-                        ? new EnsureImportStatement( begStatement, head.LastTokenIndex + 1, importStatement )
-                        : null;
+                return importStatement;
             }
         }
         return base.ParseStatement( ref head );

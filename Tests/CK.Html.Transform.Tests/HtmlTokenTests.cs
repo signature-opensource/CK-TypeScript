@@ -1,7 +1,6 @@
 using CK.Transform.Core;
 using FluentAssertions;
 using NUnit.Framework;
-using System.Threading.Tasks;
 
 namespace CK.Html.Transform.Tests;
 

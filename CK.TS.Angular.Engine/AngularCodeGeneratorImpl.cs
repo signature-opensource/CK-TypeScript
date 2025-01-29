@@ -480,8 +480,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             // Awful implementation.
             // Waiting for transformers.
             TransformAppComponent( e.Monitor, e.SrcFolderPath.Combine( "app/app.component.ts" ) );
-            TransformAppConfig( e.Monitor, e.SrcFolderPath.Combine( "app/app.config.ts" ) );
-            TransformAppRoutes( e.Monitor, e.SrcFolderPath.Combine( "app/app.routes.ts" ) );
+            TransformAppComponentConfig( e.Monitor, e.SrcFolderPath.Combine( "app/app.config.ts" ) );
+            TransformAppComponentRoutes( e.Monitor, e.SrcFolderPath.Combine( "app/app.routes.ts" ) );
+            TransformStyles( e.Monitor, e.SrcFolderPath.Combine( "styles.less" ) );
 
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
             {
@@ -547,7 +548,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
             }
 
-            static void TransformAppConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
+            static void TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
             {
                 var app = File.ReadAllText( configFilePath );
                 if( app.Contains( "import { CKGenAppModule } from '@local/ck-gen';" ) )
@@ -576,7 +577,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
             }
 
-            static void TransformAppRoutes( IActivityMonitor monitor, NormalizedPath routesFilePath )
+            static void TransformAppComponentRoutes( IActivityMonitor monitor, NormalizedPath routesFilePath )
             {
                 var app = File.ReadAllText( routesFilePath );
                 if( app.Contains( "import CKGenRoutes from '@local/ck-gen/CK/Angular/routes';" ) )
@@ -664,8 +665,40 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
             }
 
-        }
+            static void TransformStyles( IActivityMonitor monitor, NormalizedPath stylesFilePath )
+            {
+                var styles = File.ReadAllText( stylesFilePath );
+                bool hasVariables = styles.Contains( "@import '@local/ck-gen/CK/Angular/GlobalVariables.less';" );
+                bool hasStyles = styles.Contains( "@import '@local/ck-gen/CK/Angular/GlobalStyles.less';" );
+                if( hasVariables && hasStyles )
+                {
+                    monitor.Trace( "File 'src/styles.less' imports the '@local/ck-gen/CK/Angular/' GlobalStyles and GlobalVariables.less'. Skipping transformation." );
+                }
+                else
+                {
+                    using( monitor.OpenInfo( "Transforming file 'src/styles.ts'." ) )
+                    {
+                        if( !hasVariables )
+                        {
+                            styles = """
+                                "@import '@local/ck-gen/CK/Angular/GlobalVariables.less';
+
+                                """ + styles;
+                        }
+                        if( !hasStyles )
+                        {
+                            styles = """
+                                "@import '@local/ck-gen/CK/Angular/GlobalStyles.less';
+
+                                """ + styles;
+                        }
+                        File.WriteAllText( stylesFilePath, styles );
+                    }
+                }
+            }
 
 #pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'
+        }
     }
 }
+

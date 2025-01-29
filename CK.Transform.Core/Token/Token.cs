@@ -1,10 +1,8 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
-using System.Data.Common;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace CK.Transform.Core;
 
