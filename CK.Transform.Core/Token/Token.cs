@@ -242,7 +242,7 @@ public class Token
         return new SourcePosition( line, column );
     }
 
-    static ReadOnlySpan<char> GetContainingSpan( ReadOnlyMemory<char> text, out int start )
+    internal static ReadOnlySpan<char> GetContainingSpan( ReadOnlyMemory<char> text, out int start )
     {
         if( MemoryMarshal.TryGetString( text, out var str, out start, out _ ) )
         {

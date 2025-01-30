@@ -62,7 +62,8 @@ public abstract class TransformStatementAnalyzer
     /// Parsing errors should be inlined <see cref="TokenError"/>. 
     /// <para>
     /// At this level, this handles transform statements that apply to any language:
-    /// the <see cref="InjectIntoStatement"/>.
+    /// <c>begin</c>...<c>end</c> "transaction" (<see cref="TransformStatementBlock"/>)
+    /// and the <see cref="InjectIntoStatement"/>.
     /// </para>
     /// </summary>
     /// <param name="head">The head.</param>
@@ -72,6 +73,10 @@ public abstract class TransformStatementAnalyzer
         if( head.TryAcceptToken( "inject", out var inject ) )
         {
             return MatchInjectIntoStatement( ref head, inject );
+        }
+        if( head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
+        {
+            return ParseStatements( ref head );
         }
         return null;
     }

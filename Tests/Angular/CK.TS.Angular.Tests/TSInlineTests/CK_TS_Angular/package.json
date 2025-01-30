@@ -21,7 +21,7 @@
     "ng-zorro-antd": "^19",
     "rxjs": "~7.8",
     "tslib": "^2.3",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.15"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^19.1.4",

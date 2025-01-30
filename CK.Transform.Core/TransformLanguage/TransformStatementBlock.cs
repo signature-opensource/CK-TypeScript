@@ -22,6 +22,7 @@ public sealed class TransformStatementBlock : TransformStatement
             {
                 success &= statement.Apply( monitor, editor );
             }
+            if( success ) success = !editor.NeedReparse || editor.Reparse( monitor );
         }
         return success;
     }

@@ -1,6 +1,9 @@
 using CK.Core;
 using CK.Transform.Core;
 using System.Buffers;
+using System.Diagnostics;
+using static CK.Core.ActivityMonitor;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Less.Transform;
 
@@ -60,26 +63,47 @@ public class LessAnalyzer : Tokenizer, IAnalyzer
 
         static LowLevelToken ReadExtendedIdentifier( ReadOnlySpan<char> head, char c )
         {
-            if( !IsValidStart( c ) ) return default;
+            // AsciiLetter, > 0x80 and _ are basic css start characters.
+            bool isOneCharValid = char.IsAsciiLetter( c ) || c > 0x80 || c == '_';
+            if( !isOneCharValid && !IsValidExtendedStart( c ) ) return default;
             int iS = 0;
             while( ++iS < head.Length && IsValidContinuation( head[iS] ) ) ;
-            return iS > 1
-                     ? new LowLevelToken( TokenType.GenericIdentifier, iS )
-                     : default;
 
-            // AsciiLetter, > 0x80 , _ and - (numbers have been handled above) handle basic css identifiers.
+            // From https://www.w3.org/TR/css-syntax-3/#consume-token
+            //
+            //  COMMERCIAL AT (@)
+            //      If the next 3 input code points would start an ident sequence, consume an ident sequence,
+            //      create an<at-keyword-token> with its value set to the returned value, and return it.
+            //      Otherwise, return a <delim-token> with its value set to the current input code point.
+            //
+            return isOneCharValid // Basic css syntax.
+                   || iS >= (c == '@' ? 3 : 2)      
+                         ? new LowLevelToken( TokenType.GenericIdentifier, iS )
+                         : default;
+
+            // - (numbers have been handled above) are allowed.
             // # handles id selector and https://lesscss.org/#namespaces-and-accessors
             // @ starts a variable or a variable interpolation.
             // . handles class selector.
             // $ handles https://lesscss.org/features/#variables-feature-properties-as-variables-new-
-            static bool IsValidStart( char c ) => char.IsAsciiLetter( c ) || c > 0x80 || c == '_' || c == '-'
-                                                  || c == '#'
-                                                  || c == '@'
-                                                  || c == '.'
-                                                  || c == '$';
+            // & is the parent selector (embedded).
+            // \ can start an "ident-token" (see https://www.w3.org/TR/css-syntax-3/#consume-token). (
+            //   (We ignore the faulty newline after.)
+            static bool IsValidExtendedStart( char c ) => c == '-'
+                                                          || c == '#'
+                                                          || c == '@'
+                                                          || c == '.'
+                                                          || c == '$'
+                                                          || c == '&'
+                                                          || c == '\\';
 
             // Then accepts digits and {} to handle variable interpolation.
-            static bool IsValidContinuation( char c ) => IsValidStart( c ) || char.IsAsciiDigit( c ) || c == '{' || c == '}';
+            static bool IsValidContinuation( char c ) => char.IsAsciiLetterOrDigit( c )
+                                                         || c > 0x80
+                                                         || c == '_'
+                                                         || IsValidExtendedStart( c )
+                                                         || c == '{'
+                                                         || c == '}';
         }
 
         static LowLevelToken TryReadNumber( ReadOnlySpan<char> head, int iS )

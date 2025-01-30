@@ -4,43 +4,45 @@ using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.Html.Transform.Tests;
+namespace CK.Less.Transform.Tests;
 
 public class InjectIntoTests
 {
-    [TestCase(
+    [TestCase( "n°1",
         """
-        some html... 
-        <hr>
-        <div>
-            <!--<FirstInjectionPointEver/>-->
-        </div>
-        ...text.
+        .form-group {
+           margin-bottom: 15px;
+           //<FirstInjectionPointEver/>
+        }
+        
         """,
         """"
-        create html transformer
+        create less transformer
         begin
             inject """
 
-                   First injection ever...
-
+                   witdth: 15px;
+                   another-width: 60px;
+        
                    """ into <FirstInjectionPointEver>;
         end
         """",
         """
-        some html... 
-        <hr>
-        <div>
-            <!--<FirstInjectionPointEver>-->
-            First injection ever...
-            <!--</FirstInjectionPointEver>-->
-        </div>
-        ...text.
+        .form-group {
+           margin-bottom: 15px;
+           //<FirstInjectionPointEver>
+           
+           witdth: 15px;
+           another-width: 60px;
+           
+           //</FirstInjectionPointEver>
+        }
+
         """
         )]
-    public void first_injection_ever( string source, string transformer, string result )
+    public void first_injection_ever( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new HtmlLanguage() );
+        var h = new TransformerHost( new LessLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer );
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );

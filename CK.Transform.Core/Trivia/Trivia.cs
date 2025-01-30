@@ -172,6 +172,18 @@ public readonly struct Trivia : IEquatable<Trivia>
         }
     }
 
+    /// <summary>
+    /// Gets the 1-based column of this trivia in its containing text.
+    /// <para>
+    /// This really applies to trivias that have been parsed.
+    /// </para>
+    /// </summary>
+    /// <returns>The 1-based column number of this trivia.</returns>
+    public int GetColumnNumber()
+    {
+        var s = Token.GetContainingSpan( _content, out var start );
+        return SourcePosition.GetColumNumber( s, start );
+    }
 
     /// <summary>
     /// Overridden to return the <see cref="Content"/>.
@@ -181,7 +193,7 @@ public readonly struct Trivia : IEquatable<Trivia>
 
     public bool Equals( Trivia other ) => _tokenType == other._tokenType && _content.Span.SequenceEqual( other._content.Span );
 
-    public override int GetHashCode() => HashCode.Combine( _tokenType, _tokenType );
+    public override int GetHashCode() => HashCode.Combine( _tokenType, _content );
 
     public override bool Equals( object? o ) => o is Trivia other && Equals( other );
 

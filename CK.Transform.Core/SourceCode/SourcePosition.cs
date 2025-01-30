@@ -71,25 +71,31 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     /// </summary>
     /// <param name="source">The source text.</param>
     /// <param name="index">The index in the <paramref name="source"/>.</param>
-    /// <exception cref="ArgumentOutOfRangeException">index is less than zero or greater than source's length</exception>
+    /// <exception cref="ArgumentOutOfRangeException">index is less than zero or greater than source's length.</exception>
     /// <returns>The source position.</returns>
     public static SourcePosition GetSourcePosition( ReadOnlySpan<char> source, int index )
     {
-        int line, column;
         var before = source.Slice( 0, index );
         int lastIndex = before.LastIndexOf( '\n' );
         if( lastIndex >= 0 )
         {
-            line = before.Count( '\n' );
-            if( lastIndex > 0 && before[lastIndex - 1] == '\r' ) ++lastIndex;
-            column = index - lastIndex;
+            return new SourcePosition( before.Count( '\n' ) + 1, index - lastIndex );
         }
-        else
-        {
-            line = 0;
-            column = index;
-        }
-        return new SourcePosition( line + 1, column + 1 );
+        return new SourcePosition( 1, index + 1 );
+    }
+
+    /// <summary>
+    /// Computes only the 1-based column number in a source text.
+    /// </summary>
+    /// <param name="source">The source text.</param>
+    /// <param name="index">The index in the <paramref name="source"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">index is less than zero or greater than source's length.</exception>
+    /// <returns>The column number.</returns>
+    public static int GetColumNumber( ReadOnlySpan<char> source, int index )
+    {
+        var before = source.Slice( 0, index );
+        int lastIndex = before.LastIndexOf( '\n' );
+        return lastIndex >= 0 ? index - lastIndex : index + 1;
     }
 
     /// <summary>

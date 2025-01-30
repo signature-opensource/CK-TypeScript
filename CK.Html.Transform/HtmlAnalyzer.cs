@@ -77,6 +77,12 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         // A tag must start with [A-Za-z].
         // If the next char is not a ascii letter or the ending slash, continue as text.
         var c = head[++iS];
+        // We are not handling whitespaces here, so if we are on the start of a comment,
+        // emit the text: the comment (or the CDATA) will be handled as a trivia. 
+        if( c == '!' )
+        {
+            return new LowLevelToken( (TokenType)HtmlTokenType.Text, iS - 1 );
+        }
         bool isEnding = c == '/';
         if( !isEnding )
         {

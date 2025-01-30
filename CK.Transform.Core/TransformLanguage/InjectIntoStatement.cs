@@ -1,6 +1,8 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace CK.Transform.Core;
@@ -67,31 +69,64 @@ public sealed class InjectIntoStatement : TransformStatement
             {
                 if( finder.Match( monitor, t ) )
                 {
-                    Throw.DebugAssert( modified.IsDefault );
-                    if( finder.TextBefore != null )
+                    Throw.DebugAssert( "Match only once.", modified.IsDefault );
+                    var colOffset = t.IsLineComment && finder.OpeningColumnPrefix.Length > 0
+                                        ? new Trivia( TokenType.Whitespace, finder.OpeningColumnPrefix, checkContent: false )
+                                        : default;
+                    if( !finder.InjectOpening.IsDefault )
                     {
-                        modified = trivias.Insert( idx, new Trivia( TokenType.Whitespace, finder.TextBefore ) );
-                    }
-                    else if( finder.TextAfter != null )
-                    {
-                        modified = trivias.Insert( idx + 1, new Trivia( TokenType.Whitespace, finder.TextAfter ) );
+                        int len = trivias.Length + 2;
+                        if( !colOffset.IsDefault )
+                        {
+                            len += idx == 0 ? 3 : 2;
+                        }
+                        var builder = ImmutableArray.CreateBuilder<Trivia>( len );
+                        builder.AddRange( trivias, idx );
+                        if( !colOffset.IsDefault && idx == 0 ) builder.Add( colOffset );
+                        builder.Add( finder.InjectOpening );
+                        if( !colOffset.IsDefault ) builder.Add( colOffset );
+                        builder.Add( finder.InjectText );
+                        if( !colOffset.IsDefault ) builder.Add( colOffset );
+                        builder.Add( finder.InjectClosing );
+                        var remaining = trivias.Length - idx - 1;
+                        if( remaining > 0 )
+                        {
+                            builder.AddRange( trivias.AsSpan( idx + 1, remaining ) );
+                        }
+                        Throw.DebugAssert( builder.Capacity == builder.Count );
+                        modified = builder.DrainToImmutable();
                     }
                     else
                     {
-                        Throw.DebugAssert( finder.TextReplace != null );
-                        if( trivias.Length == 1 )
+                        int len = trivias.Length + (colOffset.IsDefault ? 1 : 2);
+                        var builder = ImmutableArray.CreateBuilder<Trivia>( len );
+
+                        // When isRevert is true: insert after the opening trivia (for line comment, it ends with a newline).
+                        // When isRevert is false: insert before the closing trivia.
+                        int insertIdx = finder.IsRevert ? idx + 1 : idx;
+                        builder.AddRange( trivias, insertIdx );
+                        if( finder.IsRevert )
                         {
-                            modified = ImmutableCollectionsMarshal.AsImmutableArray( finder.TextReplace );
+                            // Insert the colOffset before the text.
+                            if( !colOffset.IsDefault ) builder.Add( colOffset );
+                            builder.Add( finder.InjectText );
                         }
                         else
                         {
-                            var a = new Trivia[trivias.Length + 2];
-                            var s = trivias.AsSpan();
-                            s.Slice( 0, idx ).CopyTo( a.AsSpan( 0, idx ) );
-                            finder.TextReplace.CopyTo( a, idx );
-                            s.Slice( idx + 1 ).CopyTo( a.AsSpan( idx + 3 ) );
-                            modified = ImmutableCollectionsMarshal.AsImmutableArray( a );
+                            // Inserting before the closing trivia: the text will "reuse" the existing
+                            // offset of the closing trivia (whatever it is but it should be the same
+                            // trivia as the initial opening tag unless the text has been deliberately tampered),
+                            // and the colOffset becomes the trivia before the closing trivia. 
+                            builder.Add( finder.InjectText );
+                            if( !colOffset.IsDefault ) builder.Add( colOffset );
                         }
+                        var remaining = trivias.Length - insertIdx;
+                        if( remaining > 0 )
+                        {
+                            builder.AddRange( trivias.AsSpan( insertIdx, remaining ) );
+                        }
+                        Throw.DebugAssert( builder.Capacity == builder.Count );
+                        modified = builder.DrainToImmutable();
                     }
                 }
                 ++idx;
@@ -101,13 +136,16 @@ public sealed class InjectIntoStatement : TransformStatement
     }
 
     // This is a ref struct only to emphasize the fact that this is
-    // simply an encapsultation of a state machine.
+    // simply an encapsulation of a state machine.
     ref struct InjectionPointFinder
     {
         readonly InjectionPoint _injectionPoint;
         readonly RawString _injectedCode;
+        string? _openingColumnPrefix;
+        Trivia _injectOpening;
+        Trivia _injectText;
+        Trivia _injectClosing;
         bool _foundInsertPoint;
-        bool _foundOpening;
         bool _foundOpeningIsAutoClosing;
         bool _foundOpeningIsRevert;
 
@@ -118,19 +156,40 @@ public sealed class InjectIntoStatement : TransformStatement
         }
 
         /// <summary>
-        /// Gets the text to insert before the match.
+        /// Gets the whitespace string that offsets the opening "&lt;InjectionPoint /&gt;"
+        /// or "&lt;InjectionPoint&gt;".
         /// </summary>
-        public string? TextBefore { get; private set; }
+        public readonly string? OpeningColumnPrefix => _openingColumnPrefix;
 
         /// <summary>
-        /// Gets the text to insert after the match.
+        /// Gets whether the opening "&lt;InjectionPoint /&gt;"
+        /// or "&lt;InjectionPoint&gt;" has been found.
         /// </summary>
-        public string? TextAfter { get; private set; }
+        [MemberNotNullWhen( true, nameof( OpeningColumnPrefix ), nameof( _openingColumnPrefix ) )]
+        public readonly bool FoundOpening => _openingColumnPrefix != null;
 
         /// <summary>
-        /// Gets the 3 trivias that must replace the matched one.
+        /// Gets whether this is a reverted injection point.
         /// </summary>
-        public Trivia[]? TextReplace { get; private set; }
+        public readonly bool IsRevert => _foundOpeningIsRevert;
+
+        /// <summary>
+        /// Gets the trivia that must replace the opening one.
+        /// <see cref="Trivia.IsDefault"/> when only the text must be inserted (the injection point is already opened).
+        /// </summary>
+        public readonly Trivia InjectOpening => _injectOpening;
+
+        /// <summary>
+        /// Gets the trivia to insert.
+        /// <see cref="Trivia.IsDefault"/> when <see cref="FoundOpening"/> is false.
+        /// </summary>
+        public readonly Trivia InjectText => _injectText;
+
+        /// <summary>
+        /// Gets the trivia to inject after <see cref="InjectText"/>.
+        /// <see cref="Trivia.IsDefault"/> when only the text must be inserted (the injection point is already opened).
+        /// </summary>
+        public readonly Trivia InjectClosing => _injectClosing;
 
         /// <summary>
         /// Tests whether the given trivia matches. This is called multiple times and the internal state is updated.
@@ -139,6 +198,7 @@ public sealed class InjectIntoStatement : TransformStatement
         /// </summary>
         /// <param name="t">The trivia to process.</param>
         /// <returns>True on eventual success, false otherwise.</returns>
+        [MemberNotNullWhen(true, nameof(OpeningColumnPrefix) )]
         public bool Match( IActivityMonitor monitor, Trivia t )
         {
             if( t.IsWhitespace ) return false;
@@ -166,9 +226,6 @@ public sealed class InjectIntoStatement : TransformStatement
             {
                 return false;
             }
-            // See comment above about the InferredNewLine...
-            var injected = String.Join( Environment.NewLine, _injectedCode.Lines );
-
             // Check injection point syntax.
             if( isClosing && isAutoClosing ) monitor.Error( $"Invalid extension tag: '{t.Content}': can not start with '</' and end with '/>'." );
             else if( isClosing && isRevert ) monitor.Error( $"Invalid extension tag: '{t.Content}': revert must be on the opening tag." );
@@ -176,7 +233,7 @@ public sealed class InjectIntoStatement : TransformStatement
             {
                 if( isClosing )
                 {
-                    if( !_foundOpening ) monitor.Error( $"Closing '{t.Content}' has no opening." );
+                    if( !FoundOpening ) monitor.Error( $"Closing '{t.Content}' has no opening." );
                     else if( _foundInsertPoint )
                     {
                         if( _foundOpeningIsAutoClosing )
@@ -191,33 +248,32 @@ public sealed class InjectIntoStatement : TransformStatement
                     }
                     else
                     {
-                        TextBefore = injected;
                         return _foundInsertPoint = true;
                     }
                 }
                 else // Opening tag.
                 {
-                    if( _foundOpening ) monitor.Error( $"Duplicate opening of extension tag: '{_injectionPoint.Text}'." );
+                    if( FoundOpening ) monitor.Error( $"Duplicate opening of extension tag: '{_injectionPoint.Text}'." );
                     else
                     {
-                        _foundOpening = true;
+                        var cOffset = t.GetColumnNumber() - 1;
+                        _openingColumnPrefix = cOffset > 0 ? new string( ' ', cOffset ) : "";
                         _foundOpeningIsAutoClosing = isAutoClosing;
                         _foundOpeningIsRevert = isRevert;
+                        var text = String.Join( Environment.NewLine + OpeningColumnPrefix, _injectedCode.Lines );
+                        // Block comment injection is "inline".
+                        if( t.IsLineComment ) text += Environment.NewLine;
+                        _injectText = new Trivia( TokenType.Whitespace, text );
                         if( isAutoClosing )
                         {
-                            TextReplace =
-                            [
-                                new Trivia( t.TokenType, $"{commentPrefix}<{injectDef}>{commentSuffix}" ),
-                                new Trivia( TokenType.Whitespace, injected ),
-                                new Trivia( t.TokenType, $"{commentPrefix}</{_injectionPoint.Name}>{commentSuffix}" )
-                            ];
+                            _injectOpening = new Trivia( t.TokenType, $"{commentPrefix}<{injectDef}>{commentSuffix}" );
+                            _injectClosing = new Trivia( t.TokenType, $"{commentPrefix}</{_injectionPoint.Name}>{commentSuffix}" );
                             return _foundInsertPoint = true;
                         }
                         else
                         {
                             if( isRevert )
                             {
-                                TextAfter = injected;
                                 return _foundInsertPoint = true;
                             }
                         }

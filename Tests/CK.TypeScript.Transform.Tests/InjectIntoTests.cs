@@ -9,7 +9,7 @@ namespace CK.TypeScript.Transform.Tests;
 [TestFixture]
 public class InjectIntoTests
 {
-    [TestCase(
+    [TestCase( "n°1",
         """
         import { RouterOutlet } from '@angular/router';
         import { Component } from '@angular/core';
@@ -22,8 +22,8 @@ public class InjectIntoTests
           styleUrl: './app.component.less'
         })
         export class AppComponent {
-          title = 'Demo';
-          //<Constructor/>
+            title = 'Demo';
+            //<Constructor/>
         }
         """,
         """"
@@ -47,14 +47,15 @@ public class InjectIntoTests
           styleUrl: './app.component.less'
         })
         export class AppComponent {
-          title = 'Demo';
-          //<Constructor>
-        title += ' (modified)';
-        //</Constructor>
+            title = 'Demo';
+            //<Constructor>
+            title += ' (modified)';
+            
+            //</Constructor>
         }
         """
         )]
-    [TestCase(
+    [TestCase( "n°2",
         """
         import { RouterOutlet } from '@angular/router';
         import { Component } from '@angular/core';
@@ -80,7 +81,10 @@ public class InjectIntoTests
         create typescript transformer
         begin
             inject """
+
+                   // Modified by transformer.
                    title += ' (modified)';
+                   // Modified by transformer.
 
                    """ into <Constructor>;
         end
@@ -104,12 +108,16 @@ public class InjectIntoTests
         export class AppComponent {
           title = 'Demo';
           //<Constructor>
-        title += ' (modified)';
-        //</Constructor>
+          
+          // Modified by transformer.
+          title += ' (modified)';
+          // Modified by transformer.
+          
+          //</Constructor>
         }
         """
         )]
-    public void first_injection_ever( string source, string transformer, string result )
+    public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer );

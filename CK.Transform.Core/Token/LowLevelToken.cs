@@ -161,7 +161,11 @@ public readonly record struct LowLevelToken( TokenType TokenType, int Length )
         for(; ; )
         {
             if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
-            if( escape ) continue;
+            if( escape )
+            {
+                escape = false;
+                continue;
+            }
             var c = head[iS];
             if( c == q ) return new LowLevelToken( TokenType.GenericString, iS + 1 );
             escape = c == '\\';

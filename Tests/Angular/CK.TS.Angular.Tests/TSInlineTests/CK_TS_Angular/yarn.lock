@@ -6015,7 +6015,7 @@ __metadata:
     ts-jest: "npm:^29.2.5"
     tslib: "npm:^2.3"
     typescript: "npm:~5.5.2"
-    zone.js: "npm:~0.15.0"
+    zone.js: "npm:~0.15"
   languageName: unknown
   linkType: soft
 
@@ -12526,7 +12526,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zone.js@npm:~0.15.0":
+"zone.js@npm:~0.15":
   version: 0.15.0
   resolution: "zone.js@npm:0.15.0"
   checksum: 10/99b9381edcf1ca3da147375a9776f8ad5e6570b9e2cbd33095284a67904d94b5083448440ffcb8ec1e418a505020de0e37837db04d6a0303e111b054a8b752a2

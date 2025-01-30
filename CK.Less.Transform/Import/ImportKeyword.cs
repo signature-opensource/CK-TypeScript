@@ -1,4 +1,4 @@
-﻿namespace CK.Less.Transform;
+namespace CK.Less.Transform;
 
 /// <summary>
 /// Defines the possible <c>@import (keyword) 'file';</c>.
@@ -7,46 +7,46 @@
 public enum ImportKeyword
 {
     /// <summary>
-    /// None.
+    /// No import keyword.
     /// </summary>
     None = 0,
 
     /// <summary>
     /// Use a Less file but do not output it.
     /// </summary>
-    Reference,
+    Reference  = 1,
 
     /// <summary>
     /// Include the source file in the output but do not process it.
     /// </summary>
-    Inline,
+    Inline = 1 << 1,
 
     /// <summary>
     /// Treat the file as a Less file, no matter what the file extension.
     /// This excludes <see cref="Css"/>.
     /// </summary>
-    Less,
+    Less = 1 << 2,
 
     /// <summary>
     /// Treat the file as a CSS file, no matter what the file extension.
     /// This excludes <see cref="Less"/>.
     /// </summary>
-    Css,
+    Css = 1 << 3,
 
     /// <summary>
     /// Only include the file once (this is default behavior).
     /// This excludes <see cref="Multiple"/>.
     /// </summary>
-    Once,
+    Once = 1 << 4,
 
     /// <summary>
     /// Include the file multiple times.
     /// This excludes <see cref="Once"/>.
     /// </summary>
-    Multiple,
+    Multiple = 1 << 5,
 
     /// <summary>
     /// Continue compiling when file is not found.
     /// </summary>
-    Optional
+    Optional = 1 << 6
 }
