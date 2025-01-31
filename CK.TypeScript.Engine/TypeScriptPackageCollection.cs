@@ -14,10 +14,10 @@ sealed class TypeScriptPackageCollection
     readonly ImmutableArray<TypeScriptPackageAttributeImpl> _implPackages;
 
     /// <summary>
-    /// Nested class for the logical TypeScript package that wraps the <see cref="TypeScriptPackageAttributeImpl"/>
+    /// Logical TypeScript package that wraps the <see cref="TypeScriptPackageAttributeImpl"/>
     /// that defines it.
     /// </summary>
-    public sealed class Package
+    internal sealed class Package
     {
         readonly TypeScriptPackageAttributeImpl _impl;
 
@@ -26,6 +26,8 @@ sealed class TypeScriptPackageCollection
             _impl = impl;
         }
     }
+
+
 
     TypeScriptPackageCollection( ImmutableArray<TypeScriptPackageAttributeImpl> implPackages )
     {
