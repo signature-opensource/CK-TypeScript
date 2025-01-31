@@ -24,12 +24,11 @@ public static class ResourceContainerGlobalizationExtension
     /// Parent cultures are not created if not needed: here the "fr" set is not created.
     /// </para>
     /// <para>
-    /// The the <c>default.jsonc</c> file is required unless <paramref name="isOverrideFolder"/> is true.
+    /// The <c>default.jsonc</c> (or <c>default.jsonc</c>) file is required unless <paramref name="isOverrideFolder"/> is true.
     /// </para>
     /// <para>
     /// When <paramref name="isOverrideFolder"/> is true, the loaded folder is an override that doesn't define new resources.
     /// It doesn't need a <c>default.json</c> and all resources in its files are considered to have an implicit "O:" key prefix.
-    /// 
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

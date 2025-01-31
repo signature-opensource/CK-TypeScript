@@ -273,7 +273,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             {
                 // If Json serialization is available, let's get the name map for them.
                 // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
-                // beacause of anonymous record names that expose their fields).
+                // because of anonymous record names that expose their fields).
                 if( initializer.TypeScriptExchangeableSet.SameContentAs( typeSystem.SetManager.AllExchangeable ) )
                 {
                     exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames;

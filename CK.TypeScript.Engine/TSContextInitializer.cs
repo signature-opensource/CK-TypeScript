@@ -409,7 +409,7 @@ sealed class TSContextInitializer
                 {
                     monitor.Error( $"""
                                     TypeScript package '{p.ClassType:N}' is decorated with more than one [TypeScriptPackage] or specialized attribute:
-                                    {p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>().Select( a => a.GetType().Name ).Concatenate()}
+                                    [{p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>().Select( a => a.Attribute.GetType().Name ).Concatenate("], [")}]
                                     """ );
                     success = false;
                 }

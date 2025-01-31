@@ -64,7 +64,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
     /// </summary>
-    /// <param name="monitor">The monitor.</param>
+    /// <param name="monitor">Required monitor.</param>
     /// <param name="attr">The attribute.</param>
     /// <param name="type">The decorated type.</param>
     public TypeScriptPackageAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type )
