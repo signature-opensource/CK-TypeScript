@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Setup;
 using System;
 using System.Runtime.CompilerServices;
@@ -30,7 +31,7 @@ namespace CK.TypeScript;
 /// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
-public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute
+public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbeddedResourceTypeAttribute
 {
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttribute"/>.
