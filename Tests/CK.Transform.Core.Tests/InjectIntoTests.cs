@@ -469,7 +469,7 @@ public class InjectIntoTests
         """
         )]
 
-    [TestCase( "TwoTran",
+    [TestCase( "TwoReparse",
         """
         create transform transformer
         begin
@@ -479,11 +479,10 @@ public class InjectIntoTests
         """"
         create transform transformer
         begin
-            begin
-                inject """
-                       // First injection ever...
-                       """ into <FirstInjectionPointEver>;
-            end
+            inject """
+                    // First injection ever...
+                    """ into <FirstInjectionPointEver>;
+            reparse;
             inject """
                    // ...and another one.
                    """ into <FirstInjectionPointEver>;
@@ -500,7 +499,7 @@ public class InjectIntoTests
         end
         """
         )]
-    [TestCase( "RTwoTran",
+    [TestCase( "RTwoReparse",
         """
         create transform transformer
         begin
@@ -510,11 +509,10 @@ public class InjectIntoTests
         """"
         create transform transformer
         begin
-            begin
-                inject """
-                       // First injection ever...
-                       """ into <FirstInjectionPointEver>;
-            end
+            inject """
+                    // First injection ever...
+                    """ into <FirstInjectionPointEver>;
+            reparse;
             inject """
                    // ...and another one.
                    """ into <FirstInjectionPointEver>;

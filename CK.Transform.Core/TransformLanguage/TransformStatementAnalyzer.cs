@@ -1,5 +1,7 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 namespace CK.Transform.Core;
 
@@ -62,8 +64,8 @@ public abstract class TransformStatementAnalyzer
     /// Parsing errors should be inlined <see cref="TokenError"/>. 
     /// <para>
     /// At this level, this handles transform statements that apply to any language:
-    /// <c>begin</c>...<c>end</c> "transaction" (<see cref="TransformStatementBlock"/>)
-    /// and the <see cref="InjectIntoStatement"/>.
+    /// <see cref="ReparseStatement"/>, <see cref="InjectIntoStatement"/> and
+    /// <see cref="TransformStatementBlock"/> (<c>begin</c>...<c>end</c> blocks).
     /// </para>
     /// </summary>
     /// <param name="head">The head.</param>
@@ -74,6 +76,12 @@ public abstract class TransformStatementAnalyzer
         {
             return MatchInjectIntoStatement( ref head, inject );
         }
+        if( head.TryAcceptToken( "reparse", out var reparse ) )
+        {
+            int begStatement = head.LastTokenIndex;
+            head.TryAcceptToken( ";", out _ );
+            return new ReparseStatement( begStatement, head.LastTokenIndex + 1 );
+        }
         if( head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
         {
             return ParseStatements( ref head );
@@ -83,6 +91,7 @@ public abstract class TransformStatementAnalyzer
 
     static InjectIntoStatement? MatchInjectIntoStatement( ref TokenizerHead head, Token inject )
     {
+        Throw.DebugAssert( inject.Text.Span.Equals( "inject", StringComparison.Ordinal ) );
         int startStatement = head.LastTokenIndex;
         var content = RawString.TryMatch( ref head );
         head.MatchToken( "into" );

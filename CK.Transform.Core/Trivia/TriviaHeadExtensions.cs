@@ -20,9 +20,8 @@ public static class TriviaHeadExtensions
     {
         if( c.Head.StartsWith( "//" ) )
         {
-            int iS = 1;
-            while( ++iS < c.Head.Length && c.Head[iS] != '\n' ) ;
-            c.Accept( TokenTypeExtensions.GetTriviaLineCommentType( 2 ), iS + 1 );
+            int iS = c.Head.IndexOf( '\n' ) + 1;
+            c.Accept( TokenTypeExtensions.GetTriviaLineCommentType( 2 ), iS == 0 ? 2 : iS );
         }
     }
 
@@ -34,9 +33,8 @@ public static class TriviaHeadExtensions
     {
         if( c.Head.StartsWith( "--" ) )
         {
-            int iS = 1;
-            while( ++iS < c.Head.Length && c.Head[iS] != '\n' ) ;
-            c.Accept( TokenTypeExtensions.GetTriviaLineCommentType( 2 ), iS );
+            int iS = c.Head.IndexOf( '\n' ) + 1;
+            c.Accept( TokenTypeExtensions.GetTriviaLineCommentType( 2 ), iS == 0 ? 2 : iS );
         }
     }
 
@@ -90,7 +88,9 @@ public static class TriviaHeadExtensions
                 h = h.Slice( iE + 2 );
                 if( depth == 0 ) break;
             }
-            c.Head.Overlaps( h, out var pos );
+            int pos;
+            if( h.Length == 0 ) pos = c.Head.Length;
+            else c.Head.Overlaps( h, out pos );
             c.Accept( TokenTypeExtensions.GetTriviaBlockCommentType( 2, 2 ), pos );
         }
     }

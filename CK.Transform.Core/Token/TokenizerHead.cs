@@ -124,12 +124,15 @@ public ref struct TokenizerHead
     {
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
         Throw.CheckState( _lastSuccessfulHead == safetyToken );
+
         _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
+        _lastSuccessfulHead += subHead._lastSuccessfulHead;
         _tokens.AddRange( CollectionsMarshal.AsSpan( subHead._tokens ) );
         _lastToken = subHead._lastToken;
         _firstError ??= subHead._firstError;
         _inlineErrorCount += subHead._inlineErrorCount;
 
+        subHead._lastSuccessfulHead = 0;
         subHead._tokens.Clear();
         subHead._lastToken = null;
         if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );

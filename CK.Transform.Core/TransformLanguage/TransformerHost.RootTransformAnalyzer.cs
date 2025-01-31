@@ -50,14 +50,18 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'
         /// and is used by the <see cref="TransformerHost"/>.
+        /// <para>
+        /// This returns null and no errors are added if the text doesn't start with a <c>create</c> token.
+        /// </para>
         /// </summary>
         /// <param name="head">The head.</param>
-        /// <returns>Hard failures are that no initial "create" appears or the target language is not registered. Other errors are inlined.</returns>
+        /// <returns>Hard failures are that the target language is not registered. Other errors are inlined.</returns>
         protected override TokenError? Tokenize( ref TokenizerHead head )
         {
-            var create = head.MatchToken( "create" );
-            if( create is TokenError error ) return error; 
-
+            if( !head.TryAcceptToken( "create", out var _ ) )
+            {
+                return null;
+            }
             int startFunction = head.LastTokenIndex;
             var cLang = _host.Find( head.LowLevelTokenText );
             if( cLang == null )

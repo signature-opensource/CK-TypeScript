@@ -82,4 +82,41 @@ public class TransformerParsingTests
         }
     }
 
+    [TestCase( "" )]
+    [TestCase( "/* comment only */" )]
+    [TestCase( "not a transform function: doesn't start with create..." )]
+    public void TryParseFunction_function_returns_null_when_no_create( string text )
+    {
+        var h = new TransformerHost();
+        var f = h.TryParseFunction( TestHelper.Monitor, text, out var hasError );
+        Throw.CheckState( f == null );
+        Throw.CheckState( hasError is false );
+    }
+
+
+    [TestCase( "", 0 )]
+    [TestCase( "create transform transformer begin end", 1 )]
+    [TestCase( "create transform transformer begin end create transform transformer begin end", 2 )]
+    [TestCase( """
+               create transform transformer begin end /**/ create transform transformer begin end
+               create transform transformer begin end create transform transformer begin end //
+               """, 4 )]
+    [TestCase( """
+               create transform transformer begin end /**/ not a transformer.
+               """, -1 )]
+    public void TryParseFunctions_test( string text, int count )
+    {
+        var h = new TransformerHost();
+        var f = h.TryParseFunctions( TestHelper.Monitor, text );
+        if( count < 0 )
+        {
+            Throw.CheckState( f == null );
+        }
+        else
+        {
+            Throw.CheckState( f != null );
+            f.Count.Should().Be( count );
+        }
+    }
+
 }

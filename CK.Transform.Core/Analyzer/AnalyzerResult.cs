@@ -1,3 +1,5 @@
+using System;
+
 namespace CK.Transform.Core;
 
 /// <summary>
@@ -5,11 +7,18 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class AnalyzerResult
 {
-    internal AnalyzerResult( SourceCode result, TokenError? hardError, TokenError? firstError, int errorCount )
+    internal AnalyzerResult( SourceCode result,
+                             TokenError? hardError,
+                             TokenError? firstError,
+                             int errorCount,
+                             ReadOnlyMemory<char> remainingText,
+                             bool endOfInput )
     {
         SourceCode = result;
         HardError = hardError;
         FirstError = firstError;
+        RemainingText = remainingText;
+        EndOfInput = endOfInput;
         TotalErrorCount = hardError == null ? errorCount : errorCount + 1;
     }
 
@@ -24,6 +33,18 @@ public sealed class AnalyzerResult
     public SourceCode SourceCode { get; }
 
     /// <summary>
+    /// Gets the remaining text that has not been parsed.
+    /// </summary>
+    public ReadOnlyMemory<char> RemainingText { get; }
+
+    /// <summary>
+    /// Gets whether the end of the input has been reached.
+    /// This is true even if <see cref="RemainingText"/> is not empty when only whitespaces and comments
+    /// exist.
+    /// </summary>
+    public bool EndOfInput { get; }
+
+    /// <summary>
     /// Gets a "hard failure" error that stopped the analysis.
     /// </summary>
     public TokenError? HardError { get; }
@@ -36,7 +57,7 @@ public sealed class AnalyzerResult
     /// </para>
     /// </summary>
     public TokenError? FirstError { get; }
-
+    
     /// <summary>
     /// Gets the number of <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/> plus one if <see cref="HardError"/> is not null.
     /// </summary>

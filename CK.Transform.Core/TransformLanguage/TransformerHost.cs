@@ -111,18 +111,71 @@ public sealed partial class TransformerHost
     /// <inheritdoc cref="TryParseFunction(IActivityMonitor,ReadOnlyMemory{char})"/>
     public TransformerFunction? TryParseFunction( IActivityMonitor monitor, string text ) => TryParseFunction( monitor, text.AsMemory() );
 
+    /// <inheritdoc cref="TryParseFunction(IActivityMonitor, ReadOnlyMemory{char}, out bool)"/>
+    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, string text, out bool hasError ) => TryParseFunction( monitor, text.AsMemory(), out hasError );
+
     /// <summary>
-    /// Parses a <see cref="TransformerFunction"/> or throws if it cannot be parsed.
+    /// Tries to parse a <see cref="TransformerFunction"/>. Returns null on error (errors are logged) or if the text doesn't
+    /// start with a <c>create</c> token.
     /// </summary>
+    /// <param name="monitor">Required monitor.</param>
     /// <param name="text">the text to parse.</param>
-    /// <returns>The function.</returns>
-    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text )
+    /// <returns>The function or null on error.</returns>
+    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text ) => TryParseFunction( monitor, text, out var _ );
+
+    /// <summary>
+    /// Tries to parse a <see cref="TransformerFunction"/>.
+    /// Returns null on error (errors are logged and <paramref name="hasError"/> is true) or if
+    /// the text doesn't start with a <c>create</c> token.
+    /// </summary>
+    /// <param name="monitor">Required monitor.</param>
+    /// <param name="text">the text to parse.</param>
+    /// <param name="hasError">True if an error occurred.</param>
+    /// <returns>The function or null on error.</returns>
+    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text, out bool hasError )
     {
-        var r =_transformLanguage.RootAnalyzer.TryParse( monitor, text );
-        if( r == null ) return null;
+        var r = _transformLanguage.RootAnalyzer.TryParse( monitor, text );
+        if( r == null )
+        {
+            hasError = true;
+            return null;
+        }
+        hasError = false;
         var f = r.SourceCode.Spans.FirstOrDefault();
-        Throw.DebugAssert( f is TransformerFunction );
-        return Unsafe.As<TransformerFunction>( f );
+        Throw.DebugAssert( f == null || f is TransformerFunction );
+        return Unsafe.As<TransformerFunction?>( f );
+    }
+
+    /// <inheritdoc cref="TryParseFunctions(IActivityMonitor, ReadOnlyMemory{char})"/>
+    public List<TransformerFunction>? TryParseFunctions( IActivityMonitor monitor, string text ) => TryParseFunctions( monitor, text.AsMemory() );
+
+    /// <summary>
+    /// Tries to parse multiple <see cref="TransformerFunction"/>. Returns null on error.
+    /// </summary>
+    /// <param name="monitor">Required monitor.</param>
+    /// <param name="text">the text to parse.</param>
+    /// <returns>The functions or null on error.</returns>
+    public List<TransformerFunction>? TryParseFunctions( IActivityMonitor monitor, ReadOnlyMemory<char> text )
+    {
+        var result = new List<TransformerFunction>();
+        for( ; ; )
+        {
+            var r = _transformLanguage.RootAnalyzer.TryParse( monitor, text );
+            if( r == null ) return null;
+            // Parse success doesn't mean that a Transform function has been parsed.
+            var f = r.SourceCode.Spans.FirstOrDefault();
+            Throw.DebugAssert( f == null || f is TransformerFunction );
+            if( f == null )
+            {
+                // No Transform function: if the EndOfInput has been reached, we are good (text is whitespace or comments).
+                if( r.EndOfInput ) break;
+                // But if the EndOfInput has not been reached, it means that there are tokens but they don't start with a 'create'.
+                return null;
+            }
+            result.Add( Unsafe.As<TransformerFunction>( f ) );
+            text = r.RemainingText;
+        }
+        return result;
     }
 
     /// <summary>
