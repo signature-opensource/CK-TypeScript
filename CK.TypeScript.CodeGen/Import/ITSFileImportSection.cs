@@ -23,6 +23,13 @@ public interface ITSFileImportSection
     void ImportFromLibrary( LibraryImport library, string symbolNames );
 
     /// <summary>
+    /// Imports one or more type or variable names from a sub path in an external library.
+    /// </summary>
+    /// <param name="source">The library and the subordinate path. The path may start or not with a '/'.</param>
+    /// <param name="symbolNames">Comma separated of type or variable names to import.</param>
+    void ImportFromLibrary( (LibraryImport Library, string SubPath) source, string symbolNames );
+
+    /// <summary>
     /// Imports one or more type or variable names from an external library.
     /// See <see cref="ITSImportLine.Add(string)"/>.
     /// </summary>
@@ -64,4 +71,5 @@ public interface ITSFileImportSection
     /// </summary>
     /// <returns>The import section. Can be empty.</returns>
     string ToString();
+
 }

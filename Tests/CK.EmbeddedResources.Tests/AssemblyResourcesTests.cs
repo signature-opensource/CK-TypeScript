@@ -30,7 +30,7 @@ public class AssemblyResourcesTests
         var root = r.CreateCKResourceContainer( "", "On the Root");
         var b = new StringBuilder();
         Dump( b, new ResourceFolder( root, root.ResourcePrefix ), 0 );
-        b.ToString().Should().Be( """
+        b.ToString().ReplaceLineEndings().Should().Be( """
             C1
               Res
                 SomeFolder
@@ -59,9 +59,7 @@ public class AssemblyResourcesTests
               Res
                 data.json
 
-            """ );
-
-
+            """.ReplaceLineEndings() );
     }
 
     static void Dump( StringBuilder b, ResourceFolder d, int depth )
@@ -87,7 +85,7 @@ public class AssemblyResourcesTests
         container.TryGetFolder( fromProvider ? "" : "C1/Res", out var root );
         var b = new StringBuilder();
         Dump( b, root, 0 );
-        b.ToString().Should().Be( """
+        b.ToString().ReplaceLineEndings().Should().Be( """
             SomeFolder
               Other
                 empty-file.ts
@@ -99,13 +97,13 @@ public class AssemblyResourcesTests
               script.sql
             data.json
 
-            """ );
+            """.ReplaceLineEndings() );
 
         var otherContainer = r.CreateCKResourceContainer( fromProvider ? "C1/Res/SomeFolder" : "", "Other container" );
         var otherRoot = otherContainer.GetFolder( fromProvider ? "" : "C1/Res/SomeFolder" );
         var bOther = new StringBuilder();
         Dump( bOther, otherRoot, 0 );
-        bOther.ToString().Should().Be( """
+        bOther.ToString().ReplaceLineEndings().Should().Be( """
             Other
               empty-file.ts
             Res
@@ -113,6 +111,6 @@ public class AssemblyResourcesTests
               empty-file2.ts
             empty-file.ts
             
-            """ );
+            """.ReplaceLineEndings() );
     }
 }

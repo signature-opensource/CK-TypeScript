@@ -24,6 +24,7 @@ public sealed class PackageJsonFile
     bool? _private;
     string? _main;
     string? _module;
+    string? _packageManager;
     readonly Dictionary<string, string> _scripts;
     HashSet<string>? _workspaces;
     readonly DependencyCollection _dependencies;
@@ -116,6 +117,7 @@ public sealed class PackageJsonFile
         success &= _file.GetNonNullJsonBoolean( _file.Root, monitor, "private", out bool? isPrivate );
         success &= _file.GetNonNullJsonString( _file.Root, monitor, "main", out var main );
         success &= _file.GetNonNullJsonString( _file.Root, monitor, "module", out var module );
+        success &= _file.GetNonNullJsonString( _file.Root, monitor, "packageManager", out var packageManager );
         success &= _file.ReadStringDictionary( _file.Root, monitor, "scripts", out var scripts );
         success &= _file.ReadStringList( _file.Root, monitor, "workspaces", out var workspaces );
 
@@ -138,6 +140,7 @@ public sealed class PackageJsonFile
         _name = name;
         _version = version;
         _module = module;
+        _packageManager = packageManager;
         _main = main;
         _ckVersion = ckVersion.HasValue ? (int)ckVersion : 0;
         _private = isPrivate;
@@ -317,6 +320,11 @@ public sealed class PackageJsonFile
     public string? Module { get => _module; set => _module = value; }
 
     /// <summary>
+    /// Gets or sets the "packageManager".
+    /// </summary>
+    public string? PackageManager { get => _packageManager; set => _packageManager = value; }
+
+    /// <summary>
     /// Gets the all the dependencies from the "devDependencies", "dependencies" and "peerDependencies" properties.
     /// <para>
     /// When the same package appear in more than one section, the unique final <see cref="PackageDependency"/> is merged:
@@ -347,6 +355,7 @@ public sealed class PackageJsonFile
         _file.SetBoolean( _file.Root, "private", _private );
         _file.SetString( _file.Root, "main", _main );
         _file.SetString( _file.Root, "module", _module );
+        _file.SetString( _file.Root, "packageManager", _packageManager );
         _file.SetStringDictionary( _file.Root, "scripts", _scripts );
         _file.SetStringList( _file.Root, "workspaces", _workspaces );
         SetDependencies( _file.Root, _dependencies, peerDependenciesAsDevDependencies );

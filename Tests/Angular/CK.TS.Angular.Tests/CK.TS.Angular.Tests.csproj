@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Nunit" Version="11.0.0" />
+    <PackageReference Include="CK.Testing.Nunit" Version="11.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
@@ -12,8 +12,8 @@
     Project references don't propagate build (transitive or not) NuGet files.
     We need to reference them explicitly.        
     -->
-  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.props" />
-  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.targets" />
+  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.props" />
+  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.targets" />
   <ItemGroup>
     <EmbeddedResource Remove="TSInlineTests/**" />
   </ItemGroup>

@@ -422,14 +422,18 @@ public sealed partial class TypeScriptIntegrationContext
         Throw.DebugAssert( _configuration.IntegrationMode is CKGenIntegrationMode.Inline or CKGenIntegrationMode.NpmPackage );
 
         // Obtains the yarn path or error.
-        var yarnPath = YarnHelper.GetYarnInstallPath( monitor,
-                                                      _configuration.TargetProjectPath,
-                                                      _configuration.InstallYarn );
+        var yarnPath = YarnHelper.EnsureYarnInstallAndGetPath( monitor,
+                                                               _configuration.TargetProjectPath,
+                                                               _configuration.InstallYarn,
+                                                               out var yarnVersion );
         if( !yarnPath.HasValue ) return false;
         _yarnPath = yarnPath.Value;
 
-        // Setup the target project dependencies according to the integration mode.
+        // Sets the "packageManager" to the yarn version (even if we don't use CorePack) to avoid warnings if possible.
+        Throw.DebugAssert( yarnVersion != null );
+        _targetPackageJson.PackageManager = $"yarn@{yarnVersion.ToString( 3 )}";
 
+        // Setup the target project dependencies according to the integration mode.
         using( monitor.OpenInfo( $"Updating target package.json dependencies from code generated ones." ) )
         {
             var updates = _configuration.IntegrationMode is CKGenIntegrationMode.NpmPackage
