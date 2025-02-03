@@ -7,6 +7,15 @@ using System.Reflection;
 
 namespace CK.Core;
 
+/// <summary>
+/// Captures the embedded resource names of an assembly and exposes them through a <see cref="ImmutableOrdinalSortedStrings"/>.
+/// Among them, resource names that starts with "ck@" prefix are exposed by <see cref="CKResourceNames"/>.
+/// <para>
+/// Instances are created by <see cref="AssemblyExtensions.GetResources(Assembly)"/>.
+/// </para>
+/// At a higher level, the <see cref="CreateResourcesContainerForType(IActivityMonitor, Type, string?)"/> provides
+/// the resources defined in the "/Res" folder of a type definition.
+/// </summary>
 public sealed partial class AssemblyResources
 {
     readonly Assembly _assembly;
@@ -122,6 +131,7 @@ public sealed partial class AssemblyResources
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
     /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
+    /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
     public IResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor, Type type, string? containerDisplayName = null )
     {
         return GetCallerInfo( monitor, type, type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(), out var callerPath, out var callerSource )

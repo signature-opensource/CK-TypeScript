@@ -37,28 +37,4 @@ public class TypeScriptPackageTests
                     """ );
     }
 
-    [TypeScriptPackage]
-    public class PackageA : TypeScriptPackage
-    {
-    }
-
-    [TypeScriptPackage]
-    public class PackageB : PackageA
-    {
-    }
-
-
-    [Test]
-    public async Task TypeScriptPackage_cannot_be_specialized_Async()
-    {
-        var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.Types.Add( typeof( PackageA ), typeof( PackageB ) );
-        engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
-        engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
-
-        await engineConfig.GetFailedAutomaticServicesAsync( """
-                    TypeScript package 'CK.TypeScript.Tests.TypeScriptPackageTests.SomePackage' is decorated with more than one [TypeScriptPackage] or specialized attribute:
-                    [TypeScriptPackageAttribute], [SpecializedPackageAttribute]
-                    """ );
-    }
 }

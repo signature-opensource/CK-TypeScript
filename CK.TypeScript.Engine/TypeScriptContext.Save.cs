@@ -6,8 +6,7 @@ using System.Threading;
 
 namespace CK.Setup;
 
-
-public sealed partial class TypeScriptContext
+public sealed partial class TypeScriptContext // Save
 {
     /// <summary>
     /// The current version of this tooling is saved in the "ckVersion" property of

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Non generic base class of <see cref="NgRoutedComponent{T}"/>.
+/// Non generic base class of <see cref="NgRoutedComponentAttribute{T}"/>.
 /// </summary>
 public class NgRoutedComponentAttribute : NgComponentAttribute
 {

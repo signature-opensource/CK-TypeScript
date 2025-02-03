@@ -86,19 +86,17 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
         {
             return true;
         }
-        else
+        // The component.ts resource must exist.
+        if( !Resources.TryGetResource( monitor, fName, out var res ) )
         {
-            if( !Resources.TryGetResource( monitor, fName, out var res ) )
-            {
-                return false;
-            }
-            var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-            Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-            ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-
-            return base.GenerateCode( monitor, context )
-                   && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
+            return false;
         }
+        var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
+        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
+
+        return base.GenerateCode( monitor, context )
+                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]

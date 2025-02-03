@@ -3,6 +3,7 @@ using CK.Setup;
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -23,6 +24,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
+    List<Core.ResourceLocator>? _transformers;
     LocaleCultureSet? _tsLocales;
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
@@ -60,6 +62,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// Gets the local culture set that contains the translations associated to this package.
     /// </summary>
     public LocaleCultureSet? TSLocales => _tsLocales;
+
+    /// <summary>
+    /// Gets the transformer resources from this <see cref="Resources"/>.
+    /// </summary>
+    public ICollection<Core.ResourceLocator> Transfomers => (ICollection<Core.ResourceLocator>?)_transformers ?? Array.Empty<Core.ResourceLocator>();
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -162,11 +169,20 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         {
             _removedResources.AddRange( _resources.AllResources.Where( r => r.LocalResourceName.Span.StartsWith( "ts-locales" ) ) );
         }
+        // Second, collects the transformer files.
+        foreach( var r in _resources.AllResources )
+        {
+            if( !r.ResourceName.EndsWith( ".t" ) ) continue;
+            // Transformers are not copied.
+            _removedResources.Add( r );
+            _transformers ??= new List<Core.ResourceLocator>();
+            _transformers.Add( r );
+        }
 
         // Then handle the RegisterTypeScriptTypeAttribute.
         foreach( var r in _owner.GetTypeCustomAttributes<RegisterTypeScriptTypeAttribute>() )
         {
-            success &= initializer.EnsureRegister( monitor, r.Type, false, attr =>
+            success &= initializer.EnsureRegister( monitor, r.Type, mustBePocoType: false, attr =>
             {
                 // A Register can override because of package ordering...
                 // Even if this is weird.

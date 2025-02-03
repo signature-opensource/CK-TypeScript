@@ -206,6 +206,11 @@ public sealed partial class TypeScriptIntegrationContext
         /// Gets the /src folder. It necessarily exists.
         /// </summary>
         public NormalizedPath SrcFolderPath => IntegrationContext.SrcFolderPath;
+
+        /// <summary>
+        /// Gets the /ck-gen folder. It necessarily exists.
+        /// </summary>
+        public NormalizedPath CKGenFolder => IntegrationContext.CKGenFolder;
     }
 
 }
