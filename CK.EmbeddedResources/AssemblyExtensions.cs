@@ -18,7 +18,7 @@ public static class AssemblyExtensions
 
     /// <summary>
     /// Gets all resource names contained in the assembly (calls <see cref="Assembly.GetManifestResourceNames"/>)
-    /// as a sorted ascending (thanks to <see cref="StringComparer.Ordinal"/>) cached list of strings.
+    /// as a sorted ascending (thanks to <see cref="StringComparer.Ordinal"/>) cached list of strings (see <see cref="ImmutableOrdinalSortedStrings"/>).
     /// </summary>
     /// <param name="assembly">Assembly </param>
     /// <returns>An ordered list of the resource names.</returns>

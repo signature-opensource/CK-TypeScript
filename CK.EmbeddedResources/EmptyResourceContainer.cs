@@ -45,6 +45,18 @@ public sealed class EmptyResourceContainer : IResourceContainer
     /// <inheritdoc />
     public StringComparer NameComparer => StringComparer.Ordinal;
 
+    /// <summary>
+    /// Always false.
+    /// </summary>
+    public bool HasLocalFilePathSupport => false;
+
+    /// <summary>
+    /// Always returns null.
+    /// </summary>
+    /// <param name="resource">The resource.</param>
+    /// <returns>A null local file path.</returns>
+    public string? GetLocalFilePath( in ResourceLocator resource ) => null;
+
     /// <inheritdoc />
     public Stream GetStream( in ResourceLocator resource ) => Throw.InvalidOperationException<Stream>();
 
@@ -80,4 +92,5 @@ public sealed class EmptyResourceContainer : IResourceContainer
 
     /// <inheritdoc />
     public override string ToString() => _displayName;
+
 }

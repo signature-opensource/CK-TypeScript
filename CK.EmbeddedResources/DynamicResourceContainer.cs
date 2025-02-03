@@ -8,9 +8,16 @@ using System.Runtime.InteropServices;
 namespace CK.Core;
 
 /// <summary>
-/// A resource container where reader or writer resources can be registered.
+/// A resource container in which a reader or writer function for a resource can be registered.
 /// <para>
-/// The path separator is '/'.
+/// Whether a reader or a writer is registered for a resource is irrelevant: this container
+/// adapts its behavior to always support both <see cref="GetStream(in ResourceLocator)"/>
+/// and <see cref="WriteStream(in ResourceLocator, Stream)"/>.
+/// </para>
+/// <para>
+/// The path separator is '/', '\' are normaized to '/'. This kind of container
+/// doesn't support <see cref="ResourceLocator.LocalFilePath"/> (it is always null)
+/// and <see cref="IResourceContainer.HasLocalFilePathSupport"/> is false by design.
 /// </para>
 /// </summary>
 public sealed class DynamicResourceContainer : IResourceContainer
@@ -34,7 +41,10 @@ public sealed class DynamicResourceContainer : IResourceContainer
     }
 
     /// <summary>
-    /// Adds a new dynamic reader resource.
+    /// Adds a new resource with a dynamic reader.
+    /// <para>
+    /// This throws if the resource is already associated to a reader or a writer.
+    /// </para>
     /// </summary>
     /// <param name="resourcePath">The resource path. Must not be empty or whitespace nor contains '\'.</param>
     /// <param name="streamFactory">The function that must provide the <see cref="ResourceLocator.GetStream()"/>.</param>
@@ -46,9 +56,15 @@ public sealed class DynamicResourceContainer : IResourceContainer
     }
 
     /// <summary>
-    /// Adds a new dynamic writer resource.
+    /// Adds a new resource with a dynamic writer.
+    /// <para>
+    /// This throws if the resource is already associated to a reader or a writer.
+    /// </para>
     /// </summary>
-    /// <param name="resourcePath">The resource path. Must not be empty or whitespace nor contains '\'.</param>
+    /// <param name="resourcePath">
+    /// The resource path. '\' are normalized ro '/'.
+    /// Must not be empty or whitespace, contains '//' nor ends with a '/'.
+    /// </param>
     /// <param name="streamWriter">The function that must write the stream content.</param>
     /// <returns>The resource locator.</returns>
     public ResourceLocator AddWriter( string resourcePath, Action<Stream> streamWriter )
@@ -68,7 +84,10 @@ public sealed class DynamicResourceContainer : IResourceContainer
             resourcePath = resourcePath.Substring( 1 );
         }
         int idx = ImmutableOrdinalSortedStrings.IndexOf( resourcePath, _names.Span );
-        if( idx >= 0 ) return default;
+        if( idx >= 0 )
+        {
+            Throw.InvalidOperationException( $"Resource '{resourcePath}' already exists." );
+        }
         idx = ~idx;
         if( _names.Length == _pathStore.Length )
         {
@@ -123,6 +142,10 @@ public sealed class DynamicResourceContainer : IResourceContainer
 
     /// <inheritdoc />
     public StringComparer NameComparer => StringComparer.Ordinal;
+
+    bool IResourceContainer.HasLocalFilePathSupport => false;
+
+    string? IResourceContainer.GetLocalFilePath( in ResourceLocator resource ) => null;
 
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder ) => DoGetAllResources( folder, this, _names );

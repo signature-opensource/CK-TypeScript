@@ -6,23 +6,35 @@ namespace CK.Core;
 
 /// <summary>
 /// File system implementation of a <see cref="IResourceContainer"/>.
+/// <para>
+/// By default <see cref="HasLocalFilePathSupport"/> is true but this can be changed when
+/// instantiating the container to prrvent direct access to the file system.
+/// </para>
 /// </summary>
 public sealed class FileSystemResourceContainer : IResourceContainer
 {
     readonly string _displayName;
     readonly string _root;
+    readonly bool _allowLocalFilePath;
 
     /// <summary>
     /// Iniitalizes a new <see cref="FileSystemResourceContainer"/>.
     /// </summary>
     /// <param name="root">The root directory. This should be an absolute path.</param>
     /// <param name="displayName">The <see cref="DisplayName"/> for this container.</param>
-    /// <param name="filters">Specifies which files or directories are excluded.</param>
-    public FileSystemResourceContainer( string root, string displayName )
+    /// <param name="allowLocalFilePath">
+    /// Gets whether <see cref="GetLocalFilePath(in ResourceLocator)"/> returns the file path.
+    /// <para>
+    /// When set to false, this container hides the fact that it is bound to the file system: it behaves
+    /// like a purely readonly resource container.
+    /// </para>
+    /// </param>
+    public FileSystemResourceContainer( string root, string displayName, bool allowLocalFilePath = true )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
         Throw.CheckArgument( Path.IsPathRooted( root ) );
         _displayName = displayName;
+        _allowLocalFilePath = allowLocalFilePath;
         _root = Path.GetFullPath( root ) + Path.DirectorySeparatorChar;
     }
 
@@ -61,6 +73,16 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         {
             yield return new ResourceLocator( this, f );
         }
+    }
+
+    /// <inheritdoc />
+    public bool HasLocalFilePathSupport => _allowLocalFilePath;
+
+    /// <inheritdoc />
+    public string? GetLocalFilePath( in ResourceLocator resource )
+    {
+        resource.CheckContainer( this );
+        return !_allowLocalFilePath ? null : resource.ResourceName;
     }
 
     /// <inheritdoc />

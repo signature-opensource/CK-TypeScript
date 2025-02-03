@@ -21,18 +21,36 @@ public sealed partial class AssemblyResources
     readonly Assembly _assembly;
     readonly ImmutableOrdinalSortedStrings _allResourceNames;
     readonly ReadOnlyMemory<string> _ckResourceNames;
+    readonly NormalizedPath _localDevFolder;
 
     internal AssemblyResources( Assembly a )
     {
         _assembly = a;
         _allResourceNames = ImmutableOrdinalSortedStrings.UnsafeCreate( a.GetManifestResourceNames(), mustSort: true );
         _ckResourceNames = _allResourceNames.GetPrefixedStrings( "ck@" );
+        var localProjects = LocalDevSolution.LocalProjectPaths;
+        if( localProjects.Count > 0 )
+        {
+            var name = _assembly.GetName().Name;
+            if( name != null )
+            {
+                localProjects.TryGetValue( name, out _localDevFolder );
+            }
+        }
     }
 
     /// <summary>
     /// Gets the assembly.
     /// </summary>
     public Assembly Assembly => _assembly;
+
+    /// <summary>
+    /// Gets the local development folder for this assembly.
+    /// To be the <see cref="NormalizedPath.IsEmptyPath"/>, the runnig code must be in
+    /// a git working folder, a ".sln" or ".slx" file conventionnaly named must exist
+    /// and contain a .csproj reference that matches the name of this assembly.
+    /// </summary>
+    public NormalizedPath LocalDevFolder => _localDevFolder;
 
     /// <summary>
     /// Gets all the resource names.

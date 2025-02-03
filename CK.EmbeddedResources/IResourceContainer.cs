@@ -136,6 +136,31 @@ public interface IResourceContainer
     ReadOnlySpan<char> GetResourceName( ResourceLocator resource );
 
     /// <summary>
+    /// Gets whether this container can contain <see cref="ResourceLocator"/> that are
+    /// bound to a local file on the file system.
+    /// <para>
+    /// When this is false, <see cref="GetLocalFilePath(in ResourceLocator)"/> always
+    /// returns a null path, but true doesn't necessarily mean that all existing resources
+    /// have a local file path: only some of them may have a local file path.
+    /// </para>
+    /// <para>
+    /// When a resource has a non null <see cref="ResourceLocator.LocalFilePath"/>, the file
+    /// content may be the exact same content as the one returned by <see cref="GetStream(in ResourceLocator)"/>
+    /// or may diverge from it either because it has been altered after its content has been captured by
+    /// the container or because the resource stream is a projection (a transformation) of the file content.
+    /// </para>
+    /// </summary>
+    bool HasLocalFilePathSupport { get; }
+
+    /// <summary>
+    /// Tries to get a local file path for the resource (that must belong to this container).
+    /// See <see cref="HasLocalFilePathSupport"/>.
+    /// </summary>
+    /// <param name="resource">The resource locator.</param>
+    /// <returns>The resource's local file name or null..</returns>
+    string? GetLocalFilePath( in ResourceLocator resource );
+
+    /// <summary>
     /// Returns the <see cref="DisplayName"/>.
     /// </summary>
     /// <returns>This container's DisplayName.</returns>

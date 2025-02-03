@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace CK.Core;
 
+
 sealed class AssemblySubContainer : IResourceContainer
 {
     readonly ReadOnlyMemory<string> _names;
@@ -15,6 +16,9 @@ sealed class AssemblySubContainer : IResourceContainer
 
     internal AssemblySubContainer( AssemblyResources assemblyResources, string prefix, string displayName, ReadOnlyMemory<string> resourceNames )
     {
+        Throw.DebugAssert( prefix.Length == 0
+                           || (prefix.StartsWith( "ck@" )
+                                && (prefix.Length == 3 || prefix.EndsWith( '/' ))) );
         _assemblyResources = assemblyResources;
         _prefix = prefix;
         _displayName = displayName;
@@ -36,9 +40,21 @@ sealed class AssemblySubContainer : IResourceContainer
 
     public string ResourcePrefix => _prefix;
 
+    public bool HasLocalFilePathSupport => !_assemblyResources.LocalDevFolder.IsEmptyPath;
+
+    public string? GetLocalFilePath( in ResourceLocator resource )
+    {
+        var p = _assemblyResources.LocalDevFolder;
+        if( p.IsEmptyPath ) return null;
+        resource.CheckContainer( this );
+        Throw.DebugAssert( resource.ResourceName.StartsWith( "ck@" ) );
+        return string.Concat( p.Path.AsSpan(), "/", resource.ResourceName.AsSpan( 3 ) );
+    }
+
+
     public Stream GetStream( in ResourceLocator resource )
     {
-        Throw.CheckArgument( resource.IsValid && resource.Container == this );
+        resource.CheckContainer( this );
         return _assemblyResources.OpenResourceStream( resource.ResourceName ); 
     }
 

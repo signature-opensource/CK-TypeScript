@@ -68,14 +68,29 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// This is a simple relay to <see cref="IResourceContainer.GetResourceName(ResourceLocator)"/>.
     /// </para>
     /// </summary>
-    public ReadOnlySpan<char> Name
-    {
-        get
-        {
-            Throw.CheckState( IsValid );
-            return _container.GetResourceName( this );
-        }
-    }
+    public ReadOnlySpan<char> Name => _container.GetResourceName( this );
+
+    /// <summary>
+    /// Gets the local file path bound to this resource. See <see cref="IResourceContainer.HasLocalFilePathSupport"/>.
+    /// <para>
+    /// This is a simple relay to <see cref="IResourceContainer.GetLocalFilePath(in ResourceLocator)"/>.
+    /// </para>
+    /// </summary>
+    public string? LocalFilePath => _container.GetLocalFilePath( this );
+
+    /// <summary>
+    /// Gets the resource content.
+    /// See <see cref="IResourceContainer.GetStream(in ResourceLocator)"/>.
+    /// </summary>
+    /// <returns>The resource's content stream.</returns>
+    public Stream GetStream() => _container.GetStream( this );
+
+    /// <summary>
+    /// Writes the content of this resource to a stream.
+    /// See <see cref="IResourceContainer.WriteStream(ResourceLocator, Stream)"/>.
+    /// </summary>
+    /// <param name="target">The target stream.</param>
+    public void WriteStream( Stream target ) => _container.WriteStream( this, target );
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="ResourceName"/>
@@ -87,28 +102,6 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     {
         return _container == other._container
                && (!IsValid || _container.NameComparer.Equals( _resourceName, other._resourceName ));
-    }
-
-    /// <summary>
-    /// Gets the resource content.
-    /// See <see cref="IResourceContainer.GetStream(in ResourceLocator)"/>.
-    /// </summary>
-    /// <returns>The resource's content stream.</returns>
-    public Stream GetStream()
-    {
-        Throw.CheckState( IsValid );
-        return _container.GetStream( this );
-    }
-
-    /// <summary>
-    /// Writes the content of this resource to a stream.
-    /// See <see cref="IResourceContainer.WriteStream(ResourceLocator, Stream)"/>.
-    /// </summary>
-    /// <param name="target">The target stream.</param>
-    public void WriteStream( Stream target )
-    {
-        Throw.CheckState( IsValid );
-        _container.WriteStream( this, target );
     }
 
     /// <summary>
