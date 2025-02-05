@@ -388,10 +388,21 @@ sealed class TSContextInitializer
     }
 
     // Step 4.
-    static bool CollectTypeScriptPackages( IActivityMonitor monitor, IGeneratedBinPath genBinPath, out ImmutableArray<TypeScriptPackageAttributeImpl> packages )
+    static bool CollectTypeScriptPackages( IActivityMonitor monitor,
+                                           IGeneratedBinPath genBinPath,
+                                           out ImmutableArray<TypeScriptPackageAttributeImpl> packages )
     {
         var bPackages = ImmutableArray.CreateBuilder<TypeScriptPackageAttributeImpl>();
         bool success = true;
+        //
+        // We currently consider all the TypeScriptPackage of the BinPath: there is no way to restrict
+        // the set of TypeScriptPackage per TypeScriptBinPathAspectConfiguration.
+        // This may be done here with an ExcludedTypes (or ExcludedTypeScriptPackageTypes to avoid an exclude list on the Poco types).
+        // Note that we may be able to manage an exclude list on the Poco types thanks to the work on the PocoTypeSet...
+        //
+        // TypeScriptPackage real objects are the spine of the TS architecture. A TypeScriptPackage is the container of its "Res/" resources
+        // and drives the topology of the TS graph by replicating the topological constraints of the real object.
+        // 
         foreach( var p in genBinPath.EngineMap.StObjs.OrderedAfterContentStObjs.Where( o => typeof( TypeScriptPackage ).IsAssignableFrom( o.ClassType ) ) )
         {
             var a = p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>();

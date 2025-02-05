@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="8.1.0" />
+    <PackageReference Include="CK.Setup.Dependency" Version="19.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
+    <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
+    <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
+  </ItemGroup>
+
+</Project>

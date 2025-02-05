@@ -1,9 +1,5 @@
 using CK.Core;
 using CK.Transform.Core;
-using System.Buffers;
-using System.Diagnostics;
-using static CK.Core.ActivityMonitor;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Less.Transform;
 
