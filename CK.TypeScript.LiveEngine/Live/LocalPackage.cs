@@ -2,7 +2,7 @@ using CK.Core;
 
 namespace CK.TypeScript.LiveEngine;
 
-sealed class LocalPackage
+public sealed class LocalPackage
 {
     readonly FileSystemResourceContainer _resources;
 
@@ -10,6 +10,11 @@ sealed class LocalPackage
     {
         _resources = new FileSystemResourceContainer( localResPath, displayName );
     }
+
+    /// <summary>
+    /// Gets the full path "Res\" (ending with <see cref="Path.DirectorySeparatorChar"/>).
+    /// </summary>
+    public string ResPath => _resources.ResourcePrefix;
 
     /// <summary>
     /// Gets the package "Res/" folder resources.

@@ -1,4 +1,5 @@
 using CK.Core;
+using System.Collections.Generic;
 
 namespace CK.TypeScript.LiveEngine;
 
@@ -13,9 +14,9 @@ sealed partial class LiveTSLocales
             _p = p;
         }
 
-        public bool ApplyLocaleCultureSet( IActivityMonitor monitor, LiveState state, FinalLocaleCultureSet final )
+        public bool ApplyLocaleCultureSet( IActivityMonitor monitor, IReadOnlySet<NormalizedCultureInfo> activeCultures, FinalLocaleCultureSet final )
         {
-            if( !_p.Resources.LoadLocales( monitor, state.ActiveCultures, out var locales ) )
+            if( !_p.Resources.LoadLocales( monitor, activeCultures, out var locales ) )
             {
                 return false;
             }

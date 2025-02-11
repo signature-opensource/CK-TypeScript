@@ -68,7 +68,10 @@ static class StateSerializer
         }
     }
 
-    internal static LiveState? ReadLiveState( IActivityMonitor monitor, CKBinaryReader r, NormalizedPath loadFolder )
+    internal static LiveState? ReadLiveState( IActivityMonitor monitor,
+                                              CKBinaryReader r,
+                                              NormalizedPath loadFolder,
+                                              NormalizedPath rootStateFile )
     {
         int v = r.ReadInt32();
         if( v != CurrentVersion )
@@ -95,7 +98,7 @@ static class StateSerializer
             }
             localPackages = b.MoveToImmutable();
         }
-        return new LiveState( targetProjectPath, watchRoot, activeCultures, loadFolder, localPackages );
+        return new LiveState( targetProjectPath, watchRoot, activeCultures, loadFolder, rootStateFile, localPackages );
     }
 
     internal static bool WriteFile( IActivityMonitor monitor, NormalizedPath filePath, Action<IActivityMonitor,CKBinaryWriter> write )
