@@ -94,9 +94,9 @@ public sealed partial class TypeScriptContext // Save
                         {
                             foreach( var p in _initializer.Packages )
                             {
-                                if( p.LocalPath != null )
+                                if( p.LocalResPath != null )
                                 {
-                                    liveState.AddLocalPackage( monitor, Path.Combine( p.LocalPath, "Res" ), p.Resources.DisplayName );
+                                    liveState.AddLocalPackage( monitor, p.LocalResPath, p.Resources.DisplayName );
                                 }
                                 else
                                 {

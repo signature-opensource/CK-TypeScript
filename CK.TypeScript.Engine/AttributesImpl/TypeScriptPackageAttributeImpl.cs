@@ -19,7 +19,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
-    readonly string? _localPath;
+    readonly string? _localResPath;
     readonly IResourceContainer _resources;
     readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
@@ -59,10 +59,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     public IResourceContainer Resources => _resources;
 
     /// <summary>
-    /// Gets the non null local full path of the folder that defines this package
-    /// if this is a local package.
+    /// Gets the non null local full path of the folder "Res/" if this is a local package.
     /// </summary>
-    public string? LocalPath => _localPath;
+    public string? LocalResPath => _localResPath;
 
     /// <summary>
     /// Gets the local culture set that contains the translations associated to this package.
@@ -95,7 +94,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
         if( !attr.DisableResources )
         {
-            _localPath = _resources.GetLocalPath();
+            _localResPath = _resources.GetLocalPath();
         }
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );

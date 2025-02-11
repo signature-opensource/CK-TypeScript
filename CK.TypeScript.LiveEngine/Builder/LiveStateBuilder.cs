@@ -75,12 +75,19 @@ public sealed class LiveStateBuilder
 
         static NormalizedPath CommonParentPath( NormalizedPath p1, NormalizedPath p2 )
         {
-            int len = Math.Min( p1.Parts.Count, p2.Parts.Count );
+            int len = p1.Parts.Count;
+            if( len > p2.Parts.Count )
+            {
+                (p1,p2) = (p2,p1);
+                len = p1.Parts.Count;
+            }
             int iCommon = 0;
             while( iCommon < len && p1.Parts[iCommon] == p2.Parts[iCommon] ) ++iCommon;
             return iCommon == 0
                      ? default
-                     : p1.RemoveParts( iCommon, p1.Parts.Count - iCommon );
+                     : len == iCommon
+                        ? p1
+                        : p1.RemoveParts( iCommon, len - iCommon );
         }
 
     }
@@ -90,10 +97,13 @@ public sealed class LiveStateBuilder
         bool success = true;
         if( !Directory.Exists( _stateFolder ) )
         {
+            monitor.Info( $"Creating '{LiveState.FolderWatcher}' folder with '.gitignore' all." );
             Directory.CreateDirectory( _stateFolder );
+            File.WriteAllText( _stateFolder.AppendPart( ".gitignore" ), "*" );
         }
         success &= _locales.WriteTSLocalesState( monitor, _stateFolder );
         // Ends with the LiveState.dat.
+        monitor.Info( $"Watch root is '{_watchRoot}'." );
         success &= StateSerializer.WriteFile( monitor,
                                               _stateFolder.AppendPart( LiveState.FileName ),
                                               ( monitor, w ) => StateSerializer.WriteLiveState( w,
