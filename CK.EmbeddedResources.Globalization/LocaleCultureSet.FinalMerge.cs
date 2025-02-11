@@ -2,9 +2,21 @@ namespace CK.Core;
 
 public sealed partial class LocaleCultureSet
 {
-    bool FinalMergeWith( IActivityMonitor monitor, LocaleCultureSet above )
+    /// <summary>
+    /// Updates this culture set with the content of <paramref name="above"/>.
+    /// If this set contains overrides, they apply and if they try to redefine an existing
+    /// resource in above, this is an error.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="above">The base resources.</param>
+    /// <param name="isPartialSet">
+    /// When true, an override that overrides nothing is kept as it may apply to the eventual set.
+    /// When false, an override that overrides nothing is discarded and a warning is emitted.
+    /// </param>
+    /// <returns>True on success, false on error.</returns>
+    internal bool FinalMergeWith( IActivityMonitor monitor, LocaleCultureSet above, bool isPartialSet )
     {
-        bool success = MergeFinalTranslations( monitor, above._translations );
+        bool success = MergeFinalTranslations( monitor, above._translations, isPartialSet );
         if( above._children != null )
         {
             if( _children == null )
@@ -35,7 +47,7 @@ public sealed partial class LocaleCultureSet
                         }
                         mine = EnsureDirectChild( mine, a._culture );
                     }
-                    success &= mine.MergeFinalTranslations( monitor, a._translations );
+                    success &= mine.MergeFinalTranslations( monitor, a._translations, isPartialSet );
                 }
             }
         }
@@ -62,7 +74,7 @@ public sealed partial class LocaleCultureSet
         }
     }
 
-    bool MergeFinalTranslations( IActivityMonitor monitor, Dictionary<string, TranslationValue>? above )
+    bool MergeFinalTranslations( IActivityMonitor monitor, Dictionary<string, TranslationValue>? above, bool isPartialSet )
     {
         bool success = true;
         if( above != null && above.Count > 0 )
@@ -106,7 +118,8 @@ public sealed partial class LocaleCultureSet
                     }
                     else
                     {
-                        if( aValue.IsOverride )
+                        // No existing translation defined.
+                        if( isPartialSet && aValue.IsOverride )
                         {
                             monitor.Warn( $"Invalid override 'O:{aKey}' in {aValue.Origin}: the key doesn't exist, there's nothing to override." );
                         }

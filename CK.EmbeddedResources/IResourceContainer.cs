@@ -157,7 +157,7 @@ public interface IResourceContainer
     /// See <see cref="HasLocalFilePathSupport"/>.
     /// </summary>
     /// <param name="resource">The resource locator.</param>
-    /// <returns>The resource's local file name or null..</returns>
+    /// <returns>The resource's local file name or null.</returns>
     string? GetLocalFilePath( in ResourceLocator resource );
 
     /// <summary>

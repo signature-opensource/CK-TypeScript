@@ -8,6 +8,21 @@ namespace CK.Core;
 public static class ResourceContainerExtensions
 {
     /// <summary>
+    /// Gets the local file path of the root of this container.
+    /// </summary>
+    /// <param name="container">This container.</param>
+    /// <returns>The container's local path or null.</returns>
+    public static string? GetLocalPath( this IResourceContainer container )
+    {
+        if( container.HasLocalFilePathSupport )
+        {
+            var root = new ResourceLocator( container, container.ResourcePrefix );
+            return container.GetLocalFilePath( root );
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Tries to get an existing resource and logs an error if it is not found.
     /// </summary>
     /// <param name="container">This container.</param>

@@ -38,16 +38,34 @@ public sealed partial class LocaleCultureSet
         }
     }
 
-    public LocaleCultureSet( Core.ResourceLocator origin, NormalizedCultureInfo c )
+    public LocaleCultureSet( ResourceLocator origin, NormalizedCultureInfo c )
         : this( origin, c, null )
     {
     }
 
-    internal LocaleCultureSet( Core.ResourceLocator origin, NormalizedCultureInfo c, Dictionary<string, TranslationValue>? translations )
+    internal LocaleCultureSet( ResourceLocator origin, NormalizedCultureInfo c, Dictionary<string, TranslationValue>? translations )
     {
         _origin = origin;
         _culture = c;
         _translations = translations;
+    }
+
+    /// <summary>
+    /// Creates a new culture set with its initial translations and children.
+    /// This is typically used to restore a serialized state.
+    /// </summary>
+    /// <param name="origin">The <see cref="Origin"/>.</param>
+    /// <param name="c">The <see cref="Culture"/>.</param>
+    /// <param name="translations">The <see cref="Translations"/> if any.</param>
+    /// <param name="children">The <see cref="Children"/> if any.</param>
+    public static LocaleCultureSet UnsafeCreate( ResourceLocator origin,
+                                                 NormalizedCultureInfo c,
+                                                 Dictionary<string, TranslationValue>? translations,
+                                                 List<LocaleCultureSet>? children )
+    {
+        var set = new LocaleCultureSet( origin, c, translations );
+        set._children = children;
+        return set;
     }
 
     /// <summary>
@@ -73,7 +91,7 @@ public sealed partial class LocaleCultureSet
     /// <summary>
     /// Gets the children (more specific culture sets).
     /// </summary>
-    public IEnumerable<LocaleCultureSet> Children => _children ?? Enumerable.Empty<LocaleCultureSet>();
+    public IReadOnlyCollection<LocaleCultureSet> Children => (IReadOnlyCollection<LocaleCultureSet>?)_children ?? Array.Empty<LocaleCultureSet>();
 
     /// <summary>
     /// Gets all the culture sets, starting with this one (depth-first traversal).
@@ -94,36 +112,6 @@ public sealed partial class LocaleCultureSet
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Tries to create a unified set of resources from multiple sets. Order matters: first set values can be overridden
-    /// by subsequent ones.
-    /// <para>
-    /// The <see cref="FinalLocaleCultureSet.Root"/>, as opposed to sets created by <see cref="ResourceContainerGlobalizationExtension.LoadLocales"/>
-    /// is compact: parent cultures, even with no translation, always exist: if only "fr-FR" resources exist, the final
-    /// root set will have a "fr" set with no translation that will contain the "fr-FR" in its <see cref="Children"/>.
-    /// </para>
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="locales">The list of locales to process.</param>
-    /// <param name="finalSet">The resulting final set.</param>
-    /// <returns>True on success, false on error.</returns>
-    public static bool CreateFinalSet( IActivityMonitor monitor, IEnumerable<LocaleCultureSet> locales, [NotNullWhen(true)]out FinalLocaleCultureSet? finalSet )
-    {
-        bool success = true;
-        var f = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.GeneratedCode, "FinalLocales" ), NormalizedCultureInfo.CodeDefault );
-        foreach( var loc in locales )
-        {
-            success &= f.FinalMergeWith( monitor, loc );
-        }
-        if( success )
-        {
-            finalSet = new FinalLocaleCultureSet( f );
-            return true;
-        }
-        finalSet = null;
-        return false;
     }
 
     internal void AddSpecific( LocaleCultureSet specificSet )

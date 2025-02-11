@@ -3,7 +3,7 @@ namespace CK.Core;
 /// <summary>
 /// A translation value is a <see cref="Text"/> that comes from an <see cref="Origin"/>.
 /// <para>
-/// Equality ignores the <see cref="Origin"/> and : two values are equal if their <see cref="Text"/> are equal.
+/// Equality ignores the <see cref="Origin"/> and <see cref="IsOverride"/>: two values are equal if their <see cref="Text"/> are equal.
 /// </para>
 /// </summary>
 public readonly struct TranslationValue : IEquatable<TranslationValue>

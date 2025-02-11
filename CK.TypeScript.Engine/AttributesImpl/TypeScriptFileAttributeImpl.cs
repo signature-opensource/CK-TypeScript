@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace CK.TypeScript.Engine;
 
-
-
 /// <summary>
 /// Creates a TypeScript resource file (from an embedded '.ts' resource).
 /// </summary>

@@ -6,11 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization.Sliced" Version="8.1.0" />
-    <PackageReference Include="CK.Setup.Dependency" Version="19.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\CK.EmbeddedResources.Globalization\CK.EmbeddedResources.Globalization.csproj" />
     <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
     <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
     <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />

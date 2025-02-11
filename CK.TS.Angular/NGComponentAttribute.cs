@@ -10,13 +10,26 @@ namespace CK.TS.Angular;
 /// <typeparam name="T">The package to which this component belongs.</typeparam>
 public class NgComponentAttribute : TypeScriptPackageAttribute
 {
+    internal const string BaseActualAttributeTypeAssemblyQualifiedName = "CK.TS.Angular.Engine.NgComponentAttributeImpl, CK.TS.Angular.Engine";
+
     internal protected NgComponentAttribute( [CallerFilePath] string? callerFilePath = null )
-        : base( "CK.TS.Angular.Engine.NgComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
+        : base( BaseActualAttributeTypeAssemblyQualifiedName, callerFilePath )
     {
     }
 
-    private protected NgComponentAttribute( string actualAttributeTypeAssemblyQualifiedName, string? finalCallerFilePath )
-        : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath )
+    private protected NgComponentAttribute( string actualAttributeTypeAssemblyQualifiedName,
+                                            string? finalCallerFilePath,
+                                            bool disableResources = false )
+    : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath, disableResources )
+    {
+    }
+
+
+    // Internal: Only AppComponent uses this to disableResources.
+    internal NgComponentAttribute( bool disableResources,
+                                   string actualAttributeTypeAssemblyQualifiedName,
+                                   [CallerFilePath]string? finalCallerFilePath = null )
+        : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath, disableResources )
     {
     }
 

@@ -5,11 +5,12 @@ using System.IO;
 namespace CK.Core;
 
 /// <summary>
-/// An empty file container with no contents.
+/// An empty resource container with no contents.
 /// </summary>
 public sealed class EmptyResourceContainer : IResourceContainer
 {
     readonly string _displayName;
+    readonly string _resourcePrefix;
 
     /// <summary>
     /// A default empty container named "Generated Code Container".
@@ -17,13 +18,15 @@ public sealed class EmptyResourceContainer : IResourceContainer
     public static readonly EmptyResourceContainer GeneratedCode = new EmptyResourceContainer( "Generated Code Container" );
 
     /// <summary>
-    /// Initiaizes a new empty container with a display name.
+    /// Initializes a new empty container with a display name.
     /// </summary>
     /// <param name="displayName">The name of this empty container.</param>
-    public EmptyResourceContainer( string displayName )
+    /// <param name="resourcePrefix">Optional resource prefix. Defaults to the empty string.</param>
+    public EmptyResourceContainer( string displayName, string? resourcePrefix = null )
     {
-        Throw.CheckNotNullOrWhiteSpaceArgument(displayName);
+        Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
         _displayName = displayName;
+        _resourcePrefix = resourcePrefix ?? string.Empty;
     }
 
     /// <summary>
@@ -34,10 +37,8 @@ public sealed class EmptyResourceContainer : IResourceContainer
     /// <inheritdoc />
     public string DisplayName => _displayName;
 
-    /// <summary>
-    /// Always the empty string.
-    /// </summary>
-    public string ResourcePrefix => "";
+    /// <inheritdoc />
+    public string ResourcePrefix => _resourcePrefix;
 
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources => [];

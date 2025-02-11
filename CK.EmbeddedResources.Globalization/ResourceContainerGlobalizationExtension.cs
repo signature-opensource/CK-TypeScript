@@ -35,12 +35,14 @@ public static class ResourceContainerGlobalizationExtension
     /// <param name="container">The container of resources.</param>
     /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
     /// <param name="locales">The loaded locales. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
+    /// <param name="folder">The folder to load.</param>
+    /// <param name="isOverrideFolder">True for pure override folder (no new resources are allowed).</param>
     /// <returns>True on success, false on error.</returns>
     public static bool LoadLocales( this IResourceContainer container,
                                     IActivityMonitor monitor,
                                     IReadOnlySet<NormalizedCultureInfo> activeCultures,
                                     out LocaleCultureSet? locales,
-                                    string folder = "locales",
+                                    string folder = "ts-locales",
                                     bool isOverrideFolder = false )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( folder );

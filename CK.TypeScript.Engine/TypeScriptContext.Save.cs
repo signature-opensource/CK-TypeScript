@@ -87,6 +87,24 @@ public sealed partial class TypeScriptContext // Save
                 }
                 else
                 {
+                    var liveState = _integrationContext._liveState;
+                    if( liveState != null )
+                    {
+                        using( monitor.OpenInfo( "Configuring ck-watch live state." ) )
+                        {
+                            foreach( var p in _initializer.Packages )
+                            {
+                                if( p.LocalPath != null )
+                                {
+                                    liveState.AddLocalPackage( monitor, Path.Combine( p.LocalPath, "Res" ), p.Resources.DisplayName );
+                                }
+                                else
+                                {
+                                    liveState.AddRegularPackage( monitor, p.TSLocales );
+                                }
+                            }
+                        }
+                    }
                     success &= _integrationContext.Run( monitor, saver );
                 }
             }

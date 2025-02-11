@@ -40,17 +40,16 @@ sealed class AssemblySubContainer : IResourceContainer
 
     public string ResourcePrefix => _prefix;
 
-    public bool HasLocalFilePathSupport => !_assemblyResources.LocalDevFolder.IsEmptyPath;
+    public bool HasLocalFilePathSupport => !_assemblyResources.LocalPath.IsEmptyPath;
 
     public string? GetLocalFilePath( in ResourceLocator resource )
     {
-        var p = _assemblyResources.LocalDevFolder;
+        var p = _assemblyResources.LocalPath;
         if( p.IsEmptyPath ) return null;
         resource.CheckContainer( this );
         Throw.DebugAssert( resource.ResourceName.StartsWith( "ck@" ) );
         return string.Concat( p.Path.AsSpan(), "/", resource.ResourceName.AsSpan( 3 ) );
     }
-
 
     public Stream GetStream( in ResourceLocator resource )
     {

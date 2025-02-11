@@ -21,7 +21,7 @@ public sealed partial class AssemblyResources
     readonly Assembly _assembly;
     readonly ImmutableOrdinalSortedStrings _allResourceNames;
     readonly ReadOnlyMemory<string> _ckResourceNames;
-    readonly NormalizedPath _localDevFolder;
+    readonly NormalizedPath _localPath;
 
     internal AssemblyResources( Assembly a )
     {
@@ -34,7 +34,7 @@ public sealed partial class AssemblyResources
             var name = _assembly.GetName().Name;
             if( name != null )
             {
-                localProjects.TryGetValue( name, out _localDevFolder );
+                localProjects.TryGetValue( name, out _localPath );
             }
         }
     }
@@ -50,7 +50,7 @@ public sealed partial class AssemblyResources
     /// a git working folder, a ".sln" or ".slx" file conventionnaly named must exist
     /// and contain a .csproj reference that matches the name of this assembly.
     /// </summary>
-    public NormalizedPath LocalDevFolder => _localDevFolder;
+    public NormalizedPath LocalPath => _localPath;
 
     /// <summary>
     /// Gets all the resource names.

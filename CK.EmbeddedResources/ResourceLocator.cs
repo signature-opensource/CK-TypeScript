@@ -63,7 +63,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     }
 
     /// <summary>
-    /// Gets the name of this resource any folder related information.
+    /// Gets the name of this resource without any folder related information.
     /// <para>
     /// This is a simple relay to <see cref="IResourceContainer.GetResourceName(ResourceLocator)"/>.
     /// </para>

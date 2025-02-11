@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CK.Setup;
 
@@ -24,7 +25,6 @@ public sealed partial class TypeScriptContext
     readonly TSContextInitializer _initializer;
     readonly TypeScriptRoot _tsRoot;
     readonly PocoCodeGenerator _pocoGenerator;
-    readonly List<LocaleCultureSet> _tsLocales;
     readonly FileSystemResourceContainer? _ckGenTransform;
 
     internal TypeScriptContext( ICodeGenerationContext codeCtx,
@@ -36,7 +36,6 @@ public sealed partial class TypeScriptContext
         _integrationContext = initializer.IntegrationContext;
         _binPathConfiguration = tsBinPathConfig;
         _initializer = initializer;
-        _tsLocales = new List<LocaleCultureSet>();
         var tsConfig = tsBinPathConfig.AspectConfiguration;
         Throw.DebugAssert( tsConfig != null );
         _tsRoot = new TypeScriptRoot( tsConfig.LibraryVersions.ToImmutableDictionary(),
@@ -52,7 +51,9 @@ public sealed partial class TypeScriptContext
         _tsRoot.AfterCodeGeneration += OnAfterCodeGeneration;
         Root.Root.EnsureBarrel();
         _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
+        // The "ck-gen-transform" is not necessarily here.
         var ckGenTPath = tsBinPathConfig.TargetProjectPath.AppendPart( "ck-gen-transform" );
+        // Exposes the "ck-gen-transform" container only if the folder is here.
         if( Directory.Exists( ckGenTPath ) )
         {
             _ckGenTransform = new FileSystemResourceContainer( ckGenTPath, "ck-gen-transform/" );
@@ -162,13 +163,6 @@ public sealed partial class TypeScriptContext
     /// Gets all the global generators.
     /// </summary>
     public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _initializer.GlobalCodeGenerators;
-
-    /// <summary>
-    /// Gets a mutable list of <see cref="LocaleCultureSet"/>.
-    /// Order matters: the final translation set is built from this list, a set can
-    /// override any translation from previous ones.
-    /// </summary>
-    public List<LocaleCultureSet> TSLocales => _tsLocales;
 
     /// <summary>
     /// Gets the "/ck-gen-transform" container if the folder exists in
@@ -284,37 +278,38 @@ public sealed partial class TypeScriptContext
 
         static bool GenerateTSLocaleSupport( IActivityMonitor monitor, TypeScriptContext context )
         {
-            bool success = true;
-            if( context.TSLocales.Count == 0 )
+            // First, tries to load the "ck-gen-transform/ts-locales".
+            // If there is an error loading it, give up.
+            LocaleCultureSet? appLocales = null;
+            if( context.CKGenTransform != null
+                && !context.CKGenTransform.LoadLocales( monitor,
+                                                        context.BinPathConfiguration.ActiveCultures,
+                                                        out appLocales,
+                                                        "ts-locales",
+                                                        isOverrideFolder: true ) )
             {
-                monitor.Trace( "No ts-locale content to process." );
+                return false;
             }
-            else
+            bool success = true;
+            // Creates an empty final culture set. 
+            var f = new FinalLocaleCultureSet( isPartialSet: false, "TSLocales" );
+            foreach( var p in context._initializer.Packages )
             {
-                IEnumerable<LocaleCultureSet> locales = context.TSLocales;
-                if( context.CKGenTransform != null )
+                if( p.TSLocales != null )
                 {
-                    if( context.CKGenTransform.LoadLocales( monitor,
-                                                            context.BinPathConfiguration.ActiveCultures,
-                                                            out var appLocales,
-                                                            "ts-locales",
-                                                            isOverrideFolder: true ) )
-                    {
-                        if( appLocales != null ) locales = locales.Append( appLocales );
-                    }
-                    else
-                    {
-                        success = false;
-                    }
+                    success &= f.Add( monitor, p.TSLocales );
                 }
-
-                success &= LocaleCultureSet.CreateFinalSet( monitor, locales, out var finalSet );
-                if( success )
-                {
-                    Throw.DebugAssert( finalSet != null );
-                    var localeFolder = context.Root.Root.FindOrCreateFolder( "ts-locales" );
-                    WriteFinalSet( monitor, localeFolder, finalSet );
-                }
+            }
+            // Now add the final override if it exists.
+            if( appLocales != null )
+            {
+                success &= f.Add( monitor, appLocales );
+            }
+            if( success )
+            {
+                // Now we can create the final resource file in the Root.
+                var localeFolder = context.Root.Root.FindOrCreateFolder( "ts-locales" );
+                WriteFinalSet( monitor, localeFolder, f );
             }
             return success;
 

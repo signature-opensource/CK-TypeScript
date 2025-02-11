@@ -7,9 +7,9 @@ using System.Text.RegularExpressions;
 namespace CK.Core;
 
 /// <summary>
-/// Tries to detect a "under development" solution and locate the local projects.
+/// Tries to detect a "under development" solution and locates the local projects.
 /// </summary>
-static class LocalDevSolution
+public static class LocalDevSolution
 {
     /// <summary>
     /// Gets the solution root folder based on <see cref="AppContext.BaseDirectory"/>

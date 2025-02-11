@@ -19,6 +19,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
+    readonly string? _localPath;
     readonly IResourceContainer _resources;
     readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
@@ -58,6 +59,12 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     public IResourceContainer Resources => _resources;
 
     /// <summary>
+    /// Gets the non null local full path of the folder that defines this package
+    /// if this is a local package.
+    /// </summary>
+    public string? LocalPath => _localPath;
+
+    /// <summary>
     /// Gets the local culture set that contains the translations associated to this package.
     /// </summary>
     public LocaleCultureSet? TSLocales => _tsLocales;
@@ -86,7 +93,10 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         _removedResources = new HashSet<Core.ResourceLocator>();
         // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
         _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
-
+        if( !attr.DisableResources )
+        {
+            _localPath = _resources.GetLocalPath();
+        }
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );
         if( string.IsNullOrWhiteSpace( attr.TypeScriptFolder ) )
@@ -166,7 +176,11 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         success &= _resources.LoadLocales( monitor, initializer.BinPathConfiguration.ActiveCultures, out _tsLocales, "ts-locales" );
         if( _tsLocales != null )
         {
-            _removedResources.AddRange( _resources.AllResources.Where( r => r.LocalResourceName.Span.StartsWith( "ts-locales" ) ) );
+            var f = _resources.GetFolder( "ts-locales" );
+            if( f.IsValid )
+            {
+                _removedResources.AddRange( f.AllResources );
+            }
         }
         // Second, collects the transformer files.
         foreach( var r in _resources.AllResources )
@@ -221,7 +235,6 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <para>
     /// At this level, if <see cref="TypeScriptPackageAttribute.ConsiderExplicitResourceOnly"/> is false (the default), embedded resources
     /// are copied to the <see cref="TypeScriptFolder"/>.
-    /// If <see cref="TSLocales"/> exists, it is added to the <see cref="TypeScriptContext.TSLocales"/>.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor.</param>
@@ -230,9 +243,6 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         bool success = true;
-
-        if( _tsLocales != null ) context.TSLocales.Add( _tsLocales );
-
         foreach( var e in _extensions )
         {
             success &= e.GenerateCode( monitor, this, context );

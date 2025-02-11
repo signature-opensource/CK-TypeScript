@@ -1,3 +1,5 @@
+using System;
+
 namespace CK.TS.Angular;
 
 /// <summary>
@@ -10,7 +12,10 @@ namespace CK.TS.Angular;
 /// This package contains all the <see cref="NgComponent"/> and <see cref="NgModule"/>.
 /// </para>
 /// </summary>
-[NgComponent( HasRoutes = true, TypeScriptFolder = "../src/app" )]
+[NgComponent( disableResources: true,
+              NgComponentAttribute.BaseActualAttributeTypeAssemblyQualifiedName,
+              HasRoutes = true,
+              TypeScriptFolder = "../src/app" )]
 public sealed class AppComponent : NgComponent
 {
 }

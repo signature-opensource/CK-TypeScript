@@ -18,7 +18,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     readonly bool _allowLocalFilePath;
 
     /// <summary>
-    /// Iniitalizes a new <see cref="FileSystemResourceContainer"/>.
+    /// Initializes a new <see cref="FileSystemResourceContainer"/>.
     /// </summary>
     /// <param name="root">The root directory. This should be an absolute path.</param>
     /// <param name="displayName">The <see cref="DisplayName"/> for this container.</param>

@@ -7,14 +7,16 @@ namespace CK.TypeScript;
 /// Specialized <see cref="TypeScriptPackageAttribute{T}"/> that belongs to another package.
 /// </summary>
 /// <typeparam name="T">The package that contains this package.</typeparam>
+[AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
 public class TypeScriptPackageAttribute<T> : TypeScriptPackageAttribute where T : TypeScriptPackage
 {
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttribute"/>.
     /// </summary>
+    /// <param name="disableResources">Whether this package must not have "/Res" associated files.</param>
     /// <param name="callerFilePath">Automatically set by the Roslyn compiler and used to compute the associated embedded resource folder.</param>
-    public TypeScriptPackageAttribute( [CallerFilePath] string? callerFilePath = null )
-        : base( callerFilePath )
+    public TypeScriptPackageAttribute( bool disableResources = false, [CallerFilePath] string? callerFilePath = null )
+        : base( disableResources, callerFilePath )
     {
     }
 
