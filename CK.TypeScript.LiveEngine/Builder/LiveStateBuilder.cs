@@ -39,6 +39,7 @@ public sealed class LiveStateBuilder
             try
             {
                 File.Delete( stateFile );
+                monitor.Trace( $"Deleted state file '{stateFile}'." );
             }
             catch( Exception ex )
             {
@@ -48,7 +49,7 @@ public sealed class LiveStateBuilder
                     Thread.Sleep( retryCount * 100 );
                     goto retry;
                 }
-                monitor.Warn( $"Unable to detete state file '{stateFile}'.", ex );
+                monitor.Warn( $"Unable to delete state file '{stateFile}'.", ex );
             }
         }
     }
@@ -94,6 +95,7 @@ public sealed class LiveStateBuilder
 
     public bool WriteState( IActivityMonitor monitor )
     {
+        using var _ = monitor.OpenInfo( $"Saving ck-watch live state. Watch root is '{_watchRoot}'." );
         bool success = true;
         if( !Directory.Exists( _stateFolder ) )
         {
@@ -103,7 +105,6 @@ public sealed class LiveStateBuilder
         }
         success &= _locales.WriteTSLocalesState( monitor, _stateFolder );
         // Ends with the LiveState.dat.
-        monitor.Info( $"Watch root is '{_watchRoot}'." );
         success &= StateSerializer.WriteFile( monitor,
                                               _stateFolder.AppendPart( LiveState.FileName ),
                                               ( monitor, w ) => StateSerializer.WriteLiveState( w,

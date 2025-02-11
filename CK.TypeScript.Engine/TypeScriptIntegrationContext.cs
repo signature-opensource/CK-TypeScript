@@ -44,14 +44,10 @@ public sealed partial class TypeScriptIntegrationContext
     // Cached content of the target package.json file.
     string _lastInstalledTargetPackageJsonContent;
 
-    // Non null only if at least one package is from a local project.
-    internal readonly LiveStateBuilder? _liveState;
-
     TypeScriptIntegrationContext( TypeScriptBinPathAspectConfiguration configuration,
                                   PackageJsonFile targetPackageJson,
                                   TSConfigJsonFile tSConfigJson,
-                                  ImmutableDictionary<string, SVersionBound> libVersionsConfig,
-                                  LiveStateBuilder? liveState )
+                                  ImmutableDictionary<string, SVersionBound> libVersionsConfig )
     {
         _initialCKVersion = targetPackageJson.CKVersion;
         _initialEmptyTargetPackage = targetPackageJson.IsEmpty;
@@ -67,7 +63,6 @@ public sealed partial class TypeScriptIntegrationContext
         _targetPackageJson = targetPackageJson;
         _tsConfigJson = tSConfigJson;
         _libVersionsConfig = libVersionsConfig;
-        _liveState = liveState;
         _srcFolderPath = configuration.TargetProjectPath.AppendPart( "src" );
         if( configuration.AutoInstallJest )
         {
@@ -169,20 +164,7 @@ public sealed partial class TypeScriptIntegrationContext
                                                                             : "the latest version will be installed (unless configuration or code specify them)")}.
                     """ );
         }
-
-        // If we are developping with at least one local project, we need the LiveStateBuilder.
-        LiveStateBuilder? liveState = null;
-        if( LocalDevSolution.LocalProjectPaths.Count > 0 )
-        {
-            monitor.Info( $"""
-                          {LocalDevSolution.LocalProjectPaths.Count} local project detected:
-                          {LocalDevSolution.LocalProjectPaths.Keys.Concatenate()}
-                          Building live state for ck-watch.
-                          """ );
-            liveState = new LiveStateBuilder( configuration.TargetProjectPath, configuration.ActiveCultures );
-            liveState.ClearState( monitor );
-        }
-        return new TypeScriptIntegrationContext( configuration, packageJson, tsConfigJson, libVersionsConfig, liveState );
+        return new TypeScriptIntegrationContext( configuration, packageJson, tsConfigJson, libVersionsConfig );
     }
 
     bool AddOrUpdateTargetProjectDependency( IActivityMonitor monitor, string name, SVersionBound? version, DependencyKind kind, string? packageDefinitionSource )
@@ -507,10 +489,6 @@ public sealed partial class TypeScriptIntegrationContext
         }
         if( success )
         {
-            if( _liveState != null )
-            {
-                _liveState.WriteState( monitor );
-            }
             // Running Jest setup if AutoInstallJest is true.
             if( _jestSetup != null )
             {

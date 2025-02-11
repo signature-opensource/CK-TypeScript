@@ -2,7 +2,9 @@ using CK.Core;
 using CK.Setup.PocoJson;
 using CK.TypeScript;
 using CK.TypeScript.Engine;
+using CK.TypeScript.LiveEngine;
 using CSemVer;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -18,6 +20,7 @@ sealed class TSContextInitializer
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
     readonly ImmutableArray<TypeScriptPackageAttributeImpl> _packages;
+    readonly LiveStateBuilder? _liveState;
     readonly IDictionary<object, object?>? _rootMemory;
 
     /// <summary>
@@ -55,6 +58,11 @@ sealed class TSContextInitializer
     /// </summary>
     public ImmutableDictionary<string, SVersionBound> LibVersionsConfig => _libVersionsConfig;
 
+    /// <summary>
+    /// Gets the live state builder if at least one TypeScript package is locally defined.
+    /// </summary>
+    public LiveStateBuilder? LiveState => _liveState;
+
     public static TSContextInitializer? Create( IActivityMonitor monitor,
                                                 IGeneratedBinPath genBinPath,
                                                 TypeScriptBinPathAspectConfiguration binPathConfiguration,
@@ -79,6 +87,7 @@ sealed class TSContextInitializer
                                                       packages,
                                                       globalFactories,
                                                       out var globals,
+                                                      out var liveState,
                                                       out var rootMemory ) )
         {
             IPocoTypeSystem typeSystem = allExchangeableSet.TypeSystem;
@@ -106,7 +115,14 @@ sealed class TSContextInitializer
                 monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
                 tsExchangeable = emptyExchangeableSet;
             }
-            return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig, packages, rootMemory );
+            return new TSContextInitializer( regTypes,
+                                             globals,
+                                             tsExchangeable,
+                                             integrationContext,
+                                             libVersionsConfig,
+                                             packages,
+                                             liveState,
+                                             rootMemory );
         }
         return null;
     }
@@ -117,6 +133,7 @@ sealed class TSContextInitializer
                           TypeScriptIntegrationContext? integrationContext,
                           ImmutableDictionary<string, SVersionBound> libVersionsConfig,
                           ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                          LiveStateBuilder? liveState,
                           IDictionary<object, object?>? rootMemory )
     {
         _registeredTypes = r;
@@ -125,6 +142,7 @@ sealed class TSContextInitializer
         _integrationContext = integrationContext;
         _libVersionsConfig = libVersionsConfig;
         _packages = packages;
+        _liveState = liveState;
         _rootMemory = rootMemory;
     }
 
@@ -444,8 +462,10 @@ sealed class TSContextInitializer
                                                        ImmutableArray<TypeScriptPackageAttributeImpl> packages,
                                                        List<ITSCodeGeneratorFactory> globalFactories,
                                                        out ImmutableArray<ITSCodeGenerator> globals,
+                                                       out LiveStateBuilder? liveState,
                                                        out IDictionary<object,object?>? rootMemory )
     {
+        liveState = null;
         var i = new Initializer( binPathConfiguration, integrationContext, regTypes, jsonSerialization, allExchangeableSet, packages );
         using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators, initializing {packages.Length} TypeScript packages." ) )
         {
@@ -465,14 +485,21 @@ sealed class TSContextInitializer
             }
             if( success )
             {
+                int localPackageCount = 0;
                 foreach( var p in packages )
                 {
                     success &= p.InitializeTypeScriptPackage( monitor, i );
+                    if( p.LocalResPath != null ) ++localPackageCount;
                 }
                 if( success )
                 {
                     globals = b.MoveToImmutable();
                     rootMemory = i.RootMemory;
+                    if( localPackageCount > 0 )
+                    {
+                        monitor.Info( $"Found {localPackageCount} local package: creating live state for ck-watch." );
+                        liveState = new LiveStateBuilder( binPathConfiguration.TargetProjectPath, binPathConfiguration.ActiveCultures );
+                    }
                     return true;
                 }
             }

@@ -22,6 +22,28 @@ public sealed partial class TypeScriptContext // Save
             var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
             var targetCKGenFolder = BinPathConfiguration.TargetCKGenPath;
 
+            // If live state must be built, it's time to build it.
+            var liveState = _initializer.LiveState;
+            if( liveState != null )
+            {
+                using( monitor.OpenInfo( "Initializing ck-watch live state." ) )
+                {
+                    liveState.ClearState( monitor );
+                    foreach( var p in _initializer.Packages )
+                    {
+                        if( p.LocalResPath != null )
+                        {
+                            liveState.AddLocalPackage( monitor, p.LocalResPath, p.Resources.DisplayName );
+                        }
+                        else
+                        {
+                            liveState.AddRegularPackage( monitor, p.TSLocales );
+                        }
+                    }
+                }
+            }
+
+
             // If a ck-gen/dist folder exists, we delete it no matter what.
             // This applies to NpmPackage integration mode. 
             // When UseSrcFolder is false, its files appear in the list of cleanup files and
@@ -87,27 +109,11 @@ public sealed partial class TypeScriptContext // Save
                 }
                 else
                 {
-                    var liveState = _integrationContext._liveState;
-                    if( liveState != null )
-                    {
-                        using( monitor.OpenInfo( "Configuring ck-watch live state." ) )
-                        {
-                            foreach( var p in _initializer.Packages )
-                            {
-                                if( p.LocalResPath != null )
-                                {
-                                    liveState.AddLocalPackage( monitor, p.LocalResPath, p.Resources.DisplayName );
-                                }
-                                else
-                                {
-                                    liveState.AddRegularPackage( monitor, p.TSLocales );
-                                }
-                            }
-                        }
-                    }
                     success &= _integrationContext.Run( monitor, saver );
                 }
             }
+            // Whatever occured above, if we have a live state, write it.
+            liveState?.WriteState( monitor );
         }
         return success;
     }
