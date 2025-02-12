@@ -48,7 +48,12 @@ sealed class AssemblySubContainer : IResourceContainer
         if( p.IsEmptyPath ) return null;
         resource.CheckContainer( this );
         Throw.DebugAssert( resource.ResourceName.StartsWith( "ck@" ) );
-        return string.Concat( p.Path.AsSpan(), "/", resource.ResourceName.AsSpan( 3 ) );
+        var s = string.Concat( p.Path.AsSpan(), "/", resource.ResourceName.AsSpan( 3 ) );
+        if( Path.DirectorySeparatorChar != NormalizedPath.DirectorySeparatorChar )
+        {
+            s = s.Replace( NormalizedPath.DirectorySeparatorChar, Path.DirectorySeparatorChar );
+        }
+        return s;
     }
 
     public Stream GetStream( in ResourceLocator resource )

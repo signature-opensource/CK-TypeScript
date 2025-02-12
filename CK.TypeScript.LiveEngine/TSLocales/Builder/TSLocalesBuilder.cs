@@ -35,10 +35,10 @@ sealed class TSLocalesBuilder
         _packageLocales.Add( localPackage );
     }
 
-    public bool WriteTSLocalesState( IActivityMonitor monitor, NormalizedPath liveSavedPath )
+    public bool WriteTSLocalesState( IActivityMonitor monitor, string stateFolderPath )
     {
         return StateSerializer.WriteFile( monitor,
-                                            liveSavedPath.AppendPart( "TSLocales.dat" ),
+                                            stateFolderPath + TSLocaleSerializer.FileName,
                                             ( monitor, w ) => TSLocaleSerializer.WriteTSLocalesState( w, _packageLocales ) );
     }
 }

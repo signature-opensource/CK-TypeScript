@@ -2,7 +2,9 @@ using CK.Core;
 using CK.TypeScript.LiveEngine;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace CK.TypeScript.Engine;
@@ -12,18 +14,18 @@ namespace CK.TypeScript.Engine;
 /// </summary>
 public sealed class LiveStateBuilder
 {
+    readonly LiveStatePathContext _pathContext;
     readonly NormalizedPath _targetProjectPath;
     readonly IReadOnlySet<NormalizedCultureInfo> _activeCultures;
     readonly TSLocalesBuilder _locales;
     readonly List<LocalPackageRef> _localPackages;
-    readonly NormalizedPath _stateFolder;
-    NormalizedPath _watchRoot;
+    string? _watchRoot;
 
     public LiveStateBuilder( NormalizedPath targetProjectPath,
                              IReadOnlySet<NormalizedCultureInfo> activeCultures )
     {
+        _pathContext = new LiveStatePathContext( targetProjectPath );
         _targetProjectPath = targetProjectPath;
-        _stateFolder = targetProjectPath.Combine( LiveState.FolderWatcher );
         _activeCultures = activeCultures;
         _localPackages = new List<LocalPackageRef>();
         _locales = new TSLocalesBuilder();
@@ -31,7 +33,7 @@ public sealed class LiveStateBuilder
 
     public void ClearState( IActivityMonitor monitor )
     {
-        var stateFile = _stateFolder.AppendPart( LiveState.FileName );
+        var stateFile = _pathContext.PrimaryStateFile;
         if( File.Exists( stateFile ) )
         {
             int retryCount = 0;
@@ -60,11 +62,13 @@ public sealed class LiveStateBuilder
         if( locales != null ) _locales.AddRegularPackage( monitor, locales );
     }
 
-    public void AddLocalPackage( IActivityMonitor monitor, NormalizedPath localResPath, string displayName )
+    public void AddLocalPackage( IActivityMonitor monitor, string localResPath, string displayName )
     {
+        Throw.CheckArgument( Path.EndsInDirectorySeparator( localResPath ) );
+        Throw.CheckNotNullOrEmptyArgument( displayName );
         var loc = new LocalPackageRef( localResPath, displayName, _localPackages.Count );
         _localPackages.Add( loc );
-        if( _localPackages.Count == 1 )
+        if( _watchRoot == null )
         {
             _watchRoot = localResPath;
         }
@@ -74,41 +78,49 @@ public sealed class LiveStateBuilder
         }
         _locales.AddLocalPackage( monitor, loc );
 
-        static NormalizedPath CommonParentPath( NormalizedPath p1, NormalizedPath p2 )
+        static string CommonParentPath( string path1, string path2 )
         {
-            int len = p1.Parts.Count;
-            if( len > p2.Parts.Count )
+            string[] p1 = path1.Split( Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries );
+            string[] p2 = path2.Split( Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries );
+            int len = p1.Length;
+            if( len > p2.Length )
             {
                 (p1,p2) = (p2,p1);
-                len = p1.Parts.Count;
+                len = p1.Length;
             }
             int iCommon = 0;
-            while( iCommon < len && p1.Parts[iCommon] == p2.Parts[iCommon] ) ++iCommon;
+            while( iCommon < len && p1[iCommon] == p2[iCommon] ) ++iCommon;
             return iCommon == 0
-                     ? default
-                     : len == iCommon
-                        ? p1
-                        : p1.RemoveParts( iCommon, len - iCommon );
+                     ? string.Empty
+                     : iCommon == len 
+                        ? path1
+                        : string.Join( Path.DirectorySeparatorChar, p1.Take( iCommon ) ) + Path.DirectorySeparatorChar;
         }
-
     }
 
     public bool WriteState( IActivityMonitor monitor )
     {
         using var _ = monitor.OpenInfo( $"Saving ck-watch live state. Watch root is '{_watchRoot}'." );
         bool success = true;
-        if( !Directory.Exists( _stateFolder ) )
+        if( !Directory.Exists( _pathContext.StateFolderPath ) )
         {
-            monitor.Info( $"Creating '{LiveState.FolderWatcher}' folder with '.gitignore' all." );
-            Directory.CreateDirectory( _stateFolder );
-            File.WriteAllText( _stateFolder.AppendPart( ".gitignore" ), "*" );
+            monitor.Info( $"Creating '{_pathContext.StateFolderPath}' with '.gitignore' all." );
+            Directory.CreateDirectory( _pathContext.StateFolderPath );
+            File.WriteAllText( _pathContext.StateFolderPath + ".gitignore", "*" );
         }
-        success &= _locales.WriteTSLocalesState( monitor, _stateFolder );
+        success &= _locales.WriteTSLocalesState( monitor, _pathContext.StateFolderPath );
         // Ends with the LiveState.dat.
+        if( _watchRoot == null )
+        {
+            // If we have no packages, watchRoot is null: we'll only
+            // watch the ck-gen-transform folder.
+            Throw.DebugAssert( _localPackages.Count == 0 );
+            _watchRoot = _pathContext.CKGenTransformPath;
+        }
         success &= StateSerializer.WriteFile( monitor,
-                                              _stateFolder.AppendPart( LiveState.FileName ),
+                                              _pathContext.PrimaryStateFile,
                                               ( monitor, w ) => StateSerializer.WriteLiveState( w,
-                                                                                                _targetProjectPath,
+                                                                                                _pathContext,
                                                                                                 _watchRoot,
                                                                                                 _activeCultures,
                                                                                                 _localPackages ) );

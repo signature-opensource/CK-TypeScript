@@ -47,13 +47,13 @@ static class StateSerializer
 
 
     internal static void WriteLiveState( CKBinaryWriter w,
-                                         NormalizedPath targetProjectPath,
-                                         NormalizedPath watchRoot,
+                                         LiveStatePathContext pathContext,
+                                         string watchRoot,
                                          IReadOnlySet<NormalizedCultureInfo> activeCultures,
                                          List<LocalPackageRef> localPackages )
     {
         w.Write( CurrentVersion );
-        w.Write( targetProjectPath );
+        w.Write( pathContext.TargetProjectPath );
         w.Write( watchRoot );
         w.WriteNonNegativeSmallInt32( activeCultures.Count );
         foreach( var culture in activeCultures )
@@ -70,8 +70,7 @@ static class StateSerializer
 
     internal static LiveState? ReadLiveState( IActivityMonitor monitor,
                                               CKBinaryReader r,
-                                              NormalizedPath loadFolder,
-                                              NormalizedPath rootStateFile )
+                                              LiveStatePathContext pathContext )
     {
         int v = r.ReadInt32();
         if( v != CurrentVersion )
@@ -80,6 +79,11 @@ static class StateSerializer
             return null;
         }
         var targetProjectPath = r.ReadString();
+        if( pathContext.TargetProjectPath != targetProjectPath )
+        {
+            monitor.Error( $"Invalid paths. Expected '{pathContext.TargetProjectPath}', got '{targetProjectPath}'." );
+            return null;
+        }
         var watchRoot = r.ReadString();
         var activeCultures = new HashSet<NormalizedCultureInfo>();
         int count = r.ReadNonNegativeSmallInt32();
@@ -98,7 +102,7 @@ static class StateSerializer
             }
             localPackages = b.MoveToImmutable();
         }
-        return new LiveState( targetProjectPath, watchRoot, activeCultures, loadFolder, rootStateFile, localPackages );
+        return new LiveState( pathContext, watchRoot, activeCultures, localPackages );
     }
 
     internal static bool WriteFile( IActivityMonitor monitor, NormalizedPath filePath, Action<IActivityMonitor,CKBinaryWriter> write )

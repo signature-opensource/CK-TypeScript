@@ -32,10 +32,12 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public FileSystemResourceContainer( string root, string displayName, bool allowLocalFilePath = true )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
-        Throw.CheckArgument( Path.IsPathRooted( root ) );
+        Throw.CheckArgument( Path.IsPathFullyQualified( root ) );
         _displayName = displayName;
         _allowLocalFilePath = allowLocalFilePath;
-        _root = Path.GetFullPath( root ) + Path.DirectorySeparatorChar;
+        root = Path.GetFullPath( root );
+        if( !Path.EndsInDirectorySeparator( root ) ) root += Path.DirectorySeparatorChar;
+        _root = root;
     }
 
     /// <summary>
@@ -122,7 +124,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         var name = String.Concat( prefix, localResourceName );
         if( File.Exists( name ) )
         {
-            return new ResourceLocator( this, name.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar ) );
+            return new ResourceLocator( this, name );
         }
         return default;
     }
@@ -137,7 +139,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         return DoGetFolder( folder.FolderName, localFolderName );
     }
 
-    private ResourceFolder DoGetFolder( string prefix, ReadOnlySpan<char> localFolderName )
+    ResourceFolder DoGetFolder( string prefix, ReadOnlySpan<char> localFolderName )
     {
         if( localFolderName.Length > 0 && (localFolderName[0] == '/' || localFolderName[0] == '\\') )
         {
@@ -146,7 +148,9 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         var name = String.Concat( prefix, localFolderName );
         if( Directory.Exists( name ) )
         {
-            return new ResourceFolder( this, name.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar ) + Path.DirectorySeparatorChar );
+            return new ResourceFolder( this, Path.EndsInDirectorySeparator( name )
+                                                ? name
+                                                : name + Path.DirectorySeparatorChar );
         }
         return default;
     }
@@ -177,7 +181,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         folder.CheckContainer( this );
         foreach( var f in Directory.EnumerateDirectories( folder.FolderName ) )
         {
-            Throw.DebugAssert( f[f.Length - 1] != Path.DirectorySeparatorChar );
+            Throw.DebugAssert( f[^1] != Path.DirectorySeparatorChar );
             yield return new ResourceFolder( this, f + Path.DirectorySeparatorChar );
         }
     }

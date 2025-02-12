@@ -119,7 +119,7 @@ public sealed partial class LocaleCultureSet
                     else
                     {
                         // No existing translation defined.
-                        if( isPartialSet && aValue.IsOverride )
+                        if( !isPartialSet && aValue.IsOverride )
                         {
                             monitor.Warn( $"Invalid override 'O:{aKey}' in {aValue.Origin}: the key doesn't exist, there's nothing to override." );
                         }

@@ -1,22 +1,31 @@
 using CK.Core;
 using CK.TypeScript.LiveEngine;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 
 
 var monitor = new ActivityMonitor();
 monitor.Output.RegisterClient( new ColoredActivityMonitorConsoleClient() );
 
-NormalizedPath targetProfectPath = Environment.CurrentDirectory;
+var pathContext = new LiveStatePathContext( Environment.CurrentDirectory );
+var stateFilesFilter = new CKGenTransformFilter( pathContext );
 
-var liveState = LiveState.Load( monitor, targetProfectPath );
-while( liveState == null )
+Console.WriteLine( $"CK.TypeScript.LiveEngine v{CSemVer.InformationalVersion.ReadFromAssembly(Assembly.GetExecutingAssembly()).Version}" );
+for(; ; )
 {
-    monitor.Info( "Waiting for LiveState..." );
-    Thread.Sleep( 500 );
-    liveState = LiveState.Load( monitor, targetProfectPath );
+    monitor.Info( $"""
+    Waiting for file:
+    -> {pathContext.PrimaryStateFile}
+    """ );
+    var liveState = LiveState.Load( monitor, pathContext );
+    while( liveState == null )
+    {
+        Thread.Sleep( 500 );
+        liveState = LiveState.Load( monitor, pathContext );
+    }
+    monitor.Info( "Starting watcher." );
+    var runner = new Runner( liveState, stateFilesFilter );
+    await runner.RunAsync( monitor );
 }
-
-

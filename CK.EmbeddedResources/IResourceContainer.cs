@@ -154,6 +154,9 @@ public interface IResourceContainer
 
     /// <summary>
     /// Tries to get a local file path for the resource (that must belong to this container).
+    /// <para>
+    /// This path always uses the platform specific separator <see cref="Path.DirectorySeparatorChar"/>.
+    /// </para>
     /// See <see cref="HasLocalFilePathSupport"/>.
     /// </summary>
     /// <param name="resource">The resource locator.</param>

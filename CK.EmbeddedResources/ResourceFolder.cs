@@ -15,7 +15,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// Initializes a new resource folder.
     /// </summary>
     /// <param name="container">The resources that contains this folder.</param>
-    /// <param name="fullResourceName">the resource name in the <paramref name="container"/>. Must not be null, empty or whitespace.</param>
+    /// <param name="fullFolderName">the resource name in the <paramref name="container"/>. Must not be null, empty or whitespace.</param>
     public ResourceFolder( IResourceContainer container, string fullFolderName )
     {
         Throw.CheckNotNullArgument( container );

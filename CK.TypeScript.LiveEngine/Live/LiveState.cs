@@ -2,88 +2,74 @@ using CK.Core;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Threading;
 
 namespace CK.TypeScript.LiveEngine;
 
 public sealed class LiveState
 {
     /// <summary>
-    /// Gets the name of the watcher.
+    /// Gets the name of the state file.
     /// </summary>
-    public const string WatcherAppName = "ck-ts-watch";
+    public const string StateFileName = "LiveState.dat";
 
-    /// <summary>
-    /// Gets the name of the watcher folder state from the target project path.
-    /// </summary>
-    public const string FolderWatcher = "ck-gen-transform/." + WatcherAppName;
-
-
-    internal const string FileName = "LiveState.dat";
-
-    readonly NormalizedPath _targetProjectPath;
-    readonly NormalizedPath _ckGenFolder;
-    readonly NormalizedPath _watchRoot;
-    readonly NormalizedPath _loadFolder;
-    readonly NormalizedPath _rootStateFile;
+    readonly LiveStatePathContext _pathContext;
+    readonly string _watchRoot;
     readonly ImmutableArray<LocalPackage> _localPackages;
     readonly HashSet<NormalizedCultureInfo> _activeCultures;
     readonly FileSystemResourceContainer _ckGenTransform;
 
+    readonly LiveTSLocales _tsLocales;
 
-    internal LiveState( NormalizedPath targetProjectPath,
-                        NormalizedPath watchRoot,
+    internal LiveState( LiveStatePathContext pathContext,
+                        string watchRoot,
                         HashSet<NormalizedCultureInfo> activeCultures,
-                        NormalizedPath loadFolder,
-                        NormalizedPath rootStateFile,
                         ImmutableArray<LocalPackage> localPackages )
     {
-        _targetProjectPath = targetProjectPath;
-        _ckGenFolder = targetProjectPath.AppendPart( "ck-gen" );
+        _pathContext = pathContext;
         _watchRoot = watchRoot;
         _activeCultures = activeCultures;
-        _loadFolder = loadFolder;
-        _rootStateFile = rootStateFile;
         _localPackages = localPackages.IsDefault ? ImmutableArray<LocalPackage>.Empty : localPackages;
-        _ckGenTransform = new FileSystemResourceContainer( targetProjectPath.AppendPart( "ck-gen-transform" ), "ck-gen-transform" );
+        _ckGenTransform = new FileSystemResourceContainer( pathContext.CKGenTransformPath, "ck-gen-transform" );
+        _tsLocales = new LiveTSLocales( this );
     }
 
     /// <summary>
-    /// Gets the "ck-gen-transform/.<see cref="WatcherAppName"/>" path.
+    /// Gets the paths.
     /// </summary>
-    public NormalizedPath LoadFolder => _loadFolder;
+    public LiveStatePathContext Paths => _pathContext;
 
     /// <summary>
-    /// Gets the folder path that contains all the <see cref="LocalPackages"/> resources folders.
+    /// Gets the common folder path that contains all the <see cref="LocalPackages"/> resources folders.
     /// </summary>
-    public NormalizedPath WatchRoot => _watchRoot;
-
-    /// <summary>
-    /// Gets the full path of the file that contains the state file.
-    /// </summary>
-    public NormalizedPath RootStateFile => _rootStateFile;
-
-    public NormalizedPath CKGenFolder => _ckGenFolder;
+    public string WatchRootPath => _watchRoot;
 
     public IResourceContainer CKGenTransform => _ckGenTransform;
-
-    internal NormalizedPath TargetProjectPath => _targetProjectPath;
 
     internal HashSet<NormalizedCultureInfo> ActiveCultures => _activeCultures;
 
     public ImmutableArray<LocalPackage> LocalPackages => _localPackages;
 
-    public static LiveState? Load( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+    public void OnChange( IActivityMonitor monitor, LocalPackage? package, string subPath )
     {
-        var loadFolder = targetProjectPath.Combine( FolderWatcher );
-        var rootStateFile = loadFolder.AppendPart( FileName );
-        if( !File.Exists( rootStateFile ) ) return null;
+        Throw.DebugAssert( "ts-locales".Length == 10 );
+        if( subPath.StartsWith( "ts-locales" ) && (subPath.Length == 10 || subPath[10] == Path.DirectorySeparatorChar) )
+        {
+            _tsLocales.Apply( monitor );
+        }
+    }
 
+    public static LiveState? Load( IActivityMonitor monitor, LiveStatePathContext pathContext )
+    {
+        if( !File.Exists( pathContext.PrimaryStateFile ) ) return null;
         var result = StateSerializer.ReadFile( monitor,
-                                               rootStateFile,
-                                               ( monitor, r ) => StateSerializer.ReadLiveState( monitor, r, loadFolder, rootStateFile ) );
+                                               pathContext.PrimaryStateFile,
+                                               ( monitor, r ) => StateSerializer.ReadLiveState( monitor, r, pathContext ) );
         if( result != null )
         {
-
+            bool success = true;
+            success &= result._tsLocales.Load( monitor );
+            if( !success ) result = null;
         }
         return result;
     }

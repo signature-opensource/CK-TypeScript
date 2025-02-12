@@ -1,71 +1,28 @@
-using CK.Core;
 using CK.TypeScript.LiveEngine;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 
-sealed class Runner
-{
-    readonly LiveState _liveState;
-    readonly Channel<object?> _channel;
-    readonly FileWatcher _primary;
-    readonly FileWatcher? _secondary;
-    readonly Task _running;
-
-    public Runner( LiveState liveState )
-    {
-        _liveState = liveState;
-        var needPrimaryOnly = liveState.WatchRoot.StartsWith( liveState.LoadFolder );
-        _channel = Channel.CreateUnbounded<object?>( new UnboundedChannelOptions() { SingleReader = true, SingleWriter = needPrimaryOnly } );
-        _primary = new FileWatcher( liveState.WatchRoot, _channel.Writer );
-        if( !needPrimaryOnly )
-        {
-            _secondary = new FileWatcher( liveState.LoadFolder, _channel.Writer );
-        }
-        _running = Task.Run( RunAsync );
-    }
-
-    public Task RunningTask => _running;
-
-    async Task RunAsync()
-    {
-        var monitor = new ActivityMonitor( "ck-ts-watch Agent." );
-        monitor.Output.RegisterClient( new ColoredActivityMonitorConsoleClient() );
-        object? message = null;
-        while( (message = await _channel.Reader.ReadAsync()) != null )
-        {
-
-        }
-        monitor.MonitorEnd();
-    }
-}
-
-
-internal sealed class FileWatcher
+sealed class FileWatcher
 {
     FileSystemWatcher? _fileSystemWatcher;
     volatile bool _closed;
-    readonly object _createLock = new();
+    readonly object _lock = new();
     readonly string _watchRoot;
-    readonly ChannelWriter<object?> _output;
-    readonly string? _keepAliveFile;
+    readonly ChannelWriter<object> _output;
+    readonly IFileEventFilter _fileFilter;
 
     internal FileWatcher( string watchRoot,
-                          ChannelWriter<object?> output,
-                          string? keepAliveFile )
+                          ChannelWriter<object> output,
+                          IFileEventFilter fileFilter )
     {
         _watchRoot = watchRoot;
         _output = output;
-        _keepAliveFile = keepAliveFile;
+        _fileFilter = fileFilter;
         CreateFileSystemWatcher();
     }
 
-    public void Close()
+    public void Dispose()
     {
         _closed = true;
         DisposeInnerWatcher();
@@ -86,50 +43,34 @@ internal sealed class FileWatcher
     void WatcherRenameHandler( object sender, RenamedEventArgs e )
     {
         if( _closed ) return;
-        if( e.OldFullPath == _keepAliveFile )
+        var o = _fileFilter.GetChange( e.OldFullPath );
+        if( o != null )
         {
-            _output.TryWrite( null );
+            _output.TryWrite( o );
         }
-    }
-
-    void WatcherDeletedHandler( object sender, FileSystemEventArgs e )
-    {
-        if( _closed ) return;
-        var p = e.FullPath;
-        if( p == _keepAliveFile )
+        o = _fileFilter.GetChange( e.FullPath );
+        if( o != null )
         {
-            _output.TryWrite( null );
-        }
-        else
-        {
-            int idxRes = p.IndexOf( "/Res/" );
-            if( idxRes > 0 )
-            {
-
-            }
+            _output.TryWrite( o );
         }
     }
 
     void WatcherChangeHandler( object sender, FileSystemEventArgs e )
     {
         if( _closed ) return;
-    }
-
-    void WatcherAddedHandler( object sender, FileSystemEventArgs e )
-    {
-        if( _closed ) return;
-    }
-
-    private void CreateFileSystemWatcher()
-    {
-        lock( _createLock )
+        var o = _fileFilter.GetChange( e.FullPath );
+        if( o != null )
         {
-            bool enableEvents = false;
+            _output.TryWrite( o );
+        }
+    }
 
+    void CreateFileSystemWatcher()
+    {
+        lock( _lock )
+        {
             if( _fileSystemWatcher != null )
             {
-                enableEvents = _fileSystemWatcher.EnableRaisingEvents;
-
                 DisposeInnerWatcher();
             }
 
@@ -137,25 +78,23 @@ internal sealed class FileWatcher
             {
                 IncludeSubdirectories = true
             };
-
-            _fileSystemWatcher.Created += WatcherAddedHandler;
-            _fileSystemWatcher.Deleted += WatcherDeletedHandler;
+            _fileSystemWatcher.Created += WatcherChangeHandler;
+            _fileSystemWatcher.Deleted += WatcherChangeHandler;
             _fileSystemWatcher.Changed += WatcherChangeHandler;
             _fileSystemWatcher.Renamed += WatcherRenameHandler;
             _fileSystemWatcher.Error += WatcherErrorHandler;
-
-            _fileSystemWatcher.EnableRaisingEvents = enableEvents;
+            _fileSystemWatcher.EnableRaisingEvents = true;
         }
     }
 
-    private void DisposeInnerWatcher()
+    void DisposeInnerWatcher()
     {
         if( _fileSystemWatcher != null )
         {
             _fileSystemWatcher.EnableRaisingEvents = false;
 
-            _fileSystemWatcher.Created -= WatcherAddedHandler;
-            _fileSystemWatcher.Deleted -= WatcherDeletedHandler;
+            _fileSystemWatcher.Created -= WatcherChangeHandler;
+            _fileSystemWatcher.Deleted -= WatcherChangeHandler;
             _fileSystemWatcher.Changed -= WatcherChangeHandler;
             _fileSystemWatcher.Renamed -= WatcherRenameHandler;
             _fileSystemWatcher.Error -= WatcherErrorHandler;

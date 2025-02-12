@@ -19,7 +19,7 @@ sealed partial class LiveTSLocales
     public bool Load( IActivityMonitor monitor )
     {
         var a = StateSerializer.ReadFile( monitor,
-                                          _state.LoadFolder.AppendPart( TSLocaleSerializer.FileName ),
+                                          _state.Paths.StateFolderPath + TSLocaleSerializer.FileName,
                                           ( monitor, r ) => TSLocaleSerializer.ReadLiveTSLocales( monitor, r, _state.LocalPackages ) );
         if( a == null )
         {
@@ -32,6 +32,7 @@ sealed partial class LiveTSLocales
 
     public bool Apply( IActivityMonitor monitor )
     {
+        using var _ = monitor.OpenInfo( $"Updating 'ck-gen/ts-locales'." );
         bool success = true;
         var f = new FinalLocaleCultureSet( isPartialSet: false, "LiveTSLocales" );
         foreach( var p in _packages )
@@ -60,12 +61,12 @@ sealed partial class LiveTSLocales
     void WriteFinalSet( IActivityMonitor monitor, FinalLocaleCultureSet final )
     {
         final.PropagateFallbackTranslations( monitor );
-        var tsLocaleTarget = _state.CKGenFolder.AppendPart( "ts-locales" );
+        var tsLocaleTarget = _state.Paths.CKGenPath + "ts-locales" + Path.DirectorySeparatorChar;
         foreach( var set in final.Root.FlattenedAll )
         {
             // Use the CultureInfo to have the "correct" casing for culture names.
             var fileName = $"{set.Culture.Culture.Name}.json";
-            using( var stream = File.Create( tsLocaleTarget.AppendPart(fileName) ) )
+            using( var stream = File.Create( tsLocaleTarget + fileName ) )
             {
                 using var w = new Utf8JsonWriter( stream, new JsonWriterOptions() { Indented = true } );
                 w.WriteStartObject();
