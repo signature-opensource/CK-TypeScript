@@ -1,1 +1,0 @@
-C:\Dev\CK\CK-Crs-Projects\CK-TypeScript\ck-ts-watch\bin\Debug\net8.0\ck-ts-watch

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CK.TypeScript.LiveEngine;
 
@@ -59,7 +60,18 @@ public sealed class LiveState
         }
     }
 
-    public static LiveState? Load( IActivityMonitor monitor, LiveStatePathContext pathContext )
+    public static async Task<LiveState> WaitForStateAsync( IActivityMonitor monitor, LiveStatePathContext pathContext, CancellationToken cancellation )
+    {
+        var liveState = Load( monitor, pathContext );
+        while( liveState == null )
+        {
+            await Task.Delay( 500, cancellation );
+            liveState = Load( monitor, pathContext );
+        }
+        return liveState;
+    }
+
+    static LiveState? Load( IActivityMonitor monitor, LiveStatePathContext pathContext )
     {
         if( !File.Exists( pathContext.PrimaryStateFile ) ) return null;
         var result = StateSerializer.ReadFile( monitor,

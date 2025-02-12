@@ -15,7 +15,7 @@ public class FileSystemResourceContainerTests
     {
         var c = new FileSystemResourceContainer( TestHelper.TestProjectFolder, "This test" );
 
-        // FileSystemResourceContainer works with the platform spearator.
+        // FileSystemResourceContainer works with the platform separator.
         var normalizedPrefix = TestHelper.TestProjectFolder.Path.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar ) + Path.DirectorySeparatorChar;
 
         c.ResourcePrefix.Should().Be( normalizedPrefix );
@@ -27,8 +27,7 @@ public class FileSystemResourceContainerTests
 
         c.TryGetResource( "SomeType/SomeType.cs", out var locator ).Should().BeTrue();
 
-        locator.ResourceName.Should().Be( TestHelper.TestProjectFolder.AppendPart( "SomeType" ).AppendPart( "SomeType.cs" )
-                                            .Path.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar ) );
+        locator.ResourceName.Should().Be( normalizedPrefix + "SomeType" + Path.DirectorySeparatorChar + "SomeType.cs" );
         var content = c.GetFolder( "SomeType" );
         content.AllResources.Should().HaveCount( 2 );
         var theOne = content.Resources.Single();

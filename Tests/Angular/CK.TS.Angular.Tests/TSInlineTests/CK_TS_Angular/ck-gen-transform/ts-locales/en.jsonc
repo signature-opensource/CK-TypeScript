@@ -1,6 +1,5 @@
 {
   // ck-gen-transform/ts-locales are "override" files: their keys are implicitly prefixed by "O:".
   // This one will be ignored (and a warning will be emitted) because this key doesn't exist.
-  "PublicFooter.Title": "nop",
-  "PublicFooter.Legal": "POUF!"
+  "PublicFooter.Title": "nop"
 }

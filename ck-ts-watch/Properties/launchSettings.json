@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "ck-ts-watch": {
-      "commandName": "Project",
-      "workingDirectory": "C:\\Dev\\CK\\CK-Crs-Projects\\CK-TypeScript\\Tests\\Angular\\CK.TS.Angular.Tests\\TSInlineTests\\CK_TS_Angular"
-    }
-  }
-}

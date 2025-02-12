@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 sealed class Runner
 {
     readonly LiveState _liveState;
-    readonly CKGenTransformFilter _stateFilesFilter;
     readonly Channel<object> _channel;
     readonly FileWatcher _primary;
     readonly FileWatcher? _secondary;
@@ -15,7 +14,6 @@ sealed class Runner
     public Runner( LiveState liveState, CKGenTransformFilter stateFilesFilter )
     {
         _liveState = liveState;
-        _stateFilesFilter = stateFilesFilter;
         var needPrimaryOnly = liveState.Paths.CKGenTransformPath.StartsWith( liveState.WatchRootPath );
         _channel = Channel.CreateUnbounded<object>( new UnboundedChannelOptions() { SingleReader = true, SingleWriter = needPrimaryOnly } );
         var localPackagesFilter = new LocalPackagesFilter( liveState.LocalPackages );
@@ -30,22 +28,33 @@ sealed class Runner
         }
     }
 
-    public async Task RunAsync( IActivityMonitor monitor )
+    public async Task RunAsync( IActivityMonitor monitor, System.Threading.CancellationToken cancellation )
     {
-        object e;
-        while( (e = await _channel.Reader.ReadAsync()) != CKGenTransformFilter.PrimaryStateFileChanged ) 
+        try
         {
-            switch( e )
+            object e;
+            while( (e = await _channel.Reader.ReadAsync( cancellation )) != CKGenTransformFilter.PrimaryStateFileChanged )
             {
-                case Exception ex:
-                    monitor.Warn( $"File system watcher error.", ex );
-                    break;
-                case ChangedEvent p:
-                    _liveState.OnChange( monitor, p.Package, p.SubPath );
-                    break;
+                switch( e )
+                {
+                    case Exception ex:
+                        monitor.Warn( $"File system watcher error.", ex );
+                        break;
+                    case ChangedEvent p:
+                        _liveState.OnChange( monitor, p.Package, p.SubPath );
+                        break;
+                }
             }
+            monitor.Info( "Primary state has been modified." );
         }
-        monitor.Info( "Watcher stopped." );
+        catch( OperationCanceledException c ) when (c.CancellationToken == cancellation )
+        {
+            monitor.Info( "Stopped signal received." );
+        }
+        catch( Exception ex )
+        {
+            monitor.Error( ActivityMonitor.Tags.ToBeInvestigated, "Internal error.", ex );
+        }
         _primary.Dispose();
         _secondary?.Dispose();
     }

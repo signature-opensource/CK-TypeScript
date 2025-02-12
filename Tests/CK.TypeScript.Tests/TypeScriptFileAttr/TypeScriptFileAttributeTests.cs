@@ -1,5 +1,7 @@
+using CK.Core;
 using CK.Setup;
 using CK.Testing;
+using CK.TypeScript.LiveEngine;
 using FluentAssertions;
 using NUnit.Framework;
 using System.IO;
@@ -111,13 +113,19 @@ public class TypeScriptFileAttributeTests
 
         // The target package.json reproduces the ck-gen/package.json peer dependencies.
         var targetPackage = File.ReadAllText( targetProjectPath.AppendPart( "package.json" ) );
-        targetPackage.ReplaceLineEndings().Should().Be( """
+        var watcherPath = typeof( LiveState ).Assembly.Location;
+        if( Path.DirectorySeparatorChar == '\\' )
+        {
+            watcherPath = watcherPath.Replace( "\\", "\\\\" );
+        }
+        targetPackage.ReplaceLineEndings().Should().Be( $$"""
             {
               "name": "typescriptfile_and_typescriptimportlibrary",
               "private": true,
               "packageManager": "yarn@4.6.0",
               "scripts": {
-                "test": "jest"
+                "test": "jest",
+                "ck-watch": "dotnet \"{{watcherPath}}\""
               },
               "workspaces": [
                 "ck-gen"

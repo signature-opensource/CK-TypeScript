@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.TypeScript.CodeGen;
+using CK.TypeScript.LiveEngine;
 using System;
 using System.IO;
 using System.Threading;
@@ -42,7 +43,6 @@ public sealed partial class TypeScriptContext // Save
                     }
                 }
             }
-
 
             // If a ck-gen/dist folder exists, we delete it no matter what.
             // This applies to NpmPackage integration mode. 
@@ -109,6 +109,12 @@ public sealed partial class TypeScriptContext // Save
                 }
                 else
                 {
+                    if( liveState != null )
+                    {
+                        _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
+                            dotnet "{typeof(LiveState).Assembly.Location}"
+                            """;
+                    }
                     success &= _integrationContext.Run( monitor, saver );
                 }
             }

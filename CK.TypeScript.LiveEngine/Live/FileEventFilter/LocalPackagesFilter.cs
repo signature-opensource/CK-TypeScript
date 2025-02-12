@@ -1,8 +1,6 @@
 using CK.TypeScript.LiveEngine;
 using System;
 using System.Collections.Immutable;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.Serialization;
 
 sealed class LocalPackagesFilter : IFileEventFilter
 {

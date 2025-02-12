@@ -121,10 +121,12 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         {
             localResourceName = localResourceName.Slice( 1 );
         }
-        var name = String.Concat( prefix, localResourceName );
-        if( File.Exists( name ) )
+        // This normalizes the Path.DirectorySeparatorChar.
+        // File.Exists calls it anyway.
+        var p = Path.GetFullPath( String.Concat( prefix, localResourceName ) );
+        if( File.Exists( p ) )
         {
-            return new ResourceLocator( this, name );
+            return new ResourceLocator( this, p );
         }
         return default;
     }
@@ -145,12 +147,12 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         {
             localFolderName = localFolderName.Slice( 1 );
         }
-        var name = String.Concat( prefix, localFolderName );
-        if( Directory.Exists( name ) )
+        var p = Path.GetFullPath( String.Concat( prefix, localFolderName ) );
+        if( Directory.Exists( p ) )
         {
-            return new ResourceFolder( this, Path.EndsInDirectorySeparator( name )
-                                                ? name
-                                                : name + Path.DirectorySeparatorChar );
+            return new ResourceFolder( this, Path.EndsInDirectorySeparator( p )
+                                                ? p
+                                                : p + Path.DirectorySeparatorChar );
         }
         return default;
     }

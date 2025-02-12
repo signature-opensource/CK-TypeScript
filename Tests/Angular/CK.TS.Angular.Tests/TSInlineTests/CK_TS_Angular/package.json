@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "jest"
+    "test": "jest",
+    "ck-watch": "dotnet \"C:\\Dev\\CK\\CK-Crs-Projects\\CK-TypeScript\\Tests\\Angular\\CK.TS.Angular.Tests\\bin\\Debug\\net8.0\\CK.TypeScript.LiveEngine.dll\""
   },
   "private": true,
   "dependencies": {

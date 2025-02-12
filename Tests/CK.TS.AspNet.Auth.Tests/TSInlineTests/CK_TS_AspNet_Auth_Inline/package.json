@@ -2,7 +2,8 @@
   "name": "ck_ts_aspnet_auth_inline",
   "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "ck-watch": "dotnet \"C:\\Dev\\CK\\CK-Crs-Projects\\CK-TypeScript\\Tests\\CK.TS.AspNet.Auth.Tests\\bin\\Debug\\net8.0\\CK.TypeScript.LiveEngine.dll\""
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
