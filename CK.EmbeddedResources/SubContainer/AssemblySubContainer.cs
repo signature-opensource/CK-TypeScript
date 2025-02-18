@@ -26,7 +26,7 @@ sealed class AssemblySubContainer : IResourceContainer
     }
 
     internal AssemblySubContainer( AssemblyResources assemblyResources, string prefix, string? displayName, Type type, ReadOnlyMemory<string> resourceNames )
-        : this( assemblyResources, prefix, displayName ?? $"CKEmbeddedResources of '{type.ToCSharpName()}' type", resourceNames )
+        : this( assemblyResources, prefix, displayName ?? $"resources of '{type.ToCSharpName()}' type", resourceNames )
     {
     }
 
@@ -104,5 +104,5 @@ sealed class AssemblySubContainer : IResourceContainer
         return Path.GetFileName( resource.LocalResourceName.Span );
     }
 
-    public override string ToString() =>_displayName;
+    public override string ToString() => _displayName;
 }

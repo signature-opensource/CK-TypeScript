@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace CK.Core;
 
 public sealed partial class LocaleCultureSet
@@ -10,11 +13,11 @@ public sealed partial class LocaleCultureSet
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="above">The base resources.</param>
     /// <param name="isPartialSet">
-    /// When true, an override that overrides nothing is kept as it may apply to the eventual set.
-    /// When false, an override that overrides nothing is discarded and a warning is emitted.
+    /// When true, a regular override that overrides nothing is kept as it may apply to the eventual set.
+    /// When false, a regular override that overrides nothing is discarded and a warning is emitted.
     /// </param>
     /// <returns>True on success, false on error.</returns>
-    internal bool FinalMergeWith( IActivityMonitor monitor, LocaleCultureSet above, bool isPartialSet )
+    internal bool Combine( IActivityMonitor monitor, LocaleCultureSet above, bool isPartialSet )
     {
         bool success = MergeFinalTranslations( monitor, above._translations, isPartialSet );
         if( above._children != null )
@@ -89,8 +92,21 @@ public sealed partial class LocaleCultureSet
                 {
                     if( _translations.TryGetValue( aKey, out var ourValue ) )
                     {
-                        if( aValue.IsOverride )
+                        if( aValue.Override is ResourceOverrideKind.None )
                         {
+                            monitor.Error( $"""
+                                                Key '{aKey}' in {aValue.Origin} overides an existing value:
+                                                This key is already defined by '{ourValue.Origin}' with the value:
+                                                {ourValue.Text}
+                                                The new value would be:
+                                                {aValue.Text}
+                                                Use Override prefix ('O:{aKey}') to allow this.
+                                                """ );
+                            success = false;
+                        }
+                        else
+                        {
+                            // Whether it is a "O", "?O" or "!O" we don't care here as we override.
                             if( ourValue.Text == aValue.Text )
                             {
                                 monitor.Warn( $"""
@@ -104,28 +120,28 @@ public sealed partial class LocaleCultureSet
                                 _translations[aKey] = aValue;
                             }
                         }
-                        else
-                        {
-                            monitor.Error( $"""
-                                                Key '{aKey}' in {aValue.Origin} overides an existing value (it must be 'O:{aKey}'):
-                                                This key is already defined by '{ourValue.Origin}' with the value:
-                                                {ourValue.Text}
-                                                The new value would be:
-                                                {aValue.Text}
-                                                """ );
-                            success = false;
-                        }
                     }
                     else
                     {
                         // No existing translation defined.
-                        if( !isPartialSet && aValue.IsOverride )
+                        // - If this is a partial set, we keep the translation as-is whatever Override it is: the Override will
+                        //   be handled while merging in the final set.
+                        // - Of course, if the resource is a normal one it is added.
+                        // - And if it is a "!O": the resource is always added (as it always overrides).
+                        if( isPartialSet
+                            || aValue.Override is ResourceOverrideKind.None or ResourceOverrideKind.Always )
                         {
-                            monitor.Warn( $"Invalid override 'O:{aKey}' in {aValue.Origin}: the key doesn't exist, there's nothing to override." );
+                            _translations.Add( aKey, aValue );
                         }
                         else
                         {
-                            _translations.Add( aKey, aValue );
+                            Throw.DebugAssert( aValue.Override is ResourceOverrideKind.Regular or ResourceOverrideKind.Optional );
+                            if( aValue.Override is ResourceOverrideKind.Regular )
+                            {
+                                monitor.Warn( $"Invalid override 'O:{aKey}' in {aValue.Origin}: the key doesn't exist, there's nothing to override." );
+                            }
+                            // ResourceOverrideKind.Optional doesn't add the resource and doesn't warn
+                            // since it doesn't already exist. 
                         }
                     }
                 }

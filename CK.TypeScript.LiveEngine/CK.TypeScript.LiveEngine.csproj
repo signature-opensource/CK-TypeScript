@@ -14,6 +14,7 @@
         </PackageReference>    </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CK.EmbeddedResources.Assets\CK.EmbeddedResources.Assets.csproj" />
         <ProjectReference Include="..\CK.EmbeddedResources.Globalization\CK.EmbeddedResources.Globalization.csproj" />
         <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
         <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />

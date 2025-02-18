@@ -1,10 +1,8 @@
 using CK.Core;
 using CK.Setup;
-using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 
 namespace CK.TypeScript.Engine;
@@ -25,7 +23,10 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
     List<Core.ResourceLocator>? _transformers;
+
     LocaleCultureSet? _tsLocales;
+    ResourceAssetSet? _assets;
+
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
     [AllowNull] ITypeAttributesCache _owner;
@@ -69,9 +70,15 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     public LocaleCultureSet? TSLocales => _tsLocales;
 
     /// <summary>
+    /// Gets the assets associated to this package.
+    /// </summary>
+    public ResourceAssetSet? Assets => _assets;
+
+    /// <summary>
     /// Gets the transformer resources from this <see cref="Resources"/>.
     /// </summary>
     public ICollection<Core.ResourceLocator> Transfomers => (ICollection<Core.ResourceLocator>?)_transformers ?? Array.Empty<Core.ResourceLocator>();
+
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
@@ -90,10 +97,14 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 
         _extensions = new List<TypeScriptPackageAttributeImplExtension>();
         _removedResources = new HashSet<Core.ResourceLocator>();
-        // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
-        _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
-        if( !attr.DisableResources )
+        if( attr.DisableResources )
         {
+            _resources = new EmptyResourceContainer( $"disabled resources of '{type.ToCSharpName()}' type" ); ;
+        }
+        else
+        {
+            // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
+            _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
             _localResPath = _resources.GetLocalPath();
         }
         // Initializes TypeScriptFolder.
@@ -169,13 +180,22 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     {
         bool success = true;
 
-        // First, initializes our _tsLocales if a "ts-locales/" folder exists.
-        // And if we have locales, remove them from the resources as they are handled separately.
+        // First, initializes our _tsLocales and _assets if a "ts-locales/" (or "assets/") folder exists.
+        // And if we have locales or assets, remove them from the resources as they are handled separately.
         Throw.DebugAssert( _resources.IsValid );
         success &= _resources.LoadLocales( monitor, initializer.BinPathConfiguration.ActiveCultures, out _tsLocales, "ts-locales" );
         if( _tsLocales != null )
         {
             var f = _resources.GetFolder( "ts-locales" );
+            if( f.IsValid )
+            {
+                _removedResources.AddRange( f.AllResources );
+            }
+        }
+        success &= _resources.LoadAssets( monitor, _typeScriptFolder, out _assets, "assets" );
+        if( _assets != null )
+        {
+            var f = _resources.GetFolder( "assets" );
             if( f.IsValid )
             {
                 _removedResources.AddRange( f.AllResources );

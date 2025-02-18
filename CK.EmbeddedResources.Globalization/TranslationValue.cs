@@ -1,16 +1,18 @@
+using System;
+
 namespace CK.Core;
 
 /// <summary>
 /// A translation value is a <see cref="Text"/> that comes from an <see cref="Origin"/>.
 /// <para>
-/// Equality ignores the <see cref="Origin"/> and <see cref="IsOverride"/>: two values are equal if their <see cref="Text"/> are equal.
+/// Equality ignores the <see cref="Origin"/> and <see cref="Override"/>: two values are equal if their <see cref="Text"/> are equal.
 /// </para>
 /// </summary>
 public readonly struct TranslationValue : IEquatable<TranslationValue>
 {
     readonly string _text;
     readonly ResourceLocator _origin;
-    readonly bool _isOverride;
+    readonly ResourceOverrideKind _override;
 
     /// <summary>
     /// Gets the translation text.
@@ -24,20 +26,21 @@ public readonly struct TranslationValue : IEquatable<TranslationValue>
 
     /// <summary>
     /// Gets whether this translation overrides an existing translation provided by another component.
+    /// See <see cref="ResourceOverrideKind"/>.
     /// </summary>
-    public bool IsOverride => _isOverride;
+    public ResourceOverrideKind Override => _override;
 
     /// <summary>
     /// Initializes a new translation value.
     /// </summary>
     /// <param name="text">The translation text.</param>
     /// <param name="origin">The origin.</param>
-    /// <param name="isOverride">Whether this translation overrides an existing translation provided by another component</param>
-    public TranslationValue( string text, ResourceLocator origin, bool isOverride )
+    /// <param name="overrideKind">Whether this translation overrides an existing translation provided by another component</param>
+    public TranslationValue( string text, ResourceLocator origin, ResourceOverrideKind overrideKind )
     {
         _text = text;
         _origin = origin;
-        _isOverride = isOverride;
+        _override = overrideKind;
     }
 
     /// <summary>

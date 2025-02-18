@@ -1,5 +1,3 @@
-using System;
-
 namespace CK.TS.Angular;
 
 /// <summary>

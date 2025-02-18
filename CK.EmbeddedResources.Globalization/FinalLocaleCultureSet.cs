@@ -1,5 +1,10 @@
+using System.Linq;
+
 namespace CK.Core;
 
+/// <summary>
+/// Final culture set: this combines multiple culture set into one <see cref="Root"/> final tree.
+/// </summary>
 public sealed class FinalLocaleCultureSet
 {
     readonly LocaleCultureSet _root;
@@ -23,13 +28,13 @@ public sealed class FinalLocaleCultureSet
 
     /// <summary>
     /// Updates this culture set with the content of <paramref name="newSet"/>.
-    /// If the new set contains overrides, they apply and if they try to redefine an already defined
+    /// If the new set contains overrides, they apply and if it tries to redefine an already defined
     /// resource, this is an error.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="newSet">The new set of resources to combine.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool Add( IActivityMonitor monitor, LocaleCultureSet newSet ) => _root.FinalMergeWith( monitor, newSet, _isPartialSet );
+    public bool Add( IActivityMonitor monitor, LocaleCultureSet newSet ) => _root.Combine( monitor, newSet, _isPartialSet );
 
     /// <summary>
     /// Gets the root "en" set.
@@ -68,7 +73,7 @@ public sealed class FinalLocaleCultureSet
     /// Propagates the translations from the "en" root to all subordinated cultures.
     /// <para>
     /// This must used for final systems that don't handle culture fallbacks across the resources files:
-    /// each set must contain the whole set of key/value pairs.
+    /// for them, each set must contain the whole set of key/value pairs.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

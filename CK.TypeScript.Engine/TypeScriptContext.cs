@@ -5,9 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CK.Setup;
 
@@ -213,6 +211,7 @@ public sealed partial class TypeScriptContext
                     && ResolveRegisteredTypes( monitor )
                     && GeneratePackageCode( monitor, _initializer.Packages, this )
                     && GenerateTSLocaleSupport( monitor, this )
+                    && GenerateAssetsSupport( monitor, this )
                     // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                     && _tsRoot.GenerateCode( monitor );
         }
@@ -276,6 +275,44 @@ public sealed partial class TypeScriptContext
             return true;
         }
 
+        static bool GenerateAssetsSupport( IActivityMonitor monitor, TypeScriptContext context )
+        {
+            // First, tries to load the "ck-gen-transform/assets".
+            // If there is an error loading it, give up.
+            ResourceAssetSet? appAssets = null;
+            if( context.CKGenTransform != null
+                && !context.CKGenTransform.LoadAssets( monitor, default, out appAssets, "assets" ) )
+            {
+                return false;
+            }
+            bool success = true;
+            // Creates an empty final set. 
+            var f = new FinalResourceAssetSet( isPartialSet: false );
+            foreach( var p in context._initializer.Packages )
+            {
+                if( p.Assets != null )
+                {
+                    success &= f.Add( monitor, p.Assets );
+                }
+            }
+            // Now add the final override if it exists.
+            if( appAssets != null )
+            {
+                success &= f.Add( monitor, appAssets );
+            }
+            if( success )
+            {
+                // Now we can create the final resource file in the Root and
+                // adds all the assets.
+                var assetsFolder = context.Root.Root.FindOrCreateFolder( "assets" );
+                foreach( var (path,asset) in f.Final.Assets )
+                {
+                    assetsFolder.CreateResourceFile( asset.Origin, path );
+                }
+            }
+            return success;
+        }
+
         static bool GenerateTSLocaleSupport( IActivityMonitor monitor, TypeScriptContext context )
         {
             // First, tries to load the "ck-gen-transform/ts-locales".
@@ -307,7 +344,7 @@ public sealed partial class TypeScriptContext
             }
             if( success )
             {
-                // Now we can create the final resource file in the Root.
+                // Now we can create the final ts-locales folder in the Root.
                 var localeFolder = context.Root.Root.FindOrCreateFolder( "ts-locales" );
                 WriteFinalSet( monitor, localeFolder, f );
             }

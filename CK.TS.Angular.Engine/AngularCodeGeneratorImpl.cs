@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace CK.TS.Angular.Engine;
@@ -483,6 +484,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             TransformAppComponentConfig( e.Monitor, e.SrcFolderPath.Combine( "app/app.config.ts" ) );
             TransformAppComponentRoutes( e.Monitor, e.SrcFolderPath.Combine( "app/app.routes.ts" ) );
             TransformStyles( e.Monitor, e.SrcFolderPath.Combine( "styles.less" ), e.CKGenFolder );
+            TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), e.CKGenFolder );
 
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
             {
@@ -727,8 +729,36 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
             }
 
-#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'
+            static void TransformAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath, NormalizedPath cKGenFolder )
+            {
+                // in single "assets": []
+                //    ensure first """
+                //      {
+                //        "glob": "**/*",
+                //        "input": "ck-gen/assets"
+                //      }
+                //      """;
+                var text = File.ReadAllText( angularJsonPath );
+                var m = Regex.Match( text, """
+                            "assets"\s*:\s*\[\s*{
+                            """ );
+                if( m.Success )
+                {
+                    if( !text.AsSpan( m.Index + m.Length ).Contains( "ck-gen/assets", StringComparison.Ordinal ) )
+                    {
+                        var start = text.Substring( 0, m.Index + m.Length - 1 );
+                        start += """{ "glob": "**/*", "input": "ck-gen/assets" }, """;
+                        start += text.Substring( m.Index + m.Length - 1 );
+                        File.WriteAllText( angularJsonPath, start );
+                        monitor.Info( "Added ck-gen/assets to angular.json assets." );
+                    }
+                }
+            }
         }
+
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'
     }
+
 }
+
 

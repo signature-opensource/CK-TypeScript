@@ -21,7 +21,7 @@ static class TSLocaleSerializer
                 StateSerializer.WriteResourceLocator( w, containerPool, t.Value.Origin );
                 w.Write( t.Key );
                 w.Write( t.Value.Text );
-                w.Write( t.Value.IsOverride );
+                w.Write( (byte)t.Value.Override );
             }
         }
         else
@@ -56,7 +56,7 @@ static class TSLocaleSerializer
             {
                 var origin = StateSerializer.ReadResourceLocator( r, containerPool );
                 var key = r.ReadString();
-                tr.Add( key, new TranslationValue( r.ReadString(), origin, r.ReadBoolean() ) );
+                tr.Add( key, new TranslationValue( r.ReadString(), origin, (ResourceOverrideKind)r.ReadByte() ) );
             }
         }
         count = r.ReadInt32();

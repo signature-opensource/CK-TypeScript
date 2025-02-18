@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace CK.Core;
@@ -17,22 +21,25 @@ public static class ResourceContainerGlobalizationExtension
     ///   en/
     ///     en-GB.jsonc
     ///   en-US.jsonc
-    ///   de.json
+    ///   de.jsonc
     /// </code>
     /// Will produce the "en" (from the <c>default.jsonc</c> file), the "en-GB", "en-US", "fr-FR" and "de" culture set.
-    /// Folders are ignored, files with ".jsonc" can contain comments whereas in ".json" files, comments are prohibited.
+    /// Folders are ignored: they can freely be used to group related files.
+    /// </para>
+    /// <para>
+    /// Files must be ".jsonc" (json with comments), ".json" files are prohibited.
     /// Parent cultures are not created if not needed: here the "fr" set is not created.
     /// </para>
     /// <para>
-    /// The <c>default.jsonc</c> (or <c>default.jsonc</c>) file is required unless <paramref name="isOverrideFolder"/> is true.
+    /// The <c>default.jsonc</c> file is required unless <paramref name="isOverrideFolder"/> is true.
     /// </para>
     /// <para>
     /// When <paramref name="isOverrideFolder"/> is true, the loaded folder is an override that doesn't define new resources.
-    /// It doesn't need a <c>default.json</c> and all resources in its files are considered to have an implicit "O:" key prefix.
+    /// It doesn't need a <c>default.jsonc</c> and all resources in its files are considered to have an implicit "O:" key prefix.
     /// </para>
     /// </summary>
+    /// <param name="container">This container of resources.</param>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="container">The container of resources.</param>
     /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
     /// <param name="locales">The loaded locales. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
     /// <param name="folder">The folder to load.</param>
@@ -63,9 +70,8 @@ public static class ResourceContainerGlobalizationExtension
 
         static LocaleCultureSet? CreateRoot( IActivityMonitor monitor, ResourceFolder folder, bool isOverrideFolder )
         {
-            if( folder.TryGetResource( "default.json", out var defFile )
-                || folder.TryGetResource( "default.jsonc", out defFile )
-                || isOverrideFolder && (folder.TryGetResource( "en.json", out defFile ) || folder.TryGetResource( "en.jsonc", out defFile )) )
+            if( folder.TryGetResource( "default.jsonc", out var defFile )
+                || isOverrideFolder && folder.TryGetResource( "en.jsonc", out defFile ) )
             {
                 if( ReadJson( monitor, defFile, isOverrideFolder, out var defTranslations ) )
                 {
@@ -81,7 +87,7 @@ public static class ResourceContainerGlobalizationExtension
                     return new LocaleCultureSet( defFile, NormalizedCultureInfo.CodeDefault );
                 }
                 // Regular folder MUST contain a "default".
-                monitor.Error( $"Missing 'default.json' file in {folder}. This file must contain all the resources in english." );
+                monitor.Error( $"Missing 'default.jsonc' file in {folder}. This file must contain all the resources in english." );
             }
             return null;
         }
@@ -95,12 +101,17 @@ public static class ResourceContainerGlobalizationExtension
             bool success = true;
 
             // Ordering by increasing length: process less specific first.
-            var others = allResources.Where( r => r != defaultSet.Origin
-                                                  && (r.LocalResourceName.Span.EndsWith( ".json" ) || r.LocalResourceName.Span.EndsWith( ".jsonc" )) )
+            var others = allResources.Where( r => r != defaultSet.Origin )
                                      .OrderBy( o => o.ResourceName.Length );
 
             foreach( var o in others )
             {
+                if( !o.LocalResourceName.Span.EndsWith( ".jsonc" ) )
+                {
+                    monitor.Error( $"Invalid '{o}'. Only '.jsonc' files must appear in 'ts-locales' folder." );
+                    success = false;
+                    continue;
+                }
                 var cName = Path.GetFileNameWithoutExtension( o.ResourceName.AsSpan().ToString() );
                 if( !NormalizedCultureInfo.IsValidCultureName( cName ) )
                 {
@@ -180,7 +191,7 @@ public static class ResourceContainerGlobalizationExtension
                         // this key must also be defined as an override in the "default.json" file: it has to be defined
                         // in the final merged set by a lower-level component. Override handling is done by the FinalSet,
                         // not here.
-                        if( !kv.Value.IsOverride && !defaultSet.Translations.ContainsKey( kv.Key ) )
+                        if( kv.Value.Override == ResourceOverrideKind.None && !defaultSet.Translations.ContainsKey( kv.Key ) )
                         {
                             monitor.Error( $"""
                                         Missing key in default translation file.
@@ -257,23 +268,36 @@ public static class ResourceContainerGlobalizationExtension
                     r.ReadWithMoreData( context );
                     while( r.TokenType == JsonTokenType.PropertyName )
                     {
-                        var propertyName = r.GetString();
-                        Throw.CheckData( "Expected non empty property name.", !string.IsNullOrWhiteSpace( propertyName ) );
+                        var fullPropertyName = r.GetString();
+                        Throw.CheckData( "Expected non empty property name.", !string.IsNullOrWhiteSpace( fullPropertyName ) );
                         Throw.CheckData( "Property name cannot end or start with '.' nor contain '..'.",
-                                         propertyName[0] != '.' && propertyName[^1] != '.' && !propertyName.Contains( ".." ) );
-                        bool isOverride = isOverrideFolder;
+                                         fullPropertyName[0] != '.' && fullPropertyName[^1] != '.' && !fullPropertyName.Contains( ".." ) );
+                        ResourceOverrideKind overrideKind = isOverrideFolder
+                                                                ? ResourceOverrideKind.Regular
+                                                                : ResourceOverrideKind.None;
+                        var propertyName = fullPropertyName;
                         if( propertyName.StartsWith( "O:" ) )
                         {
-                            isOverride = true;
+                            overrideKind = ResourceOverrideKind.Regular;
                             propertyName = propertyName.Substring( 2 );
+                        }
+                        else if( propertyName.StartsWith( "?O:" ) )
+                        {
+                            overrideKind = ResourceOverrideKind.Optional;
+                            propertyName = propertyName.Substring( 3 );
+                        }
+                        else if( propertyName.StartsWith( "!O:" ) )
+                        {
+                            overrideKind = ResourceOverrideKind.Always;
+                            propertyName = propertyName.Substring( 3 );
                         }
                         propertyName = parentPath + propertyName;
                         r.ReadWithMoreData( context );
                         if( r.TokenType == JsonTokenType.StartObject )
                         {
-                            if( isOverride )
+                            if( overrideKind is not ResourceOverrideKind.None )
                             {
-                                Throw.InvalidDataException( $"Invalid parent property name \"O:{propertyName}\": When defining a subordinated object, the parent key must not be an override." );
+                                Throw.InvalidDataException( $"Invalid parent property name \"{fullPropertyName}\": When defining a subordinated object, the parent key must not be an override." );
                             }
                             ReadObject( ref r, context, origin, isOverrideFolder, target, parentPath + propertyName + '.' );
                         }
@@ -283,7 +307,7 @@ public static class ResourceContainerGlobalizationExtension
                             {
                                 Throw.InvalidDataException( $"Expected a string or an object, got a '{r.TokenType}'." );
                             }
-                            if( !target.TryAdd( propertyName, new TranslationValue( r.GetString()!, origin, isOverride ) ) )
+                            if( !target.TryAdd( propertyName, new TranslationValue( r.GetString()!, origin, overrideKind ) ) )
                             {
                                 Throw.InvalidDataException( $"Duplicate key '{propertyName}' found." );
                             }
