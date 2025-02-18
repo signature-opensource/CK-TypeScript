@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
 
 namespace CK.TypeScript.LiveEngine;
 
@@ -13,35 +14,75 @@ static class StateSerializer
 
     internal static void WriteResourceContainer( CKBinaryWriter w,
                                                  CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                                                 IResourceContainer container )
+                                                 IResourceContainer container,
+                                                 CKBinaryWriter.ObjectPool<AssemblyResourceContainer>? assemblyPool )
     {
         Throw.DebugAssert( container != null );
         if( containerPool.MustWrite( container ) )
         {
             w.Write( container.DisplayName );
             w.Write( container.ResourcePrefix );
+            if( assemblyPool != null )
+            {
+                var a = container as AssemblyResourceContainer;
+                if( assemblyPool.MustWrite( a ) )
+                {
+                    Throw.DebugAssert( a != null );
+                    w.Write( a.AssemblyResources.AssemblyName );
+                }
+            }
         }
     }
 
     internal static IResourceContainer ReadResourceContainer( CKBinaryReader r,
-                                                              CKBinaryReader.ObjectPool<EmptyResourceContainer> containerPool )
+                                                              CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
+                                                              CKBinaryReader.ObjectPool<AssemblyResourceContainer>? assemblyPool )
     {
-        return containerPool.Read( ( state, r ) => new EmptyResourceContainer( r.ReadString(), r.ReadString() ) )!;
+        var state = containerPool.TryRead( out var result );
+        if( !state.Success )
+        {
+            var displayName = r.ReadString();
+            var resourcePrefix = r.ReadString();
+            if( assemblyPool == null )
+            {
+                result = state.SetReadResult( new EmptyResourceContainer( displayName, resourcePrefix ) );
+            }
+            else
+            {
+                var assemblyState = assemblyPool.TryRead( out var assemblyResult );
+                if( assemblyState.Success )
+                {
+                    Throw.DebugAssert( assemblyResult != null );
+                    result = state.SetReadResult( assemblyResult );
+                }
+                else
+                {
+                    var a = Assembly.Load( r.ReadString() );
+                    assemblyResult = a.GetResources().CreateCKResourceContainer( resourcePrefix, displayName );
+                    assemblyState.SetReadResult( assemblyResult );
+                    result = state.SetReadResult( assemblyResult );
+                }
+            }
+        }
+        Throw.DebugAssert( "We never serialize a null container.", result != null );
+        return result;
     }
 
     internal static void WriteResourceLocator( CKBinaryWriter w,
-                                                 CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                                                 ResourceLocator locator )
+                                               CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
+                                               ResourceLocator locator,
+                                               CKBinaryWriter.ObjectPool<AssemblyResourceContainer>? assemblyPool )
     {
         Throw.DebugAssert( locator.IsValid );
-        WriteResourceContainer( w, containerPool, locator.Container );
+        WriteResourceContainer( w, containerPool, locator.Container, assemblyPool );
         w.Write( locator.ResourceName );
     }
 
     internal static ResourceLocator ReadResourceLocator( CKBinaryReader r,
-                                                         CKBinaryReader.ObjectPool<EmptyResourceContainer> containerPool )
+                                                         CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
+                                                         CKBinaryReader.ObjectPool<AssemblyResourceContainer>? assemblyPool )
     {
-        var c = ReadResourceContainer( r, containerPool );
+        var c = ReadResourceContainer( r, containerPool, assemblyPool );
         return new ResourceLocator( c, r.ReadString() );
     }
 

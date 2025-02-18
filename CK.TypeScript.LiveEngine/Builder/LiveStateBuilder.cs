@@ -56,7 +56,8 @@ public sealed class LiveStateBuilder
     }
 
     public void AddRegularPackage( IActivityMonitor monitor,
-                                   LocaleCultureSet? locales )
+                                   LocaleCultureSet? locales,
+                                   ResourceAssetSet? assets )
     {
         if( locales != null ) _locales.AddRegularPackage( monitor, locales );
     }

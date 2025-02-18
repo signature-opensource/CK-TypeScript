@@ -9,16 +9,18 @@ static class TSLocaleSerializer
 {
     public const string FileName = "TSLocale.dat";
 
-    internal static void WriteLocaleCultureSet( CKBinaryWriter w, LocaleCultureSet set, CKBinaryWriter.ObjectPool<IResourceContainer> containerPool )
+    internal static void WriteLocaleCultureSet( CKBinaryWriter w,
+                                                LocaleCultureSet set,
+                                                CKBinaryWriter.ObjectPool<IResourceContainer> containerPool )
     {
         w.Write( set.Culture.Name );
-        StateSerializer.WriteResourceLocator( w, containerPool, set.Origin );
+        StateSerializer.WriteResourceLocator( w, containerPool, set.Origin, null );
         if( set.HasTranslations )
         {
             w.Write( set.Translations.Count );
             foreach( var t in set.Translations )
             {
-                StateSerializer.WriteResourceLocator( w, containerPool, t.Value.Origin );
+                StateSerializer.WriteResourceLocator( w, containerPool, t.Value.Origin, null );
                 w.Write( t.Key );
                 w.Write( t.Value.Text );
                 w.Write( (byte)t.Value.Override );
@@ -43,10 +45,10 @@ static class TSLocaleSerializer
 
     }
 
-    internal static LocaleCultureSet ReadLocalCultureSet( CKBinaryReader r, CKBinaryReader.ObjectPool<EmptyResourceContainer> containerPool )
+    internal static LocaleCultureSet ReadLocalCultureSet( CKBinaryReader r, CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
         var cName = r.ReadString();
-        var orig = StateSerializer.ReadResourceLocator( r, containerPool );
+        var orig = StateSerializer.ReadResourceLocator( r, containerPool, null );
         Dictionary<string, TranslationValue>? tr = null;
         int count = r.ReadInt32();
         if( count > 0 )
@@ -54,7 +56,7 @@ static class TSLocaleSerializer
             tr = new Dictionary<string, TranslationValue>( count );
             for( int i = 0; i < count; i++ )
             {
-                var origin = StateSerializer.ReadResourceLocator( r, containerPool );
+                var origin = StateSerializer.ReadResourceLocator( r, containerPool, null );
                 var key = r.ReadString();
                 tr.Add( key, new TranslationValue( r.ReadString(), origin, (ResourceOverrideKind)r.ReadByte() ) );
             }
@@ -70,6 +72,7 @@ static class TSLocaleSerializer
 
     internal static void WriteTSLocalesState( CKBinaryWriter w, List<object> localePackages )
     {
+        var assemblyPool = new CKBinaryWriter.ObjectPool<AssemblyResourceContainer>( w );
         var containerPool = new CKBinaryWriter.ObjectPool<IResourceContainer>( w );
         w.WriteNonNegativeSmallInt32( localePackages.Count );
         foreach( var locale in localePackages )
@@ -90,7 +93,7 @@ static class TSLocaleSerializer
                                                            CKBinaryReader r,
                                                            ImmutableArray<LocalPackage> localPackages )
     {
-        var containerPool = new CKBinaryReader.ObjectPool<EmptyResourceContainer>( r );
+        var containerPool = new CKBinaryReader.ObjectPool<IResourceContainer>( r );
         int count = r.ReadNonNegativeSmallInt32();
         var b = new ITSLocalePackage[count];
         for( int i = 0; i < count; i++ )

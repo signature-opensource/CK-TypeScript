@@ -38,7 +38,7 @@ public sealed partial class TypeScriptContext // Save
                         }
                         else
                         {
-                            liveState.AddRegularPackage( monitor, p.TSLocales );
+                            liveState.AddRegularPackage( monitor, p.TSLocales, p.Assets );
                         }
                     }
                 }

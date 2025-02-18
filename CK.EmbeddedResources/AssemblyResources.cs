@@ -14,28 +14,28 @@ namespace CK.Core;
 /// Instances are created by <see cref="AssemblyExtensions.GetResources(Assembly)"/>.
 /// </para>
 /// At a higher level, the <see cref="CreateResourcesContainerForType(IActivityMonitor, Type, string?)"/> provides
-/// the resources defined in the "/Res" folder of a type definition.
+/// the <see cref="AssemblyResourceContainer"/> defined in the "/Res" folder of a type definition.
 /// </summary>
 public sealed partial class AssemblyResources
 {
     readonly Assembly _assembly;
+    readonly string _assemblyName;
     readonly ImmutableOrdinalSortedStrings _allResourceNames;
     readonly ReadOnlyMemory<string> _ckResourceNames;
     readonly NormalizedPath _localPath;
 
     internal AssemblyResources( Assembly a )
     {
+        var name = a.GetName().Name;
+        Throw.CheckArgument( "Cannot handle dynamic assembly.", name != null );
+        _assemblyName = name;
         _assembly = a;
         _allResourceNames = ImmutableOrdinalSortedStrings.UnsafeCreate( a.GetManifestResourceNames(), mustSort: true );
         _ckResourceNames = _allResourceNames.GetPrefixedStrings( "ck@" );
         var localProjects = LocalDevSolution.LocalProjectPaths;
         if( localProjects.Count > 0 )
         {
-            var name = _assembly.GetName().Name;
-            if( name != null )
-            {
-                localProjects.TryGetValue( name, out _localPath );
-            }
+            localProjects.TryGetValue( name, out _localPath );
         }
     }
 
@@ -43,6 +43,12 @@ public sealed partial class AssemblyResources
     /// Gets the assembly.
     /// </summary>
     public Assembly Assembly => _assembly;
+
+    /// <summary>
+    /// Gets the simple assembly name. This can never be null as dynamic assemblies
+    /// are not handled by <see cref="AssemblyResources"/>.
+    /// </summary>
+    public string AssemblyName => _assemblyName;
 
     /// <summary>
     /// Gets the local development folder for this assembly.
@@ -98,48 +104,45 @@ public sealed partial class AssemblyResources
 
     /// <summary>
     /// Creates a <see cref="IResourceContainer"/> on a sub path of the "ck@" embedded resources.
-    /// All the "ck@" prefixed resources can be handled when <paramref name="subpath"/> is empty.
+    /// All the "ck@" prefixed resources can be handled when <paramref name="subPath"/> is empty.
     /// <para>
     /// If the path doesn't start with "ck@", the prefix is automatically added.
     /// Path separator is '/' (using a '\' will throw).
     /// It can be empty: all the <see cref="CKResourceNames"/> will be reachable.
     /// </para>
     /// </summary>
-    /// <param name="subpath">
+    /// <param name="subPath">
     /// The path of the directory. May start with "ck@" or not.
     /// Should almost always end with "Res/" as it's the standard directory names that automatically
     /// embeds the "ck@" resources. 
     /// </param>
-    /// <returns>A resource container. May be an <see cref="EmptyResourceContainer"/>.</returns>
-    public IResourceContainer CreateCKResourceContainer( string subpath, string displayName )
+    /// <returns>A resource container. May be empty.</returns>
+    public AssemblyResourceContainer CreateCKResourceContainer( string subPath, string displayName )
     {
-        if( _ckResourceNames.Length == 0 ) return new EmptyResourceContainer( displayName );
-        if( string.IsNullOrEmpty( subpath ) )
+        if( string.IsNullOrEmpty( subPath ) )
         {
-            return new AssemblySubContainer( this, "ck@", displayName, _ckResourceNames );
+            return new AssemblyResourceContainer( this, "ck@", displayName, _ckResourceNames );
         }
-        Throw.CheckArgument( subpath.Contains( '\\' ) is false );
+        Throw.CheckArgument( subPath.Contains( '\\' ) is false );
 
-        bool needPrefix = !subpath.StartsWith( "ck@", StringComparison.Ordinal );
-        bool needSuffix = subpath.Length > (needPrefix ? 3 : 0) && subpath[^1] != '/';
+        bool needPrefix = !subPath.StartsWith( "ck@", StringComparison.Ordinal );
+        bool needSuffix = subPath.Length > (needPrefix ? 3 : 0) && subPath[^1] != '/';
         if( needPrefix )
         {
-            subpath = needSuffix
-                        ? "ck@" + subpath + '/'
-                        : "ck@" + subpath;
+            subPath = needSuffix
+                        ? "ck@" + subPath + '/'
+                        : "ck@" + subPath;
         }
         else if( needSuffix )
         {
-            subpath = subpath + '/';
+            subPath = subPath + '/';
         }
-        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( subpath, _ckResourceNames.Span );
-        return len == 0
-                ? new EmptyResourceContainer( displayName )
-                : new AssemblySubContainer( this, subpath, displayName, _ckResourceNames.Slice( idx, len ) );
+        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( subPath, _ckResourceNames.Span );
+        return new AssemblyResourceContainer( this, subPath, displayName, _ckResourceNames.Slice( idx, len ) );
     }
 
     /// <summary>
-    /// Creates a <see cref="IResourceContainer"/> for a type that must be decorated with at least
+    /// Creates a <see cref="AssemblyResourceContainer"/> for a type that must be decorated with at least
     /// one <see cref="IEmbeddedResourceTypeAttribute"/> attribute.
     /// <para>
     /// On success, the container is bound to the corresponding embedded ressources "Res/" folder.
@@ -150,11 +153,11 @@ public sealed partial class AssemblyResources
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
     /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
-    public IResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor, Type type, string? containerDisplayName = null )
+    public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor, Type type, string? containerDisplayName = null )
     {
         return GetCallerInfo( monitor, type, type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(), out var callerPath, out var callerSource )
                 ? CreateResourcesContainerForType( monitor, callerPath, type, callerSource.GetType().Name, containerDisplayName )
-                : new AssemblySubContainer( this, "", containerDisplayName, type, ReadOnlyMemory<string>.Empty );
+                : new AssemblyResourceContainer( this, "", containerDisplayName, type, ReadOnlyMemory<string>.Empty );
 
         static bool GetCallerInfo( IActivityMonitor monitor,
                                    Type type,
@@ -201,8 +204,8 @@ public sealed partial class AssemblyResources
     }
 
     /// <summary>
-    /// Creates a <see cref="IResourceContainer"/> for a type based on a CallerFilePath (<see cref="CallerFilePathAttribute"/>) captured
-    /// by an attribute on the <paramref name="type"/> (typically a <see cref="IEmbeddedResourceTypeAttribute"/>).
+    /// Creates a <see cref="AssemblyResourceContainer"/> for a type based on a CallerFilePath (<see cref="CallerFilePathAttribute"/>)
+    /// captured by an attribute on the <paramref name="type"/> (typically a <see cref="IEmbeddedResourceTypeAttribute"/>).
     /// <para>
     /// On success, the container is bound to the corresponding embedded ressources "Res/" folder.
     /// It may not be <see cref="IsValid"/> (an error has been logged).
@@ -214,11 +217,11 @@ public sealed partial class AssemblyResources
     /// <param name="attributeName">The attribute name that declares the resource (used for logging).</param>
     /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
-    public IResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
-                                                               string? callerFilePath,
-                                                               Type type,
-                                                               string attributeName,
-                                                               string? containerDisplayName = null )
+    public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
+                                                                      string? callerFilePath,
+                                                                      Type type,
+                                                                      string attributeName,
+                                                                      string? containerDisplayName = null )
     {
         Throw.CheckNotNullArgument( type );
         Throw.CheckNotNullArgument( attributeName );
@@ -246,9 +249,9 @@ public sealed partial class AssemblyResources
                 // TODO: miss a NormalizedPath.SubPath( int start, int len )...
                 p = p.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
                 var prefix = p.IsEmptyPath ? "ck@Res/" : $"ck@{p.Path}/Res/";
-                return new AssemblySubContainer( this, prefix, containerDisplayName, type, ImmutableOrdinalSortedStrings.GetPrefixedStrings( prefix, _ckResourceNames ) );
+                return new AssemblyResourceContainer( this, prefix, containerDisplayName, type, ImmutableOrdinalSortedStrings.GetPrefixedStrings( prefix, _ckResourceNames ) );
             }
         }
-        return new AssemblySubContainer( this, "", containerDisplayName, type, ReadOnlyMemory<string>.Empty );
+        return new AssemblyResourceContainer( this, "", containerDisplayName, type, ReadOnlyMemory<string>.Empty );
     }
 }

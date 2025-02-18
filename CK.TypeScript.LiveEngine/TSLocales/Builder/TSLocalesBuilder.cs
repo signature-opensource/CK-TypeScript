@@ -20,7 +20,7 @@ sealed class TSLocalesBuilder
     {
         Throw.DebugAssert( locales != null );
         bool isPartial = _regularPackageLocalesCount > 0;
-        _currentRegularLocales ??= new FinalLocaleCultureSet( isPartial, isPartial ? "Initial set." : $"Set n°{_regularPackageLocalesCount}" );
+        _currentRegularLocales ??= new FinalLocaleCultureSet( isPartial, isPartial ? $"Set n°{_regularPackageLocalesCount}": "Initial set" );
         _regularPackageLocalesCount++;
         _currentRegularLocales.Add( monitor, locales );
     }
