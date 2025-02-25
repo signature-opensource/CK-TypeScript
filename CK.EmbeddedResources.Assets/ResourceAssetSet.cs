@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 
 namespace CK.Core;
 
 /// <summary>
-/// Captures a folder like structure of <see cref="ResourceAsset"/>.
+/// Captures a folder like structure of <see cref="ResourceAsset"/>: a read only dictionary of <see cref="NormalizedPath"/>
+/// to its <see cref="ResourceAsset"/>.
 /// </summary>
 public sealed class ResourceAssetSet
 {
@@ -77,5 +79,10 @@ public sealed class ResourceAssetSet
             }
         }
         return success;
+    }
+
+    public static implicit operator Dictionary<object, object>( ResourceAssetSet v )
+    {
+        throw new NotImplementedException();
     }
 }

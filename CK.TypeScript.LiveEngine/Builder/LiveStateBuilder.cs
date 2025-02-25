@@ -14,9 +14,10 @@ namespace CK.TypeScript.Engine;
 public sealed class LiveStateBuilder
 {
     readonly LiveStatePathContext _pathContext;
-    readonly NormalizedPath _targetProjectPath;
     readonly IReadOnlySet<NormalizedCultureInfo> _activeCultures;
     readonly TSLocalesBuilder _locales;
+    readonly AssetsBuilder _assets;
+    readonly List<RegularPackageRef> _regularPackages;
     readonly List<LocalPackageRef> _localPackages;
     string? _watchRoot;
 
@@ -24,10 +25,11 @@ public sealed class LiveStateBuilder
                              IReadOnlySet<NormalizedCultureInfo> activeCultures )
     {
         _pathContext = new LiveStatePathContext( targetProjectPath );
-        _targetProjectPath = targetProjectPath;
         _activeCultures = activeCultures;
         _localPackages = new List<LocalPackageRef>();
+        _regularPackages = new List<RegularPackageRef>();
         _locales = new TSLocalesBuilder();
+        _assets = new AssetsBuilder();
     }
 
     public void ClearState( IActivityMonitor monitor )
@@ -56,17 +58,25 @@ public sealed class LiveStateBuilder
     }
 
     public void AddRegularPackage( IActivityMonitor monitor,
+                                   AssemblyResourceContainer resources,
+                                   NormalizedPath typeScriptFolder,
                                    LocaleCultureSet? locales,
                                    ResourceAssetSet? assets )
     {
+        var reg = new RegularPackageRef( resources, typeScriptFolder, _regularPackages.Count );
+        _regularPackages.Add( reg );
         if( locales != null ) _locales.AddRegularPackage( monitor, locales );
+        if( assets != null ) _assets.AddRegularPackage( monitor, assets );
     }
 
-    public void AddLocalPackage( IActivityMonitor monitor, string localResPath, string displayName )
+    public void AddLocalPackage( IActivityMonitor monitor,
+                                 string localResPath,
+                                 NormalizedPath typeScriptFolder,
+                                 string displayName )
     {
         Throw.CheckArgument( Path.EndsInDirectorySeparator( localResPath ) );
         Throw.CheckNotNullOrEmptyArgument( displayName );
-        var loc = new LocalPackageRef( localResPath, displayName, _localPackages.Count );
+        var loc = new LocalPackageRef( localResPath, typeScriptFolder, displayName, _localPackages.Count );
         _localPackages.Add( loc );
         if( _watchRoot == null )
         {
@@ -77,6 +87,7 @@ public sealed class LiveStateBuilder
             _watchRoot = CommonParentPath( _watchRoot, localResPath );
         }
         _locales.AddLocalPackage( monitor, loc );
+        _assets.AddLocalPackage( monitor, loc );
 
         static string CommonParentPath( string path1, string path2 )
         {
@@ -98,6 +109,8 @@ public sealed class LiveStateBuilder
         }
     }
 
+    public void SetFinalAssets( ResourceAssetSet final ) => _assets.SetFinalAssets( final );
+
     public bool WriteState( IActivityMonitor monitor )
     {
         using var _ = monitor.OpenInfo( $"Saving ck-watch live state. Watch root is '{_watchRoot}'." );
@@ -108,6 +121,7 @@ public sealed class LiveStateBuilder
             Directory.CreateDirectory( _pathContext.StateFolderPath );
             File.WriteAllText( _pathContext.StateFolderPath + ".gitignore", "*" );
         }
+        // LocalesState is independent.
         success &= _locales.WriteTSLocalesState( monitor, _pathContext.StateFolderPath );
         // Ends with the LiveState.dat.
         if( _watchRoot == null )
@@ -123,7 +137,9 @@ public sealed class LiveStateBuilder
                                                                                                 _pathContext,
                                                                                                 _watchRoot,
                                                                                                 _activeCultures,
-                                                                                                _localPackages ) );
+                                                                                                _regularPackages,
+                                                                                                _localPackages,
+                                                                                                _assets ) );
         return success;
     }
 

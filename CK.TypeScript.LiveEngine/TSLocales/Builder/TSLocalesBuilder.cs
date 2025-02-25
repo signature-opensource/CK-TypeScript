@@ -3,12 +3,22 @@ using System.Collections.Generic;
 
 namespace CK.TypeScript.LiveEngine;
 
+/// <summary>
+/// TSLocales are independent of the LiveState because the regular packages resources
+/// don't need to be extracted at runtime since the LocaleCultureSet capture the
+/// all the resources needed once for all. The state is stored in an independent
+/// file <see cref="TSLocaleSerializer.FileName"/>.
+/// <para>
+/// This compacts multiple consecutive regular packages ts-locales into one <see cref="FinalLocaleCultureSet"/>,
+/// so that we don"t need to know the real RegularPackage type.
+/// </para>
+/// </summary>
 sealed class TSLocalesBuilder
 {
     FinalLocaleCultureSet? _currentRegularLocales;
     int _regularPackageLocalesCount;
-    // A LocalPackageRef or a LocaleCultureSet of
-    // combined resources for one or more regular packages.
+    // A LocalPackageRef or a LocaleCultureSet of combined
+    // resources of one or more regular packages.
     List<object> _packageLocales;
 
     public TSLocalesBuilder()
@@ -29,7 +39,7 @@ sealed class TSLocalesBuilder
     {
         if( _currentRegularLocales != null )
         {
-            _packageLocales.Add( _currentRegularLocales );
+            _packageLocales.Add( _currentRegularLocales.Root );
             _currentRegularLocales = null;
         }
         _packageLocales.Add( localPackage );

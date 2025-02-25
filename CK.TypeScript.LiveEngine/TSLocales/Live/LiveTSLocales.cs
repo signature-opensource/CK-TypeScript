@@ -10,14 +10,19 @@ sealed partial class LiveTSLocales
 {
     readonly LiveState _state;
     ImmutableArray<ITSLocalePackage> _packages;
+    bool _isLoaded;
 
     public LiveTSLocales( LiveState state )
     {
         _state = state;
     }
 
+    public bool IsLoaded => _isLoaded;
+
     public bool Load( IActivityMonitor monitor )
     {
+        Throw.DebugAssert( _isLoaded is false );
+        _isLoaded = true;
         var a = StateSerializer.ReadFile( monitor,
                                           _state.Paths.StateFolderPath + TSLocaleSerializer.FileName,
                                           ( monitor, r ) => TSLocaleSerializer.ReadLiveTSLocales( monitor, r, _state.LocalPackages ) );

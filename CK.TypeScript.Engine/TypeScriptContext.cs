@@ -309,6 +309,7 @@ public sealed partial class TypeScriptContext
                 {
                     assetsFolder.CreateResourceFile( asset.Origin, path );
                 }
+                context._initializer.LiveState?.SetFinalAssets( f.Final );
             }
             return success;
         }

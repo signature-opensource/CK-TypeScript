@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace CK.Core;
 
 /// <summary>
-/// Final asse set: this combines multiple culture set into one <see cref="Final"/> set.
+/// Final asset set: this combines multiple asset sets into one <see cref="Final"/> set.
 /// </summary>
 public sealed class FinalResourceAssetSet
 {

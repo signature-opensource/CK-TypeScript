@@ -3,6 +3,7 @@ using CK.TypeScript.CodeGen;
 using CK.TypeScript.LiveEngine;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace CK.Setup;
@@ -32,13 +33,21 @@ public sealed partial class TypeScriptContext // Save
                     liveState.ClearState( monitor );
                     foreach( var p in _initializer.Packages )
                     {
+                        // Skips any fake (emty by design) resource containers.
+                        if( p.Resources is EmptyResourceContainer ) continue;
+
                         if( p.LocalResPath != null )
                         {
-                            liveState.AddLocalPackage( monitor, p.LocalResPath, p.Resources.DisplayName );
+                            liveState.AddLocalPackage( monitor, p.LocalResPath, p.TypeScriptFolder, p.Resources.DisplayName );
                         }
                         else
                         {
-                            liveState.AddRegularPackage( monitor, p.TSLocales, p.Assets );
+                            Throw.DebugAssert( p.Resources is AssemblyResourceContainer );
+                            liveState.AddRegularPackage( monitor,
+                                                         Unsafe.As<AssemblyResourceContainer>( p.Resources ),
+                                                         p.TypeScriptFolder,
+                                                         p.TSLocales,
+                                                         p.Assets );
                         }
                     }
                 }

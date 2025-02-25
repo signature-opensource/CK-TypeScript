@@ -3,7 +3,7 @@ using System.Linq;
 namespace CK.Core;
 
 /// <summary>
-/// Final culture set: this combines multiple culture set into one <see cref="Root"/> final tree.
+/// Final culture set: this combines multiple culture sets into one <see cref="Root"/> final tree.
 /// </summary>
 public sealed class FinalLocaleCultureSet
 {

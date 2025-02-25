@@ -16,7 +16,7 @@ sealed partial class LiveTSLocales
 
         public bool ApplyLocaleCultureSet( IActivityMonitor monitor, IReadOnlySet<NormalizedCultureInfo> activeCultures, FinalLocaleCultureSet final )
         {
-            if( !_p.Resources.LoadLocales( monitor, activeCultures, out var locales ) )
+            if( !_p.Resources.LoadLocales( monitor, activeCultures, out var locales, "ts-locales" ) )
             {
                 return false;
             }

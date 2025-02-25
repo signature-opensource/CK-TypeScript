@@ -48,7 +48,7 @@ static class TSLocaleSerializer
     internal static LocaleCultureSet ReadLocalCultureSet( CKBinaryReader r, CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
         var cName = r.ReadString();
-        var orig = StateSerializer.ReadResourceLocator( r, containerPool, null );
+        var origin = StateSerializer.ReadResourceLocator( r, containerPool, null );
         Dictionary<string, TranslationValue>? tr = null;
         int count = r.ReadInt32();
         if( count > 0 )
@@ -56,9 +56,9 @@ static class TSLocaleSerializer
             tr = new Dictionary<string, TranslationValue>( count );
             for( int i = 0; i < count; i++ )
             {
-                var origin = StateSerializer.ReadResourceLocator( r, containerPool, null );
+                var tOrigin = StateSerializer.ReadResourceLocator( r, containerPool, null );
                 var key = r.ReadString();
-                tr.Add( key, new TranslationValue( r.ReadString(), origin, (ResourceOverrideKind)r.ReadByte() ) );
+                tr.Add( key, new TranslationValue( r.ReadString(), tOrigin, (ResourceOverrideKind)r.ReadByte() ) );
             }
         }
         count = r.ReadInt32();
@@ -67,12 +67,13 @@ static class TSLocaleSerializer
         {
             children!.Add( ReadLocalCultureSet( r, containerPool ) );
         }
-        return LocaleCultureSet.UnsafeCreate( orig, NormalizedCultureInfo.EnsureNormalizedCultureInfo( cName ), tr, children );
+        return LocaleCultureSet.UnsafeCreate( origin, NormalizedCultureInfo.EnsureNormalizedCultureInfo( cName ), tr, children );
     }
 
     internal static void WriteTSLocalesState( CKBinaryWriter w, List<object> localePackages )
     {
-        var assemblyPool = new CKBinaryWriter.ObjectPool<AssemblyResourceContainer>( w );
+        // We don't use a CKBinaryWriter.ObjectPool<AssemblyResourceContainer> here:
+        // regular packages are a simple index in the localePackages array.
         var containerPool = new CKBinaryWriter.ObjectPool<IResourceContainer>( w );
         w.WriteNonNegativeSmallInt32( localePackages.Count );
         foreach( var locale in localePackages )
@@ -84,6 +85,7 @@ static class TSLocaleSerializer
             }
             else
             {
+                Throw.DebugAssert( locale is LocalPackageRef );
                 w.WriteSmallInt32( Unsafe.As<LocalPackageRef>( locale ).IdxLocal );
             }
         }

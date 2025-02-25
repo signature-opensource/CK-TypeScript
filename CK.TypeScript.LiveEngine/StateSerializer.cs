@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace CK.TypeScript.LiveEngine;
 
@@ -17,7 +18,7 @@ static class StateSerializer
                                                  IResourceContainer container,
                                                  CKBinaryWriter.ObjectPool<AssemblyResourceContainer>? assemblyPool )
     {
-        Throw.DebugAssert( container != null );
+        Throw.DebugAssert( container is EmptyResourceContainer or AssemblyResourceContainer );
         if( containerPool.MustWrite( container ) )
         {
             w.Write( container.DisplayName );
@@ -45,7 +46,7 @@ static class StateSerializer
             var resourcePrefix = r.ReadString();
             if( assemblyPool == null )
             {
-                result = state.SetReadResult( new EmptyResourceContainer( displayName, resourcePrefix ) );
+                result = state.SetReadResult( new FileSystemResourceContainer( resourcePrefix, displayName ) );
             }
             else
             {
@@ -91,7 +92,9 @@ static class StateSerializer
                                          LiveStatePathContext pathContext,
                                          string watchRoot,
                                          IReadOnlySet<NormalizedCultureInfo> activeCultures,
-                                         List<LocalPackageRef> localPackages )
+                                         List<RegularPackageRef> regularPackages,
+                                         List<LocalPackageRef> localPackages,
+                                         AssetsBuilder assets )
     {
         w.Write( CurrentVersion );
         w.Write( pathContext.TargetProjectPath );
@@ -101,12 +104,26 @@ static class StateSerializer
         {
             w.Write( culture.Name );
         }
+        // We take no risk here by using the pools to write resource containers instead
+        // of explicitly handling the provided container arrays directly.
+        var containerPool = new CKBinaryWriter.ObjectPool<IResourceContainer>( w );
         w.WriteNonNegativeSmallInt32( localPackages.Count );
         foreach( var p in localPackages )
         {
-            w.Write( p.LocalResPath );
-            w.Write( p.DisplayName );
+            // We write EmptyResourceContainer: this is enough to restore
+            // FileSystemResourceContainer when reading.
+            WriteResourceContainer( w, containerPool, p.Resources, null );  
+            w.Write( p.TypeScriptFolder.Path );
         }
+        var assemblyPool = new CKBinaryWriter.ObjectPool<AssemblyResourceContainer>( w );
+        w.WriteNonNegativeSmallInt32( regularPackages.Count );
+        foreach( var p in regularPackages )
+        {
+            WriteResourceContainer( w, containerPool, p.Resources, assemblyPool );
+            w.Write( p.TypeScriptFolder.Path );
+        }
+        // Writes the assets.
+        assets.WriteState( w, containerPool, assemblyPool );
     }
 
     internal static LiveState? ReadLiveState( IActivityMonitor monitor,
@@ -132,18 +149,52 @@ static class StateSerializer
         {
             activeCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( r.ReadString() ) );
         }
-        ImmutableArray<LocalPackage> localPackages = default;
+        // Reads the LocalPackages. They have been written as EmptyResourceContainer + TypeScriptFolder.
+        // We read them back as FileSystemResourceContainer + TypeScriptFolder.
+        var containerPool = new CKBinaryReader.ObjectPool<IResourceContainer>( r );
+        ImmutableArray<LocalPackage> localPackages;
         count = r.ReadNonNegativeSmallInt32();
-        if( count > 0 )
+        if( count == 0 )
+        {
+            localPackages = ImmutableArray<LocalPackage>.Empty;
+        }
+        else
         {
             var b = ImmutableArray.CreateBuilder<LocalPackage>( count );
             while( count-- > 0 )
             {
-                b.Add( new LocalPackage( r.ReadString(), r.ReadString() ) );
+                var resources = ReadResourceContainer( r, containerPool, null );
+                Throw.DebugAssert( resources is FileSystemResourceContainer );
+                b.Add( new LocalPackage( Unsafe.As<FileSystemResourceContainer>( resources ), r.ReadString() ) );
             }
             localPackages = b.MoveToImmutable();
         }
-        return new LiveState( pathContext, watchRoot, activeCultures, localPackages );
+        // Now reads the regular packages.
+        var assemblyPool = new CKBinaryReader.ObjectPool<AssemblyResourceContainer>( r );
+        ImmutableArray<RegularPackage> regularPackages;
+        count = r.ReadNonNegativeSmallInt32();
+        if( count == 0 )
+        {
+            regularPackages = ImmutableArray<RegularPackage>.Empty;
+        }
+        else
+        {
+            var b = ImmutableArray.CreateBuilder<RegularPackage>( count );
+            while( count-- > 0 )
+            {
+                var resources = ReadResourceContainer( r, containerPool, assemblyPool );
+                Throw.DebugAssert( resources is AssemblyResourceContainer );
+                b.Add( new RegularPackage( Unsafe.As<AssemblyResourceContainer>( resources ), r.ReadString() ) );
+            }
+            regularPackages = b.MoveToImmutable();
+        }
+
+        var result = new LiveState( pathContext, watchRoot, activeCultures, localPackages, regularPackages );
+        if( !result.LoadExtensions( monitor, r, containerPool, assemblyPool ) )
+        {
+            result = null;
+        }
+        return result;
     }
 
     internal static bool WriteFile( IActivityMonitor monitor, NormalizedPath filePath, Action<IActivityMonitor,CKBinaryWriter> write )
