@@ -65,6 +65,7 @@ static class AssetsSerializer
         {
             w.Write( path.Path );
             StateSerializer.WriteResourceLocator( w, containerPool, asset.Origin, assemblyPool );
+            w.WriteNullableString( asset.LocalPath );
             w.Write( asset.LastWriteTime );
         }
         return true;
@@ -91,7 +92,7 @@ static class AssetsSerializer
         {
             NormalizedPath key = r.ReadString();
             var origin = StateSerializer.ReadResourceLocator( r, containerPool, assemblyPool );
-            assets.Add( key, new FinalAsset( origin, r.ReadDateTime() ) );
+            assets.Add( key, new FinalAsset( origin, r.ReadNullableString(), r.ReadDateTime() ) );
         }
         return (b, assets);
     }
