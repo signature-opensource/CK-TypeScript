@@ -30,5 +30,7 @@ public sealed class LocalPackage
     /// Gets the relative path in the ck-gen/ folder for this package.
     /// </summary>
     public NormalizedPath TypeScriptFolder => _typeScriptFolder;
+
+    public override string ToString() => _typeScriptFolder.Path;
 }
 

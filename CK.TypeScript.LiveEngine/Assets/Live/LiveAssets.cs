@@ -15,11 +15,14 @@ sealed partial class LiveAssets
     readonly LiveState _state;
     ImmutableArray<IAssetPackage> _packages;
     Dictionary<NormalizedPath, FinalAsset>? _final;
+    bool _isDirty;
 
     public LiveAssets( LiveState state )
     {
         _state = state;
     }
+
+    public bool IsDirty => _isDirty;
 
     internal bool Load( IActivityMonitor monitor,
                         CKBinaryReader r,
@@ -34,13 +37,27 @@ sealed partial class LiveAssets
     internal void OnChange( IActivityMonitor monitor, LocalPackage? package, string subPath )
     {
         Throw.DebugAssert( _final != null );
-        if( subPath == "assets/assets.jsonc" )
-        {
-            RecomputeFinal( monitor );
-        }
+        _isDirty = true;
+
+        // We can be much more clever here by maintaining a
+        // Dictionary<string,DateTime> or other data structure
+        // that would enable to track changes on a per file basis.
+        // However, the "brand new file" in a local package would need
+        // to be handled explicitly. For the moment, any change triggers
+        // a full recompute of the assets and a differential update of
+        // the ck-gen/assets final folder.
+
+        // if( subPath == "assets/assets.jsonc" )
+        // {
+        //     _isDirty = true;
+        // }
+        // else
+        // {
+        //     // Per-file handling...
+        // }
     }
 
-    void RecomputeFinal( IActivityMonitor monitor )
+    internal void ApplyChanges( IActivityMonitor monitor )
     {
         using var _ = monitor.OpenInfo( $"Recomputing 'ck-gen/assets'." );
         bool success = true;

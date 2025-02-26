@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -8,49 +9,71 @@ namespace CK.TypeScript.LiveEngine;
 
 sealed partial class LiveTSLocales
 {
-    readonly LiveState _state;
+    readonly LiveState _liveState;
     ImmutableArray<ITSLocalePackage> _packages;
-    bool _isLoaded;
+    InternalState _state;
 
     public LiveTSLocales( LiveState state )
     {
-        _state = state;
+        _liveState = state;
     }
 
-    public bool IsLoaded => _isLoaded;
+    public enum InternalState
+    {
+        None,
+        Error,
+        Loaded,
+        Dirty
+    }
+
+    public bool IsLoaded => _state != InternalState.None;
+
+    public bool IsValid => _state >= InternalState.Loaded;
+
+    public bool IsDirty => _state == InternalState.Dirty;
 
     public bool Load( IActivityMonitor monitor )
     {
-        Throw.DebugAssert( _isLoaded is false );
-        _isLoaded = true;
+        Throw.DebugAssert( !IsLoaded );
         var a = StateSerializer.ReadFile( monitor,
-                                          _state.Paths.StateFolderPath + TSLocaleSerializer.FileName,
-                                          ( monitor, r ) => TSLocaleSerializer.ReadLiveTSLocales( monitor, r, _state.LocalPackages ) );
+                                          _liveState.Paths.StateFolderPath + TSLocaleSerializer.FileName,
+                                          ( monitor, r ) => TSLocaleSerializer.ReadLiveTSLocales( monitor, r, _liveState.LocalPackages ) );
         if( a == null )
         {
+            _state = InternalState.Error;
             _packages = default;
             return false;
         }
+        _state = InternalState.Loaded;
         _packages = ImmutableCollectionsMarshal.AsImmutableArray( a );
         return true;
     }
 
-    public bool Apply( IActivityMonitor monitor )
+    internal void OnChange( IActivityMonitor monitor, LocalPackage? package, string subPath )
     {
-        using var _ = monitor.OpenInfo( $"Updating 'ck-gen/ts-locales'." );
+        Throw.DebugAssert( IsValid );
+        // Locales are computed as a whole. Each jsonc file can have an
+        // impact on the final set. We don't try to be clever here.
+        _state = InternalState.Dirty;
+    }
+
+    internal bool ApplyChanges( IActivityMonitor monitor )
+    {
+        Throw.DebugAssert( IsDirty );
         bool success = true;
+        using var _ = monitor.OpenInfo( $"Updating 'ck-gen/ts-locales'." );
         var f = new FinalLocaleCultureSet( isPartialSet: false, "LiveTSLocales" );
         foreach( var p in _packages )
         {
-            success &= p.ApplyLocaleCultureSet( monitor, _state.ActiveCultures, f );
+            success &= p.ApplyLocaleCultureSet( monitor, _liveState.ActiveCultures, f );
         }
         if( success )
         {
-            success &= _state.CKGenTransform.LoadLocales( monitor,
-                                                          _state.ActiveCultures,
-                                                          out var appLocales,
-                                                          "ts-locales",
-                                                          isOverrideFolder: true );
+            success &= _liveState.CKGenTransform.LoadLocales( monitor,
+                                                              _liveState.ActiveCultures,
+                                                              out var appLocales,
+                                                              "ts-locales",
+                                                              isOverrideFolder: true );
             if( appLocales != null )
             {
                 f.Add( monitor, appLocales );
@@ -58,6 +81,7 @@ sealed partial class LiveTSLocales
             if( success )
             {
                 WriteFinalSet( monitor, f );
+                _state = InternalState.Loaded;
             }
         }
         return success;
@@ -66,7 +90,7 @@ sealed partial class LiveTSLocales
     void WriteFinalSet( IActivityMonitor monitor, FinalLocaleCultureSet final )
     {
         final.PropagateFallbackTranslations( monitor );
-        var tsLocaleTarget = _state.Paths.CKGenPath + "ts-locales" + Path.DirectorySeparatorChar;
+        var tsLocaleTarget = _liveState.Paths.CKGenPath + "ts-locales" + Path.DirectorySeparatorChar;
         foreach( var set in final.Root.FlattenedAll )
         {
             // Use the CultureInfo to have the "correct" casing for culture names.

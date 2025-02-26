@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.TypeScript.LiveEngine;
 using System;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
@@ -10,6 +11,7 @@ sealed class Runner
     readonly Channel<object> _channel;
     readonly FileWatcher _primary;
     readonly FileWatcher? _secondary;
+    readonly Timer _timer;
 
     public Runner( LiveState liveState, CKGenTransformFilter stateFilesFilter )
     {
@@ -26,6 +28,12 @@ sealed class Runner
         {
             _secondary = new FileWatcher( liveState.Paths.CKGenTransformPath, _channel.Writer, stateFilesFilter );
         }
+        _timer = new Timer( OnTimer );
+    }
+
+    void OnTimer( object? state )
+    {
+        _channel.Writer.TryWrite( _timer );
     }
 
     public async Task RunAsync( IActivityMonitor monitor, System.Threading.CancellationToken cancellation )
@@ -41,7 +49,18 @@ sealed class Runner
                         monitor.Warn( $"File system watcher error.", ex );
                         break;
                     case ChangedEvent p:
+                        monitor.Debug( $"Change: '{p.Package}' {p.SubPath}" );
                         _liveState.OnChange( monitor, p.Package, p.SubPath );
+                        if( !_timer.Change( 80, Timeout.Infinite ) )
+                        {
+                            monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, "Failed to update Timer duetime." );
+                        }
+                        break;
+                    case Timer:
+                        using( monitor.OpenDebug( "Applying changes..." ) )
+                        {
+                            _liveState.ApplyChanges( monitor );
+                        }
                         break;
                 }
             }

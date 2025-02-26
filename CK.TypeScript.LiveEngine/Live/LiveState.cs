@@ -75,20 +75,31 @@ public sealed class LiveState
     {
         // If anything change in a ts-locales/ subfolder wherever it is, we recompute the
         // locales: the LocalesState is loaded once and only when needed.
-        Throw.DebugAssert( "ts-locales".Length == 10 );
         if( subPath.StartsWith( "ts-locales" ) && (subPath.Length == 10 || subPath[10] == Path.DirectorySeparatorChar) )
         {
-            if( !_tsLocales.IsLoaded )
+            Throw.DebugAssert( "ts-locales".Length == 10 );
+            // Load on demand.
+            if( !_tsLocales.IsLoaded ) _tsLocales.Load( monitor );
+            if( _tsLocales.IsValid )
             {
-                _tsLocales.Load( monitor );
+                _tsLocales.OnChange( monitor, package, subPath );
             }
-            _tsLocales.Apply( monitor );
         }
-        Throw.DebugAssert( "assets".Length == 6 );
-        if( subPath.StartsWith( "assets" ) && (subPath.Length == 6 || subPath[6] == Path.DirectorySeparatorChar) )
+        else if( subPath.StartsWith( "assets" ) && (subPath.Length == 6 || subPath[6] == Path.DirectorySeparatorChar) )
         {
+            Throw.DebugAssert( "assets".Length == 6 );
             _assets.OnChange( monitor, package, subPath );
         }
+    }
+
+    /// <summary>
+    /// Applies any changes.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    public void ApplyChanges( IActivityMonitor monitor )
+    {
+        if( _tsLocales.IsDirty ) _tsLocales.ApplyChanges( monitor );
+        if( _assets.IsDirty ) _assets.ApplyChanges( monitor );
     }
 
     public static async Task<LiveState> WaitForStateAsync( IActivityMonitor monitor, LiveStatePathContext pathContext, CancellationToken cancellation )
