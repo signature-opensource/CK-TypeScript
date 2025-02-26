@@ -14,28 +14,26 @@ static class AssetsSerializer
 {
     static void WriteResourceAssetSet( CKBinaryWriter w,
                                        ResourceAssetSet c,
-                                       CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                                       CKBinaryWriter.ObjectPool<AssemblyResourceContainer> assemblyPool )
+                                       CKBinaryWriter.ObjectPool<IResourceContainer> containerPool )
     {
         w.WriteNonNegativeSmallInt32( c.Assets.Count );
         foreach( var (path, asset) in c.Assets )
         {
             w.Write( path.Path );
-            StateSerializer.WriteResourceLocator( w, containerPool, asset.Origin, assemblyPool );
+            StateSerializer.WriteResourceLocator( w, containerPool, asset.Origin );
             w.Write( (byte)asset.Override );
         }
     }
 
     static ResourceAssetSet ReadResourceAssetSet( CKBinaryReader r,
-                                                  CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
-                                                  CKBinaryReader.ObjectPool<AssemblyResourceContainer> assemblyPool )
+                                                  CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
         int count = r.ReadNonNegativeSmallInt32();
         var assets = new Dictionary<NormalizedPath, ResourceAsset>( count );
         while( --count >= 0 )
         {
             NormalizedPath  key = r.ReadString();
-            var origin = StateSerializer.ReadResourceLocator( r, containerPool, assemblyPool );
+            var origin = StateSerializer.ReadResourceLocator( r, containerPool );
             assets.Add( key, new ResourceAsset( origin, (ResourceOverrideKind)r.ReadByte() ) );
         }
         return new ResourceAssetSet( assets );
@@ -43,7 +41,6 @@ static class AssetsSerializer
 
     public static bool WriteAssetsState( CKBinaryWriter w,
                                          CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                                         CKBinaryWriter.ObjectPool<AssemblyResourceContainer> assemblyPool,
                                          List<object> packageAssets,
                                          Dictionary<NormalizedPath, FinalAsset> finalAssets )
     {
@@ -53,7 +50,7 @@ static class AssetsSerializer
             if( locale is ResourceAssetSet c )
             {
                 w.WriteSmallInt32( -1 );
-                WriteResourceAssetSet( w, c, containerPool, assemblyPool );
+                WriteResourceAssetSet( w, c, containerPool );
             }
             else
             {
@@ -64,7 +61,7 @@ static class AssetsSerializer
         foreach( var (path, asset) in finalAssets )
         {
             w.Write( path.Path );
-            StateSerializer.WriteResourceLocator( w, containerPool, asset.Origin, assemblyPool );
+            StateSerializer.WriteResourceLocator( w, containerPool, asset.Origin );
             w.WriteNullableString( asset.LocalPath );
             w.Write( asset.LastWriteTime );
         }
@@ -74,8 +71,7 @@ static class AssetsSerializer
     internal static (IAssetPackage[]?, Dictionary<NormalizedPath, FinalAsset> Final)
                         ReadAssetsState( CKBinaryReader r,
                                          ImmutableArray<LocalPackage> localPackages,
-                                         CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
-                                                      CKBinaryReader.ObjectPool<AssemblyResourceContainer> assemblyPool )
+                                         CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
         int count = r.ReadNonNegativeSmallInt32();
         var b = new IAssetPackage[count];
@@ -83,7 +79,7 @@ static class AssetsSerializer
         {
             var idx = r.ReadSmallInt32();
             b[i] = idx < 0
-                    ? new LiveAssets.Regular( ReadResourceAssetSet( r, containerPool, assemblyPool ) )
+                    ? new LiveAssets.Regular( ReadResourceAssetSet( r, containerPool ) )
                     : new LiveAssets.Local( localPackages[idx] );
         }
         count = r.ReadNonNegativeSmallInt32();
@@ -91,7 +87,7 @@ static class AssetsSerializer
         for( int i = 0; i < count; i++ )
         {
             NormalizedPath key = r.ReadString();
-            var origin = StateSerializer.ReadResourceLocator( r, containerPool, assemblyPool );
+            var origin = StateSerializer.ReadResourceLocator( r, containerPool );
             assets.Add( key, new FinalAsset( origin, r.ReadNullableString(), r.ReadDateTime() ) );
         }
         return (b, assets);

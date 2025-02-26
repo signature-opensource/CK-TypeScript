@@ -70,13 +70,12 @@ public sealed class LiveStateBuilder
     }
 
     public void AddLocalPackage( IActivityMonitor monitor,
-                                 string localResPath,
-                                 NormalizedPath typeScriptFolder,
-                                 string displayName )
+                                 AssemblyResourceContainer resources,
+                                 NormalizedPath typeScriptFolder )
     {
-        Throw.CheckArgument( Path.EndsInDirectorySeparator( localResPath ) );
-        Throw.CheckNotNullOrEmptyArgument( displayName );
-        var loc = new LocalPackageRef( localResPath, typeScriptFolder, displayName, _localPackages.Count );
+        var localResPath = resources.GetLocalPath();
+        Throw.CheckArgument( "Resources must be locally defined.", localResPath != null );
+        var loc = new LocalPackageRef( resources, typeScriptFolder, _localPackages.Count );
         _localPackages.Add( loc );
         if( _watchRoot == null )
         {

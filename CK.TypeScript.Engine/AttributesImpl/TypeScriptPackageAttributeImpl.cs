@@ -56,6 +56,10 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 
     /// <summary>
     /// Gets the resources for this package.
+    /// <para>
+    /// This is an <see cref="EmptyResourceContainer"/> if <see cref="TypeScriptPackageAttribute.DisableResources"/>
+    /// is true, otherwise it is a <see cref="AssemblyResourceContainer"/>.
+    /// </para>
     /// </summary>
     public IResourceContainer Resources => _resources;
 

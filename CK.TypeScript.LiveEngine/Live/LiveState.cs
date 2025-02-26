@@ -20,6 +20,7 @@ public sealed class LiveState
     readonly ImmutableArray<LocalPackage> _localPackages;
     readonly HashSet<NormalizedCultureInfo> _activeCultures;
     readonly ImmutableArray<RegularPackage> _regularPackages;
+    readonly CKBinaryReader.ObjectPool<IResourceContainer> _resourceContainerPool;
     readonly FileSystemResourceContainer _ckGenTransform;
 
     readonly LiveTSLocales _tsLocales;
@@ -29,12 +30,14 @@ public sealed class LiveState
                         string watchRoot,
                         HashSet<NormalizedCultureInfo> activeCultures,
                         ImmutableArray<LocalPackage> localPackages,
-                        ImmutableArray<RegularPackage> regularPackages )
+                        ImmutableArray<RegularPackage> regularPackages,
+                        CKBinaryReader.ObjectPool<IResourceContainer> resourceContainerPool )
     {
         _pathContext = pathContext;
         _watchRoot = watchRoot;
         _activeCultures = activeCultures;
         _regularPackages = regularPackages;
+        _resourceContainerPool = resourceContainerPool;
         _localPackages = localPackages.IsDefault ? ImmutableArray<LocalPackage>.Empty : localPackages;
         _ckGenTransform = new FileSystemResourceContainer( pathContext.CKGenTransformPath, "ck-gen-transform" );
         _tsLocales = new LiveTSLocales( this );
@@ -79,7 +82,7 @@ public sealed class LiveState
         {
             Throw.DebugAssert( "ts-locales".Length == 10 );
             // Load on demand.
-            if( !_tsLocales.IsLoaded ) _tsLocales.Load( monitor );
+            if( !_tsLocales.IsLoaded ) _tsLocales.Load( monitor,_resourceContainerPool );
             if( _tsLocales.IsValid )
             {
                 _tsLocales.OnChange( monitor, package, subPath );
@@ -122,12 +125,9 @@ public sealed class LiveState
         return result;
     }
 
-    internal bool LoadExtensions( IActivityMonitor monitor,
-                                  CKBinaryReader r,
-                                  CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
-                                  CKBinaryReader.ObjectPool<AssemblyResourceContainer> assemblyPool )
+    internal bool LoadExtensions( IActivityMonitor monitor, CKBinaryReader r )
     {
-        return _assets.Load( monitor, r, containerPool, assemblyPool );
+        return _assets.Load( monitor, r, _resourceContainerPool );
     }
 }
 

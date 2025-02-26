@@ -32,12 +32,15 @@ sealed partial class LiveTSLocales
 
     public bool IsDirty => _state == InternalState.Dirty;
 
-    public bool Load( IActivityMonitor monitor )
+    public bool Load( IActivityMonitor monitor, CKBinaryReader.ObjectPool<IResourceContainer> resourceContainerPool )
     {
         Throw.DebugAssert( !IsLoaded );
         var a = StateSerializer.ReadFile( monitor,
                                           _liveState.Paths.StateFolderPath + TSLocaleSerializer.FileName,
-                                          ( monitor, r ) => TSLocaleSerializer.ReadLiveTSLocales( monitor, r, _liveState.LocalPackages ) );
+                                          ( monitor, r ) => TSLocaleSerializer.ReadLiveTSLocales( monitor,
+                                                                                                  r,
+                                                                                                  resourceContainerPool,
+                                                                                                  _liveState.LocalPackages ) );
         if( a == null )
         {
             _state = InternalState.Error;

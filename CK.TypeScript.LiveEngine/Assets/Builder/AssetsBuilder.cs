@@ -55,10 +55,9 @@ sealed class AssetsBuilder
     }
 
     public bool WriteState( CKBinaryWriter w,
-                            CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                            CKBinaryWriter.ObjectPool<AssemblyResourceContainer> assemblyPool )
+                            CKBinaryWriter.ObjectPool<IResourceContainer> containerPool )
     {
         Throw.CheckState( "SetFinalAssets must have been called.", _final != null );
-        return AssetsSerializer.WriteAssetsState( w, containerPool, assemblyPool, _packageAssets, _final );
+        return AssetsSerializer.WriteAssetsState( w, containerPool, _packageAssets, _final );
     }
 }

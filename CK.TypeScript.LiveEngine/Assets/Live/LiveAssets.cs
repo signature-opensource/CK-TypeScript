@@ -26,10 +26,9 @@ sealed partial class LiveAssets
 
     internal bool Load( IActivityMonitor monitor,
                         CKBinaryReader r,
-                        CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
-                        CKBinaryReader.ObjectPool<AssemblyResourceContainer> assemblyPool )
+                        CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
-        (var packages, _final) = AssetsSerializer.ReadAssetsState( r, _state.LocalPackages, containerPool, assemblyPool );
+        (var packages, _final) = AssetsSerializer.ReadAssetsState( r, _state.LocalPackages, containerPool );
         _packages = ImmutableCollectionsMarshal.AsImmutableArray( packages );
         return true;
     }
@@ -126,7 +125,8 @@ sealed partial class LiveAssets
                     var updated = FinalAsset.ToFinal( asset.Origin );
                     if( updated.LocalPath != null )
                     {
-                        // The updated resource file doesn't exist anymore.
+                        // If the updated resource file doesn't exist anymore, we remove
+                        // it from _final and adds the target path to the remove list.
                         if( !updated.Exists )
                         {
                             HandleUnexistingFile( monitor, ref toRemove, path, updated.LocalPath );
@@ -179,6 +179,7 @@ sealed partial class LiveAssets
         {
             using( monitor.OpenInfo( $"Updating {resToCopy.Count} files from assembly resources." ) )
             {
+                monitor.Debug( $"Updating: {resToCopy.Select( f => f.Item2.Path ).Concatenate()}." );
                 foreach( var (r, path) in resToCopy )
                 {
                     try
@@ -202,11 +203,12 @@ sealed partial class LiveAssets
         {
             using( monitor.OpenInfo( $"Copying {fileToCopy.Count} files." ) )
             {
+                monitor.Debug( $"Updating: {fileToCopy.Select( f => f.Item2.Path ).Concatenate()}." );
                 foreach( var (filePath, path) in fileToCopy )
                 {
                     try
                     {
-                        File.Copy( filePath, ckGenAssets + path.Path );
+                        File.Copy( filePath, ckGenAssets + path.Path, overwrite: true );
                     }
                     catch( Exception ex )
                     {
@@ -223,6 +225,7 @@ sealed partial class LiveAssets
         {
             using( monitor.OpenInfo( $"Removing {toRemove.Count} asset files." ) )
             {
+                monitor.Debug( $"Removing: {toRemove.Select( f => f.Path ).Concatenate()}." );
                 foreach( var path in toRemove )
                 {
                     try

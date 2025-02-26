@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -15,55 +16,65 @@ static class StateSerializer
 
     internal static void WriteResourceContainer( CKBinaryWriter w,
                                                  CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                                                 IResourceContainer container,
-                                                 CKBinaryWriter.ObjectPool<AssemblyResourceContainer>? assemblyPool )
+                                                 IResourceContainer container )
     {
-        Throw.DebugAssert( container is EmptyResourceContainer or AssemblyResourceContainer );
         if( containerPool.MustWrite( container ) )
         {
             w.Write( container.DisplayName );
-            w.Write( container.ResourcePrefix );
-            if( assemblyPool != null )
+            switch( container )
             {
-                var a = container as AssemblyResourceContainer;
-                if( assemblyPool.MustWrite( a ) )
-                {
-                    Throw.DebugAssert( a != null );
-                    w.Write( a.AssemblyResources.AssemblyName );
-                }
+                case EmptyResourceContainer e:
+                    w.Write( (byte)0 );
+                    w.Write( container.ResourcePrefix );
+                    break;
+                case AssemblyResourceContainer a:
+                    // If a local path exists, a FileSystemResourceContainer will be deserailized.
+                    var localPath = container.GetLocalPath();
+                    if( localPath != null )
+                    {
+                        w.Write( (byte)2 );
+                        w.Write( localPath );
+                    }
+                    else
+                    {
+                        w.Write( (byte)1 );
+                        w.Write( a.AssemblyResources.AssemblyName );
+                        w.Write( container.ResourcePrefix );
+                    }
+                    break;
+                case FileSystemResourceContainer f:
+                    w.Write( (byte)2 );
+                    w.Write( f.ResourcePrefix );
+                    break;
+                default:
+                    Throw.NotSupportedException( $"Unhandled type '{container.GetType()}'." );
+                    break;
             }
         }
     }
 
     internal static IResourceContainer ReadResourceContainer( CKBinaryReader r,
-                                                              CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
-                                                              CKBinaryReader.ObjectPool<AssemblyResourceContainer>? assemblyPool )
+                                                              CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
         var state = containerPool.TryRead( out var result );
         if( !state.Success )
         {
             var displayName = r.ReadString();
-            var resourcePrefix = r.ReadString();
-            if( assemblyPool == null )
+            var type = r.ReadByte();
+            switch( type )
             {
-                result = state.SetReadResult( new FileSystemResourceContainer( resourcePrefix, displayName ) );
-            }
-            else
-            {
-                var assemblyState = assemblyPool.TryRead( out var assemblyResult );
-                if( assemblyState.Success )
-                {
-                    Throw.DebugAssert( assemblyResult != null );
-                    result = state.SetReadResult( assemblyResult );
-                }
-                else
-                {
+                case 0:
+                    result = new EmptyResourceContainer( displayName, r.ReadString() );
+                    break;
+                case 1:
                     var a = Assembly.Load( r.ReadString() );
-                    assemblyResult = a.GetResources().CreateCKResourceContainer( resourcePrefix, displayName );
-                    assemblyState.SetReadResult( assemblyResult );
-                    result = state.SetReadResult( assemblyResult );
-                }
+                    result = a.GetResources().CreateCKResourceContainer( r.ReadString(), displayName );
+                    break;
+                case 2:
+                    result = new FileSystemResourceContainer( r.ReadString(), displayName );
+                    break;
             }
+            state.SetReadResult( result! );
         }
         Throw.DebugAssert( "We never serialize a null container.", result != null );
         return result;
@@ -71,19 +82,17 @@ static class StateSerializer
 
     internal static void WriteResourceLocator( CKBinaryWriter w,
                                                CKBinaryWriter.ObjectPool<IResourceContainer> containerPool,
-                                               ResourceLocator locator,
-                                               CKBinaryWriter.ObjectPool<AssemblyResourceContainer>? assemblyPool )
+                                               ResourceLocator locator )
     {
         Throw.DebugAssert( locator.IsValid );
-        WriteResourceContainer( w, containerPool, locator.Container, assemblyPool );
+        WriteResourceContainer( w, containerPool, locator.Container );
         w.Write( locator.ResourceName );
     }
 
     internal static ResourceLocator ReadResourceLocator( CKBinaryReader r,
-                                                         CKBinaryReader.ObjectPool<IResourceContainer> containerPool,
-                                                         CKBinaryReader.ObjectPool<AssemblyResourceContainer>? assemblyPool )
+                                                         CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
-        var c = ReadResourceContainer( r, containerPool, assemblyPool );
+        var c = ReadResourceContainer( r, containerPool );
         return new ResourceLocator( c, r.ReadString() );
     }
 
@@ -110,20 +119,17 @@ static class StateSerializer
         w.WriteNonNegativeSmallInt32( localPackages.Count );
         foreach( var p in localPackages )
         {
-            // We write EmptyResourceContainer: this is enough to restore
-            // FileSystemResourceContainer when reading.
-            WriteResourceContainer( w, containerPool, p.Resources, null );  
+            WriteResourceContainer( w, containerPool, p.Resources );  
             w.Write( p.TypeScriptFolder.Path );
         }
-        var assemblyPool = new CKBinaryWriter.ObjectPool<AssemblyResourceContainer>( w );
         w.WriteNonNegativeSmallInt32( regularPackages.Count );
         foreach( var p in regularPackages )
         {
-            WriteResourceContainer( w, containerPool, p.Resources, assemblyPool );
+            WriteResourceContainer( w, containerPool, p.Resources );
             w.Write( p.TypeScriptFolder.Path );
         }
         // Writes the assets.
-        assets.WriteState( w, containerPool, assemblyPool );
+        assets.WriteState( w, containerPool );
     }
 
     internal static LiveState? ReadLiveState( IActivityMonitor monitor,
@@ -149,8 +155,7 @@ static class StateSerializer
         {
             activeCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( r.ReadString() ) );
         }
-        // Reads the LocalPackages. They have been written as EmptyResourceContainer + TypeScriptFolder.
-        // We read them back as FileSystemResourceContainer + TypeScriptFolder.
+        // Reads the LocalPackages.
         var containerPool = new CKBinaryReader.ObjectPool<IResourceContainer>( r );
         ImmutableArray<LocalPackage> localPackages;
         count = r.ReadNonNegativeSmallInt32();
@@ -163,14 +168,13 @@ static class StateSerializer
             var b = ImmutableArray.CreateBuilder<LocalPackage>( count );
             while( count-- > 0 )
             {
-                var resources = ReadResourceContainer( r, containerPool, null );
+                var resources = ReadResourceContainer( r, containerPool );
                 Throw.DebugAssert( resources is FileSystemResourceContainer );
                 b.Add( new LocalPackage( Unsafe.As<FileSystemResourceContainer>( resources ), r.ReadString() ) );
             }
             localPackages = b.MoveToImmutable();
         }
         // Now reads the regular packages.
-        var assemblyPool = new CKBinaryReader.ObjectPool<AssemblyResourceContainer>( r );
         ImmutableArray<RegularPackage> regularPackages;
         count = r.ReadNonNegativeSmallInt32();
         if( count == 0 )
@@ -182,15 +186,15 @@ static class StateSerializer
             var b = ImmutableArray.CreateBuilder<RegularPackage>( count );
             while( count-- > 0 )
             {
-                var resources = ReadResourceContainer( r, containerPool, assemblyPool );
+                var resources = ReadResourceContainer( r, containerPool );
                 Throw.DebugAssert( resources is AssemblyResourceContainer );
                 b.Add( new RegularPackage( Unsafe.As<AssemblyResourceContainer>( resources ), r.ReadString() ) );
             }
             regularPackages = b.MoveToImmutable();
         }
 
-        var result = new LiveState( pathContext, watchRoot, activeCultures, localPackages, regularPackages );
-        if( !result.LoadExtensions( monitor, r, containerPool, assemblyPool ) )
+        var result = new LiveState( pathContext, watchRoot, activeCultures, localPackages, regularPackages, containerPool );
+        if( !result.LoadExtensions( monitor, r ) )
         {
             result = null;
         }

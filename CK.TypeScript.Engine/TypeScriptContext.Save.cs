@@ -33,16 +33,18 @@ public sealed partial class TypeScriptContext // Save
                     liveState.ClearState( monitor );
                     foreach( var p in _initializer.Packages )
                     {
-                        // Skips any fake (emty by design) resource containers.
+                        // Skips any fake (empty by design) resource containers.
                         if( p.Resources is EmptyResourceContainer ) continue;
+                        Throw.DebugAssert( p.Resources is AssemblyResourceContainer );
 
                         if( p.LocalResPath != null )
                         {
-                            liveState.AddLocalPackage( monitor, p.LocalResPath, p.TypeScriptFolder, p.Resources.DisplayName );
+                            liveState.AddLocalPackage( monitor,
+                                                       Unsafe.As<AssemblyResourceContainer>( p.Resources ),
+                                                       p.TypeScriptFolder );
                         }
                         else
                         {
-                            Throw.DebugAssert( p.Resources is AssemblyResourceContainer );
                             liveState.AddRegularPackage( monitor,
                                                          Unsafe.As<AssemblyResourceContainer>( p.Resources ),
                                                          p.TypeScriptFolder,
