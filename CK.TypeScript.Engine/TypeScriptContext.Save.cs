@@ -120,9 +120,25 @@ public sealed partial class TypeScriptContext // Save
                 {
                     if( liveState != null )
                     {
-                        _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
-                            dotnet "{typeof(LiveState).Assembly.Location}"
+                        var liveEnginePath = typeof( LiveState ).Assembly.Location;
+                        if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
+                                                                                         out var relative ) )
+                        {
+                            _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
+                            dotnet "$PROJECT_CWD/{relative}"
                             """;
+                        }
+                        else
+                        {
+                            monitor.Warn( $"""
+                                Unable to compute reltive path from:
+                                {BinPathConfiguration.TargetProjectPath}
+                                to:
+                                {liveEnginePath}
+                                No 'yarn ck-watch' command available.
+                                """ );
+                            _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
+                        }
                     }
                     success &= _integrationContext.Run( monitor, saver );
                 }
