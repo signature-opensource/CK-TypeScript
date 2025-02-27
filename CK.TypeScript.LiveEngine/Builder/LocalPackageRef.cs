@@ -4,11 +4,11 @@ namespace CK.TypeScript.LiveEngine;
 
 sealed class LocalPackageRef
 {
-    readonly AssemblyResourceContainer _resources;
+    readonly FileSystemResourceContainer _resources;
     readonly NormalizedPath _typeScriptFolder;
     readonly int _idxLocal;
 
-    internal LocalPackageRef( AssemblyResourceContainer resources,
+    internal LocalPackageRef( FileSystemResourceContainer resources,
                               NormalizedPath typeScriptFolder,
                               int idxLocal )
     {
@@ -17,7 +17,7 @@ sealed class LocalPackageRef
         _idxLocal = idxLocal;
     }
 
-    public AssemblyResourceContainer Resources => _resources;
+    public FileSystemResourceContainer Resources => _resources;
 
     public NormalizedPath TypeScriptFolder => _typeScriptFolder;
 

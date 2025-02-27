@@ -5,8 +5,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.TypeScript.LiveEngine;
 
@@ -78,6 +76,7 @@ sealed partial class LiveAssets
             if( success )
             {
                 SetFinal( monitor, f.Final.Assets );
+                _isDirty = false;
             }
         }
     }

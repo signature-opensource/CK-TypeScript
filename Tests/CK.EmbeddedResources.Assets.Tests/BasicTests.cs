@@ -1,9 +1,7 @@
 using CK.Core;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Resources;
 using NUnit.Framework;
 using System;
-using System.Threading;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.EmbeddedResources.Assets.Tests;

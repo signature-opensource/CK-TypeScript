@@ -15,6 +15,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
 {
     readonly string _displayName;
     readonly string _root;
+    readonly bool _alwaysValid;
     readonly bool _allowLocalFilePath;
 
     /// <summary>
@@ -22,6 +23,13 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     /// </summary>
     /// <param name="root">The root directory. This should be an absolute path.</param>
     /// <param name="displayName">The <see cref="DisplayName"/> for this container.</param>
+    /// <param name="alwaysValid">
+    /// By default, this is valid even if the <see cref="ResourcePrefix"/> (the root directory)
+    /// doesn't exist on the file system: it is considered as being empty.
+    /// <para>
+    /// When set to true, <see cref="IsValid"/> is true only when the root directory exists. 
+    /// </para>
+    /// </param>
     /// <param name="allowLocalFilePath">
     /// Gets whether <see cref="GetLocalFilePath(in ResourceLocator)"/> returns the file path.
     /// <para>
@@ -29,11 +37,15 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     /// like a purely readonly resource container.
     /// </para>
     /// </param>
-    public FileSystemResourceContainer( string root, string displayName, bool allowLocalFilePath = true )
+    public FileSystemResourceContainer( string root,
+                                        string displayName,
+                                        bool alwaysValid = true,
+                                        bool allowLocalFilePath = true )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
         Throw.CheckArgument( Path.IsPathFullyQualified( root ) );
         _displayName = displayName;
+        _alwaysValid = alwaysValid;
         _allowLocalFilePath = allowLocalFilePath;
         root = Path.GetFullPath( root );
         if( !Path.EndsInDirectorySeparator( root ) ) root += Path.DirectorySeparatorChar;
@@ -43,14 +55,13 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     /// <summary>
     /// Gets whether the <see cref="ResourcePrefix"/> that is the root directory exists on the file system.
     /// </summary>
-    public bool IsValid => Directory.Exists( _root );
+    public bool IsValid => _alwaysValid || Directory.Exists( _root );
 
     /// <inheritdoc />
     /// <remarks>
     /// This is the root directory ending with a <see cref="Path.DirectorySeparatorChar"/>.
     /// </remarks>
     public string ResourcePrefix => _root;
-
 
     /// <inheritdoc />
     public string DisplayName => _displayName;
@@ -60,9 +71,12 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     {
         get
         {
-            foreach( var f in Directory.EnumerateFiles( _root, "*", SearchOption.AllDirectories ) )
+            if( Directory.Exists( _root ) )
             {
-                yield return new ResourceLocator( this, f );
+                foreach( var f in Directory.EnumerateFiles( _root, "*", SearchOption.AllDirectories ) )
+                {
+                    yield return new ResourceLocator( this, f );
+                }
             }
         }
     }
@@ -71,9 +85,12 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public IEnumerable<ResourceLocator> GetAllResource( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        foreach( var f in Directory.EnumerateFiles( folder.FolderName, "*", SearchOption.AllDirectories ) )
+        if( Directory.Exists( _root ) )
         {
-            yield return new ResourceLocator( this, f );
+            foreach( var f in Directory.EnumerateFiles( folder.FolderName, "*", SearchOption.AllDirectories ) )
+            {
+                yield return new ResourceLocator( this, f );
+            }
         }
     }
 

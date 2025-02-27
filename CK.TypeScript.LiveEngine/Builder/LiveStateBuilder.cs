@@ -70,20 +70,18 @@ public sealed class LiveStateBuilder
     }
 
     public void AddLocalPackage( IActivityMonitor monitor,
-                                 AssemblyResourceContainer resources,
+                                 FileSystemResourceContainer resources,
                                  NormalizedPath typeScriptFolder )
     {
-        var localResPath = resources.GetLocalPath();
-        Throw.CheckArgument( "Resources must be locally defined.", localResPath != null );
         var loc = new LocalPackageRef( resources, typeScriptFolder, _localPackages.Count );
         _localPackages.Add( loc );
         if( _watchRoot == null )
         {
-            _watchRoot = localResPath;
+            _watchRoot = resources.ResourcePrefix;
         }
         else
         {
-            _watchRoot = CommonParentPath( _watchRoot, localResPath );
+            _watchRoot = CommonParentPath( _watchRoot, resources.ResourcePrefix );
         }
         _locales.AddLocalPackage( monitor, loc );
         _assets.AddLocalPackage( monitor, loc );

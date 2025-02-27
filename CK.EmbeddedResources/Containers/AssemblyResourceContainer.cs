@@ -8,7 +8,7 @@ namespace CK.Core;
 
 /// <summary>
 /// Resource container for embedded resources.
-/// This can only be created from a <see cref="AssemblyResources"/>.
+/// This can only be created from a <see cref="Assembly"/>.
 /// </summary>
 public sealed class AssemblyResourceContainer : IResourceContainer
 {
@@ -31,19 +31,22 @@ public sealed class AssemblyResourceContainer : IResourceContainer
         _names = resourceNames;
     }
 
+    // Invalid constructor.
     internal AssemblyResourceContainer( AssemblyResources assemblyResources,
-                                        string prefix,
-                                        string? displayName,
-                                        Type type,
-                                        ReadOnlyMemory<string> resourceNames )
-        : this( assemblyResources, prefix, displayName ?? $"resources of '{type.ToCSharpName()}' type", resourceNames )
+                                        string displayName )
     {
+        _assemblyResources = assemblyResources;
+        _prefix = string.Empty;
+        _displayName = displayName;
+        _names = ReadOnlyMemory<string>.Empty;
     }
+
+    internal static string MakeDisplayName( string? displayName, Type type ) => displayName ?? $"resources of '{type.ToCSharpName()}' type";
 
     /// <summary>
     /// Gets the assembly that contains this container.
     /// </summary>
-    public AssemblyResources AssemblyResources => _assemblyResources;
+    public AssemblyResources Assembly => _assemblyResources;
 
     /// <inheritdoc />
     public bool IsValid => _prefix.Length > 0;

@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -26,13 +28,112 @@ public static class AssemblyExtensions
     {
         return _cache.GetOrAdd( assembly, a =>
         {
+            var assemblyName = assembly.GetName().Name;
+            Throw.CheckArgument( "Cannot handle dynamic assembly.", assemblyName != null );
             // We DO care about duplicate computation.
             // "Out of lock" GetOrAdd must be protected.
             lock( _lock )
             {
-                return new AssemblyResources( a );
+                return new AssemblyResources( a, assemblyName );
             }
         } );
+    }
+
+    static AssemblyResources GetResources( Assembly assembly, string assemblyName )
+    {
+        return _cache.GetOrAdd( assembly, a =>
+        {
+            // We DO care about duplicate computation.
+            // "Out of lock" GetOrAdd must be protected.
+            lock( _lock )
+            {
+                return new AssemblyResources( a, assemblyName );
+            }
+        } );
+    }
+
+    /// <summary>
+    /// Creates a <see cref="AssemblyResourceContainer"/> or <see cref="FileSystemResourceContainer"/> if this assembly
+    /// is a local one for a type that must be decorated with at least one <see cref="IEmbeddedResourceTypeAttribute"/>
+    /// attribute.
+    /// <para>
+    /// On success, the container is bound to the corresponding embedded ressources "Res/" folder.
+    /// It may not be <see cref="IResourceContainer.IsValid"/> (an error has been logged).
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
+    /// <param name="containerDisplayName">When null, the <see cref="IResourceContainer.DisplayName"/> defaults to "resources of '...' type".</param>
+    /// <returns>The resources (<see cref="IResourceContainer.IsValid"/> may be false).</returns>
+    public static IResourceContainer CreateResourcesContainerForType( this Assembly assembly,
+                                                                      IActivityMonitor monitor,
+                                                                      Type type,
+                                                                      string? containerDisplayName = null )
+    {
+        return AssemblyResources.GetCallerInfo( monitor,
+                                                type,
+                                                type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(),
+                                                out var callerPath,
+                                                out var callerSource )
+                ? CreateResourcesContainerForType( assembly, monitor, callerPath, type, callerSource.GetType().Name, containerDisplayName )
+                : new EmptyResourceContainer( AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type ),
+                                              resourcePrefix: "",
+                                              isValid: false );
+
+    }
+
+    /// <summary>
+    /// Creates a <see cref="AssemblyResourceContainer"/> or <see cref="FileSystemResourceContainer"/> if this assembly
+    /// is a local one for a type based on a CallerFilePath (<see cref="CallerFilePathAttribute"/>)
+    /// captured by an attribute on the <paramref name="type"/> (typically a <see cref="IEmbeddedResourceTypeAttribute"/>).
+    /// <para>
+    /// On success, the container is bound to the corresponding embedded ressources "Res/" folder or to the file system
+    /// "Res\" folder.
+    /// It may not be <see cref="IResourceContainer.IsValid"/> (an error has been logged).
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="callerFilePath">The caller file path. This is required: when null or empty, an error is logged and an invalid container is returned.</param>
+    /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>. (This is used for logging).</param>
+    /// <param name="attributeName">The attribute name that declares the resource (used for logging).</param>
+    /// <param name="containerDisplayName">When null, the <see cref="IResourceContainer.DisplayName"/> defaults to "resources of '...' type".</param>
+    /// <returns>The resources (<see cref="IResourceContainer.IsValid"/> may be false).</returns>
+    static public IResourceContainer CreateResourcesContainerForType( this Assembly assembly,
+                                                                      IActivityMonitor monitor,
+                                                                      string? callerFilePath,
+                                                                      Type type,
+                                                                      string attributeName,
+                                                                      string? containerDisplayName = null )
+    {
+        var assemblyName = assembly.GetName().Name;
+        Throw.CheckArgument( "Cannot handle dynamic assembly.", assemblyName != null );
+        if( LocalDevSolution.LocalProjectPaths.TryGetValue( assemblyName, out var projectPath ) )
+        {
+            containerDisplayName = AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type );
+            if( AssemblyResources.ValidateContainerForType( monitor,
+                                                            assembly,
+                                                            assemblyName,
+                                                            callerFilePath,
+                                                            type,
+                                                            attributeName,
+                                                            out var subPath ) )
+            {
+                return new FileSystemResourceContainer( projectPath.Combine( subPath ).AppendPart( "Res" ), containerDisplayName );
+            }
+            return new EmptyResourceContainer( containerDisplayName, resourcePrefix: projectPath, isValid: false );
+        }
+        AssemblyResources aR = _cache.GetOrAdd( assembly, a =>
+        {
+            lock( _lock )
+            {
+                return new AssemblyResources( a, assemblyName );
+            }
+        } );
+        return aR.CreateResourcesContainerForType( monitor,
+                                                   callerFilePath,
+                                                   type,
+                                                   attributeName,
+                                                   containerDisplayName );
     }
 
     /// <summary>
@@ -67,7 +168,10 @@ public static class AssemblyExtensions
     /// <param name="resourceName">The resource name with the "ck@" prefix.</param>
     /// <param name="logLevel">The log level when the resource cannot be found or loaded.</param>
     /// <returns>The string or null on error.</returns>
-    public static string? TryGetCKResourceString( this Assembly assembly, IActivityMonitor monitor, string resourceName, LogLevel logLevel = LogLevel.Error )
+    public static string? TryGetCKResourceString( this Assembly assembly,
+                                                  IActivityMonitor monitor,
+                                                  string resourceName,
+                                                  LogLevel logLevel = LogLevel.Error )
     {
         return TryGetCKResourceString( assembly, monitor, resourceName, logLevel, null );
     }
@@ -100,7 +204,10 @@ public static class AssemblyExtensions
     /// <param name="resourceName">The resource name with the "ck@" prefix.</param>
     /// <param name="logLevel">The log level when the resource cannot be found or loaded.</param>
     /// <returns>The Stream or null on error.</returns>
-    public static Stream? TryOpenCKResourceStream( this Assembly assembly, IActivityMonitor monitor, string resourceName, LogLevel logLevel = LogLevel.Error )
+    public static Stream? TryOpenCKResourceStream( this Assembly assembly,
+                                                   IActivityMonitor monitor,
+                                                   string resourceName,
+                                                   LogLevel logLevel = LogLevel.Error )
     {
         return TryOpenCKResourceStream( assembly, monitor, resourceName, logLevel, null );
     }

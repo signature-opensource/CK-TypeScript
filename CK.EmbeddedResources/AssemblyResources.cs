@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace CK.Core;
 
@@ -24,18 +25,16 @@ public sealed partial class AssemblyResources
     readonly ReadOnlyMemory<string> _ckResourceNames;
     readonly NormalizedPath _localPath;
 
-    internal AssemblyResources( Assembly a )
+    internal AssemblyResources( Assembly a, string assemblyName )
     {
-        var name = a.GetName().Name;
-        Throw.CheckArgument( "Cannot handle dynamic assembly.", name != null );
-        _assemblyName = name;
+        _assemblyName = assemblyName;
         _assembly = a;
         _allResourceNames = ImmutableOrdinalSortedStrings.UnsafeCreate( a.GetManifestResourceNames(), mustSort: true );
         _ckResourceNames = _allResourceNames.GetPrefixedStrings( "ck@" );
         var localProjects = LocalDevSolution.LocalProjectPaths;
         if( localProjects.Count > 0 )
         {
-            localProjects.TryGetValue( name, out _localPath );
+            localProjects.TryGetValue( assemblyName, out _localPath );
         }
     }
 
@@ -151,55 +150,13 @@ public sealed partial class AssemblyResources
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
-    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
+    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "resources of '...' type".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
     public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor, Type type, string? containerDisplayName = null )
     {
         return GetCallerInfo( monitor, type, type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(), out var callerPath, out var callerSource )
                 ? CreateResourcesContainerForType( monitor, callerPath, type, callerSource.GetType().Name, containerDisplayName )
-                : new AssemblyResourceContainer( this, "", containerDisplayName, type, ReadOnlyMemory<string>.Empty );
-
-        static bool GetCallerInfo( IActivityMonitor monitor,
-                                   Type type,
-                                   IEnumerable<IEmbeddedResourceTypeAttribute> attributes,
-                                   [NotNullWhen( true )] out string? callerPath,
-                                   [NotNullWhen( true )] out IEmbeddedResourceTypeAttribute? callerSource )
-        {
-            var eA = attributes.GetEnumerator();
-            callerPath = null;
-            callerSource = null;
-            if( !eA.MoveNext() )
-            {
-                monitor.Error( $"Type '{type:N}' has no IEmbeddedResourceTypeAttribute. Unable to resolve a resource container." );
-                return false;
-            }
-            callerSource = eA.Current;
-            callerPath = callerSource.CallerFilePath ?? "";
-            while( eA.MoveNext() )
-            {
-                var otherSource = eA.Current;
-                var otherPath = otherSource.CallerFilePath ?? "";
-                if( callerPath.Length == 0 )
-                {
-                    callerPath = otherPath;
-                    callerSource = otherSource;
-                }
-                else if( otherPath.Length != 0 && callerPath != otherPath )
-                {
-                    monitor.Error( $"""
-                                    Type '{type:N}' has more than one IEmbeddedResourceTypeAttribute with different CallerFilePath.
-                                    Attribute '{callerSource.GetType().Name}' provides '{callerPath}' and '{otherSource.GetType().Name}' provides '{otherPath}'.
-                                    """ );
-                    return false;
-                }
-            }
-            if( callerPath.Length == 0 )
-            {
-                monitor.Error( $"Type '{type:N}' has IEmbeddedResourceTypeAttribute but non provide a non null or empty CallerFilePath. Unable to resolve a resource container." );
-                return false;
-            }
-            return true;
-        }
+                : new AssemblyResourceContainer( this, AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type ) );
 
     }
 
@@ -215,7 +172,7 @@ public sealed partial class AssemblyResources
     /// <param name="callerFilePath">The caller file path. This is required: when null or empty, an error is logged and an invalid container is returned.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>. (This is used for logging).</param>
     /// <param name="attributeName">The attribute name that declares the resource (used for logging).</param>
-    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "CKEmbeddedResources of '...' type".</param>
+    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "resources of '...' type".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
     public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
                                                                       string? callerFilePath,
@@ -223,35 +180,89 @@ public sealed partial class AssemblyResources
                                                                       string attributeName,
                                                                       string? containerDisplayName = null )
     {
+        containerDisplayName = AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type );
+        if( ValidateContainerForType( monitor, Assembly, _assemblyName, callerFilePath, type, attributeName, out var subPath ) )
+        {
+            var prefix = subPath.IsEmptyPath ? "ck@Res/" : $"ck@{subPath.Path}/Res/";
+            return new AssemblyResourceContainer( this,
+                                                  prefix,
+                                                  containerDisplayName,
+                                                  ImmutableOrdinalSortedStrings.GetPrefixedStrings( prefix, _ckResourceNames ) );
+        }
+        return new AssemblyResourceContainer( this, containerDisplayName );
+    }
+
+    internal static bool GetCallerInfo( IActivityMonitor monitor,
+                                        Type type,
+                                        IEnumerable<IEmbeddedResourceTypeAttribute> attributes,
+                                        [NotNullWhen( true )] out string? callerPath,
+                                        [NotNullWhen( true )] out IEmbeddedResourceTypeAttribute? callerSource )
+    {
+        var eA = attributes.GetEnumerator();
+        callerPath = null;
+        callerSource = null;
+        if( !eA.MoveNext() )
+        {
+            monitor.Error( $"Type '{type:N}' has no IEmbeddedResourceTypeAttribute. Unable to resolve a resource container." );
+            return false;
+        }
+        callerSource = eA.Current;
+        callerPath = callerSource.CallerFilePath ?? "";
+        while( eA.MoveNext() )
+        {
+            var otherSource = eA.Current;
+            var otherPath = otherSource.CallerFilePath ?? "";
+            if( callerPath.Length == 0 )
+            {
+                callerPath = otherPath;
+                callerSource = otherSource;
+            }
+            else if( otherPath.Length != 0 && callerPath != otherPath )
+            {
+                monitor.Error( $"""
+                                Type '{type:N}' has more than one IEmbeddedResourceTypeAttribute with different CallerFilePath.
+                                Attribute '{callerSource.GetType().Name}' provides '{callerPath}' and '{otherSource.GetType().Name}' provides '{otherPath}'.
+                                """ );
+                return false;
+            }
+        }
+        if( callerPath.Length == 0 )
+        {
+            monitor.Error( $"Type '{type:N}' has IEmbeddedResourceTypeAttribute but with a null or empty CallerFilePath. Unable to resolve a resource container." );
+            return false;
+        }
+        return true;
+    }
+
+    internal static bool ValidateContainerForType( IActivityMonitor monitor,
+                                                   Assembly assembly,
+                                                   string assemblyName,
+                                                   string? callerFilePath,
+                                                   Type type,
+                                                   string attributeName,
+                                                   out NormalizedPath subPath )
+    {
         Throw.CheckNotNullArgument( type );
         Throw.CheckNotNullArgument( attributeName );
-        Throw.CheckArgument( type.Assembly == Assembly );
-        NormalizedPath p = callerFilePath;
-        if( p.IsEmptyPath )
+        Throw.CheckArgument( type.Assembly == assembly );
+        subPath = callerFilePath;
+        if( subPath.IsEmptyPath )
         {
             monitor.Error( $"[{attributeName}] on '{type:N}' has no CallerFilePath. Unable to resolve relative embedded resource paths." );
+            return false;
         }
-        else
+        int idx;
+        for( idx = subPath.Parts.Count - 2; idx >= 0; --idx )
         {
-            var n = type.Assembly.GetName().Name;
-            Throw.DebugAssert( n != null );
-            int idx;
-            for( idx = p.Parts.Count - 2; idx >= 0; --idx )
-            {
-                if( p.Parts[idx] == n ) break;
-            }
-            if( idx < 0 )
-            {
-                monitor.Error( $"Unable to resolve relative embedded resource paths: the assembly name '{n}' parent folder of type '{type:N}' not found in caller file path '{p}'." );
-            }
-            else
-            {
-                // TODO: miss a NormalizedPath.SubPath( int start, int len )...
-                p = p.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
-                var prefix = p.IsEmptyPath ? "ck@Res/" : $"ck@{p.Path}/Res/";
-                return new AssemblyResourceContainer( this, prefix, containerDisplayName, type, ImmutableOrdinalSortedStrings.GetPrefixedStrings( prefix, _ckResourceNames ) );
-            }
+            if( subPath.Parts[idx] == assemblyName ) break;
         }
-        return new AssemblyResourceContainer( this, "", containerDisplayName, type, ReadOnlyMemory<string>.Empty );
+        if( idx < 0 )
+        {
+            monitor.Error( $"Unable to resolve relative embedded resource paths: the assembly name '{assemblyName}' parent folder of type '{type:N}' not found in caller file path '{subPath}'." );
+            return false;
+        }
+        subPath = subPath.RemoveFirstPart( idx + 1 ).With( NormalizedPathRootKind.None ).RemoveLastPart();
+        return true;
     }
+
 }

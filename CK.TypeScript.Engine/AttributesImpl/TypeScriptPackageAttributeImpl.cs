@@ -17,7 +17,6 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
-    readonly string? _localResPath;
     readonly IResourceContainer _resources;
     readonly HashSet<Core.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
@@ -58,7 +57,8 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// Gets the resources for this package.
     /// <para>
     /// This is an <see cref="EmptyResourceContainer"/> if <see cref="TypeScriptPackageAttribute.DisableResources"/>
-    /// is true, otherwise it is a <see cref="AssemblyResourceContainer"/>.
+    /// is true, a <see cref="FileSystemResourceContainer"/> if the package is local, or a <see cref="AssemblyResourceContainer"/>
+    /// for regular package.
     /// </para>
     /// </summary>
     public IResourceContainer Resources => _resources;
@@ -66,7 +66,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the non null local full path of the folder "Res/" if this is a local package.
     /// </summary>
-    public string? LocalResPath => _localResPath;
+    public bool IsLocalPackage => _resources is FileSystemResourceContainer;
 
     /// <summary>
     /// Gets the local culture set that contains the translations associated to this package.
@@ -108,8 +108,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         else
         {
             // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
-            _resources = type.Assembly.GetResources().CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
-            _localResPath = _resources.GetLocalPath();
+            _resources = type.Assembly.CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
         }
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );

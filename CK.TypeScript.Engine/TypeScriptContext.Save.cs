@@ -35,12 +35,12 @@ public sealed partial class TypeScriptContext // Save
                     {
                         // Skips any fake (empty by design) resource containers.
                         if( p.Resources is EmptyResourceContainer ) continue;
-                        Throw.DebugAssert( p.Resources is AssemblyResourceContainer );
+                        Throw.DebugAssert( p.Resources is AssemblyResourceContainer or FileSystemResourceContainer );
 
-                        if( p.LocalResPath != null )
+                        if( p.Resources is FileSystemResourceContainer local )
                         {
                             liveState.AddLocalPackage( monitor,
-                                                       Unsafe.As<AssemblyResourceContainer>( p.Resources ),
+                                                       local,
                                                        p.TypeScriptFolder );
                         }
                         else

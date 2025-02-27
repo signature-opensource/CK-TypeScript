@@ -2,7 +2,6 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -28,19 +27,9 @@ static class StateSerializer
                     w.Write( container.ResourcePrefix );
                     break;
                 case AssemblyResourceContainer a:
-                    // If a local path exists, a FileSystemResourceContainer will be deserailized.
-                    var localPath = container.GetLocalPath();
-                    if( localPath != null )
-                    {
-                        w.Write( (byte)2 );
-                        w.Write( localPath );
-                    }
-                    else
-                    {
-                        w.Write( (byte)1 );
-                        w.Write( a.AssemblyResources.AssemblyName );
-                        w.Write( container.ResourcePrefix );
-                    }
+                    w.Write( (byte)1 );
+                    w.Write( a.Assembly.AssemblyName );
+                    w.Write( container.ResourcePrefix );
                     break;
                 case FileSystemResourceContainer f:
                     w.Write( (byte)2 );

@@ -11,6 +11,7 @@ public sealed class EmptyResourceContainer : IResourceContainer
 {
     readonly string _displayName;
     readonly string _resourcePrefix;
+    readonly bool _isValid;
 
     /// <summary>
     /// A default empty container named "Generated Code Container".
@@ -22,17 +23,17 @@ public sealed class EmptyResourceContainer : IResourceContainer
     /// </summary>
     /// <param name="displayName">The name of this empty container.</param>
     /// <param name="resourcePrefix">Optional resource prefix. Defaults to the empty string.</param>
-    public EmptyResourceContainer( string displayName, string? resourcePrefix = null )
+    /// <param name="isValid">Optionally creates an invalid container. By default, an empty container is valid.</param>
+    public EmptyResourceContainer( string displayName, string? resourcePrefix = null, bool isValid = true )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
         _displayName = displayName;
         _resourcePrefix = resourcePrefix ?? string.Empty;
+        _isValid = isValid;
     }
 
-    /// <summary>
-    /// Always true: an empty container is valid.
-    /// </summary>
-    public bool IsValid => true;
+    /// <inheritdoc />
+    public bool IsValid => _isValid;
 
     /// <inheritdoc />
     public string DisplayName => _displayName;

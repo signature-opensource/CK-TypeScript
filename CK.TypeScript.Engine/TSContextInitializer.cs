@@ -487,7 +487,7 @@ sealed class TSContextInitializer
                 foreach( var p in packages )
                 {
                     success &= p.InitializeTypeScriptPackage( monitor, i );
-                    if( p.LocalResPath != null ) ++localPackageCount;
+                    if( p.IsLocalPackage ) ++localPackageCount;
                 }
                 if( success )
                 {
