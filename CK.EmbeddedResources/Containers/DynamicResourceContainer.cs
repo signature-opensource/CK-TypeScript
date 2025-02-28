@@ -180,7 +180,7 @@ public sealed class DynamicResourceContainer : IResourceContainer
     public Stream GetStream( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        int idx = ImmutableOrdinalSortedStrings.IndexOf(resource.ResourceName,_names.Span);
+        int idx = ImmutableOrdinalSortedStrings.IndexOf(resource.FullResourceName,_names.Span);
         Throw.DebugAssert( idx >= 0 );
         var s = _streamStore[idx];
         if( s is Func<Stream> reader ) return reader();
@@ -195,7 +195,7 @@ public sealed class DynamicResourceContainer : IResourceContainer
     public void WriteStream( in ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
-        int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.ResourceName, _names.Span );
+        int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
         Throw.DebugAssert( idx >= 0 );
         var s = _streamStore[idx];
         if( s is Action<Stream> writer )
@@ -221,7 +221,7 @@ public sealed class DynamicResourceContainer : IResourceContainer
     public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return Path.GetFileName( resource.LocalResourceName.Span );
+        return Path.GetFileName( resource.ResourceName.Span );
     }
 
     /// <inheritdoc />

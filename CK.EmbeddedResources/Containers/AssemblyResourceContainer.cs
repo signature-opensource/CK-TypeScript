@@ -73,8 +73,8 @@ public sealed class AssemblyResourceContainer : IResourceContainer
         var p = _assemblyResources.LocalPath;
         if( p.IsEmptyPath ) return null;
         resource.CheckContainer( this );
-        Throw.DebugAssert( resource.ResourceName.StartsWith( "ck@" ) );
-        var s = string.Concat( p.Path.AsSpan(), "/", resource.ResourceName.AsSpan( 3 ) );
+        Throw.DebugAssert( resource.FullResourceName.StartsWith( "ck@" ) );
+        var s = string.Concat( p.Path.AsSpan(), "/", resource.FullResourceName.AsSpan( 3 ) );
         if( Path.DirectorySeparatorChar != NormalizedPath.DirectorySeparatorChar )
         {
             s = s.Replace( NormalizedPath.DirectorySeparatorChar, Path.DirectorySeparatorChar );
@@ -86,14 +86,14 @@ public sealed class AssemblyResourceContainer : IResourceContainer
     public Stream GetStream( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return _assemblyResources.OpenResourceStream( resource.ResourceName ); 
+        return _assemblyResources.OpenResourceStream( resource.FullResourceName ); 
     }
 
     /// <inheritdoc />
     public void WriteStream( in ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
-        using var source = _assemblyResources.OpenResourceStream( resource.ResourceName );
+        using var source = _assemblyResources.OpenResourceStream( resource.FullResourceName );
         source.CopyTo( target );
     }
 
@@ -138,7 +138,7 @@ public sealed class AssemblyResourceContainer : IResourceContainer
     public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return Path.GetFileName( resource.LocalResourceName.Span );
+        return Path.GetFileName( resource.ResourceName.Span );
     }
 
     /// <inheritdoc />

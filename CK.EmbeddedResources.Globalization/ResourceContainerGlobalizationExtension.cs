@@ -103,17 +103,17 @@ public static class ResourceContainerGlobalizationExtension
 
             // Ordering by increasing length: process less specific first.
             var others = allResources.Where( r => r != defaultSet.Origin )
-                                     .OrderBy( o => o.ResourceName.Length );
+                                     .OrderBy( o => o.FullResourceName.Length );
 
             foreach( var o in others )
             {
-                if( !o.LocalResourceName.Span.EndsWith( ".jsonc" ) )
+                if( !o.ResourceName.Span.EndsWith( ".jsonc" ) )
                 {
                     monitor.Error( $"Invalid '{o}'. Only '.jsonc' files must appear in 'ts-locales' folder." );
                     success = false;
                     continue;
                 }
-                var cName = Path.GetFileNameWithoutExtension( o.ResourceName.AsSpan().ToString() );
+                var cName = Path.GetFileNameWithoutExtension( o.FullResourceName.AsSpan().ToString() );
                 if( !NormalizedCultureInfo.IsValidCultureName( cName ) )
                 {
                     monitor.Error( $"Invalid '{o}'. Name '{cName}' is not a BCP47 compliant culture name." );
@@ -221,7 +221,7 @@ public static class ResourceContainerGlobalizationExtension
             try
             {
                 using var s = locator.GetStream();
-                content = ReadJsonTranslationFile( locator, s, isOverrideFolder, skipComments: locator.ResourceName.EndsWith( ".jsonc" ) );
+                content = ReadJsonTranslationFile( locator, s, isOverrideFolder, skipComments: locator.FullResourceName.EndsWith( ".jsonc" ) );
                 return true;
             }
             catch( Exception ex )

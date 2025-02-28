@@ -26,11 +26,11 @@ public class FileSystemResourceContainerTests
 
         c.TryGetResource( "SomeType/SomeType.cs", out var locator ).Should().BeTrue();
 
-        locator.ResourceName.Should().Be( normalizedPrefix + "SomeType" + Path.DirectorySeparatorChar + "SomeType.cs" );
+        locator.FullResourceName.Should().Be( normalizedPrefix + "SomeType" + Path.DirectorySeparatorChar + "SomeType.cs" );
         var content = c.GetFolder( "SomeType" );
         content.AllResources.Should().HaveCount( 2 );
         var theOne = content.Resources.Single();
-        theOne.ResourceName.Should().EndWith( $"{Path.DirectorySeparatorChar}SomeType.cs" );
+        theOne.FullResourceName.Should().EndWith( $"{Path.DirectorySeparatorChar}SomeType.cs" );
     }
 
     [Test]

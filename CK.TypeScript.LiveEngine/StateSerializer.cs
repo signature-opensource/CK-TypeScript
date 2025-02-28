@@ -76,7 +76,7 @@ static class StateSerializer
     {
         Throw.DebugAssert( locator.IsValid );
         WriteResourceContainer( w, containerPool, locator.Container );
-        w.Write( locator.ResourceName );
+        w.Write( locator.FullResourceName );
     }
 
     internal static ResourceLocator ReadResourceLocator( CKBinaryReader r,

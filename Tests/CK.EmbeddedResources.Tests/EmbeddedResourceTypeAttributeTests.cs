@@ -28,7 +28,7 @@ public class EmbeddedResourceTypeAttributeTests
         }
 
         // Reading content from a ResourceFolder.
-        var locator2 = c.GetFolder( "" ).Resources.Single( r => r.LocalResourceName.Span.SequenceEqual( "data.json" ) );
+        var locator2 = c.GetFolder( "" ).Resources.Single( r => r.ResourceName.Span.SequenceEqual( "data.json" ) );
         locator2.Should().Be( data );
 
         using( var s = locator2.GetStream() )

@@ -28,7 +28,7 @@ public class BasicTests
             assets.Assets["favicon.ico"].Override.Should().Be( ResourceOverrideKind.None );
             // The ResourceName is the full path of the file.
             var sep = Path.DirectorySeparatorChar;
-            localFavIconPath = assets.Assets["favicon.ico"].Origin.ResourceName;
+            localFavIconPath = assets.Assets["favicon.ico"].Origin.FullResourceName;
             localFavIconPath.Should().Be( $"{c.ResourcePrefix}assets{sep}favicon.ico" );
             localFavIconPath.Should().BeSameAs( assets.Assets["favicon.ico"].Origin.LocalFilePath );
         }
@@ -47,7 +47,7 @@ public class BasicTests
             // The LocalFilePath exists.
             o.LocalFilePath.Should().Be( localFavIconPath );
             c.ResourcePrefix.Should().Be( "ck@T1/Res/" );
-            o.ResourceName.Should().Be( $"{c.ResourcePrefix}assets/favicon.ico" );
+            o.FullResourceName.Should().Be( $"{c.ResourcePrefix}assets/favicon.ico" );
         }
     }
 

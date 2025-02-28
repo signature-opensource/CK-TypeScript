@@ -30,7 +30,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     /// <summary>
     /// Gets whether this locator is valid: the <see cref="Container"/> is not null
-    /// and the <see cref="ResourceName"/> is not null, not empty nor whitespace.
+    /// and the <see cref="FullResourceName"/> is not null, not empty nor whitespace.
     /// <para>
     /// Whether the resource actuallly exists or not is not known.
     /// </para>
@@ -49,12 +49,12 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// This is the full resource name that includes the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </para>
     /// </summary>
-    public string ResourceName => _resourceName;
+    public string FullResourceName => _resourceName;
 
     /// <summary>
     /// Gets the resource name without the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </summary>
-    public ReadOnlyMemory<char> LocalResourceName
+    public ReadOnlyMemory<char> ResourceName
     {
         get
         {
@@ -106,7 +106,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     }
 
     /// <summary>
-    /// To be equal the <see cref="Container"/> must be the same and <see cref="ResourceName"/>
+    /// To be equal the <see cref="Container"/> must be the same and <see cref="FullResourceName"/>
     /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
     /// </summary>
     /// <param name="other">The other locator.</param>
@@ -125,7 +125,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public override string ToString()
     {
         return IsValid
-                ? $"'{LocalResourceName}' in '{_container.DisplayName}'"
+                ? $"'{ResourceName}' in '{_container.DisplayName}'"
                 : "";
     }
 
@@ -136,7 +136,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public static bool operator !=( ResourceLocator left, ResourceLocator right ) => !(left == right);
 
     public override int GetHashCode() => IsValid
-                                            ? HashCode.Combine( Container.GetHashCode(), _container.NameComparer.GetHashCode( ResourceName ) )
+                                            ? HashCode.Combine( Container.GetHashCode(), _container.NameComparer.GetHashCode( FullResourceName ) )
                                             : 0;
 
     internal void CheckContainer( IResourceContainer expectedContainer )

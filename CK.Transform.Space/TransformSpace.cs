@@ -13,7 +13,7 @@ public sealed class TransformSpace
     readonly List<TransformPackage> _packages;
 
     // All sources are indexed by their LogicalName.
-    internal readonly Dictionary<string, TransformableSource> _itemsByName;
+    internal readonly Dictionary<string, TransformableSource> _items;
     // Indexed by file path only when the origin is a FileSystemResourceContainer
     // with true HasLocalFilePathSupport.
     internal readonly Dictionary<string, TransformableSource> _localItems;
@@ -25,7 +25,7 @@ public sealed class TransformSpace
     {
         _packageIndex = new Dictionary<string, TransformPackage>();
         _packages = new List<TransformPackage>();
-        _itemsByName = new Dictionary<string, TransformableSource>();
+        _items = new Dictionary<string, TransformableSource>();
         _localItems = new Dictionary<string, TransformableSource>();
         _transformerHost = new TransformerHost( languages );
     }
@@ -59,12 +59,6 @@ public sealed class TransformSpace
         {
             p.ApplyChanges( c );
         }
-    }
-
-
-    internal static string NormalizeLogicalName( string logicalName )
-    {
-        return logicalName.Trim( '.' ).Replace( '/', '.' ).Replace( '\\', '.' );
     }
 
 }

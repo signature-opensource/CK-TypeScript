@@ -102,7 +102,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public string? GetLocalFilePath( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return !_allowLocalFilePath ? null : resource.ResourceName;
+        return !_allowLocalFilePath ? null : resource.FullResourceName;
     }
 
     /// <inheritdoc />
@@ -112,14 +112,14 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public Stream GetStream( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return File.OpenRead( resource.ResourceName );
+        return File.OpenRead( resource.FullResourceName );
     }
 
     /// <inheritdoc />
     public void WriteStream( in ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
-        using var source = File.OpenRead( resource.ResourceName );
+        using var source = File.OpenRead( resource.FullResourceName );
         source.CopyTo( target );
     }
 
@@ -218,7 +218,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return Path.GetFileName( resource.LocalResourceName.Span );
+        return Path.GetFileName( resource.ResourceName.Span );
     }
 
     /// <inheritdoc />

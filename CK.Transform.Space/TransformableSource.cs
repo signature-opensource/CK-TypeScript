@@ -15,7 +15,7 @@ public sealed class TransformableSource
 {
     readonly TransformPackage _package;
     readonly ResourceLocator _origin;
-    readonly string _logicalName;
+    readonly NormalizedPath _target;
     readonly TransformerHost.Language _originLanguage;
     readonly string? _localFilePath;
 
@@ -31,20 +31,20 @@ public sealed class TransformableSource
 
     public TransformableSource( TransformPackage package,
                                 ResourceLocator origin,
-                                string logicalName,
+                                NormalizedPath target,
                                 TransformerHost.Language originLanguage,
                                 string? localFilePath )
     {
         _package = package;
         _origin = origin;
-        _logicalName = logicalName;
+        _target = target;
         _originLanguage = originLanguage;
         _localFilePath = localFilePath;
     }
 
     public ResourceLocator Origin => _origin;
 
-    public string LogicalName => _logicalName;
+    public string LogicalName => _target;
 
     public TransformableSourceState State => _state;
 
@@ -62,30 +62,24 @@ public sealed class TransformableSource
     internal void ApplyChanges( ApplyChangesContext c )
     {
         Throw.DebugAssert( _text == null );
-        if( TryGetText( c, out var text ) )
+        if( TryGetText( c, out var text )
+            && _originLanguage.TransformLanguage.IsTransformerLanguage )
         {
-            if( _originLanguage.TransformLanguage.IsTransformerLanguage )
+            _transformers = c.Host.TryParseFunctions( c.Monitor, text );
+            if( _transformers == null )
             {
-                _transformers = c.Host.TryParseFunctions( c.Monitor, text );
-                if( _transformers == null )
-                {
-                    c.AddError( $"Unable to parse transfomers from {_origin}." );
-                }
-                else if( _transformers.Count == 0 )
-                {
-                    c.Monitor.Warn( $"No transfomers found in {_origin}." );
-                }
-                else
-                {
-                    foreach( var t in _transformers )
-                    {
-
-                    }
-                }
+                c.AddError( $"Unable to parse transformers from {_origin}." );
+            }
+            else if( _transformers.Count == 0 )
+            {
+                c.Monitor.Warn( $"No transformers found in {_origin}." );
             }
             else
             {
-
+                foreach( var t in _transformers )
+                {
+                    _origin.ResourceName
+                }
             }
         }
     }

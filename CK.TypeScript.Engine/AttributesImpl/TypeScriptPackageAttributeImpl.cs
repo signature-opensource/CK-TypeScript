@@ -208,7 +208,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         // Second, collects the transformer files.
         foreach( var r in _resources.AllResources )
         {
-            if( !r.ResourceName.EndsWith( ".t" ) ) continue;
+            if( !r.FullResourceName.EndsWith( ".t" ) ) continue;
             // Transformers are not copied.
             _removedResources.Add( r );
             _transformers ??= new List<EmbeddedResources.ResourceLocator>();
@@ -275,7 +275,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
             foreach( var r in _resources.AllResources )
             {
                 if( _removedResources.Contains( r ) ) continue;
-                var targetFileName = _typeScriptFolder.Combine( r.LocalResourceName.ToString() );
+                var targetFileName = _typeScriptFolder.Combine( r.ResourceName.ToString() );
                 context.Root.Root.CreateResourceFile( r, targetFileName );
             }
         }

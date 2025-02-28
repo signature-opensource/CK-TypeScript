@@ -106,7 +106,7 @@ public static class ResourceContainerAssetsExtension
             {
                 if( r != manifestFile )
                 {
-                    var target = defaultTargetPath.Combine( r.ResourceName.Substring( resources.FolderName.Length ) );
+                    var target = defaultTargetPath.Combine( r.FullResourceName.Substring( resources.FolderName.Length ) );
                     final.Add( target, new ResourceAsset( r, ResourceOverrideKind.None ) );
                 }
             }
@@ -262,17 +262,17 @@ public static class ResourceContainerAssetsExtension
                               ref Dictionary<NormalizedPath, ResourceOverrideKind>? overrides,
                               Dictionary<NormalizedPath, ResourceAsset> final )
         {
-            var subPath = res.ResourceName.Substring( resFolder.FolderName.Length );
+            var subPath = res.FullResourceName.Substring( resFolder.FolderName.Length );
             var t = target.Combine( subPath );
             if( final.TryGetValue( target, out var already ) )
             {
                 if( mappingKey != null )
                 {
-                    monitor.Error( $"Invalid mapping \"{mappingKey}\": \"{target}\". Resource '{already.Origin.LocalResourceName}' maps to the same target '{t}'." );
+                    monitor.Error( $"Invalid mapping \"{mappingKey}\": \"{target}\". Resource '{already.Origin.ResourceName}' maps to the same target '{t}'." );
                 }
                 else
                 {
-                    monitor.Error( $"Resource '{subPath}' maps to '{t}' but '{already.Origin.LocalResourceName}' already maps to the same target." );
+                    monitor.Error( $"Resource '{subPath}' maps to '{t}' but '{already.Origin.ResourceName}' already maps to the same target." );
                 }
                 return false;
             }
