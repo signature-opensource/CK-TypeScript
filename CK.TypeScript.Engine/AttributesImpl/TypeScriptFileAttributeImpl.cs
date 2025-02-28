@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
@@ -12,7 +13,7 @@ namespace CK.TypeScript.Engine;
 /// </summary>
 public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImplExtension
 {
-    Core.ResourceLocator _resource;
+    EmbeddedResources.ResourceLocator _resource;
     NormalizedPath _targetPath;
 
     /// <summary>

@@ -1,8 +1,9 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// File system implementation of a <see cref="IResourceContainer"/>.

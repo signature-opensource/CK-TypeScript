@@ -1,10 +1,11 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Resource container for embedded resources.

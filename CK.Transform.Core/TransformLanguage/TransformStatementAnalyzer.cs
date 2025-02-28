@@ -75,7 +75,7 @@ public abstract class TransformStatementAnalyzer
         {
             return MatchInjectIntoStatement( ref head, inject );
         }
-        if( head.TryAcceptToken( "reparse", out var reparse ) )
+        if( head.TryAcceptToken( "reparse", out var _ ) )
         {
             int begStatement = head.LastTokenIndex;
             head.TryAcceptToken( ";", out _ );

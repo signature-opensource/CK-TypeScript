@@ -14,7 +14,7 @@ public sealed partial class TypeScriptContext
 {
     sealed class BuildModeSaver : TypeScriptFileSaveStrategy
     {
-        List<(NormalizedPath Gen, Core.ResourceLocator Origin)>? _clashes;
+        List<(NormalizedPath Gen, EmbeddedResources.ResourceLocator Origin)>? _clashes;
 
         public BuildModeSaver( TypeScriptRoot root, NormalizedPath targetPath )
             : base( root, targetPath )
@@ -64,7 +64,7 @@ public sealed partial class TypeScriptContext
         string OnClashPath( IActivityMonitor monitor, BaseFile file, NormalizedPath filePath )
         {
             string savedFilePath;
-            _clashes ??= new List<(NormalizedPath, Core.ResourceLocator)>();
+            _clashes ??= new List<(NormalizedPath, EmbeddedResources.ResourceLocator)>();
             _clashes.Add( (file.Folder.Path.AppendPart( file.Name ), file is IResourceFile rF ? rF.Locator : default) );
             savedFilePath = $"{filePath.Path}.G{file.Extension}";
             monitor.Trace( $"Saving '{Path.GetFileName( savedFilePath.AsSpan() )}'." );

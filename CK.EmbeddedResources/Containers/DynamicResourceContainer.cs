@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// A resource container in which a reader or writer function for a resource can be registered.

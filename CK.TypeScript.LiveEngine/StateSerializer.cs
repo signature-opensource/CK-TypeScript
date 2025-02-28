@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -22,7 +23,7 @@ static class StateSerializer
             w.Write( container.DisplayName );
             switch( container )
             {
-                case EmptyResourceContainer e:
+                case EmptyResourceContainer:
                     w.Write( (byte)0 );
                     w.Write( container.ResourcePrefix );
                     break;
@@ -31,9 +32,9 @@ static class StateSerializer
                     w.Write( a.Assembly.AssemblyName );
                     w.Write( container.ResourcePrefix );
                     break;
-                case FileSystemResourceContainer f:
+                case FileSystemResourceContainer:
                     w.Write( (byte)2 );
-                    w.Write( f.ResourcePrefix );
+                    w.Write( container.ResourcePrefix );
                     break;
                 default:
                     Throw.NotSupportedException( $"Unhandled type '{container.GetType()}'." );

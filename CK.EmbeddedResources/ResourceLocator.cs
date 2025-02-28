@@ -1,7 +1,8 @@
+using CK.Core;
 using System;
 using System.IO;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Locator for a resource in a <see cref="IResourceContainer"/>.
@@ -91,6 +92,18 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// </summary>
     /// <param name="target">The target stream.</param>
     public void WriteStream( Stream target ) => _container.WriteStream( this, target );
+
+    /// <summary>
+    /// Reads the resource content as a text.
+    /// </summary>
+    /// <returns>The content as a text.</returns>
+    public string ReadAsText()
+    {
+        using( var r = new StreamReader( GetStream() ) )
+        {
+            return r.ReadToEnd();
+        }
+    }
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="ResourceName"/>

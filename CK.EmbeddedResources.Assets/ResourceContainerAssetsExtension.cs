@@ -1,9 +1,10 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Provides <see cref="LoadAssets(CK.Core.IResourceContainer, CK.Core.IActivityMonitor, CK.Core.NormalizedPath, out CK.Core.ResourceAssetSet?, string)"/>

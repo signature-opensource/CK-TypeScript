@@ -27,6 +27,19 @@ public abstract class TransformLanguage
     public string LanguageName => _languageName;
 
     /// <summary>
+    /// Tests a file name (typically the extesion) to determine if it should
+    /// contain code from this language.
+    /// </summary>
+    /// <param name="fileName">The file name. May be a path.</param>
+    /// <returns>True if the file can be handled by this language analyzer.</returns>
+    public abstract bool IsLangageFilename( ReadOnlySpan<char> fileName );
+
+    /// <summary>
+    /// Gets whether this is the Transform language.
+    /// </summary>
+    public bool IsTransformerLanguage => ReferenceEquals( _languageName, TransformerHost._transformLanguageName );
+
+    /// <summary>
     /// Must create the transforme statement analyzer and the target language analyzer.
     /// <para>
     /// The <see cref="TransformStatementAnalyzer"/> can reference the <see cref="IAnalyzer"/>

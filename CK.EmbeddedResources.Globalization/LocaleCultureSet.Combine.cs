@@ -1,7 +1,8 @@
+using CK.Core;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 public sealed partial class LocaleCultureSet
 {

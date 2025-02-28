@@ -1,8 +1,9 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// An empty resource container with no contents.

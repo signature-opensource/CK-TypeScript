@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CK.Setup;
 using System;
 using System.IO;
@@ -8,7 +9,7 @@ namespace CK.TypeScript.Engine;
 
 public sealed class TypeScriptResourceAttributeImpl : TypeScriptPackageAttributeImplExtension
 {
-    Core.ResourceLocator _resource;
+    EmbeddedResources.ResourceLocator _resource;
     NormalizedPath _targetPath;
 
     public new TypeScriptResourceAttribute Attribute => Unsafe.As<TypeScriptResourceAttribute>( base.Attribute );

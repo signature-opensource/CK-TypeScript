@@ -1,16 +1,18 @@
+using System;
+
 namespace CK.Transform.Core;
 
 
 public sealed partial class TransformerHost
 {
+    internal static readonly string _transformLanguageName = "Transform";
+
     /// <summary>
     /// Transform language itself.
     /// The target and transform statements analyzers are cached, bound to the TransformerHost. 
     /// </summary>
     sealed class RootTransformLanguage : TransformLanguage
     {
-        internal const string _languageName = "Transform";
-
         readonly RootTransformAnalyzer _rootAnalyzer;
         readonly TransformStatementAnalyzer _thisAnalyzer;
 
@@ -32,17 +34,25 @@ public sealed partial class TransformerHost
         }
 
         internal RootTransformLanguage( TransformerHost host )
-            : base( _languageName )
+            : base( _transformLanguageName )
         {
             _thisAnalyzer = new ThisStatementAnalyzer( this );
             _rootAnalyzer = new RootTransformAnalyzer( host );
         }
+
+        /// <summary>
+        /// Accepts ".t" file name extension.
+        /// </summary>
+        /// <param name="fileName">The file name or path to consider.</param>
+        /// <returns>True if this is a transformer file name.</returns>
+        public override bool IsLangageFilename( ReadOnlySpan<char> fileName ) => fileName.EndsWith( ".t", StringComparison.Ordinal );
 
         public RootTransformAnalyzer RootAnalyzer => _rootAnalyzer;
 
         public TransformStatementAnalyzer TransformStatementAnalyzer => _thisAnalyzer;
 
         protected internal override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host ) => (_thisAnalyzer, _rootAnalyzer);
+
     }
 
 }

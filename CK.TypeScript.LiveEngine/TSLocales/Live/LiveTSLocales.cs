@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using System.Collections.Immutable;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -56,7 +57,10 @@ sealed partial class LiveTSLocales
         Throw.DebugAssert( IsValid );
         // Locales are computed as a whole. Each jsonc file can have an
         // impact on the final set. We don't try to be clever here.
-        _state = InternalState.Dirty;
+        if( subPath.EndsWith( ".jsonc" ) )
+        {
+            _state = InternalState.Dirty;
+        }
     }
 
     internal bool ApplyChanges( IActivityMonitor monitor )

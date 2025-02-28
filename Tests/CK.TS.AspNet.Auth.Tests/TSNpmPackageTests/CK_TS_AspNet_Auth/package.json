@@ -19,7 +19,7 @@
   },
   "scripts": {
     "test": "jest",
-    "ck-watch": "dotnet \"C:\\Dev\\CK\\CK-Crs-Projects\\CK-TypeScript\\Tests\\CK.TS.AspNet.Auth.Tests\\bin\\Debug\\net8.0\\CK.TypeScript.LiveEngine.dll\""
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "peerDependencies": {
     "axios": "^1.7.7"

@@ -1,6 +1,7 @@
+using CK.Core;
 using System.Collections.Generic;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Final asset set: this combines multiple asset sets into one <see cref="Final"/> set.

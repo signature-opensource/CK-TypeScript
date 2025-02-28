@@ -102,7 +102,7 @@ public class TypeScriptFileAttributeTests
               },
               "dependencies": {
                 "@stdlib/utils-native-class": "~0.2.2",
-                "axios": "^1.7.9",
+                "axios": "^1.8.1",
                 "tslib": "=2.7.0"
               },
               "peerDependencies": {
@@ -125,7 +125,7 @@ public class TypeScriptFileAttributeTests
               "packageManager": "yarn@4.6.0",
               "scripts": {
                 "test": "jest",
-                "ck-watch": "dotnet \"{{watcherPath}}\""
+                "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
               },
               "workspaces": [
                 "ck-gen"

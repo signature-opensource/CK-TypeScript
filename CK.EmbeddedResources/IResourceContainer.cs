@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Abstract resource container. Its goal is to handle <see cref="ResourceFolder"/> and <see cref="ResourceLocator"/>.
@@ -13,6 +13,9 @@ namespace CK.Core;
 /// </para>
 /// <para>
 /// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories and files.
+/// </para>
+/// <para>
+/// The most common usage is to the <see cref="TypeExtensions."/>
 /// </para>
 /// </summary>
 public interface IResourceContainer

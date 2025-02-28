@@ -4,7 +4,7 @@
   "packageManager": "yarn@4.6.0",
   "scripts": {
     "test": "jest",
-    "ck-watch": "dotnet \"C:\\Dev\\CK\\CK-Crs-Projects\\CK-TypeScript\\Tests\\BuildMode\\CK-TS-JsonGraphSerializer\\CK.TS.JsonGraphSerializer.Tests\\bin\\Debug\\net8.0\\CK.TypeScript.LiveEngine.dll\""
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "workspaces": [
     "ck-gen"

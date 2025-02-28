@@ -1,4 +1,6 @@
-﻿namespace CK.Core;
+using CK.Core;
+
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// A resource asset is a resource and a <see cref="ResourceOverrideKind"/>.

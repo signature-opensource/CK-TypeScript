@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -5,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 public static class ResourceContainerGlobalizationExtension
 {
@@ -174,7 +175,7 @@ public static class ResourceContainerGlobalizationExtension
             return success ? defaultSet : null;
 
             static bool ReadSpecificSet( IActivityMonitor monitor,
-                                         Core.ResourceLocator locator,
+                                         EmbeddedResources.ResourceLocator locator,
                                          NormalizedCultureInfo culture,
                                          LocaleCultureSet defaultSet,
                                          bool isOverrideFolder,

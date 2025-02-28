@@ -23,7 +23,7 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Gets the "Transform" language name.
         /// </summary>
-        public string LanguageName => RootTransformLanguage._languageName;
+        public string LanguageName => _transformLanguageName;
 
         /// <summary>
         /// Transform languages accept <see cref="TriviaHeadExtensions.AcceptCLikeRecursiveStarComment(ref TriviaHead)"/>

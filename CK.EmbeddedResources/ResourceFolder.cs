@@ -1,7 +1,8 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Resource folder in a <see cref="IResourceContainer"/>.

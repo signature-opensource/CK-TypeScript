@@ -1,7 +1,8 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Captures a folder like structure of <see cref="ResourceAsset"/>: a read only dictionary of <see cref="NormalizedPath"/>

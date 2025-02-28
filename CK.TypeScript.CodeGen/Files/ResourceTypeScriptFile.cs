@@ -1,4 +1,4 @@
-using CK.Core;
+using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 

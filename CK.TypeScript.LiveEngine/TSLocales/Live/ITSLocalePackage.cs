@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using System.Collections.Generic;
 
 namespace CK.TypeScript.LiveEngine;

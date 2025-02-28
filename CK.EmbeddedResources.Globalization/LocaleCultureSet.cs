@@ -1,8 +1,9 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Captures a "locales/" folder: the root culture is "en" and is filled with the
@@ -18,7 +19,7 @@ namespace CK.Core;
 public sealed partial class LocaleCultureSet
 {
     readonly NormalizedCultureInfo _culture;
-    readonly Core.ResourceLocator _origin;
+    readonly EmbeddedResources.ResourceLocator _origin;
     Dictionary<string, TranslationValue>? _translations;
     List<LocaleCultureSet>? _children;
 
@@ -88,7 +89,7 @@ public sealed partial class LocaleCultureSet
     /// <summary>
     /// Gets the origin of this set.
     /// </summary>
-    public Core.ResourceLocator Origin => _origin;
+    public EmbeddedResources.ResourceLocator Origin => _origin;
 
     /// <summary>
     /// Gets the children (more specific culture sets).

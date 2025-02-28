@@ -1,6 +1,7 @@
+using CK.Core;
 using System;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Extends <see cref="IResourceContainer"/>.

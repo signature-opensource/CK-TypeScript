@@ -96,6 +96,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Assets
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Assets.Tests", "Tests\CK.EmbeddedResources.Assets.Tests\CK.EmbeddedResources.Assets.Tests.csproj", "{3485D04F-5614-4843-8413-8A748388FD26}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Transform.Space", "CK.Transform.Space\CK.Transform.Space.csproj", "{69C98830-A7E9-4325-B627-0F61B02BF0AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -238,6 +240,10 @@ Global
 		{3485D04F-5614-4843-8413-8A748388FD26}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3485D04F-5614-4843-8413-8A748388FD26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3485D04F-5614-4843-8413-8A748388FD26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

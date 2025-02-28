@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CK.Setup;
 using CK.TypeScript;
 using CK.TypeScript.Engine;

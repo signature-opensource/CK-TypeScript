@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Text.Json;
+using CK.EmbeddedResources;
 
 namespace CK.Setup;
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace CK.Transform.Core;
 
@@ -56,12 +57,17 @@ public sealed partial class TransformerHost
     /// Initializes a host with at least the <see cref="RootTransformLanguage"/>.
     /// </summary>
     /// <param name="languages">Languages to register.</param>
-    public TransformerHost( params TransformLanguage[] languages )
+    public TransformerHost( params IEnumerable<TransformLanguage> languages )
     {
         _transformLanguage = new RootTransformLanguage( this );
         _languages = new List<Language>();
-        foreach( var language in languages ) EnsureLanguage( language );
-        if( Find( _languages, RootTransformLanguage._languageName ) == null )
+        bool hasTransfomer = false;
+        foreach( var language in languages )
+        {
+            EnsureLanguage( language );
+            hasTransfomer |= language.IsTransformerLanguage;
+        }
+        if( !hasTransfomer )
         {
             _languages.Add( new Language( this, _transformLanguage ) );
         }
@@ -76,29 +82,35 @@ public sealed partial class TransformerHost
     /// Removes a language.
     /// </summary>
     /// <param name="language">The language to remove.</param>
-    /// <returns>Tre if the language has been removed, false if it was not found.</returns>
+    /// <returns>True if the language has been removed, false if it was not found or if it is the transform language itself.</returns>
     public bool RemoveLanguage( TransformLanguage language )
     {
-        var idx = _languages.FindIndex( l => l.TransformLanguage != _transformLanguage && l.LanguageName == language.LanguageName );
-        if( idx >= 0 )
+        if( !language.IsTransformerLanguage )
         {
-            _languages.RemoveAt( idx );
-            return true;
+            var idx = _languages.FindIndex( l => l.LanguageName == language.LanguageName );
+            if( idx >= 0 )
+            {
+                _languages.RemoveAt( idx );
+                return true;
+            }
         }
         return false;
     }
 
     /// <summary>
-    /// Adds a language if it is not already registered.
+    /// Adds a language if it is not already registered of finds its cached instance.
     /// </summary>
     /// <param name="language">The language to add.</param>
-    public void EnsureLanguage( TransformLanguage language )
+    /// <returns>The cached language.</returns>
+    public Language EnsureLanguage( TransformLanguage language )
     {
         var l = _languages.FirstOrDefault( l => l.LanguageName == language.LanguageName );
         if( l == null )
         {
-            _languages.Add( new Language( this, language ) );
+            l = new Language( this, language );
+            _languages.Add( l );
         }
+        return l;
     }
 
     /// <summary>
@@ -107,6 +119,23 @@ public sealed partial class TransformerHost
     /// <param name="name">The language name.</param>
     /// <returns>The language or null if not found.</returns>
     public Language? Find( ReadOnlySpan<char> name ) => Find( _languages, name );
+
+    /// <summary>
+    /// Tries to find a <see cref="Language"/> from a file name or path.
+    /// </summary>
+    /// <param name="fileName">The file name or path.</param>
+    /// <returns>The language or null.</returns>
+    public Language? FindFromFilename( ReadOnlySpan<char> fileName )
+    {
+        foreach( var l in _languages )
+        {
+            if( l.TransformLanguage.IsLangageFilename( fileName ) )
+            {
+                return l;
+            }
+        }
+        return null;
+    }
 
     /// <inheritdoc cref="TryParseFunction(IActivityMonitor,ReadOnlyMemory{char})"/>
     public TransformerFunction? TryParseFunction( IActivityMonitor monitor, string text ) => TryParseFunction( monitor, text.AsMemory() );

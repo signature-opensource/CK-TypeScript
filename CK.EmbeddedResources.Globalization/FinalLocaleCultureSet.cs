@@ -1,6 +1,7 @@
+using CK.Core;
 using System.Linq;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Final culture set: this combines multiple culture sets into one <see cref="Root"/> final tree.
@@ -22,7 +23,7 @@ public sealed class FinalLocaleCultureSet
     /// </param>
     public FinalLocaleCultureSet( bool isPartialSet, string fullResourceName )
     {
-        _root = new LocaleCultureSet( new Core.ResourceLocator( EmptyResourceContainer.GeneratedCode, fullResourceName ), NormalizedCultureInfo.CodeDefault );
+        _root = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.GeneratedCode, fullResourceName ), NormalizedCultureInfo.CodeDefault );
         _isPartialSet = isPartialSet;
     }
 

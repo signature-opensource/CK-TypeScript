@@ -1,4 +1,3 @@
-using CK.Core;
 using FluentAssertions;
 using Namespace.Does.Not.Matter;
 using NUnit.Framework;

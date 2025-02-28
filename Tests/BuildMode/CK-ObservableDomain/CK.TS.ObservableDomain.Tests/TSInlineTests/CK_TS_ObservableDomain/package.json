@@ -11,7 +11,7 @@
   },
   "scripts": {
     "test": "jest",
-    "ck-watch": "dotnet \"C:\\Dev\\CK\\CK-Crs-Projects\\CK-TypeScript\\Tests\\BuildMode\\CK-ObservableDomain\\CK.TS.ObservableDomain.Tests\\bin\\Debug\\net8.0\\CK.TypeScript.LiveEngine.dll\""
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "dependencies": {
     "rxjs": "^7.5.6"

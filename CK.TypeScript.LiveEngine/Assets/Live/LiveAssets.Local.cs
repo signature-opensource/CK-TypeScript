@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 
 namespace CK.TypeScript.LiveEngine;
 

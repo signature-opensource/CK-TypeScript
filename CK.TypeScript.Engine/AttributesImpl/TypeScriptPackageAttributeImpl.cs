@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
@@ -18,10 +19,10 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
     readonly IResourceContainer _resources;
-    readonly HashSet<Core.ResourceLocator> _removedResources;
+    readonly HashSet<EmbeddedResources.ResourceLocator> _removedResources;
     readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
     NormalizedPath _typeScriptFolder;
-    List<Core.ResourceLocator>? _transformers;
+    List<EmbeddedResources.ResourceLocator>? _transformers;
 
     LocaleCultureSet? _tsLocales;
     ResourceAssetSet? _assets;
@@ -81,7 +82,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the transformer resources from this <see cref="Resources"/>.
     /// </summary>
-    public ICollection<Core.ResourceLocator> Transfomers => (ICollection<Core.ResourceLocator>?)_transformers ?? Array.Empty<Core.ResourceLocator>();
+    public ICollection<EmbeddedResources.ResourceLocator> Transfomers => (ICollection<EmbeddedResources.ResourceLocator>?)_transformers ?? Array.Empty<EmbeddedResources.ResourceLocator>();
 
 
     /// <summary>
@@ -100,7 +101,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         }
 
         _extensions = new List<TypeScriptPackageAttributeImplExtension>();
-        _removedResources = new HashSet<Core.ResourceLocator>();
+        _removedResources = new HashSet<EmbeddedResources.ResourceLocator>();
         if( attr.DisableResources )
         {
             _resources = new EmptyResourceContainer( $"disabled resources of '{type.ToCSharpName()}' type" ); ;
@@ -108,7 +109,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         else
         {
             // Computes Resources: if an error occured IsValid is false and a error has been logged that stops the processing.
-            _resources = type.Assembly.CreateResourcesContainerForType( monitor, attr.CallerFilePath, type, "TypeScriptPackage" );
+            _resources = type.CreateResourcesContainer( monitor, attr.CallerFilePath, "TypeScriptPackage" );
         }
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );
@@ -210,7 +211,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
             if( !r.ResourceName.EndsWith( ".t" ) ) continue;
             // Transformers are not copied.
             _removedResources.Add( r );
-            _transformers ??= new List<Core.ResourceLocator>();
+            _transformers ??= new List<EmbeddedResources.ResourceLocator>();
             _transformers.Add( r );
         }
 
@@ -245,7 +246,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// won't generate its file.
     /// </summary>
     /// <param name="resource"></param>
-    internal protected void RemoveResource( Core.ResourceLocator resource )
+    internal protected void RemoveResource( EmbeddedResources.ResourceLocator resource )
     {
         Throw.DebugAssert( resource.Container == _resources );
         _removedResources.Add( resource );

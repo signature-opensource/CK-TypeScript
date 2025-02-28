@@ -2,6 +2,7 @@ using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
+using System.IO;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.EmbeddedResources.Assets.Tests;
@@ -12,16 +13,42 @@ public class BasicTests
     [Test]
     public void TargetPath_can_be_empty()
     {
-        var resources = typeof( BasicTests ).Assembly.GetResources();
-
-        var c = resources.CreateResourcesContainerForType( TestHelper.Monitor, typeof( T1.Package ) );
-        c.IsValid.Should().BeTrue();
-        c.LoadAssets( TestHelper.Monitor, "some/path", out var assets, "assets" ).Should().BeTrue();
-        Throw.Assert( assets != null );
-        assets.Assets.Count.Should().Be( 1 );
-        assets.Assets["favicon.ico"].Override.Should().Be( ResourceOverrideKind.None );
-        assets.Assets["favicon.ico"].Origin.LocalFilePath.Should().NotBeNullOrWhiteSpace();
-        assets.Assets["favicon.ico"].Origin.ResourceName.Should().Be( "ck@T1/Res/assets/favicon.ico" );
+        Type type = typeof( T1.Package );
+        // This is a Local project: we obtain a FileSystemResourceContainer.
+        string localFavIconPath;
+        {
+            var c = type.CreateResourcesContainer( TestHelper.Monitor );
+            c.IsValid.Should().BeTrue();
+            c.Should().BeAssignableTo<FileSystemResourceContainer>();
+            c.LoadAssets( TestHelper.Monitor, "some/path", out var assets, "assets" ).Should().BeTrue();
+            Throw.Assert( assets != null );
+            assets.Assets.Count.Should().Be( 1 );
+            // assets.jsonc defines is { "targetPath": "" }
+            // The defaultTargetPath "some/path" is ignored.
+            assets.Assets["favicon.ico"].Override.Should().Be( ResourceOverrideKind.None );
+            // The ResourceName is the full path of the file.
+            var sep = Path.DirectorySeparatorChar;
+            localFavIconPath = assets.Assets["favicon.ico"].Origin.ResourceName;
+            localFavIconPath.Should().Be( $"{c.ResourcePrefix}assets{sep}favicon.ico" );
+            localFavIconPath.Should().BeSameAs( assets.Assets["favicon.ico"].Origin.LocalFilePath );
+        }
+        // Same as above but from the embedded resources.
+        {
+            var c = type.Assembly.GetResources().CreateResourcesContainerForType( TestHelper.Monitor, type );
+            c.IsValid.Should().BeTrue();
+            c.Should().BeAssignableTo<AssemblyResourceContainer>();
+            c.LoadAssets( TestHelper.Monitor, "some/path", out var assets, "assets" ).Should().BeTrue();
+            Throw.Assert( assets != null );
+            assets.Assets.Count.Should().Be( 1 );
+            // assets.jsonc defines is { "targetPath": "" }
+            // The defaultTargetPath "some/path" is ignored.
+            assets.Assets["favicon.ico"].Override.Should().Be( ResourceOverrideKind.None );
+            var o = assets.Assets["favicon.ico"].Origin;
+            // The LocalFilePath exists.
+            o.LocalFilePath.Should().Be( localFavIconPath );
+            c.ResourcePrefix.Should().Be( "ck@T1/Res" );
+            o.ResourceName.Should().Be( $"{c.ResourcePrefix}assets/favicon.ico" );
+        }
     }
 
     [Test]

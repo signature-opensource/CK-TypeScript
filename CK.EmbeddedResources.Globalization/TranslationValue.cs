@@ -1,6 +1,7 @@
+using CK.Core;
 using System;
 
-namespace CK.Core;
+namespace CK.EmbeddedResources;
 
 /// <summary>
 /// A translation value is a <see cref="Text"/> that comes from an <see cref="Origin"/>.

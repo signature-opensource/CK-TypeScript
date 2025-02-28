@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
