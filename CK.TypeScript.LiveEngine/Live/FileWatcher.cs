@@ -8,11 +8,11 @@ sealed class FileWatcher
     volatile bool _closed;
     readonly object _lock = new();
     readonly string _watchRoot;
-    readonly ChannelWriter<object> _output;
+    readonly ChannelWriter<object?> _output;
     readonly IFileEventFilter _fileFilter;
 
     internal FileWatcher( string watchRoot,
-                          ChannelWriter<object> output,
+                          ChannelWriter<object?> output,
                           IFileEventFilter fileFilter )
     {
         _watchRoot = watchRoot;
