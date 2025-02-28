@@ -46,7 +46,7 @@ public class BasicTests
             var o = assets.Assets["favicon.ico"].Origin;
             // The LocalFilePath exists.
             o.LocalFilePath.Should().Be( localFavIconPath );
-            c.ResourcePrefix.Should().Be( "ck@T1/Res" );
+            c.ResourcePrefix.Should().Be( "ck@T1/Res/" );
             o.ResourceName.Should().Be( $"{c.ResourcePrefix}assets/favicon.ico" );
         }
     }
