@@ -1,7 +1,11 @@
 using CK.Core;
 using CommunityToolkit.HighPerformance;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace CK.Transform.Core;
 
@@ -10,6 +14,40 @@ namespace CK.Transform.Core;
 /// </summary>
 public static class AnalyzerExtensions
 {
+    /// <summary>
+    /// Tries to parse multiple <see cref="TopLevelSourceSpan"/>.
+    /// Returns null on error.
+    /// </summary>
+    /// <param name="analyzer">This top-level analyzer.</param>
+    /// <param name="monitor">Required monitor.</param>
+    /// <param name="text">the text to parse.</param>
+    /// <returns>The top-level spans or null on error.</returns>
+    public static List<T>? TryParseMultiple<T>( this ITopLevelAnalyzer<T> analyzer,
+                                                IActivityMonitor monitor,
+                                                ReadOnlyMemory<char> text )
+        where T : TopLevelSourceSpan
+    {
+        var result = new List<T>();
+        for(; ; )
+        {
+            var r = analyzer.TryParse( monitor, text );
+            if( r == null ) return null;
+            // Parse success doesn't mean that a top-level construct has been parsed.
+            var f = r.SourceCode.Spans.FirstOrDefault();
+            Throw.DebugAssert( f == null || f is T );
+            if( f == null || f is not T topLevel )
+            {
+                // No Transform function: if the EndOfInput has been reached, we are good (text is whitespace or comments).
+                if( r.EndOfInput ) break;
+                // But if the EndOfInput has not been reached, it means that there are tokens but they don't start with a 'create'.
+                return null;
+            }
+            result.Add( topLevel );
+            text = r.RemainingText;
+        }
+        return result;
+    }
+
     /// <summary>
     /// Ensures that the <see cref="AnalyzerResult.Success"/> is true and handles any exception.
     /// </summary>

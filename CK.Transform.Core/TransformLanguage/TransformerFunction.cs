@@ -2,7 +2,7 @@ using CK.Core;
 
 namespace CK.Transform.Core;
 
-public sealed class TransformerFunction : SourceSpan
+public sealed class TransformerFunction : TopLevelSourceSpan
 {
     public TransformerFunction( int createTokenIndex,
                                 int endTokenIndex,
@@ -21,7 +21,7 @@ public sealed class TransformerFunction : SourceSpan
     /// <summary>
     /// Gets or sets this transformer function name.
     /// </summary>
-    public string? Name { get; set; }
+    public override string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the transform language.

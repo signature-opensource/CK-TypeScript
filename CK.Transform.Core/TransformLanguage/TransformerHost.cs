@@ -186,25 +186,7 @@ public sealed partial class TransformerHost
     /// <returns>The functions or null on error.</returns>
     public List<TransformerFunction>? TryParseFunctions( IActivityMonitor monitor, ReadOnlyMemory<char> text )
     {
-        var result = new List<TransformerFunction>();
-        for( ; ; )
-        {
-            var r = _transformLanguage.RootAnalyzer.TryParse( monitor, text );
-            if( r == null ) return null;
-            // Parse success doesn't mean that a Transform function has been parsed.
-            var f = r.SourceCode.Spans.FirstOrDefault();
-            Throw.DebugAssert( f == null || f is TransformerFunction );
-            if( f == null )
-            {
-                // No Transform function: if the EndOfInput has been reached, we are good (text is whitespace or comments).
-                if( r.EndOfInput ) break;
-                // But if the EndOfInput has not been reached, it means that there are tokens but they don't start with a 'create'.
-                return null;
-            }
-            result.Add( Unsafe.As<TransformerFunction>( f ) );
-            text = r.RemainingText;
-        }
-        return result;
+        return _transformLanguage.RootAnalyzer.TryParseMultiple( monitor, text );
     }
 
     /// <summary>

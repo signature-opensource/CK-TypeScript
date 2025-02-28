@@ -4,6 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Span of a source code. Specialized instances are created by analyzers and
+/// managed by <see cref="SourceCode"/> and <see cref="SourceCodeEditor"/>.
+/// </summary>
 public abstract partial class SourceSpan
 {
     internal SourceSpanRoot? _root;
@@ -18,7 +22,7 @@ public abstract partial class SourceSpan
     /// </summary>
     /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
     /// <param name="end">The end of the span. Must be greater than <paramref name="beg"/>.</param>
-    public SourceSpan( int beg, int end )
+    protected SourceSpan( int beg, int end )
     {
         _span = new TokenSpan( beg, end );
         _children = new SourceSpanChildren();
