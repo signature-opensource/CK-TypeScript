@@ -16,11 +16,13 @@ public static class AnalyzerExtensions
 {
     /// <summary>
     /// Tries to parse multiple <see cref="TopLevelSourceSpan"/>.
-    /// Returns null on error.
+    /// Returns null on error. The result is empty if no top-level construct
+    /// has been recongnized.
     /// </summary>
+    /// <typeparam name="T">The top-level source span type.</typeparam>
     /// <param name="analyzer">This top-level analyzer.</param>
     /// <param name="monitor">Required monitor.</param>
-    /// <param name="text">the text to parse.</param>
+    /// <param name="text">The text to analyze.</param>
     /// <returns>The top-level spans or null on error.</returns>
     public static List<T>? TryParseMultiple<T>( this ITopLevelAnalyzer<T> analyzer,
                                                 IActivityMonitor monitor,
@@ -46,6 +48,15 @@ public static class AnalyzerExtensions
             text = r.RemainingText;
         }
         return result;
+    }
+
+    /// <inheritdoc cref="TryParseMultiple{T}(ITopLevelAnalyzer{T}, IActivityMonitor, ReadOnlyMemory{char})"/>
+    public static List<T>? TryParseMultiple<T>( this ITopLevelAnalyzer<T> analyzer,
+                                                IActivityMonitor monitor,
+                                                string text )
+           where T : TopLevelSourceSpan
+    {
+        return TryParseMultiple( analyzer, monitor, text.AsMemory() );
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace CK.Transform.Core;
 
@@ -19,7 +19,7 @@ namespace CK.Transform.Core;
 /// </para>
 /// </summary>
 /// <typeparam name="T">The type (or base type) of the top-level source span.</typeparam>
-public interface ITopLevelAnalyzer<T> : IAnalyzer where T: TopLevelSourceSpan
+public interface ITopLevelAnalyzer<out T> : IAnalyzer where T: TopLevelSourceSpan
 {
 }
 
