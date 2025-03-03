@@ -1,26 +1,29 @@
 using CK.Core;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CK.EmbeddedResources;
 
 /// <summary>
-/// A resource container in which a reader or writer function for a resource can be registered.
+/// A resource container in which a string, a reader or a writer function for a
+/// resource can be registered.
 /// <para>
-/// Whether a reader or a writer is registered for a resource is irrelevant: this container
-/// adapts its behavior to always support both <see cref="GetStream(in ResourceLocator)"/>
-/// and <see cref="WriteStream(in ResourceLocator, Stream)"/>.
+/// Whether a string, a reader or a writer is registered for a resource is irrelevant: this container
+/// adapts its behavior to always support <see cref="GetStream(in ResourceLocator)"/>,
+/// <see cref="WriteStream(in ResourceLocator, Stream)"/> and <see cref="ReadAsText(in ResourceLocator)"/>.
 /// </para>
 /// <para>
-/// The path separator is '/', '\' are normaized to '/'. This kind of container
+/// The path separator is '/', '\' are normalized to '/'. This kind of container
 /// doesn't support <see cref="ResourceLocator.LocalFilePath"/> (it is always null)
 /// and <see cref="IResourceContainer.HasLocalFilePathSupport"/> is false by design.
 /// </para>
 /// </summary>
-public sealed class DynamicResourceContainer : IResourceContainer
+public sealed class CodeGenResourceContainer : IResourceContainer
 {
     string[] _pathStore;
     object[] _streamStore;
@@ -32,7 +35,7 @@ public sealed class DynamicResourceContainer : IResourceContainer
     /// Initializes a new empty dynamic container.
     /// </summary>
     /// <param name="displayName">The display name.</param>
-    public DynamicResourceContainer( string displayName )
+    public CodeGenResourceContainer( string displayName )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( displayName );
         _displayName = displayName;
@@ -73,7 +76,25 @@ public sealed class DynamicResourceContainer : IResourceContainer
         return DoAdd( resourcePath, streamWriter );
     }
 
-    ResourceLocator DoAdd( string resourcePath, object rwStream )
+    /// <summary>
+    /// Adds a new resource with a dynamic writer.
+    /// <para>
+    /// This throws if the resource is already associated to a reader or a writer.
+    /// </para>
+    /// </summary>
+    /// <param name="resourcePath">
+    /// The resource path. '\' are normalized ro '/'.
+    /// Must not be empty or whitespace, contains '//' nor ends with a '/'.
+    /// </param>
+    /// <param name="text">The text content.</param>
+    /// <returns>The resource locator.</returns>
+    public ResourceLocator AddText( string resourcePath, string text )
+    {
+        Throw.CheckNotNullArgument( text );
+        return DoAdd( resourcePath, text );
+    }
+
+    ResourceLocator DoAdd( string resourcePath, object rws )
     {
         Throw.CheckArgument( resourcePath != null && !String.IsNullOrWhiteSpace( resourcePath ) );
         resourcePath = resourcePath.Replace( '\\', '/' );
@@ -99,7 +120,7 @@ public sealed class DynamicResourceContainer : IResourceContainer
             Array.Copy( _streamStore, idx, _streamStore, idx + 1, _names.Length - idx );
         }
         _pathStore[idx] = resourcePath;
-        _streamStore[idx] = rwStream;
+        _streamStore[idx] = rws;
         _names = _pathStore.AsMemory( 0, _names.Length + 1 );
         return new ResourceLocator( this, resourcePath );
     }
@@ -180,10 +201,14 @@ public sealed class DynamicResourceContainer : IResourceContainer
     public Stream GetStream( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        int idx = ImmutableOrdinalSortedStrings.IndexOf(resource.FullResourceName,_names.Span);
+        int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
         Throw.DebugAssert( idx >= 0 );
         var s = _streamStore[idx];
         if( s is Func<Stream> reader ) return reader();
+        if( s is string str )
+        {
+            return Util.RecyclableStreamManager.GetStream( Encoding.UTF8.GetBytes( str ) );
+        }
         var writer = (Action<Stream>)s;
         var memory = Util.RecyclableStreamManager.GetStream();
         writer( memory );
@@ -202,10 +227,39 @@ public sealed class DynamicResourceContainer : IResourceContainer
         {
             writer( target );
         }
+        else if( s is string str )
+        {
+            var len = Encoding.UTF8.GetMaxByteCount( str.Length );
+            var buffer = ArrayPool<byte>.Shared.Rent( len );
+            len = Encoding.UTF8.GetBytes( str, buffer.AsSpan() );
+            target.Write( buffer.AsSpan( 0, len ) );
+            ArrayPool<byte>.Shared.Return( buffer );
+        }
         else
         {
             using var source = ((Func<Stream>)s)();
             source.CopyTo( target );
+        }
+    }
+
+    /// <inheritdoc />
+    public string ReadAsText( in ResourceLocator resource )
+    {
+        resource.CheckContainer( this );
+        int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
+        Throw.DebugAssert( idx >= 0 );
+        var s = _streamStore[idx];
+        if( s is string str ) return str;
+        if( s is Action<Stream> writer )
+        {
+            using var memory = Util.RecyclableStreamManager.GetStream();
+            writer( memory );
+            return Encoding.UTF8.GetString( memory.GetReadOnlySequence() );
+        }
+        using( var source = ((Func<Stream>)s)() )
+        using( var r = new StreamReader( source ) )
+        {
+            return r.ReadToEnd();
         }
     }
 

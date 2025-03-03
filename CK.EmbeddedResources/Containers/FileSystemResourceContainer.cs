@@ -124,6 +124,13 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     }
 
     /// <inheritdoc />
+    public string ReadAsText( in ResourceLocator resource )
+    {
+        resource.CheckContainer( this );
+        return File.ReadAllText( resource.FullResourceName );
+    }
+
+    /// <inheritdoc />
     public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => DoGetResource( _root, localResourceName );
 
     /// <inheritdoc />

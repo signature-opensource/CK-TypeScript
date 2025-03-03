@@ -53,6 +53,13 @@ public interface IResourceContainer
     void WriteStream( in ResourceLocator resource, Stream target );
 
     /// <summary>
+    /// Gets the resource content as a text.
+    /// </summary>
+    /// <param name="resource">The resource locator.</param>
+    /// <returns>The resource's content as a string.</returns>
+    string ReadAsText( in ResourceLocator resource );
+
+    /// <summary>
     /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false
     /// if the resource doesn't exist.
     /// </summary>
@@ -171,4 +178,5 @@ public interface IResourceContainer
     /// </summary>
     /// <returns>This container's DisplayName.</returns>
     string ToString();
+
 }

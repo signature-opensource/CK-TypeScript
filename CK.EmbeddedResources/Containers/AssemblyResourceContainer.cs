@@ -98,33 +98,43 @@ public sealed class AssemblyResourceContainer : IResourceContainer
     }
 
     /// <inheritdoc />
-    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => DynamicResourceContainer.DoGetResource( _prefix, this, _names.Span, localResourceName );
+    public string ReadAsText( in ResourceLocator resource )
+    {
+        using( var source = GetStream( resource ) )
+        using( var r = new StreamReader( source ) )
+        {
+            return r.ReadToEnd();
+        }
+    }
+
+    /// <inheritdoc />
+    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => CodeGenResourceContainer.DoGetResource( _prefix, this, _names.Span, localResourceName );
 
     /// <inheritdoc />
     public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )
     {
         folder.CheckContainer( this );
-        return DynamicResourceContainer.DoGetResource( folder.FolderName, this, _names.Span, localResourceName );
+        return CodeGenResourceContainer.DoGetResource( folder.FolderName, this, _names.Span, localResourceName );
     }
 
     /// <inheritdoc />
-    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => DynamicResourceContainer.DoGetFolder( _prefix, this, _names.Span, localFolderName );
+    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => CodeGenResourceContainer.DoGetFolder( _prefix, this, _names.Span, localFolderName );
 
     /// <inheritdoc />
     public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName )
     {
         folder.CheckContainer( this );
-        return DynamicResourceContainer.DoGetFolder( folder.FolderName, this, _names.Span, localFolderName );
+        return CodeGenResourceContainer.DoGetFolder( folder.FolderName, this, _names.Span, localFolderName );
     }
 
     /// <inheritdoc />
-    public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder ) => DynamicResourceContainer.DoGetAllResources( folder, this, _names );
+    public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder ) => CodeGenResourceContainer.DoGetAllResources( folder, this, _names );
 
     /// <inheritdoc />
-    public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder ) => DynamicResourceContainer.DoGetResources( folder, this, _names );
+    public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder ) => CodeGenResourceContainer.DoGetResources( folder, this, _names );
 
     /// <inheritdoc />
-    public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder ) => DynamicResourceContainer.DoGetFolders( folder, this, _names );
+    public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder ) => CodeGenResourceContainer.DoGetFolders( folder, this, _names );
 
     /// <inheritdoc />
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )

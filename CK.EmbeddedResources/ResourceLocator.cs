@@ -97,13 +97,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// Reads the resource content as a text.
     /// </summary>
     /// <returns>The content as a text.</returns>
-    public string ReadAsText()
-    {
-        using( var r = new StreamReader( GetStream() ) )
-        {
-            return r.ReadToEnd();
-        }
-    }
+    public string ReadAsText() => _container.ReadAsText( this );
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="FullResourceName"/>
