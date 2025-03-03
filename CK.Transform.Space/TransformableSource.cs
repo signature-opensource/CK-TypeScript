@@ -9,14 +9,12 @@ using System.IO;
 namespace CK.Transform.Space;
 
 /// <summary>
-/// Models a source resource.
+/// Models a source file (a resource).
 /// </summary>
-public sealed class TransformableSource
+public class TransformableSource
 {
     readonly TransformPackage _package;
     readonly ResourceLocator _origin;
-    readonly NormalizedPath _target;
-    readonly TransformerHost.Language _originLanguage;
     readonly string? _localFilePath;
 
     internal TransformableSource? _nextDirty;
@@ -24,29 +22,20 @@ public sealed class TransformableSource
     // Text is loaded on demand and at most once per ApplyChanges.
     string? _text;
     int _getTextVersion;
-    // When the origin language is the Transfomer, this contains
-    // the parsed transfomers on success.
-    List<TransformerFunction>? _transformers;
-    TransformableSourceState _state;
+    bool _isDirty;
 
     public TransformableSource( TransformPackage package,
                                 ResourceLocator origin,
-                                NormalizedPath target,
-                                TransformerHost.Language originLanguage,
                                 string? localFilePath )
     {
         _package = package;
         _origin = origin;
-        _target = target;
-        _originLanguage = originLanguage;
         _localFilePath = localFilePath;
     }
 
     public ResourceLocator Origin => _origin;
 
-    public string LogicalName => _target;
-
-    public TransformableSourceState State => _state;
+    public bool IsDirty => _isDirty;
 
     public TransformPackage Package => _package;
 
@@ -54,34 +43,15 @@ public sealed class TransformableSource
 
     internal void SetDirty()
     {
-        Throw.DebugAssert( _state != TransformableSourceState.Dirty );
-        _state = TransformableSourceState.Dirty;
+        Throw.DebugAssert( !IsDirty && _localFilePath != null );
+        _isDirty = true;
         _text = null;
     }
 
     internal void ApplyChanges( ApplyChangesContext c )
     {
         Throw.DebugAssert( _text == null );
-        if( TryGetText( c, out var text )
-            && _originLanguage.TransformLanguage.IsTransformerLanguage )
-        {
-            _transformers = c.Host.TryParseFunctions( c.Monitor, text );
-            if( _transformers == null )
-            {
-                c.AddError( $"Unable to parse transformers from {_origin}." );
-            }
-            else if( _transformers.Count == 0 )
-            {
-                c.Monitor.Warn( $"No transformers found in {_origin}." );
-            }
-            else
-            {
-                foreach( var t in _transformers )
-                {
-                    _origin.ResourceName
-                }
-            }
-        }
+        TryGetText( c, out var text );
     }
 
     bool TryGetText( ApplyChangesContext c, [NotNullWhen(true)]out string? text )
@@ -104,6 +74,18 @@ public sealed class TransformableSource
                 }
             }
         }
-        return (text = _text) != null;
+        if( (text = _text) == null )
+        {
+            return false;
+        }
+        if( OnTextAvailable( c, text ) )
+        {
+            return true;
+        }
+        Throw.DebugAssert( c.HasError );
+        _text = null;
+        return false;
     }
+
+    private protected virtual bool OnTextAvailable( ApplyChangesContext c, string text ) => true;
 }

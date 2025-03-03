@@ -12,11 +12,14 @@ public sealed class TransformSpace
     readonly Dictionary<string, TransformPackage> _packageIndex;
     readonly List<TransformPackage> _packages;
 
-    // All sources are indexed by their LogicalName.
-    internal readonly Dictionary<string, TransformableSource> _items;
-    // Indexed by file path only when the origin is a FileSystemResourceContainer
-    // with true HasLocalFilePathSupport.
-    internal readonly Dictionary<string, TransformableSource> _localItems;
+    // All items are indexed by their target path.
+    internal readonly Dictionary<string, TransformableItem> _items;
+    // Resources with unrecognized language (unknown extensions) are indexed by their
+    // target path.
+    internal readonly Dictionary<string, ResourceLocator> _unmanagedResources;
+    // FileSystem local files are tracked.
+    internal readonly Dictionary<string, TransformableSource> _localFiles;
+
     internal readonly TransformerHost _transformerHost;
 
     int _applyChangesVersion;
@@ -25,8 +28,9 @@ public sealed class TransformSpace
     {
         _packageIndex = new Dictionary<string, TransformPackage>();
         _packages = new List<TransformPackage>();
-        _items = new Dictionary<string, TransformableSource>();
-        _localItems = new Dictionary<string, TransformableSource>();
+        _items = new Dictionary<string, TransformableItem>();
+        _unmanagedResources = new Dictionary<string, ResourceLocator>();
+        _localFiles = new Dictionary<string, TransformableSource>();
         _transformerHost = new TransformerHost( languages );
     }
 
@@ -45,10 +49,12 @@ public sealed class TransformSpace
 
     public void OnChange( IActivityMonitor monitor, string localFilePath )
     {
-        if( _localItems.TryGetValue( localFilePath, out var source )
-            && source.State != TransformableSourceState.Dirty )
+        if( _localFiles.TryGetValue( localFilePath, out var source ) )
         {
-            source.Package.OnChange( monitor, source );
+            if( !source.IsDirty )
+            {
+                source.Package.OnChange( monitor, source );
+            }
         }
     }
 

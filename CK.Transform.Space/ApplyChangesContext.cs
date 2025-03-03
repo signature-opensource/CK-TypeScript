@@ -40,6 +40,8 @@ sealed class ApplyChangesContext
         return true;
     }
 
+    public bool HasError => _errorCount > 0;
+
     public void AddError( string error, Exception? ex = null )
     {
         Throw.DebugAssert( !string.IsNullOrWhiteSpace( error ) );

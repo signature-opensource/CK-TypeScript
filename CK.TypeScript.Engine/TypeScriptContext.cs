@@ -355,7 +355,7 @@ public sealed partial class TypeScriptContext
             static void WriteFinalSet( IActivityMonitor monitor, TypeScriptFolder localeFolder, FinalLocaleCultureSet final )
             {
                 final.PropagateFallbackTranslations( monitor );
-                var resources = new DynamicResourceContainer( "FinalTSLocales" );
+                var resources = new CodeGenResourceContainer( "FinalTSLocales" );
                 foreach( var set in final.Root.FlattenedAll )
                 {
                     // Use the CultureInfo to have the "correct" casing for culture names.

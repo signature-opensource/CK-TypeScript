@@ -50,6 +50,7 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
 
     /// <summary>
     /// Enables initialization for this extension.
+    /// Errors must be logged: this will stop the setup process.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="tsPackage">The associated package.</param>
