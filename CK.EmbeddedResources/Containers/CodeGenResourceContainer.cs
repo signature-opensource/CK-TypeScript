@@ -33,6 +33,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
 
     ReadOnlyMemory<string> _names;
     readonly string _displayName;
+    bool _closed;
 
     /// <summary>
     /// Initializes a new empty dynamic container.
@@ -49,6 +50,9 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <summary>
     /// Initializes a new <see cref="CodeGenResourceContainer"/> previously serialized
     /// by <see cref="WriteData(ICKBinaryWriter)"/>.
+    /// <para>
+    /// Note that <see cref="IsOpened"/> is not written: a deserialized container is opened by default.
+    /// </para>
     /// </summary>
     /// <param name="r">The reader.</param>
     /// <param name="version">The serialized version.</param>
@@ -79,6 +83,9 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <summary>
     /// Serializes this container. Reader and Writer functions are written as
     /// binary content.
+    /// <para>
+    /// Note that <see cref="IsOpened"/> is not written: a deserialized container is opened by default.
+    /// </para>
     /// </summary>
     /// <param name="w">The target writer.</param>
     public void WriteData( ICKBinaryWriter w )
@@ -132,9 +139,21 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     }
 
     /// <summary>
+    /// Gets whether this container is opened: <see cref="AddBinary(string, byte[])"/>, <see cref="AddReader(string, Func{Stream})"/>,
+    /// <see cref="AddWriter(string, Action{Stream})"/> or <see cref="AddText(string, string)"/> can be called.
+    /// </summary>
+    public bool IsOpened => !_closed;
+
+    /// <summary>
+    /// Closes this container. No more resources can be added to it.
+    /// </summary>
+    public void Close() => _closed = true;
+
+    /// <summary>
     /// Adds a new resource with a dynamic reader.
     /// <para>
-    /// This throws if the resource is already associated to a reader, writer, binary content or text.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text
+    /// or if <see cref="IsOpened"/> is false.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">The resource path. Must not be empty or whitespace nor contains '\'.</param>
@@ -149,7 +168,8 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <summary>
     /// Adds a new resource with a binary content.
     /// <para>
-    /// This throws if the resource is already associated to a reader, writer, binary content or text.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text
+    /// or if <see cref="IsOpened"/> is false.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">The resource path. Must not be empty or whitespace nor contains '\'.</param>
@@ -164,7 +184,8 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <summary>
     /// Adds a new resource with a dynamic writer.
     /// <para>
-    /// This throws if the resource is already associated to a reader, writer, binary content or text.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text
+    /// or if <see cref="IsOpened"/> is false.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">
@@ -182,7 +203,8 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <summary>
     /// Adds a new textual resource.
     /// <para>
-    /// This throws if the resource is already associated to a reader, writer, binary content or text.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text
+    /// or if <see cref="IsOpened"/> is false.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">
@@ -202,6 +224,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
         Throw.CheckArgument( resourcePath != null && !String.IsNullOrWhiteSpace( resourcePath ) );
         resourcePath = resourcePath.Replace( '\\', '/' );
         Throw.CheckArgument( !resourcePath.Contains( "//" ) && resourcePath[^1] != '/' );
+        Throw.CheckState( IsOpened );
         if( resourcePath[0] == '/' )
         {
             Throw.CheckArgument( resourcePath != "/" );

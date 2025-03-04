@@ -12,7 +12,7 @@ namespace CK.Core;
 /// <summary>
 /// 
 /// </summary>
-public sealed class TPackageDescriptor : IDependentItemContainerTyped, ITPackageDescriptorRef
+public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IResPackageDescriptorRef
 {
     readonly string _fullName;
     readonly Type? _type;
@@ -20,14 +20,14 @@ public sealed class TPackageDescriptor : IDependentItemContainerTyped, ITPackage
     readonly IResourceContainer _packageResources;
     readonly CodeGenResourceContainer _codeGenResources;
     readonly string? _localPath;
-    ITPackageDescriptorRef? _container;
-    List<ITPackageDescriptorRef>? _requires;
-    List<ITPackageDescriptorRef>? _requiredBy;
-    List<ITPackageDescriptorRef>? _groups;
-    List<ITPackageDescriptorRef>? _children;
+    IResPackageDescriptorRef? _container;
+    List<IResPackageDescriptorRef>? _requires;
+    List<IResPackageDescriptorRef>? _requiredBy;
+    List<IResPackageDescriptorRef>? _groups;
+    List<IResPackageDescriptorRef>? _children;
     bool _isGroup;
 
-    internal TPackageDescriptor( string fullName,
+    internal ResPackageDescriptor( string fullName,
                                  Type? type,
                                  NormalizedPath defaultTargetPath,
                                  IResourceContainer packageResources,
@@ -81,7 +81,7 @@ public sealed class TPackageDescriptor : IDependentItemContainerTyped, ITPackage
     /// <summary>
     /// Gets or sets the container for this item.
     /// </summary>
-    public ITPackageDescriptorRef? Container
+    public IResPackageDescriptorRef? Container
     {
         get => _container;
         set => _container = value;
@@ -90,25 +90,25 @@ public sealed class TPackageDescriptor : IDependentItemContainerTyped, ITPackage
     /// <summary>
     /// Gets a mutable list of requirements that can be named optional references.
     /// </summary>
-    public IList<ITPackageDescriptorRef> Requires => _requires ??= new List<ITPackageDescriptorRef>();
+    public IList<IResPackageDescriptorRef> Requires => _requires ??= new List<IResPackageDescriptorRef>();
 
     /// <summary>
     /// Gets a mutable list of revert dependencies (a package can specify that it is itself required by another one). 
     /// A "RequiredBy" constraint is optional: a missing "RequiredBy" is not an error (it is considered 
     /// as a reverted optional dependency).
     /// </summary>
-    public IList<ITPackageDescriptorRef> RequiredBy => _requiredBy ??= new List<ITPackageDescriptorRef>();
+    public IList<IResPackageDescriptorRef> RequiredBy => _requiredBy ??= new List<IResPackageDescriptorRef>();
 
     /// <summary>
     /// Gets a mutable list of children.
     /// </summary>
-    public IList<ITPackageDescriptorRef> Children => _children ??= new List<ITPackageDescriptorRef>();
+    public IList<IResPackageDescriptorRef> Children => _children ??= new List<IResPackageDescriptorRef>();
 
     /// <summary>
     /// Gets a mutable list of groups to which this item belongs. If one of these groups is a container,
     /// it must be the only container of this item (otherwise it is an error).
     /// </summary>
-    public IList<ITPackageDescriptorRef> Groups => _groups ??= new List<ITPackageDescriptorRef>();
+    public IList<IResPackageDescriptorRef> Groups => _groups ??= new List<IResPackageDescriptorRef>();
 
     DependentItemKind IDependentItemContainerTyped.ItemKind => _isGroup ? DependentItemKind.Group : DependentItemKind.Container;
 
@@ -126,16 +126,9 @@ public sealed class TPackageDescriptor : IDependentItemContainerTyped, ITPackage
 
     bool IDependentItemRef.Optional => false;
 
-    /// <summary>
-    /// Gets the <see cref="FullName"/> (type name if this package is defined by a type).
-    /// </summary>
-    /// <returns>The package full name.</returns>
-    public override string ToString()
-    {
-        return _type != null
-                ? $"{_fullName} ({_type.Name})"
-                : _fullName;
-    }
-
     object? IDependentItem.StartDependencySort( IActivityMonitor m ) => null;
+
+    /// <inheritdoc cref="ResPackage.ToString()"/>
+    public override string ToString() => ResPackage.ToString( _fullName, _type );
+
 }
