@@ -15,7 +15,6 @@ public class TransformableSource
 {
     readonly TransformPackage _package;
     readonly ResourceLocator _origin;
-    readonly string? _localFilePath;
 
     internal TransformableSource? _nextDirty;
 
@@ -25,12 +24,10 @@ public class TransformableSource
     bool _isDirty;
 
     public TransformableSource( TransformPackage package,
-                                ResourceLocator origin,
-                                string? localFilePath )
+                                ResourceLocator origin )
     {
         _package = package;
         _origin = origin;
-        _localFilePath = localFilePath;
     }
 
     public ResourceLocator Origin => _origin;
@@ -39,11 +36,11 @@ public class TransformableSource
 
     public TransformPackage Package => _package;
 
-    public string? LocalFilePath => _localFilePath;
+    public bool IsLocal => _origin.Container == _package.PackageResources && _package.LocalPath != null;
 
     internal void SetDirty()
     {
-        Throw.DebugAssert( !IsDirty && _localFilePath != null );
+        Throw.DebugAssert( !IsDirty );
         _isDirty = true;
         _text = null;
     }
@@ -61,14 +58,14 @@ public class TransformableSource
             _getTextVersion = c.Version;
             try
             {
-                if( _localFilePath == null || c.LocalFileExists( this ) )
+                if( c.CheckCanReadText( this ) )
                 {
                     _text = _origin.ReadAsText();
                 }
             }
             catch( Exception ex )
             {
-                if( _localFilePath == null || c.LocalFileExists( this ) )
+                if( c.CheckCanReadText( this ) )
                 {
                     c.AddError( $"While reading {_origin}.", ex );
                 }

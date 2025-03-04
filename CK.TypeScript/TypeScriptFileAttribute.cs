@@ -12,8 +12,8 @@ namespace CK.TypeScript;
 public sealed class TypeScriptFileAttribute : ContextBoundDelegationAttribute
 {
     /// <summary>
-    /// Initializes a new TypeScriptFileAttribute with a .ts file
-    /// embedded as resources that must be copied in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> folder.
+    /// Initializes a new TypeScriptFileAttribute with a .ts file embedded as resources
+    /// that must be copied in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> folder.
     /// </summary>
     /// <param name="resourcePath">
     /// The embedded file name or path relative to the <see cref="TypeScriptPackage"/> folder.

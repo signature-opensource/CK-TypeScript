@@ -72,7 +72,7 @@ public sealed partial class LocaleCultureSet
             {
                 mine._children = new List<LocaleCultureSet>();
             }
-            var newOne = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.GeneratedCode, "Automatic Parent Culture" ), c );
+            var newOne = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.FakeFinalContainer, "Automatic Parent Culture" ), c );
             mine._children.Add( newOne );
             return newOne;
         }

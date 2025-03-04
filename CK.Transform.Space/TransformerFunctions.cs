@@ -13,10 +13,9 @@ public class TransformerFunctions : TransformableSource
 
     public TransformerFunctions( TransformPackage package,
                                  ResourceLocator origin,
-                                 string? localFilePath,
                                  string transformTargetBase,
                                  TransformerHost.Language? monoTargetLanguage )
-        : base( package, origin, localFilePath )
+        : base( package, origin )
     {
         _transformTargetBase = transformTargetBase;
         _monoTargetLanguage = monoTargetLanguage;

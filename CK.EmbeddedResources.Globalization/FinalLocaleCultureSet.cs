@@ -18,12 +18,12 @@ public sealed class FinalLocaleCultureSet
     /// True for the real final set of locales, false for an intermediate set of locale definitions that keeps the override definitions.
     /// </param>
     /// <param name="fullResourceName">
-    /// Name of the fake resource in <see cref="EmptyResourceContainer.GeneratedCode"/>.
+    /// Name of the fake resource in <see cref="EmptyResourceContainer.FakeFinalContainer"/>.
     /// This is used only for logging, there is no resource that originate directly from this container.
     /// </param>
     public FinalLocaleCultureSet( bool isPartialSet, string fullResourceName )
     {
-        _root = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.GeneratedCode, fullResourceName ), NormalizedCultureInfo.CodeDefault );
+        _root = new LocaleCultureSet( new ResourceLocator( EmptyResourceContainer.FakeFinalContainer, fullResourceName ), NormalizedCultureInfo.CodeDefault );
         _isPartialSet = isPartialSet;
     }
 

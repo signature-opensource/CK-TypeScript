@@ -17,10 +17,10 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     readonly bool _isValid;
 
     /// <summary>
-    /// A default empty container named "Generated Code Container".
+    /// A default empty container named "Final Container".
     /// Can be used as an empty object where a container is required but without direct content in it.
     /// </summary>
-    public static readonly EmptyResourceContainer GeneratedCode = new EmptyResourceContainer( "Generated Code Container", false );
+    public static readonly EmptyResourceContainer FakeFinalContainer = new EmptyResourceContainer( "Final Container", false );
 
     /// <summary>
     /// Initializes a new empty container with a display name.
@@ -54,19 +54,19 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
         Throw.CheckArgument( version == 0 );
         if( r.ReadByte() == 0 )
         {
-            return GeneratedCode;
+            return FakeFinalContainer;
         }
         return new EmptyResourceContainer( r.ReadString(), r.ReadBoolean(), r.ReadString(), r.ReadBoolean() );
     }
 
     /// <summary>
-    /// Writes this empty container. The singleton <see cref="GeneratedCode"/> is handled,
+    /// Writes this empty container. The singleton <see cref="FakeFinalContainer"/> is handled,
     /// <see cref="Read(ICKBinaryReader, int)"/> will recover it.
     /// </summary>
     /// <param name="w">The target writer.</param>
     public void WriteData( ICKBinaryWriter w )
     {
-        if( this == GeneratedCode )
+        if( this == FakeFinalContainer )
         {
             w.Write( (byte)0 );
         }

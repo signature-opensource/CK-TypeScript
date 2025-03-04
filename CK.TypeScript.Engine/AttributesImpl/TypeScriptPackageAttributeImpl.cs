@@ -104,7 +104,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         _removedResources = new HashSet<EmbeddedResources.ResourceLocator>();
         if( attr.DisableResources )
         {
-            _resources = new EmptyResourceContainer( $"disabled resources of '{type.ToCSharpName()}' type" ); ;
+            _resources = new EmptyResourceContainer( $"resources of '{type.ToCSharpName()}' type", isDisabled: true );
         }
         else
         {

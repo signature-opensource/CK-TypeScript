@@ -12,9 +12,8 @@ public class TransformableItem : TransformableSource
     public TransformableItem( TransformPackage package,
                               ResourceLocator origin,
                               TransformerHost.Language originLanguage,
-                              string? localFilePath,
                               NormalizedPath target )
-        : base( package, origin, localFilePath )
+        : base( package, origin )
     {
         _originLanguage = originLanguage;
         _target = target;

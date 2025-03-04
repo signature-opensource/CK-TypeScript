@@ -23,17 +23,17 @@ static class StateSerializer
             w.Write( container.DisplayName );
             switch( container )
             {
-                case EmptyResourceContainer:
-                    w.Write( (byte)0 );
+                case EmptyResourceContainer e:
+                    w.Write( (byte)(e.IsDisabled ? 0 : 1) );
                     w.Write( container.ResourcePrefix );
                     break;
                 case AssemblyResourceContainer a:
-                    w.Write( (byte)1 );
+                    w.Write( (byte)2 );
                     w.Write( a.Assembly.AssemblyName );
                     w.Write( container.ResourcePrefix );
                     break;
                 case FileSystemResourceContainer:
-                    w.Write( (byte)2 );
+                    w.Write( (byte)3 );
                     w.Write( container.ResourcePrefix );
                     break;
                 default:
@@ -54,13 +54,16 @@ static class StateSerializer
             switch( type )
             {
                 case 0:
-                    result = new EmptyResourceContainer( displayName, r.ReadString() );
+                    result = new EmptyResourceContainer( displayName, false, r.ReadString() );
                     break;
                 case 1:
+                    result = new EmptyResourceContainer( displayName, true, r.ReadString() );
+                    break;
+                case 2:
                     var a = Assembly.Load( r.ReadString() );
                     result = a.GetResources().CreateCKResourceContainer( r.ReadString(), displayName );
                     break;
-                case 2:
+                case 3:
                     result = new FileSystemResourceContainer( r.ReadString(), displayName );
                     break;
             }

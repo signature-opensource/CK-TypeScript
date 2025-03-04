@@ -28,10 +28,9 @@ sealed class ApplyChangesContext
 
     public int Version => _version;
 
-    public bool LocalFileExists( TransformableSource source )
+    public bool CheckCanReadText( TransformableSource source )
     {
-        Throw.DebugAssert( source.LocalFilePath != null );
-        if( !File.Exists( source.LocalFilePath ) )
+        if( source.IsLocal && !File.Exists( source.Origin.FullResourceName ) )
         {
             _deleted ??= new List<TransformableSource>();
             _deleted.Add( source );

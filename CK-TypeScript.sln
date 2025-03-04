@@ -98,6 +98,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Assets
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Transform.Space", "CK.Transform.Space\CK.Transform.Space.csproj", "{69C98830-A7E9-4325-B627-0F61B02BF0AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.LogicalPackage", "CK.LogicalPackage\CK.LogicalPackage.csproj", "{E67C7A72-83CE-4E48-B2B0-DC9F161BF00A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -244,6 +246,10 @@ Global
 		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{69C98830-A7E9-4325-B627-0F61B02BF0AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E67C7A72-83CE-4E48-B2B0-DC9F161BF00A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E67C7A72-83CE-4E48-B2B0-DC9F161BF00A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E67C7A72-83CE-4E48-B2B0-DC9F161BF00A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E67C7A72-83CE-4E48-B2B0-DC9F161BF00A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

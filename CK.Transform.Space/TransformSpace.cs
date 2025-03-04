@@ -2,7 +2,9 @@ using CK.Core;
 using CK.EmbeddedResources;
 using CK.Transform.Core;
 using Microsoft.VisualBasic;
+using System;
 using System.Collections.Generic;
+using System.Runtime;
 
 namespace CK.Transform.Space;
 
@@ -17,8 +19,10 @@ public sealed class TransformSpace
     // Resources with unrecognized language (unknown extensions) are indexed by their
     // target path.
     internal readonly Dictionary<string, ResourceLocator> _unmanagedResources;
-    // FileSystem local files are tracked.
+    // Live tracking: FileSystem local files are tracked.
     internal readonly Dictionary<string, TransformableSource> _localFiles;
+    // Live tracking: LocalPackages only.
+    internal readonly List<TransformPackage> _localPackages;
 
     internal readonly TransformerHost _transformerHost;
 
@@ -31,19 +35,30 @@ public sealed class TransformSpace
         _items = new Dictionary<string, TransformableItem>();
         _unmanagedResources = new Dictionary<string, ResourceLocator>();
         _localFiles = new Dictionary<string, TransformableSource>();
+        _localPackages = new List<TransformPackage>();
         _transformerHost = new TransformerHost( languages );
     }
 
-    public TransformPackage? RegisterPackage( IActivityMonitor monitor, string name )
+    public TransformPackage? RegisterPackage( IActivityMonitor monitor,
+                                              string name,
+                                              NormalizedPath defaultTargetPath,
+                                              IResourceContainer packageResources )
     {
         if( _packageIndex.ContainsKey( name ) )
         {
             monitor.Error( $"Duplicate Transform package. Package '{name}' already exists." );
             return null;
         }
-        var p = new TransformPackage( this, name, _packages.Count );
+        string? localPath = packageResources is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
+                                ? fs.ResourcePrefix
+                                : null;
+        var p = new TransformPackage( this, name, defaultTargetPath, packageResources, localPath, _packages.Count );
         _packages.Add( p );
         _packageIndex.Add( name, p );
+        if( localPath != null )
+        {
+            _localPackages.Add( p );
+        }
         return p;
     }
 
@@ -53,7 +68,18 @@ public sealed class TransformSpace
         {
             if( !source.IsDirty )
             {
-                source.Package.OnChange( monitor, source );
+                source.Package.OnTrackedChange( monitor, source );
+            }
+        }
+        else
+        {
+            foreach( var p in _localPackages )
+            {
+                Throw.DebugAssert( p.LocalPath != null );
+                if( localFilePath.StartsWith( p.LocalPath ) )
+                {
+                    p.OnUntrackedChange( monitor, localFilePath );
+                }
             }
         }
     }
