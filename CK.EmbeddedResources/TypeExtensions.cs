@@ -38,6 +38,7 @@ public static class TypeExtensions
                                                 out var callerSource )
                 ? CreateResourcesContainer( type, monitor, callerPath, callerSource.GetType().Name, containerDisplayName )
                 : new EmptyResourceContainer( AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type ),
+                                              isDisabled: false,
                                               resourcePrefix: "",
                                               isValid: false );
     }
@@ -82,7 +83,7 @@ public static class TypeExtensions
             {
                 return new FileSystemResourceContainer( projectPath.Combine( subPath ).AppendPart( "Res" ), containerDisplayName );
             }
-            return new EmptyResourceContainer( containerDisplayName, resourcePrefix: projectPath, isValid: false );
+            return new EmptyResourceContainer( containerDisplayName, isDisabled: false, resourcePrefix: projectPath, isValid: false );
         }
         return AssemblyExtensions.GetResources( assembly, assemblyName )
                                   .CreateResourcesContainerForType( monitor,

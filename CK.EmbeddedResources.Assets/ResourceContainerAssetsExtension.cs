@@ -106,7 +106,7 @@ public static class ResourceContainerAssetsExtension
             {
                 if( r != manifestFile )
                 {
-                    var target = defaultTargetPath.Combine( r.FullResourceName.Substring( resources.FolderName.Length ) );
+                    var target = defaultTargetPath.Combine( r.FullResourceName.Substring( resources.FullFolderName.Length ) );
                     final.Add( target, new ResourceAsset( r, ResourceOverrideKind.None ) );
                 }
             }
@@ -262,7 +262,7 @@ public static class ResourceContainerAssetsExtension
                               ref Dictionary<NormalizedPath, ResourceOverrideKind>? overrides,
                               Dictionary<NormalizedPath, ResourceAsset> final )
         {
-            var subPath = res.FullResourceName.Substring( resFolder.FolderName.Length );
+            var subPath = res.FullResourceName.Substring( resFolder.FullFolderName.Length );
             var t = target.Combine( subPath );
             if( final.TryGetValue( target, out var already ) )
             {

@@ -12,7 +12,8 @@ namespace CK.EmbeddedResources;
 /// instantiating the container to prrvent direct access to the file system.
 /// </para>
 /// </summary>
-public sealed class FileSystemResourceContainer : IResourceContainer
+[SerializationVersion( 0 )]
+public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersionedBinarySerializable
 {
     readonly string _displayName;
     readonly string _root;
@@ -54,6 +55,33 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     }
 
     /// <summary>
+    /// Initializes a new <see cref="FileSystemResourceContainer"/> previously serialized
+    /// by <see cref="WriteData(ICKBinaryWriter)"/>.
+    /// </summary>
+    /// <param name="r">The reader.</param>
+    /// <param name="version">The serialized version.</param>
+    public FileSystemResourceContainer( ICKBinaryReader r, int version )
+    {
+        Throw.CheckArgument( version == 0 );
+        _displayName = r.ReadString();
+        _root = r.ReadString();
+        _alwaysValid = r.ReadBoolean();
+        _allowLocalFilePath = r.ReadBoolean();
+    }
+
+    /// <summary>
+    /// Serializes this container.
+    /// </summary>
+    /// <param name="w">The target writer.</param>
+    public void WriteData( ICKBinaryWriter w )
+    {
+        w.Write( _displayName );
+        w.Write( _root );
+        w.Write( _alwaysValid );
+        w.Write( _allowLocalFilePath );
+    }
+
+    /// <summary>
     /// Gets whether the <see cref="ResourcePrefix"/> that is the root directory exists on the file system.
     /// </summary>
     public bool IsValid => _alwaysValid || Directory.Exists( _root );
@@ -88,7 +116,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
         folder.CheckContainer( this );
         if( Directory.Exists( _root ) )
         {
-            foreach( var f in Directory.EnumerateFiles( folder.FolderName, "*", SearchOption.AllDirectories ) )
+            foreach( var f in Directory.EnumerateFiles( folder.FullFolderName, "*", SearchOption.AllDirectories ) )
             {
                 yield return new ResourceLocator( this, f );
             }
@@ -131,24 +159,41 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     }
 
     /// <inheritdoc />
-    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => DoGetResource( _root, localResourceName );
+    public ResourceLocator GetResource( ReadOnlySpan<char> resourceName ) => DoGetResource( _root, resourceName );
 
     /// <inheritdoc />
-    public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )
+    public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> resourceName )
     {
         folder.CheckContainer( this );
-        return DoGetResource( folder.FolderName, localResourceName );
+        return DoGetResource( folder.FullFolderName, resourceName );
     }
 
-    ResourceLocator DoGetResource( string prefix, ReadOnlySpan<char> localResourceName )
+    /// <summary>
+    /// Gets a <see cref="ResourceLocator"/> from its local file path.
+    /// Returns an invalid resource if the file doesn't exist on the file system.
+    /// </summary>
+    /// <param name="localFilePath">The local file path that must start with <see cref="ResourcePrefix"/>.</param>
+    /// <returns>The resource. <see cref="ResourceLocator.IsValid"/> is false if the file doesn't exist.</returns>
+    public ResourceLocator GetResourceFromLocalPath( string localFilePath )
     {
-        if( localResourceName.Length > 0 && (localResourceName[0] == '/' || localResourceName[0] == '\\') )
+        Throw.CheckArgument( localFilePath.StartsWith( ResourcePrefix ) );
+        localFilePath = Path.GetFullPath( localFilePath );
+        if( File.Exists( localFilePath ) )
         {
-            localResourceName = localResourceName.Slice( 1 );
+            return new ResourceLocator( this, localFilePath );
+        }
+        return default;
+    }
+
+    ResourceLocator DoGetResource( string prefix, ReadOnlySpan<char> resourceName )
+    {
+        if( resourceName.Length > 0 && (resourceName[0] == '/' || resourceName[0] == '\\') )
+        {
+            resourceName = resourceName.Slice( 1 );
         }
         // This normalizes the Path.DirectorySeparatorChar.
         // File.Exists calls it anyway.
-        var p = Path.GetFullPath( String.Concat( prefix, localResourceName ) );
+        var p = Path.GetFullPath( String.Concat( prefix, resourceName ) );
         if( File.Exists( p ) )
         {
             return new ResourceLocator( this, p );
@@ -157,22 +202,22 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     }
 
     /// <inheritdoc />
-    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => DoGetFolder( _root, localFolderName );
+    public ResourceFolder GetFolder( ReadOnlySpan<char> folderName ) => DoGetFolder( _root, folderName );
 
     /// <inheritdoc />
-    public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName )
+    public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> folderName )
     {
         folder.CheckContainer( this );
-        return DoGetFolder( folder.FolderName, localFolderName );
+        return DoGetFolder( folder.FullFolderName, folderName );
     }
 
-    ResourceFolder DoGetFolder( string prefix, ReadOnlySpan<char> localFolderName )
+    ResourceFolder DoGetFolder( string prefix, ReadOnlySpan<char> folderName )
     {
-        if( localFolderName.Length > 0 && (localFolderName[0] == '/' || localFolderName[0] == '\\') )
+        if( folderName.Length > 0 && (folderName[0] == '/' || folderName[0] == '\\') )
         {
-            localFolderName = localFolderName.Slice( 1 );
+            folderName = folderName.Slice( 1 );
         }
-        var p = Path.GetFullPath( String.Concat( prefix, localFolderName ) );
+        var p = Path.GetFullPath( String.Concat( prefix, folderName ) );
         if( Directory.Exists( p ) )
         {
             return new ResourceFolder( this, Path.EndsInDirectorySeparator( p )
@@ -186,7 +231,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        foreach( var f in Directory.EnumerateFiles( folder.FolderName, "*", SearchOption.AllDirectories ) )
+        foreach( var f in Directory.EnumerateFiles( folder.FullFolderName, "*", SearchOption.AllDirectories ) )
         {
             yield return new ResourceLocator( this, f );
         }
@@ -196,7 +241,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        foreach( var f in Directory.EnumerateFiles( folder.FolderName ) )
+        foreach( var f in Directory.EnumerateFiles( folder.FullFolderName ) )
         {
             yield return new ResourceLocator( this, f );
         }
@@ -206,7 +251,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        foreach( var f in Directory.EnumerateDirectories( folder.FolderName ) )
+        foreach( var f in Directory.EnumerateDirectories( folder.FullFolderName ) )
         {
             Throw.DebugAssert( f[^1] != Path.DirectorySeparatorChar );
             yield return new ResourceFolder( this, f + Path.DirectorySeparatorChar );
@@ -217,7 +262,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        var s = folder.LocalFolderName.Span;
+        var s = folder.FolderName.Span;
         return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
     }
 

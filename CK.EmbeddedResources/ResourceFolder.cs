@@ -22,12 +22,12 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
         Throw.CheckNotNullArgument( container );
         Throw.CheckNotNullOrWhiteSpaceArgument( fullFolderName );
         Container = container;
-        FolderName = fullFolderName;
+        FullFolderName = fullFolderName;
     }
 
     /// <summary>
     /// Gets whether this folder is valid: the <see cref="Container"/> is not null
-    /// and the <see cref="FolderName"/> is not null, not empty nor whitespace.
+    /// and the <see cref="FullFolderName"/> is not null, not empty nor whitespace.
     /// <para>
     /// Whether the resource actuallly exists or not is not known.
     /// </para>
@@ -46,17 +46,17 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// This is the full name that includes the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </para>
     /// </summary>
-    public string FolderName { get; }
+    public string FullFolderName { get; }
 
     /// <summary>
     /// Gets the folder name without the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </summary>
-    public ReadOnlyMemory<char> LocalFolderName
+    public ReadOnlyMemory<char> FolderName
     {
         get
         {
             Throw.CheckState( IsValid );
-            return FolderName.AsMemory( Container.ResourcePrefix.Length.. );
+            return FullFolderName.AsMemory( Container.ResourcePrefix.Length.. );
         }
     }
 
@@ -145,7 +145,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     }
 
     /// <summary>
-    /// To be equal the <see cref="Container"/> must be the same and <see cref="FolderName"/>
+    /// To be equal the <see cref="Container"/> must be the same and <see cref="FullFolderName"/>
     /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
     /// </summary>
     /// <param name="other">The other locator.</param>
@@ -153,7 +153,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     public bool Equals( ResourceFolder other )
     {
         return Container == other.Container
-               && (!IsValid || Container.NameComparer.Equals( FolderName, other.FolderName ));
+               && (!IsValid || Container.NameComparer.Equals( FullFolderName, other.FullFolderName ));
     }
 
     /// <summary>
@@ -164,7 +164,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     public override string ToString()
     {
         return IsValid
-                ? $"Folder '{LocalFolderName}' in '{Container.DisplayName}'"
+                ? $"Folder '{FolderName}' in '{Container.DisplayName}'"
                 : "";
     }
 
@@ -175,7 +175,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     public static bool operator !=( ResourceFolder left, ResourceFolder right ) => !(left == right);
 
     public override int GetHashCode() => IsValid
-                                            ? HashCode.Combine( Container.GetHashCode(), Container.NameComparer.GetHashCode( FolderName ) )
+                                            ? HashCode.Combine( Container.GetHashCode(), Container.NameComparer.GetHashCode( FullFolderName ) )
                                             : 0;
 
 

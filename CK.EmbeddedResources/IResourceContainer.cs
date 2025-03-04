@@ -63,35 +63,35 @@ public interface IResourceContainer
     /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false
     /// if the resource doesn't exist.
     /// </summary>
-    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="resourceName">The resource name (without <see cref="ResourcePrefix"/>). Can contain any sub folder prefix.</param>
     /// <returns>The resource locator that may not be valid.</returns>
-    ResourceLocator GetResource( ReadOnlySpan<char> localResourceName );
+    ResourceLocator GetResource( ReadOnlySpan<char> resourceName );
 
     /// <summary>
     /// Gets an existing resource in a <paramref name="folder"/> or a locator with <see cref="ResourceLocator.IsValid"/> false
     /// if the resource doesn't exist.
     /// </summary>
     /// <param name="folder">The parent folder.</param>
-    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="resourceName">The resource name (without <see cref="ResourcePrefix"/>). Can contain any sub folder prefix.</param>
     /// <returns>The resource locator that may not be valid.</returns>
-    ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName );
+    ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> resourceName );
 
     /// <summary>
     /// Gets an existing folder or a ResourceFolder with <see cref="ResourceLocator.IsValid"/> false
     /// if the folder doesn't exist.
     /// </summary>
-    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <param name="folderName">The resource folder name (without <see cref="ResourcePrefix"/>). Can contain any sub folder prefix.</param>
     /// <returns>The resource folder that may not be valid.</returns>
-    ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName );
+    ResourceFolder GetFolder( ReadOnlySpan<char> folderName );
 
     /// <summary>
     /// Gets an existing folder in a <paramref name="folder"/> or a ResourceFolder with <see cref="ResourceLocator.IsValid"/> false
     /// if the folder doesn't exist.
     /// </summary>
     /// <param name="folder">The parent folder.</param>
-    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <param name="folderName">The resource folder name (without <see cref="ResourcePrefix"/>). Can contain any sub folder prefix.</param>
     /// <returns>The resource folder that may not be valid.</returns>
-    ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName );
+    ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> folderName );
 
     /// <summary>
     /// Gets all the existing <see cref="ResourceLocator"/> regardless of any folder.

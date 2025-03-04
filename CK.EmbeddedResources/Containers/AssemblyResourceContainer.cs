@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using static CK.Core.CheckedWriteStream;
 
 namespace CK.EmbeddedResources;
 
@@ -11,7 +12,8 @@ namespace CK.EmbeddedResources;
 /// Resource container for embedded resources.
 /// This can only be created from a <see cref="Assembly"/>.
 /// </summary>
-public sealed class AssemblyResourceContainer : IResourceContainer
+[SerializationVersion(0)]
+public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersionedBinarySerializable
 {
     readonly ReadOnlyMemory<string> _names;
     readonly AssemblyResources _assemblyResources;
@@ -40,6 +42,36 @@ public sealed class AssemblyResourceContainer : IResourceContainer
         _prefix = string.Empty;
         _displayName = displayName;
         _names = ReadOnlyMemory<string>.Empty;
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="CodeGenResourceContainer"/> previously serialized
+    /// by <see cref="WriteData(ICKBinaryWriter)"/>.
+    /// </summary>
+    /// <param name="r">The reader.</param>
+    /// <param name="version">The serialized version.</param>
+    public AssemblyResourceContainer( ICKBinaryReader r, int version )
+    {
+        Throw.CheckArgument( version == 0 );
+        _displayName = r.ReadString();
+        _prefix = r.ReadString();
+        var a = System.Reflection.Assembly.Load( r.ReadString() );
+        _assemblyResources = a.GetResources();
+        _names = _prefix.Length > 0
+                    ? _assemblyResources.AllResourceNames.GetPrefixedStrings( _prefix )
+                    : ReadOnlyMemory<string>.Empty;
+    }
+
+    /// <summary>
+    /// Serializes this container. The <see cref="AssemblyResources.AssemblyName"/> is serialized
+    /// and deserialization loads the assembly in the default assembly load context.
+    /// </summary>
+    /// <param name="w">The target writer.</param>
+    public void WriteData( ICKBinaryWriter w )
+    {
+        w.Write( _displayName );
+        w.Write( _prefix );
+        w.Write( _assemblyResources.AssemblyName );
     }
 
     internal static string MakeDisplayName( string? displayName, Type type ) => displayName ?? $"resources of '{type.ToCSharpName()}' type";
@@ -111,20 +143,20 @@ public sealed class AssemblyResourceContainer : IResourceContainer
     public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => CodeGenResourceContainer.DoGetResource( _prefix, this, _names.Span, localResourceName );
 
     /// <inheritdoc />
-    public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )
+    public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> resourceName )
     {
         folder.CheckContainer( this );
-        return CodeGenResourceContainer.DoGetResource( folder.FolderName, this, _names.Span, localResourceName );
+        return CodeGenResourceContainer.DoGetResource( folder.FullFolderName, this, _names.Span, resourceName );
     }
 
     /// <inheritdoc />
     public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => CodeGenResourceContainer.DoGetFolder( _prefix, this, _names.Span, localFolderName );
 
     /// <inheritdoc />
-    public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName )
+    public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> folderName )
     {
         folder.CheckContainer( this );
-        return CodeGenResourceContainer.DoGetFolder( folder.FolderName, this, _names.Span, localFolderName );
+        return CodeGenResourceContainer.DoGetFolder( folder.FullFolderName, this, _names.Span, folderName );
     }
 
     /// <inheritdoc />
@@ -140,7 +172,7 @@ public sealed class AssemblyResourceContainer : IResourceContainer
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        var s = folder.LocalFolderName.Span;
+        var s = folder.FolderName.Span;
         return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
     }
 

@@ -1,16 +1,18 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CK.EmbeddedResources;
 
 /// <summary>
-/// A resource container in which a string, a reader or a writer function for a
+/// A resource container in which a string, an array of bytes, a reader or a writer function for a
 /// resource can be registered.
 /// <para>
 /// Whether a string, a reader or a writer is registered for a resource is irrelevant: this container
@@ -23,7 +25,8 @@ namespace CK.EmbeddedResources;
 /// and <see cref="IResourceContainer.HasLocalFilePathSupport"/> is false by design.
 /// </para>
 /// </summary>
-public sealed class CodeGenResourceContainer : IResourceContainer
+[SerializationVersion(0)]
+public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedBinarySerializable
 {
     string[] _pathStore;
     object[] _streamStore;
@@ -44,9 +47,94 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     }
 
     /// <summary>
+    /// Initializes a new <see cref="CodeGenResourceContainer"/> previously serialized
+    /// by <see cref="WriteData(ICKBinaryWriter)"/>.
+    /// </summary>
+    /// <param name="r">The reader.</param>
+    /// <param name="version">The serialized version.</param>
+    public CodeGenResourceContainer( ICKBinaryReader r, int version )
+    {
+        Throw.CheckArgument( version == 0 );
+        _displayName = r.ReadString();
+        int count = r.ReadInt32();
+        _pathStore = new string[count];
+        _streamStore = new object[count];
+        for( int i = 0; i < _pathStore.Length; ++i )
+        {
+            _pathStore[i] = r.ReadString();
+            var discriminator = r.ReadByte();
+            Throw.CheckData( discriminator is 0 or 1 );
+            if( discriminator == 0 )
+            {
+                _streamStore[i] = r.ReadString();
+            }
+            else
+            {
+                _streamStore[i] = r.ReadBytes( r.ReadInt32() );
+            }
+        }
+        _names = _pathStore.AsMemory();
+    }
+
+    /// <summary>
+    /// Serializes this container. Reader and Writer functions are written as
+    /// binary content.
+    /// </summary>
+    /// <param name="w">The target writer.</param>
+    public void WriteData( ICKBinaryWriter w )
+    {
+        w.Write( _displayName );
+        w.Write( _names.Length );
+        for( int i = 0; i < _names.Length;++i )
+        {
+            w.Write( _pathStore[i] );
+            var content = _streamStore[i];
+            if( content is string str )
+            {
+                w.Write( (byte)0 );
+                w.Write( str );
+            }
+            else
+            {
+                w.Write( (byte)1 );
+                if( content is byte[] bytes )
+                {
+                    w.Write( bytes.Length );
+                    w.Write( bytes );
+                }
+                else if( content is Action<Stream> writer )
+                {
+                    using var b = Util.RecyclableStreamManager.GetStream();
+                    writer( b );
+                    WriteRecyclable( w, b );
+                }
+                else
+                {
+                    Throw.DebugAssert( content is Func<Stream> );
+                    using var b = Util.RecyclableStreamManager.GetStream();
+                    using( var s = Unsafe.As<Func<Stream>>( content )() )
+                    {
+                        s.CopyTo( b );
+                    }
+                    WriteRecyclable( w, b );
+                }
+            }
+        }
+
+        static void WriteRecyclable( ICKBinaryWriter w, Microsoft.IO.RecyclableMemoryStream b )
+        {
+            w.Write( (int)b.Position );
+            foreach( var seq in b.GetReadOnlySequence() )
+            {
+                w.Write( seq.Span );
+            }
+        }
+    }
+
+    /// <summary>
     /// Adds a new resource with a dynamic reader.
     /// <para>
-    /// This throws if the resource is already associated to a reader or a writer.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">The resource path. Must not be empty or whitespace nor contains '\'.</param>
@@ -59,9 +147,24 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     }
 
     /// <summary>
+    /// Adds a new resource with a binary content.
+    /// <para>
+    /// This throws if the resource is already associated to a reader, writer, binary content or text.
+    /// </para>
+    /// </summary>
+    /// <param name="resourcePath">The resource path. Must not be empty or whitespace nor contains '\'.</param>
+    /// <param name="bytes">The binary content.</param>
+    /// <returns>The resource locator.</returns>
+    public ResourceLocator AddBinary( string resourcePath, byte[] bytes )
+    {
+        Throw.CheckNotNullArgument( bytes );
+        return DoAdd( resourcePath, bytes );
+    }
+
+    /// <summary>
     /// Adds a new resource with a dynamic writer.
     /// <para>
-    /// This throws if the resource is already associated to a reader or a writer.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">
@@ -77,9 +180,9 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     }
 
     /// <summary>
-    /// Adds a new resource with a dynamic writer.
+    /// Adds a new textual resource.
     /// <para>
-    /// This throws if the resource is already associated to a reader or a writer.
+    /// This throws if the resource is already associated to a reader, writer, binary content or text.
     /// </para>
     /// </summary>
     /// <param name="resourcePath">
@@ -94,7 +197,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer
         return DoAdd( resourcePath, text );
     }
 
-    ResourceLocator DoAdd( string resourcePath, object rws )
+    ResourceLocator DoAdd( string resourcePath, object content )
     {
         Throw.CheckArgument( resourcePath != null && !String.IsNullOrWhiteSpace( resourcePath ) );
         resourcePath = resourcePath.Replace( '\\', '/' );
@@ -120,7 +223,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer
             Array.Copy( _streamStore, idx, _streamStore, idx + 1, _names.Length - idx );
         }
         _pathStore[idx] = resourcePath;
-        _streamStore[idx] = rws;
+        _streamStore[idx] = content;
         _names = _pathStore.AsMemory( 0, _names.Length + 1 );
         return new ResourceLocator( this, resourcePath );
     }
@@ -178,7 +281,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> localFolderName )
     {
         folder.CheckContainer( this );
-        return DoGetFolder( folder.FolderName, this, _names.Span, localFolderName );
+        return DoGetFolder( folder.FullFolderName, this, _names.Span, localFolderName );
     }
 
     /// <inheritdoc />
@@ -191,7 +294,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> localResourceName )
     {
         folder.CheckContainer( this );
-        return DoGetResource( folder.FolderName, this, _names.Span, localResourceName );
+        return DoGetResource( folder.FullFolderName, this, _names.Span, localResourceName );
     }
 
     /// <inheritdoc />
@@ -204,10 +307,17 @@ public sealed class CodeGenResourceContainer : IResourceContainer
         int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
         Throw.DebugAssert( idx >= 0 );
         var s = _streamStore[idx];
-        if( s is Func<Stream> reader ) return reader();
+        if( s is Func<Stream> reader )
+        {
+            return reader();
+        }
         if( s is string str )
         {
             return Util.RecyclableStreamManager.GetStream( Encoding.UTF8.GetBytes( str ) );
+        }
+        if( s is byte[] bytes )
+        {
+            return Util.RecyclableStreamManager.GetStream( bytes );
         }
         var writer = (Action<Stream>)s;
         var memory = Util.RecyclableStreamManager.GetStream();
@@ -235,6 +345,10 @@ public sealed class CodeGenResourceContainer : IResourceContainer
             target.Write( buffer.AsSpan( 0, len ) );
             ArrayPool<byte>.Shared.Return( buffer );
         }
+        else if( s is byte[] bytes )
+        {
+            target.Write( bytes );
+        }
         else
         {
             using var source = ((Func<Stream>)s)();
@@ -249,7 +363,14 @@ public sealed class CodeGenResourceContainer : IResourceContainer
         int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
         Throw.DebugAssert( idx >= 0 );
         var s = _streamStore[idx];
-        if( s is string str ) return str;
+        if( s is string str )
+        {
+            return str;
+        }
+        if( s is byte[] bytes )
+        {
+            return Encoding.UTF8.GetString( bytes );
+        }
         if( s is Action<Stream> writer )
         {
             using var memory = Util.RecyclableStreamManager.GetStream();
@@ -267,7 +388,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        var s = folder.LocalFolderName.Span;
+        var s = folder.FolderName.Span;
         return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
     }
 
@@ -316,7 +437,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     internal static IEnumerable<ResourceLocator> DoGetAllResources( ResourceFolder folder, IResourceContainer container, ReadOnlyMemory<string> names )
     {
         folder.CheckContainer( container );
-        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( folder.FolderName, names.Span );
+        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( folder.FullFolderName, names.Span );
         if( len > 0 )
         {
             for( int i = 0; i < len; i++ )
@@ -329,13 +450,13 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     internal static IEnumerable<ResourceLocator> DoGetResources( ResourceFolder folder, IResourceContainer container, ReadOnlyMemory<string> names )
     {
         folder.CheckContainer( container );
-        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( folder.FolderName, names.Span );
+        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( folder.FullFolderName, names.Span );
         if( len > 0 )
         {
             for( int i = 0; i < len; i++ )
             {
                 var s = names.Span[idx + i];
-                if( !s.AsSpan( folder.FolderName.Length ).Contains( '/' ) )
+                if( !s.AsSpan( folder.FullFolderName.Length ).Contains( '/' ) )
                 {
                     yield return new ResourceLocator( container, s );
                 }
@@ -346,15 +467,15 @@ public sealed class CodeGenResourceContainer : IResourceContainer
     internal static IEnumerable<ResourceFolder> DoGetFolders( ResourceFolder folder, IResourceContainer container, ReadOnlyMemory<string> names )
     {
         folder.CheckContainer( container );
-        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( folder.FolderName, names.Span );
+        var (idx, len) = ImmutableOrdinalSortedStrings.GetPrefixedRange( folder.FullFolderName, names.Span );
         for( int i = 0; i < len; ++i )
         {
             var currentIdx = idx + i;
             var p = names.Span[currentIdx];
-            int idxSub = p.AsSpan( folder.FolderName.Length ).IndexOf( '/' );
+            int idxSub = p.AsSpan( folder.FullFolderName.Length ).IndexOf( '/' );
             if( idxSub != -1 )
             {
-                p = p.Remove( folder.FolderName.Length + idxSub + 1 );
+                p = p.Remove( folder.FullFolderName.Length + idxSub + 1 );
                 var lenSub = ImmutableOrdinalSortedStrings.GetEndIndex( p, names.Span.Slice( currentIdx ) );
                 Throw.DebugAssert( lenSub > 0 );
                 Throw.DebugAssert( (currentIdx, lenSub) == ImmutableOrdinalSortedStrings.GetPrefixedRange( p, names.Span ) );
@@ -363,4 +484,5 @@ public sealed class CodeGenResourceContainer : IResourceContainer
             }
         }
     }
+
 }
