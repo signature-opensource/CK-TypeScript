@@ -7,7 +7,6 @@ namespace CK.Core;
 
 public sealed class ResPackage
 {
-    readonly ResourceSpace _space;
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
@@ -20,8 +19,7 @@ public sealed class ResPackage
     readonly bool _isGroup;
     readonly int _index;
 
-    internal ResPackage( ResourceSpace space,
-                         ResPackageDescriptor d,
+    internal ResPackage( ResPackageDescriptor d,
                          ImmutableArray<ResPackage> requires,
                          ImmutableArray<ResPackage> children,
                          int index )
@@ -34,7 +32,6 @@ public sealed class ResPackage
         _localPath = d.LocalPath;
         _isGroup = d.IsGroup;
         _index = index;
-        _space = space;
         _requires = requires;
         _children = children;
     }
@@ -74,6 +71,12 @@ public sealed class ResPackage
     /// Gets whether this package is a group.
     /// </summary>
     public bool IsGroup => _isGroup;
+
+    /// <summary>
+    /// Gets the index in the <see cref="ResourceSpaceData.Packages"/>.
+    /// </summary>
+    public int Index => _index;
+
 
     /// <summary>
     /// Gets a set of packages that are reachable from this one: this is the closure

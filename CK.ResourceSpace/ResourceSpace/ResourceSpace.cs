@@ -6,19 +6,19 @@ using System.Linq;
 
 namespace CK.Core;
 
+
 public sealed class ResourceSpace
 {
-    readonly Dictionary<object, ResPackage> _packageIndex;
+    readonly ResourceSpaceData _data;
     readonly ImmutableArray<ResourceSpaceFolderHandler> _folderHandlers;
     readonly ImmutableArray<ResourceSpaceFileHandler> _fileHandlers;
-    internal ImmutableArray<ResPackage> _packages;
     readonly ResourceSpaceFileHandler.FolderExclusion _folderExclusion;
     
-    public ResourceSpace( Dictionary<object, ResPackage> packageIndex,
-                          ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
-                          ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
+    internal ResourceSpace( ResourceSpaceData data,
+                            ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
+                            ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
     {
-        _packageIndex = packageIndex;
+        _data = data;
         _folderHandlers = folderHandlers;
         _fileHandlers = fileHandlers;
         _folderExclusion = new ResourceSpaceFileHandler.FolderExclusion( folderHandlers );
@@ -29,11 +29,11 @@ public sealed class ResourceSpace
         bool success = true;
         foreach( var h in _folderHandlers )
         {
-            success &= h.Initialize( monitor, _packages );
+            success &= h.Initialize( monitor, _data );
         }
         foreach( var h in _fileHandlers )
         {
-            success &= h.Initialize( monitor, _packages, _folderExclusion );
+            success &= h.Initialize( monitor, _data, _folderExclusion );
         }
         return success;
     }

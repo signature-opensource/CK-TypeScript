@@ -4,19 +4,21 @@ using System.Collections.Immutable;
 namespace CK.Core;
 
 /// <summary>
-/// Base class for <see cref="ResourceSpace.FolderHandlers"/>.
+/// Base class for folder resource handlers.
 /// </summary>
 public abstract class ResourceSpaceFolderHandler
 {
+    readonly ResourceSpaceData _spaceData;
     readonly string _rootFolderName;
 
     /// <summary>
     /// Initializes a new handler that will manage resources in the provided root folder.
     /// </summary>
     /// <param name="rootFolderName">Must not be empty, whitespace and there must be no '/' or '\' in it.</param>
-    protected ResourceSpaceFolderHandler( string rootFolderName )
+    protected ResourceSpaceFolderHandler( ResourceSpaceData spaceData, string rootFolderName )
     {
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( rootFolderName ) && !rootFolderName.AsSpan().ContainsAny( "\\/" ) );
+        _spaceData = spaceData;
         _rootFolderName = rootFolderName;
     }
 
@@ -26,12 +28,18 @@ public abstract class ResourceSpaceFolderHandler
     public string RootFolderName => _rootFolderName;
 
     /// <summary>
-    /// Must initialize this handler from the ordered set of packages.
+    /// Gets <see cref="ResourceSpaceData"/>.
+    /// </summary>
+    protected ResourceSpaceData SpaceData => _spaceData;
+
+    /// <summary>
+    /// Must initialize this handler from the <see cref="ResourceSpaceData"/> that
+    /// exposes the ordered set of packages and the <see cref="ResourceSpaceData.PackageIndex"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="packages">The topological ordered set of packages to consider.</param>
+    /// <param name="spaceData">The space data to consider.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
-    internal protected abstract bool Initialize( IActivityMonitor monitor, ImmutableArray<ResPackage> packages );
+    internal protected abstract bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData );
 
-    public override string ToString() => $"{GetType().Name} - Folder '{_rootFolderName}/'";
+    public sealed override string ToString() => $"{GetType().Name} - Folder '{_rootFolderName}/'";
 }
