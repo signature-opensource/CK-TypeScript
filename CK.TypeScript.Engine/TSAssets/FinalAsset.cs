@@ -1,9 +1,7 @@
-using CK.Core;
-using CK.EmbeddedResources;
+﻿using CK.Core;
 using System;
-using System.IO;
 
-namespace CK.TypeScript.LiveEngine;
+namespace CK.TypeScript.Engine;
 
 /// <summary>
 /// A final asset is a resource and the last write time of its local file.
