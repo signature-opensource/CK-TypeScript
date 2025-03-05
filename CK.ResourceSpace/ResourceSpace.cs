@@ -1,31 +1,41 @@
+using CK.EmbeddedResources;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace CK.Core;
 
 public sealed class ResourceSpace
 {
     readonly Dictionary<object, ResPackage> _packageIndex;
-    readonly ImmutableArray<ResourceSpaceHandler> _handlers;
+    readonly ImmutableArray<ResourceSpaceFolderHandler> _folderHandlers;
+    readonly ImmutableArray<ResourceSpaceFileHandler> _fileHandlers;
     internal ImmutableArray<ResPackage> _packages;
+    readonly ResourceSpaceFileHandler.FolderExclusion _folderExclusion;
     
-    public ResourceSpace( Dictionary<object, ResPackage> packageIndex, ImmutableArray<ResourceSpaceHandler> handlers )
+    public ResourceSpace( Dictionary<object, ResPackage> packageIndex,
+                          ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
+                          ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
     {
         _packageIndex = packageIndex;
-        _handlers = handlers;
+        _folderHandlers = folderHandlers;
+        _fileHandlers = fileHandlers;
+        _folderExclusion = new ResourceSpaceFileHandler.FolderExclusion( folderHandlers );
     }
 
-    public ImmutableArray<ResourceSpaceHandler> Handlers => _handlers;
-
-    public bool Initialize( IActivityMonitor monitor )
+    internal bool Initialize( IActivityMonitor monitor )
     {
         bool success = true;
-        foreach( var p in _packages )
+        foreach( var h in _folderHandlers )
         {
-            foreach( var h in _handlers )
-            {
-                success &= h.
-            }
+            success &= h.Initialize( monitor, _packages );
         }
+        foreach( var h in _fileHandlers )
+        {
+            success &= h.Initialize( monitor, _packages, _folderExclusion );
+        }
+        return success;
     }
+
 }

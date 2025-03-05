@@ -223,7 +223,10 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     {
         Throw.CheckArgument( resourcePath != null && !String.IsNullOrWhiteSpace( resourcePath ) );
         resourcePath = resourcePath.Replace( '\\', '/' );
-        Throw.CheckArgument( !resourcePath.Contains( "//" ) && resourcePath[^1] != '/' );
+        if( resourcePath.Contains( "//" ) || resourcePath[^1] == '/' )
+        {
+            Throw.ArgumentException( nameof( resourcePath ), $"'{resourcePath}' must not contain '//' nor ends with '/'." );
+        }
         Throw.CheckState( IsOpened );
         if( resourcePath[0] == '/' )
         {
@@ -411,7 +414,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        var s = folder.FolderName.Span;
+        var s = folder.FolderName;
         return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
     }
 
@@ -419,7 +422,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return Path.GetFileName( resource.ResourceName.Span );
+        return Path.GetFileName( resource.ResourceName );
     }
 
     /// <inheritdoc />

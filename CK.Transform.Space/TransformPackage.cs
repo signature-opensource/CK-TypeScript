@@ -55,7 +55,7 @@ public sealed class TransformPackage
         var language = host.FindFromFilename( origin.Name );
         if( language != null && language.TransformLanguage.IsTransformerLanguage )
         {
-            var n = origin.ResourceName.Span;
+            var n = origin.ResourceName;
             Throw.DebugAssert( Path.GetExtension( n ).Equals( ".t", StringComparison.Ordinal ) );
             n = n.Slice( 0, n.Length - 2 );
             var monoTargetLanguage = host.FindFromFilename( n );
@@ -68,7 +68,7 @@ public sealed class TransformPackage
         else
         {
             // Register non-transformer item.
-            var originPath = origin.ResourceName.Span;
+            var originPath = origin.ResourceName;
             var targetPath = _defaultTargetPath.Combine( origin.ResourceName.ToString() );
             if( language == null )
             {

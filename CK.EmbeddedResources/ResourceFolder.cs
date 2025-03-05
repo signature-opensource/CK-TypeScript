@@ -12,6 +12,9 @@ namespace CK.EmbeddedResources;
 /// </summary>
 public readonly struct ResourceFolder : IEquatable<ResourceFolder>
 {
+    readonly IResourceContainer _container;
+    readonly string _fullName;
+
     /// <summary>
     /// Initializes a new resource folder.
     /// </summary>
@@ -21,8 +24,8 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     {
         Throw.CheckNotNullArgument( container );
         Throw.CheckNotNullOrWhiteSpaceArgument( fullFolderName );
-        Container = container;
-        FullFolderName = fullFolderName;
+        _container = container;
+        _fullName = fullFolderName;
     }
 
     /// <summary>
@@ -33,12 +36,12 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// </para>
     /// Only the <c>default</c> of this type is invalid.
     /// </summary>
-    public bool IsValid => Container != null;
+    public bool IsValid => _container != null;
 
     /// <summary>
     /// Gets the container of this resource.
     /// </summary>
-    public IResourceContainer Container { get; }
+    public IResourceContainer Container => _container;
 
     /// <summary>
     /// Gets the folder name in the <see cref="Container"/>.
@@ -46,17 +49,17 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// This is the full name that includes the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </para>
     /// </summary>
-    public string FullFolderName { get; }
+    public string FullFolderName => _fullName;
 
     /// <summary>
     /// Gets the folder name without the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </summary>
-    public ReadOnlyMemory<char> FolderName
+    public ReadOnlySpan<char> FolderName
     {
         get
         {
             Throw.CheckState( IsValid );
-            return FullFolderName.AsMemory( Container.ResourcePrefix.Length.. );
+            return _fullName.AsSpan( _container.ResourcePrefix.Length );
         }
     }
 
@@ -66,14 +69,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// This is a simple relay to <see cref="IResourceContainer.GetFolderName(ResourceFolder)"/>.
     /// </para>
     /// </summary>
-    public ReadOnlySpan<char> Name
-    {
-        get
-        {
-            Throw.CheckState( IsValid );
-            return Container.GetFolderName( this );
-        }
-    }
+    public ReadOnlySpan<char> Name => _container.GetFolderName( this );
 
     /// <summary>
     /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false
@@ -81,11 +77,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// </summary>
     /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
     /// <returns>The resource locator that may not be valid.</returns>
-    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName )
-    {
-        Throw.CheckState( IsValid );
-        return Container.GetResource( this, localResourceName );
-    }
+    public ResourceLocator GetResource( ReadOnlySpan<char> localResourceName ) => _container.GetResource( this, localResourceName );
 
     /// <summary>
     /// Gets an existing folder or a ResourceFolder with <see cref="ResourceLocator.IsValid"/> false
@@ -93,11 +85,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// </summary>
     /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
     /// <returns>The resource folder that may not be valid.</returns>
-    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName )
-    {
-        Throw.CheckState( IsValid );
-        return Container.GetFolder( this, localFolderName );
-    }
+    public ResourceFolder GetFolder( ReadOnlySpan<char> localFolderName ) => _container.GetFolder( this, localFolderName );
 
     /// <summary>
     /// Gets the resources contained in this folder.
@@ -105,14 +93,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// This is a simple relay to <see cref="IResourceContainer.GetResources(ResourceFolder)"/>.
     /// </para>
     /// </summary>
-    public IEnumerable<ResourceLocator> Resources
-    {
-        get
-        {
-            Throw.CheckState( IsValid );
-            return Container.GetResources( this );
-        }
-    }
+    public IEnumerable<ResourceLocator> Resources => _container.GetResources( this );
 
     /// <summary>
     /// Gets all the resources contained in this folder, regardless of any subordinated folders.
@@ -120,14 +101,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// This is a simple relay to <see cref="IResourceContainer.GetAllResources(ResourceFolder)"/>.
     /// </para>
     /// </summary>
-    public IEnumerable<ResourceLocator> AllResources
-    {
-        get
-        {
-            Throw.CheckState( IsValid );
-            return Container.GetAllResources( this );
-        }
-    }
+    public IEnumerable<ResourceLocator> AllResources => _container.GetAllResources( this );
 
     /// <summary>
     /// Gets the direct children folders contained in this folder.
@@ -135,14 +109,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// This is a simple relay to <see cref="IResourceContainer.GetFolders(ResourceFolder)"/>.
     /// </para>
     /// </summary>
-    public IEnumerable<ResourceFolder> Folders
-    {
-        get
-        {
-            Throw.CheckState( IsValid );
-            return Container.GetFolders( this );
-        }
-    }
+    public IEnumerable<ResourceFolder> Folders => _container.GetFolders( this );
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="FullFolderName"/>
@@ -152,8 +119,8 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// <returns>True if the resources are the same.</returns>
     public bool Equals( ResourceFolder other )
     {
-        return Container == other.Container
-               && (!IsValid || Container.NameComparer.Equals( FullFolderName, other.FullFolderName ));
+        return _container == other._container
+               && (_container == null || _container.NameComparer.Equals( _fullName, other._fullName ));
     }
 
     /// <summary>
@@ -181,9 +148,9 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
 
     internal void CheckContainer( IResourceContainer expectedContainer )
     {
-        if( Container != expectedContainer )
+        if( _container != expectedContainer )
         {
-            if( !IsValid )
+            if( _container == null )
             {
                 throw new ArgumentException( $"The folder is invalid." );
             }

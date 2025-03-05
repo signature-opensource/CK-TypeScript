@@ -172,7 +172,7 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        var s = folder.FolderName.Span;
+        var s = folder.FolderName;
         return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
     }
 
@@ -180,7 +180,7 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return Path.GetFileName( resource.ResourceName.Span );
+        return Path.GetFileName( resource.ResourceName );
     }
 
     /// <inheritdoc />

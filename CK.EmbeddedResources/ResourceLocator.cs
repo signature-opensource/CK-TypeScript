@@ -13,7 +13,7 @@ namespace CK.EmbeddedResources;
 public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 {
     readonly IResourceContainer _container;
-    readonly string _resourceName;
+    readonly string _fullName;
 
     /// <summary>
     /// Initializes a new resource locator.
@@ -25,7 +25,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
         Throw.CheckNotNullArgument( container );
         Throw.CheckNotNullOrWhiteSpaceArgument( fullResourceName );
         _container = container;
-        _resourceName = fullResourceName;
+        _fullName = fullResourceName;
     }
 
     /// <summary>
@@ -49,17 +49,17 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// This is the full resource name that includes the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </para>
     /// </summary>
-    public string FullResourceName => _resourceName;
+    public string FullResourceName => _fullName;
 
     /// <summary>
     /// Gets the resource name without the <see cref="IResourceContainer.ResourcePrefix"/>.
     /// </summary>
-    public ReadOnlyMemory<char> ResourceName
+    public ReadOnlySpan<char> ResourceName
     {
         get
         {
             Throw.CheckState( IsValid );
-            return _resourceName.AsMemory( _container.ResourcePrefix.Length.. );
+            return _fullName.AsSpan( _container.ResourcePrefix.Length );
         }
     }
 
@@ -108,7 +108,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public bool Equals( ResourceLocator other )
     {
         return _container == other._container
-               && (!IsValid || _container.NameComparer.Equals( _resourceName, other._resourceName ));
+               && (!IsValid || _container.NameComparer.Equals( _fullName, other._fullName ));
     }
 
     /// <summary>
