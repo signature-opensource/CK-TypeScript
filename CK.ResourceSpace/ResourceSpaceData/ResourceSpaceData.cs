@@ -10,6 +10,8 @@ public sealed class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     internal ImmutableArray<ResPackage> _packages;
+    internal ImmutableArray<ResPackage> _rootPackages;
+    internal ImmutableArray<ResPackage> _localPackages;
 
     internal ResourceSpaceData( IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
@@ -26,4 +28,14 @@ public sealed class ResourceSpaceData
     /// Gets the packages topologically ordered. <see cref="ResPackage.Index"/> is the index in this array.
     /// </summary>
     public ImmutableArray<ResPackage> Packages => _packages;
+
+    /// <summary>
+    /// Gets the local packages.
+    /// </summary>
+    public ImmutableArray<ResPackage> LocalPackages => _localPackages;
+
+    /// <summary>
+    /// Gets the packages that have no requirements.
+    /// </summary>
+    public ImmutableArray<ResPackage> RootPackages => _rootPackages;
 }

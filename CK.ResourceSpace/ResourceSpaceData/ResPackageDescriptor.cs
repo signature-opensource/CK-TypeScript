@@ -28,10 +28,10 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IResPac
     bool _isGroup;
 
     internal ResPackageDescriptor( string fullName,
-                                 Type? type,
-                                 NormalizedPath defaultTargetPath,
-                                 IResourceContainer packageResources,
-                                 string? localPath )
+                                   Type? type,
+                                   NormalizedPath defaultTargetPath,
+                                   IResourceContainer packageResources,
+                                   string? localPath )
     {
         _fullName = fullName;
         _type = type;

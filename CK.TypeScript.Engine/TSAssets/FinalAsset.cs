@@ -1,4 +1,5 @@
-﻿using CK.Core;
+using CK.Core;
+using CK.EmbeddedResources;
 using System;
 
 namespace CK.TypeScript.Engine;

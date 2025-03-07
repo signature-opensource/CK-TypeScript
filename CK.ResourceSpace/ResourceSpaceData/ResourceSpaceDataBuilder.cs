@@ -25,6 +25,7 @@ public sealed class ResourceSpaceDataBuilder
     // of any ResourceLocator.
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     int _packageCount;
+    int _localPackageCount;
 
     public ResourceSpaceDataBuilder()
     {
@@ -104,6 +105,10 @@ public sealed class ResourceSpaceDataBuilder
         string? localPath = packageResources is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                                 ? fs.ResourcePrefix
                                 : null;
+        if( localPath != null )
+        {
+            ++_localPackageCount;
+        }
         var p = new ResPackageDescriptor( fullName, type, defaultTargetPath, packageResources, localPath );
         ++_packageCount;
         _packageIndex.Add( fullName, p );
@@ -132,23 +137,36 @@ public sealed class ResourceSpaceDataBuilder
         }
         // We can compute the final size of the index: it is the same as the builder index
         // with FullName, PackageResources and Type(?) plus the CodeGenResources instance.
-        var b = ImmutableArray.CreateBuilder<ResPackage>( _packageCount );
         Throw.DebugAssert( sortResult.SortedItems != null );
         Throw.DebugAssert( "No items, only containers (and maybe groups).",
                             sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
 
+        var b = ImmutableArray.CreateBuilder<ResPackage>( _packageCount );
+        var bLocal = ImmutableArray.CreateBuilder<ResPackage>( _localPackageCount );
+        var bRoot = ImmutableArray.CreateBuilder<ResPackage>();
         var packageIndex = new Dictionary<object, ResPackage>( _packageIndex.Count + _packageCount );
         var space = new ResourceSpaceData( packageIndex );
         foreach( var s in sortResult.SortedItems )
         {
             if( s.IsGroup )
             {
+                ResPackageDescriptor d = s.Item;
                 // Close the CodeGen resources.
-                s.Item.CodeGenResources.Close();
-                // Requirements and chidren have already been indexed.
-                var p = new ResPackage( s.Item,
-                                        s.Requires.Select( s => packageIndex[s.Item.CodeGenResources] ).ToImmutableArray(),
-                                        s.Children.Select( s => packageIndex[s.Item.CodeGenResources] ).ToImmutableArray(),
+                d.CodeGenResources.Close();
+                Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
+                                   !s.Requires.Intersect( s.Children ).Any() );
+                // Requirements and children have already been indexed.
+                ImmutableArray<ResPackage> requires = s.Requires.Select( s => packageIndex[s.Item.CodeGenResources] ).ToImmutableArray();
+                ImmutableArray<ResPackage> children = s.Children.Select( s => packageIndex[s.Item.CodeGenResources] ).ToImmutableArray();
+                var p = new ResPackage( d.FullName,
+                                        d.DefaultTargetPath,
+                                        d.PackageResources,
+                                        d.CodeGenResources,
+                                        d.LocalPath,
+                                        d.IsGroup,
+                                        d.Type,
+                                        requires,
+                                        children,
                                         b.Count );
                 // The 4 indexes.
                 packageIndex.Add( p.FullName, p );
@@ -158,10 +176,21 @@ public sealed class ResourceSpaceDataBuilder
                 {
                     packageIndex.Add( p.Type, p );
                 }
+                // Rank is 1-based. Rank = 1 is for the head.
+                if( s.Rank == 2 )
+                {
+                    bRoot.Add( p );
+                }
+                if( p.IsLocalPackage )
+                {
+                    bLocal.Add( p );
+                }
             }
         }
         Throw.DebugAssert( packageIndex.Count == _packageIndex.Count + _packageCount );
         space._packages = b.DrainToImmutable();
+        space._rootPackages = bRoot.ToImmutableArray();
+        space._localPackages = bLocal.ToImmutableArray();
         return space;
     }
 }

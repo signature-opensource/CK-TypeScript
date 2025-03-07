@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="CK.BinarySerialization.Sliced" Version="8.1.0" />
-      <PackageReference Include="CK.Setup.Dependency" Version="19.1.0" />
+      <PackageReference Include="CK.BinarySerialization.Sliced" Version="8.1.1--0002-develop" />
+      <PackageReference Include="CK.Setup.Dependency" Version="19.1.1--0002-develop" />
     </ItemGroup>
 
     <ItemGroup>
