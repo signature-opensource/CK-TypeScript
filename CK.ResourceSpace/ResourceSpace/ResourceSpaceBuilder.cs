@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -21,6 +21,9 @@ public sealed class ResourceSpaceBuilder
         _fileHandlers = new List<ResourceSpaceFileHandler>();
     }
 
+    /// <summary>
+    /// Gets the <see cref="ResourceSpaceData"/>.
+    /// </summary>
     public ResourceSpaceData SpaceData => _spaceData;
 
     /// <summary>

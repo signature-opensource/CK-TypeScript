@@ -14,8 +14,6 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
     readonly TypeScriptContext _context;
     LocaleCultureSet?[] _locales;
     LocaleCultureSet?[] _combinedLocales;
-    // The "ck-gen-transform/ts-locales" if any.
-    LocaleCultureSet? _appLocales;
     // The final combined locales.
     // Finalized by a call to FinalLocaleCultureSet.PropagateFallbackTranslations.
     LocaleCultureSet? _buildFinal;
@@ -48,12 +46,13 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
         // First, tries to load the "ck-gen-transform/ts-locales".
         // These are pure overrides: it cannot define new resources.
         // If there is an error loading it, give up.
+        LocaleCultureSet? appLocales = null;
         if( _context.CKGenTransform != null
             && !_context.CKGenTransform.LoadLocales( monitor,
-                                                    activeCultures,
-                                                    out _appLocales,
-                                                    "ts-locales",
-                                                    isOverrideFolder: true ) )
+                                                     activeCultures,
+                                                     out appLocales,
+                                                     "ts-locales",
+                                                     isOverrideFolder: true ) )
         {
             return false;
         }
@@ -101,9 +100,9 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
                     success &= finalCombiner.Add( monitor, l );
                 }
             }
-            if( success && _appLocales != null )
+            if( success && appLocales != null )
             {
-                success &= finalCombiner.Add( monitor, _appLocales );
+                success &= finalCombiner.Add( monitor, appLocales );
             }
             if( success )
             {

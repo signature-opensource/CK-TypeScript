@@ -26,7 +26,7 @@ public enum ResourceOverrideKind : byte
 
     /// <summary>
     /// Optional override ("?O") declares that a resource is overridden only if it already
-    /// exists. No warning of any kind must be emitted if the resource doesn't alreay exist
+    /// exists. No warning of any kind must be emitted if the resource doesn't already exist
     /// and the resource is simply ignored.
     /// </summary>
     Optional,

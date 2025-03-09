@@ -202,19 +202,28 @@ public sealed partial class TypeScriptContext
     internal bool Run( IActivityMonitor monitor )
     {
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
+        bool success;
         using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
-            return  // Initializes the global generators.
-                    StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, this )
-                    // Calls Root.TSTypes.ResolveType for each RegisteredType:
-                    // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
-                    // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
-                    && ResolveRegisteredTypes( monitor )
-                    && GeneratePackageCode( monitor, _initializer.Packages, this )
-                    && GenerateTSLocaleSupport( monitor, this )
-                    && GenerateAssetsSupport( monitor, this )
-                    // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
-                    && _tsRoot.GenerateCode( monitor );
+            success = // Initializes the global generators.
+                      StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, this )
+                      // Calls Root.TSTypes.ResolveType for each RegisteredType:
+                      // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
+                      // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
+                      && ResolveRegisteredTypes( monitor )
+                      && GeneratePackageCode( monitor, _initializer.Packages, this )
+                      && GenerateTSLocaleSupport( monitor, this )
+                      && GenerateAssetsSupport( monitor, this )
+                      // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
+                      && _tsRoot.GenerateCode( monitor );
+        }
+        // New approach (CK-ReaDI oriented) here to manage the resources.
+        // We create a ResourceSpace from the TypeScriptPackage type that exist.
+        // Currently these are IRealObject but this should not be required in the future.
+        var resSpaceDataBuilder = new ResourceSpaceDataBuilder();
+        foreach( var p in _initializer.Packages )
+        {
+
         }
 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,

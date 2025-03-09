@@ -16,7 +16,6 @@ public sealed class LiveStateBuilder
 {
     readonly LiveStatePathContext _pathContext;
     readonly IReadOnlySet<NormalizedCultureInfo> _activeCultures;
-    readonly TSLocalesBuilder _locales;
     readonly AssetsBuilder _assets;
     readonly List<RegularPackageRef> _regularPackages;
     readonly List<LocalPackageRef> _localPackages;
@@ -29,7 +28,6 @@ public sealed class LiveStateBuilder
         _activeCultures = activeCultures;
         _localPackages = new List<LocalPackageRef>();
         _regularPackages = new List<RegularPackageRef>();
-        _locales = new TSLocalesBuilder();
         _assets = new AssetsBuilder();
     }
 
@@ -66,7 +64,6 @@ public sealed class LiveStateBuilder
     {
         var reg = new RegularPackageRef( resources, typeScriptFolder, _regularPackages.Count );
         _regularPackages.Add( reg );
-        if( locales != null ) _locales.AddRegularPackage( monitor, locales );
         if( assets != null ) _assets.AddRegularPackage( monitor, assets );
     }
 
@@ -84,7 +81,6 @@ public sealed class LiveStateBuilder
         {
             _watchRoot = CommonParentPath( _watchRoot, resources.ResourcePrefix );
         }
-        _locales.AddLocalPackage( monitor, loc );
         _assets.AddLocalPackage( monitor, loc );
 
         static string CommonParentPath( string path1, string path2 )
@@ -119,8 +115,6 @@ public sealed class LiveStateBuilder
             Directory.CreateDirectory( _pathContext.StateFolderPath );
             File.WriteAllText( _pathContext.StateFolderPath + ".gitignore", "*" );
         }
-        // LocalesState is independent.
-        success &= _locales.WriteTSLocalesState( monitor, _pathContext.StateFolderPath );
         // Ends with the LiveState.dat.
         if( _watchRoot == null )
         {

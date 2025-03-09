@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using System;
+using System.IO;
 
 namespace CK.TypeScript.Engine;
 

@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\CK.EmbeddedResources\CK.EmbeddedResources.csproj" />
+      <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

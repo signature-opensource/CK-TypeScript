@@ -132,7 +132,9 @@ public sealed partial class ResPackage
             Throw.DebugAssert( !set.Contains( p ) );
             set.Add( p );
             cL |= p.IsLocalPackage;
-            l |= p._allContentReachableHasLocalPackage;
+            // This triggers the InitializationContent.
+            l |= p.AllContentReachableHasLocalPackage;
+            Throw.DebugAssert( p._allContentReachablePackages != null );
             set.UnionWith( p._allContentReachablePackages );
         }
         return (cL,l);
@@ -143,8 +145,10 @@ public sealed partial class ResPackage
     void EnsureContent()
     {
         if( _contentReachablePackages == null ) InitializeContent();
+        Throw.DebugAssert( _allContentReachablePackages != null );
     }
 
+    [MemberNotNull( nameof( _contentReachablePackages ) )]
     [MethodImpl(MethodImplOptions.NoInlining)]
     void InitializeContent()
     {

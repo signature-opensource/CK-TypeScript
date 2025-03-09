@@ -107,7 +107,7 @@ public static class ResourceContainerGlobalizationExtension
 
             foreach( var o in others )
             {
-                if( !o.ResourceName.Span.EndsWith( ".jsonc" ) )
+                if( !o.ResourceName.EndsWith( ".jsonc" ) )
                 {
                     monitor.Error( $"Invalid '{o}'. Only '.jsonc' files must appear in 'ts-locales' folder." );
                     success = false;
