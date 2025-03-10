@@ -220,6 +220,11 @@ public sealed partial class TypeScriptContext
         // New approach (CK-ReaDI oriented) here to manage the resources.
         // We create a ResourceSpace from the TypeScriptPackage type that exist.
         // Currently these are IRealObject but this should not be required in the future.
+        var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
+
+        var resSpaceCollector = resSpaceCollectorBuilder.Build( monitor );
+
+
         var resSpaceDataBuilder = new ResourceSpaceDataBuilder();
         foreach( var p in _initializer.Packages )
         {
