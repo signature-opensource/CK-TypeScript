@@ -14,9 +14,6 @@ namespace CK.EmbeddedResources;
 /// <para>
 /// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories and files.
 /// </para>
-/// <para>
-/// The most common usage is to the <see cref="TypeExtensions."/>
-/// </para>
 /// </summary>
 public interface IResourceContainer
 {

@@ -1,19 +1,14 @@
-using CK.Core;
 using CK.EmbeddedResources;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
+using System.Xml;
 
 namespace CK.Core;
 
 /// <summary>
-/// 
+/// Mutable package descriptor.
 /// </summary>
 public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDependentItemContainerRef
 {
@@ -54,9 +49,14 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public string FullName => _fullName;
 
     /// <summary>
-    /// Gets the default target path that will prefix resources that are items.
+    /// Gets the type if this package is defined by a type.
     /// </summary>
-    public NormalizedPath DefaultTargetPath => _defaultTargetPath;
+    public Type? Type => _type;
+
+    /// <summary>
+    /// Gets a non null fully qualified path of this package's resources if this is a local package.
+    /// </summary>
+    public string? LocalPath => _localPath;
 
     /// <summary>
     /// Gets a mutable set of resources that can be code generated instead of being read from the resources.
@@ -70,14 +70,9 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public IResourceContainer PackageResources => _packageResources;
 
     /// <summary>
-    /// Gets a non null fully qualified path of this package's resources if this is a local package.
+    /// Gets the default target path that will prefix resources that are items.
     /// </summary>
-    public string? LocalPath => _localPath;
-
-    /// <summary>
-    /// Gets the type if this package is defined by a type.
-    /// </summary>
-    public Type? Type => _type;
+    public NormalizedPath DefaultTargetPath => _defaultTargetPath;
 
     /// <summary>
     /// Gets or sets whether this package is a group.
@@ -159,12 +154,39 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                          "RequiredBy",
                          typeof( RequiredByAttribute<> ), typeof( RequiredByAttribute<,> ), typeof( RequiredByAttribute<,,> ),
                          typeof( RequiredByAttribute<,,,> ), typeof( RequiredByAttribute<,,,,> ), typeof( RequiredByAttribute<,,,,,> ) );
+        HandleMultiType( monitor,
+                         genAttributes,
+                         ref _groups,
+                         "Groups",
+                         typeof( GroupsAttribute<> ), typeof( GroupsAttribute<,> ), typeof( GroupsAttribute<,,> ),
+                         typeof( GroupsAttribute<,,,> ), typeof( GroupsAttribute<,,,,> ), typeof( GroupsAttribute<,,,,,> ) );
+        HandleMultiType( monitor,
+                         genAttributes,
+                         ref _children,
+                         "Children",
+                         typeof( ChildrenAttribute<> ), typeof( ChildrenAttribute<,> ), typeof( ChildrenAttribute<,,> ),
+                         typeof( ChildrenAttribute<,,,> ), typeof( ChildrenAttribute<,,,,> ), typeof( ChildrenAttribute<,,,,,> ) );
 
         // Then handles names. Duplicates can be differentiated.
         var req = attributes.OfType<RequiresAttribute>().FirstOrDefault();
         if( req != null )
         {
             HandleMultiName( monitor, req.CommaSeparatedPackageFullnames, ref _requires, "Requires" );
+        }
+        var reqBy = attributes.OfType<RequiredByAttribute>().FirstOrDefault();
+        if( reqBy != null )
+        {
+            HandleMultiName( monitor, reqBy.CommaSeparatedPackageFullnames, ref _requiredBy, "RequiredBy" );
+        }
+        var groups = attributes.OfType<GroupsAttribute>().FirstOrDefault();
+        if( groups != null )
+        {
+            HandleMultiName( monitor, groups.CommaSeparatedPackageFullnames, ref _groups, "Groups" );
+        }
+        var children = attributes.OfType<ChildrenAttribute>().FirstOrDefault();
+        if( children != null )
+        {
+            HandleMultiName( monitor, children.CommaSeparatedPackageFullnames, ref _children, "Children" );
         }
 
         return success;
@@ -198,7 +220,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                             }
                             else
                             {
-                                monitor.Warn( $"Duplicate '[{relName}( \"{name}\" )]' on type '{_type:N}'. Ignored." );
+                                monitor.Warn( $"Duplicate '[{relName}( \"{name}\" )]' on type '{_type:N}'. Already defined by one '[{relName}<{package.Type:N}>]'. Ignored." );
                             }
                         }
                         else
@@ -207,9 +229,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                         }
                     }
                 }
-
             }
-
         }
     }
 
@@ -281,6 +301,11 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
             }
 
         }
+    }
+
+    internal void InitializeFromPackageDescriptor( IActivityMonitor monitor, XmlReader xmlReader )
+    {
+        throw new NotImplementedException();
     }
 
     DependentItemKind IDependentItemContainerTyped.ItemKind => _isGroup ? DependentItemKind.Group : DependentItemKind.Container;

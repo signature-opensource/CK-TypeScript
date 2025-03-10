@@ -4,7 +4,12 @@ using System.Collections.Immutable;
 namespace CK.Core;
 
 /// <summary>
-/// <see cref="ResourceSpace"/> core data is produced by the <see cref="ResourceSpaceDataBuilder"/>.
+/// <see cref="ResourceSpace"/> core data is produced by the <see cref="ResourceSpaceDataBuilder"/>:
+/// this contains the final <see cref="ResPackage"/> topologically ordered.
+/// <para>
+/// This can now be consumed by a <see cref="ResourceSpaceBuilder"/> that can be configured with resource handlers
+/// to eventually produce a <see cref="ResourceSpace"/>.
+/// </para>
 /// </summary>
 public sealed class ResourceSpaceData
 {
@@ -13,6 +18,7 @@ public sealed class ResourceSpaceData
     internal ImmutableArray<ResPackage> _rootPackages;
     internal ImmutableArray<ResPackage> _localPackages;
 
+    // _packages, _rootPackages and _localPackages are set by the ResourceSpaceDataBuilder.
     internal ResourceSpaceData( IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
         _packageIndex = packageIndex;

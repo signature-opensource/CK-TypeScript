@@ -6,7 +6,9 @@ using System.Linq;
 namespace CK.Core;
 
 /// <summary>
-/// Builder for <see cref="ResourceSpace"/>.
+/// Handles <see cref="ResourceSpaceData"/> and enables <see cref="ResourceSpaceFolderHandler"/>
+/// and <see cref="ResourceSpaceFileHandler"/> to be registered in order to produce a
+/// final <see cref="ResourceSpaceData"/>.
 /// </summary>
 public sealed class ResourceSpaceBuilder
 {

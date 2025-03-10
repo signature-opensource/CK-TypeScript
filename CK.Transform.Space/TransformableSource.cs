@@ -1,10 +1,7 @@
 using CK.Core;
 using CK.EmbeddedResources;
-using CK.Transform.Core;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 
 namespace CK.Transform.Space;
 

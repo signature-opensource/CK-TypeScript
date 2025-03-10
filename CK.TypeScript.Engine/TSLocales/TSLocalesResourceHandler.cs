@@ -1,11 +1,7 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.Setup;
-using System;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.TypeScript.Engine;
 
@@ -36,6 +32,7 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
 
     /// <summary>
     /// Gets the live state.
+    /// Null if no local packages exist or if an error occurred during initialization.
     /// </summary>
     public LocaleCultureSet?[]? LiveState => _liveState;
 
@@ -65,10 +62,10 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
             success &= p.PackageResources.LoadLocales( monitor, activeCultures, out var tsLocales, "ts-locales" );
             // Combines them with all the ones from the reachable packages.
             LocaleCultureSet? combined = tsLocales;
-            if( p.AllReachablePackages.Count > 0 )
+            if( p.ReachablePackages.Count > 0 )
             {
                 var combiner = new FinalLocaleCultureSet( isPartialSet: false, p.FullName );
-                foreach( var pBelow in p.AllReachablePackages )
+                foreach( var pBelow in p.ReachablePackages )
                 {
                     var below = _combinedLocales[pBelow.Index];
                     if( below != null )
@@ -109,7 +106,10 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
                 finalCombiner.PropagateFallbackTranslations( monitor );
                 _buildFinal = finalCombiner.Root;
                 // Only on success do we build the live state.
-                _liveState = BuildLiveState( spaceData );
+                if( spaceData.LocalPackages.Length > 0 )
+                {
+                    _liveState = BuildLiveState( spaceData );
+                }
             }
         }
         return success;

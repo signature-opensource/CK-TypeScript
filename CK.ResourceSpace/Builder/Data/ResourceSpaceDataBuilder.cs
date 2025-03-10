@@ -1,53 +1,37 @@
-using CK.Core;
-using CK.EmbeddedResources;
 using CK.Setup;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel.Design;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CK.Core;
 
 /// <summary>
-/// Builder for <see cref="ResourceSpaceData"/>.
+/// Handles a <see cref="ResourceSpaceCollector"/> to topologically sort its configured <see cref="ResPackageDescriptor"/>
+/// to produce a <see cref="ResourceSpaceData"/> with its final <see cref="ResPackage"/>.
 /// </summary>
 public sealed class ResourceSpaceDataBuilder
 {
+    readonly IReadOnlyDictionary<object, ResPackageDescriptor> _packageIndex;
+    readonly IReadOnlyCollection<ResPackageDescriptor> _packages;
+    readonly int _localPackageCount;
 
     public ResourceSpaceDataBuilder( ResourceSpaceCollector collector )
     {
-        _packageIndex = new Dictionary<object, ResPackageDescriptor>();
+        _packageIndex = collector.PackageIndex;
+        _packages = collector.Packages;
+        _localPackageCount = collector.LocalPackageCount;
     }
 
     /// <summary>
-    /// Finds a package by its full name.
-    /// </summary>
-    /// <param name="fullName">The full name.</param>
-    /// <returns>The package or null if not found.</returns>
-    public ResPackageDescriptor? FindByFullName( string fullName ) => _packageIndex.GetValueOrDefault( fullName );
-
-    /// <summary>
-    /// Finds a package by its type.
-    /// </summary>
-    /// <param name="type">The type.</param>
-    /// <returns>The package or null if not found.</returns>
-    public ResPackageDescriptor? FindByType( Type type ) => _packageIndex.GetValueOrDefault( type );
-
-    /// <summary>
-    /// Tries to build the <see cref="ResourceSpaceData"/>. 
+    /// Produces the <see cref="ResourceSpaceData"/> with its final <see cref="ResPackage"/>
+    /// toplogically sorted. 
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The space data on success, null otherwise.</returns>
     public ResourceSpaceData? Build( IActivityMonitor monitor )
     {
         var sortResult = DependencySorter<ResPackageDescriptor>.OrderItems( monitor,
-                                                                            _packageIndex.Values,
+                                                                            _packages,
                                                                             discoverers: null );
         if( !sortResult.IsComplete )
         {
@@ -60,10 +44,10 @@ public sealed class ResourceSpaceDataBuilder
         Throw.DebugAssert( "No items, only containers (and maybe groups).",
                             sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
 
-        var b = ImmutableArray.CreateBuilder<ResPackage>( _packageCount );
+        var b = ImmutableArray.CreateBuilder<ResPackage>( _packages.Count );
         var bLocal = ImmutableArray.CreateBuilder<ResPackage>( _localPackageCount );
         var bRoot = ImmutableArray.CreateBuilder<ResPackage>();
-        var packageIndex = new Dictionary<object, ResPackage>( _packageIndex.Count + _packageCount );
+        var packageIndex = new Dictionary<object, ResPackage>( _packageIndex.Count + _packages.Count );
         var space = new ResourceSpaceData( packageIndex );
         foreach( var s in sortResult.SortedItems )
         {
@@ -106,10 +90,11 @@ public sealed class ResourceSpaceDataBuilder
                 }
             }
         }
-        Throw.DebugAssert( packageIndex.Count == _packageIndex.Count + _packageCount );
-        space._packages = b.DrainToImmutable();
-        space._rootPackages = bRoot.ToImmutableArray();
-        space._localPackages = bLocal.ToImmutableArray();
+        Throw.DebugAssert( "Expected planned size.", packageIndex.Count == _packageIndex.Count + _packages.Count );
+        space._packages = b.MoveToImmutable();
+        space._localPackages = bLocal.MoveToImmutable();
+        // Number of roots cannot be computed.
+        space._rootPackages = bRoot.DrainToImmutable();
         return space;
     }
 }

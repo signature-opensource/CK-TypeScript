@@ -1,17 +1,20 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace CK.Core;
 
 /// <summary>
-/// Builder for <see cref="ResourceSpaceCollector"/>.
+/// Builder for <see cref="ResourceSpaceCollector"/> that is the first step to produce a
+/// <see cref="ResourceSpace"/>. This enable resource packages to be regitered from a type (that must be decorated
+/// with at least one <see cref="IEmbeddedResourceTypeAttribute"/> attribute) or from any <see cref="IResourceContainer"/>.
 /// </summary>
 public sealed class ResourceSpaceCollectorBuilder
 {
-    // Packages are indexed by their FullName, Type if package is defined
+    // Packages are indexed by their FullName, their Type if package is defined
     // by type and by their IResourceContainer PackageResources.
-    // The IResourceContainer is used by the builder only to check that no resource
+    // The IResourceContainer is used by this builder only to check that no resource
     // containers are shared by 2 packages.
     // The ResourceSpace uses this index to efficiently get the definer package
     // of any ResourceLocator.
@@ -100,7 +103,13 @@ public sealed class ResourceSpaceCollectorBuilder
         return p;
     }
 
-    public ResourceSpaceCollector Build( IActivityMonitor monitor )
+    /// <summary>
+    /// Produces the set of <see cref="ResPackageDescriptor"/> initialized from their <see cref="ResPackageDescriptor.Type"/>
+    /// or, if there is no definer type, from the "Package.xml" file in the <see cref="ResPackageDescriptor.PackageResources"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <returns>The collector with initialized packages or null on error.</returns>
+    public ResourceSpaceCollector? Build( IActivityMonitor monitor )
     {
         bool success = true;
         foreach( var r in _packages )
@@ -109,13 +118,35 @@ public sealed class ResourceSpaceCollectorBuilder
             if( r.Type != null )
             {
                 success &= r.InitializeFromType( monitor );
+                var descriptor = r.PackageResources.GetResource( "Package.xml" );
+                if( descriptor.IsValid )
+                {
+                    monitor.Warn( $"Found {descriptor} for type '{r.Type:N}'. Ignored." );
+                }
+            }
+            else
+            {
+                var descriptor = r.PackageResources.GetResource( "Package.xml" );
+                if( descriptor.IsValid )
+                {
+                    try
+                    {
+                        using( var s = descriptor.GetStream() )
+                        using( var xmlReader = XmlReader.Create( s ) )
+                        {
+                            r.InitializeFromPackageDescriptor( monitor, xmlReader );
+                        }
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( $"While reading {descriptor}.", ex );
+                    }
+                }
+
             }
         }
-        else
-        {
-            // Read package.xml in CodeGenResource or IResourceContainer.
-
-        }
-
+        return success
+                ? new ResourceSpaceCollector( _packageIndex, _packages, _localPackageCount )
+                : null;
     }
 }

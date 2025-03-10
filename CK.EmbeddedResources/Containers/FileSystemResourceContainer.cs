@@ -6,7 +6,7 @@ using System.IO;
 namespace CK.EmbeddedResources;
 
 /// <summary>
-/// File system implementation of a <see cref="IResourceContainer"/>.
+/// File system implementation of a <see cref="IResourceContainer"/> uses the platform <see cref="Path.DirectorySeparatorChar"/>.
 /// <para>
 /// By default <see cref="HasLocalFilePathSupport"/> is true but this can be changed when
 /// instantiating the container to prrvent direct access to the file system.

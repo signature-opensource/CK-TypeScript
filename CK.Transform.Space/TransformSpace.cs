@@ -1,10 +1,7 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.Transform.Core;
-using Microsoft.VisualBasic;
-using System;
 using System.Collections.Generic;
-using System.Runtime;
 
 namespace CK.Transform.Space;
 
