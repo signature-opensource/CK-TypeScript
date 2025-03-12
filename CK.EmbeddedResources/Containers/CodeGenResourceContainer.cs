@@ -51,7 +51,8 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// Initializes a new <see cref="CodeGenResourceContainer"/> previously serialized
     /// by <see cref="WriteData(ICKBinaryWriter)"/>.
     /// <para>
-    /// Note that <see cref="IsOpened"/> is not written: a deserialized container is opened by default.
+    /// Note that <see cref="IsOpened"/> is not written: a deserialized Code container is opened by default
+    /// when deserialized.
     /// </para>
     /// </summary>
     /// <param name="r">The reader.</param>

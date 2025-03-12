@@ -16,8 +16,8 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
-    readonly IResourceContainer _packageResources;
-    readonly CodeGenResourceContainer _codeGenResources;
+    readonly CodeStoreResources _resources;
+    readonly CodeStoreResources _afterContentResources;
     readonly string? _localPath;
     ResPackageDescriptor? _package;
     List<ResPackageDescriptor>? _requires;
@@ -30,17 +30,18 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                                    string fullName,
                                    Type? type,
                                    NormalizedPath defaultTargetPath,
-                                   IResourceContainer packageResources,
+                                   CodeStoreResources resources,
+                                   CodeStoreResources afterContentResources,
                                    string? localPath )
     {
+        Throw.DebugAssert( resources != afterContentResources );
         _collector = collector;
         _fullName = fullName;
         _type = type;
         _defaultTargetPath = defaultTargetPath;
-        _packageResources = packageResources;
+        _resources = resources;
+        _afterContentResources = afterContentResources;
         _localPath = localPath;
-        var n = packageResources is EmptyResourceContainer e ? e.NonDisabledDisplayName : packageResources.DisplayName;
-        _codeGenResources = new CodeGenResourceContainer( $"[CodeGen] {n}" );
     }
 
     /// <summary>
@@ -59,15 +60,14 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public string? LocalPath => _localPath;
 
     /// <summary>
-    /// Gets a mutable set of resources that can be code generated instead of being read from the resources.
+    /// Gets the <see cref="CodeStoreResources"/> for this package.
     /// </summary>
-    public CodeGenResourceContainer CodeGenResources => _codeGenResources;
+    public CodeStoreResources Resources => _resources;
 
     /// <summary>
-    /// Gets the resources of the package. <see cref="IResourceContainer.IsValid"/> is necessarily true
-    /// but this can be a <see cref="EmptyResourceContainer"/>.
+    /// Gets the <see cref="CodeStoreResources"/> that apply after this package's <see cref="Children"/>.
     /// </summary>
-    public IResourceContainer PackageResources => _packageResources;
+    public CodeStoreResources AfterContentResources => _afterContentResources;
 
     /// <summary>
     /// Gets the default target path that will prefix resources that are items.

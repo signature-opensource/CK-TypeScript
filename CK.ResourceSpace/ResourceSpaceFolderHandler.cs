@@ -23,6 +23,7 @@ public abstract class ResourceSpaceFolderHandler
 
     /// <summary>
     /// Gets the root folder name.
+    /// Never empty, whitespace and doesn't contain '/' or '\'.
     /// </summary>
     public string RootFolderName => _rootFolderName;
 

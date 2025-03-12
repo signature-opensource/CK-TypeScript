@@ -1,13 +1,15 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.Setup;
+using Microsoft.Extensions.Hosting;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CK.TypeScript.Engine;
 
 sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
 {
-    readonly TypeScriptContext _context;
+    readonly IReadOnlySet<NormalizedCultureInfo> _activeCultures;
     LocaleCultureSet?[] _locales;
     LocaleCultureSet?[] _combinedLocales;
     // The final combined locales.
@@ -16,12 +18,14 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
     // The live state is as simple as that (see BuildLiveState).
     LocaleCultureSet?[]? _liveState;
 
-    public TSLocalesResourceHandler( ResourceSpaceData spaceData, TypeScriptContext context )
-        : base( spaceData, "ts-locales" )
+    public TSLocalesResourceHandler( ResourceSpaceData spaceData,
+                                     IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                     string folderName )
+        : base( spaceData, folderName )
     {
         _locales = new LocaleCultureSet[spaceData.Packages.Length];
         _combinedLocales = new LocaleCultureSet[spaceData.Packages.Length];
-        _context = context;
+        _activeCultures = activeCultures;
     }
 
     /// <summary>
@@ -38,44 +42,34 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
 
     protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData )
     {
-        var activeCultures = _context.BinPathConfiguration.ActiveCultures;
-
-        // First, tries to load the "ck-gen-transform/ts-locales".
-        // These are pure overrides: it cannot define new resources.
-        // If there is an error loading it, give up.
-        LocaleCultureSet? appLocales = null;
-        if( _context.CKGenTransform != null
-            && !_context.CKGenTransform.LoadLocales( monitor,
-                                                     activeCultures,
-                                                     out appLocales,
-                                                     "ts-locales",
-                                                     isOverrideFolder: true ) )
-        {
-            return false;
-        }
-        bool success = true;
-        // Consider all the packages that have a "ts-locales/".
+        // Consider all the packages (from "<Code>" to "<App>" included) that
+        // have a "RootFolderName" (like "locales").
         // Combination is done with as final sets (isPartialSet: false): a override
         // that overrides nothing is an error.
+        bool success = true;
         foreach( var p in spaceData.Packages )
         {
-            success &= p.PackageResources.LoadLocales( monitor, activeCultures, out var tsLocales, "ts-locales" );
+            success &= p.Resources.LoadLocales( monitor,
+                                                _activeCultures,
+                                                out var tsLocales,
+                                                RootFolderName,
+                                                isOverrideFolder: p == spaceData.AppPackage );
             // Combines them with all the ones from the reachable packages.
             LocaleCultureSet? combined = tsLocales;
             if( p.ReachablePackages.Count > 0 )
             {
                 var combiner = new FinalLocaleCultureSet( isPartialSet: false, p.FullName );
-                foreach( var pBelow in p.ReachablePackages )
-                {
-                    var below = _combinedLocales[pBelow.Index];
-                    if( below != null )
-                    {
-                        success &= combiner.Add( monitor, below );
-                    }
-                }
                 if( tsLocales != null )
                 {
                     success &= combiner.Add( monitor, tsLocales );
+                }
+                foreach( var pAbove in p.ReachablePackages )
+                {
+                    var above = _combinedLocales[pAbove.Index];
+                    if( above != null )
+                    {
+                        success &= combiner.Add( monitor, above );
+                    }
                 }
                 combined = combiner.Root;
             }

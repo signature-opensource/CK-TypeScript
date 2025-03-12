@@ -16,8 +16,8 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _localPath = r.ReadNullableString();
         _isGroup = r.ReadBoolean();
         _index = r.ReadInt32();
-        _packageResources = s.ReadObject<IResourceContainer>();
-        _codeGenResources = s.ReadObject<CodeGenResourceContainer>();
+        _resources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+        _afterContentResources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
         _requires = s.ReadValue<ImmutableArray<ResPackage>>();
         _children = s.ReadValue<ImmutableArray<ResPackage>>();
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
@@ -50,8 +50,10 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         w.WriteNullableString( _localPath );
         w.Write( _isGroup );
         w.Write( _index );
-        s.WriteObject( _packageResources );
-        s.WriteObject( _codeGenResources );
+        s.WriteObject( _resources.Code );
+        s.WriteObject( _resources.Store );
+        s.WriteObject( _afterContentResources.Code );
+        s.WriteObject( _afterContentResources.Store );
         s.WriteValue( _requires );
         s.WriteValue( _children );
         w.WriteNonNegativeSmallInt32( _reachablePackages.Count );

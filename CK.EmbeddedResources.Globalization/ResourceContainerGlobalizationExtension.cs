@@ -8,6 +8,9 @@ using System.Text.Json;
 
 namespace CK.EmbeddedResources;
 
+/// <summary>
+/// Extends <see cref="IResourceContainer"/> and <see cref="CodeStoreResources"/> with LoadLocales methods.
+/// </summary>
 public static class ResourceContainerGlobalizationExtension
 {
     /// <summary>
@@ -56,12 +59,13 @@ public static class ResourceContainerGlobalizationExtension
         Throw.CheckNotNullOrWhiteSpaceArgument( folder );
         if( container.TryGetFolder( folder, out var content ) )
         {
+            bool unactiveCultureWarned = false;
             using( monitor.OpenInfo( $"Reading {content}." ) )
             {
                 var defaultSet = CreateRoot( monitor, content, isOverrideFolder );
                 if( defaultSet != null )
                 {
-                    locales = ReadLocales( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures );
+                    locales = ReadLocales( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
                     return locales != null;
                 }
             }
@@ -97,7 +101,8 @@ public static class ResourceContainerGlobalizationExtension
                                               LocaleCultureSet defaultSet,
                                               bool isOverrideFolder,
                                               IEnumerable<ResourceLocator> allResources,
-                                              IReadOnlySet<NormalizedCultureInfo> activeCultures )
+                                              IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                              ref bool unactiveCultureWarned )
         {
             bool success = true;
 
@@ -124,7 +129,12 @@ public static class ResourceContainerGlobalizationExtension
                     var c = NormalizedCultureInfo.FindNormalizedCultureInfo( cName );
                     if( c == null || !activeCultures.Contains( c ) )
                     {
-                        monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the TSBinPathConfiguration.ActiveCultures list." );
+                        monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the active cultures." );
+                        if( !unactiveCultureWarned )
+                        {
+                            unactiveCultureWarned = true;
+                            monitor.Warn( $"Active cultures are: {activeCultures.Select( c => c.Name ).Concatenate()}." );
+                        }
                     }
                     else if( c == NormalizedCultureInfo.CodeDefault )
                     {
@@ -175,7 +185,7 @@ public static class ResourceContainerGlobalizationExtension
             return success ? defaultSet : null;
 
             static bool ReadSpecificSet( IActivityMonitor monitor,
-                                         EmbeddedResources.ResourceLocator locator,
+                                         ResourceLocator locator,
                                          NormalizedCultureInfo culture,
                                          LocaleCultureSet defaultSet,
                                          bool isOverrideFolder,
@@ -187,7 +197,7 @@ public static class ResourceContainerGlobalizationExtension
                     bool success = true;
                     foreach( var kv in content )
                     {
-                        // When a key overrides/masks an entry, it masks a key defined in another component.
+                        // When a key overrides an entry, it overrides a key defined in another component.
                         // The fact that "fr-FR" overrides the "Super.EvenBetter.Text" key does NOT mean that
                         // this key must also be defined as an override in the "default.json" file: it has to be defined
                         // in the final merged set by a lower-level component. Override handling is done by the FinalSet,
@@ -238,8 +248,8 @@ public static class ResourceContainerGlobalizationExtension
                 CommentHandling = skipComments ? JsonCommentHandling.Skip : JsonCommentHandling.Disallow,
                 AllowTrailingCommas = true
             };
-            using var context = Utf8JsonStreamReader.Create( s, options, out var reader );
             var result = new Dictionary<string, TranslationValue>();
+            using var context = Utf8JsonStreamReader.Create( s, options, out var reader );
             ReadJson( ref reader, context, origin, isOverrideFolder, result );
             return result;
 
@@ -319,5 +329,36 @@ public static class ResourceContainerGlobalizationExtension
             }
         }
 
+    }
+
+    /// <summary>
+    /// Same as <see cref="LoadLocales(IResourceContainer, IActivityMonitor, IReadOnlySet{NormalizedCultureInfo}, out LocaleCultureSet?, string, bool)"/>
+    /// except that this returns the combination of <paramref name="folder"/> from <see cref="CodeStoreResources.Code"/> or
+    /// <see cref="CodeStoreResources.Store"/> or a combined locales set if both exist. 
+    /// </summary>
+    /// <param name="resources">This Code and Store resources.</param>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
+    /// <param name="locales">The loaded locales. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
+    /// <param name="folder">The folder to load (typically "locales" or "ts-locales").</param>
+    /// <param name="isOverrideFolder">True for pure override folder (no new resources are allowed).</param>
+    /// <returns>True on success, false on error.</returns>
+    public static bool LoadLocales( this CodeStoreResources resources,
+                                    IActivityMonitor monitor,
+                                    IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                    out LocaleCultureSet? locales,
+                                    string folder,
+                                    bool isOverrideFolder = false )
+    {
+        bool success = resources.Store.LoadLocales( monitor, activeCultures, out locales, folder, isOverrideFolder );
+        if( locales == null )
+        {
+            success &= resources.Code.LoadLocales( monitor, activeCultures, out locales, folder, isOverrideFolder );
+        }
+        else
+        {
+            success &= locales.LoadAndApplyBase( monitor, resources.Code, activeCultures, folder, isPartialSet: true, isOverrideFolder );
+        }
+        return success;
     }
 }

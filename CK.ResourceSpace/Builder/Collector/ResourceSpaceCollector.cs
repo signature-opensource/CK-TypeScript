@@ -1,3 +1,4 @@
+using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 
@@ -12,14 +13,23 @@ public sealed class ResourceSpaceCollector
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     readonly List<ResPackageDescriptor> _packages;
     readonly int _localPackageCount;
+    readonly int _typedPackageCount;
+    IResourceContainer? _generatedCodeContainer;
+    string? _appResourcesLocalPath;
 
     internal ResourceSpaceCollector( Dictionary<object, ResPackageDescriptor> packageIndex,
                                      List<ResPackageDescriptor> packages,
-                                     int localPackageCount )
+                                     int localPackageCount,
+                                     IResourceContainer? generatedCodeContainer,
+                                     string? appResourcesLocalPath,
+                                     int typedPackageCount )
     {
         _packageIndex = packageIndex;
         _packages = packages;
         _localPackageCount = localPackageCount;
+        _generatedCodeContainer = generatedCodeContainer;
+        _appResourcesLocalPath = appResourcesLocalPath;
+        _typedPackageCount = typedPackageCount;
     }
 
     /// <summary>
@@ -34,9 +44,14 @@ public sealed class ResourceSpaceCollector
     public IReadOnlyCollection<ResPackageDescriptor> Packages => _packages;
 
     /// <summary>
-    /// Gets the number of local packages in <see cref="Packages"/>.
+    /// Gets the number of local packages in <see cref="Packages"/> (excluding <see cref="AppResourcesLocalPath"/>).
     /// </summary>
     public int LocalPackageCount => _localPackageCount;
+
+    /// <summary>
+    /// Gets the number of packages that are defined by a <see cref="ResPackageDescriptor.Type"/>.
+    /// </summary>
+    public int TypedPackageCount => _typedPackageCount;
 
     /// <summary>
     /// Finds a mutable package descriptor by its full name.
@@ -51,4 +66,16 @@ public sealed class ResourceSpaceCollector
     /// <param name="type">The type.</param>
     /// <returns>The package or null if not found.</returns>
     public ResPackageDescriptor? FindByType( Type type ) => _packageIndex.GetValueOrDefault( type );
+
+    /// <summary>
+    /// Gets or sets the Code generated resource container.
+    /// When let to null, an empty container is used.
+    /// </summary>
+    public IResourceContainer? GeneratedCodeContainer { get => _generatedCodeContainer; set => _generatedCodeContainer = value; }
+
+    /// <summary>
+    /// Gets or sets the path of the application local resources.
+    /// When let to null, an empty container is used.
+    /// </summary>
+    public string? AppResourcesLocalPath { get => _appResourcesLocalPath; set => _appResourcesLocalPath = value; }
 }

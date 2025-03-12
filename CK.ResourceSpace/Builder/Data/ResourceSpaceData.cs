@@ -1,5 +1,7 @@
+using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Core;
 
@@ -14,11 +16,14 @@ namespace CK.Core;
 public sealed class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
-    internal ImmutableArray<ResPackage> _packages;
-    internal ImmutableArray<ResPackage> _rootPackages;
-    internal ImmutableArray<ResPackage> _localPackages;
 
-    // _packages, _rootPackages and _localPackages are set by the ResourceSpaceDataBuilder.
+    // _packages, _localPackages, _codePackage and _appPackage are
+    // set by the ResourceSpaceDataBuilder.Build method.
+    internal ImmutableArray<ResPackage> _packages;
+    internal ImmutableArray<ResPackage> _localPackages;
+    [AllowNull]internal ResPackage _codePackage;
+    [AllowNull] internal ResPackage _appPackage;
+
     internal ResourceSpaceData( IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
         _packageIndex = packageIndex;
@@ -26,22 +31,32 @@ public sealed class ResourceSpaceData
 
     /// <summary>
     /// Gets the packages indexed by their <see cref="ResPackage.FullName"/>, <see cref="ResPackage.Type"/> (if
-    /// the package is defined by a type), <see cref="ResPackage.PackageResources"/> and <see cref="ResPackage.CodeGenResources"/>.
+    /// the package is defined by a type), and by the <see cref="CodeStoreResources.Code"/> and <see cref="CodeStoreResources.Store"/>
+    /// resource containers of <see cref="ResPackage.Resources"/> and <see cref="ResPackage.AfterContentResources"/>.
     /// </summary>
     public IReadOnlyDictionary<object, ResPackage> PackageIndex => _packageIndex;
 
     /// <summary>
+    /// Gets the "&lt;Code&gt;" special head package.
+    /// </summary>
+    public ResPackage CodePackage => _codePackage;
+
+    /// <summary>
     /// Gets the packages topologically ordered. <see cref="ResPackage.Index"/> is the index in this array.
+    /// <para>
+    /// This first package is <see cref="CodePackage"/> and the last one is <see cref="AppPackage"/>.
+    /// </para>
     /// </summary>
     public ImmutableArray<ResPackage> Packages => _packages;
+
+    /// <summary>
+    /// Gets the "&lt;App&gt;" special tail package.
+    /// </summary>
+    public ResPackage AppPackage => _appPackage;
 
     /// <summary>
     /// Gets the local packages.
     /// </summary>
     public ImmutableArray<ResPackage> LocalPackages => _localPackages;
 
-    /// <summary>
-    /// Gets the packages that have no requirements.
-    /// </summary>
-    public ImmutableArray<ResPackage> RootPackages => _rootPackages;
 }

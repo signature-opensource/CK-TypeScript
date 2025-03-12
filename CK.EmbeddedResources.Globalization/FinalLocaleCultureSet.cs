@@ -28,14 +28,14 @@ public sealed class FinalLocaleCultureSet
     }
 
     /// <summary>
-    /// Updates this culture set with the content of <paramref name="newSet"/>.
-    /// If the new set contains overrides, they apply and if it tries to redefine an already defined
-    /// resource, this is an error.
+    /// Updates this culture set with the content of <paramref name="above"/>.
+    /// If this set contains overrides, they apply and if they try to redefine an existing
+    /// resource in above, this is an error.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="newSet">The new set of resources to combine.</param>
+    /// <param name="above">The new set of resources to combine.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool Add( IActivityMonitor monitor, LocaleCultureSet newSet ) => _root.Combine( monitor, newSet, _isPartialSet );
+    public bool Add( IActivityMonitor monitor, LocaleCultureSet above ) => _root.Combine( monitor, above, _isPartialSet );
 
     /// <summary>
     /// Gets the root "en" set.

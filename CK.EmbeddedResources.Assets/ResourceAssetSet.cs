@@ -27,6 +27,43 @@ public sealed class ResourceAssetSet
     public IReadOnlyDictionary<NormalizedPath, ResourceAsset> Assets => _assets;
 
     /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="baseContainer">The container whose assets must be combined with these assets.</param>
+    /// <param name="defaultTargetPath">The default target path: a relative path in the final target root folder.</param>
+    /// <param name="folder">The folder to load.</param>
+    /// <param name="isPartialSet">
+    /// When true, a regular override that overrides nothing is kept as it may apply to the final set.
+    /// When false, a regular override that overrides nothing is discarded and a warning is emitted.
+    /// <para>
+    /// This defaults to true because this is primarily used to load combined locales from set of <see cref="IResourceContainer"/>
+    /// for the locales set of a package that is not a final one (such locales sets are then combined with the sets
+    /// of the package dependencies to build the final one).
+    /// </para>
+    /// </param>
+    /// <returns>True on success, false on error.</returns>
+    public bool LoadAndApplyBase( IActivityMonitor monitor,
+                                  IResourceContainer baseContainer,
+                                  NormalizedPath defaultTargetPath,
+                                  string folder = "assets",
+                                  bool isPartialSet = true )
+    {
+        Throw.CheckArgument( baseContainer != null && baseContainer.IsValid );
+        if( !baseContainer.LoadAssets( monitor, defaultTargetPath, out var baseAssets, folder ) )
+        {
+            return false;
+        }
+        // If there's no base set, we have nothing to do.
+        if( baseAssets == null )
+        {
+            return true;
+        }
+        return Combine( monitor, baseAssets, isPartialSet );
+    }
+
+
+    /// <summary>
     /// Updates this assets the content of <paramref name="above"/>.
     /// If this set contains overrides, they apply and if it tries to redefine an existing
     /// resource, this is an error.
@@ -80,10 +117,5 @@ public sealed class ResourceAssetSet
             }
         }
         return success;
-    }
-
-    public static implicit operator Dictionary<object, object>( ResourceAssetSet v )
-    {
-        throw new NotImplementedException();
     }
 }

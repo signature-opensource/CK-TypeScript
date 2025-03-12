@@ -14,7 +14,7 @@ public sealed partial class LocaleCultureSet
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="above">The base resources.</param>
     /// <param name="isPartialSet">
-    /// When true, a regular override that overrides nothing is kept as it may apply to the eventual set.
+    /// When true, a regular override that overrides nothing is kept as it may apply to the final set.
     /// When false, a regular override that overrides nothing is discarded and a warning is emitted.
     /// </param>
     /// <returns>True on success, false on error.</returns>

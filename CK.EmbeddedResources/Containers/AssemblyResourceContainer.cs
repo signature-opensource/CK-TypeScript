@@ -8,8 +8,13 @@ using System.Runtime.InteropServices;
 namespace CK.EmbeddedResources;
 
 /// <summary>
-/// Resource container for embedded resources.
-/// This can only be created from a <see cref="Assembly"/>.
+/// Resource container for embedded resources. <see cref="IsValid"/> is true even if no
+/// resources exist under the <see cref="ResourcePrefix"/> (it is false only when an error
+/// prevented a correct instantiation).
+/// <para>
+/// This can be created from a <see cref="TypeExtensions.CreateResourcesContainer(Type, IActivityMonitor, string?, bool)">Type</see>
+/// or a <see cref="AssemblyResources.CreateCKResourceContainer(string, string)">AssemblyResources</see>.
+/// </para>
 /// </summary>
 [SerializationVersion(0)]
 public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersionedBinarySerializable
@@ -73,7 +78,13 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
         w.Write( _assemblyResources.AssemblyName );
     }
 
-    internal static string MakeDisplayName( string? displayName, Type type ) => displayName ?? $"resources of '{type.ToCSharpName()}' type";
+    internal static string MakeDisplayName( string? displayName, Type type, bool resAfter )
+    {
+        return displayName
+                ?? (resAfter
+                        ? $"resources [After] of '{type.ToCSharpName()}' type"
+                        : $"resources of '{type.ToCSharpName()}' type");
+    }
 
     /// <summary>
     /// Gets the assembly that contains this container.

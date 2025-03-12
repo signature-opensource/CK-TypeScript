@@ -152,12 +152,16 @@ public sealed partial class AssemblyResources
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
     /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "resources of '...' type".</param>
+    /// <param name="resAfter">True to consider the "Res[After]" folder instead of "Res".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
-    public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor, Type type, string? containerDisplayName = null )
+    public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
+                                                                      Type type,
+                                                                      string? containerDisplayName = null,
+                                                                      bool resAfter = false )
     {
         return GetCallerInfo( monitor, type, type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(), out var callerPath, out var callerSource )
-                ? CreateResourcesContainerForType( monitor, callerPath, type, callerSource.GetType().Name, containerDisplayName )
-                : new AssemblyResourceContainer( this, AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type ) );
+                ? CreateResourcesContainerForType( monitor, callerPath, type, callerSource.GetType().Name, containerDisplayName, resAfter )
+                : new AssemblyResourceContainer( this, AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type, resAfter) );
 
     }
 
@@ -174,17 +178,26 @@ public sealed partial class AssemblyResources
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>. (This is used for logging).</param>
     /// <param name="attributeName">The attribute name that declares the resource (used for logging).</param>
     /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "resources of '...' type".</param>
+    /// <param name="resAfter">True to consider the "Res[After]" folder instead of "Res".</param>
     /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
     public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
                                                                       string? callerFilePath,
                                                                       Type type,
                                                                       string attributeName,
-                                                                      string? containerDisplayName = null )
+                                                                      string? containerDisplayName = null,
+                                                                      bool resAfter = false )
     {
-        containerDisplayName = AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type );
+        containerDisplayName = AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type, resAfter );
         if( ValidateContainerForType( monitor, Assembly, _assemblyName, callerFilePath, type, attributeName, out var subPath ) )
         {
-            var prefix = subPath.IsEmptyPath ? "ck@Res/" : $"ck@{subPath.Path}/Res/";
+            var prefix = resAfter
+                            ? (subPath.IsEmptyPath
+                                ? "ck@Res[After]/"
+                                : $"ck@{subPath.Path}/Res[After]/")
+                            : (subPath.IsEmptyPath
+                                ? "ck@Res/"
+                                : $"ck@{subPath.Path}/Res/");
+
             return new AssemblyResourceContainer( this,
                                                   prefix,
                                                   containerDisplayName,

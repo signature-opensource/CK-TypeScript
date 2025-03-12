@@ -219,18 +219,39 @@ public sealed partial class TypeScriptContext
         }
         // New approach (CK-ReaDI oriented) here to manage the resources.
         // We create a ResourceSpace from the TypeScriptPackage type that exist.
-        // Currently these are IRealObject but this should not be required in the future.
+        // Currently these are IRealObject (this will not be the case in the future) and we use
+        // the current TypeScriptPackageAttributeImpl instances.
+        var typeScriptContext = this;
         var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
-
-        var resSpaceCollector = resSpaceCollectorBuilder.Build( monitor );
-
-
-        var resSpaceDataBuilder = new ResourceSpaceDataBuilder();
         foreach( var p in _initializer.Packages )
         {
-
+            success &= resSpaceCollectorBuilder.RegisterPackage( monitor, p.DecoratedType, p.TypeScriptFolder );
         }
-
+        // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
+        // logically depends on it. All its resources will be reachable from any package.
+        success &= resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
+        if( !success )
+        {
+            return false;
+        }
+        // The resource space perimeter is initialized:
+        // - It is composed of the currently empty TypeScriptRoot.
+        // - And all the TypeScript packages.
+        //
+        // With CK-ReaDI, publishing this ResourceSpaceCollectorBuilder here will allow
+        // any code to register additional packages in it, including totally "virtual"
+        // ones that could produce .ts or other resources based on an existing resource that is
+        // a schema or any description of code.
+        //
+        var resSpaceCollector = resSpaceCollectorBuilder.Build( monitor );
+        if( resSpaceCollector == null )
+        {
+            return false;
+        }
+        // With CK-ReaDI, publishing this resSpaceCollector here will allow any code
+        // to mutate the package descriptor. May be not that useful.
+        var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
+        // Here 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,
                                                ImmutableArray<ITSCodeGenerator> globals,
                                                TypeScriptContext context )

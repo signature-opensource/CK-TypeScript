@@ -19,7 +19,7 @@ namespace CK.EmbeddedResources;
 public sealed partial class LocaleCultureSet
 {
     readonly NormalizedCultureInfo _culture;
-    readonly EmbeddedResources.ResourceLocator _origin;
+    readonly ResourceLocator _origin;
     Dictionary<string, TranslationValue>? _translations;
     List<LocaleCultureSet>? _children;
 
@@ -89,7 +89,7 @@ public sealed partial class LocaleCultureSet
     /// <summary>
     /// Gets the origin of this set.
     /// </summary>
-    public EmbeddedResources.ResourceLocator Origin => _origin;
+    public ResourceLocator Origin => _origin;
 
     /// <summary>
     /// Gets the children (more specific culture sets).
@@ -115,6 +115,49 @@ public sealed partial class LocaleCultureSet
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Combines this set with a base one one loaded from another <paramref name="baseContainer"/>.
+    /// The locales from this set override the base container one's.
+    /// <para>
+    /// See <see cref="ResourceContainerGlobalizationExtension.LoadLocales(IResourceContainer, IActivityMonitor, IReadOnlySet{NormalizedCultureInfo}, out LocaleCultureSet?, string, bool)">
+    /// LoadLocales</see> extension method.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="baseContainer">The container whose locales must be combined with this locales.</param>
+    /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
+    /// <param name="folder">The folder to load (typically "locales" or "ts-locales").</param>
+    /// <param name="isPartialSet">
+    /// When true, a regular override that overrides nothing is kept as it may apply to the final set.
+    /// When false, a regular override that overrides nothing is discarded and a warning is emitted.
+    /// <para>
+    /// This defaults to true because this is primarily used to load combined locales from set of <see cref="IResourceContainer"/>
+    /// for the locales set of a package that is not a final one (such locales sets are then combined with the sets
+    /// of the package dependencies to build the final one).
+    /// </para>
+    /// </param>
+    /// <param name="isOverrideFolder">True for pure override folder (no new resources are allowed).</param>
+    /// <returns>True on success, false on error.</returns>
+    public bool LoadAndApplyBase( IActivityMonitor monitor,
+                                  IResourceContainer baseContainer,
+                                  IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                  string folder,
+                                  bool isPartialSet = true,
+                                  bool isOverrideFolder = false )
+    {
+        Throw.CheckArgument( baseContainer != null && baseContainer.IsValid );
+        if( !baseContainer.LoadLocales( monitor, activeCultures, out var baseLocaleSet, folder, isOverrideFolder ) )
+        {
+            return false;
+        }
+        // If there's no base set, we have nothing to do.
+        if( baseLocaleSet == null )
+        {
+            return true;
+        }
+        return Combine( monitor, baseLocaleSet, isPartialSet );
     }
 
     internal void AddSpecific( LocaleCultureSet specificSet )

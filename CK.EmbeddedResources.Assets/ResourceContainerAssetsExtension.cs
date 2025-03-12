@@ -7,8 +7,9 @@ using System.Text.Json;
 namespace CK.EmbeddedResources;
 
 /// <summary>
-/// Provides <see cref="LoadAssets(CK.Core.IResourceContainer, CK.Core.IActivityMonitor, CK.Core.NormalizedPath, out CK.Core.ResourceAssetSet?, string)"/>
-/// to <see cref="IResourceContainer"/>.
+/// <summary>
+/// Extends <see cref="IResourceContainer"/> and <see cref="CodeStoreResources"/> with LoadAssets methods.
+/// </summary>
 /// </summary>
 public static class ResourceContainerAssetsExtension
 {
@@ -356,6 +357,36 @@ public static class ResourceContainerAssetsExtension
             }
             return true;
         }
+    }
+
+    /// <summary>
+    /// Same as <see cref="LoadAssets(CodeStoreResources, IActivityMonitor, NormalizedPath, out ResourceAssetSet?, string)"/>
+    /// except that this returns the combination of <paramref name="folder"/> from <see cref="CodeStoreResources.Code"/> or
+    /// <see cref="CodeStoreResources.Store"/> or a combined assets set if both exist. 
+    /// </summary>
+    /// <param name="resources">This Code and Store resources.</param>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="defaultTargetPath">The default target path: a relative path in the final target root folder.</param>
+    /// <param name="folder">The folder to load.</param>
+    /// <param name="assets">The loaded assets. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
+    /// <param name="folder">The folder to load.</param>
+    /// <returns>True on success, false on error.</returns>
+    public static bool LoadAssets( this CodeStoreResources resources,
+                                   IActivityMonitor monitor,
+                                   NormalizedPath defaultTargetPath,
+                                   out ResourceAssetSet? assets,
+                                   string folder = "assets" )
+    {
+        bool success = resources.Store.LoadAssets( monitor, defaultTargetPath, out assets, folder );
+        if( assets == null )
+        {
+            success &= resources.Code.LoadAssets( monitor, defaultTargetPath, out assets, folder );
+        }
+        else
+        {
+            success &= assets.LoadAndApplyBase( monitor, resources.Code, defaultTargetPath, folder, isPartialSet: true );
+        }
+        return success;
     }
 
 }

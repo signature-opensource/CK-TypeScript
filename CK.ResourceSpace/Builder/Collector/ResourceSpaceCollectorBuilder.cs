@@ -13,14 +13,15 @@ namespace CK.Core;
 public sealed class ResourceSpaceCollectorBuilder
 {
     // Packages are indexed by their FullName, their Type if package is defined
-    // by type and by their IResourceContainer PackageResources.
-    // The IResourceContainer is used by this builder only to check that no resource
+    // by type and by their Resources Store container.
+    // The IResourceContainer key is used by this builder only to check that no resource
     // containers are shared by 2 packages.
-    // The ResourceSpace uses this index to efficiently get the definer package
-    // of any ResourceLocator.
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     readonly List<ResPackageDescriptor> _packages;
     int _localPackageCount;
+    int _typedPackageCount;
+    IResourceContainer? _generatedCodeContainer;
+    string? _appResourcesLocalPath;
 
     public ResourceSpaceCollectorBuilder()
     {
@@ -29,22 +30,47 @@ public sealed class ResourceSpaceCollectorBuilder
     }
 
     /// <summary>
-    /// Registers a package. It must not already exist: <paramref name="fullName"/> or <paramref name="packageResources"/>
-    /// must not have been already registered.
+    /// Gets or sets the Code generated resource container.
+    /// When let to null, an empty container is used.
+    /// </summary>
+    public IResourceContainer? GeneratedCodeContainer { get => _generatedCodeContainer; set => _generatedCodeContainer = value; }
+
+    /// <summary>
+    /// Gets or sets the path of the application local resources.
+    /// When let to null, an empty container is used.
+    /// </summary>
+    public string? AppResourcesLocalPath { get => _appResourcesLocalPath; set => _appResourcesLocalPath = value; }
+
+    /// <summary>
+    /// Registers a package. It must not already exist: <paramref name="fullName"/>, <paramref name="resourceStore"/>
+    /// or <paramref name="afterContentResourceStore"/> must not have been already registered.
+    /// <para>
+    /// <paramref name="resourceStore"/> and <paramref name="afterContentResourceStore"/> must be <see cref="IResourceContainer.IsValid"/>
+    /// and must not be the same instance.
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="fullName">The package full name.</param>
     /// <param name="defaultTargetPath">The default target path associated to the package's resources.</param>
-    /// <param name="packageResources">The package resources. Must be <see cref="IResourceContainer.IsValid"/>.</param>
+    /// <param name="resourceStore">
+    /// The package resources. Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
+    /// </param>
+    /// <param name="afterContentResourceStore">
+    /// The package resources to apply after the <see cref="ResPackageDescriptor.Children"/>.
+    /// Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
+    /// </param>
     /// <returns>True on success, false otherwise.</returns>
     public bool RegisterPackage( IActivityMonitor monitor,
                                  string fullName,
                                  NormalizedPath defaultTargetPath,
-                                 IResourceContainer packageResources )
+                                 IResourceContainer resourceStore,
+                                 IResourceContainer afterContentResourceStore )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fullName );
-        Throw.CheckArgument( packageResources is not null && packageResources.IsValid );
-        return DoRegister( monitor, fullName, null, defaultTargetPath, packageResources ) != null;
+        Throw.CheckArgument( resourceStore is not null && resourceStore.IsValid );
+        Throw.CheckArgument( afterContentResourceStore is not null && resourceStore.IsValid );
+        Throw.CheckArgument( resourceStore != afterContentResourceStore );
+        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, afterContentResourceStore ) != null;
     }
 
     /// <summary>
@@ -65,39 +91,63 @@ public sealed class ResourceSpaceCollectorBuilder
             monitor.Error( $"Duplicate package registration: type '{type:C}' is already registered as '{already}'." );
             return false;
         }
-        IResourceContainer resources = type.CreateResourcesContainer( monitor );
-        return resources.IsValid && DoRegister( monitor, type.FullName, type, defaultTargetPath, resources ) != null;
+        IResourceContainer resourceStore = type.CreateResourcesContainer( monitor );
+        IResourceContainer afterContentStore = type.CreateResourcesContainer( monitor, resAfter: true );
+
+        return resourceStore.IsValid && afterContentStore.IsValid
+               && DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, afterContentStore ) != null;
     }
 
     ResPackageDescriptor? DoRegister( IActivityMonitor monitor,
                                       string fullName,
                                       Type? type,
                                       NormalizedPath defaultTargetPath,
-                                      IResourceContainer packageResources )
+                                      IResourceContainer resourceStore,
+                                      IResourceContainer afterContentStore )
     {
         if( _packageIndex.TryGetValue( fullName, out var already ) )
         {
             monitor.Error( $"Duplicate package registration: FullName is already registered as '{already}'." );
             return null;
         }
-        if( _packageIndex.TryGetValue( packageResources, out already ) )
+        if( _packageIndex.TryGetValue( resourceStore, out already ) )
         {
-            monitor.Error( $"Package resources mismatch: {packageResources} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
+            monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
             return null;
         }
-        string? localPath = packageResources is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
+        if( _packageIndex.TryGetValue( afterContentStore, out already ) )
+        {
+            monitor.Error( $"Package resources mismatch: {afterContentStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
+            return null;
+        }
+        // The resource store may not be local (it may be an empty one) but if the afterContentResourceStore
+        // is local, then this package is a local one.
+        // For simplicity we only keep a single local path at the package level and by design we
+        // privilegiate the "/Res" over the "/Res[After]".
+        // Live engine will be in charge to handle the one or more FileSystemResourceContainer at their level.
+        string? localPath = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                                 ? fs.ResourcePrefix
-                                : null;
+                                : afterContentStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport
+                                    ? fsA.ResourcePrefix
+                                    : null;
         if( localPath != null )
         {
             ++_localPackageCount;
         }
-        var p = new ResPackageDescriptor( _packageIndex, fullName, type, defaultTargetPath, packageResources, localPath );
+        var p = new ResPackageDescriptor( _packageIndex,
+                                            fullName,
+                                            type,
+                                            defaultTargetPath,
+                                            new CodeStoreResources( resourceStore ),
+                                            new CodeStoreResources( afterContentStore ),
+                                            localPath );
         _packages.Add( p );
         _packageIndex.Add( fullName, p );
-        _packageIndex.Add( packageResources, p );
+        _packageIndex.Add( resourceStore, p );
+        _packageIndex.Add( afterContentStore, p );
         if( type != null )
         {
+            ++_typedPackageCount; 
             _packageIndex.Add( type, p );
         }
         return p;
@@ -118,7 +168,7 @@ public sealed class ResourceSpaceCollectorBuilder
             if( r.Type != null )
             {
                 success &= r.InitializeFromType( monitor );
-                var descriptor = r.PackageResources.GetResource( "Package.xml" );
+                var descriptor = r.Resources.GetResource( "Package.xml" );
                 if( descriptor.IsValid )
                 {
                     monitor.Warn( $"Found {descriptor} for type '{r.Type:N}'. Ignored." );
@@ -126,7 +176,7 @@ public sealed class ResourceSpaceCollectorBuilder
             }
             else
             {
-                var descriptor = r.PackageResources.GetResource( "Package.xml" );
+                var descriptor = r.Resources.GetResource( "Package.xml" );
                 if( descriptor.IsValid )
                 {
                     try
@@ -146,7 +196,12 @@ public sealed class ResourceSpaceCollectorBuilder
             }
         }
         return success
-                ? new ResourceSpaceCollector( _packageIndex, _packages, _localPackageCount )
+                ? new ResourceSpaceCollector( _packageIndex,
+                                              _packages,
+                                              _localPackageCount,
+                                              _generatedCodeContainer,
+                                              _appResourcesLocalPath,
+                                              _typedPackageCount )
                 : null;
     }
 }
