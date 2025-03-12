@@ -4,7 +4,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.StObjEngine" Version="28.1.0" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="28.1.1--0001-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.TypeScript.Engine\CK.TypeScript.Engine.csproj" />
