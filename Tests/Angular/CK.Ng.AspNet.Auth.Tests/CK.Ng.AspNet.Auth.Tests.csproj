@@ -9,7 +9,7 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="25.1.1--0006-develop" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="25.1.1--0007-develop" />
     <ProjectReference Include="..\..\..\CK.Ng.AspNet.Auth\CK.Ng.AspNet.Auth.csproj" />
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
