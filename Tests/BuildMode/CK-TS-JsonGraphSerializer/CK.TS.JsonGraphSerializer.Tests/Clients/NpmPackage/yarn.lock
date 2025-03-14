@@ -712,8 +712,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
-    axios: "npm:^1.7.9"
-    rxjs: "npm:^7.8.1"
+    axios: "npm:^1.8.3"
+    rxjs: "npm:^7.8.2"
     typescript: "npm:=5.4.5"
   languageName: unknown
   linkType: soft
@@ -1254,14 +1254,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.7.9":
-  version: 1.7.9
-  resolution: "axios@npm:1.7.9"
+"axios@npm:^1.8.3":
+  version: 1.8.3
+  resolution: "axios@npm:1.8.3"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10/b7a5f660ea53ba9c2a745bf5ad77ad8bf4f1338e13ccc3f9f09f810267d6c638c03dac88b55dae8dc98b79c57d2d6835be651d58d2af97c174f43d289a9fd007
+  checksum: 10/050f911cadd6d47a38ddbf91d2f8da2c34661dda8077e7ad6546e8178701125366fddbba07211a648b6815cf6c2c3c91c0a65d8b968e3d1a6054a21141ff9c01
   languageName: node
   linkType: hard
 
@@ -3988,6 +3988,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.1.0"
   checksum: 10/b10cac1a5258f885e9dd1b70d23c34daeb21b61222ee735d2ec40a8685bdca40429000703a44f0e638c27a684ac139e1c37e835d2a0dc16f6fc061a138ae3abb
+  languageName: node
+  linkType: hard
+
+"rxjs@npm:^7.8.2":
+  version: 7.8.2
+  resolution: "rxjs@npm:7.8.2"
+  dependencies:
+    tslib: "npm:^2.1.0"
+  checksum: 10/03dff09191356b2b87d94fbc1e97c4e9eb3c09d4452399dddd451b09c2f1ba8d56925a40af114282d7bc0c6fe7514a2236ca09f903cf70e4bbf156650dddb49d
   languageName: node
   linkType: hard
 

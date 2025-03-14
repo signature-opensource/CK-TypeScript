@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Testing;
 using CK.TypeScript.CodeGen;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -89,24 +89,23 @@ public class EnumAndCommentTests
 
         var s = File.ReadAllText( targetProjectPath.Combine( "CK/TypeScript/Tests/CommentedEnum.ts" ) );
 
-        s.Should().Contain( "Commented enumeration." );
+        s.ShouldContain( "Commented enumeration." );
 
         var newLine = Environment.NewLine + " * ";
 
-        s.Should().Contain( "The Zero is 0." + newLine + newLine + "Para elements are transparent." + newLine + newLine + "Even nested (consecutive empty lines are collapsed)." )
-                  .And.Contain( "Zero = 0," );
+        s.ShouldContain( "The Zero is 0." + newLine + newLine + "Para elements are transparent." + newLine + newLine + "Even nested (consecutive empty lines are collapsed)." );
+        s.ShouldContain( "Zero = 0," );
 
-        s.Should().Contain( "One is 1 (1 > 0 && 0 < 1)." + newLine + "Code `can be" )
-                  .And.Contain( "Note: spaces/newlines are ignored both in C# & TS: they are left as-is.`" )
-                  .And.Contain( "One = 1," );
+        s.ShouldContain( "One is 1 (1 > 0 && 0 < 1)." + newLine + "Code `can be" );
+        s.ShouldContain( "Note: spaces/newlines are ignored both in C# & TS: they are left as-is.`" );
+        s.ShouldContain( "One = 1," );
 
+        s.ShouldNotContain( "An xml comment appears in the Xml documentation file." );
+        s.ShouldContain( "A " + newLine + "```" + newLine + "Code block will use triple backticks," + newLine + "   so it can be" );
+        s.ShouldContain( newLine + "```" + newLine + "(This is just for fun.)" + newLine + newLine + "A remark is appended." + newLine + newLine + "Another remark is" );
+        s.ShouldContain( "Two = 2" );
 
-        s.Should().NotContain( "An xml comment appears in the Xml documentation file." )
-                  .And.Contain( "A " + newLine + "```" + newLine + "Code block will use triple backticks," + newLine + "   so it can be" )
-                  .And.Contain( newLine + "```" + newLine + "(This is just for fun.)" + newLine + newLine + "A remark is appended." + newLine + newLine + "Another remark is" )
-                  .And.Contain( "Two = 2" );
-
-        s.Should().Contain( "Two = 2," + Environment.NewLine + "Three = 3," + Environment.NewLine + "Four = 4" );
+        s.ShouldContain( "Two = 2," + Environment.NewLine + "Three = 3," + Environment.NewLine + "Four = 4" );
     }
 
     /// <summary>
@@ -148,15 +147,15 @@ public class EnumAndCommentTests
         ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, targetProjectPath ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( targetProjectPath.AppendPart( f.Name ) ).Should().Be( s );
+        File.ReadAllText( targetProjectPath.AppendPart( f.Name ) ).ShouldBe( s );
 
-        s.Should().Contain( "An interface with comment." );
+        s.ShouldContain( "An interface with comment." );
 
         var newLine = Environment.NewLine + " * ";
 
-        s.Should().Contain( newLine + "Gets the power." );
+        s.ShouldContain( newLine + "Gets the power." );
 
-        s.Should().Contain( newLine + "Method comment."
+        s.ShouldContain( newLine + "Method comment."
                             + newLine + "@param b The boolean."
                             + newLine + "@param i The integer."
                             + newLine + "@param s The string."
@@ -205,15 +204,15 @@ public class EnumAndCommentTests
         ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
 
-        s.Should().Contain( "Generic interface." )
-                  .And.Contain( "@typeParam T1 The FIRST generic type!" )
-                  .And.Contain( "@typeParam T2 The SECOND generic type!" );
+        s.ShouldContain( "Generic interface." );
+        s.ShouldContain( "@typeParam T1 The FIRST generic type!" );
+        s.ShouldContain( "@typeParam T2 The SECOND generic type!" );
 
         var newLine = Environment.NewLine + " * ";
 
-        s.Should().Contain( newLine + "Generic method comment."
+        s.ShouldContain( newLine + "Generic method comment."
                             + newLine + "@typeParam U1 The FIRST generic method parameter."
                             + newLine + "@typeParam U2 The SECOND generic method parameter."
                             + newLine + "@param u FIRST generic method."
@@ -279,14 +278,14 @@ public class EnumAndCommentTests
         ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
 
-        s.Should().Contain( "Class doc." )
-                  .And.Contain( "Constructor doc." )
-                  .And.Contain( "Method doc." )
-                  .And.Contain( "Property doc." )
-                  .And.Contain( "Field doc." )
-                  .And.Contain( "Event doc." );
+        s.ShouldContain( "Class doc." );
+        s.ShouldContain( "Constructor doc." );
+        s.ShouldContain( "Method doc." );
+        s.ShouldContain( "Property doc." );
+        s.ShouldContain( "Field doc." );
+        s.ShouldContain( "Event doc." );
     }
 
     /// <summary>
@@ -352,18 +351,18 @@ public class EnumAndCommentTests
         ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
 
-        s.Should().Contain( "WithCodeReference doc." )
-                  .And.Contain( "Initializes a new WithCodeReference instance (seealso is treated like see)." )
-                  .And.Contain( "The constructor is very simple - hey!" )
-                  .And.Contain( "The parameter is a." )
-                  .And.Contain( "The type is WithCodeReference." )
-                  .And.Contain( "The constructor is WithCodeReference.constructor." )
-                  .And.Contain( "The method is WithCodeReference.m." )
-                  .And.Contain( "The property is WithCodeReference.p." )
-                  .And.Contain( "The field is WithCodeReference.f." )
-                  .And.Contain( "The event is WithCodeReference.e." );
+        s.ShouldContain( "WithCodeReference doc." );
+        s.ShouldContain( "Initializes a new WithCodeReference instance (seealso is treated like see)." );
+        s.ShouldContain( "The constructor is very simple - hey!" );
+        s.ShouldContain( "The parameter is a." );
+        s.ShouldContain( "The type is WithCodeReference." );
+        s.ShouldContain( "The constructor is WithCodeReference.constructor." );
+        s.ShouldContain( "The method is WithCodeReference.m." );
+        s.ShouldContain( "The property is WithCodeReference.p." );
+        s.ShouldContain( "The field is WithCodeReference.f." );
+        s.ShouldContain( "The event is WithCodeReference.e." );
     }
 
     /// <summary>
@@ -389,9 +388,9 @@ public class EnumAndCommentTests
         ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).Should().Be( s );
+        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
 
-        s.Should().Contain( "A buggy reference: ~~!:TypeNotFound~~." );
+        s.ShouldContain( "A buggy reference: ~~!:TypeNotFound~~." );
     }
 
     static void GenerateMembersDocumentation( TypeScriptFile f, Type t, string header )

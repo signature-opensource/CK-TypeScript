@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 
@@ -13,32 +13,32 @@ public class ImmutableOrdinalSortedStringsTests
     {
         ImmutableOrdinalSortedStrings s = new( "a", "pA", "pA", "pB", "pC", "z" );
         ReadOnlyMemory<string> r = s.GetPrefixedStrings( "p" );
-        r.Length.Should().Be( 4 );
-        r.ToArray().Should().BeEquivalentTo( ["pA", "pA", "pB", "pC"] );
+        r.Length.ShouldBe( 4 );
+        r.ToArray().ShouldBe( ["pA", "pA", "pB", "pC"] );
 
         r = s.GetPrefixedStrings( "" );
-        r.ToArray().Should().BeEquivalentTo( s.All );
+        r.ToArray().ShouldBe( s.All );
 
         r = s.GetPrefixedStrings( "\u00FF" );
-        r.Length.Should().Be( 0 );
+        r.Length.ShouldBe( 0 );
 
         r = s.GetPrefixedStrings( "a" );
-        r.Length.Should().Be( 1 );
-        r.Span[0].Should().Be( "a" );
+        r.Length.ShouldBe( 1 );
+        r.Span[0].ShouldBe( "a" );
 
         r = s.GetPrefixedStrings( "aa" );
-        r.Length.Should().Be( 0 );
+        r.Length.ShouldBe( 0 );
 
         r = s.GetPrefixedStrings( "!" );
-        r.Length.Should().Be( 0 );
+        r.Length.ShouldBe( 0 );
 
         r = s.GetPrefixedStrings( "zz" );
-        r.Length.Should().Be( 0 );
+        r.Length.ShouldBe( 0 );
 
         r = s.GetPrefixedStrings( "pA" );
-        r.Length.Should().Be( 2 );
-        r.Span[0].Should().Be( "pA" );
-        r.Span[1].Should().Be( "pA" );
+        r.Length.ShouldBe( 2 );
+        r.Span[0].ShouldBe( "pA" );
+        r.Span[1].ShouldBe( "pA" );
     }
 
 
@@ -46,27 +46,27 @@ public class ImmutableOrdinalSortedStringsTests
     public void IsPrefix()
     {
         ImmutableOrdinalSortedStrings s = new( "zz", "zzz", "a", "pA", "pA", "pB", "pC" );
-        s.IsPrefix( "" ).Should().BeTrue();
-        s.IsPrefix( "p" ).Should().BeTrue();
-        s.IsPrefix( "z" ).Should().BeTrue();
+        s.IsPrefix( "" ).ShouldBeTrue();
+        s.IsPrefix( "p" ).ShouldBeTrue();
+        s.IsPrefix( "z" ).ShouldBeTrue();
 
-        s.IsPrefix( "zz" ).Should().BeFalse();
-        s.IsPrefix( "a" ).Should().BeFalse();
-        s.IsPrefix( "aa" ).Should().BeFalse();
-        s.IsPrefix( "pX" ).Should().BeFalse();
-        s.IsPrefix( "b" ).Should().BeFalse();
+        s.IsPrefix( "zz" ).ShouldBeFalse();
+        s.IsPrefix( "a" ).ShouldBeFalse();
+        s.IsPrefix( "aa" ).ShouldBeFalse();
+        s.IsPrefix( "pX" ).ShouldBeFalse();
+        s.IsPrefix( "b" ).ShouldBeFalse();
     }
 
     [Test]
     public void IsPrefix_is_false_if_the_string_exists()
     {
         ImmutableOrdinalSortedStrings s = new( "prefix1" );
-        s.IsPrefix( "prefix" ).Should().BeTrue();
-        s.IsPrefix( "prefix1" ).Should().BeFalse();
+        s.IsPrefix( "prefix" ).ShouldBeTrue();
+        s.IsPrefix( "prefix1" ).ShouldBeFalse();
 
         s = new( "prefix1", "prefix2", "prefi" );
-        s.IsPrefix( "prefix" ).Should().BeTrue();
-        s.IsPrefix( "prefix1" ).Should().BeFalse();
+        s.IsPrefix( "prefix" ).ShouldBeTrue();
+        s.IsPrefix( "prefix1" ).ShouldBeFalse();
 
     }
 

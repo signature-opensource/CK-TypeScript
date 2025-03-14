@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -34,7 +34,7 @@ public class SystemTypesTests
         engineConfig.FirstBinPath.Types.Add( typeof( IWithDateAndGuid ) );
         await engineConfig.RunSuccessfullyAsync();
 
-        File.Exists( targetProjectPath.Combine( "ck-gen/WithDateAndGuid.ts" ) ).Should().BeTrue();
+        File.Exists( targetProjectPath.Combine( "ck-gen/WithDateAndGuid.ts" ) ).ShouldBeTrue();
     }
 
 }

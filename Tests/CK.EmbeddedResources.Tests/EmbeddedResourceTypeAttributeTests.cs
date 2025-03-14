@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using Namespace.Does.Not.Matter;
 using NUnit.Framework;
 using System;
@@ -18,24 +18,24 @@ public class EmbeddedResourceTypeAttributeTests
         var resources = typeof( AssemblyResourcesTests ).Assembly.GetResources();
 
         var c = resources.CreateResourcesContainerForType( TestHelper.Monitor, typeof( SomeType ) );
-        c.IsValid.Should().BeTrue();
+        c.IsValid.ShouldBeTrue();
 
         // Reading content with the File Provider IFileInfo.
         var data = c.GetResource( "data.json" );
         using( var s = data.GetStream() )
         using( var r = new StreamReader( s ) )
         {
-            r.ReadToEnd().Trim().Should().Be( """{"Hello":"World"}""" );
+            r.ReadToEnd().Trim().ShouldBe( """{"Hello":"World"}""" );
         }
 
         // Reading content from a ResourceFolder.
         var locator2 = c.GetFolder( "" ).Resources.Single( r => r.LocalResourceName.Span.SequenceEqual( "data.json" ) );
-        locator2.Should().Be( data );
+        locator2.ShouldBe( data );
 
         using( var s = locator2.GetStream() )
         using( var r = new StreamReader( s ) )
         {
-            r.ReadToEnd().Trim().Should().Be( """{"Hello":"World"}""" );
+            r.ReadToEnd().Trim().ShouldBe( """{"Hello":"World"}""" );
         }
 
     }
