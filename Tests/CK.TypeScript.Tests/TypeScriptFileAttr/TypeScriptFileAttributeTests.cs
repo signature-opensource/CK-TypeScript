@@ -1,8 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using CK.TypeScript.LiveEngine;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.IO;
 using System.Threading.Tasks;
@@ -46,12 +45,12 @@ public class TypeScriptFileAttributeTests
         await configuration.RunSuccessfullyAsync();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/IAmHere.ts" ) )
-            .Should().BeTrue();
+            .ShouldBeTrue();
         File.Exists( targetProjectPath.Combine( "ck-gen/IAmAlsoHere.ts" ) )
-            .Should().BeFalse();
+            .ShouldBeFalse();
 
         var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/index.ts" ) );
-        barrel.Should().Contain( "export * from './IAmHere';" );
+        barrel.ShouldContain( "export * from './IAmHere';" );
     }
 
     // This test uses NpmPackage integration.
@@ -73,21 +72,21 @@ public class TypeScriptFileAttributeTests
         await engineConfig.RunSuccessfullyAsync();
 
         File.Exists( targetProjectPath.Combine( "ck-gen/src/IAmHere.ts" ) )
-            .Should().BeTrue();
+            .ShouldBeTrue();
         File.Exists( targetProjectPath.Combine( "ck-gen/src/IAmAlsoHere.ts" ) )
-            .Should().BeTrue();
+            .ShouldBeTrue();
 
         var barrel = File.ReadAllText( targetProjectPath.Combine( "ck-gen/src/index.ts" ) );
-        barrel.Should().Contain( "export * from './IAmHere';" )
-                   .And.Contain( "export * from './IAmAlsoHere';" )
-                   .And.NotContain( "private" );
+        barrel.ShouldContain( "export * from './IAmHere';" );
+        barrel.ShouldContain( "export * from './IAmAlsoHere';" );
+        barrel.ShouldNotContain( "private" );
 
         // Note that a PeerDependency is also a DevDependency (otherwise nothing works: this trick makes
         // our PeerDependencies de facto transitive dependencies).
 
         // The ck-gen/package.json has resolved ">=0.0.0-0" dependencies.
         var ckGenPackage = File.ReadAllText( targetProjectPath.Combine( "ck-gen/package.json" ) );
-        ckGenPackage.ReplaceLineEndings().Should().Be( """
+        ckGenPackage.ReplaceLineEndings().ShouldBe( """
             {
               "name": "@local/ck-gen",
               "private": true,
@@ -102,7 +101,7 @@ public class TypeScriptFileAttributeTests
               },
               "dependencies": {
                 "@stdlib/utils-native-class": "~0.2.2",
-                "axios": "^1.8.1",
+                "axios": "^1.8.3",
                 "tslib": "=2.7.0"
               },
               "peerDependencies": {

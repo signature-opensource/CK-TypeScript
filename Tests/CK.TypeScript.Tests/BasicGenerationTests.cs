@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -33,13 +33,13 @@ public class BasicGenerationTests
         var f1 = targetProjectPath.Combine( "b1/ck-gen/CK/TypeScript/Tests/Simple.ts" );
         var f2 = targetProjectPath.Combine( "b2/ck-gen/CK/TypeScript/Tests/Simple.ts" );
         var f3 = targetProjectPath.Combine( "b3/ck-gen/CK/TypeScript/Tests/Simple.ts" );
-        File.Exists( f1 ).Should().BeTrue();
-        File.Exists( f2 ).Should().BeTrue();
-        File.Exists( f3 ).Should().BeFalse();
+        File.Exists( f1 ).ShouldBeTrue();
+        File.Exists( f2 ).ShouldBeTrue();
+        File.Exists( f3 ).ShouldBeFalse();
 
         var s = File.ReadAllText( f1 );
-        s.Should().Contain( "export enum Simple" );
-        s.Should().Be( File.ReadAllText( f2 ) );
+        s.ShouldContain( "export enum Simple" );
+        s.ShouldBe( File.ReadAllText( f2 ) );
 
         static EngineConfiguration CreateConfigurationTSCodeInB1AndB2Outputs( NormalizedPath targetProjectPath, params Type[] types )
         {
@@ -114,7 +114,7 @@ public class BasicGenerationTests
 
         var f = targetProjectPath.Combine( "ck-gen/TheFolder/InAnotherFolder.ts" );
         var s = File.ReadAllText( f );
-        s.Should().Contain( "export enum InAnotherFolder" );
+        s.ShouldContain( "export enum InAnotherFolder" );
     }
 
     /// <summary>
@@ -147,7 +147,7 @@ public class BasicGenerationTests
 
         var f1 = targetProjectPath.Combine( "ck-gen/AtTheRootFolder.ts" );
         var s = File.ReadAllText( f1 );
-        s.Should().Contain( "export enum AtTheRootFolder" );
+        s.ShouldContain( "export enum AtTheRootFolder" );
     }
 
     /// <summary>
@@ -186,7 +186,8 @@ public class BasicGenerationTests
 
         var f1 = targetProjectPath.Combine( "ck-gen/Folder/EnumFile.ts" );
         var s = File.ReadAllText( f1 );
-        s.Should().Contain( "export enum InASpecificFile" ).And.Contain( "export enum AInFile" );
+        s.ShouldContain( "export enum InASpecificFile" );
+        s.ShouldContain( "export enum AInFile" );
     }
 
     /// <summary>
@@ -220,7 +221,7 @@ public class BasicGenerationTests
 
         var f = targetProjectPath.Combine( "ck-gen/IAmHere/EnumFile.ts" );
         var s = File.ReadAllText( f );
-        s.Should().Contain( "export enum Toto" );
+        s.ShouldContain( "export enum Toto" );
     }
 
     /// <summary>
@@ -263,7 +264,7 @@ public class BasicGenerationTests
 
         var f = targetProjectPath.Combine( "ck-gen/Folder/Toto.ts" );
         var s = File.ReadAllText( f );
-        s.Should().Contain( "export enum Toto" );
+        s.ShouldContain( "export enum Toto" );
     }
 
     [TypeScript( Folder = "", FileName = "EnumFile.ts", TypeName = "EnumType" )]
@@ -289,7 +290,7 @@ public class BasicGenerationTests
 
         var f = targetProjectPath.Combine( "ck-gen/EnumFile.ts" );
         var s = File.ReadAllText( f );
-        s.Should().Contain( "export enum EnumType" );
+        s.ShouldContain( "export enum EnumType" );
     }
 
 }

@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Linq;
 using System.Text;
@@ -12,13 +12,12 @@ public class AssemblyResourcesTests
     public void standard_EmbeddedResources_can_coexist_with_CKEmbeddedResources()
     {
         var r = typeof( AssemblyResourcesTests ).Assembly.GetResources();
-        r.AllResourceNames.All.Length.Should().Be( 2 * 7 + 1 );
-        r.AllResourceNames.All.Should()
-            .Contain( "CK.EmbeddedResources.Tests.C1.Res.Sql.script.sql" )
-            .And.Contain( "CK.EmbeddedResources.Tests.C2.Res.Sql.script.sql" );
+        r.AllResourceNames.All.Length.ShouldBe( 2 * 7 + 1 );
+        r.AllResourceNames.All.ShouldContain( "CK.EmbeddedResources.Tests.C1.Res.Sql.script.sql" );
+        r.AllResourceNames.All.ShouldContain( "CK.EmbeddedResources.Tests.C2.Res.Sql.script.sql" );
 
-        r.CKResourceNames.Length.Should().Be( 2 * 6 + 1 );
-        r.CKResourceNames.ToArray().All( a => a.StartsWith( "ck@" ) ).Should().BeTrue();
+        r.CKResourceNames.Length.ShouldBe( 2 * 6 + 1 );
+        r.CKResourceNames.ToArray().All( a => a.StartsWith( "ck@" ) ).ShouldBeTrue();
     }
 
     [Test]
@@ -29,7 +28,7 @@ public class AssemblyResourcesTests
         var root = r.CreateCKResourceContainer( "", "On the Root");
         var b = new StringBuilder();
         Dump( b, new ResourceFolder( root, root.ResourcePrefix ), 0 );
-        b.ToString().ReplaceLineEndings().Should().Be( """
+        b.ToString().ReplaceLineEndings().ShouldBe( """
             C1
               Res
                 SomeFolder
@@ -84,7 +83,7 @@ public class AssemblyResourcesTests
         container.TryGetFolder( fromProvider ? "" : "C1/Res", out var root );
         var b = new StringBuilder();
         Dump( b, root, 0 );
-        b.ToString().ReplaceLineEndings().Should().Be( """
+        b.ToString().ReplaceLineEndings().ShouldBe( """
             SomeFolder
               Other
                 empty-file.ts
@@ -102,7 +101,7 @@ public class AssemblyResourcesTests
         var otherRoot = otherContainer.GetFolder( fromProvider ? "" : "C1/Res/SomeFolder" );
         var bOther = new StringBuilder();
         Dump( bOther, otherRoot, 0 );
-        bOther.ToString().ReplaceLineEndings().Should().Be( """
+        bOther.ToString().ReplaceLineEndings().ShouldBe( """
             Other
               empty-file.ts
             Res

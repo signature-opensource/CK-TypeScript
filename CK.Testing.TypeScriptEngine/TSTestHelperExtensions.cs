@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -188,7 +188,7 @@ public static partial class TSTestHelperExtensions
                                                  Dictionary<string, string>? environmentVariables = null,
                                                  string command = "test" )
     {
-        TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).Should().BeTrue();
+        TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).ShouldBeTrue();
         return new Runner( @this, targetProjectPath, environmentVariables, command, afterRun );
     }
 
