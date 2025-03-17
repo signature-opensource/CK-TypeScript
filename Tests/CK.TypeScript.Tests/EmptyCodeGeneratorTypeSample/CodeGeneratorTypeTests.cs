@@ -1,7 +1,7 @@
 using CK.Setup;
 using CK.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -67,10 +67,10 @@ public class CodeGeneratorTypeTests
         var c = File.ReadAllText( targetProjectPath.Combine( "ck-gen/WillBeEmptyClass.ts" ) );
         var s = File.ReadAllText( targetProjectPath.Combine( "ck-gen/WillBeEmptyStruct.ts" ) );
 
-        e.Should().Be( "export enum EnumThatWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
-        i.Should().Be( "export interface IWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
-        c.Should().Be( "export class WillBeEmptyClass {" + Environment.NewLine + "}" + Environment.NewLine );
-        s.Should().Be( "export class WillBeEmptyStruct {" + Environment.NewLine + "}" + Environment.NewLine );
+        e.ShouldBe( "export enum EnumThatWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
+        i.ShouldBe( "export interface IWillBeEmpty {" + Environment.NewLine + "}" + Environment.NewLine );
+        c.ShouldBe( "export class WillBeEmptyClass {" + Environment.NewLine + "}" + Environment.NewLine );
+        s.ShouldBe( "export class WillBeEmptyStruct {" + Environment.NewLine + "}" + Environment.NewLine );
 
     }
 

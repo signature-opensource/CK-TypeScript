@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
@@ -44,7 +44,7 @@ public class PocoTypeScriptTests
         engineConfig.FirstBinPath.Types.Add( typeof( INotGeneratedByDefault ) );
         await engineConfig.RunSuccessfullyAsync();
 
-        File.Exists( targetProjectPath.Combine( "ck-gen/src/CK.TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeFalse();
+        File.Exists( targetProjectPath.Combine( "ck-gen/src/CK.TypeScript/Tests/NotGeneratedByDefault.ts" ) ).ShouldBeFalse();
     }
 
     [Test]
@@ -59,7 +59,7 @@ public class PocoTypeScriptTests
         engineConfig.FirstBinPath.Types.Add( typeof( IGeneratedByDefault ), typeof( INotGeneratedByDefault ) );
         await engineConfig.RunSuccessfullyAsync();
 
-        File.Exists( targetProjectPath.Combine( "ck-gen/CK/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).Should().BeTrue();
+        File.Exists( targetProjectPath.Combine( "ck-gen/CK/TypeScript/Tests/NotGeneratedByDefault.ts" ) ).ShouldBeTrue();
     }
 
     [Test]
@@ -74,7 +74,7 @@ public class PocoTypeScriptTests
         await engineConfig.RunSuccessfullyAsync();
 
         File.ReadAllText( targetProjectPath.Combine( "ck-gen/CK/TypeScript/Tests/NotGeneratedByDefault.ts" ) )
-            .Should().Contain( "export class NotGeneratedByDefault" );
+            .ShouldContain( "export class NotGeneratedByDefault" );
     }
 
     public interface IRecursive : IPoco

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -41,7 +41,7 @@ public static partial class TSTestHelperExtensions
         public void Run()
         {
             YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, _yarnCommand, _environmentVariables )
-                .Should().BeTrue( $"'yarn {_yarnCommand}' should be sucessfull." );
+                .ShouldBeTrue( $"'yarn {_yarnCommand}' should be sucessfull." );
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.AspNetCore.Builder;
 using NUnit.Framework;
 using System;
@@ -37,7 +37,7 @@ public class TSTests
     public async Task CK_TS_AspNet_Auth_Inline_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
-        targetProjectPath.Parts[^2].Should().Be( "TSInlineTests" );
+        targetProjectPath.Parts[^2].ShouldBe( "TSInlineTests" );
 
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
@@ -69,7 +69,7 @@ public class TSTests
             ts.IntegrationMode = CKGenIntegrationMode.Inline;
             var r = await configuration.RunSuccessfullyAsync();
 
-            File.Exists( targetProjectPath.Combine( "src/sample.spec.ts" ) ).Should().BeTrue();
+            File.Exists( targetProjectPath.Combine( "src/sample.spec.ts" ) ).ShouldBeTrue();
 
             var map = r.LoadMap();
 

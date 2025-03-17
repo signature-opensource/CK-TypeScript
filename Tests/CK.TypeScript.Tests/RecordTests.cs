@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -333,6 +333,6 @@ public class RecordTests
     {
         File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", name ) )
             .ReplaceLineEndings()
-            .Should().Contain( expected.ReplaceLineEndings() );
+            .ShouldContain( expected.ReplaceLineEndings() );
     }
 }
