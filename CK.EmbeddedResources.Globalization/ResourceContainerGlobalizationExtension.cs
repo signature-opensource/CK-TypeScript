@@ -250,7 +250,6 @@ public static class ResourceContainerGlobalizationExtension
             };
             using var context = Utf8JsonStreamReaderContext.Create( s, options, out var reader );
             var result = new Dictionary<string, TranslationValue>();
-            using var context = Utf8JsonStreamReader.Create( s, options, out var reader );
             ReadJson( ref reader, context, origin, isOverrideFolder, result );
             return result;
 

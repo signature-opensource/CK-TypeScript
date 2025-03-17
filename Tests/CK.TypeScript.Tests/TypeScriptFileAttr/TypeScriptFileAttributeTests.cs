@@ -112,12 +112,7 @@ public class TypeScriptFileAttributeTests
 
         // The target package.json reproduces the ck-gen/package.json peer dependencies.
         var targetPackage = File.ReadAllText( targetProjectPath.AppendPart( "package.json" ) );
-        var watcherPath = typeof( LiveState ).Assembly.Location;
-        if( Path.DirectorySeparatorChar == '\\' )
-        {
-            watcherPath = watcherPath.Replace( "\\", "\\\\" );
-        }
-        targetPackage.ReplaceLineEndings().Should().Be( $$"""
+        targetPackage.ReplaceLineEndings().ShouldBe( $$"""
             {
               "name": "typescriptfile_and_typescriptimportlibrary",
               "private": true,
