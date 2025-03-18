@@ -12,13 +12,15 @@ namespace CK.EmbeddedResources;
 /// in which new code generated resources can be added and an immutable <see cref="Store"/>
 /// container that contains statically defined resources.
 /// <para>
-/// The final resources is a combination of the <see cref="Code"/> and the <see cref="Store"/>
-/// in this order: Code resources may be overridden, altered, by Store ones.
+/// The notion of "final" resource is meaningless at this level: these resources must be analyzed, combined
+/// in any way by resource handlers. What matters here is that Code generation is able to generate such "resources"
+/// until <see cref="CodeGenResourceContainer.Close()"/> is called. 
 /// </para>
 /// <para>
-/// This order is a rather arbitrary choice (it could have been the other way around) but is a required
-/// convention to align the behavior of all the resource handlers. In practice, such modifications
-/// of the "same" resource provider should not exist.
+/// Code is able to read the resources from the Store before adding Code resources: it follows that, when applicable,
+/// Code resources must be considered as a potential "override" of the resources in the Store and this is why
+/// <see cref="GetSingleResource(IActivityMonitor, ReadOnlySpan{char})"/> and <see cref="GetSingleFolder(IActivityMonitor, ReadOnlySpan{char})"/>
+/// are supported but how resources are "combined" together (and even whether thay are "combinable") is not known here.
 /// </para>
 /// </summary>
 /// <remarks>
@@ -88,41 +90,61 @@ public sealed class CodeStoreResources
     public IResourceContainer Store => _store;
 
     /// <summary>
-    /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false
-    /// if the resource doesn't exist.
+    /// Tries to get a resource from <see cref="Code"/> if it exists and from <see cref="Store"/> otherwise.
     /// <para>
-    /// <see cref="Store"/> is considered first and then <see cref="Code"/> (applying the convention that Code
-    /// is "before" Store).
+    /// If the resource doesn't exist, <see cref="ResourceLocator.IsValid"/> is false.
     /// </para>
     /// </summary>
-    /// <param name="resourceName">The resource name (without <see cref="ResourcePrefix"/>). Can contain any sub folder prefix.</param>
+    /// <param name="resourceName">
+    /// The resource name (without their <see cref="IResourceContainer.ResourcePrefix"/>).
+    /// Can contain any sub folder prefix.
+    /// </param>
     /// <returns>The resource locator that may not be valid.</returns>
-    public ResourceLocator GetResource( ReadOnlySpan<char> resourceName )
+    public ResourceLocator GetSingleResource( IActivityMonitor monitor, ReadOnlySpan<char> resourceName )
     {
-        var r = _store.GetResource( resourceName );
-        return r.IsValid ? r : _code.GetResource( resourceName );
+        var r = _code.GetResource( resourceName );
+        if( r.IsValid )
+        {
+            var fromStore = _store.GetResource( resourceName );
+            if( fromStore.IsValid )
+            {
+                monitor.Trace( $"Resource {r} overrides {fromStore}." );
+            }
+            return r;
+        }
+        return _store.GetResource( resourceName );
     }
 
     /// <summary>
-    /// Gets an existing folder or a ResourceFolder with <see cref="ResourceLocator.IsValid"/> false
-    /// if the folder doesn't exist.
+    /// Tries to get a folder from <see cref="Code"/> if it exists and from <see cref="Store"/> otherwise.
     /// <para>
-    /// <see cref="Store"/> is considered first and then <see cref="Code"/> (applying the convention that Code
-    /// is "before" Store).
+    /// If the resource doesn't exist, <see cref="ResourceLocator.IsValid"/> is false.
     /// </para>
     /// </summary>
-    /// <param name="folderName">The resource folder name (without <see cref="ResourcePrefix"/>). Can contain any sub folder prefix.</param>
+    /// <param name="folderName">
+    /// The resource folder name (without the <see cref="IResourceContainer.ResourcePrefix"/>).
+    /// Can contain any sub folder prefix.
+    /// </param>
     /// <returns>The resource folder that may not be valid.</returns>
-    public ResourceFolder GetFolder( ReadOnlySpan<char> folderName )
+    public ResourceFolder GetSingleFolder( IActivityMonitor monitor, ReadOnlySpan<char> folderName )
     {
-        var r = _store.GetFolder( folderName );
-        return r.IsValid ? r : _code.GetFolder( folderName );
+        var r = _code.GetFolder( folderName );
+        if( r.IsValid )
+        {
+            var fromStore = _store.GetFolder( folderName );
+            if( fromStore.IsValid )
+            {
+                monitor.Trace( $"Resource {r} overrides {fromStore}." );
+            }
+            return r;
+        }
+        return _store.GetFolder( folderName );
     }
 
     /// <summary>
-    /// Overridden to return <see cref="Code"/> and <see cref="Store"/> display names.
+    /// Overridden to return <see cref="Store"/> and <see cref="Code"/> display names.
     /// </summary>
     /// <returns>The Code and Store display names.</returns>
-    public override string ToString() => $"{Code} / {Store}";
+    public override string ToString() => $"{Store} and {Code}";
 
 }
