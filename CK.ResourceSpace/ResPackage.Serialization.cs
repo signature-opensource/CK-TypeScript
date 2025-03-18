@@ -25,7 +25,7 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _reachablePackages = new HashSet<ResPackage>( r.ReadNonNegativeSmallInt32() );
         (_requiresHasLocalPackage, _reachableHasLocalPackage, bool allRequired) = ComputeReachablePackages( _reachablePackages );
 
-        int expectedSize = r.ReadSmallInt32();
+        int expectedSize = r.ReadNonNegativeSmallInt32();
         Throw.DebugAssert( (expectedSize >= 0) == allRequired );
         // AllReacheable. ComputeReachablePackages above computed the allRequired.
         if( allRequired )
@@ -39,6 +39,26 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         {
             _allReachablePackages = _reachablePackages;
             _allReachableHasLocalPackage = _reachableHasLocalPackage;
+        }
+        if( _children.Length == 0 )
+        {
+            _contentReachablePackages = _reachablePackages;
+            _contentReachableHasLocalPackage = _reachableHasLocalPackage;
+            _allContentReachablePackages = _allReachablePackages;
+            _allContentReachableHasLocalPackage = _allReachableHasLocalPackage;
+        }
+        else
+        {
+            expectedSize = r.ReadNonNegativeSmallInt32();
+            _allContentReachablePackages = new HashSet<ResPackage>( expectedSize );
+            _allContentReachablePackages.AddRange( _allReachablePackages );
+            (_childrenHasLocalPackage, _allContentReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allContentReachablePackages );
+            _allContentReachableHasLocalPackage |= _allReachableHasLocalPackage;
+
+            _contentReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + _children.Length );
+            _contentReachablePackages.AddRange( _reachablePackages );
+            _contentReachablePackages.AddRange( _children );
+            _contentReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
         }
     }
 
@@ -58,5 +78,9 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         s.WriteValue( _children );
         w.WriteNonNegativeSmallInt32( _reachablePackages.Count );
         w.WriteSmallInt32( _allReachablePackages != _reachablePackages ? _allReachablePackages.Count : -1 );
+        if( _children.Length > 0 )
+        {
+            w.WriteNonNegativeSmallInt32( _allContentReachablePackages.Count );
+        }
     }
 }

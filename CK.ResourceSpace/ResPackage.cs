@@ -27,12 +27,12 @@ public sealed partial class ResPackage
     readonly bool _requiresHasLocalPackage;
     readonly bool _reachableHasLocalPackage;
     readonly bool _allReachableHasLocalPackage;
-    // Content information (less used) is created on demand.
-    HashSet<ResPackage>? _contentReachablePackages;
-    HashSet<ResPackage>? _allContentReachablePackages;
-    bool _childrenHasLocalPackage;
-    bool _contentReachableHasLocalPackage;
-    bool _allContentReachableHasLocalPackage;
+    // Content information.
+    readonly HashSet<ResPackage> _contentReachablePackages;
+    readonly HashSet<ResPackage> _allContentReachablePackages;
+    readonly bool _childrenHasLocalPackage;
+    readonly bool _contentReachableHasLocalPackage;
+    readonly bool _allContentReachableHasLocalPackage;
 
     internal ResPackage( string fullName,
                          NormalizedPath defaultTargetPath,
@@ -57,20 +57,47 @@ public sealed partial class ResPackage
         _type = type;
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
         _reachablePackages = new HashSet<ResPackage>();
-        (_requiresHasLocalPackage, _reachableHasLocalPackage, bool allRequired) = ComputeReachablePackages( _reachablePackages );
+        (_requiresHasLocalPackage, _reachableHasLocalPackage, bool allIsRequired) = ComputeReachablePackages( _reachablePackages );
 
-        // AllReacheable. ComputeReachablePackages above computed the allRequired.
-        if( allRequired )
+        // AllReacheable. ComputeReachablePackages above computed the allIsRequired.
+        if( allIsRequired )
         {
             _allReachablePackages = new HashSet<ResPackage>();
             _allReachableHasLocalPackage = ComputeAllReachablePackages( _allReachablePackages )
                                            || _reachableHasLocalPackage;
-            Throw.DebugAssert( "allRequired should have been false!", _allReachablePackages.Count > _reachablePackages.Count );
+            Throw.DebugAssert( "allIsRequired should have been false!", _allReachablePackages.Count > _reachablePackages.Count );
         }
         else
         {
             _allReachablePackages = _reachablePackages;
             _allReachableHasLocalPackage = _reachableHasLocalPackage;
+        }
+        // Content:
+        // ContentReachable is the ReachablePackages + Children.
+        // AllContentReacheable is the AllReachable + Children's AllContentReachable.
+        // For both of them, if we have no children, they are the Reachable (resp. AllReachable)
+        // and _childrenHasLocalPackage obviously remains false.
+        Throw.DebugAssert( "ReachablePackages and Children don't overlap.",
+                           !_reachablePackages.Overlaps( children ) );
+        if( children.Length == 0 )
+        {
+            _contentReachablePackages = _reachablePackages;
+            _contentReachableHasLocalPackage = _reachableHasLocalPackage;
+            _allContentReachablePackages = _allReachablePackages;
+            _allContentReachableHasLocalPackage = _allReachableHasLocalPackage;
+        }
+        else
+        {
+            // AllContentReacheable computes the _childrenHasLocalPackage, we compute it first.
+            // It contains the children (just like the _contentReachablePackages computed below).
+            _allContentReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
+            (_childrenHasLocalPackage, _allContentReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allContentReachablePackages );
+            _allContentReachableHasLocalPackage |= _allReachableHasLocalPackage;
+
+            _contentReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
+            _contentReachablePackages.AddRange( _reachablePackages );
+            _contentReachablePackages.AddRange( _children );
+            _contentReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
         }
     }
 
@@ -122,7 +149,7 @@ public sealed partial class ResPackage
 
     (bool,bool) ComputeAllContentReachablePackage( HashSet<ResPackage> set )
     {
-        // We extend our AllReachablePackages with our content's AllContentReachableHasLocalPackage.
+        // We extend our AllReachablePackages with our content's AllContentReachable.
         Throw.DebugAssert( "Initial set must be the AllReachablePackages.",
                            set.SetEquals( _allReachablePackages ) );
         bool cL = false;
@@ -132,50 +159,10 @@ public sealed partial class ResPackage
             Throw.DebugAssert( !set.Contains( p ) );
             set.Add( p );
             cL |= p.IsLocalPackage;
-            // This triggers the InitializationContent.
             l |= p.AllContentReachableHasLocalPackage;
-            Throw.DebugAssert( p._allContentReachablePackages != null );
             set.UnionWith( p._allContentReachablePackages );
         }
         return (cL,l);
-    }
-
-    [MemberNotNull( nameof( _contentReachablePackages ), nameof( _allContentReachablePackages ) )]
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void EnsureContent()
-    {
-        if( _contentReachablePackages == null ) InitializeContent();
-        Throw.DebugAssert( _allContentReachablePackages != null );
-    }
-
-    [MemberNotNull( nameof( _contentReachablePackages ) )]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    void InitializeContent()
-    {
-        // ContentReachable is the ReachablePackages + Children.
-        // AllContentReacheable is the AllReachable + Children's AllContentReachable.
-        // For both of them, if we have no children, they are the Reachable (resp. AllReachable)
-        // and _childrenHasLocalPackage obviously remains false.
-        Throw.DebugAssert( "ReachablePackages and Children don't overlap.",
-                           !_reachablePackages.Overlaps( _children ) );
-        if( _children.Length == 0 )
-        {
-            _contentReachablePackages = _reachablePackages;
-            _contentReachableHasLocalPackage = _reachableHasLocalPackage;
-            _allContentReachablePackages = _allReachablePackages;
-            _allContentReachableHasLocalPackage = _allReachableHasLocalPackage;
-        }
-        else
-        {
-            // AllContentReacheable computes the _childrenHasLocalPackage.
-            _allContentReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
-            (_childrenHasLocalPackage, _allContentReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allContentReachablePackages );
-            _allContentReachableHasLocalPackage |= _allReachableHasLocalPackage;
-
-            _contentReachablePackages = new HashSet<ResPackage>( _reachablePackages );
-            _contentReachablePackages.AddRange( _children );
-            _contentReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
-        }
     }
 
     /// <summary>
@@ -248,14 +235,7 @@ public sealed partial class ResPackage
     /// <summary>
     /// Gets whether at least one of the <see cref="Children"/> is a local package.
     /// </summary>
-    public bool ChildrenHasLocalPackage
-    {
-        get
-        {
-            EnsureContent();
-            return _childrenHasLocalPackage;
-        }
-    }
+    public bool ChildrenHasLocalPackage => _childrenHasLocalPackage;
 
     /// <summary>
     /// Gets the packages that are reachable from this one: this is
@@ -295,51 +275,23 @@ public sealed partial class ResPackage
     /// the <see cref="ReachablePackages"/> plus the <see cref="Children"/>.
     /// This set is minimal, it doesn't contain any transitive dependency.
     /// </summary>
-    public IReadOnlySet<ResPackage> ContentReachablePackages
-    {
-        get
-        {
-            EnsureContent();
-            return _contentReachablePackages;
-        }
-    }
+    public IReadOnlySet<ResPackage> ContentReachablePackages => _contentReachablePackages;
 
     /// <summary>
     /// Gets whether at least one of the <see cref="ContentReachablePackages"/> is a local package.
     /// </summary>
-    public bool ContentReachableHasLocalPackage
-    {
-        get
-        {
-            EnsureContent();
-            return _contentReachableHasLocalPackage;
-        }
-    }
+    public bool ContentReachableHasLocalPackage => _contentReachableHasLocalPackage;
 
     /// <summary>
     /// Gets all the packages that are reachable from the 'tail" of this package:
     /// this is the transitive closure of the <see cref="ContentReachablePackages"/>.
     /// </summary>
-    public IReadOnlySet<ResPackage> AllContentReachablePackages
-    {
-        get
-        {
-            EnsureContent();
-            return _allContentReachablePackages;
-        }
-    }
+    public IReadOnlySet<ResPackage> AllContentReachablePackages => _allContentReachablePackages;
 
     /// <summary>
     /// Gets whether at least one of the <see cref="AllContentReachablePackages"/> is a local package.
     /// </summary>
-    public bool AllContentReachableHasLocalPackage
-    {
-        get
-        {
-            EnsureContent();
-            return _allContentReachableHasLocalPackage;
-        }
-    }
+    public bool AllContentReachableHasLocalPackage => _allContentReachableHasLocalPackage;
 
     /// <summary>
     /// Gets the <see cref="FullName"/> (type name if this package is defined by a type).
