@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
 
@@ -16,7 +17,7 @@ public static class ResourceContainerAssetsExtension
     const string _manifestFileName = "assets.jsonc";
 
     /// <summary>
-    /// Processes the <paramref name="folder"/> if it exists and returns a <see cref="ResourceAssetSet"/>.
+    /// Processes the <paramref name="folder"/> if it exists and returns a <see cref="ResourceAssetDefinitionSet"/>.
     /// Returns false on error (error has been logged).
     /// <para>
     /// The following folder:
@@ -38,7 +39,8 @@ public static class ResourceContainerAssetsExtension
     /// <code>
     /// {
     ///     // Defines the default mapping for resources that have no defined mapping.
-    ///     // When defined this replaces the path from the component that holds the resources.
+    ///     // When defined this replaces the provided <paramref name="defaultTargetPath"/> (that is
+    ///     // typically the path from the component that holds the resources).
     ///     // It can be the empty string to target the root of the final asset folder.
     ///     "targetPath": "my/component/target",
     ///
@@ -80,21 +82,29 @@ public static class ResourceContainerAssetsExtension
     public static bool LoadAssets( this IResourceContainer container,
                                    IActivityMonitor monitor,
                                    NormalizedPath defaultTargetPath,
-                                   out ResourceAssetSet? assets,
+                                   out ResourceAssetDefinitionSet? assets,
                                    string folder = "assets" )
     {
+        return DoLoad( monitor, container.GetFolder( folder ), defaultTargetPath, out assets );
+    }
+
+    static bool DoLoad( IActivityMonitor monitor,
+                        in ResourceFolder resources,
+                        NormalizedPath defaultTargetPath,
+                        out ResourceAssetDefinitionSet? assets )
+    {
         assets = null;
-        var resources = container.GetFolder( folder );
         if( !resources.IsValid )
         {
             return true;
         }
-
         bool success = true;
-        var final = new Dictionary<NormalizedPath, ResourceAsset>();
+        var final = new Dictionary<NormalizedPath, ResourceAssetDefinition>();
         ResourceLocator manifestFile = resources.GetResource( _manifestFileName );
         if( manifestFile.IsValid )
         {
+            // When a "assets.jsonc" is here, its processing handle all
+            // the resources: final is computed.
             success &= ReadManifest( monitor,
                                      resources,
                                      manifestFile,
@@ -103,27 +113,28 @@ public static class ResourceContainerAssetsExtension
         }
         else
         {
+            // No manifest, no mappings, we use the provided defaultTargetPath.
             foreach( var r in resources.AllResources )
             {
                 if( r != manifestFile )
                 {
                     var target = defaultTargetPath.Combine( r.FullResourceName.Substring( resources.FullFolderName.Length ) );
-                    final.Add( target, new ResourceAsset( r, ResourceOverrideKind.None ) );
+                    final.Add( target, new ResourceAssetDefinition( r, ResourceOverrideKind.None ) );
                 }
             }
         }
         if( success )
         {
-            assets = new ResourceAssetSet( final );
+            assets = new ResourceAssetDefinitionSet( final );
         }
         return success;
     }
 
     static bool ReadManifest( IActivityMonitor monitor,
-                              ResourceFolder resources,
+                              in ResourceFolder resources,
                               ResourceLocator manifestFile,
                               NormalizedPath defaultTargetPath,
-                              Dictionary<NormalizedPath, ResourceAsset> final )
+                              Dictionary<NormalizedPath, ResourceAssetDefinition> final )
     {
         bool success = true;
         try
@@ -217,7 +228,7 @@ public static class ResourceContainerAssetsExtension
                                     ResourceFolder resources,
                                     NormalizedPath defaultTargetPath,
                                     ref Dictionary<NormalizedPath, ResourceOverrideKind>? overrides,
-                                    Dictionary<NormalizedPath, ResourceAsset> final )
+                                    Dictionary<NormalizedPath, ResourceAssetDefinition> final )
         {
             if( maps.ValueKind is not JsonValueKind.Object )
             {
@@ -261,7 +272,7 @@ public static class ResourceContainerAssetsExtension
                               ResourceFolder resFolder,
                               ResourceLocator res,
                               ref Dictionary<NormalizedPath, ResourceOverrideKind>? overrides,
-                              Dictionary<NormalizedPath, ResourceAsset> final )
+                              Dictionary<NormalizedPath, ResourceAssetDefinition> final )
         {
             var subPath = res.FullResourceName.Substring( resFolder.FullFolderName.Length );
             var t = target.Combine( subPath );
@@ -286,7 +297,7 @@ public static class ResourceContainerAssetsExtension
                     if( overrides.Count == 0 ) overrides = null;
                 }
             }
-            final.Add( t, new ResourceAsset( res, o ) );
+            final.Add( t, new ResourceAssetDefinition( res, o ) );
             return true;
         }
 
@@ -360,9 +371,12 @@ public static class ResourceContainerAssetsExtension
     }
 
     /// <summary>
-    /// Same as <see cref="LoadAssets(CodeStoreResources, IActivityMonitor, NormalizedPath, out ResourceAssetSet?, string)"/>
-    /// except that this returns the combination of <paramref name="folder"/> from <see cref="CodeStoreResources.Code"/> or
-    /// <see cref="CodeStoreResources.Store"/> or a combined assets set if both exist. 
+    /// Does a <see cref="LoadAssets(IResourceContainer, IActivityMonitor, NormalizedPath, out ResourceAssetDefinitionSet?, string)"/>
+    /// on the <see cref="CodeStoreResources.GetSingleFolder(IActivityMonitor, ReadOnlySpan{char})"/>.
+    /// <para>
+    /// Assets don't "merge" between Store and Code: the folder in Code, if it exists, fully replaces the Store resources.
+    /// If needed, it is up to the code to generate a resource folder that account for all stored resources.
+    /// </para>
     /// </summary>
     /// <param name="resources">This Code and Store resources.</param>
     /// <param name="monitor">The monitor to use.</param>
@@ -374,19 +388,11 @@ public static class ResourceContainerAssetsExtension
     public static bool LoadAssets( this CodeStoreResources resources,
                                    IActivityMonitor monitor,
                                    NormalizedPath defaultTargetPath,
-                                   out ResourceAssetSet? assets,
+                                   out ResourceAssetDefinitionSet? assets,
                                    string folder = "assets" )
     {
-        bool success = resources.Store.LoadAssets( monitor, defaultTargetPath, out assets, folder );
-        if( assets == null )
-        {
-            success &= resources.Code.LoadAssets( monitor, defaultTargetPath, out assets, folder );
-        }
-        else
-        {
-            success &= assets.LoadAndApplyBase( monitor, resources.Code, defaultTargetPath, folder, isPartialSet: true );
-        }
-        return success;
+        var f = resources.GetSingleFolder( monitor, folder );
+        return DoLoad( monitor, f, defaultTargetPath, out assets );
     }
 
 }
