@@ -9,7 +9,7 @@ namespace CK.EmbeddedResources;
 /// <para>
 /// An <see cref="AssemblyResources"/> is not a <see cref="IResourceContainer"/> (because we cannot know the
 /// folder separator to use for all the resources) but it can create subordinate containers on the "ck@" prefixed resources
-/// (that uses '/' as the folder separator) thanks to <see cref="AssemblyResources.CreateResourcesContainerForType(IActivityMonitor, Type, string?)"/>.
+/// (that uses '/' as the folder separator) thanks to <see cref="AssemblyResources.CreateResourcesContainerForType(Core.IActivityMonitor, Type, string?, bool)"/>.
 /// </para>
 /// <para>
 /// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories and files.

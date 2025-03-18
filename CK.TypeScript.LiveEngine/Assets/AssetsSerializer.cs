@@ -9,7 +9,7 @@ namespace CK.TypeScript.LiveEngine;
 static class AssetsSerializer
 {
     static void WriteResourceAssetSet( CKBinaryWriter w,
-                                       ResourceAssetSet c,
+                                       ResourceAssetDefinitionSet c,
                                        CKBinaryWriter.ObjectPool<IResourceContainer> containerPool )
     {
         w.WriteNonNegativeSmallInt32( c.Assets.Count );
@@ -21,18 +21,18 @@ static class AssetsSerializer
         }
     }
 
-    static ResourceAssetSet ReadResourceAssetSet( CKBinaryReader r,
+    static ResourceAssetDefinitionSet ReadResourceAssetSet( CKBinaryReader r,
                                                   CKBinaryReader.ObjectPool<IResourceContainer> containerPool )
     {
         int count = r.ReadNonNegativeSmallInt32();
-        var assets = new Dictionary<NormalizedPath, ResourceAsset>( count );
+        var assets = new Dictionary<NormalizedPath, ResourceAssetDefinition>( count );
         while( --count >= 0 )
         {
             NormalizedPath  key = r.ReadString();
             var origin = StateSerializer.ReadResourceLocator( r, containerPool );
-            assets.Add( key, new ResourceAsset( origin, (ResourceOverrideKind)r.ReadByte() ) );
+            assets.Add( key, new ResourceAssetDefinition( origin, (ResourceOverrideKind)r.ReadByte() ) );
         }
-        return new ResourceAssetSet( assets );
+        return new ResourceAssetDefinitionSet( assets );
     }
 
     public static bool WriteAssetsState( CKBinaryWriter w,
@@ -43,7 +43,7 @@ static class AssetsSerializer
         w.WriteNonNegativeSmallInt32( packageAssets.Count );
         foreach( var locale in packageAssets )
         {
-            if( locale is ResourceAssetSet c )
+            if( locale is ResourceAssetDefinitionSet c )
             {
                 w.WriteSmallInt32( -1 );
                 WriteResourceAssetSet( w, c, containerPool );

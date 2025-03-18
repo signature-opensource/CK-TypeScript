@@ -1,5 +1,6 @@
 using CK.Core;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.EmbeddedResources;
 
@@ -18,7 +19,7 @@ namespace CK.EmbeddedResources;
 ///     By aggregating 2 final sets together. If the same target path associated to different resource exists,
 ///     the resulting set can be <see cref="IsAmbiguous"/> (it contains at least one non null <see cref="FinalResourceAsset.Ambiguities"/>).
 ///     <para>
-///     <see cref="Aggregate(IActivityMonitor, FinalResourceAssetSet)"/> provides this kind of aggregated set.
+///     <see cref="Aggregate(FinalResourceAssetSet)"/> provides this kind of aggregated set.
 ///     </para>
 ///     </item>
 ///     <item>
@@ -36,10 +37,12 @@ namespace CK.EmbeddedResources;
 /// </summary>
 public sealed class FinalResourceAssetSet
 {
-    readonly Dictionary<NormalizedPath, FinalResourceAsset> _assets;
+    readonly IReadOnlyDictionary<NormalizedPath, FinalResourceAsset> _assets;
     readonly bool _isAmbiguous;
 
-    internal FinalResourceAssetSet( Dictionary<NormalizedPath, FinalResourceAsset> assets, bool isAmbiguous )
+    public static readonly FinalResourceAssetSet Empty = new FinalResourceAssetSet( ImmutableDictionary<NormalizedPath, FinalResourceAsset>.Empty, false );
+
+    internal FinalResourceAssetSet( IReadOnlyDictionary<NormalizedPath, FinalResourceAsset> assets, bool isAmbiguous )
     {
         _assets = assets;
         _isAmbiguous = isAmbiguous;
@@ -58,12 +61,10 @@ public sealed class FinalResourceAssetSet
     /// <summary>
     /// Aggregate this set with an other one. Even if both sets are not <see cref="IsAmbiguous"/>,
     /// if a comman target paths is mapped to different resource, the result will be amiguous.
-    /// generate ambiguities.
     /// </summary>
-    /// <param name="monitor"></param>
-    /// <param name="other"></param>
-    /// <returns></returns>
-    public FinalResourceAssetSet? Aggregate( IActivityMonitor monitor, FinalResourceAssetSet other )
+    /// <param name="other">The other set to aggregate.</param>
+    /// <returns>The aggregated set.</returns>
+    public FinalResourceAssetSet Aggregate( FinalResourceAssetSet other )
     {
         if( _assets.Count == 0 ) return other;
         if( other._assets.Count == 0 ) return this;
@@ -86,6 +87,21 @@ public sealed class FinalResourceAssetSet
             }
         }
         return new FinalResourceAssetSet( result, isAmbiguous );
+    }
+
+    /// <summary>
+    /// Aggregate this set with other ones. See <see cref="Aggregate(FinalResourceAssetSet)"/>.
+    /// </summary>
+    /// <param name="others">The other sets to aggregate.</param>
+    /// <returns>The aggregated set.</returns>
+    public FinalResourceAssetSet Aggregate( IEnumerable<FinalResourceAssetSet> others )
+    {
+        var f = this;
+        foreach( var o in others )
+        {
+            f = f.Aggregate( o );
+        }
+        return f;
     }
 
 }

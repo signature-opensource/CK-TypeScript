@@ -104,6 +104,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.ResourceSpace.Abstractio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.EmbeddedResources.Globalization.Tests", "Tests\CK.EmbeddedResources.Globalization.Tests\CK.EmbeddedResources.Globalization.Tests.csproj", "{65B0FB79-DD50-4881-9D22-0D382A412829}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.ResourceSpace.Assets", "CK.ResourceSpace.Assets\CK.ResourceSpace.Assets.csproj", "{181ED61E-0EA0-4AFD-A401-E131AEFFF3B1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -262,6 +264,10 @@ Global
 		{65B0FB79-DD50-4881-9D22-0D382A412829}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65B0FB79-DD50-4881-9D22-0D382A412829}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65B0FB79-DD50-4881-9D22-0D382A412829}.Release|Any CPU.Build.0 = Release|Any CPU
+		{181ED61E-0EA0-4AFD-A401-E131AEFFF3B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{181ED61E-0EA0-4AFD-A401-E131AEFFF3B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{181ED61E-0EA0-4AFD-A401-E131AEFFF3B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{181ED61E-0EA0-4AFD-A401-E131AEFFF3B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

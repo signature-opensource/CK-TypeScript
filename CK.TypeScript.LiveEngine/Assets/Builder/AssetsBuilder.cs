@@ -25,7 +25,7 @@ sealed class AssetsBuilder
         _packageAssets = new List<object>();
     }
 
-    public void AddRegularPackage( IActivityMonitor monitor, ResourceAssetSet newSet )
+    public void AddRegularPackage( IActivityMonitor monitor, ResourceAssetDefinitionSet newSet )
     {
         Throw.DebugAssert( newSet != null );
         bool isPartial = _regularPackageCount > 0;
@@ -44,7 +44,7 @@ sealed class AssetsBuilder
         _packageAssets.Add( localPackage );
     }
 
-    internal void SetFinalAssets( ResourceAssetSet final )
+    internal void SetFinalAssets( ResourceAssetDefinitionSet final )
     {
         _final = new Dictionary<NormalizedPath, FinalAsset>();
         foreach( var (path,asset) in final.Assets )

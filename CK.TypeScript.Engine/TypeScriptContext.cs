@@ -315,7 +315,7 @@ public sealed partial class TypeScriptContext
         {
             // First, tries to load the "ck-gen-transform/assets".
             // If there is an error loading it, give up.
-            ResourceAssetSet? appAssets = null;
+            ResourceAssetDefinitionSet? appAssets = null;
             if( context.CKGenTransform != null
                 && !context.CKGenTransform.LoadAssets( monitor, default, out appAssets, "assets" ) )
             {

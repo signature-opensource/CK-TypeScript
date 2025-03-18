@@ -26,7 +26,7 @@ public class FileSystemResourceContainerTests
 
         c.TryGetResource( "SomeType/SomeType.cs", out var locator ).ShouldBeTrue();
 
-        locator.FullResourceName.ShouldBe( TestHelper.TestProjectFolder.AppendPart( "SomeType" ).AppendPart( "SomeType.cs" )
+        locator.FullResourceName.ShouldBe( TestHelper.TestProjectFolder.AppendPart( "SomeType" ).AppendPart( "SomeType.cs" ) );
         var content = c.GetFolder( "SomeType" );
         content.AllResources.Count().ShouldBe( 2 );
         var theOne = content.Resources.Single();

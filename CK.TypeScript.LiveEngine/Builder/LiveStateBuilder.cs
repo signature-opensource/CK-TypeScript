@@ -60,7 +60,7 @@ public sealed class LiveStateBuilder
                                    AssemblyResourceContainer resources,
                                    NormalizedPath typeScriptFolder,
                                    LocaleCultureSet? locales,
-                                   ResourceAssetSet? assets )
+                                   ResourceAssetDefinitionSet? assets )
     {
         var reg = new RegularPackageRef( resources, typeScriptFolder, _regularPackages.Count );
         _regularPackages.Add( reg );
@@ -103,7 +103,7 @@ public sealed class LiveStateBuilder
         }
     }
 
-    public void SetFinalAssets( ResourceAssetSet final ) => _assets.SetFinalAssets( final );
+    public void SetFinalAssets( ResourceAssetDefinitionSet final ) => _assets.SetFinalAssets( final );
 
     public bool WriteState( IActivityMonitor monitor )
     {

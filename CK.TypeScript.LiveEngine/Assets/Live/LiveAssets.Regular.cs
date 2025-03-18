@@ -7,9 +7,9 @@ sealed partial class LiveAssets
 {
     public sealed class Regular : IAssetPackage
     {
-        readonly ResourceAssetSet _assets;
+        readonly ResourceAssetDefinitionSet _assets;
 
-        public Regular( ResourceAssetSet assets )
+        public Regular( ResourceAssetDefinitionSet assets )
         {
             _assets = assets;
         }

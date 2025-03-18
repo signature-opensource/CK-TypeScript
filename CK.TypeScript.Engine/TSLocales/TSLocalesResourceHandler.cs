@@ -49,7 +49,7 @@ sealed partial class TSLocalesResourceHandler : ResourceSpaceFolderHandler
         bool success = true;
         foreach( var p in spaceData.Packages )
         {
-            success &= p.Resources.LoadLocales( monitor,
+            success &= p.BeforeResources.LoadLocales( monitor,
                                                 _activeCultures,
                                                 out var tsLocales,
                                                 RootFolderName,

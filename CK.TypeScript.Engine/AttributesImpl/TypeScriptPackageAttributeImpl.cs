@@ -25,7 +25,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     List<EmbeddedResources.ResourceLocator>? _transformers;
 
     LocaleCultureSet? _tsLocales;
-    ResourceAssetSet? _assets;
+    ResourceAssetDefinitionSet? _assets;
 
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
@@ -77,7 +77,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the assets associated to this package.
     /// </summary>
-    public ResourceAssetSet? Assets => _assets;
+    public ResourceAssetDefinitionSet? Assets => _assets;
 
     /// <summary>
     /// Gets the transformer resources from this <see cref="Resources"/>.

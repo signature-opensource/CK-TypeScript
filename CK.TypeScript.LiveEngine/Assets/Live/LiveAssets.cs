@@ -82,7 +82,7 @@ sealed partial class LiveAssets
         }
     }
 
-    void SetFinal( IActivityMonitor monitor, IReadOnlyDictionary<NormalizedPath, ResourceAsset> newFinal )
+    void SetFinal( IActivityMonitor monitor, IReadOnlyDictionary<NormalizedPath, ResourceAssetDefinition> newFinal )
     {
         Throw.DebugAssert( _final != null );
 
