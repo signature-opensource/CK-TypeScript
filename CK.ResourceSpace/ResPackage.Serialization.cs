@@ -16,8 +16,6 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _localPath = r.ReadNullableString();
         _isGroup = r.ReadBoolean();
         _index = r.ReadInt32();
-        _beforeResources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
-        _afterResources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
         _requires = s.ReadValue<ImmutableArray<ResPackage>>();
         _children = s.ReadValue<ImmutableArray<ResPackage>>();
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
@@ -60,6 +58,12 @@ public sealed partial class ResPackage : ICKSlicedSerializable
             _afterReachablePackages.AddRange( _children );
             _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
         }
+        // Initializes the resources once the package sets are computed.
+        var bRes = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+        _beforeResources = new BeforeContent( this, bRes, r.ReadNonNegativeSmallInt32() );
+
+        var aRes = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+        _afterResources = new AfterContent( this, aRes, r.ReadNonNegativeSmallInt32() );
     }
 
     public void Write( IBinarySerializer s )
@@ -70,10 +74,6 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         w.WriteNullableString( _localPath );
         w.Write( _isGroup );
         w.Write( _index );
-        s.WriteObject( _beforeResources.Code );
-        s.WriteObject( _beforeResources.Store );
-        s.WriteObject( _afterResources.Code );
-        s.WriteObject( _afterResources.Store );
         s.WriteValue( _requires );
         s.WriteValue( _children );
         w.WriteNonNegativeSmallInt32( _reachablePackages.Count );
@@ -82,5 +82,11 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         {
             w.WriteNonNegativeSmallInt32( _allAfterReachablePackages.Count );
         }
+        s.WriteObject( _beforeResources.Resources.Code );
+        s.WriteObject( _beforeResources.Resources.Store );
+        w.WriteNonNegativeSmallInt32( _beforeResources.Index );
+        s.WriteObject( _afterResources.Resources.Code );
+        s.WriteObject( _afterResources.Resources.Store );
+        w.WriteNonNegativeSmallInt32( _afterResources.Index );
     }
 }

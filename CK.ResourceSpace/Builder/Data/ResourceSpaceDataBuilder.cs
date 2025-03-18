@@ -50,19 +50,25 @@ public sealed class ResourceSpaceDataBuilder
         Throw.DebugAssert( "No items, only containers (and maybe groups).",
                             sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
 
+        // Pool for reachable sets.
+        var rpBuilder = new ReachablePackageCacheBuilder();
+
         // The "<Code>" package is the first package and represents the generated code.
         // It is empty (no child) and only contains the generated code as AfterResources by design.
         // This package is not local as it is not bound to any local path.
         // All packages that require no other package require it.
         // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
         //       change anything.
-        static ResPackage CreateCodePackage( IResourceContainer? generatedCodeContainer )
+        static ResPackage CreateCodePackage( ReachablePackageCacheBuilder rpBuilder, IResourceContainer? generatedCodeContainer )
         {
             var codeContainer = generatedCodeContainer ?? new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
             // Code package has no content and is by construction the first package: its index and
             // the indexes of its resources are known.
-            return new ResPackage( "<Code>",
+            // This will cache an empty Reachable HastSet<ResPackage> in the rpBuilder (at index 0): any
+            // other empty set will be this first empty one.
+            return new ResPackage( rpBuilder,
+                                   "<Code>",
                                    defaultTargetPath: default,
                                    idxBeforeResources: 0,
                                    beforeResources: new CodeStoreResources( noHeadRes, noHeadRes ),
@@ -85,7 +91,8 @@ public sealed class ResourceSpaceDataBuilder
         // Note: We could choose the AfterResources to hold the app resources, this wouldn't
         //       change anything.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
-                                            ImmutableArray<ResPackage> appRequires,
+                                            ReachablePackageCacheBuilder rpBuilder,
+                                            ImmutableArray< ResPackage> appRequires,
                                             int index )
         {
             IResourceContainer appResStore;
@@ -99,7 +106,8 @@ public sealed class ResourceSpaceDataBuilder
                 appResStore = new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             }
             var noAppRes = new EmptyResourceContainer( "<App>", isDisabled: true );
-            var appPackage = new ResPackage( "<App>",
+            var appPackage = new ResPackage( rpBuilder,
+                                             "<App>",
                                              defaultTargetPath: default,
                                              idxBeforeResources: 2 * index,
                                              beforeResources: new CodeStoreResources( noAppRes, appResStore ),
@@ -142,7 +150,7 @@ public sealed class ResourceSpaceDataBuilder
         var space = new ResourceSpaceData( packageIndex );
 
         // Create the code package and adds it where it must be.
-        ResPackage codePackage = CreateCodePackage( _generatedCodeContainer );
+        ResPackage codePackage = CreateCodePackage( rpBuilder, _generatedCodeContainer );
         bAll.Add( codePackage );
         packageIndex.Add( codePackage.FullName, codePackage );
         if( _generatedCodeContainer != null )
@@ -174,7 +182,8 @@ public sealed class ResourceSpaceDataBuilder
                                                         ? s.Requires.Select( s => packageIndex[s.Item] ).ToImmutableArray()
                                                         : requiresCode;
                 ImmutableArray<ResPackage> children = s.Children.Select( s => packageIndex[s.Item] ).ToImmutableArray();
-                var p = new ResPackage( d.FullName,
+                var p = new ResPackage( rpBuilder,
+                                        d.FullName,
                                         d.DefaultTargetPath,
                                         s.HeadForGroup.Index,
                                         d.Resources,
@@ -214,7 +223,7 @@ public sealed class ResourceSpaceDataBuilder
         // The FileSystemResourceContainer normalizes the path (ends with Path.DirectorySeparator)
         // and this must be normalized!
         string? appLocalPath = _appResourcesLocalPath;
-        var appPackage = CreateAppPackage( ref appLocalPath, bAppRequirements.DrainToImmutable(), bAll.Count );
+        var appPackage = CreateAppPackage( ref appLocalPath, rpBuilder, bAppRequirements.DrainToImmutable(), bAll.Count );
         packageIndex.Add( appPackage.FullName, appPackage );
         if( appLocalPath != null )
         {
@@ -225,6 +234,10 @@ public sealed class ResourceSpaceDataBuilder
         space._packages = bAll.MoveToImmutable();
         space._localPackages = bLocal.MoveToImmutable();
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
+        // The space is initialized with all its packages.
+        // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now
+        // compute the optimal aggregation sets.
+
         return space;
 
     }

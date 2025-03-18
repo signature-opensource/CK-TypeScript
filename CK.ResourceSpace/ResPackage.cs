@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
@@ -35,7 +36,8 @@ public sealed partial class ResPackage
     readonly bool _afterReachableHasLocalPackage;
     readonly bool _allAfterReachableHasLocalPackage;
 
-    internal ResPackage( string fullName,
+    internal ResPackage( ReachablePackageCacheBuilder rpBuilder,
+                         string fullName,
                          NormalizedPath defaultTargetPath,
                          int idxBeforeResources,
                          CodeStoreResources beforeResources,
@@ -50,17 +52,20 @@ public sealed partial class ResPackage
     {
         _fullName = fullName;
         _defaultTargetPath = defaultTargetPath;
-        _beforeResources = new BeforeContent( this, beforeResources, idxBeforeResources );
-        _afterResources = new AfterContent( this, beforeResources, idxAfterResources );
         _localPath = localPath;
         _isGroup = isGroup;
         _index = index;
         _requires = requires;
         _children = children;
         _type = type;
+        // Initializes the resources.
+        _beforeResources = new BeforeContent( this, beforeResources, idxBeforeResources );
+        _afterResources = new AfterContent( this, afterResources, idxAfterResources );
+
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
-        _reachablePackages = new HashSet<ResPackage>();
-        (_requiresHasLocalPackage, _reachableHasLocalPackage, bool allIsRequired) = ComputeReachablePackages( _reachablePackages );
+        var reachablePackages = new HashSet<ResPackage>();
+        (_requiresHasLocalPackage, _reachableHasLocalPackage, bool allIsRequired) = ComputeReachablePackages( reachablePackages );
+        _reachablePackages = rpBuilder.Pool( reachablePackages );
 
         // AllReacheable. ComputeReachablePackages above computed the allIsRequired.
         if( allIsRequired )
@@ -76,8 +81,8 @@ public sealed partial class ResPackage
             _allReachableHasLocalPackage = _reachableHasLocalPackage;
         }
         // Content:
-        // ContentReachable is the ReachablePackages + Children.
-        // AllContentReacheable is the AllReachable + Children's AllContentReachable.
+        // AfterReachable is the ReachablePackages + Children.
+        // AllAfterReacheable is the AllReachable + Children's AllAfterReachable.
         // For both of them, if we have no children, they are the Reachable (resp. AllReachable)
         // and _childrenHasLocalPackage obviously remains false.
         Throw.DebugAssert( "ReachablePackages and Children don't overlap.",
@@ -92,15 +97,16 @@ public sealed partial class ResPackage
         else
         {
             // AllContentReacheable computes the _childrenHasLocalPackage, we compute it first.
-            // It contains the children (just like the _contentReachablePackages computed below).
+            // It contains the children (just like the _afterReachablePackages computed below).
             _allAfterReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
             (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allAfterReachablePackages );
             _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
 
-            _afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
-            _afterReachablePackages.AddRange( _reachablePackages );
-            _afterReachablePackages.AddRange( _children );
             _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
+            var afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
+            afterReachablePackages.AddRange( _reachablePackages );
+            afterReachablePackages.AddRange( _children );
+            _afterReachablePackages = rpBuilder.Pool( reachablePackages );
         }
     }
 
@@ -359,4 +365,3 @@ public sealed partial class ResPackage
         public ResPackage Package => _package;
     }
 }
-

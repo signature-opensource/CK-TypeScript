@@ -155,7 +155,7 @@ public sealed class ResourceSpaceCollectorBuilder
 
     /// <summary>
     /// Produces the set of <see cref="ResPackageDescriptor"/> initialized from their <see cref="ResPackageDescriptor.Type"/>
-    /// or, if there is no definer type, from the "Package.xml" file in the <see cref="ResPackageDescriptor.PackageResources"/>.
+    /// or, if there is no definer type, from the "Package.xml" file in the <see cref="ResPackageDescriptor.Resources"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The collector with initialized packages or null on error.</returns>
