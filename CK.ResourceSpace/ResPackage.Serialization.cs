@@ -16,8 +16,8 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _localPath = r.ReadNullableString();
         _isGroup = r.ReadBoolean();
         _index = r.ReadInt32();
-        _resources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
-        _afterContentResources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+        _beforeResources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+        _afterResources = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
         _requires = s.ReadValue<ImmutableArray<ResPackage>>();
         _children = s.ReadValue<ImmutableArray<ResPackage>>();
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
@@ -42,23 +42,23 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         }
         if( _children.Length == 0 )
         {
-            _contentReachablePackages = _reachablePackages;
-            _contentReachableHasLocalPackage = _reachableHasLocalPackage;
-            _allContentReachablePackages = _allReachablePackages;
-            _allContentReachableHasLocalPackage = _allReachableHasLocalPackage;
+            _afterReachablePackages = _reachablePackages;
+            _afterReachableHasLocalPackage = _reachableHasLocalPackage;
+            _allAfterReachablePackages = _allReachablePackages;
+            _allAfterReachableHasLocalPackage = _allReachableHasLocalPackage;
         }
         else
         {
             expectedSize = r.ReadNonNegativeSmallInt32();
-            _allContentReachablePackages = new HashSet<ResPackage>( expectedSize );
-            _allContentReachablePackages.AddRange( _allReachablePackages );
-            (_childrenHasLocalPackage, _allContentReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allContentReachablePackages );
-            _allContentReachableHasLocalPackage |= _allReachableHasLocalPackage;
+            _allAfterReachablePackages = new HashSet<ResPackage>( expectedSize );
+            _allAfterReachablePackages.AddRange( _allReachablePackages );
+            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allAfterReachablePackages );
+            _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
 
-            _contentReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + _children.Length );
-            _contentReachablePackages.AddRange( _reachablePackages );
-            _contentReachablePackages.AddRange( _children );
-            _contentReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
+            _afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + _children.Length );
+            _afterReachablePackages.AddRange( _reachablePackages );
+            _afterReachablePackages.AddRange( _children );
+            _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
         }
     }
 
@@ -70,17 +70,17 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         w.WriteNullableString( _localPath );
         w.Write( _isGroup );
         w.Write( _index );
-        s.WriteObject( _resources.Code );
-        s.WriteObject( _resources.Store );
-        s.WriteObject( _afterContentResources.Code );
-        s.WriteObject( _afterContentResources.Store );
+        s.WriteObject( _beforeResources.Code );
+        s.WriteObject( _beforeResources.Store );
+        s.WriteObject( _afterResources.Code );
+        s.WriteObject( _afterResources.Store );
         s.WriteValue( _requires );
         s.WriteValue( _children );
         w.WriteNonNegativeSmallInt32( _reachablePackages.Count );
         w.WriteSmallInt32( _allReachablePackages != _reachablePackages ? _allReachablePackages.Count : -1 );
         if( _children.Length > 0 )
         {
-            w.WriteNonNegativeSmallInt32( _allContentReachablePackages.Count );
+            w.WriteNonNegativeSmallInt32( _allAfterReachablePackages.Count );
         }
     }
 }

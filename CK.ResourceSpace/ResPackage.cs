@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace CK.Core;
@@ -20,24 +21,26 @@ public sealed partial class ResPackage
     readonly HashSet<ResPackage> _reachablePackages;
     readonly ImmutableArray<ResPackage> _children;
     readonly HashSet<ResPackage> _allReachablePackages;
-    readonly CodeStoreResources _resources;
-    readonly CodeStoreResources _afterContentResources;
+    readonly BeforeContent _beforeResources;
+    readonly AfterContent _afterResources;
     readonly int _index;
     readonly bool _isGroup;
     readonly bool _requiresHasLocalPackage;
     readonly bool _reachableHasLocalPackage;
     readonly bool _allReachableHasLocalPackage;
     // Content information.
-    readonly HashSet<ResPackage> _contentReachablePackages;
-    readonly HashSet<ResPackage> _allContentReachablePackages;
+    readonly HashSet<ResPackage> _afterReachablePackages;
+    readonly HashSet<ResPackage> _allAfterReachablePackages;
     readonly bool _childrenHasLocalPackage;
-    readonly bool _contentReachableHasLocalPackage;
-    readonly bool _allContentReachableHasLocalPackage;
+    readonly bool _afterReachableHasLocalPackage;
+    readonly bool _allAfterReachableHasLocalPackage;
 
     internal ResPackage( string fullName,
                          NormalizedPath defaultTargetPath,
-                         CodeStoreResources resources,
-                         CodeStoreResources afterContentResources,
+                         int idxBeforeResources,
+                         CodeStoreResources beforeResources,
+                         int idxAfterResources,
+                         CodeStoreResources afterResources,
                          string? localPath,
                          bool isGroup,
                          Type? type,
@@ -47,8 +50,8 @@ public sealed partial class ResPackage
     {
         _fullName = fullName;
         _defaultTargetPath = defaultTargetPath;
-        _resources = resources;
-        _afterContentResources = afterContentResources;
+        _beforeResources = new BeforeContent( this, beforeResources, idxBeforeResources );
+        _afterResources = new AfterContent( this, beforeResources, idxAfterResources );
         _localPath = localPath;
         _isGroup = isGroup;
         _index = index;
@@ -81,23 +84,23 @@ public sealed partial class ResPackage
                            !_reachablePackages.Overlaps( children ) );
         if( children.Length == 0 )
         {
-            _contentReachablePackages = _reachablePackages;
-            _contentReachableHasLocalPackage = _reachableHasLocalPackage;
-            _allContentReachablePackages = _allReachablePackages;
-            _allContentReachableHasLocalPackage = _allReachableHasLocalPackage;
+            _afterReachablePackages = _reachablePackages;
+            _afterReachableHasLocalPackage = _reachableHasLocalPackage;
+            _allAfterReachablePackages = _allReachablePackages;
+            _allAfterReachableHasLocalPackage = _allReachableHasLocalPackage;
         }
         else
         {
             // AllContentReacheable computes the _childrenHasLocalPackage, we compute it first.
             // It contains the children (just like the _contentReachablePackages computed below).
-            _allContentReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
-            (_childrenHasLocalPackage, _allContentReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allContentReachablePackages );
-            _allContentReachableHasLocalPackage |= _allReachableHasLocalPackage;
+            _allAfterReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
+            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allAfterReachablePackages );
+            _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
 
-            _contentReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
-            _contentReachablePackages.AddRange( _reachablePackages );
-            _contentReachablePackages.AddRange( _children );
-            _contentReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
+            _afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
+            _afterReachablePackages.AddRange( _reachablePackages );
+            _afterReachablePackages.AddRange( _children );
+            _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
         }
     }
 
@@ -159,8 +162,8 @@ public sealed partial class ResPackage
             Throw.DebugAssert( !set.Contains( p ) );
             set.Add( p );
             cL |= p.IsLocalPackage;
-            l |= p.AllContentReachableHasLocalPackage;
-            set.UnionWith( p._allContentReachablePackages );
+            l |= p.AllAfterReachableHasLocalPackage;
+            set.UnionWith( p._allAfterReachablePackages );
         }
         return (cL,l);
     }
@@ -176,14 +179,15 @@ public sealed partial class ResPackage
     public NormalizedPath DefaultTargetPath => _defaultTargetPath;
 
     /// <summary>
-    /// Gets the <see cref="CodeStoreResources"/> for this package.
+    /// Gets the <see cref="IResPackageResources"/> for this package.
     /// </summary>
-    public CodeStoreResources Resources => _resources;
+    public IResPackageResources BeforeResources => _beforeResources;
 
     /// <summary>
-    /// Gets the <see cref="CodeStoreResources"/> that apply after this package's <see cref="Children"/>.
+    /// Gets the <see cref="IResPackageResources"/> that apply after this package's <see cref="Children"/>
+    /// and these <see cref="BeforeResources"/>.
     /// </summary>
-    public CodeStoreResources AfterContentResources => _afterContentResources;
+    public IResPackageResources AfterResources => _afterResources;
 
     /// <summary>
     /// Gets a non null fully qualified path of this package's resources if this is a local package.
@@ -247,7 +251,7 @@ public sealed partial class ResPackage
     /// of the package.
     /// </para>
     /// <para>
-    /// The <see cref="ContentReachablePackages"/> is the same minimal set but from
+    /// The <see cref="AfterReachablePackages"/> is the same minimal set but from
     /// the point of view of the "tail" of the package from which the children
     /// of the packages are like package's requirements.
     /// </para>
@@ -273,25 +277,26 @@ public sealed partial class ResPackage
     /// <summary>
     /// Gets the packages that are reachable from the 'tail" of this package: this is
     /// the <see cref="ReachablePackages"/> plus the <see cref="Children"/>.
-    /// This set is minimal, it doesn't contain any transitive dependency.
+    /// This set is minimal, it doesn't contain any transitive dependency and doesn't contain this package.
     /// </summary>
-    public IReadOnlySet<ResPackage> ContentReachablePackages => _contentReachablePackages;
+    public IReadOnlySet<ResPackage> AfterReachablePackages => _afterReachablePackages;
 
     /// <summary>
-    /// Gets whether at least one of the <see cref="ContentReachablePackages"/> is a local package.
+    /// Gets whether at least one of the <see cref="AfterReachablePackages"/> is a local package.
     /// </summary>
-    public bool ContentReachableHasLocalPackage => _contentReachableHasLocalPackage;
+    public bool AfterReachableHasLocalPackage => _afterReachableHasLocalPackage;
 
     /// <summary>
     /// Gets all the packages that are reachable from the 'tail" of this package:
-    /// this is the transitive closure of the <see cref="ContentReachablePackages"/>.
+    /// this is the transitive closure of the <see cref="AfterReachablePackages"/> (but
+    /// still without this package).
     /// </summary>
-    public IReadOnlySet<ResPackage> AllContentReachablePackages => _allContentReachablePackages;
+    public IReadOnlySet<ResPackage> AllAfterReachablePackages => _allAfterReachablePackages;
 
     /// <summary>
-    /// Gets whether at least one of the <see cref="AllContentReachablePackages"/> is a local package.
+    /// Gets whether at least one of the <see cref="AllAfterReachablePackages"/> is a local package.
     /// </summary>
-    public bool AllContentReachableHasLocalPackage => _allContentReachableHasLocalPackage;
+    public bool AllAfterReachableHasLocalPackage => _allAfterReachableHasLocalPackage;
 
     /// <summary>
     /// Gets the <see cref="FullName"/> (type name if this package is defined by a type).
@@ -301,8 +306,57 @@ public sealed partial class ResPackage
 
     internal static string ToString( string fullName, Type? type )
     {
-        return type != null
+        return type != null && !fullName.EndsWith( type.Name )
                 ? $"{fullName} ({type.Name})"
                 : fullName;
     }
+
+    sealed class BeforeContent : IResPackageResources
+    {
+        readonly ResPackage _package;
+        readonly CodeStoreResources _resources;
+        readonly int _index;
+
+        public BeforeContent( ResPackage package, CodeStoreResources resources, int index )
+        {
+            _package = package;
+            _resources = resources;
+            _index = index;
+        }
+
+        public bool IsAfter => false;
+
+        public int Index => _index;
+
+        public IEnumerable<IResPackageResources> Reachables => _package.ReachablePackages.Select( p => p.AfterResources );
+
+        public CodeStoreResources Resources => _resources;
+
+        public ResPackage Package => _package;
+    }
+
+    sealed class AfterContent : IResPackageResources
+    {
+        readonly ResPackage _package;
+        readonly CodeStoreResources _resources;
+        readonly int _index;
+
+        public AfterContent( ResPackage package, CodeStoreResources resources, int index )
+        {
+            _package = package;
+            _resources = resources;
+            _index = index;
+        }
+
+        public bool IsAfter => true;
+
+        public int Index => _index;
+
+        public IEnumerable<IResPackageResources> Reachables => _package.AfterReachablePackages.Select( p => p.AfterResources ).Append( _package.BeforeResources );
+
+        public CodeStoreResources Resources => _resources;
+
+        public ResPackage Package => _package;
+    }
 }
+

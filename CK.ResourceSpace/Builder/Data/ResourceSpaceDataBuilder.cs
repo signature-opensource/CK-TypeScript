@@ -3,6 +3,7 @@ using CK.Setup;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CK.Core;
 
@@ -50,17 +51,23 @@ public sealed class ResourceSpaceDataBuilder
                             sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
 
         // The "<Code>" package is the first package and represents the generated code.
-        // It is empty and only contains generated code resources by design.
+        // It is empty (no child) and only contains the generated code as AfterResources by design.
         // This package is not local as it is not bound to any local path.
         // All packages that require no other package require it.
+        // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
+        //       change anything.
         static ResPackage CreateCodePackage( IResourceContainer? generatedCodeContainer )
         {
             var codeContainer = generatedCodeContainer ?? new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
+            // Code package has no content and is by construction the first package: its index and
+            // the indexes of its resources are known.
             return new ResPackage( "<Code>",
                                    defaultTargetPath: default,
-                                   resources: new CodeStoreResources( codeContainer, noHeadRes ),
-                                   afterContentResources: new CodeStoreResources( noHeadRes, noHeadRes ),
+                                   idxBeforeResources: 0,
+                                   beforeResources: new CodeStoreResources( noHeadRes, noHeadRes ),
+                                   idxAfterResources: 1,
+                                   afterResources: new CodeStoreResources( codeContainer, noHeadRes ),
                                    localPath: null,
                                    isGroup: false,
                                    type: null,
@@ -70,11 +77,13 @@ public sealed class ResourceSpaceDataBuilder
         }
 
         // The "<App>" package is the last package and represents the Application being setup.
-        // It is empty an only contains Resources with an empty Code resources container and
-        // a Store FileSystemResourceContainer on the AppResourcesLocalPath.
+        // It is empty (no child) and only contains BeforeResources with an empty Code resources
+        // container disabled by design and a Store FileSystemResourceContainer on the AppResourcesLocalPath.
         // It is a local package by design except if AppResourcesLocalPath is null.
         // It requires all packages that are not required by other packages.
-        // It is initialized below after the others (once we know its requirements).
+        // It is initialized below after the others (once we know its requirements) and the indexes.
+        // Note: We could choose the AfterResources to hold the app resources, this wouldn't
+        //       change anything.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
                                             ImmutableArray<ResPackage> appRequires,
                                             int index )
@@ -92,8 +101,10 @@ public sealed class ResourceSpaceDataBuilder
             var noAppRes = new EmptyResourceContainer( "<App>", isDisabled: true );
             var appPackage = new ResPackage( "<App>",
                                              defaultTargetPath: default,
-                                             resources: new CodeStoreResources( noAppRes, appResStore ),
-                                             afterContentResources: new CodeStoreResources( noAppRes, noAppRes ),
+                                             idxBeforeResources: 2 * index,
+                                             beforeResources: new CodeStoreResources( noAppRes, appResStore ),
+                                             idxAfterResources: 2 * index + 1,
+                                             afterResources: new CodeStoreResources( noAppRes, noAppRes ),
                                              localPath: appLocalPath,
                                              isGroup: false,
                                              type: null,
@@ -103,8 +114,11 @@ public sealed class ResourceSpaceDataBuilder
             return appPackage;
         }
 
-        // We have <Code> + _packages.Count + <App>.
+        // We have <Code> + _packages.Count + <App> total packages.
         var bAll = ImmutableArray.CreateBuilder<ResPackage>( _packages.Count + 2 );
+        // We have 2 * (<Code> + _packages.Count + <App>) total IResPackageResources (the After and Before CodeStoreResources).
+        // We don't use a list/builder here because indexes are provided by the SortedItems.
+        var allPackageResources = new IResPackageResources[ 2 * bAll.Capacity ];
         // The final size of the index:
         // - 5 keys (FullName, Code and Store for Resources and AfterResources) per ResPackageDescriptor.
         // - Plus the type for the typed package.
@@ -143,7 +157,8 @@ public sealed class ResourceSpaceDataBuilder
         var bAppRequirements = ImmutableArray.CreateBuilder<ResPackage>();
         foreach( var s in sortResult.SortedItems )
         {
-            if( s.IsGroup )
+            Throw.DebugAssert( s.IsGroup == (s.HeadForGroup != null) );
+            if( s.HeadForGroup != null )
             {
                 ResPackageDescriptor d = s.Item;
                 // Close the CodeGen resources.
@@ -161,7 +176,9 @@ public sealed class ResourceSpaceDataBuilder
                 ImmutableArray<ResPackage> children = s.Children.Select( s => packageIndex[s.Item] ).ToImmutableArray();
                 var p = new ResPackage( d.FullName,
                                         d.DefaultTargetPath,
+                                        s.HeadForGroup.Index,
                                         d.Resources,
+                                        s.Index,
                                         d.AfterContentResources,
                                         d.LocalPath,
                                         d.IsGroup,
@@ -171,14 +188,17 @@ public sealed class ResourceSpaceDataBuilder
                                         bAll.Count );
                 // The 5 or 6 indexes.
                 packageIndex.Add( p.FullName, p );
-                packageIndex.Add( p.Resources.Store, p );
-                packageIndex.Add( p.Resources.Code, p );
-                packageIndex.Add( p.AfterContentResources.Store, p );
-                packageIndex.Add( p.AfterContentResources.Code, p );
+                packageIndex.Add( p.BeforeResources.Resources.Store, p );
+                packageIndex.Add( p.BeforeResources.Resources.Code, p );
+                packageIndex.Add( p.AfterResources.Resources.Store, p );
+                packageIndex.Add( p.AfterResources.Resources.Code, p );
                 if( p.Type != null )
                 {
                     packageIndex.Add( p.Type, p );
                 }
+                // Enlist the package resources.
+                allPackageResources[p.BeforeResources.Index] = p.BeforeResources;
+                allPackageResources[p.AfterResources.Index] = p.AfterResources;
                 // Rank is 1-based. Rank = 1 is for the head of the Group.
                 if( s.Rank == 2 )
                 {
@@ -204,6 +224,7 @@ public sealed class ResourceSpaceDataBuilder
         Throw.DebugAssert( "Expected size reached.", packageIndex.Count == packageIndexSize );
         space._packages = bAll.MoveToImmutable();
         space._localPackages = bLocal.MoveToImmutable();
+        space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
         return space;
 
     }
