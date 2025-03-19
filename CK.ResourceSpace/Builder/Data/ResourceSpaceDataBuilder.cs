@@ -51,7 +51,7 @@ public sealed class ResourceSpaceDataBuilder
                             sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
 
         // Pool for reachable sets.
-        var rpBuilder = new ReachablePackageCacheBuilder();
+        var rpBuilder = new ReachablePackageSetCacheBuilder();
 
         // The "<Code>" package is the first package and represents the generated code.
         // It is empty (no child) and only contains the generated code as AfterResources by design.
@@ -59,7 +59,7 @@ public sealed class ResourceSpaceDataBuilder
         // All packages that require no other package require it.
         // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
         //       change anything.
-        static ResPackage CreateCodePackage( ReachablePackageCacheBuilder rpBuilder, IResourceContainer? generatedCodeContainer )
+        static ResPackage CreateCodePackage( ReachablePackageSetCacheBuilder rpBuilder, IResourceContainer? generatedCodeContainer )
         {
             var codeContainer = generatedCodeContainer ?? new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
@@ -91,7 +91,7 @@ public sealed class ResourceSpaceDataBuilder
         // Note: We could choose the AfterResources to hold the app resources, this wouldn't
         //       change anything.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
-                                            ReachablePackageCacheBuilder rpBuilder,
+                                            ReachablePackageSetCacheBuilder rpBuilder,
                                             ImmutableArray< ResPackage> appRequires,
                                             int index )
         {
@@ -236,8 +236,8 @@ public sealed class ResourceSpaceDataBuilder
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
         // The space is initialized with all its packages.
         // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now
-        // compute the optimal aggregation sets.
-
+        // compute the aggregation sets.
+        rpBuilder.Build( monitor, space._packages );
         return space;
 
     }

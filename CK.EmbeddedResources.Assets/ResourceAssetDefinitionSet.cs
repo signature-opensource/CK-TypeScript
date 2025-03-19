@@ -39,7 +39,7 @@ public sealed class ResourceAssetDefinitionSet
     /// <returns>The final set on success, false on error.</returns>
     public FinalResourceAssetSet? ToInitialFinalSet( IActivityMonitor monitor )
     {
-        var buggyOverrides = _assets.Values.Where( a => a.Override != ResourceOverrideKind.None );
+        var buggyOverrides = _assets.Values.Where( a => a.Override is ResourceOverrideKind.Regular );
         if( buggyOverrides.Any() )
         {
             monitor.Error( $"""
@@ -51,7 +51,11 @@ public sealed class ResourceAssetDefinitionSet
         var result = new Dictionary<NormalizedPath, FinalResourceAsset>( _assets.Count );
         foreach( var (path,definition) in _assets )
         {
-            result.Add( path, new FinalResourceAsset( definition.Origin ) );
+            // Regular has trigerred the error above. Here we ignore Optional. 
+            if( definition.Override is ResourceOverrideKind.None or ResourceOverrideKind.Always )
+            {
+                result.Add( path, new FinalResourceAsset( definition.Origin ) );
+            }
         }
         // There's no ambiguity by design.
         return new FinalResourceAssetSet( result, false );

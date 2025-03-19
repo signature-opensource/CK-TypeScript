@@ -18,26 +18,26 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _index = r.ReadInt32();
         _requires = s.ReadValue<ImmutableArray<ResPackage>>();
         _children = s.ReadValue<ImmutableArray<ResPackage>>();
-        // Reacheable is the core set (deduplicated Requires + Requires' Children).
-        // The reachable is rebuilt, not serialized. The difference is that we know its size upfront.
-        _reachablePackages = new HashSet<ResPackage>( r.ReadNonNegativeSmallInt32() );
-        (_requiresHasLocalPackage, _reachableHasLocalPackage, bool allRequired) = ComputeReachablePackages( _reachablePackages );
+
+        _requiresHasLocalPackage = r.ReadBoolean();
+        _reachableHasLocalPackage = r.ReadBoolean();
+        _reachablePackages = s.ReadObject<IReachablePackageSet>();
 
         int expectedSize = r.ReadNonNegativeSmallInt32();
-        Throw.DebugAssert( (expectedSize >= 0) == allRequired );
-        // AllReacheable. ComputeReachablePackages above computed the allRequired.
-        if( allRequired )
+        if( expectedSize > 0 )
         {
-            _allReachablePackages = new HashSet<ResPackage>( expectedSize );
-            _allReachableHasLocalPackage = ComputeAllReachablePackages( _allReachablePackages )
+            var allReachablePackages = new HashSet<ResPackage>( expectedSize );
+            _allReachableHasLocalPackage = ComputeAllReachablePackages( allReachablePackages )
                                            || _reachableHasLocalPackage;
-            Throw.DebugAssert( "allRequired should have been false!", _allReachablePackages.Count > _reachablePackages.Count );
+            Throw.DebugAssert( "allRequired should have been false!", allReachablePackages.Count > _reachablePackages.Count );
+            _allReachablePackages = allReachablePackages;
         }
         else
         {
             _allReachablePackages = _reachablePackages;
             _allReachableHasLocalPackage = _reachableHasLocalPackage;
         }
+
         if( _children.Length == 0 )
         {
             _afterReachablePackages = _reachablePackages;
@@ -47,16 +47,13 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         }
         else
         {
+            _afterReachablePackages = s.ReadObject<IReachablePackageSet>();
             expectedSize = r.ReadNonNegativeSmallInt32();
-            _allAfterReachablePackages = new HashSet<ResPackage>( expectedSize );
-            _allAfterReachablePackages.AddRange( _allReachablePackages );
-            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( _allAfterReachablePackages );
+            var allAfterReachablePackages = new HashSet<ResPackage>( expectedSize );
+            allAfterReachablePackages.AddRange( _allReachablePackages );
+            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( allAfterReachablePackages );
             _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
-
-            _afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + _children.Length );
-            _afterReachablePackages.AddRange( _reachablePackages );
-            _afterReachablePackages.AddRange( _children );
-            _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
+            _allAfterReachablePackages = allAfterReachablePackages;
         }
         // Initializes the resources once the package sets are computed.
         var bRes = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
@@ -76,12 +73,22 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         w.Write( _index );
         s.WriteValue( _requires );
         s.WriteValue( _children );
-        w.WriteNonNegativeSmallInt32( _reachablePackages.Count );
-        w.WriteSmallInt32( _allReachablePackages != _reachablePackages ? _allReachablePackages.Count : -1 );
+
+        w.Write( _requiresHasLocalPackage );
+        w.Write( _reachableHasLocalPackage );
+
+        s.WriteObject( _reachablePackages );
+        Throw.DebugAssert( _allReachablePackages == _reachablePackages || _allReachablePackages.Count > 1 );
+        w.WriteNonNegativeSmallInt32( _allReachablePackages != _reachablePackages
+                                            ? _allReachablePackages.Count
+                                            : 0 );
+
         if( _children.Length > 0 )
         {
+            s.WriteObject( _afterReachablePackages );
             w.WriteNonNegativeSmallInt32( _allAfterReachablePackages.Count );
         }
+
         s.WriteObject( _beforeResources.Resources.Code );
         s.WriteObject( _beforeResources.Resources.Store );
         w.WriteNonNegativeSmallInt32( _beforeResources.Index );
