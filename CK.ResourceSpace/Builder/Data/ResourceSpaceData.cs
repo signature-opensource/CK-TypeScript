@@ -17,11 +17,12 @@ public sealed class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
 
-    // _packages, _localPackages, _allPackageResources, _codePackage
-    // and _appPackage are set by the ResourceSpaceDataBuilder.Build method.
+    // _packages, _localPackages, _allPackageResources, _reachablePackageSetCache,
+    // _codePackage and _appPackage are set by the ResourceSpaceDataBuilder.Build method.
     internal ImmutableArray<ResPackage> _packages;
     internal ImmutableArray<ResPackage> _localPackages;
     internal ImmutableArray<IResPackageResources> _allPackageResources;
+    [AllowNull]internal ReachablePackageSetCache _reachablePackageSetCache;
     [AllowNull]internal ResPackage _codePackage;
     [AllowNull]internal ResPackage _appPackage;
 
@@ -65,4 +66,9 @@ public sealed class ResourceSpaceData
     /// by their <see cref="IResPackageResources.Index"/>.
     /// </summary>
     public ImmutableArray<IResPackageResources> AllPackageResources => _allPackageResources;
+
+    /// <summary>
+    /// Gets the cache from wich <see cref="ReachablePackageDataCache{T}"/> can be built.
+    /// </summary>
+    public ReachablePackageSetCache ReachablePackageSetCache => _reachablePackageSetCache;
 }

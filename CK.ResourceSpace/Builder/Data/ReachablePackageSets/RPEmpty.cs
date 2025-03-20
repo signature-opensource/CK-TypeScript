@@ -6,22 +6,33 @@ namespace CK.Core;
 
 /// <summary>
 /// Captures an empty reachable package set. This keeps the package that
-/// defines the reachable set: <see cref="ReachablePackageDictionary{T}.Create(CK.Core.IActivityMonitor, CK.Core.ResPackage)"/>
-/// can use it to create the aggregated associated data seed.
+/// defines the root reachable sets.
 /// </summary>
 [SerializationVersion( 0 )]
 sealed class RPEmpty : IReachablePackageSet, IRPRoot, ICKSlicedSerializable
 {
     readonly ResPackage _declarer;
-    readonly int _index;
+    readonly int _cacheIndex;
 
     public RPEmpty( ResPackage declarer, int index )
     {
         _declarer = declarer;
-        _index = index;
+        _cacheIndex = index;
     }
 
-    public int Index => _index;
+    public RPEmpty( IBinaryDeserializer d, ITypeReadInfo info )
+    {
+        _declarer = d.ReadObject<ResPackage>();
+        _cacheIndex = d.Reader.ReadNonNegativeSmallInt32();
+    }
+
+    public static void Write( IBinarySerializer s, in RPEmpty o )
+    {
+        s.WriteObject( o._declarer );
+        s.Writer.WriteNonNegativeSmallInt32( o._cacheIndex );
+    }
+
+    public int CacheIndex => _cacheIndex;
 
     public bool IsLocalDependent => _declarer.IsEventuallyLocalDependent;
 

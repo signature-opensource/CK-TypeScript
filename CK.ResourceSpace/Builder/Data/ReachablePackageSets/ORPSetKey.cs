@@ -29,9 +29,9 @@ sealed class ORPSetKey : IRPSetKey
         Throw.DebugAssert( set.Count >= 2 );
         int[] indexes = new int[set.Count];
         int i = 0;
-        foreach( var e in set )
+        foreach( var package in set )
         {
-            indexes[i++] = e.IsEventuallyLocalDependent ?  ~e.Index : e.Index;
+            indexes[i++] = package.IsEventuallyLocalDependent ?  ~package.Index : package.Index;
         }
         Array.Sort( indexes );
         HashCode c = new HashCode();
@@ -51,20 +51,47 @@ sealed class ORPSetKey : IRPSetKey
         _hash = k.GetHashCode();
     }
 
-    public void ResetMutable( MutableRPSetKey mutable ) => mutable.Reset( _indexes, 0, _indexes.Length );
+    internal MutableRPSetKey SetTrivialLocalLookup( MutableRPSetKey lookupKey )
+    {
+        Throw.DebugAssert( IsTrivialLocalHybrid );
+        return lookupKey.Reset( _indexes, 1, _indexes.Length - 1 );
+    }
+
+    internal MutableRPSetKey SetTrivialStableLookup( MutableRPSetKey lookupKey )
+    {
+        Throw.DebugAssert( IsTrivialStableHybrid );
+        return lookupKey.Reset( _indexes, 0, _indexes.Length - 1 );
+    }
+
+    internal MutableRPSetKey SetHybridLookup( MutableRPSetKey lookupKey )
+    {
+        Throw.DebugAssert( IsHybrid && !IsTrivialLocalHybrid && !IsTrivialStableHybrid );
+        return lookupKey.Reset( _indexes, 0, _indexes.IndexOf( i => i >= 0 ) );
+    }
+
+    internal MutableRPSetKey SetHomogeneousLookup( MutableRPSetKey lookupKey )
+    {
+        Throw.DebugAssert( !IsHybrid );
+        return lookupKey.Reset( _indexes, 0, _indexes.Length );
+    }
 
     public int Length => _indexes.Length;
 
     public bool IsLocalDependent => _indexes[0] < 0;
 
+    public bool IsHybrid => _indexes[0] < 0 && _indexes[^1] >= 0;
+
+    public bool IsTrivialLocalHybrid => _indexes[0] < 0 && _indexes[1] >= 0;
+
+    public bool IsTrivialStableHybrid => _indexes[^2] < 0 && _indexes[^1] >= 0;
+
     public ReadOnlySpan<int> PackageIndexes => _indexes.AsSpan();
 
     public override bool Equals( object? obj )
     {
-        return obj is IRPSetKey k
-                ? _indexes.AsSpan().SequenceEqual( k.PackageIndexes )
-                : false;
+        return obj is IRPSetKey k && _indexes.AsSpan().SequenceEqual( k.PackageIndexes );
     }
 
     public override int GetHashCode() => _hash;
+
 }

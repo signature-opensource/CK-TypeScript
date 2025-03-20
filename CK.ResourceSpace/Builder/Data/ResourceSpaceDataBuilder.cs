@@ -237,7 +237,7 @@ public sealed class ResourceSpaceDataBuilder
         // The space is initialized with all its packages.
         // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now
         // compute the aggregation sets.
-        rpBuilder.Build( monitor, space._packages );
+        space._reachablePackageSetCache = rpBuilder.Build( monitor, space._packages );
         return space;
 
     }

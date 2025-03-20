@@ -10,64 +10,95 @@ namespace CK.Core;
 /// Only their index are stored and serialized.
 /// </summary>
 [SerializationVersion( 0 )]
-sealed class RPSet : HashSet<ResPackage>, IReachablePackageSet, ICKSlicedSerializable
+sealed class RPSet : HashSet<ResPackage>, IReachablePackageSet, IRPDerived, ICKSlicedSerializable
 {
-    internal int _index;
+    int _cacheIndex;
+    int _cIndex1;
+    int _cIndex2;
 
-    IReachablePackageSet? _iSet1;
-    IReachablePackageSet? _iSet2;
-
-    public int Index => _index;
+    public int CacheIndex => _cacheIndex;
 
     public bool IsLocalDependent
     {
         get
         {
-            Throw.DebugAssert( "Must not be called before initialization.", _iSet1 != null );
-            return _iSet1.IsLocalDependent;
+            Throw.DebugAssert( "Must not be called before initialization.", _cacheIndex >= 0 );
+            return _cIndex1 < 0;
         }
     }
 
-    internal void InitializePair( Dictionary<object, IReachablePackageSet> index )
+    public int CIndex1 => _cIndex1;
+
+    public int CIndex2 => _cIndex2;
+
+    internal void SetCachedIndex( int index )
+    {
+        Throw.DebugAssert( _cacheIndex == -1 );
+        Throw.DebugAssert( index >= 0 );
+        _cacheIndex = index;
+    }
+
+    internal void SettlePair( Dictionary<object, IReachablePackageSet> setIndex )
     {
         Throw.DebugAssert( Count == 2 );
         using var e = GetEnumerator();
         e.MoveNext();
-        _iSet1 = index[e.Current];
+        var s1 = setIndex[e.Current];
         e.MoveNext();
-        _iSet2 = index[e.Current];
-        if( !_iSet1.IsLocalDependent && _iSet2.IsLocalDependent )
+        var s2 = setIndex[e.Current];
+        Settle( s1, s2 );
+    }
+
+    internal void Settle( IReachablePackageSet s1, IReachablePackageSet s2 )
+    {
+        Throw.DebugAssert( _cacheIndex >= 0 );
+        Throw.DebugAssert( Count >= 2 );
+        _cIndex1 = s1.IsLocalDependent ? ~s1.CacheIndex : s1.CacheIndex;
+        _cIndex2 = s2.IsLocalDependent ? ~s2.CacheIndex : s2.CacheIndex;
+        if( _cIndex1 >= 0 && _cIndex2 < 0 )
         {
-            (_iSet1, _iSet2) = (_iSet2, _iSet1);
+            (_cIndex1, _cIndex2) = (_cIndex2, _cIndex1);
         }
     }
 
     public RPSet()
     {
+        // Uninitialized.
+        _cacheIndex = -1;
     }
 
     public RPSet( int capacity )
         : base( capacity )
     {
+        // Uninitialized.
+        _cacheIndex = -1;
     }
 
     public RPSet( IBinaryDeserializer d, ITypeReadInfo info )
     {
-        _index = d.Reader.ReadInt32();
-        int c = d.Reader.ReadInt32();
+        Throw.DebugAssert( "We only serialize sets that are local dependent.", IsLocalDependent );
+        _cacheIndex = d.Reader.ReadNonNegativeSmallInt32();
+        int c = d.Reader.ReadNonNegativeSmallInt32();
         while( --c >= 0 )
         {
             Add( d.ReadObject<ResPackage>() );
         }
+        _cIndex1 = d.Reader.ReadInt32();
+        _cIndex2 = d.Reader.ReadInt32();
     }
 
     public static void Write( IBinarySerializer s, in RPSet o )
     {
-        s.Writer.Write( o._index );
-        s.Writer.Write( o.Count );
+        Throw.DebugAssert( "We are initialized.", o._cacheIndex >= 0 );
+        Throw.DebugAssert( "We only serialize sets that are local dependent.", o.IsLocalDependent );
+        s.Writer.WriteNonNegativeSmallInt32( o._cacheIndex );
+        s.Writer.WriteNonNegativeSmallInt32( o.Count );
         foreach( var e in o )
         {
             s.WriteObject( e );
         }
+        Throw.DebugAssert( "Because we are local dependent.", o._cIndex1 < 0 );
+        s.Writer.Write( o._cIndex1 );
+        s.Writer.Write( o._cIndex2 );
     }
 }

@@ -1,6 +1,6 @@
-﻿namespace CK.Core;
+namespace CK.Core;
 
-interface IRPRoot
+interface IRPRoot : IRPInternal
 {
-    public ResPackage RootPackage { get; }
+    ResPackage RootPackage { get; }
 }

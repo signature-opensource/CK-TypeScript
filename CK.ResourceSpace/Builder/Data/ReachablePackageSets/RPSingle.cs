@@ -19,7 +19,17 @@ sealed class RPSingle : IReachablePackageSet, IRPRoot, ICKSlicedSerializable
         _empty = empty;
     }
 
-    public int Index => _empty.Index;
+    public RPSingle( IBinaryDeserializer d, ITypeReadInfo info )
+    {
+        _empty = d.ReadObject<RPEmpty>();
+    }
+
+    public static void Write( IBinarySerializer s, in RPSingle o )
+    {
+        s.WriteObject( o._empty );
+    }
+
+    public int CacheIndex => _empty.CacheIndex;
 
     public bool IsLocalDependent => _empty.IsLocalDependent;
 

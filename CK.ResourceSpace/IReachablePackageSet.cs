@@ -12,7 +12,7 @@ public interface IReachablePackageSet : IReadOnlySet<ResPackage>
     /// Gets a unique index for this set of packages.
     /// It is the index of this set in the <see cref="ReachablePackageSetCache.All"/>.
     /// </summary>
-    int Index { get; }
+    int CacheIndex { get; }
 
     /// <summary>
     /// Gets whether this reachable set is local dependent.
