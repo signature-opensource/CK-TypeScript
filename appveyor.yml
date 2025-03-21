@@ -10,5 +10,4 @@ on_finish:
 build_script:
     - node --version
     - npm --version
-    - npm install -g npm@latest
     - dotnet run --project CodeCakeBuilder -nointeraction

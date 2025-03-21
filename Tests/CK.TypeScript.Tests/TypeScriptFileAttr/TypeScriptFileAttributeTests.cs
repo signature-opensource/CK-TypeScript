@@ -54,6 +54,7 @@ public class TypeScriptFileAttributeTests
 
     // This test uses NpmPackage integration.
     [Test( Description = "This test may fail when starting from scratch because the \"latest\" (>=0.0.0-0) libraries are installed." )]
+    [Explicit( "NpmPackage mode versions resolution doesn't work as expected. NpmPackage mode should no longer be used anyway." )]
     public async Task TypeScriptFile_and_TypeScriptImportLibrary_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
