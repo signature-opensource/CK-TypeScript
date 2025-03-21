@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.IO;
 
 namespace CK.Core;
 
@@ -51,5 +52,22 @@ public sealed class ResourceSpace
             success &= h.Initialize( monitor, _data, _folderExclusion );
         }
         return success;
+    }
+
+    public void WriteLiveState( IActivityMonitor monitor, NormalizedPath folderState )
+    {
+        if( _data.WatchRoot == null )
+        {
+            monitor.Info( "No local package exist and no AppResourcesLocalPath has been set. Skipping Live state generation." );
+            return;
+        }
+        using var _ = monitor.OpenInfo( $"Saving ck-watch live state. Watch root is '{_data.WatchRoot}'." );
+        if( !Directory.Exists( folderState ) )
+        {
+            monitor.Info( $"Creating '{folderState}' with '.gitignore' all." );
+            Directory.CreateDirectory( folderState );
+            File.WriteAllText( folderState + ".gitignore", "*" );
+        }
+
     }
 }

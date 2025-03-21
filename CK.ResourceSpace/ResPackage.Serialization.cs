@@ -1,5 +1,6 @@
 using CK.BinarySerialization;
 using CK.EmbeddedResources;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -8,20 +9,22 @@ namespace CK.Core;
 [SerializationVersion(0)]
 public sealed partial class ResPackage : ICKSlicedSerializable
 {
-    public ResPackage( IBinaryDeserializer s, ITypeReadInfo info )
+    public ResPackage( IBinaryDeserializer d, ITypeReadInfo info )
     {
-        var r = s.Reader;
+        var r = d.Reader;
         _fullName = r.ReadString();
+        _type = d.ReadNullableObject<Type>();
         _defaultTargetPath = r.ReadString();
         _localPath = r.ReadNullableString();
         _isGroup = r.ReadBoolean();
         _index = r.ReadInt32();
-        _requires = s.ReadValue<ImmutableArray<ResPackage>>();
-        _children = s.ReadValue<ImmutableArray<ResPackage>>();
+        _requires = d.ReadValue<ImmutableArray<ResPackage>>();
+        _children = d.ReadValue<ImmutableArray<ResPackage>>();
+        _resourceIndex = d.ReadObject<IReadOnlyDictionary<IResourceContainer, IResPackageResources>>();
 
         _requiresHasLocalPackage = r.ReadBoolean();
         _reachableHasLocalPackage = r.ReadBoolean();
-        _reachablePackages = s.ReadObject<IReachablePackageSet>();
+        _reachablePackages = d.ReadNullableObject<IReadOnlySet<ResPackage>>() ?? ImmutableHashSet<ResPackage>.Empty;
 
         int expectedSize = r.ReadNonNegativeSmallInt32();
         if( expectedSize > 0 )
@@ -47,7 +50,7 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         }
         else
         {
-            _afterReachablePackages = s.ReadObject<IReachablePackageSet>();
+            _afterReachablePackages = d.ReadNullableObject<IReadOnlySet<ResPackage>>() ?? ImmutableHashSet<ResPackage>.Empty;
             expectedSize = r.ReadNonNegativeSmallInt32();
             var allAfterReachablePackages = new HashSet<ResPackage>( expectedSize );
             allAfterReachablePackages.AddRange( _allReachablePackages );
@@ -55,11 +58,14 @@ public sealed partial class ResPackage : ICKSlicedSerializable
             _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
             _allAfterReachablePackages = allAfterReachablePackages;
         }
-        // Initializes the resources once the package sets are computed.
-        var bRes = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+
+        _reachableAggregateId = new AggregateId( r );
+        _childrenAggregateId = new AggregateId( r );
+
+        var bRes = new CodeStoreResources( d.ReadObject<IResourceContainer>(), d.ReadObject<IResourceContainer>() );
         _beforeResources = new BeforeContent( this, bRes, r.ReadNonNegativeSmallInt32() );
 
-        var aRes = new CodeStoreResources( s.ReadObject<IResourceContainer>(), s.ReadObject<IResourceContainer>() );
+        var aRes = new CodeStoreResources( d.ReadObject<IResourceContainer>(), d.ReadObject<IResourceContainer>() );
         _afterResources = new AfterContent( this, aRes, r.ReadNonNegativeSmallInt32() );
     }
 
@@ -67,17 +73,22 @@ public sealed partial class ResPackage : ICKSlicedSerializable
     {
         var w = s.Writer;
         w.Write( _fullName );
+        s.WriteNullableObject( _type );
         w.Write( _defaultTargetPath.Path );
         w.WriteNullableString( _localPath );
         w.Write( _isGroup );
         w.Write( _index );
         s.WriteValue( _requires );
         s.WriteValue( _children );
+        s.WriteObject( _resourceIndex );
 
         w.Write( _requiresHasLocalPackage );
         w.Write( _reachableHasLocalPackage );
 
-        s.WriteObject( _reachablePackages );
+
+        s.WriteNullableObject( _reachablePackages != ImmutableHashSet<ResPackage>.Empty
+                                ? _reachablePackages
+                                : null );
         Throw.DebugAssert( _allReachablePackages == _reachablePackages || _allReachablePackages.Count > 1 );
         w.WriteNonNegativeSmallInt32( _allReachablePackages != _reachablePackages
                                             ? _allReachablePackages.Count
@@ -85,9 +96,14 @@ public sealed partial class ResPackage : ICKSlicedSerializable
 
         if( _children.Length > 0 )
         {
-            s.WriteObject( _afterReachablePackages );
+            s.WriteNullableObject( _afterReachablePackages != ImmutableHashSet<ResPackage>.Empty
+                                    ? _afterReachablePackages
+                                    : null );
             w.WriteNonNegativeSmallInt32( _allAfterReachablePackages.Count );
         }
+
+        _reachableAggregateId.Write( w );
+        _childrenAggregateId.Write( w );
 
         s.WriteObject( _beforeResources.Resources.Code );
         s.WriteObject( _beforeResources.Resources.Store );

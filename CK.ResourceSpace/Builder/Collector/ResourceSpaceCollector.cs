@@ -33,13 +33,17 @@ public sealed class ResourceSpaceCollector
     }
 
     /// <summary>
-    /// Gets the packahe index. <see cref="FindByFullName(string)"/> or <see cref="FindByType(Type)"/>
-    /// should be used to fine a package descriptor.
+    /// Gets the package index. <see cref="FindByFullName(string)"/> or <see cref="FindByType(Type)"/>
+    /// should be used to find a package descriptor.
     /// </summary>
     public IReadOnlyDictionary<object, ResPackageDescriptor> PackageIndex => _packageIndex;
 
     /// <summary>
     /// Gets the package descriptors.
+    /// <para>
+    /// This doesn't contain the "&lt;Code&gt;" and "&lt;App&gt;" packages: it's the <see cref="ResourceSpaceDataBuilder"/>
+    /// that generate them in the <see cref="ResourceSpaceData"/>.
+    /// </para>
     /// </summary>
     public IReadOnlyCollection<ResPackageDescriptor> Packages => _packages;
 

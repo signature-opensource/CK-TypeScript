@@ -1,7 +1,9 @@
 using CK.EmbeddedResources;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -17,14 +19,16 @@ public sealed class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
 
-    // _packages, _localPackages, _allPackageResources, _reachablePackageSetCache,
-    // _codePackage and _appPackage are set by the ResourceSpaceDataBuilder.Build method.
+    // _packages, _localPackages, _allPackageResources, _exposedPackages, _reachablePackageSetCache,
+    // _codePackage, _appPackage and _watchRoot are set by the ResourceSpaceDataBuilder.Build method.
     internal ImmutableArray<ResPackage> _packages;
     internal ImmutableArray<ResPackage> _localPackages;
     internal ImmutableArray<IResPackageResources> _allPackageResources;
-    [AllowNull]internal ReachablePackageSetCache _reachablePackageSetCache;
+    [AllowNull]internal IReadOnlyList<ResPackage> _exposedPackages;
+    [AllowNull]internal IResPackageDataCache _resPackageDataCache;
     [AllowNull]internal ResPackage _codePackage;
     [AllowNull]internal ResPackage _appPackage;
+    internal string? _watchRoot;
 
     internal ResourceSpaceData( IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
@@ -45,11 +49,12 @@ public sealed class ResourceSpaceData
 
     /// <summary>
     /// Gets the packages topologically ordered. <see cref="ResPackage.Index"/> is the index in this array.
+    /// This list is 1-based: the 0 index is invalid.
     /// <para>
     /// This first package is <see cref="CodePackage"/> and the last one is <see cref="AppPackage"/>.
     /// </para>
     /// </summary>
-    public ImmutableArray<ResPackage> Packages => _packages;
+    public IReadOnlyList<ResPackage> Packages => _packages;
 
     /// <summary>
     /// Gets the "&lt;App&gt;" special tail package.
@@ -68,7 +73,13 @@ public sealed class ResourceSpaceData
     public ImmutableArray<IResPackageResources> AllPackageResources => _allPackageResources;
 
     /// <summary>
-    /// Gets the cache from wich <see cref="ReachablePackageDataCache{T}"/> can be built.
+    /// Gets the cache from wich <see cref="ResPackageDataHandler{T}"/> can be built.
     /// </summary>
-    public ReachablePackageSetCache ReachablePackageSetCache => _reachablePackageSetCache;
+    public IResPackageDataCache ResPackageDataCache => _resPackageDataCache;
+
+    /// <summary>
+    /// Gets the watch root. Null only if no local packages exist and "&ltAppp&gt;" package
+    /// has no defined folder (<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> was not set).
+    /// </summary>
+    public string? WatchRoot => _watchRoot; 
 }

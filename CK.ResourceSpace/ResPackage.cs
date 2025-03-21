@@ -11,16 +11,15 @@ namespace CK.Core;
 
 public sealed partial class ResPackage
 {
-    // Implementation notes: ResPackage doesn't reference the ResourceSpaceData
-    // because it is serialized into the live world, and the ResourceSpaceData
-    // is not live.  
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
     readonly string? _localPath;
     readonly ImmutableArray<ResPackage> _requires;
-    readonly IReachablePackageSet _reachablePackages;
+    readonly IReadOnlySet<ResPackage> _reachablePackages;
+    readonly AggregateId _reachableAggregateId;
     readonly ImmutableArray<ResPackage> _children;
+    readonly AggregateId _childrenAggregateId;
     readonly IReadOnlySet<ResPackage> _allReachablePackages;
     readonly BeforeContent _beforeResources;
     readonly AfterContent _afterResources;
@@ -30,13 +29,22 @@ public sealed partial class ResPackage
     readonly bool _reachableHasLocalPackage;
     readonly bool _allReachableHasLocalPackage;
     // Content information.
-    readonly IReachablePackageSet _afterReachablePackages;
+    readonly IReadOnlySet<ResPackage> _afterReachablePackages;
     readonly IReadOnlySet<ResPackage> _allAfterReachablePackages;
     readonly bool _childrenHasLocalPackage;
     readonly bool _afterReachableHasLocalPackage;
     readonly bool _allAfterReachableHasLocalPackage;
+    // Implementation notes:
+    // ResPackage doesn't reference the ResourceSpaceData
+    // because it is serialized into the live world, and the ResourceSpaceData
+    // is not live.
+    // To be able to locate the package of a resource (to check reachability of resources)
+    // we however need a resourceIndex.
+    // This resource index is shared by all ResPackage and is the only "global" context
+    // we really need.
+    IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
 
-    internal ResPackage( ReachablePackageSetCacheBuilder rpBuilder,
+    internal ResPackage( ResPackageDataCacheBuilder dataCacheBuilder,
                          string fullName,
                          NormalizedPath defaultTargetPath,
                          int idxBeforeResources,
@@ -58,6 +66,7 @@ public sealed partial class ResPackage
         _requires = requires;
         _children = children;
         _type = type;
+        _resourceIndex = dataCacheBuilder._resourceIndex;
         // Initializes the resources.
         _beforeResources = new BeforeContent( this, beforeResources, idxBeforeResources );
         _afterResources = new AfterContent( this, afterResources, idxAfterResources );
@@ -66,14 +75,15 @@ public sealed partial class ResPackage
         bool allIsRequired;
         if( requires.Length > 0 )
         {
-            var reachablePackages = new RPSet();
+            var reachablePackages = new HashSet<ResPackage>();
             (_requiresHasLocalPackage, _reachableHasLocalPackage, allIsRequired) = ComputeReachablePackages( reachablePackages );
-            _reachablePackages = rpBuilder.RegisterSet( reachablePackages );
+            _reachablePackages = dataCacheBuilder.RegisterAndShare( reachablePackages, out _reachableAggregateId );
         }
         else
         {
             allIsRequired = false;
-            _reachablePackages = rpBuilder.RegisterEmpty( this );
+            _reachablePackages = ImmutableHashSet<ResPackage>.Empty;
+            Throw.DebugAssert( _reachableAggregateId == default );
         }
         // AllReacheable. ComputeReachablePackages above computed the allIsRequired.
         if( allIsRequired )
@@ -102,9 +112,11 @@ public sealed partial class ResPackage
             _afterReachableHasLocalPackage = _reachableHasLocalPackage;
             _allAfterReachablePackages = _allReachablePackages;
             _allAfterReachableHasLocalPackage = _allReachableHasLocalPackage;
+            Throw.DebugAssert( _childrenAggregateId == default );
         }
         else
         {
+            _childrenAggregateId = dataCacheBuilder.Register( _children );
             // ComputeAllContentReachablePackage computes the _childrenHasLocalPackage, we compute it first.
             // It contains the children (just like the _afterReachablePackages computed below).
             var allAfterReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
@@ -113,10 +125,10 @@ public sealed partial class ResPackage
             _allAfterReachablePackages = allAfterReachablePackages;
 
             _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
-            var afterReachablePackages = new RPSet( _reachablePackages.Count + children.Length );
+            var afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
             afterReachablePackages.AddRange( _reachablePackages );
             afterReachablePackages.AddRange( _children );
-            _afterReachablePackages = rpBuilder.RegisterSet( afterReachablePackages );
+            _afterReachablePackages = afterReachablePackages;
         }
     }
 
@@ -184,6 +196,8 @@ public sealed partial class ResPackage
         return (cL,l);
     }
 
+    internal (AggregateId, AggregateId) GetAggregateIdentifiers() => (_reachableAggregateId, _childrenAggregateId);
+
     /// <summary>
     /// Gets this package full name. When built from a type, this is the type's full name.
     /// </summary>
@@ -207,6 +221,9 @@ public sealed partial class ResPackage
 
     /// <summary>
     /// Gets a non null fully qualified path of this package's resources if this is a local package.
+    /// <para>
+    /// By convention, this is the "/Res" path (not the "Res[After]" one).
+    /// </para>
     /// </summary>
     public string? LocalPath => _localPath;
 
@@ -228,6 +245,7 @@ public sealed partial class ResPackage
 
     /// <summary>
     /// Gets the index in the <see cref="ResourceSpaceData.Packages"/>.
+    /// This is 1-based (0 is an invalid index).
     /// </summary>
     public int Index => _index;
 
@@ -272,7 +290,7 @@ public sealed partial class ResPackage
     /// of the packages are like package's requirements.
     /// </para>
     /// </summary>
-    public IReachablePackageSet ReachablePackages => _reachablePackages;
+    public IReadOnlySet<ResPackage> ReachablePackages => _reachablePackages;
 
     /// <summary>
     /// Gets whether at least one of the <see cref="ReachablePackages"/> is a local package.
@@ -295,7 +313,7 @@ public sealed partial class ResPackage
     /// the <see cref="ReachablePackages"/> plus the <see cref="Children"/>.
     /// This set is minimal, it doesn't contain any transitive dependency and doesn't contain this package.
     /// </summary>
-    public IReachablePackageSet AfterReachablePackages => _afterReachablePackages;
+    public IReadOnlySet<ResPackage> AfterReachablePackages => _afterReachablePackages;
 
     /// <summary>
     /// Gets whether at least one of the <see cref="AfterReachablePackages"/> is a local package.

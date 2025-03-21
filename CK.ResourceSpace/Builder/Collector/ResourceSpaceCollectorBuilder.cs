@@ -168,7 +168,11 @@ public sealed class ResourceSpaceCollectorBuilder
             if( r.Type != null )
             {
                 success &= r.InitializeFromType( monitor );
-                var descriptor = r.Resources.GetResource( "Package.xml" );
+                // Detect a useless Package.xml for the type: currently, there's
+                // no "merge" possible, tye type drives.
+                // Lookup in both Code/Store.
+                var descriptor = r.Resources.Store.GetResource( "Package.xml" );
+                if( !descriptor.IsValid ) descriptor = r.Resources.Code.GetResource( "Package.xml" );
                 if( descriptor.IsValid )
                 {
                     monitor.Warn( $"Found {descriptor} for type '{r.Type:N}'. Ignored." );
@@ -176,7 +180,7 @@ public sealed class ResourceSpaceCollectorBuilder
             }
             else
             {
-                var descriptor = r.Resources.GetResource( "Package.xml" );
+                var descriptor = r.Resources.GetSingleResource( monitor, "Package.xml" );
                 if( descriptor.IsValid )
                 {
                     try

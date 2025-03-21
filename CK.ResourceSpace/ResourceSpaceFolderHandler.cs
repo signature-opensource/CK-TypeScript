@@ -7,17 +7,15 @@ namespace CK.Core;
 /// </summary>
 public abstract class ResourceSpaceFolderHandler
 {
-    readonly ResourceSpaceData _spaceData;
     readonly string _rootFolderName;
 
     /// <summary>
     /// Initializes a new handler that will manage resources in the provided root folder.
     /// </summary>
     /// <param name="rootFolderName">Must not be empty, whitespace and there must be no '/' or '\' in it.</param>
-    protected ResourceSpaceFolderHandler( ResourceSpaceData spaceData, string rootFolderName )
+    protected ResourceSpaceFolderHandler( string rootFolderName )
     {
         Throw.CheckArgument( !string.IsNullOrWhiteSpace( rootFolderName ) && !rootFolderName.AsSpan().ContainsAny( "\\/" ) );
-        _spaceData = spaceData;
         _rootFolderName = rootFolderName;
     }
 
@@ -28,13 +26,7 @@ public abstract class ResourceSpaceFolderHandler
     public string RootFolderName => _rootFolderName;
 
     /// <summary>
-    /// Gets <see cref="ResourceSpaceData"/>.
-    /// </summary>
-    protected ResourceSpaceData SpaceData => _spaceData;
-
-    /// <summary>
-    /// Must initialize this handler from the <see cref="ResourceSpaceData"/> that
-    /// exposes the ordered set of packages and the <see cref="ResourceSpaceData.PackageIndex"/>.
+    /// Must initialize this handler.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="spaceData">The space data to consider.</param>
