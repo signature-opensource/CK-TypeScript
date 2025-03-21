@@ -100,7 +100,7 @@ public class TypeScriptFileAttributeTests
               },
               "dependencies": {
                 "@stdlib/utils-native-class": "~0.2.2",
-                "axios": "^1.8.3",
+                "axios": "^1.8.4",
                 "tslib": "=2.7.0"
               },
               "peerDependencies": {
