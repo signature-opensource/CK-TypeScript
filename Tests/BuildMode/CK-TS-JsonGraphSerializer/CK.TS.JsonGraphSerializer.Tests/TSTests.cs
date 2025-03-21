@@ -65,11 +65,12 @@ public class MultipleTypeScriptTests
 
         await engineConfig.RunSuccessfullyAsync();
 
-        // Runs the Jest tests.
-        var t1 = TestHelper.TestProjectFolder.Combine( "Clients/NpmPackage" );
-        await using var r1 = TestHelper.CreateTypeScriptRunner( t1 );
-        r1.Run();
+        // Removed NpmPackage mode test because of versions resolution.
+        //var t1 = TestHelper.TestProjectFolder.Combine( "Clients/NpmPackage" );
+        //await using var r1 = TestHelper.CreateTypeScriptRunner( t1 );
+        //r1.Run();
 
+        // Runs the Jest tests.
         var t2 = TestHelper.TestProjectFolder.Combine( "Clients/Inline" );
         await using var r2 = TestHelper.CreateTypeScriptRunner( t2 );
         r2.Run();
