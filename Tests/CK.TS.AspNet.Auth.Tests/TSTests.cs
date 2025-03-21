@@ -16,6 +16,8 @@ namespace CK.TS.AspNet.Auth.Tests;
 public class TSTests
 {
     [Test]
+    [Explicit( "TSPackages' imports from @local/ck-gen have been replaced with precise paths, but NpmPackage mode introduces a \"src\" folder, " +
+        "which is incompatible. NpmPackage mode should no longer be used anyway." )]
     public async Task CK_TS_AspNet_Auth_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
