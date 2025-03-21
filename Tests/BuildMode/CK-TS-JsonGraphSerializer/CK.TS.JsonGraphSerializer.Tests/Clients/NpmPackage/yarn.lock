@@ -715,6 +715,8 @@ __metadata:
     axios: "npm:^1.8.4"
     rxjs: "npm:^7.8.2"
     typescript: "npm:=5.4.5"
+  peerDependencies:
+    rxjs: ^7.8.2
   languageName: unknown
   linkType: soft
 
