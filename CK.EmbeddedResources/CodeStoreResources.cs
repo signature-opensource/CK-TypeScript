@@ -122,6 +122,10 @@ public sealed class CodeStoreResources
     /// <summary>
     /// Tries to get a folder from <see cref="Code"/> if it exists and from <see cref="Store"/> otherwise.
     /// <para>
+    /// If Code resource exists and overwrites the Store's one, a <see cref="LogLevel.Trace"/> is emitted: this is
+    /// not a warning as the code should have been handled the Store resource when generating its replacement.
+    /// </para>
+    /// <para>
     /// If the resource doesn't exist, <see cref="ResourceLocator.IsValid"/> is false.
     /// </para>
     /// </summary>

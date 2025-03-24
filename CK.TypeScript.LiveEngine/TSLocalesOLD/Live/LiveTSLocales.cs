@@ -75,7 +75,7 @@ sealed partial class LiveTSLocales
         }
         if( success )
         {
-            success &= _liveState.CKGenTransform.LoadLocales( monitor,
+            success &= _liveState.CKGenTransform.LoadTranslations( monitor,
                                                               _liveState.ActiveCultures,
                                                               out var appLocales,
                                                               "ts-locales",

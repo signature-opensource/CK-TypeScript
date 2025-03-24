@@ -78,14 +78,14 @@ public sealed partial class LocaleCultureSet
         }
     }
 
-    bool MergeFinalTranslations( IActivityMonitor monitor, Dictionary<string, TranslationValue>? above, bool isPartialSet )
+    bool MergeFinalTranslations( IActivityMonitor monitor, Dictionary<string, TranslationDefinition>? above, bool isPartialSet )
     {
         bool success = true;
         if( above != null && above.Count > 0 )
         {
             if( _translations == null || _translations.Count == 0 )
             {
-                _translations = new Dictionary<string, TranslationValue>( above );
+                _translations = new Dictionary<string, TranslationDefinition>( above );
             }
             else
             {

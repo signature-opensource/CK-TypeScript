@@ -20,7 +20,7 @@ public sealed partial class LocaleCultureSet
 {
     readonly NormalizedCultureInfo _culture;
     readonly ResourceLocator _origin;
-    Dictionary<string, TranslationValue>? _translations;
+    Dictionary<string, TranslationDefinition>? _translations;
     List<LocaleCultureSet>? _children;
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed partial class LocaleCultureSet
         _origin = set._origin;
         if( set._translations != null )
         {
-            _translations = new Dictionary<string, TranslationValue>( set._translations );
+            _translations = new Dictionary<string, TranslationDefinition>( set._translations );
         }
         if( set._children != null )
         {
@@ -46,7 +46,7 @@ public sealed partial class LocaleCultureSet
     {
     }
 
-    internal LocaleCultureSet( ResourceLocator origin, NormalizedCultureInfo c, Dictionary<string, TranslationValue>? translations )
+    internal LocaleCultureSet( ResourceLocator origin, NormalizedCultureInfo c, Dictionary<string, TranslationDefinition>? translations )
     {
         _origin = origin;
         _culture = c;
@@ -63,7 +63,7 @@ public sealed partial class LocaleCultureSet
     /// <param name="children">The <see cref="Children"/> if any.</param>
     public static LocaleCultureSet UnsafeCreate( ResourceLocator origin,
                                                  NormalizedCultureInfo c,
-                                                 Dictionary<string, TranslationValue>? translations,
+                                                 Dictionary<string, TranslationDefinition>? translations,
                                                  List<LocaleCultureSet>? children )
     {
         var set = new LocaleCultureSet( origin, c, translations );
@@ -79,7 +79,7 @@ public sealed partial class LocaleCultureSet
     /// <summary>
     /// Gets the mutable translations.
     /// </summary>
-    public Dictionary<string, TranslationValue> Translations => _translations ??= new Dictionary<string, TranslationValue>();
+    public Dictionary<string, TranslationDefinition> Translations => _translations ??= new Dictionary<string, TranslationDefinition>();
 
     /// <summary>
     /// Gets the culture of this set.
@@ -148,7 +148,7 @@ public sealed partial class LocaleCultureSet
                                   bool isOverrideFolder = false )
     {
         Throw.CheckArgument( baseContainer != null && baseContainer.IsValid );
-        if( !baseContainer.LoadLocales( monitor, activeCultures, out var baseLocaleSet, folder, isOverrideFolder ) )
+        if( !baseContainer.LoadTranslations( monitor, activeCultures, out var baseLocaleSet, folder, isOverrideFolder ) )
         {
             return false;
         }

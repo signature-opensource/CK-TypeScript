@@ -16,8 +16,4 @@
       <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Live\" />
-    </ItemGroup>
-
 </Project>

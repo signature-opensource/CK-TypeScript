@@ -58,6 +58,10 @@ public sealed class ResourceSpaceData
 
     /// <summary>
     /// Gets the "&lt;App&gt;" special tail package.
+    /// <para>
+    /// When <see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> is defined, its <see cref="ResPackage.LocalPath"/>
+    /// is the AppResourcesLocalPath.
+    /// </para>
     /// </summary>
     public ResPackage AppPackage => _appPackage;
 

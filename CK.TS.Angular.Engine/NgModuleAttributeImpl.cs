@@ -50,7 +50,7 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
     protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
     {
         var fName = _snakeName + ".module.ts";
-        if( !Resources.TryGetResource( monitor, fName, out var res ) )
+        if( !Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
         }

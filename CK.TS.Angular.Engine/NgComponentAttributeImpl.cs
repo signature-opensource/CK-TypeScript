@@ -88,7 +88,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
             return true;
         }
         // The component.ts resource must exist.
-        if( !Resources.TryGetResource( monitor, fName, out var res ) )
+        if( !Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
         }

@@ -31,7 +31,7 @@ public sealed class TypeScriptResourceAttributeImpl : TypeScriptPackageAttribute
 
     protected override void OnInitialize( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, ITypeAttributesCache owner )
     {
-        if( tsPackage.Resources.TryGetResource( monitor, Attribute.ResourcePath, out _resource ) )
+        if( tsPackage.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out _resource ) )
         {
             _targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
             _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );

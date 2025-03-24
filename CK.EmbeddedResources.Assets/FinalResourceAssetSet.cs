@@ -60,7 +60,7 @@ public sealed class FinalResourceAssetSet
 
     /// <summary>
     /// Aggregate this set with an other one. Even if both sets are not <see cref="IsAmbiguous"/>,
-    /// if a comman target paths is mapped to different resource, the result will be amiguous.
+    /// if a common target path is mapped to different resources, the result will be ambiguous.
     /// </summary>
     /// <param name="other">The other set to aggregate.</param>
     /// <returns>The aggregated set.</returns>

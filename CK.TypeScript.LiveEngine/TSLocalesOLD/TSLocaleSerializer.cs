@@ -51,16 +51,16 @@ static class TSLocaleSerializer
     {
         var cName = r.ReadString();
         var origin = StateSerializer.ReadResourceLocator( r, containerPool );
-        Dictionary<string, TranslationValue>? tr = null;
+        Dictionary<string, TranslationDefinition>? tr = null;
         int count = r.ReadInt32();
         if( count > 0 )
         {
-            tr = new Dictionary<string, TranslationValue>( count );
+            tr = new Dictionary<string, TranslationDefinition>( count );
             for( int i = 0; i < count; i++ )
             {
                 var tOrigin = StateSerializer.ReadResourceLocator( r, containerPool );
                 var key = r.ReadString();
-                tr.Add( key, new TranslationValue( r.ReadString(), tOrigin, (ResourceOverrideKind)r.ReadByte() ) );
+                tr.Add( key, new TranslationDefinition( r.ReadString(), tOrigin, (ResourceOverrideKind)r.ReadByte() ) );
             }
         }
         count = r.ReadInt32();

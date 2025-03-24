@@ -34,6 +34,11 @@ public abstract class ResPackageDataHandler<T> where T : class
     }
 
     /// <summary>
+    /// Gets the cache instance to which this data handler is bound.
+    /// </summary>
+    public IResPackageDataCache ResPackageDataCache => _cache;
+
+    /// <summary>
     /// Gets the data associated to a <see cref="ResPackage"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

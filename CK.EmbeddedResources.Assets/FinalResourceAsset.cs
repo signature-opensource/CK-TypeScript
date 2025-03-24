@@ -16,7 +16,7 @@ public readonly record struct FinalResourceAsset( ResourceLocator Origin, IEnume
     /// Returns a resource asset with a new <see cref="Ambiguities"/>.
     /// </summary>
     /// <param name="locator">The locator that share the same target path as this <see cref="Origin"/>.</param>
-    /// <returns>A new resource asset or this one if <paramref name="locator"/> is already knonw.</returns>
+    /// <returns>A new resource asset or this one if <paramref name="locator"/> is already known.</returns>
     public FinalResourceAsset AddAmbiguity( ResourceLocator locator )
     {
         if( locator == Origin
@@ -29,6 +29,11 @@ public readonly record struct FinalResourceAsset( ResourceLocator Origin, IEnume
             : new FinalResourceAsset( Origin, Ambiguities.Append( locator ) );
     }
 
+    /// <summary>
+    /// Adds multiple ambiguities at once.
+    /// </summary>
+    /// <param name="ambiguities">The ambiguities to add.</param>
+    /// <returns>A new resource asset or this one if all <paramref name="ambiguities"/> are already known.</returns>
     public FinalResourceAsset AddAmbiguities( IEnumerable<ResourceLocator>? ambiguities )
     {
         if( ambiguities == null ) return this;

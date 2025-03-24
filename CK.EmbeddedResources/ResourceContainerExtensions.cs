@@ -28,14 +28,14 @@ public static class ResourceContainerExtensions
     /// </summary>
     /// <param name="container">This container.</param>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="resourcePath">The resource path.</param>
+    /// <param name="resourceName">The local resource name (can contain any folder prefix).</param>
     /// <param name="locator">The resulting locator.</param>
     /// <returns>True if the resource exists, false otherwise.</returns>
-    public static bool TryGetResource( this IResourceContainer container, IActivityMonitor monitor, string resourcePath, out ResourceLocator locator )
+    public static bool TryGetExpectedResource( this IResourceContainer container, IActivityMonitor monitor, string resourceName, out ResourceLocator locator )
     {
-        if( !container.TryGetResource( resourcePath, out locator ) )
+        if( !container.TryGetResource( resourceName, out locator ) )
         {
-            monitor.Error( $"Unable to find expected resource '{resourcePath}' from {container.DisplayName}." );
+            monitor.Error( $"Unable to find expected resource '{resourceName}' from {container.DisplayName}." );
             return false;
         }
         return true;
@@ -45,12 +45,12 @@ public static class ResourceContainerExtensions
     /// Tries to get an existing resource.
     /// </summary>
     /// <param name="container">This container.</param>
-    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="resourceName">The local resource name (can contain any folder prefix).</param>
     /// <param name="locator">The resulting locator.</param>
     /// <returns>True if the resource exists, false otherwise.</returns>
-    public static bool TryGetResource( this IResourceContainer container, ReadOnlySpan<char> localResourceName, out ResourceLocator locator )
+    public static bool TryGetResource( this IResourceContainer container, ReadOnlySpan<char> resourceName, out ResourceLocator locator )
     {
-        locator = container.GetResource( localResourceName );
+        locator = container.GetResource( resourceName );
         return locator.IsValid;
     }
 
@@ -58,12 +58,12 @@ public static class ResourceContainerExtensions
     /// Tries to get an existing folder.
     /// </summary>
     /// <param name="container">This container.</param>
-    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <param name="folderName">The local resource folder name (can contain any folder prefix).</param>
     /// <param name="folder">The resulting folder.</param>
     /// <returns>True if the folder exists, false otherwise.</returns>
-    public static bool TryGetFolder( this IResourceContainer container,  ReadOnlySpan<char> localFolderName, out ResourceFolder folder )
+    public static bool TryGetFolder( this IResourceContainer container,  ReadOnlySpan<char> folderName, out ResourceFolder folder )
     {
-        folder = container.GetFolder( localFolderName );
+        folder = container.GetFolder( folderName );
         return folder.IsValid;
     }
 
@@ -71,12 +71,12 @@ public static class ResourceContainerExtensions
     /// Tries to get an existing resource in this folder.
     /// </summary>
     /// <param name="parentFolder">This folder.</param>
-    /// <param name="localResourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="resourceName">The local resource name (can contain any folder prefix).</param>
     /// <param name="locator">The resulting locator.</param>
     /// <returns>True if the resource exists, false otherwise.</returns>
-    public static bool TryGetResource( this ResourceFolder parentFolder, ReadOnlySpan<char> localResourceName, out ResourceLocator locator )
+    public static bool TryGetResource( this ResourceFolder parentFolder, ReadOnlySpan<char> resourceName, out ResourceLocator locator )
     {
-        locator = parentFolder.GetResource( localResourceName );
+        locator = parentFolder.GetResource( resourceName );
         return locator.IsValid;
     }
 
@@ -84,12 +84,34 @@ public static class ResourceContainerExtensions
     /// Tries to get an existing folder in this folder.
     /// </summary>
     /// <param name="folder">This folder.</param>
-    /// <param name="localFolderName">The local resource folder name (can contain any folder prefix).</param>
+    /// <param name="folderName">The local resource folder name (can contain any folder prefix).</param>
     /// <param name="folder">The resulting folder.</param>
     /// <returns>True if the folder exists, false otherwise.</returns>
-    public static bool TryGetFolder( this ResourceFolder parentFolder,  ReadOnlySpan<char> localFolderName, out ResourceFolder folder )
+    public static bool TryGetFolder( this ResourceFolder parentFolder,  ReadOnlySpan<char> folderName, out ResourceFolder folder )
     {
-        folder = parentFolder.GetFolder( localFolderName );
+        folder = parentFolder.GetFolder( folderName );
+        return folder.IsValid;
+    }
+
+    /// <inheritdoc cref="CodeStoreResources.GetSingleResource(IActivityMonitor, ReadOnlySpan{char})"/>
+    /// <param name="codeStore">This <see cref="CodeStoreResources"/>.</param>
+    public static bool TryGetSingleResource( this CodeStoreResources codeStore,
+                                             IActivityMonitor monitor,
+                                             ReadOnlySpan<char> resourceName,
+                                             out ResourceLocator locator )
+    {
+        locator = codeStore.GetSingleResource( monitor, resourceName );
+        return locator.IsValid;
+    }
+
+    /// <inheritdoc cref="CodeStoreResources.GetSingleFolder(IActivityMonitor, ReadOnlySpan{char})"/>
+    /// <param name="codeStore">This <see cref="CodeStoreResources"/>.</param>
+    public static bool TryGetSingleFolder( this CodeStoreResources codeStore,
+                                           IActivityMonitor monitor,
+                                           ReadOnlySpan<char> folderName,
+                                           out ResourceFolder folder )
+    {
+        folder = codeStore.GetSingleFolder( monitor, folderName );
         return folder.IsValid;
     }
 

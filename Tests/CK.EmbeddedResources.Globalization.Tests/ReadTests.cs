@@ -30,7 +30,7 @@ public class ReadTests
         p.AddText( "locales/fr-FR.jsonc", """{ "Msg": "Salut" }""" );
         p.AddText( "locales/fr-CA.jsonc", """{ "Msg": "Bon matin" }""" );
 
-        p.LoadLocales( TestHelper.Monitor, _activeCultures, out var set, "locales" );
+        p.LoadTranslations( TestHelper.Monitor, _activeCultures, out var set, "locales" );
         set.ShouldNotBeNull();
         set.Children.Count.ShouldBe( 3 );
 

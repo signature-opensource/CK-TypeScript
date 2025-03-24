@@ -19,7 +19,7 @@ sealed partial class LiveTSLocales
                                            IReadOnlySet<NormalizedCultureInfo> activeCultures,
                                            FinalLocaleCultureSet final )
         {
-            if( !_p.Resources.LoadLocales( monitor, activeCultures, out var locales, "ts-locales" ) )
+            if( !_p.Resources.LoadTranslations( monitor, activeCultures, out var locales, "ts-locales" ) )
             {
                 return false;
             }

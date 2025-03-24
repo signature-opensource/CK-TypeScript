@@ -31,8 +31,12 @@ public sealed class ResourceAssetDefinitionSet
     /// Creates a new initial <see cref="FinalResourceAssetSet"/> from this one that is independent
     /// of any other asset definitions.
     /// <para>
-    /// All <see cref="ResourceAssetDefinition.Override"/> in <see cref="Assets"/> must be <see cref="ResourceOverrideKind.None"/>
-    /// otherwise it is an error and null is returned. 
+    /// No <see cref="ResourceAssetDefinition.Override"/> in <see cref="Assets"/> cannot be <see cref="ResourceOverrideKind.Regular"/>
+    /// otherwise it is an error and null is returned.
+    /// </para>
+    /// <para>
+    /// <see cref="ResourceOverrideKind.Optional"/> are silently ignored: only <see cref="ResourceOverrideKind.None"/>
+    /// and <see cref="ResourceOverrideKind.Always"/> are kept in the resulting set.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

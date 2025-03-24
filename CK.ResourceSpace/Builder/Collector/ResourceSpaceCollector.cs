@@ -1,6 +1,7 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CK.Core;
 
@@ -80,6 +81,25 @@ public sealed class ResourceSpaceCollector
     /// <summary>
     /// Gets or sets the path of the application local resources.
     /// When let to null, an empty container is used.
+    /// <para>
+    /// When not null, this path is fully qualified and ends with <see cref="Path.DirectorySeparatorChar"/>.
+    /// </para>
     /// </summary>
-    public string? AppResourcesLocalPath { get => _appResourcesLocalPath; set => _appResourcesLocalPath = value; }
+    public string? AppResourcesLocalPath
+    {
+        get => _appResourcesLocalPath;
+        set
+        {
+            if( value != null )
+            {
+                Throw.CheckArgument( Path.IsPathFullyQualified( value ) );
+                value = Path.GetFullPath( value );
+                if( value[^1] != Path.DirectorySeparatorChar )
+                {
+                    value += Path.DirectorySeparatorChar;
+                }
+            }
+            _appResourcesLocalPath = value;
+        }
+    }
 }
