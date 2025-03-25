@@ -16,8 +16,9 @@ public readonly struct TranslationDefinition : IEquatable<TranslationDefinition>
 
     /// <summary>
     /// Gets the translation text.
+    /// This is empty even when <see cref="IsValid"/> is false.
     /// </summary>
-    public string Text => _text;
+    public string Text => _text ?? string.Empty;
 
     /// <summary>
     /// Gets whether this translation overrides an existing translation provided by another component.
@@ -26,9 +27,15 @@ public readonly struct TranslationDefinition : IEquatable<TranslationDefinition>
     public ResourceOverrideKind Override => _override;
 
     /// <summary>
+    /// Gets whether this value is valid.
+    /// Invalid value is the <c>default</c> (<see cref="Text"/> is the empty string).
+    /// </summary>
+    public bool IsValid => _text != null;
+
+    /// <summary>
     /// Initializes a new translation value.
     /// </summary>
-    /// <param name="text">The translation text.</param>
+    /// <param name="text">The translation text. When null or empty, <see cref="IsValid"/> is false.</param>
     /// <param name="overrideKind">Whether this translation overrides an existing translation provided by another component</param>
     public TranslationDefinition( string text, ResourceOverrideKind overrideKind )
     {
@@ -41,13 +48,13 @@ public readonly struct TranslationDefinition : IEquatable<TranslationDefinition>
     /// </summary>
     /// <param name="other">The other value.</param>
     /// <returns>Whether this <see cref="Text"/> has the same text as the other one.</returns>
-    public bool Equals( TranslationDefinition other ) => Text == other.Text;
+    public bool Equals( TranslationDefinition other ) => _text == other._text;
 
     public override bool Equals( object? obj ) => obj is TranslationDefinition v && Equals( v );
 
     public override string ToString() => Text;
 
-    public override int GetHashCode() => Text.GetHashCode();
+    public override int GetHashCode() => _text == null ? 0 : _text.GetHashCode();
 
     public static bool operator ==( TranslationDefinition x, TranslationDefinition y ) => x.Equals( y );
 

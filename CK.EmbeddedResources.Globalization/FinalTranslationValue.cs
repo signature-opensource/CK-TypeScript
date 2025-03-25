@@ -20,8 +20,9 @@ public readonly struct FinalTranslationValue : IEquatable<FinalTranslationValue>
 
     /// <summary>
     /// Gets the translation text.
+    /// This is empty even when <see cref="IsValid"/> is false.
     /// </summary>
-    public string Text => _text;
+    public string Text => _text ?? string.Empty;
 
     /// <summary>
     /// Gets the origin of the translation.
@@ -32,6 +33,12 @@ public readonly struct FinalTranslationValue : IEquatable<FinalTranslationValue>
     /// Gets the translations that share the same key if any.
     /// </summary>
     public IEnumerable<FinalTranslationValue>? Ambiguities => _ambiguities;
+
+    /// <summary>
+    /// Gets whether this value is valid.
+    /// Invalid value is the <c>default</c> (<see cref="Text"/> is the empty string).
+    /// </summary>
+    public bool IsValid => _text != null;
 
     /// <summary>
     /// Initializes a new translation.

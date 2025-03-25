@@ -27,7 +27,7 @@ public sealed class FinalTranslationSet
     /// <summary>
     /// Gets the translations.
     /// </summary>
-    public IReadOnlyDictionary<string, FinalTranslationValue>? Translations => _translations;
+    public IReadOnlyDictionary<string, FinalTranslationValue> Translations => _translations;
 
     /// <summary>
     /// Gets the culture of this set.
@@ -53,56 +53,112 @@ public sealed class FinalTranslationSet
     /// <returns>The aggregated set.</returns>
     public FinalTranslationSet Aggregate( FinalTranslationSet other )
     {
-        // Iterate on the smallest to add/update into the biggest.
-        var (s1, s2) = (this, other);
-        if( _translations.Count > other._translations.Count ) (s1, s2) = (s2, s1);
-        var result = new Dictionary<string, FinalTranslationValue>( s2._translations );
-        bool isAmbiguous = s2._isAmbiguous;
-        foreach( var (key, t1) in s1._translations )
-        {
-            if( result.TryGetValue( key, out var t2 ) )
-            {
-                var f = t1.AddAmbiguities( t2.Ambiguities );
-                isAmbiguous |= f.Ambiguities != null;
-                result[key] = f;
-            }
-            else
-            {
-                result.Add( key, t1 );
-            }
-        }
+        var translations = MergeTranslations( other, out bool isAmbiguous );
+
         IReadOnlyCollection<FinalTranslationSet> children;
         if( _children.Count > 0 )
         {
             if( other._children.Count > 0 )
             {
-                var newOnes = new List<FinalTranslationSet>();
+                bool isAllMine = true;
+                bool isAllTheir = true;
+                var candidates = new List<FinalTranslationSet>();
                 foreach( var mine in _children )
                 {
-                    var their = other._children.FirstOrDefault( c => c.Culture == mine._culture );
-                    if( their != null )
+                    var their = other._children.FirstOrDefault( o => o._culture == mine._culture );
+                    var merged = their != null ? mine.Aggregate( their ) : mine;
+                    isAmbiguous |= merged._isAmbiguous;
+                    candidates.Add( merged );
+                    isAllMine &= merged == mine;
+                    isAllTheir &= merged == their;
+                }
+                foreach( var their in other.Children )
+                {
+                    var alreadyMine = Children.FirstOrDefault( o => o._culture == their._culture );
+                    if( alreadyMine == null )
                     {
-                        their = mine.Aggregate( their );
-                        isAmbiguous |= their.IsAmbiguous;
-                        newOnes.Add( their );
-                    }
-                    else
-                    {
-                        newOnes.Add( mine );
+                        isAmbiguous |= their._isAmbiguous;
+                        candidates.Add( their );
+                        isAllMine = false;
                     }
                 }
-                children = newOnes;
+                children = isAllMine
+                            ? _children
+                            : isAllTheir
+                               ? other._children
+                               : candidates;
             }
             else
             {
                 children = _children;
+                isAmbiguous |= _isAmbiguous;
             }
         }
         else
         {
             children = other._children;
+            if( children != null )
+            {
+                isAmbiguous |= other._isAmbiguous;
+            }
         }
-        return new FinalTranslationSet( result, _culture, children, isAmbiguous );
+        if( translations == _translations && children == _children )
+        {
+            Throw.DebugAssert( isAmbiguous == _isAmbiguous );
+            return this;
+        }
+        if( translations == other._translations && children == other._children )
+        {
+            Throw.DebugAssert( isAmbiguous == other._isAmbiguous );
+            return other;
+        }
+        return new FinalTranslationSet( translations, _culture, children, isAmbiguous );
     }
 
+    IReadOnlyDictionary<string, FinalTranslationValue> MergeTranslations( FinalTranslationSet other, out bool isAmbiguous )
+    {
+        IReadOnlyDictionary<string, FinalTranslationValue> translations;
+        if( _translations.Count > 0 )
+        {
+            if( other._translations.Count > 0 )
+            {
+                // Iterate on the smallest to add/update into the biggest.
+                var (s1, s2) = (this, other);
+                if( _translations.Count > other._translations.Count ) (s1, s2) = (s2, s1);
+                var result = new Dictionary<string, FinalTranslationValue>( s2._translations );
+                bool changed = false;
+                isAmbiguous = s2._isAmbiguous;
+                foreach( var (key, t1) in s1._translations )
+                {
+                    if( result.TryGetValue( key, out var t2 ) )
+                    {
+                        var f = t1.AddAmbiguities( t2.Ambiguities );
+                        if( f.Ambiguities != t1.Ambiguities )
+                        {
+                            isAmbiguous |= f.Ambiguities != null;
+                            result[key] = f;
+                            changed = true;
+                        }
+                    }
+                    else
+                    {
+                        result.Add( key, t1 );
+                        changed = true;
+                    }
+                }
+                translations = changed ? result : s2._translations;
+            }
+            else
+            {
+                translations = _translations;
+                isAmbiguous = _isAmbiguous;
+            }
+        }
+        else
+        {
+            translations = other._translations;
+            isAmbiguous = other._isAmbiguous;
+        }
+        return translations;
+    }
 }

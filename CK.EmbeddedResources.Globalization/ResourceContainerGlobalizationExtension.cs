@@ -126,7 +126,7 @@ public static class ResourceContainerGlobalizationExtension
         {
             if( ReadJson( monitor, defFile, isOverrideFolder, out var defTranslations ) )
             {
-                return new TranslationDefinitionSet( defFile, NormalizedCultureInfo.CodeDefault, null, defTranslations );
+                return new TranslationDefinitionSet( defFile, NormalizedCultureInfo.CodeDefault, defTranslations );
             }
         }
         else
@@ -135,7 +135,7 @@ public static class ResourceContainerGlobalizationExtension
             if( isOverrideFolder )
             {
                 // If isOverrideFolder, simply returns an empty "en" root set.
-                return new TranslationDefinitionSet( defFile, NormalizedCultureInfo.CodeDefault, null, null );
+                return new TranslationDefinitionSet( defFile, NormalizedCultureInfo.CodeDefault, null );
             }
             // Regular folder MUST contain a "default".
             monitor.Error( $"Missing 'default.jsonc' file in {folder}. This file must contain all the resources in english." );
@@ -363,7 +363,7 @@ public static class ResourceContainerGlobalizationExtension
                             {
                                 Throw.InvalidDataException( $"Expected a string or an object, got a '{r.TokenType}'." );
                             }
-                            if( !target.TryAdd( propertyName, new TranslationDefinition( r.GetString()!, origin, overrideKind ) ) )
+                            if( !target.TryAdd( propertyName, new TranslationDefinition( r.GetString()!, overrideKind ) ) )
                             {
                                 Throw.InvalidDataException( $"Duplicate key '{propertyName}' found." );
                             }
