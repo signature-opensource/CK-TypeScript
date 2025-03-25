@@ -52,7 +52,7 @@ public static class ResourceContainerGlobalizationExtension
     /// <returns>True on success, false on error.</returns>
     public static bool LoadTranslations( this IResourceContainer container,
                                          IActivityMonitor monitor,
-                                         IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                         ActiveCultureSet activeCultures,
                                          out TranslationDefinitionSet? locales,
                                          string folder,
                                          bool isOverrideFolder = false )
@@ -63,7 +63,7 @@ public static class ResourceContainerGlobalizationExtension
             bool unactiveCultureWarned = false;
             using( monitor.OpenInfo( $"Reading {content}." ) )
             {
-                var defaultSet = CreateRoot( monitor, content, isOverrideFolder );
+                var defaultSet = CreateRoot( monitor, activeCultures, content, isOverrideFolder );
                 if( defaultSet != null )
                 {
                     locales = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
@@ -92,7 +92,7 @@ public static class ResourceContainerGlobalizationExtension
     /// <returns>True on success, false on error.</returns>
     public static bool LoadTranslations( this CodeStoreResources resources,
                                          IActivityMonitor monitor,
-                                         IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                         ActiveCultureSet activeCultures,
                                          out TranslationDefinitionSet? locales,
                                          string folder,
                                          bool isOverrideFolder = false )
@@ -103,7 +103,7 @@ public static class ResourceContainerGlobalizationExtension
             bool unactiveCultureWarned = false;
             using( monitor.OpenInfo( $"Reading {content}." ) )
             {
-                var defaultSet = CreateRoot( monitor, content, isOverrideFolder );
+                var defaultSet = CreateRoot( monitor, activeCultures, content, isOverrideFolder );
                 if( defaultSet != null )
                 {
                     // Whe Code overrides, we may decide here to merge the content.AllResources with
@@ -119,14 +119,14 @@ public static class ResourceContainerGlobalizationExtension
         return true;
     }
 
-    static TranslationDefinitionSet? CreateRoot( IActivityMonitor monitor, ResourceFolder folder, bool isOverrideFolder )
+    static TranslationDefinitionSet? CreateRoot( IActivityMonitor monitor, ActiveCultureSet activeCultures, ResourceFolder folder, bool isOverrideFolder )
     {
         if( folder.TryGetResource( "default.jsonc", out var defFile )
             || isOverrideFolder && folder.TryGetResource( "en.jsonc", out defFile ) )
         {
             if( ReadJson( monitor, defFile, isOverrideFolder, out var defTranslations ) )
             {
-                return new TranslationDefinitionSet( defFile, NormalizedCultureInfo.CodeDefault, defTranslations );
+                return new TranslationDefinitionSet( activeCultures, defFile, defTranslations );
             }
         }
         else
@@ -135,7 +135,7 @@ public static class ResourceContainerGlobalizationExtension
             if( isOverrideFolder )
             {
                 // If isOverrideFolder, simply returns an empty "en" root set.
-                return new TranslationDefinitionSet( defFile, NormalizedCultureInfo.CodeDefault, null );
+                return new TranslationDefinitionSet( activeCultures, defFile, null );
             }
             // Regular folder MUST contain a "default".
             monitor.Error( $"Missing 'default.jsonc' file in {folder}. This file must contain all the resources in english." );
@@ -144,18 +144,15 @@ public static class ResourceContainerGlobalizationExtension
     }
 
     static TranslationDefinitionSet? ReadTranslations( IActivityMonitor monitor,
-                                                       TranslationDefinitionSet defaultSet,
+                                                       TranslationDefinitionSet root,
                                                        bool isOverrideFolder,
                                                        IEnumerable<ResourceLocator> allResources,
-                                                       IReadOnlySet<NormalizedCultureInfo> activeCultures,
+                                                       ActiveCultureSet activeCultures,
                                                        ref bool unactiveCultureWarned )
     {
         bool success = true;
 
-        // Ordering by increasing length: process less specific first.
-        var others = allResources.Where( r => r != defaultSet.Origin )
-                                 .OrderBy( o => o.FullResourceName.Length );
-
+        var others = allResources.Where( o => o != root.Origin );
         foreach( var o in others )
         {
             if( !o.ResourceName.EndsWith( ".jsonc" ) )
@@ -173,13 +170,13 @@ public static class ResourceContainerGlobalizationExtension
             else
             {
                 var c = NormalizedCultureInfo.FindNormalizedCultureInfo( cName );
-                if( c == null || !activeCultures.Contains( c ) )
+                if( c == null || !activeCultures.TryGetValue( c, out ActiveCulture? aC ) )
                 {
                     monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the active cultures." );
                     if( !unactiveCultureWarned )
                     {
                         unactiveCultureWarned = true;
-                        monitor.Warn( $"Active cultures are: {activeCultures.Select( c => c.Name ).Concatenate()}." );
+                        monitor.Warn( $"Active cultures are: {activeCultures.AllActiveCultures.Select( c => c.Culture.Name ).Concatenate()}." );
                     }
                 }
                 else if( c == NormalizedCultureInfo.CodeDefault )
@@ -191,53 +188,20 @@ public static class ResourceContainerGlobalizationExtension
                     monitor.Error( $"File {o} defines the \"en\" culture. This is the default culture that must be in 'default.jsonc' file." );
                     success = false;
                 }
-                else
+                else if( root.CheckNoSubSet( monitor, aC, cName, o ) )
                 {
-                    if( !c.IsNeutralCulture && defaultSet.Find( c.NeutralCulture ) == null )
-                    {
-                        monitor.Error( $"""
-                                        Cannot handle culture '{cName}' from {o}.
-                                        The translation file for the neutral culture '{c.NeutralCulture.Name}' is required.
-                                        """ );
-                        success = false;
-                    }
-                    else
-                    {
-                        var parent = c.IsNeutralCulture || c.IsDefault
-                                        ? defaultSet
-                                        : defaultSet.FindClosest( c );
-                        Throw.DebugAssert( "Since the NeutralCulture exists.", parent != null );
-                        if( parent.Culture == c )
-                        {
-                            monitor.Error( $"Duplicate files found for culture '{cName}': {o} and {parent.Origin} lead to the same culture." );
-                            success = false;
-                        }
-                        else
-                        {
-                            if( ReadSpecificSet( monitor, o, c, defaultSet, isOverrideFolder, out var specificSet ) )
-                            {
-                                parent.AddSpecific( specificSet );
-                                monitor.Trace( $"Successfully loaded {specificSet.Translations.Count} translations from {o}." );
-                            }
-                            else
-                            {
-                                success = false;
-                            }
-                        }
-                    }
+                    success &= ReadSpecificSet( monitor, o, aC, root, isOverrideFolder );
                 }
             }
         }
-        return success ? defaultSet : null;
+        return success ? root : null;
 
         static bool ReadSpecificSet( IActivityMonitor monitor,
                                      ResourceLocator locator,
-                                     NormalizedCultureInfo culture,
-                                     TranslationDefinitionSet defaultSet,
-                                     bool isOverrideFolder,
-                                     [NotNullWhen( true )] out TranslationDefinitionSet? specificSet )
+                                     ActiveCulture culture,
+                                     TranslationDefinitionSet root,
+                                     bool isOverrideFolder )
         {
-            specificSet = null;
             if( ReadJson( monitor, locator, isOverrideFolder, out var content ) )
             {
                 bool success = true;
@@ -248,25 +212,25 @@ public static class ResourceContainerGlobalizationExtension
                     // this key must also be defined as an override in the "default.json" file: it has to be defined
                     // in the final merged set by a lower-level component. Override handling is done by the FinalSet,
                     // not here.
-                    if( kv.Value.Override == ResourceOverrideKind.None && !defaultSet.Translations.ContainsKey( kv.Key ) )
+                    if( kv.Value.Override == ResourceOverrideKind.None && !root.Translations.ContainsKey( kv.Key ) )
                     {
                         monitor.Error( $"""
                                         Missing key in default translation file.
-                                        Key '{kv.Value}' defined in translation file {locator} doesn't exist in {defaultSet.Origin}.
+                                        Key '{kv.Value}' defined in translation file {locator} doesn't exist in {root.Origin}.
                                         """ );
                         success = false;
                     }
                 }
                 if( success )
                 {
-                    specificSet = new TranslationDefinitionSet( locator, culture, content );
+                    var subSet = root.CreateSubSet( culture, locator, content );
+                    monitor.Trace( $"Successfully loaded {subSet.Translations.Count} translations from {locator}." );
                     return true;
                 }
             }
             return false;
         }
     }
-
 
     static bool ReadJson( IActivityMonitor monitor,
                           ResourceLocator locator,

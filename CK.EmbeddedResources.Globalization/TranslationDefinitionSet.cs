@@ -1,54 +1,56 @@
 using CK.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.EmbeddedResources;
 
 /// <summary>
 /// Captures a "locales/" folder: the root culture is "en" and is filled with the
-/// "default.json" or "default.jsonc" required file.
+/// "default.jsonc" required file.
 /// <para>
-/// The hierarchy is under control of the <see cref="NormalizedCultureInfo"/> trees, itself
+/// The hierarchy is under control of the <see cref="ActiveCultures"/> tree, itself
 /// under control of the <see cref="System.Globalization.CultureInfo.Parent"/> structure.
 /// </para>
 /// </summary>
-public sealed partial class TranslationDefinitionSet
+public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
 {
-    readonly NormalizedCultureInfo _culture;
+    readonly ActiveCultureSet _activeCultures;
     readonly ResourceLocator _origin;
     readonly IReadOnlyDictionary<string, TranslationDefinition> _translations;
-    List<TranslationDefinitionSet>? _children;
+    readonly ITranslationDefinitionSet?[] _subSets;
 
-    internal TranslationDefinitionSet( ResourceLocator origin,
-                                       NormalizedCultureInfo c,
+    internal TranslationDefinitionSet( ActiveCultureSet activeCultures,
+                                       ResourceLocator origin,
                                        IReadOnlyDictionary<string, TranslationDefinition>? translations )
     {
+        _activeCultures = activeCultures;
         _origin = origin;
-        _culture = c;
-        _translations = translations ?? ImmutableDictionary<string,TranslationDefinition>.Empty;
+        _translations = translations ?? ImmutableDictionary<string, TranslationDefinition>.Empty;
+        _subSets = new TranslationDefinitionSet[activeCultures.Count];
+        _subSets[0] = this;
     }
 
     /// <summary>
-    /// Gets the translations.
+    /// Gets the cultures set to which this definition is bound.
     /// </summary>
+    public ActiveCultureSet ActiveCultures => _activeCultures;
+
+    /// <inheritdoc />
     public IReadOnlyDictionary<string, TranslationDefinition> Translations => _translations;
 
-    /// <summary>
-    /// Gets the culture of this set.
-    /// </summary>
-    public NormalizedCultureInfo Culture => _culture;
+    /// <inheritdoc />
+    public ActiveCulture Culture => _activeCultures.Root;
 
-    /// <summary>
-    /// Gets the origin of this set.
-    /// </summary>
+    /// <inheritdoc />
     public ResourceLocator Origin => _origin;
 
-    /// <summary>
-    /// Gets the children (more specific culture sets).
-    /// </summary>
-    public IReadOnlyCollection<TranslationDefinitionSet> Children => (IReadOnlyCollection<TranslationDefinitionSet>?)_children ?? Array.Empty<TranslationDefinitionSet>();
+    /// <inheritdoc />
+    public IEnumerable<ITranslationDefinitionSet> Children => Culture.Children.Select( c => _subSets[c.Index] ).Where( s => s != null )!;
 
     /// <summary>
     /// Creates a new initial <see cref="FinalTranslationSet"/> from this definition that is independent
@@ -64,94 +66,53 @@ public sealed partial class TranslationDefinitionSet
     /// </summary>
     public FinalTranslationSet? ToInitialFinalSet( IActivityMonitor monitor )
     {
-        var translations = CreateFinalTranslations( monitor );
+        var translations = CreateFinalTranslations( monitor, _origin, _translations );
         bool success = translations != null;
-
-        IReadOnlyCollection<FinalTranslationSet>? children = null;
-        if( _children != null )
+        var subSets = new IFinalTranslationSet[_subSets.Length];
+        var result = new FinalTranslationSet( _activeCultures, translations, subSets, isAmbiguous: false );
+        for( int i = 1; i < subSets.Length; ++i )
         {
-            // Not easy here :-(.
-            // We must enure a compact tree when the definitions are not compact.
-            // Only definitions for NeutralCultures are assumed while reading the resources.
-            // Children may not have a parent definitions if the parent is not a Neutral culture.
-            //
-            // This seems overly complicated but I failed to find a more elegant solution without
-            // dangerous (and hideous) mutabilites...
-            //
-            // And the bad news is that the Combine has the same compacity issue.
-            //
-            var buildMap = _children.SelectMany( def => def._culture.Fallbacks.Append( def._culture ) )
-                                    .Distinct()
-                                    .OrderByDescending( c => c.Fallbacks.Length )
-                                    .Select( (c,index) => (Index: index, Culture: c, Definitions: _children.FirstOrDefault( d => d._culture == c )) )
-                                    .ToArray();
-            var buffer = new FinalTranslationSet?[buildMap.Length];
-            List<FinalTranslationSet>? childrenBuilder = null;
-            foreach( var b in buildMap )
+            var def = _subSets[i];
+            if( def != null )
             {
-                // Collects the children of this culture that have already been
-                // built (thanks to the OrderByDescending).
-                for( int i = 0; i < b.Index; ++i )
+                translations = CreateFinalTranslations( monitor, def.Origin, def.Translations );
+                if( translations != null )
                 {
-                    var candidate = buffer[i];
-                    if( candidate != null
-                        && candidate.Culture.Fallbacks.Length > 0
-                        && candidate.Culture.Fallbacks[0] == b.Culture )
-                    {
-                        // We have a child of this culture. Acquire it.
-                        childrenBuilder ??= new List<FinalTranslationSet>();
-                        childrenBuilder.Add( candidate );
-                        buffer[i] = null;
-                    }
+                    subSets[i] = new FinalTranslationSet.SubSet( result, def.Culture, translations, isAmbiguous: false );
                 }
-                FinalTranslationSet[]? childChildren = null;
-                if( childrenBuilder != null && childrenBuilder.Count > 0 )
+                else
                 {
-                    childChildren = childrenBuilder.ToArray();
-                    childrenBuilder.Clear();
+                    success = false;
                 }
-                Throw.DebugAssert( "If we have no definitions, then we have children.", b.Definitions != null || childChildren != null );
-                IReadOnlyDictionary<string, FinalTranslationValue>? childTranslations = null;
-                if( b.Definitions != null )
-                {
-                    childTranslations = CreateFinalTranslations( monitor );
-                    success &= childChildren != null;
-                }
-                // Cannot be ambiguous by design.
-                buffer[b.Index] = new FinalTranslationSet( childTranslations, b.Culture, childChildren, isAmbiguous: false );
-            }
-            // The non null cultures that remains in the buffer are our children.
-            if( success )
-            {
-                children = buffer.Where( f => f != null ).ToArray()!;
             }
         }
-        // Cannot be ambiguous by design.
-        return new FinalTranslationSet( translations, _culture, children, isAmbiguous: false );
+        return success ? result : null;
 
-    }
-
-    Dictionary<string, FinalTranslationValue>? CreateFinalTranslations( IActivityMonitor monitor )
-    {
-        var buggyOverrides = _translations.Where( kv => kv.Value.Override is ResourceOverrideKind.Regular );
-        if( buggyOverrides.Any() )
+        static Dictionary<string, FinalTranslationValue>? CreateFinalTranslations( IActivityMonitor monitor,
+                                                                                   ResourceLocator origin,
+                                                                                   IReadOnlyDictionary<string, TranslationDefinition> translations )
         {
-            monitor.Error( $"""
-                    Invalid final set of resources {_origin}. No asset can be defined as an override, the following resources are override definitions:
-                    {buggyOverrides.Select( kv => kv.Key ).Concatenate()}
-                    """ );
-            return null;
-        }
-        var result = new Dictionary<string, FinalTranslationValue>( _translations.Count );
-        foreach( var (key, definition) in _translations )
-        {
-            // Regular has trigerred the error above. Here we ignore Optional. 
-            if( definition.Override is ResourceOverrideKind.None or ResourceOverrideKind.Always )
+            var buggyOverrides = translations.Where( kv => kv.Value.Override is ResourceOverrideKind.Regular );
+            if( buggyOverrides.Any() )
             {
-                result.Add( key, new FinalTranslationValue( definition.Text, _origin ) );
+                monitor.Error( $"""
+                        Invalid final set of resources {origin}. No asset can be defined as an override, the following resources are override definitions:
+                        {buggyOverrides.Select( kv => kv.Key ).Concatenate()}
+                        """ );
+                return null;
             }
+            var result = new Dictionary<string, FinalTranslationValue>( translations.Count );
+            foreach( var (key, definition) in translations )
+            {
+                // Regular has trigerred the error above. Here we ignore Optional. 
+                if( definition.Override is ResourceOverrideKind.None or ResourceOverrideKind.Always )
+                {
+                    result.Add( key, new FinalTranslationValue( definition.Text, origin ) );
+                }
+            }
+            return result;
         }
-        return result;
+
     }
 
     /// <summary>
@@ -171,17 +132,22 @@ public sealed partial class TranslationDefinitionSet
         var translations = CombineTranslations( monitor, _origin, _translations, null, baseSet.Translations );
         bool success = translations != null;
 
-        List<FinalTranslationSet>? children = null;
-        if( _children != null )
+        var subSets = new IFinalTranslationSet[_subSets.Length];
+        var result = new FinalTranslationSet( _activeCultures, translations, subSets, isAmbiguous: false );
+        for( int i = 1; i < subSets.Length; ++i )
         {
-            children = new List<FinalTranslationSet>( _children.Count );
-            foreach( var cDef in _children )
+            var def = _subSets[i];
+            if( def != null )
             {
-                // BuildChildPath
-                var inheritFinder = BuildChildPath( baseSet, cDef.Culture, out var exactSet );
-                var c = _children[i].ToInitialFinalSet( monitor );
-                if( c == null ) return null;
-                children[i] = c;
+                translations = CreateFinalTranslations( monitor, def.Origin, def.Translations );
+                if( translations != null )
+                {
+                    subSets[i] = new FinalTranslationSet.SubSet( result, def.Culture, translations, isAmbiguous: false );
+                }
+                else
+                {
+                    success = false;
+                }
             }
         }
 
@@ -281,36 +247,4 @@ public sealed partial class TranslationDefinitionSet
 
 
 
-
-    internal void AddSpecific( TranslationDefinitionSet specificSet )
-    {
-        _children ??= new List<TranslationDefinitionSet>();
-        _children.Add( specificSet );
-    }
-
-    internal TranslationDefinitionSet? Find( NormalizedCultureInfo c )
-    {
-        if( c == _culture ) return this;
-        if( _children != null )
-        {
-            foreach( var child in _children )
-            {
-                var r = child.Find( c );
-                if( r != null ) return r;
-            }
-        }
-        return null;
-    }
-
-    internal TranslationDefinitionSet? FindClosest( NormalizedCultureInfo c )
-    {
-        Throw.DebugAssert( "Called on the default set only.", _culture == NormalizedCultureInfo.CodeDefault );
-        Throw.DebugAssert( "Called only for specific cultures.", !c.IsNeutralCulture && !c.IsDefault );
-        foreach( var f in c.Fallbacks )
-        {
-            var r = Find( f );
-            if( r != null ) return r;
-        }
-        return null;
-    }
 }
