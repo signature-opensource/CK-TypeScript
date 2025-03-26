@@ -18,12 +18,10 @@ namespace CK.Core;
 public sealed class ResourceSpaceDataBuilder
 {
     readonly ResourceSpaceCollector _collector;
-    readonly string? _appResourcesLocalPath;
      
     public ResourceSpaceDataBuilder( ResourceSpaceCollector collector )
     {
         _collector = collector;
-        _appResourcesLocalPath = collector.AppResourcesLocalPath;
     }
 
     /// <summary>

@@ -1,19 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="../.yarn/releases/yarn-4.6.0.cjs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="29.0.1" />
-    <ProjectReference Include="..\CK.EmbeddedResources.Globalization\CK.EmbeddedResources.Globalization.csproj" />
-    <ProjectReference Include="..\CK.ResourceSpace.Assets\CK.ResourceSpace.Assets.csproj" />
-    <ProjectReference Include="..\CK.TypeScript.LiveEngine\CK.TypeScript.LiveEngine.csproj" />
-    <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
-    <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="TSLocales\" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="../.yarn/releases/yarn-4.6.0.cjs" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="29.0.1" />
+        <ProjectReference Include="..\CK.ResourceSpace.Globalization\CK.ResourceSpace.Globalization.csproj" />
+        <ProjectReference Include="..\CK.ResourceSpace.Assets\CK.ResourceSpace.Assets.csproj" />
+        <ProjectReference Include="..\CK.TypeScript.LiveEngine\CK.TypeScript.LiveEngine.csproj" />
+        <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
+        <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
+    </ItemGroup>
 </Project>

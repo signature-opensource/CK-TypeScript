@@ -133,7 +133,12 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
                                             ? HashCode.Combine( Container.GetHashCode(), _container.NameComparer.GetHashCode( FullResourceName ) )
                                             : 0;
 
-    internal void CheckContainer( IResourceContainer expectedContainer )
+    /// <summary>
+    /// Checks that <see cref="Container"/> is the same as <paramref name="expectedContainer"/> or
+    /// throws a <see cref="ArgumentException"/>.
+    /// </summary>
+    /// <param name="expectedContainer">The expected container.</param>
+    public void CheckContainer( IResourceContainer expectedContainer )
     {
         if( _container != expectedContainer )
         {

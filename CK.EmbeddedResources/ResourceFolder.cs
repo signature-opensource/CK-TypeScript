@@ -145,8 +145,12 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
                                             ? HashCode.Combine( Container.GetHashCode(), Container.NameComparer.GetHashCode( FullFolderName ) )
                                             : 0;
 
-
-    internal void CheckContainer( IResourceContainer expectedContainer )
+    /// <summary>
+    /// Checks that <see cref="Container"/> is the same as <paramref name="expectedContainer"/> or
+    /// throws a <see cref="ArgumentException"/>.
+    /// </summary>
+    /// <param name="expectedContainer">The expected container.</param>
+    public void CheckContainer( IResourceContainer expectedContainer )
     {
         if( _container != expectedContainer )
         {

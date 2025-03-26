@@ -100,7 +100,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// <summary>
     /// Gets a mutable set of cultures that should be handled by the generated TypeScript code.
     /// <para>
-    /// It is useless to register the "en" culture as it is always implicitly added.
+    /// It is useless to register the "en" culture as it is always implicitly added and parent cultures
+    /// are automatically added (adding "fr-FR" adds "fr").
     /// </para>
     /// <para>
     /// In configuration files, this is expressed as a comma separated string of BCP47 culture names.

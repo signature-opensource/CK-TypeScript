@@ -51,12 +51,22 @@ public class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="target">The target.</param>
-    public void Install( IActivityMonitor monitor, ResourceSpaceFileInstaller target )
+    /// <returns>True on succes, false one error (errors have been logged).</returns>
+    public bool Install( IActivityMonitor monitor, ResourceSpaceFileInstaller target )
     {
         Throw.CheckState( FinalAssets != null );
-        foreach( var a in FinalAssets.Assets )
+        try
         {
-            target.Write( a.Key, a.Value.Origin );
+            foreach( var a in FinalAssets.Assets )
+            {
+                target.Write( a.Key, a.Value.Origin );
+            }
+            return true;
+        }
+        catch( Exception ex )
+        {
+            monitor.Error( "While generating Assets.", ex );
+            return false;
         }
     }
 

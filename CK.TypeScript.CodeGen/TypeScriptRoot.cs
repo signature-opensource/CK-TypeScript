@@ -1,8 +1,10 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 
@@ -19,11 +21,8 @@ namespace CK.TypeScript.CodeGen;
 /// <para>
 /// Once code generation succeeds, <see cref="Save"/> can be called.
 /// </para>
-/// <para>
-/// This class can be used as-is or can be specialized in order to offer a more powerful API.
-/// </para>
 /// </summary>
-public sealed class TypeScriptRoot
+public sealed partial class TypeScriptRoot
 {
     IDictionary<object, object?>? _memory;
     readonly TSTypeManager _tsTypes;

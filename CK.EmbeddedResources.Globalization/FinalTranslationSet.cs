@@ -7,12 +7,18 @@ using System.Linq;
 
 namespace CK.EmbeddedResources;
 
+/// <summary>
+/// Translations associated to a <see cref="ActiveCultureSet"/>.
+/// Only empty sets can be created directly, actual sets are read from resources:
+/// see <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(IResourceContainer, IActivityMonitor, ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>
+/// and <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(CodeStoreResources, IActivityMonitor, ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>.
+/// </summary>
 public sealed partial class FinalTranslationSet : IFinalTranslationSet
 {
     readonly IReadOnlyDictionary<string, FinalTranslationValue> _translations;
     readonly ActiveCultureSet _activeCultures;
     readonly IFinalTranslationSet?[] _subSets;
-    // Unfortunate required post-instantiation mutability. 
+    // Unfortunate required post-instantiation mutability for Combine. 
     internal bool _isAmbiguous;
 
     internal FinalTranslationSet( ActiveCultureSet activeCultures,
@@ -27,6 +33,18 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         subSets[0] = this;
     }
 
+    /// <summary>
+    /// Initializes a new empty final translation set.
+    /// </summary>
+    /// <param name="activeCultures">The active culture set.</param>
+    public FinalTranslationSet( ActiveCultureSet activeCultures )
+    {
+        _activeCultures = activeCultures;
+        _translations = ImmutableDictionary<string, FinalTranslationValue>.Empty;
+        _subSets = new IFinalTranslationSet[activeCultures.Count];
+        _subSets[0] = this;
+    }
+
     /// <inheritdoc />
     public IReadOnlyDictionary<string, FinalTranslationValue> Translations => _translations;
 
@@ -37,13 +55,42 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
     public IFinalTranslationSet? Parent => null;
 
     /// <inheritdoc />
-    public IEnumerable<IFinalTranslationSet> Children => Culture.Children.Select( c => _subSets[c.Index] ).Where( s => s != null )!;
+    public IEnumerable<IFinalTranslationSet> Children => _activeCultures.Root.Children.Select( c => _subSets[c.Index] ).Where( s => s != null )!;
 
     /// <inheritdoc />
     public bool IsAmbiguous => _isAmbiguous;
 
+    /// <inheritdoc />
+    public IEnumerable<KeyValuePair<string, FinalTranslationValue>> RootPropagatedTranslations => _translations;
+
     /// <summary>
-    /// Aggregate this set with an other one. Even if both sets are not <see cref="IsAmbiguous"/>,
+    /// Gets all the existing ambiguities.
+    /// </summary>
+    public IEnumerable<KeyValuePair<string, FinalTranslationValue>> Ambiguities => _subSets.Where( s => s != null )
+                                                                                          .SelectMany( s => s!.Translations
+                                                                                                              .Where( kv => kv.Value.Ambiguities != null ) );
+
+    /// <summary>
+    /// Gets all the translation sets (including this root).
+    /// Order is irrelevant and there may be less sets than <see cref="ActiveCultureSet.Count"/>.
+    /// Nullable sets can be obtained by <see cref="FindTranslationSet"/>.
+    /// </summary>
+    public IEnumerable<IFinalTranslationSet> AllTranslationSets => _subSets.Where( s => s != null )!;
+
+    /// <summary>
+    /// Finds the translation set for an active culture.
+    /// It may be null if it has never been required to hold any transalations.
+    /// </summary>
+    /// <param name="c">The active culture. Must be from the same set as this <see cref="Culture"/>.</param>
+    /// <returns>The set or null if its creation was useless..</returns>
+    public IFinalTranslationSet? FindTranslationSet( ActiveCulture c )
+    {
+        Throw.CheckArgument( c.ActiveCultures == _activeCultures );
+        return _subSets[c.Index];
+    }
+
+    /// <summary>
+    /// Aggregate this set with another one. Even if both sets are not <see cref="IsAmbiguous"/>,
     /// if a common key is mapped to different text, the result will be ambiguous.
     /// </summary>
     /// <param name="other">The other set to aggregate.</param>

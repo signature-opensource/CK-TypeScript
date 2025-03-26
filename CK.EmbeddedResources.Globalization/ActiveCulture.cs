@@ -36,6 +36,10 @@ public sealed class ActiveCulture
 
     /// <summary>
     /// Gets a unique index in the <see cref="ActiveCultureSet.AllActiveCultures"/>.
+    /// <para>
+    /// This index must be used to easily and efficiently associate any external data
+    /// to active cultures (by using an array of external data).
+    /// </para>
     /// </summary>
     public int Index => _index;
 

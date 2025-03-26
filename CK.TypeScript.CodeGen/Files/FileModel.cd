@@ -191,7 +191,7 @@
       </MemberNameLabel>
     </AssociationLine>
     <TypeIdentifier>
-      <HashCode>CAQAFIITRIESADIACABAQEQgAAAIYAAgASAACABAAwA=</HashCode>
+      <HashCode>CAQAFIITRIESADIACABAQEQgAAIIYAAgASAACABAAwA=</HashCode>
       <FileName>TypeScriptFolder.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
@@ -213,18 +213,40 @@
       <Field Name="_tsTypes" Hidden="true" />
       <Method Name="GenerateCode" Hidden="true" />
       <Method Name="GetTSTypeSignatureBuilder" Hidden="true" />
+      <Property Name="IResourceContainer.AllResources" Hidden="true" />
+      <Property Name="IResourceContainer.DisplayName" Hidden="true" />
+      <Method Name="IResourceContainer.GetAllResources" Hidden="true" />
+      <Method Name="IResourceContainer.GetFolder" Hidden="true" />
+      <Method Name="IResourceContainer.GetFolderName" Hidden="true" />
+      <Method Name="IResourceContainer.GetFolders" Hidden="true" />
+      <Method Name="IResourceContainer.GetLocalFilePath" Hidden="true" />
+      <Method Name="IResourceContainer.GetResource" Hidden="true" />
+      <Method Name="IResourceContainer.GetResourceName" Hidden="true" />
+      <Method Name="IResourceContainer.GetResources" Hidden="true" />
+      <Method Name="IResourceContainer.GetStream" Hidden="true" />
+      <Property Name="IResourceContainer.HasLocalFilePathSupport" Hidden="true" />
+      <Property Name="IResourceContainer.IsValid" Hidden="true" />
+      <Property Name="IResourceContainer.NameComparer" Hidden="true" />
+      <Method Name="IResourceContainer.ReadAsText" Hidden="true" />
+      <Property Name="IResourceContainer.ResourcePrefix" Hidden="true" />
+      <Method Name="IResourceContainer.WriteStream" Hidden="true" />
       <Method Name="IsInPool" Hidden="true" />
       <Method Name="OnFolderCreated" Hidden="true" />
       <Method Name="OnTypeScriptFileCreated" Hidden="true" />
       <Method Name="Return" Hidden="true" />
       <Method Name="Save" Hidden="true" />
       <Method Name="ToIdentifier" Hidden="true" />
+      <Method Name="ToString" Hidden="true" />
       <Method Name="TypeScriptRoot" Hidden="true" />
     </Members>
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
     <TypeIdentifier>
-      <HashCode>AAIAAIIABgAQALIIQCAABAoAgACQQAggggFAEgCAAAA=</HashCode>
+      <HashCode>gAJAqIIABgAQQLIMQCAElA6BgACQQAogggFYEgCAwAA=</HashCode>
       <FileName>TypeScriptRoot.cs</FileName>
     </TypeIdentifier>
+    <Lollipop Position="0.2" />
   </Class>
   <Interface Name="CK.TypeScript.CodeGen.IResourceFile">
     <Position X="8" Y="3.75" Width="1.25" />

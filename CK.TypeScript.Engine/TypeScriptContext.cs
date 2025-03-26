@@ -21,6 +21,7 @@ public sealed partial class TypeScriptContext
     readonly ICodeGenerationContext _codeContext;
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly TypeScriptBinPathAspectConfiguration _binPathConfiguration;
+    readonly ActiveCultureSet _activeCultures;
     readonly TSContextInitializer _initializer;
     readonly TypeScriptRoot _tsRoot;
     readonly PocoCodeGenerator _pocoGenerator;
@@ -42,6 +43,7 @@ public sealed partial class TypeScriptContext
                                       tsConfig.GenerateDocumentation,
                                       tsConfig.IgnoreVersionsBound,
                                       initializer.RootMemory );
+        _activeCultures = new ActiveCultureSet( tsBinPathConfig.ActiveCultures );
         _tsRoot.FolderCreated += OnFolderCreated;
         _tsRoot.TSTypes.TSFromTypeRequired += OnTSFromTypeRequired;
         _tsRoot.TSTypes.TSFromObjectRequired += OnTSFromObjectRequired;
@@ -139,6 +141,11 @@ public sealed partial class TypeScriptContext
     public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
 
     /// <summary>
+    /// Gets the active cultures.
+    /// </summary>
+    public ActiveCultureSet ActiveCultures => _activeCultures;
+
+    /// <summary>
     /// Gets the <see cref="TypeScriptRoot"/>.
     /// </summary>
     public TypeScriptRoot Root => _tsRoot;
@@ -212,24 +219,23 @@ public sealed partial class TypeScriptContext
                       // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
                       && ResolveRegisteredTypes( monitor )
                       && GeneratePackageCode( monitor, _initializer.Packages, this )
-                      && GenerateTSLocaleSupport( monitor, this )
-                      && GenerateAssetsSupport( monitor, this )
                       // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                       && _tsRoot.GenerateCode( monitor );
         }
         // New approach (CK-ReaDI oriented) here to manage the resources.
-        // We create a ResourceSpace from the TypeScriptPackage type that exist.
-        // Currently these are IRealObject (this will not be the case in the future) and we use
-        // the current TypeScriptPackageAttributeImpl instances.
+
         var typeScriptContext = this;
         var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
+        // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
+        // logically depends on it. Its resources will be reachable from any package.
+        resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
+        // We collect packages from the TypeScriptPackage type that exist.
+        // Currently these are IRealObject (this will not be the case in the future) and we use
+        // the current TypeScriptPackageAttributeImpl instances.
         foreach( var p in _initializer.Packages )
         {
             success &= resSpaceCollectorBuilder.RegisterPackage( monitor, p.DecoratedType, p.TypeScriptFolder );
         }
-        // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
-        // logically depends on it. All its resources will be reachable from any package.
-        success &= resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
         if( !success )
         {
             return false;
@@ -244,13 +250,25 @@ public sealed partial class TypeScriptContext
         // a schema or any description of code.
         //
         var resSpaceCollector = resSpaceCollectorBuilder.Build( monitor );
-        if( resSpaceCollector == null )
-        {
-            return false;
-        }
+        if( resSpaceCollector == null ) return false;
         // With CK-ReaDI, publishing this resSpaceCollector here will allow any code
         // to mutate the package descriptor. May be not that useful.
+        // The ResourceSpaceDataBuilder will also be initialized (but its Build method
+        // will be called only when the ResSpaceCollector is no more needed by other components).
         var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
+        var resSpaceData = resSpaceDataBuilder.Build( monitor );
+        if( resSpaceData == null ) return false;
+        // When a ResourceSpaceData is available, we are almost done.
+        // It exposes all the read only packages inculding the head "<Code>" and tail "<App>" packages.
+        // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
+        // final ResorceSpace.
+        var resSpaceBuilder = new ResourceSpaceBuilder( resSpaceData );
+        success &= resSpaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( resSpaceData.ResPackageDataCache, "ts-assets" ) );
+        success &= resSpaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( resSpaceData.ResPackageDataCache,
+                                                                                         "ts-locales",
+                                                                                         typeScriptContext.ActiveCultures,
+                                                                                         LocalesResourceHandler.InstallOption.Full ) );
+
         // Here 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,
                                                ImmutableArray<ITSCodeGenerator> globals,

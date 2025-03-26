@@ -35,4 +35,10 @@ public interface IFinalTranslationSet
     /// Gets the children translations (more specific culture translations).
     /// </summary>
     IEnumerable<IFinalTranslationSet> Children { get; }
+
+    /// <summary>
+    /// Returns translations from these <see cref="Translations"/> and any other
+    /// translations from <see cref="Parent"/> up to the <see cref="ActiveCultureSet.Root"/>.
+    /// </summary>
+    IEnumerable<KeyValuePair<string, FinalTranslationValue>> RootPropagatedTranslations { get; }
 }

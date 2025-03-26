@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -10,12 +11,8 @@ namespace CK.Core;
 /// <summary>
 /// Helper that captures a compact tree of <see cref="ActiveCulture"/>.
 /// All parent cultures are guaranteed to exist.
-/// <para>
-/// This is a read only dictionary of <see cref="NormalizedCultureInfo"/> to their <see cref="ActiveCulture"/>.
-/// Use <see cref="AllActiveCultures"/> to find <see cref="ActiveCulture"/> by their <see cref="ActiveCulture.Index"/>.
-/// </para>
 /// </summary>
-public sealed class ActiveCultureSet : IReadOnlyDictionary<NormalizedCultureInfo,ActiveCulture>
+public sealed class ActiveCultureSet
 {
     readonly Dictionary<NormalizedCultureInfo, ActiveCulture> _index;
     readonly ImmutableArray<ActiveCulture> _all;
@@ -61,11 +58,12 @@ public sealed class ActiveCultureSet : IReadOnlyDictionary<NormalizedCultureInfo
         _all = all.ToImmutableArray();
     }
 
-    public ActiveCulture this[NormalizedCultureInfo key] => _index[key];
-
-
     /// <summary>
-    /// Gets all the active cultures indexed by their <see cref="ActiveCulture.Index"/>.
+    /// Gets all the active cultures indexed by their <see cref="ActiveCulture.Index"/> (including the <see cref="Root"/>).
+    /// <para>
+    /// Note that the order is irrelevant: this is not the same as traversing the <see cref="ActiveCulture.Children"/>
+    /// sets in depth or breadth order.
+    /// </para>
     /// </summary>
     public ImmutableArray<ActiveCulture> AllActiveCultures => _all;
 
@@ -74,22 +72,32 @@ public sealed class ActiveCultureSet : IReadOnlyDictionary<NormalizedCultureInfo
     /// </summary>
     public ActiveCulture Root => _all[0];
 
-    public IEnumerable<NormalizedCultureInfo> Keys => _index.Keys;
+    /// <summary>
+    /// Gets the number of active cultures (the <see cref="Root"/> is always active).
+    /// </summary>
+    public int Count => _all.Length;
 
-    public IEnumerable<ActiveCulture> Values => _index.Values;
+    /// <summary>
+    /// Gets whether a culture belongs to this set.
+    /// </summary>
+    /// <param name="c">The culture.</param>
+    /// <returns>True if this culture belongs to this active set. False otherwise.</returns>
+    public bool Contains( NormalizedCultureInfo c ) => _index.ContainsKey( c );
 
-    public int Count => ((IReadOnlyCollection<KeyValuePair<NormalizedCultureInfo, ActiveCulture>>)_index).Count;
+    /// <summary>
+    /// Gets an <see cref="ActiveCulture"/> if the culture belongs to this set.
+    /// </summary>
+    /// <param name="c">The culture.</param>
+    /// <returns>The active culture or null.</returns>
+    public ActiveCulture? Get( NormalizedCultureInfo c ) => _index.GetValueOrDefault( c );
 
-    public bool ContainsKey( NormalizedCultureInfo key )
-    {
-        return _index.ContainsKey( key );
-    }
-
-    public IEnumerator<KeyValuePair<NormalizedCultureInfo, ActiveCulture>> GetEnumerator() => _index.GetEnumerator();
-
-    public bool TryGetValue( NormalizedCultureInfo key, [MaybeNullWhen( false )] out ActiveCulture value ) => _index.TryGetValue( key, out value );
-
-    IEnumerator IEnumerable.GetEnumerator() => _index.GetEnumerator();
+    /// <summary>
+    /// Gets an <see cref="ActiveCulture"/> if the culture belongs to this set.
+    /// </summary>
+    /// <param name="c">The culture.</param>
+    /// <param name="aC">The resulting active culture.</param>
+    /// <returns>True if the culture is an active one. False otherwise.</returns>
+    public bool TryGet( NormalizedCultureInfo c, [NotNullWhen(true)]out ActiveCulture? aC ) => _index.TryGetValue( c, out aC );
 
     ActiveCulture Register( Dictionary<NormalizedCultureInfo, ActiveCulture> index,
                             List<ActiveCulture> all,

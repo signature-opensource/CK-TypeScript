@@ -87,12 +87,12 @@ public sealed partial class TypeScriptFolder
         return FindLocalFolder( name ) ?? CreateLocalFolder( name );
     }
 
-    TypeScriptFolder? FindLocalFolder( string name )
+    TypeScriptFolder? FindLocalFolder( ReadOnlySpan<char> name )
     {
         var c = _firstChild;
         while( c != null )
         {
-            if( c.Name == name ) return c;
+            if( name.Equals( c.Name, StringComparison.Ordinal ) ) return c;
             c = c._next;
         }
         return null;
@@ -171,6 +171,36 @@ public sealed partial class TypeScriptFolder
             }
         }
         return f;
+    }
+
+    /// <summary>
+    /// Finds an existing subordinated folder by its path or returns null.
+    /// </summary>
+    /// <param name="path">The path to the subordinated folder to find.</param>
+    /// <returns>The existing folder or null.</returns>
+    public TypeScriptFolder? FindFolder( ReadOnlySpan<char> path )
+    {
+        var f = this;
+        if( !path.IsEmpty )
+        {
+            Span<Range> ranges = stackalloc Range[256];
+            foreach( var r in SplitPath( path, ranges ) )
+            {
+                f = f.FindLocalFolder( path[r] );
+                if( f == null ) return null;
+            }
+        }
+        return f;
+    }
+
+    static ReadOnlySpan<Range> SplitPath( ReadOnlySpan<char> path, Span<Range> ranges )
+    {
+        int len = path.SplitAny( ranges, "/\\", StringSplitOptions.None );
+        if( len == ranges.Length )
+        {
+            Throw.ArgumentException( nameof( path ), $"Too many path separators in '{path}'. Max is {ranges.Length - 1}." );
+        }
+        return ranges.Slice( 0, len );
     }
 
     /// <summary>

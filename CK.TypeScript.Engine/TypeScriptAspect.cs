@@ -13,7 +13,6 @@ namespace CK.Setup;
 /// </summary>
 public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
 {
-    readonly TypeScriptAspectConfiguration _tsConfig;
     // This enables deferring the TypeScript generation at the final step of CS code generation.
     // A first part must run during the CS code generation to be able to register PocoTypeSet.
     // But TypeScript generation itself is not CS code generation and by deferring the TS we allow
@@ -32,7 +31,6 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
     /// <param name="config">The aspect configuration.</param>
     public TypeScriptAspect( TypeScriptAspectConfiguration config )
     {
-        _tsConfig = config;
         _deferedSave = config.DeferFileSave ? new List<TypeScriptContext>() : null;
         _runContexts = new List<TypeScriptContext>();
     }

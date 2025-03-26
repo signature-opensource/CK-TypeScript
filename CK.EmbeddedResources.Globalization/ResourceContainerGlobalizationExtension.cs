@@ -46,14 +46,14 @@ public static class ResourceContainerGlobalizationExtension
     /// <param name="container">This container of resources.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
-    /// <param name="locales">The loaded locales. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
+    /// <param name="translations">The loaded translations. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
     /// <param name="folder">The folder to load (typically "locales" or "ts-locales").</param>
     /// <param name="isOverrideFolder">True for pure override folder (no new resources are allowed).</param>
     /// <returns>True on success, false on error.</returns>
     public static bool LoadTranslations( this IResourceContainer container,
                                          IActivityMonitor monitor,
                                          ActiveCultureSet activeCultures,
-                                         out TranslationDefinitionSet? locales,
+                                         out TranslationDefinitionSet? translations,
                                          string folder,
                                          bool isOverrideFolder = false )
     {
@@ -66,12 +66,12 @@ public static class ResourceContainerGlobalizationExtension
                 var defaultSet = CreateRoot( monitor, activeCultures, content, isOverrideFolder );
                 if( defaultSet != null )
                 {
-                    locales = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
-                    return locales != null;
+                    translations = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
+                    return translations != null;
                 }
             }
         }
-        locales = null;
+        translations = null;
         return true;
     }
 
@@ -86,14 +86,14 @@ public static class ResourceContainerGlobalizationExtension
     /// <param name="resources">This Code and Store resources.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
-    /// <param name="locales">The loaded locales. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
+    /// <param name="translations">The loaded translations. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
     /// <param name="folder">The folder to load (typically "locales" or "ts-locales").</param>
     /// <param name="isOverrideFolder">True for pure override folder (no new resources are allowed).</param>
     /// <returns>True on success, false on error.</returns>
     public static bool LoadTranslations( this CodeStoreResources resources,
                                          IActivityMonitor monitor,
                                          ActiveCultureSet activeCultures,
-                                         out TranslationDefinitionSet? locales,
+                                         out TranslationDefinitionSet? translations,
                                          string folder,
                                          bool isOverrideFolder = false )
     {
@@ -110,12 +110,12 @@ public static class ResourceContainerGlobalizationExtension
                     // the Store's folder content here. This will enable Code to be able to provide only
                     // some culture overrides instead of being obliged (when overriding) to provide all the
                     // cultures.
-                    locales = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
-                    return locales != null;
+                    translations = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
+                    return translations != null;
                 }
             }
         }
-        locales = null;
+        translations = null;
         return true;
     }
 
@@ -170,7 +170,7 @@ public static class ResourceContainerGlobalizationExtension
             else
             {
                 var c = NormalizedCultureInfo.FindNormalizedCultureInfo( cName );
-                if( c == null || !activeCultures.TryGetValue( c, out ActiveCulture? aC ) )
+                if( c == null || !activeCultures.TryGet( c, out ActiveCulture? aC ) )
                 {
                     monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the active cultures." );
                     if( !unactiveCultureWarned )

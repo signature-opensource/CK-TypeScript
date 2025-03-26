@@ -37,6 +37,22 @@ public sealed class ResourceSpaceFileInstaller
         DoWrite( path, resource );
     }
 
+    public void Write( NormalizedPath filePath, string text )
+    {
+        string path = GetNormalizedTargetPath( filePath.Path );
+        _existing.Remove( path );
+        File.WriteAllText( path, text );
+    }
+
+    public Stream OpenWriteStream( NormalizedPath fPath )
+    {
+        string path = GetNormalizedTargetPath( fPath.Path );
+        _existing.Remove( path );
+        return new FileStream( path, FileMode.Create );
+    }
+
+
+
     void DoWrite( string path, ResourceLocator resource )
     {
         _existing.Remove( path );

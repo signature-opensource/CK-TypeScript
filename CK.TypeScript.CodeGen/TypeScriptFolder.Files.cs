@@ -31,12 +31,12 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// </summary>
     public IEnumerable<BaseFile> AllFilesRecursive => AllFiles.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
 
-    BaseFile? FindLocalFile( string name )
+    BaseFile? FindLocalFile( ReadOnlySpan<char> name )
     {
         var c = _firstFile;
         while( c != null )
         {
-            if( c.Name == name ) return c;
+            if( name.Equals( c.Name, StringComparison.Ordinal ) ) return c;
             c = c._next;
         }
         return null;
@@ -54,12 +54,33 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         return closest.FindLocalFile( path.LastPart );
     }
 
+    BaseFile? DoFindFile( ReadOnlySpan<char> path, out TypeScriptFolder? closest )
+    {
+        Throw.CheckArgument( !path.IsEmpty );
+        closest = this;
+        Span<Range> rangeStore = stackalloc Range[256];
+        var ranges = SplitPath( path, rangeStore );
+        for( int i = 0; i < ranges.Length - 1; i++ )
+        {
+            closest = closest.FindLocalFolder( path[ranges[i]] );
+            if( closest == null ) return null;
+        }
+        return closest.FindLocalFile( path[ranges[^1]] );
+    }
+
     /// <summary>
     /// Finds a <see cref="BaseFile"/> in this folder or a subordinated folder.
     /// </summary>
     /// <param name="path">The file's path to find or create. Must not be empty.</param>
     /// <returns>The file or null if not found.</returns>
     public BaseFile? FindFile( NormalizedPath path ) => DoFindFile( path, out var _ );
+
+    /// <summary>
+    /// Finds a <see cref="BaseFile"/> in this folder or a subordinated folder.
+    /// </summary>
+    /// <param name="path">The file's path to find or create. Must not be empty.</param>
+    /// <returns>The file or null if not found.</returns>
+    public BaseFile? FindFile( ReadOnlySpan<char> path ) => DoFindFile( path, out var _ );
 
     /// <summary>
     /// Finds or creates a file in this folder or a subordinated folder.

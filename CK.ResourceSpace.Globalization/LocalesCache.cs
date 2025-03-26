@@ -1,49 +1,53 @@
 
-//using CK.EmbeddedResources;
+using CK.EmbeddedResources;
 
-//namespace CK.Core;
+namespace CK.Core;
 
-//sealed class LocalesCache : ResPackageDataHandler<FinalLocaleCultureSet>
-//{
-//    readonly AssetsResourceHandler _handler;
+sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
+{
+    readonly LocalesResourceHandler _handler;
+    readonly ActiveCultureSet _activeCultures;
 
-//    public LocalesCache( AssetsResourceHandler handler, IResPackageDataCache cache )
-//        : base( cache )
-//    {
-//        _handler = handler;
-//    }
+    public LocalesCache( LocalesResourceHandler handler, IResPackageDataCache cache, ActiveCultureSet activeCultures )
+        : base( cache )
+    {
+        _handler = handler;
+        _activeCultures = activeCultures;
+    }
 
-//    protected override FinalResourceAssetSet Aggregate( FinalResourceAssetSet data1, FinalResourceAssetSet data2 )
-//    {
-//        return data1.Aggregate( data2 );
-//    }
+    public ActiveCultureSet ActiveCultures => _activeCultures;
 
-//    protected override FinalResourceAssetSet? Combine( IActivityMonitor monitor, IResPackageResources resources, FinalResourceAssetSet data )
-//    {
-//        if( resources.Resources.LoadAssets( monitor,
-//                                            resources.Package.DefaultTargetPath,
-//                                            out var definitions,
-//                                            _handler.RootFolderName ) )
-//        {
-//            return definitions != null
-//                    ? definitions.Combine( monitor, data )
-//                    : data;
-//        }
-//        return null;
-//    }
+    protected override FinalTranslationSet Aggregate( FinalTranslationSet data1, FinalTranslationSet data2 )
+    {
+        return data1.Aggregate( data2 );
+    }
 
-//    protected override FinalResourceAssetSet? Create( IActivityMonitor monitor, ResPackage package )
-//    {
-//        FinalResourceAssetSet? initial = null;
-//        if( package.BeforeResources.Resources.LoadAssets( monitor,
-//                                                           package.DefaultTargetPath,
-//                                                           out var definitions,
-//                                                           _handler.RootFolderName ) )
-//        {
-//            initial = definitions != null
-//                            ? definitions.ToInitialFinalSet( monitor )
-//                            : FinalResourceAssetSet.Empty;
-//        }
-//        return initial;
-//    }
-//}
+    protected override FinalTranslationSet? Combine( IActivityMonitor monitor, IResPackageResources resources, FinalTranslationSet data )
+    {
+        if( resources.Resources.LoadTranslations( monitor,
+                                                  _activeCultures,
+                                                  out var definitions,
+                                                  _handler.RootFolderName ) )
+        {
+            return definitions != null
+                    ? definitions.Combine( monitor, data )
+                    : data;
+        }
+        return null;
+    }
+
+    protected override FinalTranslationSet? Create( IActivityMonitor monitor, ResPackage package )
+    {
+        FinalTranslationSet? initial = null;
+        if( package.BeforeResources.Resources.LoadTranslations( monitor,
+                                                                _activeCultures,
+                                                                out var definitions,
+                                                                _handler.RootFolderName ) )
+        {
+            initial = definitions != null
+                            ? definitions.ToInitialFinalSet( monitor )
+                            : new FinalTranslationSet( _activeCultures );
+        }
+        return initial;
+    }
+}

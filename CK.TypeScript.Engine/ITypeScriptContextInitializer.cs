@@ -78,5 +78,4 @@ public interface ITypeScriptContextInitializer
     /// </para>
     /// </summary>
     IDictionary<object, object?> RootMemory { get; }
-
 }
