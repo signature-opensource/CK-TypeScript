@@ -1,6 +1,7 @@
-﻿using CK.Core;
+using CK.Core;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.EmbeddedResources;
 
@@ -18,6 +19,7 @@ public sealed partial class FinalTranslationSet
                        IReadOnlyDictionary<string, FinalTranslationValue> translations,
                        bool isAmbiguous )
         {
+            Throw.DebugAssert( culture.Index > 0 );
             _root = root;
             _translations = translations;
             _isAmbiguous = isAmbiguous;
@@ -30,6 +32,10 @@ public sealed partial class FinalTranslationSet
 
         public ActiveCulture Culture => _culture;
 
+        public IFinalTranslationSet? Parent => _root._subSets[_culture.Index];
+
         public IEnumerable<IFinalTranslationSet> Children => Culture.Children.Select( c => _root._subSets[c.Index] ).Where( s => s != null )!;
     }
+
+    internal IFinalTranslationSet[] CloneSubSets() => Unsafe.As<IFinalTranslationSet[]>( _subSets.Clone() );
 }

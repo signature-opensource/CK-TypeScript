@@ -13,4 +13,7 @@
     <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSLocales\" />
+  </ItemGroup>
 </Project>

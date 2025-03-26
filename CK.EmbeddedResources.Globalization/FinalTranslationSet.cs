@@ -11,8 +11,9 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
 {
     readonly IReadOnlyDictionary<string, FinalTranslationValue> _translations;
     readonly ActiveCultureSet _activeCultures;
-    readonly bool _isAmbiguous;
     readonly IFinalTranslationSet?[] _subSets;
+    // Unfortunate required post-instantiation mutability. 
+    internal bool _isAmbiguous;
 
     internal FinalTranslationSet( ActiveCultureSet activeCultures,
                                   IReadOnlyDictionary<string, FinalTranslationValue>? translations,
@@ -33,6 +34,9 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
     public ActiveCulture Culture => _activeCultures.Root;
 
     /// <inheritdoc />
+    public IFinalTranslationSet? Parent => null;
+
+    /// <inheritdoc />
     public IEnumerable<IFinalTranslationSet> Children => Culture.Children.Select( c => _subSets[c.Index] ).Where( s => s != null )!;
 
     /// <inheritdoc />
@@ -49,8 +53,8 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         Throw.CheckArgument( Culture == other.Culture );
         var translations = AggregateTranslations( this, other, out bool isAmbiguous );
 
-        bool changed = false;
-        var subSets = new IFinalTranslationSet[_subSets.Length];
+        bool subSetsChanged = false;
+        var subSets = CloneSubSets();
         for( int i = 1; i < subSets.Length; ++i )
         {
             var mine = _subSets[i];
@@ -60,36 +64,28 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
                 if( their != null )
                 {
                     subSets[i] = their;
-                    changed = true;
+                    subSetsChanged = true;
                     isAmbiguous |= their.IsAmbiguous;
                 }
             }
             else
             {
-                if( their == null )
-                {
-                    subSets[i] = mine;
-                }
-                else
+                if( their != null )
                 {
                     var agg = AggregateTranslations( mine, their, out var aggAmbiguous );
-                    if( agg == mine )
+                    if( agg != mine )
                     {
-                        subSets[i] = mine;
-                    }
-                    else
-                    {
-                        changed = true;
+                        subSetsChanged = true;
                         subSets[i] = agg == their
                                         ? their
                                         : new SubSet( this, mine.Culture, agg, aggAmbiguous );
+                        isAmbiguous |= aggAmbiguous;
                     }
-                    isAmbiguous |= aggAmbiguous;
                 }
             }
         }
 
-        if( translations == _translations && !changed )
+        if( translations == _translations && !subSetsChanged )
         {
             Throw.DebugAssert( isAmbiguous == _isAmbiguous );
             return this;
