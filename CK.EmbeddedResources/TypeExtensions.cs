@@ -38,7 +38,7 @@ public static class TypeExtensions
                                                 type.GetCustomAttributes().OfType<IEmbeddedResourceTypeAttribute>(),
                                                 out var callerPath,
                                                 out var callerSource )
-                ? CreateResourcesContainer( type, monitor, callerPath, callerSource.GetType().Name, containerDisplayName )
+                ? CreateResourcesContainer( type, monitor, callerPath, callerSource.GetType().Name, containerDisplayName, resAfter )
                 : new EmptyResourceContainer( AssemblyResourceContainer.MakeDisplayName( containerDisplayName, type, resAfter ),
                                               isDisabled: false,
                                               resourcePrefix: "",
@@ -85,7 +85,7 @@ public static class TypeExtensions
                                                             attributeName,
                                                             out var subPath ) )
             {
-                return new FileSystemResourceContainer( projectPath.Combine( subPath ).AppendPart( resAfter ? "Res" : "Res[After]" ), containerDisplayName );
+                return new FileSystemResourceContainer( projectPath.Combine( subPath ).AppendPart( resAfter ? "Res[After]" : "Res" ), containerDisplayName );
             }
             return new EmptyResourceContainer( containerDisplayName, isDisabled: false, resourcePrefix: projectPath, isValid: false );
         }

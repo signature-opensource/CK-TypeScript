@@ -1,5 +1,4 @@
 using CK.Core;
-using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
@@ -535,7 +534,7 @@ public class InjectIntoTests
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().Should().Be( result );
+        sourceCode.ToString().ShouldBe( result );
     }
 
     [TestCase( "PadOne",
@@ -589,6 +588,6 @@ public class InjectIntoTests
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().Should().Be( result );
+        sourceCode.ToString().ShouldBe( result );
     }
 }

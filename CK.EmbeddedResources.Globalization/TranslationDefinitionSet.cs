@@ -31,7 +31,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
         _activeCultures = activeCultures;
         _origin = origin;
         _definitions = translations ?? ImmutableDictionary<string, TranslationDefinition>.Empty;
-        _subSets = new TranslationDefinitionSet[activeCultures.Count];
+        _subSets = new ITranslationDefinitionSet[activeCultures.Count];
         _subSets[0] = this;
     }
 
@@ -97,7 +97,9 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
         if( buggyOverrides.Any() )
         {
             monitor.Error( $"""
-                    Invalid final set of resources {definition.Origin}. No asset can be defined as an override, the following resources are override definitions:
+                    Invalid initial set of translation definitions {definition.Origin}.
+                    No translation can be defined as regular override ("O:"). Only optional ("O?" - that will be skipped) and always ("O!:" - that will be kept) are allowed.
+                    The following resources are regular override definitions:
                     {buggyOverrides.Select( kv => kv.Key ).Concatenate()}
                     """ );
             return null;
@@ -128,23 +130,25 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     public FinalTranslationSet? Combine( IActivityMonitor monitor, FinalTranslationSet baseSet )
     {
         Throw.CheckArgument( baseSet.Culture == Culture );
-        var (rootTranslations, rootIsAmbiguous) = CombineTranslations( monitor, this, baseSet );
+        var (rootTranslations, isAmbiguous) = CombineTranslations( monitor, this, baseSet, isRoot: true );
         bool success = rootTranslations != null;
 
-        // We create the result only when actually needed.
-        FinalTranslationSet? result = null;
-
         var subSets = baseSet.CloneSubSets();
+        // We create a result only when actually needed.
+        FinalTranslationSet? result = null;
         for( int i = 1; i < subSets.Length; ++i )
         {
+            var otherSet = subSets[i];
             var def = _subSets[i];
             if( def == null )
             {
-                rootIsAmbiguous |= subSets[i].IsAmbiguous;
+                if( otherSet != null )
+                {
+                    isAmbiguous |= otherSet.IsAmbiguous;
+                }
             }
             else
             {
-                var otherSet = subSets[i];
                 if( otherSet == null )
                 {
                     var t = CreateInitialTranslations( monitor, def );
@@ -158,14 +162,14 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
                 }
                 else
                 {
-                    var (t, a) = CombineTranslations( monitor, def, otherSet );
+                    var (t, a) = CombineTranslations( monitor, def, otherSet, isRoot: false );
                     success &= t != null;
                     if( success )
                     {
                         Throw.DebugAssert( t != null );
                         result ??= new FinalTranslationSet( _activeCultures, rootTranslations, subSets, false );
                         subSets[i] = new FinalTranslationSet.SubSet( result, def.Culture, t, a );
-                        rootIsAmbiguous |= a;
+                        isAmbiguous |= a;
                     }
                 }
             }
@@ -180,7 +184,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
                 }
                 result = new FinalTranslationSet( _activeCultures, rootTranslations, subSets, false );
             }
-            result._isAmbiguous = rootIsAmbiguous;
+            result._isAmbiguous = isAmbiguous;
             return result;
         }
         return null;
@@ -188,30 +192,34 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
 
     static (IReadOnlyDictionary<string, FinalTranslationValue>?,bool) CombineTranslations( IActivityMonitor monitor,
                                                                                            ITranslationDefinitionSet definition,
-                                                                                           IFinalTranslationSet baseSet )
+                                                                                           IFinalTranslationSet baseSet,
+                                                                                           bool isRoot )
     {
-        if( definition.Translations.Count == 0 ) return (baseSet.Translations,baseSet.IsAmbiguous);
         bool success = true;
-        bool isAmbiguous = baseSet.IsAmbiguous;
-        bool mustRecomputeAmbiguities = false;
-        var newOne = new Dictionary<string, FinalTranslationValue>( baseSet.Translations );
-        foreach( var (key, def) in definition.Translations )
+        bool isAmbiguous = !isRoot && baseSet.IsAmbiguous;
+        bool mustRecomputeAmbiguities = isRoot;
+        var result = baseSet.Translations;
+        if( definition.Translations.Count > 0 )
         {
-            bool fromInheritance = false;
-            if( !newOne.TryGetValue( key, out var exists ) )
+            bool changed = false;
+            var newOne = new Dictionary<string, FinalTranslationValue>( baseSet.Translations );
+            foreach( var (key, def) in definition.Translations )
             {
-                var p = baseSet.Parent;
-                while( p != null && !p.Translations.TryGetValue( key, out exists ) )
+                bool fromInheritance = false;
+                if( !newOne.TryGetValue( key, out var exists ) )
                 {
-                    p = p.Parent;
+                    var p = baseSet.Parent;
+                    while( p != null && !p.Translations.TryGetValue( key, out exists ) )
+                    {
+                        p = p.Parent;
+                    }
+                    fromInheritance = true;
                 }
-                fromInheritance = true;
-            }
-            if( exists.IsValid )
-            {
-                if( def.Override is ResourceOverrideKind.None )
+                if( exists.IsValid )
                 {
-                    monitor.Error( $"""
+                    if( def.Override is ResourceOverrideKind.None )
+                    {
+                        monitor.Error( $"""
                                     Key '{key}' in {definition.Origin} overides an existing value:
                                     This key is already defined by '{exists.Origin}' with the value:
                                     {exists.Text}
@@ -219,50 +227,54 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
                                     {def.Text}
                                     Use Override prefix ('O:{key}') to allow this.
                                     """ );
-                    success = false;
-                }
-                else
-                {
-                    // Whether it is a "O", "?O" or "!O" we don't care here as we override.
-                    // We warn for a useless (same) text, except if this override resolves an ambiguity.
-                    bool hasAmbiguities = exists.Ambiguities != null;
-                    if( !hasAmbiguities && def.Text == exists.Text )
-                    {
-                        monitor.Warn( $"""
-                                       Useless override 'O:{key}' in {definition.Origin}: it has the same value as the one from {exists.Origin}:
-                                       {def.Text}
-                                       """ );
+                        success = false;
                     }
                     else
                     {
-                        // Override (no ambiguities).
-                        newOne[key] = new FinalTranslationValue( def.Text, definition.Origin );
-                        mustRecomputeAmbiguities = hasAmbiguities && !fromInheritance;
+                        // Whether it is a "O", "?O" or "!O" we don't care here as we override.
+                        // We warn for a useless (same) text, except if this override resolves an ambiguity.
+                        bool hasAmbiguities = exists.Ambiguities != null;
+                        if( !hasAmbiguities && def.Text == exists.Text )
+                        {
+                            monitor.Warn( $"""
+                                       Useless override 'O:{key}' in {definition.Origin}: it has the same value as the one from {exists.Origin}:
+                                       {def.Text}
+                                       """ );
+                        }
+                        else
+                        {
+                            // Override (clears any ambiguity).
+                            newOne[key] = new FinalTranslationValue( def.Text, definition.Origin );
+                            mustRecomputeAmbiguities = hasAmbiguities && !fromInheritance;
+                            changed = true;
+                        }
                     }
-                }
-            }
-            else
-            {
-                if( def.Override is ResourceOverrideKind.Regular )
-                {
-                    monitor.Warn( $"Invalid override 'O:{key}' in {definition.Origin}: the key doesn't exist, there's nothing to override." );
                 }
                 else
                 {
-                    if( def.Override != ResourceOverrideKind.Optional )
+                    if( def.Override is ResourceOverrideKind.Regular )
                     {
-                        newOne.Add( key, new FinalTranslationValue( def.Text, definition.Origin ) );
+                        monitor.Warn( $"Invalid override 'O:{key}' in {definition.Origin}: the key doesn't exist, there's nothing to override." );
+                    }
+                    else
+                    {
+                        if( def.Override != ResourceOverrideKind.Optional )
+                        {
+                            newOne.Add( key, new FinalTranslationValue( def.Text, definition.Origin ) );
+                            changed = true;
+                        }
                     }
                 }
             }
+            if( changed ) result = newOne;
         }
         if( success )
         {
             if( mustRecomputeAmbiguities )
             {
-                isAmbiguous = newOne.Values.Any( v => v.Ambiguities != null );
+                isAmbiguous = result.Values.Any( v => v.Ambiguities != null );
             }
-            return (newOne,isAmbiguous);
+            return (result,isAmbiguous);
         }
         return default;
     }

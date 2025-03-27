@@ -82,11 +82,24 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
     /// It may be null if it has never been required to hold any transalations.
     /// </summary>
     /// <param name="c">The active culture. Must be from the same set as this <see cref="Culture"/>.</param>
-    /// <returns>The set or null if its creation was useless..</returns>
+    /// <returns>The set or null if its creation was useless.</returns>
     public IFinalTranslationSet? FindTranslationSet( ActiveCulture c )
     {
         Throw.CheckArgument( c.ActiveCultures == _activeCultures );
         return _subSets[c.Index];
+    }
+
+    /// <summary>
+    /// Finds the translation set for a culture.
+    /// It is null if this culture doesn't belong to this set of active cultures or
+    /// if it has never been required to hold any transalations.
+    /// </summary>
+    /// <param name="c">The active culture. Must be from the same set as this <see cref="Culture"/>.</param>
+    /// <returns>The set or null if its creation was useless.</returns>
+    public IFinalTranslationSet? FindTranslationSet( NormalizedCultureInfo c )
+    {
+        var aC = _activeCultures.Get( c );
+        return aC != null ? _subSets[aC.Index] : null;
     }
 
     /// <summary>
@@ -120,10 +133,10 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
                 if( their != null )
                 {
                     var agg = AggregateTranslations( mine, their, out var aggAmbiguous );
-                    if( agg != mine )
+                    if( agg != mine.Translations )
                     {
                         subSetsChanged = true;
-                        subSets[i] = agg == their
+                        subSets[i] = agg == their.Translations
                                         ? their
                                         : new SubSet( this, mine.Culture, agg, aggAmbiguous );
                         isAmbiguous |= aggAmbiguous;
@@ -137,7 +150,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
             Throw.DebugAssert( isAmbiguous == _isAmbiguous );
             return this;
         }
-        return new FinalTranslationSet( _activeCultures, translations, _subSets, isAmbiguous );
+        return new FinalTranslationSet( _activeCultures, translations, subSets, isAmbiguous );
     }
 
     static IReadOnlyDictionary<string, FinalTranslationValue> AggregateTranslations( IFinalTranslationSet set1,
@@ -159,7 +172,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
                 {
                     if( candidate.TryGetValue( key, out var t2 ) )
                     {
-                        var f = t1.AddAmbiguities( t2.Ambiguities );
+                        var f = t1.AddAmbiguity( t2 );
                         if( f.Ambiguities != t1.Ambiguities )
                         {
                             isAmbiguous |= f.Ambiguities != null;
@@ -188,4 +201,6 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         }
         return result;
     }
+
+    public override string ToString() => _activeCultures.ToString();
 }

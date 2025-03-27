@@ -1,5 +1,5 @@
 using CK.Transform.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 
 namespace CK.Html.Transform.Tests;
@@ -11,8 +11,8 @@ public class HtmlTokenTests
     {
         var a = new HtmlAnalyzer();
         var sourceCode = a.ParseOrThrow( "" );
-        sourceCode.Spans.Should().BeEmpty();
-        sourceCode.Tokens.Should().BeEmpty();
+        sourceCode.Spans.ShouldBeEmpty();
+        sourceCode.Tokens.ShouldBeEmpty();
     }
 
     [Test]
@@ -21,73 +21,73 @@ public class HtmlTokenTests
         var a = new HtmlAnalyzer();
         {
             var sourceCode = a.ParseOrThrow( "some text" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "some text" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "some text" );
         }
         {
             var sourceCode = a.ParseOrThrow( "some text<" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "some text<" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "some text<" );
         }
         {
             var sourceCode = a.ParseOrThrow( "some text<<" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "some text<<" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "some text<<" );
         }
         {
             var sourceCode = a.ParseOrThrow( "some text<<<<<" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "some text<<<<<" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "some text<<<<<" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<<<<<" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<<<<<" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<<<<<" );
         }
         {
             var sourceCode = a.ParseOrThrow( ">" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( ">" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( ">" );
         }
         {
             var sourceCode = a.ParseOrThrow( ">>>>" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( ">>>>" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( ">>>>" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<a<b < c <  " );
-            sourceCode.Tokens.Should().HaveCount( 3 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<a" );
-            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[1].ToString().Should().Be( "<b " );
-            sourceCode.Tokens[2].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[2].ToString().Should().Be( "< c <  " );
+            sourceCode.Tokens.Count.ShouldBe( 3 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<a" );
+            sourceCode.Tokens[1].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[1].ToString().ShouldBe( "<b " );
+            sourceCode.Tokens[2].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[2].ToString().ShouldBe( "< c <  " );
         }
         {
             var sourceCode = a.ParseOrThrow( "</" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</" );
         }
         {
             var sourceCode = a.ParseOrThrow( "</ a" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</ a" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</ a" );
         }
     }
 
@@ -97,99 +97,99 @@ public class HtmlTokenTests
         var a = new HtmlAnalyzer();
         {
             var sourceCode = a.ParseOrThrow( "<some>" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlStartingEmptyElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<some>" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingEmptyElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<some>" );
         }
         {
             // Area is a void element.
             var sourceCode = a.ParseOrThrow( "<Area>" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsEmptyVoidElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<Area>" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsEmptyVoidElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<Area>" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<SOME  >" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlStartingEmptyElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<SOME  >" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingEmptyElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<SOME  >" );
         }
         {
             // Wbr is a void element.
             var sourceCode = a.ParseOrThrow( "<WBR  >" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsEmptyVoidElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<WBR  >" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsEmptyVoidElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<WBR  >" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<some/>" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlEmptyElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<some/>" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlEmptyElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<some/>" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<some />" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlEmptyElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<some />" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlEmptyElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<some />" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<some a = 'd' />" );
-            sourceCode.Tokens.Should().HaveCount( 5 );
-            sourceCode.Tokens[0].TokenType.IsHtmlStartingTag().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<some" );
-            sourceCode.Tokens[1].TokenType.Should().Be( TokenType.GenericIdentifier );
-            sourceCode.Tokens[1].ToString().Should().Be( "a" );
-            sourceCode.Tokens[2].TokenType.Should().Be( TokenType.Equals );
-            sourceCode.Tokens[2].ToString().Should().Be( "=" );
-            sourceCode.Tokens[3].TokenType.Should().Be( TokenType.GenericString );
-            sourceCode.Tokens[3].ToString().Should().Be( "'d'" );
-            sourceCode.Tokens[4].TokenType.IsHtmlEndTokenTag().Should().BeTrue();
-            sourceCode.Tokens[4].ToString().Should().Be( "/>" );
+            sourceCode.Tokens.Count.ShouldBe( 5 );
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingTag().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<some" );
+            sourceCode.Tokens[1].TokenType.ShouldBe( TokenType.GenericIdentifier );
+            sourceCode.Tokens[1].ToString().ShouldBe( "a" );
+            sourceCode.Tokens[2].TokenType.ShouldBe( TokenType.Equals );
+            sourceCode.Tokens[2].ToString().ShouldBe( "=" );
+            sourceCode.Tokens[3].TokenType.ShouldBe( TokenType.GenericString );
+            sourceCode.Tokens[3].ToString().ShouldBe( "'d'" );
+            sourceCode.Tokens[4].TokenType.IsHtmlEndTokenTag().ShouldBeTrue();
+            sourceCode.Tokens[4].ToString().ShouldBe( "/>" );
         }
         {
             var sourceCode = a.ParseOrThrow( "<some a = 'd' >" );
-            sourceCode.Tokens.Should().HaveCount( 5 );
-            sourceCode.Tokens[0].TokenType.IsHtmlStartingTag().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<some" );
-            sourceCode.Tokens[1].TokenType.Should().Be( TokenType.GenericIdentifier );
-            sourceCode.Tokens[1].ToString().Should().Be( "a" );
-            sourceCode.Tokens[2].TokenType.Should().Be( TokenType.Equals );
-            sourceCode.Tokens[2].ToString().Should().Be( "=" );
-            sourceCode.Tokens[3].TokenType.Should().Be( TokenType.GenericString );
-            sourceCode.Tokens[3].ToString().Should().Be( "'d'" );
-            sourceCode.Tokens[4].TokenType.Should().Be( TokenType.GreaterThan );
-            sourceCode.Tokens[4].ToString().Should().Be( ">" );
+            sourceCode.Tokens.Count.ShouldBe( 5 );
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingTag().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<some" );
+            sourceCode.Tokens[1].TokenType.ShouldBe( TokenType.GenericIdentifier );
+            sourceCode.Tokens[1].ToString().ShouldBe( "a" );
+            sourceCode.Tokens[2].TokenType.ShouldBe( TokenType.Equals );
+            sourceCode.Tokens[2].ToString().ShouldBe( "=" );
+            sourceCode.Tokens[3].TokenType.ShouldBe( TokenType.GenericString );
+            sourceCode.Tokens[3].ToString().ShouldBe( "'d'" );
+            sourceCode.Tokens[4].TokenType.ShouldBe( TokenType.GreaterThan );
+            sourceCode.Tokens[4].ToString().ShouldBe( ">" );
         }
         {
             // Embed is a void element.
             var sourceCode = a.ParseOrThrow( "<embed a = 'd' >" );
-            sourceCode.Tokens.Should().HaveCount( 5 );
-            sourceCode.Tokens[0].TokenType.IsHtmlStartingVoidElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<embed" );
-            sourceCode.Tokens[1].TokenType.Should().Be( TokenType.GenericIdentifier );
-            sourceCode.Tokens[1].ToString().Should().Be( "a" );
-            sourceCode.Tokens[2].TokenType.Should().Be( TokenType.Equals );
-            sourceCode.Tokens[2].ToString().Should().Be( "=" );
-            sourceCode.Tokens[3].TokenType.Should().Be( TokenType.GenericString );
-            sourceCode.Tokens[3].ToString().Should().Be( "'d'" );
-            sourceCode.Tokens[4].TokenType.Should().Be( TokenType.GreaterThan );
-            sourceCode.Tokens[4].ToString().Should().Be( ">" );
+            sourceCode.Tokens.Count.ShouldBe( 5 );
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingVoidElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<embed" );
+            sourceCode.Tokens[1].TokenType.ShouldBe( TokenType.GenericIdentifier );
+            sourceCode.Tokens[1].ToString().ShouldBe( "a" );
+            sourceCode.Tokens[2].TokenType.ShouldBe( TokenType.Equals );
+            sourceCode.Tokens[2].ToString().ShouldBe( "=" );
+            sourceCode.Tokens[3].TokenType.ShouldBe( TokenType.GenericString );
+            sourceCode.Tokens[3].ToString().ShouldBe( "'d'" );
+            sourceCode.Tokens[4].TokenType.ShouldBe( TokenType.GreaterThan );
+            sourceCode.Tokens[4].ToString().ShouldBe( ">" );
         }
         {
             // Track is a void element.
             var sourceCode = a.ParseOrThrow( "<track a = value />" );
-            sourceCode.Tokens.Should().HaveCount( 5 );
-            sourceCode.Tokens[0].TokenType.IsHtmlStartingVoidElement().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<track" );
-            sourceCode.Tokens[1].TokenType.Should().Be( TokenType.GenericIdentifier );
-            sourceCode.Tokens[1].ToString().Should().Be( "a" );
-            sourceCode.Tokens[2].TokenType.Should().Be( TokenType.Equals );
-            sourceCode.Tokens[2].ToString().Should().Be( "=" );
-            sourceCode.Tokens[3].TokenType.Should().Be( TokenType.GenericIdentifier );
-            sourceCode.Tokens[3].ToString().Should().Be( "value" );
-            sourceCode.Tokens[4].TokenType.IsHtmlEndTokenTag().Should().BeTrue();
-            sourceCode.Tokens[4].ToString().Should().Be( "/>" );
+            sourceCode.Tokens.Count.ShouldBe( 5 );
+            sourceCode.Tokens[0].TokenType.IsHtmlStartingVoidElement().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<track" );
+            sourceCode.Tokens[1].TokenType.ShouldBe( TokenType.GenericIdentifier );
+            sourceCode.Tokens[1].ToString().ShouldBe( "a" );
+            sourceCode.Tokens[2].TokenType.ShouldBe( TokenType.Equals );
+            sourceCode.Tokens[2].ToString().ShouldBe( "=" );
+            sourceCode.Tokens[3].TokenType.ShouldBe( TokenType.GenericIdentifier );
+            sourceCode.Tokens[3].ToString().ShouldBe( "value" );
+            sourceCode.Tokens[4].TokenType.IsHtmlEndTokenTag().ShouldBeTrue();
+            sourceCode.Tokens[4].ToString().ShouldBe( "/>" );
         }
     }
 
@@ -200,37 +200,37 @@ public class HtmlTokenTests
         var a = new HtmlAnalyzer();
         {
             var sourceCode = a.ParseOrThrow( "</div>" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</div>" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</div>" );
         }
         {
             var sourceCode = a.ParseOrThrow( "</div  >" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</div  >" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</div  >" );
         }
         {
             var sourceCode = a.ParseOrThrow( "</div ignored >" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</div ignored >" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</div ignored >" );
         }
         {
             var sourceCode = a.ParseOrThrow( "</div ignored / />" );
-            sourceCode.Tokens.Should().HaveCount( 1 );
-            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</div ignored / />" );
+            sourceCode.Tokens.Count.ShouldBe( 1 );
+            sourceCode.Tokens[0].TokenType.IsHtmlEndingTag().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</div ignored / />" );
         }
         {
             var sourceCode = a.ParseOrThrow( "</div </a </yes>" );
-            sourceCode.Tokens.Should().HaveCount( 3 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</div " );
-            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[1].ToString().Should().Be( "</a " );
-            sourceCode.Tokens[2].TokenType.IsHtmlEndingTag().Should().BeTrue();
-            sourceCode.Tokens[2].ToString().Should().Be( "</yes>" );
+            sourceCode.Tokens.Count.ShouldBe( 3 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</div " );
+            sourceCode.Tokens[1].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[1].ToString().ShouldBe( "</a " );
+            sourceCode.Tokens[2].TokenType.IsHtmlEndingTag().ShouldBeTrue();
+            sourceCode.Tokens[2].ToString().ShouldBe( "</yes>" );
         }
     }
 
@@ -240,29 +240,29 @@ public class HtmlTokenTests
         var a = new HtmlAnalyzer();
         {
             var sourceCode = a.ParseOrThrow( "<some <!-- comment --> Text " );
-            sourceCode.Tokens.Should().HaveCount( 2 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "<some " );
-            sourceCode.Tokens[0].TrailingTrivias.Length.Should().Be( 1 );
-            sourceCode.Tokens[0].TrailingTrivias[0].Content.ToString().Should().Be( "<!-- comment -->" );
+            sourceCode.Tokens.Count.ShouldBe( 2 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "<some " );
+            sourceCode.Tokens[0].TrailingTrivias.Length.ShouldBe( 1 );
+            sourceCode.Tokens[0].TrailingTrivias[0].Content.ToString().ShouldBe( "<!-- comment -->" );
 
-            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[1].ToString().Should().Be( " Text " );
-            sourceCode.Tokens[1].LeadingTrivias.Length.Should().Be( 0 );
-            sourceCode.Tokens[1].TrailingTrivias.Length.Should().Be( 0 );
+            sourceCode.Tokens[1].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[1].ToString().ShouldBe( " Text " );
+            sourceCode.Tokens[1].LeadingTrivias.Length.ShouldBe( 0 );
+            sourceCode.Tokens[1].TrailingTrivias.Length.ShouldBe( 0 );
         }
         {
             var sourceCode = a.ParseOrThrow( "</some <!-- comment --> Text " );
-            sourceCode.Tokens.Should().HaveCount( 2 );
-            sourceCode.Tokens[0].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[0].ToString().Should().Be( "</some " );
-            sourceCode.Tokens[0].TrailingTrivias.Length.Should().Be( 1 );
-            sourceCode.Tokens[0].TrailingTrivias[0].Content.ToString().Should().Be( "<!-- comment -->" );
+            sourceCode.Tokens.Count.ShouldBe( 2 );
+            sourceCode.Tokens[0].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[0].ToString().ShouldBe( "</some " );
+            sourceCode.Tokens[0].TrailingTrivias.Length.ShouldBe( 1 );
+            sourceCode.Tokens[0].TrailingTrivias[0].Content.ToString().ShouldBe( "<!-- comment -->" );
 
-            sourceCode.Tokens[1].TokenType.IsHtmlText().Should().BeTrue();
-            sourceCode.Tokens[1].ToString().Should().Be( " Text " );
-            sourceCode.Tokens[1].LeadingTrivias.Length.Should().Be( 0 );
-            sourceCode.Tokens[1].TrailingTrivias.Length.Should().Be( 0 );
+            sourceCode.Tokens[1].TokenType.IsHtmlText().ShouldBeTrue();
+            sourceCode.Tokens[1].ToString().ShouldBe( " Text " );
+            sourceCode.Tokens[1].LeadingTrivias.Length.ShouldBe( 0 );
+            sourceCode.Tokens[1].TrailingTrivias.Length.ShouldBe( 0 );
         }
     }
 }

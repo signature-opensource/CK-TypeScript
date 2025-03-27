@@ -3,21 +3,17 @@ using System;
 
 namespace CK.TypeScript.Transform;
 
+/// <summary>
+/// Accepts ".ts" file name extension.
+/// </summary>
 public sealed class TypeScriptLanguage : TransformLanguage
 {
     internal const string _languageName = "TypeScript";
 
     public TypeScriptLanguage()
-        : base( _languageName )
+        : base( _languageName, ".ts" )
     {
     }
-
-    /// <summary>
-    /// Accepts ".ts" file name extension.
-    /// </summary>
-    /// <param name="fileName">The file name or path to consider.</param>
-    /// <returns>True if this is a TypeScript file name.</returns>
-    public override bool IsLangageFilename( ReadOnlySpan<char> fileName ) => fileName.EndsWith( ".ts", StringComparison.Ordinal );
 
     protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
     {

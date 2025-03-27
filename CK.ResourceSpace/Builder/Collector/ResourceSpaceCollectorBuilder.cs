@@ -7,7 +7,7 @@ namespace CK.Core;
 
 /// <summary>
 /// Builder for <see cref="ResourceSpaceCollector"/> that is the first step to produce a
-/// <see cref="ResourceSpace"/>. This enable resource packages to be regitered from a type (that must be decorated
+/// <see cref="ResourceSpace"/>. This enable resource packages to be registered from a type (that must be decorated
 /// with at least one <see cref="IEmbeddedResourceTypeAttribute"/> attribute) or from any <see cref="IResourceContainer"/>.
 /// </summary>
 public sealed class ResourceSpaceCollectorBuilder
@@ -43,9 +43,9 @@ public sealed class ResourceSpaceCollectorBuilder
 
     /// <summary>
     /// Registers a package. It must not already exist: <paramref name="fullName"/>, <paramref name="resourceStore"/>
-    /// or <paramref name="afterContentResourceStore"/> must not have been already registered.
+    /// or <paramref name="resourceAfterStore"/> must not have been already registered.
     /// <para>
-    /// <paramref name="resourceStore"/> and <paramref name="afterContentResourceStore"/> must be <see cref="IResourceContainer.IsValid"/>
+    /// <paramref name="resourceStore"/> and <paramref name="resourceAfterStore"/> must be <see cref="IResourceContainer.IsValid"/>
     /// and must not be the same instance.
     /// </para>
     /// </summary>
@@ -55,7 +55,7 @@ public sealed class ResourceSpaceCollectorBuilder
     /// <param name="resourceStore">
     /// The package resources. Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
     /// </param>
-    /// <param name="afterContentResourceStore">
+    /// <param name="resourceAfterStore">
     /// The package resources to apply after the <see cref="ResPackageDescriptor.Children"/>.
     /// Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
     /// </param>
@@ -64,13 +64,13 @@ public sealed class ResourceSpaceCollectorBuilder
                                  string fullName,
                                  NormalizedPath defaultTargetPath,
                                  IResourceContainer resourceStore,
-                                 IResourceContainer afterContentResourceStore )
+                                 IResourceContainer resourceAfterStore )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fullName );
         Throw.CheckArgument( resourceStore is not null && resourceStore.IsValid );
-        Throw.CheckArgument( afterContentResourceStore is not null && resourceStore.IsValid );
-        Throw.CheckArgument( resourceStore != afterContentResourceStore );
-        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, afterContentResourceStore ) != null;
+        Throw.CheckArgument( resourceAfterStore is not null && resourceStore.IsValid );
+        Throw.CheckArgument( resourceStore != resourceAfterStore );
+        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore ) != null;
     }
 
     /// <summary>
@@ -92,10 +92,10 @@ public sealed class ResourceSpaceCollectorBuilder
             return false;
         }
         IResourceContainer resourceStore = type.CreateResourcesContainer( monitor );
-        IResourceContainer afterContentStore = type.CreateResourcesContainer( monitor, resAfter: true );
+        IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true );
 
-        return resourceStore.IsValid && afterContentStore.IsValid
-               && DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, afterContentStore ) != null;
+        return resourceStore.IsValid && resourceAfterStore.IsValid
+               && DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore ) != null;
     }
 
     ResPackageDescriptor? DoRegister( IActivityMonitor monitor,
@@ -103,7 +103,7 @@ public sealed class ResourceSpaceCollectorBuilder
                                       Type? type,
                                       NormalizedPath defaultTargetPath,
                                       IResourceContainer resourceStore,
-                                      IResourceContainer afterContentStore )
+                                      IResourceContainer resourceAfterStore )
     {
         if( _packageIndex.TryGetValue( fullName, out var already ) )
         {
@@ -115,19 +115,19 @@ public sealed class ResourceSpaceCollectorBuilder
             monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
             return null;
         }
-        if( _packageIndex.TryGetValue( afterContentStore, out already ) )
+        if( _packageIndex.TryGetValue( resourceAfterStore, out already ) )
         {
-            monitor.Error( $"Package resources mismatch: {afterContentStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
+            monitor.Error( $"Package resources mismatch: {resourceAfterStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
             return null;
         }
-        // The resource store may not be local (it may be an empty one) but if the afterContentResourceStore
+        // The resource store may not be local (it may be an empty one) but if the resourceAfterStore
         // is local, then this package is a local one.
         // For simplicity we only keep a single local path at the package level and by design we
         // privilegiate the "/Res" over the "/Res[After]".
         // Live engine will be in charge to handle the one or more FileSystemResourceContainer at their level.
         string? localPath = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                                 ? fs.ResourcePrefix
-                                : afterContentStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport
+                                : resourceAfterStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport
                                     ? fsA.ResourcePrefix
                                     : null;
         if( localPath != null )
@@ -135,16 +135,16 @@ public sealed class ResourceSpaceCollectorBuilder
             ++_localPackageCount;
         }
         var p = new ResPackageDescriptor( _packageIndex,
-                                            fullName,
-                                            type,
-                                            defaultTargetPath,
-                                            new CodeStoreResources( resourceStore ),
-                                            new CodeStoreResources( afterContentStore ),
-                                            localPath );
+                                          fullName,
+                                          type,
+                                          defaultTargetPath,
+                                          resources: new CodeStoreResources( resourceStore ),
+                                          afterResources: new CodeStoreResources( resourceAfterStore ),
+                                          localPath );
         _packages.Add( p );
         _packageIndex.Add( fullName, p );
         _packageIndex.Add( resourceStore, p );
-        _packageIndex.Add( afterContentStore, p );
+        _packageIndex.Add( resourceAfterStore, p );
         if( type != null )
         {
             ++_typedPackageCount; 
@@ -196,7 +196,6 @@ public sealed class ResourceSpaceCollectorBuilder
                         monitor.Error( $"While reading {descriptor}.", ex );
                     }
                 }
-
             }
         }
         return success

@@ -1,8 +1,9 @@
 using CK.Core;
 using CK.Transform.Core.Tests.Helpers;
-using FluentAssertions;
 using NUnit.Framework;
+using Shouldly;
 using System;
+using System.Collections.Immutable;
 
 namespace CK.Transform.Core.Tests;
 
@@ -41,8 +42,8 @@ public class RawStringTests
         var codeSource = new TestAnalyzer().ParseOrThrow( code );
         var rawString = codeSource.Tokens[0] as RawString;
         Throw.DebugAssert( rawString != null );
-        rawString.Lines.Should().HaveCount( 1 );
-        rawString.Lines[0].Should().Be( expected );
+        rawString.Lines.Length.ShouldBe( 1 );
+        rawString.Lines[0].ShouldBe( expected );
     }
 
     [TestCase( """
@@ -52,18 +53,18 @@ public class RawStringTests
                     "
                     ERROR_TOLERANT
                """,
-               "Single-line string must not contain end of line.*" )]
+               "Single-line string must not contain end of line." )]
     public void invalid_single_line_RawString_tests( string code, string errorMessage )
     {
         var r = new TestAnalyzer().Parse( code );
-        r.Success.Should().BeFalse();
+        r.Success.ShouldBeFalse();
         Throw.DebugAssert( r.FirstError != null );
 
-        r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstError.ErrorMessage.Should().Match( errorMessage );
+        r.SourceCode.Tokens.Count.ShouldBe( 2 );
+        r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstError.ErrorMessage.ShouldStartWith( errorMessage );
 
-        r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
+        r.SourceCode.Tokens[1].ToString().ShouldBe( "ERROR_TOLERANT" );
     }
 
 
@@ -74,14 +75,14 @@ public class RawStringTests
     public void unterminated_string_covers_the_whole_text( string code )
     {
         var r = new TestAnalyzer().Parse( code );
-        r.Success.Should().BeFalse();
+        r.Success.ShouldBeFalse();
         Throw.DebugAssert( r.FirstError != null );
-        r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[1] );
-        r.FirstError.ErrorMessage.Should().Match( "Unterminated string.*" );
+        r.SourceCode.Tokens.Count.ShouldBe( 2 );
+        r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[1] );
+        r.FirstError.ErrorMessage.ShouldStartWith( "Unterminated string." );
 
-        r.SourceCode.Tokens[0].ToString().Should().Be( "Some" );
-        r.SourceCode.Tokens[1].Text.Length.Should().Be( code.Length - 4 - 1 );
+        r.SourceCode.Tokens[0].ToString().ShouldBe( "Some" );
+        r.SourceCode.Tokens[1].Text.Length.ShouldBe( code.Length - 4 - 1 );
     }
 
     [TestCase( """"
@@ -141,7 +142,7 @@ public class RawStringTests
         var codeSource = new TestAnalyzer().ParseOrThrow( code );
         var rawString = codeSource.Tokens[0] as RawString;
         Throw.DebugAssert( rawString != null );
-        rawString.Lines.Should().BeEquivalentTo( expected.Split( Environment.NewLine ) );
+        rawString.Lines.ShouldBe( expected.Split( Environment.NewLine ).ToImmutableArray() );
     }
 
     [TestCase( """"
@@ -151,7 +152,7 @@ public class RawStringTests
                     """
                     ERROR_TOLERANT
 
-               """", "Invalid multi-line raw string: at least one line must appear between the \"\"\".*" )]
+               """", "Invalid multi-line raw string: at least one line must appear between the \"\"\"." )]
     [TestCase( """"
                     /*No trailing chars on the first line.*/
 
@@ -160,7 +161,7 @@ public class RawStringTests
                     """
                     ERROR_TOLERANT
 
-               """", "Invalid multi-line raw string: there must be no character after the opening \"\"\" characters.*" )]
+               """", "Invalid multi-line raw string: there must be no character after the opening \"\"\" characters." )]
     [TestCase( """"""""
                     /*No leading chars on the last line (error messages display the right number of quotes).*/
                
@@ -169,7 +170,7 @@ public class RawStringTests
                   X """"""
                     ERROR_TOLERANT
 
-               """""""", "Invalid multi-line raw string: there must be no character on the line before the closing \"\"\"\"\"\" characters.*" )]
+               """""""", "Invalid multi-line raw string: there must be no character on the line before the closing \"\"\"\"\"\" characters." )]
     [TestCase( """"""""
                     /*No  chars before the ending column (1/2).*/
                
@@ -178,7 +179,7 @@ public class RawStringTests
                     """"""
                     ERROR_TOLERANT
 
-               """""""", "Invalid multi-line raw string: there must be no character before column 5.*" )]
+               """""""", "Invalid multi-line raw string: there must be no character before column 5." )]
     [TestCase( """"""""
                     /*No  chars before the ending column (2/2).*/
                
@@ -187,18 +188,18 @@ public class RawStringTests
                     """"""
                     ERROR_TOLERANT
 
-               """""""", "Invalid multi-line raw string: there must be no character before column 5 in '    XSome'.*" )]
+               """""""", "Invalid multi-line raw string: there must be no character before column 5 in '    XSome'." )]
     public void invalid_multi_line_RawString_tests( string code, string errorMessage )
     {
         var r = new TestAnalyzer().Parse( code );
-        r.Success.Should().BeFalse();
+        r.Success.ShouldBeFalse();
         Throw.DebugAssert( r.FirstError != null );
 
-        r.SourceCode.Tokens.Should().HaveCount( 2 );
-        r.FirstError.Should().BeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstError.ErrorMessage.Should().Match( errorMessage );
+        r.SourceCode.Tokens.Count.ShouldBe( 2 );
+        r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstError.ErrorMessage.ShouldStartWith( errorMessage );
 
-        r.SourceCode.Tokens[1].ToString().Should().Be( "ERROR_TOLERANT" );
+        r.SourceCode.Tokens[1].ToString().ShouldBe( "ERROR_TOLERANT" );
     }
 
 

@@ -93,7 +93,11 @@ public sealed class ResourceAssetDefinitionSet
             {
                 if( def.Override == ResourceOverrideKind.None )
                 {
-                    monitor.Warn( $"Asset '{path}' conflict: {def.Origin} must declare this target path as an override as this asset is already defined by: {exists.Origin}." );
+                    monitor.Warn( $"""
+                        Asset '{path}' in {def.Origin.Container} overides the existing asset from {exists.Origin.Container}.
+                        An explicit override declaration "O": [..., "{path}", ...] is required.
+                        """ );
+                        
                     var a = exists.AddAmbiguity( def.Origin );
                     result.Add( path, a );
                     isAmbiguous = true;

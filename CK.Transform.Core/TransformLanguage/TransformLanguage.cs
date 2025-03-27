@@ -1,24 +1,34 @@
 using CK.Core;
 using System;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace CK.Transform.Core;
 
 /// <summary>
 /// Abstract factory for a target language <see cref="IAnalyzer"/> and its associated
 /// transfom <see cref="TransformStatementAnalyzer"/>.
+/// <para>
+/// A language is identified by its <see cref="LanguageName"/> in a <see cref="TransformerHost"/>
+/// and its <see cref="FileExtensions"/> must also be unique.
+/// </para>
 /// </summary>
 public abstract class TransformLanguage
 {
     readonly string _languageName;
+    readonly ImmutableArray<string> _fileExtensions;
 
     /// <summary>
     /// Initializes a language with its name.
     /// </summary>
     /// <param name="languageName">The language name.</param>
-    protected TransformLanguage( string languageName )
+    /// <param name="fileExtensions">File extensions must not be empty andd all must start with a dot (like ".cs").</param>
+    protected TransformLanguage( string languageName, params ImmutableArray<string> fileExtensions )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( languageName );
+        Throw.CheckArgument( fileExtensions.Length > 0 && fileExtensions.All( e => e.Length >= 2 && e[0] == '.' ) );
         _languageName = languageName;
+        _fileExtensions = fileExtensions;
     }
 
     /// <summary>
@@ -27,12 +37,23 @@ public abstract class TransformLanguage
     public string LanguageName => _languageName;
 
     /// <summary>
-    /// Tests a file name (typically the extesion) to determine if it should
-    /// contain code from this language.
+    /// Gets one or more file extensions for this language. They start with a dot (like ".cs").
+    /// </summary>
+    public ImmutableArray<string> FileExtensions => _fileExtensions;
+
+    /// <summary>
+    /// Tests the file name against the <see cref="FileExtensions"/>.
     /// </summary>
     /// <param name="fileName">The file name. May be a path.</param>
     /// <returns>True if the file can be handled by this language analyzer.</returns>
-    public abstract bool IsLangageFilename( ReadOnlySpan<char> fileName );
+    public bool IsLangageFilename( ReadOnlySpan<char> fileName )
+    {
+        foreach( var e in _fileExtensions )
+        {
+            if( fileName.EndsWith( e, StringComparison.Ordinal ) ) return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Gets whether this is the Transform language.

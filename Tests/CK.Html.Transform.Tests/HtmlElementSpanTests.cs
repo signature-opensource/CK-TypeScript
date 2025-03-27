@@ -1,5 +1,5 @@
 using CK.Transform.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Linq;
 
@@ -15,12 +15,12 @@ public class HtmlElementSpanTests
     {
         var a = new HtmlAnalyzer();
         var sourceCode = a.ParseOrThrow( text );
-        sourceCode.Tokens.Count.Should().Be( tokenCount );
-        sourceCode.Spans.Count().Should().Be( 1 );
+        sourceCode.Tokens.Count.ShouldBe( tokenCount );
+        sourceCode.Spans.Count().ShouldBe( 1 );
         var s = sourceCode.Spans.Single();
-        s.Parent.Should().BeNull();
-        s.Children.Should().BeEmpty();
-        s.Span.Should().Be( new TokenSpan( idxStart, idxStart + 2 ) );
+        s.Parent.ShouldBeNull();
+        s.Children.ShouldBeEmpty();
+        s.Span.ShouldBe( new TokenSpan( idxStart, idxStart + 2 ) );
     }
 
     [TestCase( "<area >", 1 )]
@@ -42,8 +42,8 @@ public class HtmlElementSpanTests
     {
         var a = new HtmlAnalyzer();
         var sourceCode = a.ParseOrThrow( text );
-        sourceCode.Tokens.Count.Should().Be( tokenCount );
-        sourceCode.Spans.Should().BeEmpty();
+        sourceCode.Tokens.Count.ShouldBe( tokenCount );
+        sourceCode.Spans.ShouldBeEmpty();
     }
 
     [TestCase( "<area a > text ", 3 + 1 )]
@@ -64,10 +64,10 @@ public class HtmlElementSpanTests
     {
         var a = new HtmlAnalyzer();
         var sourceCode = a.ParseOrThrow( text );
-        sourceCode.Tokens.Count.Should().Be( tokenCount );
-        sourceCode.Spans.Count().Should().Be( 1 );
+        sourceCode.Tokens.Count.ShouldBe( tokenCount );
+        sourceCode.Spans.Count().ShouldBe( 1 );
         var s = sourceCode.Spans.Single();
-        s.Parent.Should().BeNull();
-        s.Children.Should().BeEmpty();
+        s.Parent.ShouldBeNull();
+        s.Children.ShouldBeEmpty();
     }
 }

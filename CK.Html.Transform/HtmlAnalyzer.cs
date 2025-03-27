@@ -1,5 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
+using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace CK.Html.Transform;

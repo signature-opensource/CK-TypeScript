@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Transform.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 
 namespace CK.TypeScript.Transform.Tests;
@@ -12,8 +12,8 @@ public class HtmlParsingTests
     {
         var a = new TypeScriptAnalyzer();
         var sourceCode = a.ParseOrThrow( "" );
-        sourceCode.Spans.Should().BeEmpty();
-        sourceCode.Tokens.Should().BeEmpty();
+        sourceCode.Spans.ShouldBeEmpty();
+        sourceCode.Tokens.ShouldBeEmpty();
     }
 
     [Test]
@@ -22,6 +22,6 @@ public class HtmlParsingTests
         var a = new TypeScriptAnalyzer();
         var result = a.Parse( "🙃" );
         Throw.DebugAssert( result != null && result.HardError != null );
-        result.HardError.ErrorMessage.Should().Be( "Unrecognized token." );
+        result.HardError.ErrorMessage.ShouldBe( "Unrecognized token." );
     }
 }

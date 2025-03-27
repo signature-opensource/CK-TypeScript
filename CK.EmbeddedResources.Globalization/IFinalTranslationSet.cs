@@ -22,7 +22,12 @@ public interface IFinalTranslationSet
 
     /// <summary>
     /// Gets whether at least one of the <see cref="FinalTranslationValue"/> from these translations
-    /// or from a child has a non null <see cref="FinalTranslationValue.Ambiguities"/>.
+    /// has a non null <see cref="FinalTranslationValue.Ambiguities"/>.
+    /// <para>
+    /// For the root <see cref="FinalTranslationSet"/>, this is also true when any of
+    /// the <see cref="FinalTranslationSet.AllTranslationSets"/> is ambiguous (avan if the root Translations
+    /// have no ambiguity).
+    /// </para>
     /// </summary>
     bool IsAmbiguous { get; }
 
@@ -32,7 +37,8 @@ public interface IFinalTranslationSet
     IFinalTranslationSet? Parent { get; }
 
     /// <summary>
-    /// Gets the children translations (more specific culture translations).
+    /// Gets the children translations (more specific culture translations) that have at least one
+    /// translations (translation sets without translations are not instantiated).
     /// </summary>
     IEnumerable<IFinalTranslationSet> Children { get; }
 

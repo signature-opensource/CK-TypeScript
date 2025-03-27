@@ -61,6 +61,8 @@ public sealed partial class FinalTranslationSet // SubSets
                 return source;
             }
         }
+
+        public override string ToString() => _culture.Culture.Name;
     }
 
     internal IFinalTranslationSet[] CloneSubSets() => Unsafe.As<IFinalTranslationSet[]>( _subSets.Clone() );

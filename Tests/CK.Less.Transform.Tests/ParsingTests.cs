@@ -1,5 +1,5 @@
 using CK.Transform.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.IO;
 using System.IO.Compression;
@@ -14,10 +14,10 @@ public class ParsingTests
     public void parsing_bootstrap()
     {
         var c = File.ReadAllText( TestHelper.TestProjectFolder.AppendPart( "bootstrap.css" ) );
-        c.Should().NotBeNull().And.NotBeEmpty();
+        c.ShouldNotBeEmpty();
         var a = new LessAnalyzer();
         var sourceCode = a.ParseOrThrow( c );
-        sourceCode.Tokens.Count.Should().BeGreaterThan( 1000 );
+        sourceCode.Tokens.Count.ShouldBeGreaterThan( 1000 );
     }
 
     [Test]
@@ -26,10 +26,10 @@ public class ParsingTests
         var zip = ZipFile.OpenRead( TestHelper.TestProjectFolder.AppendPart( "ng-zorro-antd.all.less.zip" ) );
         using var reader = new StreamReader( zip.Entries[0].Open() );
         var all = reader.ReadToEnd();
-        all.Should().NotBeNull().And.NotBeEmpty();
+        all.ShouldNotBeEmpty();
         var a = new LessAnalyzer();
         var sourceCode = a.ParseOrThrow( all );
-        sourceCode.Tokens.Count.Should().BeGreaterThan( 1000 );
+        sourceCode.Tokens.Count.ShouldBeGreaterThan( 1000 );
     }
 
     [TestCase( "t" )]
@@ -47,8 +47,8 @@ public class ParsingTests
     {
         var a = new LessAnalyzer();
         var sourceCode = a.ParseOrThrow( oneToken );
-        sourceCode.Tokens.Count.Should().Be( 1 );
-        sourceCode.Tokens[0].TokenType.Should().Be( TokenType.GenericIdentifier );
-        sourceCode.Tokens[0].Text.ToString().Should().Be( oneToken );
+        sourceCode.Tokens.Count.ShouldBe( 1 );
+        sourceCode.Tokens[0].TokenType.ShouldBe( TokenType.GenericIdentifier );
+        sourceCode.Tokens[0].Text.ToString().ShouldBe( oneToken );
     }
 }

@@ -125,8 +125,16 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     public override bool Equals( object? obj ) => obj is ResourceLocator locator && Equals( locator );
 
+    /// <inheritdoc cref="Equals(ResourceLocator)"/>.
     public static bool operator ==( ResourceLocator left, ResourceLocator right ) => left.Equals( right );
 
+    /// <summary>
+    /// To be equal the <see cref="Container"/> must be the same and <see cref="FullResourceName"/>
+    /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
+    /// </summary>
+    /// <param name="left">The first value.</param>
+    /// <param name="right">The second value.</param>
+    /// <returns>Whether the two resource locators are different.</returns>
     public static bool operator !=( ResourceLocator left, ResourceLocator right ) => !(left == right);
 
     public override int GetHashCode() => IsValid

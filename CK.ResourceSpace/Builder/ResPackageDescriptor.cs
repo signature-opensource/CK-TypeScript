@@ -17,7 +17,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
     readonly CodeStoreResources _resources;
-    readonly CodeStoreResources _afterContentResources;
+    readonly CodeStoreResources _afterResources;
     readonly string? _localPath;
     ResPackageDescriptor? _package;
     List<ResPackageDescriptor>? _requires;
@@ -31,16 +31,16 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                                    Type? type,
                                    NormalizedPath defaultTargetPath,
                                    CodeStoreResources resources,
-                                   CodeStoreResources afterContentResources,
+                                   CodeStoreResources afterResources,
                                    string? localPath )
     {
-        Throw.DebugAssert( resources != afterContentResources );
+        Throw.DebugAssert( resources != afterResources );
         _collector = collector;
         _fullName = fullName;
         _type = type;
         _defaultTargetPath = defaultTargetPath;
         _resources = resources;
-        _afterContentResources = afterContentResources;
+        _afterResources = afterResources;
         _localPath = localPath;
     }
 
@@ -67,7 +67,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <summary>
     /// Gets the <see cref="CodeStoreResources"/> that apply after this package's <see cref="Children"/>.
     /// </summary>
-    public CodeStoreResources AfterContentResources => _afterContentResources;
+    public CodeStoreResources AfterResources => _afterResources;
 
     /// <summary>
     /// Gets the default target path that will prefix resources that are items.

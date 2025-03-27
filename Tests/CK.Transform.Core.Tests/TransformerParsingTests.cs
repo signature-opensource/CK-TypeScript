@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
@@ -14,7 +14,7 @@ public class TransformerParsingTests
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" );
         Throw.DebugAssert( f != null );
-        f.Body.Statements.Should().HaveCount( 0 );
+        f.Body.Statements.Count.ShouldBe( 0 );
     }
 
     [Test]
@@ -23,8 +23,8 @@ public class TransformerParsingTests
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" );
         Throw.DebugAssert( f != null );
-        f.Name.Should().Be( "MyTransformer" );
-        f.Target.Should().BeNull();
+        f.Name.ShouldBe( "MyTransformer" );
+        f.Target.ShouldBeNull();
     }
 
     [Test]
@@ -33,8 +33,8 @@ public class TransformerParsingTests
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" );
         Throw.DebugAssert( f != null );
-        f.Name.Should().Be( "MyTransformer" );
-        f.Target.Should().NotBeNull().And.HaveLength( 0 );
+        f.Name.ShouldBe( "MyTransformer" );
+        f.Target.ShouldNotBeNull().Length.ShouldBe( 0 );
     }
 
     [Test]
@@ -115,7 +115,7 @@ public class TransformerParsingTests
         else
         {
             Throw.CheckState( f != null );
-            f.Count.Should().Be( count );
+            f.Count.ShouldBe( count );
         }
     }
 

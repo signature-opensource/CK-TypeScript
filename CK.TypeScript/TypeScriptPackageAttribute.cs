@@ -36,12 +36,10 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbe
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttribute"/>.
     /// </summary>
-    /// <param name="disableResources">Whether this package must not have "/Res" associated files.</param>
     /// <param name="callerFilePath">Automatically set by the Roslyn compiler and used to compute the associated embedded resource folder.</param>
-    public TypeScriptPackageAttribute( bool disableResources = false, [CallerFilePath] string? callerFilePath = null )
+    public TypeScriptPackageAttribute( [CallerFilePath] string? callerFilePath = null )
         : base( "CK.TypeScript.Engine.TypeScriptPackageAttributeImpl, CK.TypeScript.Engine" )
     {
-        DisableResources = disableResources;
         CallerFilePath = callerFilePath;
     }
 
@@ -50,11 +48,9 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbe
     /// </summary>
     /// <param name="actualAttributeTypeAssemblyQualifiedName">Assembly Qualified Name of the object that will replace this attribute during setup.</param>
     /// <param name="finalCallerFilePath">Specialized types must provide the <c>[CallerFilePath]string? callerFilePath = null</c>.</param>
-    /// <param name="disableResources">Whether this package must not have "/Res" associated files.</param>
-    protected TypeScriptPackageAttribute( string actualAttributeTypeAssemblyQualifiedName, string? finalCallerFilePath, bool disableResources = false )
+    protected TypeScriptPackageAttribute( string actualAttributeTypeAssemblyQualifiedName, string? finalCallerFilePath )
         : base( actualAttributeTypeAssemblyQualifiedName )
     {
-        DisableResources = disableResources;
         CallerFilePath = finalCallerFilePath;
     }
 
@@ -62,15 +58,6 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbe
     /// Gets the package to which this package belongs.
     /// </summary>
     public virtual Type? Package => null;
-
-    /// <summary>
-    /// Gets or sets the folder's path where embedded resources for this package should be loaded from.
-    /// <para>
-    /// When let to null, an automatic resolution is done that defaults to the "./Res" folder
-    /// where the "." is the folder of the type that declares this attribute.
-    /// </para>
-    /// </summary>
-    public string? ResourceFolderPath { get; set; }
 
     /// <summary>
     /// Gets or sets the target TypeScript folder in the <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/>
@@ -81,20 +68,6 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbe
     /// </para>
     /// </summary>
     public string? TypeScriptFolder { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether embedded resources must be explicitly declared by <see cref="TypeScriptFileAttribute"/>
-    /// or <see cref="TypeScriptResourceAttribute"/>.
-    /// <para>
-    /// Defaults to false: by default all files in <see cref="ResourceFolderPath"/> are considered. 
-    /// </para>
-    /// </summary>
-    public bool ConsiderExplicitResourceOnly { get; set; }
-
-    /// <summary>
-    /// Gets whether this package has "Res/" associated files.
-    /// </summary>
-    public bool DisableResources { get; }
 
     /// <summary>
     /// Gets the folder path of the type that declares this attribute.

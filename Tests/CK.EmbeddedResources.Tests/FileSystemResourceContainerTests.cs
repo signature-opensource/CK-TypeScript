@@ -21,12 +21,13 @@ public class FileSystemResourceContainerTests
 
         c.GetFolder( "SomeType" ).IsValid.ShouldBeTrue();
         c.GetFolder( "C1/Res/" ).IsValid.ShouldBeTrue();
-        c.GetFolder( "C1/Res" ).IsValid.ShouldBeTrue();
+        c.GetFolder( "C1\\Res" ).IsValid.ShouldBeTrue();
         c.GetResource( "AssemblyResourcesTests.cs" ).IsValid.ShouldBeTrue();
 
         c.TryGetResource( "SomeType/SomeType.cs", out var locator ).ShouldBeTrue();
 
-        locator.FullResourceName.ShouldBe( TestHelper.TestProjectFolder.AppendPart( "SomeType" ).AppendPart( "SomeType.cs" ) );
+        var fsPath = Path.GetFullPath( TestHelper.TestProjectFolder.AppendPart( "SomeType" ).AppendPart( "SomeType.cs" ) );
+        locator.FullResourceName.ShouldBe( fsPath, "FileSystemContainer uses the environment Path.DirectorySeparatorChar." );
         var content = c.GetFolder( "SomeType" );
         content.AllResources.Count().ShouldBe( 2 );
         var theOne = content.Resources.Single();

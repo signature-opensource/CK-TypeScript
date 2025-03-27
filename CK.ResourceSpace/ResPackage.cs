@@ -21,8 +21,8 @@ public sealed partial class ResPackage
     readonly ImmutableArray<ResPackage> _children;
     readonly AggregateId _childrenAggregateId;
     readonly IReadOnlySet<ResPackage> _allReachablePackages;
-    readonly BeforeContent _beforeResources;
-    readonly AfterContent _afterResources;
+    readonly BeforeRes _beforeResources;
+    readonly AfterRes _afterResources;
     readonly int _index;
     readonly bool _isGroup;
     readonly bool _requiresHasLocalPackage;
@@ -68,8 +68,8 @@ public sealed partial class ResPackage
         _type = type;
         _resourceIndex = dataCacheBuilder._resourceIndex;
         // Initializes the resources.
-        _beforeResources = new BeforeContent( this, beforeResources, idxBeforeResources );
-        _afterResources = new AfterContent( this, afterResources, idxAfterResources );
+        _beforeResources = new BeforeRes( this, beforeResources, idxBeforeResources );
+        _afterResources = new AfterRes( this, afterResources, idxAfterResources );
 
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
         bool allIsRequired;
@@ -351,13 +351,13 @@ public sealed partial class ResPackage
                 : fullName;
     }
 
-    sealed class BeforeContent : IResPackageResources
+    sealed class BeforeRes : IResPackageResources
     {
         readonly ResPackage _package;
         readonly CodeStoreResources _resources;
         readonly int _index;
 
-        public BeforeContent( ResPackage package, CodeStoreResources resources, int index )
+        public BeforeRes( ResPackage package, CodeStoreResources resources, int index )
         {
             _package = package;
             _resources = resources;
@@ -375,13 +375,13 @@ public sealed partial class ResPackage
         public ResPackage Package => _package;
     }
 
-    sealed class AfterContent : IResPackageResources
+    sealed class AfterRes : IResPackageResources
     {
         readonly ResPackage _package;
         readonly CodeStoreResources _resources;
         readonly int _index;
 
-        public AfterContent( ResPackage package, CodeStoreResources resources, int index )
+        public AfterRes( ResPackage package, CodeStoreResources resources, int index )
         {
             _package = package;
             _resources = resources;

@@ -264,7 +264,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
         Throw.DebugAssert( newCapacity >= capacity );
 
         string[] newPStore = new string[newCapacity];
-        Func<Stream>[] newSStore = new Func<Stream>[newCapacity];
+        object[] newSStore = new object[newCapacity];
         if( indexToInsert != 0 )
         {
             Array.Copy( _pathStore, newPStore, length: indexToInsert );

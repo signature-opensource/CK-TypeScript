@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace CK.Core;
@@ -122,4 +123,10 @@ public sealed class ActiveCultureSet
         all.Add( newOne );
         return newOne;
     }
+
+    /// <summary>
+    /// Overridden to return the comma separated culture names.
+    /// </summary>
+    /// <returns>The active culture names.</returns>
+    public override string ToString() => _all.Select( c => c.ToString() ).Concatenate();
 }

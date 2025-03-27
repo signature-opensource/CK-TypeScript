@@ -63,10 +63,10 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _childrenAggregateId = new AggregateId( r );
 
         var bRes = new CodeStoreResources( d.ReadObject<IResourceContainer>(), d.ReadObject<IResourceContainer>() );
-        _beforeResources = new BeforeContent( this, bRes, r.ReadNonNegativeSmallInt32() );
+        _beforeResources = new BeforeRes( this, bRes, r.ReadNonNegativeSmallInt32() );
 
         var aRes = new CodeStoreResources( d.ReadObject<IResourceContainer>(), d.ReadObject<IResourceContainer>() );
-        _afterResources = new AfterContent( this, aRes, r.ReadNonNegativeSmallInt32() );
+        _afterResources = new AfterRes( this, aRes, r.ReadNonNegativeSmallInt32() );
     }
 
     public void Write( IBinarySerializer s )

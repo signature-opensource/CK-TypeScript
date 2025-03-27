@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Transform.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
@@ -45,7 +45,7 @@ public class InjectIntoTests
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().Should().Be( result );
+        sourceCode.ToString().ShouldBe( result );
     }
 
 }

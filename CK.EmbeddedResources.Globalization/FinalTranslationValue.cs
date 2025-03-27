@@ -9,7 +9,8 @@ namespace CK.EmbeddedResources;
 /// A translation value is a <see cref="Text"/> that comes from an <see cref="Origin"/>
 /// with potential <see cref="Ambiguities"/>.
 /// <para>
-/// Equality ignores the <see cref="Origin"/: two values are equal if their <see cref="Text"/> are equal.
+/// Equality ignores the <see cref="Ambiguities"/: two values are equal if their <see cref="Text"/>
+/// and <see cref="Origin"/> are equal.
 /// </para>
 /// </summary>
 public readonly struct FinalTranslationValue : IEquatable<FinalTranslationValue>
@@ -56,51 +57,55 @@ public readonly struct FinalTranslationValue : IEquatable<FinalTranslationValue>
 
     /// <summary>
     /// Returns a translation with a new <see cref="Ambiguities"/>.
+    /// <para>
+    /// This value is returned if the <paramref name="ambiguous"/> has the same <see cref="Text"/> as
+    /// this one, or if it already belongs to this <see cref="Ambiguities"/>.
+    /// </para>
     /// </summary>
     /// <param name="ambiguous">The translation that share the same key as this <see cref="Origin"/>.</param>
     /// <returns>A new resource asset or this one if <paramref name="locator"/> is already known.</returns>
     public FinalTranslationValue AddAmbiguity( FinalTranslationValue ambiguous )
     {
-        if( ambiguous == this
+        // We decide here that if Text are equal, there's no ambiguity to resolve even if
+        // a structural ambiguity exists.
+        // And if the ambiguity is already known, don't duplicate it.
+        if( ambiguous.Text == Text
             || (_ambiguities != null && _ambiguities.Contains( ambiguous )) )
         {
             return this;
         }
-        return _ambiguities == null
-            ? new FinalTranslationValue( _text, _origin, [ambiguous] )
-            : new FinalTranslationValue( _text, _origin, _ambiguities.Append( ambiguous ) );
+        // Flatten the ambiguities.
+        IEnumerable<FinalTranslationValue> a = _ambiguities?.Append( ambiguous ) ?? [ambiguous];
+        if( ambiguous._ambiguities != null ) a = a.Concat( ambiguous._ambiguities );
+        return new FinalTranslationValue( _text, _origin, a );
     }
 
     /// <summary>
-    /// Adds multiple ambiguities at once.
-    /// </summary>
-    /// <param name="ambiguities">The ambiguities to add.</param>
-    /// <returns>A new translation value or this one if all <paramref name="ambiguities"/> are already known.</returns>
-    public FinalTranslationValue AddAmbiguities( IEnumerable<FinalTranslationValue>? ambiguities )
-    {
-        if( ambiguities == null ) return this;
-        FinalTranslationValue f = this;
-        foreach( var a in ambiguities )
-        {
-            f = f.AddAmbiguity( a );
-        }
-        return f;
-    }
-
-    /// <summary>
-    /// Check whether <see cref="Text"/> are equal. <see cref="Origin"/> is ignored.
+    /// Check whether <see cref="Text"/> and <see cref="Origin"/> are equal.
     /// </summary>
     /// <param name="other">The other value.</param>
-    /// <returns>Whether this <see cref="Text"/> has the same text as the other one.</returns>
-    public bool Equals( FinalTranslationValue other ) => _text == other._text;
+    /// <returns>Whether this <see cref="Text"/> and <see cref="Origin"/> are the equal to the other one's.</returns>
+    public bool Equals( FinalTranslationValue other ) => _text == other._text && _origin == other._origin;
 
     public override bool Equals( object? obj ) => obj is FinalTranslationValue v && Equals( v );
 
     public override string ToString() => Text;
 
-    public override int GetHashCode() => Text.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine( Text.GetHashCode(), Origin.GetHashCode() );
 
+    /// <summary>
+    /// Tests whether <see cref="Text"/> and <see cref="Origin"/> are equal.
+    /// </summary>
+    /// <param name="x">The first value.</param>
+    /// <param name="y">The scond value.</param>
+    /// <returns>Whether the two values are equal.</returns>
     public static bool operator ==( FinalTranslationValue x, FinalTranslationValue y ) => x.Equals( y );
 
+    /// <summary>
+    /// Tests whether <see cref="Text"/> or <see cref="Origin"/> are different.
+    /// </summary>
+    /// <param name="x">The first value.</param>
+    /// <param name="y">The scond value.</param>
+    /// <returns>Whether the two values are different.</returns>
     public static bool operator !=( FinalTranslationValue x, FinalTranslationValue y ) => !x.Equals( y );
 }

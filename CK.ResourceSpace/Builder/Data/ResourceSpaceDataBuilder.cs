@@ -180,9 +180,9 @@ public sealed class ResourceSpaceDataBuilder
                 ResPackageDescriptor d = s.Item;
                 // Close the CodeGen resources.
                 if( d.Resources.Code is CodeGenResourceContainer c1 ) c1.Close();
-                if( d.AfterContentResources.Code is CodeGenResourceContainer c2 ) c2.Close();
+                if( d.AfterResources.Code is CodeGenResourceContainer c2 ) c2.Close();
                 Throw.DebugAssert( d.Resources.Store is not CodeGenResourceContainer
-                                   && d.AfterContentResources.Store is not CodeGenResourceContainer );
+                                   && d.AfterResources.Store is not CodeGenResourceContainer );
 
                 Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
                                    !s.Requires.Intersect( s.Children ).Any() );
@@ -197,7 +197,7 @@ public sealed class ResourceSpaceDataBuilder
                                         s.HeadForGroup.Index,
                                         d.Resources,
                                         s.Index,
-                                        d.AfterContentResources,
+                                        d.AfterResources,
                                         d.LocalPath,
                                         d.IsGroup,
                                         d.Type,

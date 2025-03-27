@@ -32,9 +32,9 @@ public abstract partial class ResourceSpaceFileHandler
     /// <param name="spaceData">The space data to consider.</param>
     /// <param name="folderFilter">The filter for resources or folder to use.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
-    internal abstract bool Initialize( IActivityMonitor monitor,
-                                       ResourceSpaceData spaceData,
-                                       FolderExclusion folderFilter );
+    internal protected abstract bool Initialize( IActivityMonitor monitor,
+                                                 ResourceSpaceData spaceData,
+                                                 FolderExclusion folderFilter );
 
     public sealed override string ToString() => $"{GetType().Name} - Files '*{_fileExtensions.Concatenate( "', *'" )}'";
 
