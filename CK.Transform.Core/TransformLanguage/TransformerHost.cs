@@ -15,6 +15,7 @@ public sealed partial class TransformerHost
 {
     readonly List<Language> _languages;
     readonly RootTransformLanguage _transformLanguage;
+    bool _isLockedLanguages;
 
     /// <summary>
     /// Cached instance of a <see cref="TransformLanguage"/> for this host.
@@ -78,12 +79,32 @@ public sealed partial class TransformerHost
     public IReadOnlyList<Language> Languages => _languages;
 
     /// <summary>
+    /// Gets whether no languages can be added or removed.
+    /// </summary>
+    public bool IsLockedLanguages => _isLockedLanguages;
+
+    /// <summary>
+    /// Locks the languages: <see cref="EnsureLanguage(TransformLanguage)"/> and <see cref="RemoveLanguage(TransformLanguage)"/>
+    /// must not be called anymore.
+    /// </summary>
+    /// <returns>The locked list of supported languages.</returns>
+    public IReadOnlyList<Language> LockLanguages()
+    {
+        _isLockedLanguages = true;
+        return _languages;
+    }
+
+    /// <summary>
     /// Removes a language.
+    /// <para>
+    /// <see cref="IsLockedLanguages"/> must be false otherwise a <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
     /// </summary>
     /// <param name="language">The language to remove.</param>
     /// <returns>True if the language has been removed, false if it was not found or if it is the transform language itself.</returns>
     public bool RemoveLanguage( TransformLanguage language )
     {
+        Throw.CheckState( IsLockedLanguages is false );
         if( !language.IsTransformerLanguage )
         {
             var idx = _languages.FindIndex( l => l.LanguageName == language.LanguageName );
@@ -97,12 +118,16 @@ public sealed partial class TransformerHost
     }
 
     /// <summary>
-    /// Adds a language if it is not already registered of finds its cached instance.
+    /// Adds a language if it is not already registered or finds its cached instance.
+    /// <para>
+    /// <see cref="IsLockedLanguages"/> must be false otherwise a <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
     /// </summary>
     /// <param name="language">The language to add.</param>
     /// <returns>The cached language.</returns>
     public Language EnsureLanguage( TransformLanguage language )
     {
+        Throw.CheckState( IsLockedLanguages is false );
         var l = _languages.FirstOrDefault( l => l.LanguageName == language.LanguageName );
         if( l == null )
         {
