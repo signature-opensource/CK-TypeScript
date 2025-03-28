@@ -23,27 +23,36 @@ public sealed partial class TypeScriptRoot : IResourceContainer
 
     bool IResourceContainer.HasLocalFilePathSupport => false;
 
-    IEnumerable<ResourceLocator> IResourceContainer.AllResources => throw new NotImplementedException();
+    char IResourceContainer.DirectorySeparatorChar => '/';
+
+    IEnumerable<ResourceLocator> IResourceContainer.AllResources
+    {
+        get
+        {
+            return _root.AllFilesRecursive.Select( f => new ResourceLocator( this, f.Folder.Path.Path + '/' + f.Name ) );
+        }
+    }
 
     string? IResourceContainer.GetLocalFilePath( in ResourceLocator resource ) => null;
 
     ResourceFolder IResourceContainer.GetFolder( ReadOnlySpan<char> folderName )
     {
         var f = _root.FindFolder( folderName );
-        return f != null ? new ResourceFolder( this, f.Path.Path ) : default;
+        return f != null ? new ResourceFolder( this, f.Path.Path + '/' ) : default;
     }
 
     ResourceFolder IResourceContainer.GetFolder( ResourceFolder folder, ReadOnlySpan<char> folderName )
     {
         folder.CheckContainer( this );
         var f = _root.FindFolder( folder.FullFolderName.AsSpan() )?.FindFolder( folderName );
-        return f != null ? new ResourceFolder( this, f.Path.Path ) : default;
+        return f != null ? new ResourceFolder( this, f.Path.Path + '/' ) : default;
     }
 
     ReadOnlySpan<char> IResourceContainer.GetFolderName( ResourceFolder folder )
     {
         folder.CheckContainer( this );
-        return Path.GetFileName( folder.FullFolderName.AsSpan() );
+        var s = folder.FolderName;
+        return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
     }
 
     IEnumerable<ResourceFolder> IResourceContainer.GetFolders( ResourceFolder folder )
@@ -52,7 +61,7 @@ public sealed partial class TypeScriptRoot : IResourceContainer
         var f = _root.FindFolder( folder.FullFolderName.AsSpan() );
         if( f != null )
         {
-            return f.Folders.Select( c => new ResourceFolder( this, c.Path.Path ) );
+            return f.Folders.Select( c => new ResourceFolder( this, c.Path.Path + '/' ) );
         }
         return Array.Empty<ResourceFolder>();
     }

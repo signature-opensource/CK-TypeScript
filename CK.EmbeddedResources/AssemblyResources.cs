@@ -52,7 +52,7 @@ public sealed partial class AssemblyResources
 
     /// <summary>
     /// Gets the local development folder for this assembly.
-    /// To be the <see cref="NormalizedPath.IsEmptyPath"/>, the runnig code must be in
+    /// To not be the <see cref="NormalizedPath.IsEmptyPath"/>, the runnig code must be in
     /// a git working folder, a ".sln" or ".slx" file conventionnaly named must exist
     /// and contain a .csproj reference that matches the name of this assembly.
     /// </summary>

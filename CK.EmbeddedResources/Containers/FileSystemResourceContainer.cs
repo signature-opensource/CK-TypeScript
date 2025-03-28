@@ -95,6 +95,10 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     /// <inheritdoc />
     public string DisplayName => _displayName;
 
+    /// <summary>
+    /// Separator is <see cref="Path.DirectorySeparatorChar"/>.
+    /// </summary>
+    public char DirectorySeparatorChar => Path.DirectorySeparatorChar;
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources
     {
@@ -130,7 +134,9 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     public string? GetLocalFilePath( in ResourceLocator resource )
     {
         resource.CheckContainer( this );
-        return !_allowLocalFilePath ? null : resource.FullResourceName;
+        return _allowLocalFilePath
+                    ? resource.FullResourceName
+                    : null;
     }
 
     /// <inheritdoc />

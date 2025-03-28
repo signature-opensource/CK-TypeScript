@@ -20,14 +20,18 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// </summary>
     /// <param name="container">The resources that contains this folder.</param>
     /// <param name="fullFolderName">
-    /// The full resource name in the <paramref name="container"/>, including the <see cref="IResourceContainer.ResourcePrefix"/>.
+    /// The full folder name in the <paramref name="container"/>, including the <see cref="IResourceContainer.ResourcePrefix"/>.
+    /// When not equal to the ResourcePrefix (that is the root folder), it must always ends with
+    /// the <see cref="IResourceContainer.DirectorySeparatorChar"/>.
     /// </param>
     public ResourceFolder( IResourceContainer container, string fullFolderName )
     {
         Throw.CheckNotNullArgument( container );
-        Throw.CheckNotNullOrEmptyArgument( fullFolderName );
+        Throw.CheckNotNullArgument( fullFolderName );
         Throw.CheckArgument( fullFolderName.StartsWith( container.ResourcePrefix ) );
-        Throw.CheckArgument( (fullFolderName.Length - container.ResourcePrefix.Length) is > 1 and <= IResourceContainer.MaxNameLength );
+        Throw.CheckArgument( (fullFolderName.Length - container.ResourcePrefix.Length) <= IResourceContainer.MaxNameLength );
+        Throw.CheckArgument( "If there is a folder name, then it must end with the container's separator.",
+                             fullFolderName.Length == container.ResourcePrefix.Length || fullFolderName.EndsWith( container.DirectorySeparatorChar ) );
         _container = container;
         _fullName = fullFolderName;
     }

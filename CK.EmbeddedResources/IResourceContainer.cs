@@ -8,7 +8,7 @@ namespace CK.EmbeddedResources;
 /// Abstract resource container. Its goal is to handle <see cref="ResourceFolder"/> and <see cref="ResourceLocator"/>.
 /// <para>
 /// An <see cref="AssemblyResources"/> is not a <see cref="IResourceContainer"/> (because we cannot know the
-/// folder separator to use for all the resources) but it can create subordinate containers on the "ck@" prefixed resources
+/// folder separator to use for the .Net resources) but it can create subordinate containers on the "ck@" prefixed resources
 /// (that uses '/' as the folder separator) thanks to <see cref="AssemblyResources.CreateResourcesContainerForType(Core.IActivityMonitor, Type, string?, bool)"/>.
 /// </para>
 /// <para>
@@ -44,6 +44,10 @@ public interface IResourceContainer
     /// </summary>
     string ResourcePrefix { get; }
 
+    /// <summary>
+    /// Gets the directory separator char. Either '/' or '\\'.
+    /// </summary>
+    char DirectorySeparatorChar { get; }
     /// <summary>
     /// Gets a resource content from a locator (that must belong to this container).
     /// <para>

@@ -19,7 +19,13 @@ public class FileSystemResourceContainerTests
 
         c.ResourcePrefix.ShouldBe( normalizedPrefix );
 
-        c.GetFolder( "SomeType" ).IsValid.ShouldBeTrue();
+        var content = c.GetFolder( "SomeType" );
+        content.IsValid.ShouldBeTrue();
+        content.FullFolderName.ShouldBe( normalizedPrefix + "SomeType" + Path.DirectorySeparatorChar );
+        content.AllResources.Count().ShouldBe( 2 );
+        var theOne = content.Resources.Single();
+        theOne.FullResourceName.ShouldBe( $"{c.ResourcePrefix}SomeType{Path.DirectorySeparatorChar}SomeType.cs" );
+
         c.GetFolder( "C1/Res/" ).IsValid.ShouldBeTrue();
         c.GetFolder( "C1\\Res" ).IsValid.ShouldBeTrue();
         c.GetResource( "AssemblyResourcesTests.cs" ).IsValid.ShouldBeTrue();
@@ -28,10 +34,6 @@ public class FileSystemResourceContainerTests
 
         var fsPath = Path.GetFullPath( TestHelper.TestProjectFolder.AppendPart( "SomeType" ).AppendPart( "SomeType.cs" ) );
         locator.FullResourceName.ShouldBe( fsPath, "FileSystemContainer uses the environment Path.DirectorySeparatorChar." );
-        var content = c.GetFolder( "SomeType" );
-        content.AllResources.Count().ShouldBe( 2 );
-        var theOne = content.Resources.Single();
-        theOne.FullResourceName.ShouldEndWith( $"{Path.DirectorySeparatorChar}SomeType.cs" );
     }
 
     [Test]

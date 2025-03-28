@@ -92,6 +92,10 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     public string DisplayName => _displayName;
 
     /// <summary>
+    /// Separator is '/' (but this is meaningless).
+    /// </summary>
+    public char DirectorySeparatorChar => '/';
+    /// <summary>
     /// Gets the display name regardless of the <see cref="IsDisabled"/> state.
     /// </summary>
     public ReadOnlySpan<char> NonDisabledDisplayName => _isDisabled ? _displayName.AsSpan( 9 ) : _displayName;

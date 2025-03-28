@@ -19,11 +19,14 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// Initializes a new resource locator.
     /// </summary>
     /// <param name="container">The type resources that contains this resource.</param>
-    /// <param name="fullResourceName">the resource name in the <paramref name="container"/>. Must not be null, empty or whitespace.</param>
+    /// <param name="fullResourceName">the resource name in the <paramref name="container"/>.</param>
     public ResourceLocator( IResourceContainer container, string fullResourceName )
     {
         Throw.CheckNotNullArgument( container );
-        Throw.CheckNotNullOrWhiteSpaceArgument( fullResourceName );
+        Throw.CheckNotNullArgument( fullResourceName );
+        Throw.CheckArgument( fullResourceName.StartsWith( container.ResourcePrefix ) );
+        Throw.CheckArgument( (fullResourceName.Length - container.ResourcePrefix.Length) is >= 1 and <= IResourceContainer.MaxNameLength );
+        Throw.CheckArgument( fullResourceName[^1] is not '/' and not '\\' );
         _container = container;
         _fullName = fullResourceName;
     }

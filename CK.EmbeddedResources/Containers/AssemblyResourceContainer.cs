@@ -97,6 +97,10 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     /// <inheritdoc />
     public string DisplayName => _displayName;
 
+    /// <summary>
+    /// Separator is '/'.
+    /// </summary>
+    public char DirectorySeparatorChar => '/';
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources => MemoryMarshal.ToEnumerable( _names ).Select( p => new ResourceLocator( this, p ) );
 

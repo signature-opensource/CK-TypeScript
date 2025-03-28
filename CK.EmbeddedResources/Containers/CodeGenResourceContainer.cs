@@ -288,6 +288,10 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <inheritdoc />
     public string ResourcePrefix => String.Empty;
 
+    /// <summary>
+    /// Separator is '/'.
+    /// </summary>
+    public char DirectorySeparatorChar => '/';
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources => MemoryMarshal.ToEnumerable( _names ).Select( p => new ResourceLocator( this, p ) );
 
