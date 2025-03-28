@@ -19,11 +19,15 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     /// Initializes a new resource folder.
     /// </summary>
     /// <param name="container">The resources that contains this folder.</param>
-    /// <param name="fullFolderName">the resource name in the <paramref name="container"/>. Must not be null, empty or whitespace.</param>
+    /// <param name="fullFolderName">
+    /// The full resource name in the <paramref name="container"/>, including the <see cref="IResourceContainer.ResourcePrefix"/>.
+    /// </param>
     public ResourceFolder( IResourceContainer container, string fullFolderName )
     {
         Throw.CheckNotNullArgument( container );
-        Throw.CheckNotNullOrWhiteSpaceArgument( fullFolderName );
+        Throw.CheckNotNullOrEmptyArgument( fullFolderName );
+        Throw.CheckArgument( fullFolderName.StartsWith( container.ResourcePrefix ) );
+        Throw.CheckArgument( (fullFolderName.Length - container.ResourcePrefix.Length) is > 1 and <= IResourceContainer.MaxNameLength );
         _container = container;
         _fullName = fullFolderName;
     }

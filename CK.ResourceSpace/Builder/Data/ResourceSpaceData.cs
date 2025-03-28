@@ -82,7 +82,7 @@ public sealed class ResourceSpaceData
     public IResPackageDataCache ResPackageDataCache => _resPackageDataCache;
 
     /// <summary>
-    /// Gets the watch root. Null only if no local packages exist and "&ltAppp&gt;" package
+    /// Gets the watch root. Null only if no local packages exist and "&lt;App&gt;" package
     /// has no defined folder (<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> was not set).
     /// </summary>
     public string? WatchRoot => _watchRoot; 

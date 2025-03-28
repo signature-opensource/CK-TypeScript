@@ -1,7 +1,10 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CK.Transform.Core;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 
 namespace CK.Core;
 
@@ -22,6 +25,12 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
 
     protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData, FolderExclusion folderFilter )
     {
-        spaceData.Al
+        bool success = true;
+        var mappings = new Dictionary<NormalizedPath, ResourceLocator>();
+        foreach( var r in spaceData.AllPackageResources )
+        {
+            success &= Register( monitor, r.Resources, mappings );
+        }
+        return success;
     }
 }

@@ -12,11 +12,22 @@ namespace CK.EmbeddedResources;
 /// (that uses '/' as the folder separator) thanks to <see cref="AssemblyResources.CreateResourcesContainerForType(Core.IActivityMonitor, Type, string?, bool)"/>.
 /// </para>
 /// <para>
-/// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories and files.
+/// The <see cref="FileSystemResourceContainer"/> is a simple container for file system directories and files that uses
+/// the platform <see cref="Path.DirectorySeparatorChar"/>.
 /// </para>
 /// </summary>
 public interface IResourceContainer
 {
+    /// <summary>
+    /// Maximum <see cref="ResourceLocator.ResourceName"/> and <see cref="ResourceFolder.FolderName"/> length.
+    /// </summary>
+    public const int MaxNameLength = 512;
+
+    /// <summary>
+    /// Maximum number of directory separators in a <see cref="ResourceLocator.ResourceName"/> and <see cref="ResourceFolder.FolderName"/>.
+    /// </summary>
+    public const int MaxFolderCount = MaxNameLength / 2 - 1;
+
     /// <summary>
     /// Gets whether this <see cref="IResourceContainer"/> is valid.
     /// </summary>

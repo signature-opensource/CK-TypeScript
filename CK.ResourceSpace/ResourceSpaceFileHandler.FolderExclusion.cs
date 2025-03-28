@@ -1,4 +1,4 @@
-﻿using CK.EmbeddedResources;
+using CK.EmbeddedResources;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -13,12 +13,17 @@ public abstract partial class ResourceSpaceFileHandler
     /// </summary>
     public readonly struct FolderExclusion
     {
-        readonly string[] _folders;
+        readonly ImmutableArray<string> _folders;
 
         internal FolderExclusion( ImmutableArray<ResourceSpaceFolderHandler> folders )
         {
-            _folders = folders.Select( f => f.RootFolderName ).ToArray();
+            _folders = folders.Select( f => f.RootFolderName ).ToImmutableArray();
         }
+
+        /// <summary>
+        /// Gets all the <see cref="ResourceSpaceFolderHandler.RootFolderName"/>.
+        /// </summary>
+        public ImmutableArray<string> ExcludedFolderNames => _folders;
 
         /// <summary>
         /// Checks whether the <paramref name="resource"/> is handled by an
