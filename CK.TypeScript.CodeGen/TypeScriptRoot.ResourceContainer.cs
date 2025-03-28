@@ -81,11 +81,6 @@ public sealed partial class TypeScriptRoot : IResourceContainer
         return f != null ? new ResourceLocator( this, f.Folder.Path.Path + '/' + f.Name ) : default;
     }
 
-    ReadOnlySpan<char> IResourceContainer.GetResourceName( ResourceLocator resource )
-    {
-        return Path.GetFileName( resource.FullResourceName.AsSpan() );
-    }
-
     IEnumerable<ResourceLocator> IResourceContainer.GetResources( ResourceFolder folder )
     {
         folder.CheckContainer( this );

@@ -65,11 +65,8 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     /// <summary>
     /// Gets the name of this resource without any folder related information.
-    /// <para>
-    /// This is a simple relay to <see cref="IResourceContainer.GetResourceName(ResourceLocator)"/>.
-    /// </para>
     /// </summary>
-    public ReadOnlySpan<char> Name => _container.GetResourceName( this );
+    public ReadOnlySpan<char> Name => Path.GetFileName( _fullName.AsSpan() );
 
     /// <summary>
     /// Gets the local file path bound to this resource. See <see cref="IResourceContainer.HasLocalFilePathSupport"/>.

@@ -145,15 +145,6 @@ public interface IResourceContainer
     ReadOnlySpan<char> GetFolderName( ResourceFolder folder );
 
     /// <summary>
-    /// Gets the name of a resource (that must belong to this container)
-    /// without any folder related information. May be empty for some
-    /// resources of some container implementations.
-    /// </summary>
-    /// <param name="folder">A folder.</param>
-    /// <returns>The name of the resource.</returns>
-    ReadOnlySpan<char> GetResourceName( ResourceLocator resource );
-
-    /// <summary>
     /// Gets whether this container can contain <see cref="ResourceLocator"/> that are
     /// bound to a local file on the file system.
     /// <para>

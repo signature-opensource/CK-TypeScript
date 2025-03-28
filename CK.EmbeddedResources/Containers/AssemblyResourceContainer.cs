@@ -187,12 +187,5 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     }
 
     /// <inheritdoc />
-    public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
-    {
-        resource.CheckContainer( this );
-        return Path.GetFileName( resource.ResourceName );
-    }
-
-    /// <inheritdoc />
     public override string ToString() => _displayName;
 }

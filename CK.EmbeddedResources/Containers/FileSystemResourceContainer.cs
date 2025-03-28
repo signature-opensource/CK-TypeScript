@@ -267,12 +267,5 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     }
 
     /// <inheritdoc />
-    public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
-    {
-        resource.CheckContainer( this );
-        return Path.GetFileName( resource.ResourceName );
-    }
-
-    /// <inheritdoc />
     public override string ToString() => _displayName;
 }

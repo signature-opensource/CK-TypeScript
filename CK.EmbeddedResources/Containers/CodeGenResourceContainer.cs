@@ -420,13 +420,6 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     }
 
     /// <inheritdoc />
-    public ReadOnlySpan<char> GetResourceName( ResourceLocator resource )
-    {
-        resource.CheckContainer( this );
-        return Path.GetFileName( resource.ResourceName );
-    }
-
-    /// <inheritdoc />
     public override string ToString() => _displayName;
 
     internal static ResourceLocator DoGetResource( string fullPrefix, IResourceContainer container, ReadOnlySpan<string> names, ReadOnlySpan<char> localResourceName )

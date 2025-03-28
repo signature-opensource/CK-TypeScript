@@ -151,9 +151,6 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     public ReadOnlySpan<char> GetFolderName( ResourceFolder folder ) => default;
 
     /// <inheritdoc />
-    public ReadOnlySpan<char> GetResourceName( ResourceLocator resource ) => default;
-
-    /// <inheritdoc />
     public override string ToString() => _displayName;
 
 }
