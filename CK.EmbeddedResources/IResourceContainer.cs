@@ -48,6 +48,7 @@ public interface IResourceContainer
     /// Gets the directory separator char. Either '/' or '\\'.
     /// </summary>
     char DirectorySeparatorChar { get; }
+
     /// <summary>
     /// Gets a resource content from a locator (that must belong to this container).
     /// <para>
@@ -138,15 +139,6 @@ public interface IResourceContainer
     /// Gets the string comparer to use for the resource names.
     /// </summary>
     StringComparer NameComparer { get; }
-
-    /// <summary>
-    /// Gets the name of a folder (that must belong to this container)
-    /// without any parent folder related information. May be empty for some
-    /// resources of some container implementations.
-    /// </summary>
-    /// <param name="folder">A folder.</param>
-    /// <returns>The name of the folder.</returns>
-    ReadOnlySpan<char> GetFolderName( ResourceFolder folder );
 
     /// <summary>
     /// Gets whether this container can contain <see cref="ResourceLocator"/> that are

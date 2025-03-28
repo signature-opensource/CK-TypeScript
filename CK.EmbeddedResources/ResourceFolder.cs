@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CK.EmbeddedResources;
 
@@ -72,12 +73,16 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     }
 
     /// <summary>
-    /// Gets the name of this folder.
-    /// <para>
-    /// This is a simple relay to <see cref="IResourceContainer.GetFolderName(ResourceFolder)"/>.
-    /// </para>
+    /// Gets the name of this folder (without parent folder names).
     /// </summary>
-    public ReadOnlySpan<char> Name => _container.GetFolderName( this );
+    public ReadOnlySpan<char> Name
+    {
+        get
+        {
+            var s = FolderName;
+            return s.Length != 0 ? Path.GetFileName( s.Slice( 0, s.Length - 1 ) ) : s;
+        }
+    }
 
     /// <summary>
     /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false

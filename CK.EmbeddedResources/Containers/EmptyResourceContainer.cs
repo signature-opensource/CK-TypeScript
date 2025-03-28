@@ -152,9 +152,6 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder ) => [];
 
     /// <inheritdoc />
-    public ReadOnlySpan<char> GetFolderName( ResourceFolder folder ) => default;
-
-    /// <inheritdoc />
     public override string ToString() => _displayName;
 
 }
