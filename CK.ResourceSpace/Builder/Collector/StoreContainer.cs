@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,8 @@ using System.Linq;
 
 namespace CK.Core;
 
-sealed class StoreContainer : IResourceContainer
+[SerializationVersion(0)]
+sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
 {
     readonly IResourceContainer _container;
     readonly HashSet<ResourceLocator> _codeHandledResources;
@@ -15,6 +17,18 @@ sealed class StoreContainer : IResourceContainer
     {
         _codeHandledResources = codeHandledResources;
         _container = container;
+    }
+
+    public StoreContainer( IBinaryDeserializer d, ITypeReadInfo info )
+    {
+        _codeHandledResources = d.ReadObject<HashSet<ResourceLocator>>();
+        _container = d.ReadObject<IResourceContainer>();
+    }
+
+    public void Write( IBinarySerializer s )
+    {
+        s.WriteObject( _codeHandledResources );
+        s.WriteObject( _container );
     }
 
     public bool IsValid => _container.IsValid;
