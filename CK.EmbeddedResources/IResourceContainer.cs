@@ -136,11 +136,6 @@ public interface IResourceContainer
     IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder );
 
     /// <summary>
-    /// Gets the string comparer to use for the resource names.
-    /// </summary>
-    StringComparer NameComparer { get; }
-
-    /// <summary>
     /// Gets whether this container can contain <see cref="ResourceLocator"/> that are
     /// bound to a local file on the file system.
     /// <para>

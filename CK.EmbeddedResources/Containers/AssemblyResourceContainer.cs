@@ -105,9 +105,6 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     public IEnumerable<ResourceLocator> AllResources => MemoryMarshal.ToEnumerable( _names ).Select( p => new ResourceLocator( this, p ) );
 
     /// <inheritdoc />
-    public StringComparer NameComparer => StringComparer.Ordinal;
-
-    /// <inheritdoc />
     public string ResourcePrefix => _prefix;
 
     /// <inheritdoc />

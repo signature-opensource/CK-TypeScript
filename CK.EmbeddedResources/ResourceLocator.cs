@@ -101,14 +101,14 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="FullResourceName"/>
-    /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
+    /// must be equal (<see cref="StringComparison.Ordinal"/>).
     /// </summary>
     /// <param name="other">The other locator.</param>
     /// <returns>True if the resources are the same.</returns>
     public bool Equals( ResourceLocator other )
     {
         return _container == other._container
-               && (!IsValid || _container.NameComparer.Equals( _fullName, other._fullName ));
+               && (!IsValid || _fullName == other._fullName);
     }
 
     /// <summary>
@@ -130,7 +130,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="FullResourceName"/>
-    /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
+    /// must be equal (<see cref="StringComparison.Ordinal"/>).
     /// </summary>
     /// <param name="left">The first value.</param>
     /// <param name="right">The second value.</param>
@@ -138,7 +138,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public static bool operator !=( ResourceLocator left, ResourceLocator right ) => !(left == right);
 
     public override int GetHashCode() => IsValid
-                                            ? HashCode.Combine( Container.GetHashCode(), _container.NameComparer.GetHashCode( FullResourceName ) )
+                                            ? HashCode.Combine( Container.GetHashCode(), FullResourceName.GetHashCode() )
                                             : 0;
 
     /// <summary>

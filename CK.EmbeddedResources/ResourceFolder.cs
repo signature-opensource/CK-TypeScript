@@ -126,14 +126,14 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
 
     /// <summary>
     /// To be equal the <see cref="Container"/> must be the same and <see cref="FullFolderName"/>
-    /// must be equal for the <see cref="IResourceContainer.NameComparer"/>.
+    /// must be equal (<see cref="StringComparison.Ordinal"/>).
     /// </summary>
     /// <param name="other">The other locator.</param>
     /// <returns>True if the resources are the same.</returns>
     public bool Equals( ResourceFolder other )
     {
         return _container == other._container
-               && (_container == null || _container.NameComparer.Equals( _fullName, other._fullName ));
+               && (_container == null || _fullName == other._fullName);
     }
 
     /// <summary>
@@ -155,7 +155,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     public static bool operator !=( ResourceFolder left, ResourceFolder right ) => !(left == right);
 
     public override int GetHashCode() => IsValid
-                                            ? HashCode.Combine( Container.GetHashCode(), Container.NameComparer.GetHashCode( FullFolderName ) )
+                                            ? HashCode.Combine( Container.GetHashCode(), FullFolderName.GetHashCode() )
                                             : 0;
 
     /// <summary>

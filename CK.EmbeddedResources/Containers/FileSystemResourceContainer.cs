@@ -140,9 +140,6 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     }
 
     /// <inheritdoc />
-    public StringComparer NameComparer => StringComparer.Ordinal;
-
-    /// <inheritdoc />
     public Stream GetStream( in ResourceLocator resource )
     {
         resource.CheckContainer( this );

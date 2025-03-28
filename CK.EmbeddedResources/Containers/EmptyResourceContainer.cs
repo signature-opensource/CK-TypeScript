@@ -106,9 +106,6 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources => [];
 
-    /// <inheritdoc />
-    public StringComparer NameComparer => StringComparer.Ordinal;
-
     /// <summary>
     /// Always false.
     /// </summary>

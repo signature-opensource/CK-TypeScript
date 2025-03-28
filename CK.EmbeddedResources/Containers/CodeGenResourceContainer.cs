@@ -295,9 +295,6 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> AllResources => MemoryMarshal.ToEnumerable( _names ).Select( p => new ResourceLocator( this, p ) );
 
-    /// <inheritdoc />
-    public StringComparer NameComparer => StringComparer.Ordinal;
-
     bool IResourceContainer.HasLocalFilePathSupport => false;
 
     string? IResourceContainer.GetLocalFilePath( in ResourceLocator resource ) => null;

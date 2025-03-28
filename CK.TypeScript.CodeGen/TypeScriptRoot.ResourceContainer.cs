@@ -19,8 +19,6 @@ public sealed partial class TypeScriptRoot : IResourceContainer
 
     string IResourceContainer.ResourcePrefix => string.Empty;
 
-    StringComparer IResourceContainer.NameComparer => StringComparer.Ordinal;
-
     bool IResourceContainer.HasLocalFilePathSupport => false;
 
     char IResourceContainer.DirectorySeparatorChar => '/';
