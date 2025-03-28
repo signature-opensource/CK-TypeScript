@@ -35,7 +35,7 @@ sealed class AssetCache : ResPackageDataHandler<FinalResourceAssetSet>
     protected override FinalResourceAssetSet? Create( IActivityMonitor monitor, ResPackage package )
     {
         FinalResourceAssetSet? initial = null;
-        if( package.BeforeResources.Resources.LoadAssets( monitor,
+        if( package.Resources.Resources.LoadAssets( monitor,
                                                            package.DefaultTargetPath,
                                                            out var definitions,
                                                            _handler.RootFolderName ) )

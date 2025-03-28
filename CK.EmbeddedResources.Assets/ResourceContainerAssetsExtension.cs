@@ -370,29 +370,4 @@ public static class ResourceContainerAssetsExtension
         }
     }
 
-    /// <summary>
-    /// Does a <see cref="LoadAssets(IResourceContainer, IActivityMonitor, NormalizedPath, out ResourceAssetDefinitionSet?, string)"/>
-    /// on the <see cref="CodeStoreResources.GetSingleFolder(IActivityMonitor, ReadOnlySpan{char})"/>.
-    /// <para>
-    /// Assets don't "merge" between Store and Code: the folder in Code, if it exists, fully replaces the Store resources.
-    /// If needed, it is up to the code to generate a resource folder that account for all stored resources.
-    /// </para>
-    /// </summary>
-    /// <param name="resources">This Code and Store resources.</param>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="defaultTargetPath">The default target path: a relative path in the final target root folder.</param>
-    /// <param name="folder">The folder to load.</param>
-    /// <param name="assets">The loaded assets. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
-    /// <param name="folder">The folder to load.</param>
-    /// <returns>True on success, false on error.</returns>
-    public static bool LoadAssets( this CodeStoreResources resources,
-                                   IActivityMonitor monitor,
-                                   NormalizedPath defaultTargetPath,
-                                   out ResourceAssetDefinitionSet? assets,
-                                   string folder = "assets" )
-    {
-        var f = resources.GetSingleFolder( monitor, folder );
-        return DoLoad( monitor, f, defaultTargetPath, out assets );
-    }
-
 }

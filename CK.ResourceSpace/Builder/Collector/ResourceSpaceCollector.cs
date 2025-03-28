@@ -6,8 +6,13 @@ using System.IO;
 namespace CK.Core;
 
 /// <summary>
-/// Collected package descriptors for a resource space. This enables <see cref="ResPackageDescriptor"/>
-/// to be mutated before <see cref="ResourceSpaceDataBuilder"/> topologically sorts them.
+/// Exposes mutable <see cref="ResPackageDescriptor"/> for a resource space and
+/// the "&lt;Code&gt;" <see cref="GeneratedCodeContainer"/> to be assigned as well as
+/// the "&lt;App&gt;" <see cref="AppResourcesLocalPath"/> local path.
+/// <para>
+/// This is the input of the <see cref="ResourceSpaceDataBuilder"/> that topologically sorts
+/// the descriptors to produce the immutable <see cref="ResourceSpaceData.Packages"/>.
+/// </para>
 /// </summary>
 public sealed class ResourceSpaceCollector
 {

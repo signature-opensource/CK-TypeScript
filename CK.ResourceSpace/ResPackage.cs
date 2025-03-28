@@ -21,8 +21,8 @@ public sealed partial class ResPackage
     readonly ImmutableArray<ResPackage> _children;
     readonly AggregateId _childrenAggregateId;
     readonly IReadOnlySet<ResPackage> _allReachablePackages;
-    readonly BeforeRes _beforeResources;
-    readonly AfterRes _afterResources;
+    readonly BeforeRes _resources;
+    readonly AfterRes _resourcesAfter;
     readonly int _index;
     readonly bool _isGroup;
     readonly bool _requiresHasLocalPackage;
@@ -48,9 +48,9 @@ public sealed partial class ResPackage
                          string fullName,
                          NormalizedPath defaultTargetPath,
                          int idxBeforeResources,
-                         CodeStoreResources beforeResources,
+                         IResourceContainer beforeResources,
                          int idxAfterResources,
-                         CodeStoreResources afterResources,
+                         IResourceContainer afterResources,
                          string? localPath,
                          bool isGroup,
                          Type? type,
@@ -68,8 +68,8 @@ public sealed partial class ResPackage
         _type = type;
         _resourceIndex = dataCacheBuilder._resourceIndex;
         // Initializes the resources.
-        _beforeResources = new BeforeRes( this, beforeResources, idxBeforeResources );
-        _afterResources = new AfterRes( this, afterResources, idxAfterResources );
+        _resources = new BeforeRes( this, beforeResources, idxBeforeResources );
+        _resourcesAfter = new AfterRes( this, afterResources, idxAfterResources );
 
         // Reacheable is the core set (deduplicated Requires + Requires' Children).
         bool allIsRequired;
@@ -211,13 +211,13 @@ public sealed partial class ResPackage
     /// <summary>
     /// Gets the <see cref="IResPackageResources"/> for this package.
     /// </summary>
-    public IResPackageResources BeforeResources => _beforeResources;
+    public IResPackageResources Resources => _resources;
 
     /// <summary>
     /// Gets the <see cref="IResPackageResources"/> that apply after this package's <see cref="Children"/>
-    /// and these <see cref="BeforeResources"/>.
+    /// and these <see cref="Resources"/>.
     /// </summary>
-    public IResPackageResources AfterResources => _afterResources;
+    public IResPackageResources ResourcesAfter => _resourcesAfter;
 
     /// <summary>
     /// Gets a non null fully qualified path of this package's resources if this is a local package.
@@ -354,10 +354,10 @@ public sealed partial class ResPackage
     sealed class BeforeRes : IResPackageResources
     {
         readonly ResPackage _package;
-        readonly CodeStoreResources _resources;
+        readonly IResourceContainer _resources;
         readonly int _index;
 
-        public BeforeRes( ResPackage package, CodeStoreResources resources, int index )
+        public BeforeRes( ResPackage package, IResourceContainer resources, int index )
         {
             _package = package;
             _resources = resources;
@@ -368,9 +368,9 @@ public sealed partial class ResPackage
 
         public int Index => _index;
 
-        public IEnumerable<IResPackageResources> Reachables => _package.ReachablePackages.Select( p => p.AfterResources );
+        public IEnumerable<IResPackageResources> Reachables => _package.ReachablePackages.Select( p => p.ResourcesAfter );
 
-        public CodeStoreResources Resources => _resources;
+        public IResourceContainer Resources => _resources;
 
         public ResPackage Package => _package;
     }
@@ -378,10 +378,10 @@ public sealed partial class ResPackage
     sealed class AfterRes : IResPackageResources
     {
         readonly ResPackage _package;
-        readonly CodeStoreResources _resources;
+        readonly IResourceContainer _resources;
         readonly int _index;
 
-        public AfterRes( ResPackage package, CodeStoreResources resources, int index )
+        public AfterRes( ResPackage package, IResourceContainer resources, int index )
         {
             _package = package;
             _resources = resources;
@@ -392,9 +392,9 @@ public sealed partial class ResPackage
 
         public int Index => _index;
 
-        public IEnumerable<IResPackageResources> Reachables => _package.AfterReachablePackages.Select( p => p.AfterResources ).Append( _package.BeforeResources );
+        public IEnumerable<IResPackageResources> Reachables => _package.AfterReachablePackages.Select( p => p.ResourcesAfter ).Append( _package.Resources );
 
-        public CodeStoreResources Resources => _resources;
+        public IResourceContainer Resources => _resources;
 
         public ResPackage Package => _package;
     }

@@ -62,11 +62,11 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _reachableAggregateId = new AggregateId( r );
         _childrenAggregateId = new AggregateId( r );
 
-        var bRes = new CodeStoreResources( d.ReadObject<IResourceContainer>(), d.ReadObject<IResourceContainer>() );
-        _beforeResources = new BeforeRes( this, bRes, r.ReadNonNegativeSmallInt32() );
+        var bRes = d.ReadObject<IResourceContainer>();
+        _resources = new BeforeRes( this, bRes, r.ReadNonNegativeSmallInt32() );
 
-        var aRes = new CodeStoreResources( d.ReadObject<IResourceContainer>(), d.ReadObject<IResourceContainer>() );
-        _afterResources = new AfterRes( this, aRes, r.ReadNonNegativeSmallInt32() );
+        var aRes = d.ReadObject<IResourceContainer>();
+        _resourcesAfter = new AfterRes( this, aRes, r.ReadNonNegativeSmallInt32() );
     }
 
     public void Write( IBinarySerializer s )
@@ -105,11 +105,9 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _reachableAggregateId.Write( w );
         _childrenAggregateId.Write( w );
 
-        s.WriteObject( _beforeResources.Resources.Code );
-        s.WriteObject( _beforeResources.Resources.Store );
-        w.WriteNonNegativeSmallInt32( _beforeResources.Index );
-        s.WriteObject( _afterResources.Resources.Code );
-        s.WriteObject( _afterResources.Resources.Store );
-        w.WriteNonNegativeSmallInt32( _afterResources.Index );
+        s.WriteObject( _resources.Resources );
+        w.WriteNonNegativeSmallInt32( _resources.Index );
+        s.WriteObject( _resourcesAfter.Resources );
+        w.WriteNonNegativeSmallInt32( _resourcesAfter.Index );
     }
 }

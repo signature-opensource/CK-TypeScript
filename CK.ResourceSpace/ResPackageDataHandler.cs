@@ -68,7 +68,7 @@ public abstract class ResPackageDataHandler<T> where T : class
             var before = GetAggregate( monitor, reachableAggregateId );
             if( before != null )
             {
-                result = Combine( monitor, package.BeforeResources, before );
+                result = Combine( monitor, package.Resources, before );
             }
         }
         if( result != null && package.Children.Length > 0 )
@@ -80,7 +80,7 @@ public abstract class ResPackageDataHandler<T> where T : class
         }
         if( result != null )
         {
-            result = Combine( monitor, package.AfterResources, result );
+            result = Combine( monitor, package.ResourcesAfter, result );
         }
         return result;
     }

@@ -39,7 +39,7 @@ sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
     protected override FinalTranslationSet? Create( IActivityMonitor monitor, ResPackage package )
     {
         FinalTranslationSet? initial = null;
-        if( package.BeforeResources.Resources.LoadTranslations( monitor,
+        if( package.Resources.Resources.LoadTranslations( monitor,
                                                                 _activeCultures,
                                                                 out var definitions,
                                                                 _handler.RootFolderName ) )

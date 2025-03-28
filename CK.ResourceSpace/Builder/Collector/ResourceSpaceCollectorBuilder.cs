@@ -6,17 +6,26 @@ using System.Xml;
 namespace CK.Core;
 
 /// <summary>
+/// Provided context to the <see cref="ResPackageDescriptor"/>.
+/// </summary>
+interface IResPackageDescriptorContext
+{
+    void RegisterCodeHandledResources( ResourceLocator resource );
+}
+
+/// <summary>
 /// Builder for <see cref="ResourceSpaceCollector"/> that is the first step to produce a
 /// <see cref="ResourceSpace"/>. This enable resource packages to be registered from a type (that must be decorated
 /// with at least one <see cref="IEmbeddedResourceTypeAttribute"/> attribute) or from any <see cref="IResourceContainer"/>.
 /// </summary>
-public sealed class ResourceSpaceCollectorBuilder
+public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
 {
     // Packages are indexed by their FullName, their Type if package is defined
     // by type and by their Resources Store container.
     // The IResourceContainer key is used by this builder only to check that no resource
     // containers are shared by 2 packages.
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
+    readonly HashSet<ResourceLocator> _codeHandledResources;
     readonly List<ResPackageDescriptor> _packages;
     int _localPackageCount;
     int _typedPackageCount;
@@ -27,6 +36,7 @@ public sealed class ResourceSpaceCollectorBuilder
     {
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
+        _codeHandledResources = new HashSet<ResourceLocator>();
     }
 
     /// <summary>
@@ -124,7 +134,7 @@ public sealed class ResourceSpaceCollectorBuilder
         // is local, then this package is a local one.
         // For simplicity we only keep a single local path at the package level and by design we
         // privilegiate the "/Res" over the "/Res[After]".
-        // Live engine will be in charge to handle the one or more FileSystemResourceContainer at their level.
+        // Live engine will be in charge to handle the single or two FileSystemResourceContainer at their level.
         string? localPath = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                                 ? fs.ResourcePrefix
                                 : resourceAfterStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport
@@ -134,12 +144,12 @@ public sealed class ResourceSpaceCollectorBuilder
         {
             ++_localPackageCount;
         }
-        var p = new ResPackageDescriptor( _packageIndex,
+        var p = new ResPackageDescriptor( this,
                                           fullName,
                                           type,
                                           defaultTargetPath,
-                                          resources: new CodeStoreResources( resourceStore ),
-                                          afterResources: new CodeStoreResources( resourceAfterStore ),
+                                          resources: new StoreContainer( _codeHandledResources, resourceStore ),
+                                          afterResources: new StoreContainer( _codeHandledResources, resourceAfterStore ),
                                           localPath );
         _packages.Add( p );
         _packageIndex.Add( fullName, p );
@@ -151,6 +161,11 @@ public sealed class ResourceSpaceCollectorBuilder
             _packageIndex.Add( type, p );
         }
         return p;
+    }
+
+    void IResPackageDescriptorContext.RegisterCodeHandledResources( ResourceLocator resource )
+    {
+        _codeHandledResources.Add( resource );
     }
 
     /// <summary>
@@ -167,12 +182,10 @@ public sealed class ResourceSpaceCollectorBuilder
             Throw.DebugAssert( r.Package == null );
             if( r.Type != null )
             {
-                success &= r.InitializeFromType( monitor );
+                success &= r.InitializeFromType( monitor, _packageIndex );
                 // Detect a useless Package.xml for the type: currently, there's
-                // no "merge" possible, tye type drives.
-                // Lookup in both Code/Store.
-                var descriptor = r.Resources.Store.GetResource( "Package.xml" );
-                if( !descriptor.IsValid ) descriptor = r.Resources.Code.GetResource( "Package.xml" );
+                // no "merge" possible, the type drives.
+                var descriptor = r.Resources.GetResource( "Package.xml" );
                 if( descriptor.IsValid )
                 {
                     monitor.Warn( $"Found {descriptor} for type '{r.Type:N}'. Ignored." );
@@ -180,7 +193,7 @@ public sealed class ResourceSpaceCollectorBuilder
             }
             else
             {
-                var descriptor = r.Resources.GetSingleResource( monitor, "Package.xml" );
+                var descriptor = r.Resources.GetResource( "Package.xml" );
                 if( descriptor.IsValid )
                 {
                     try

@@ -92,27 +92,4 @@ public static class ResourceContainerExtensions
         folder = parentFolder.GetFolder( folderName );
         return folder.IsValid;
     }
-
-    /// <inheritdoc cref="CodeStoreResources.GetSingleResource(IActivityMonitor, ReadOnlySpan{char})"/>
-    /// <param name="codeStore">This <see cref="CodeStoreResources"/>.</param>
-    public static bool TryGetSingleResource( this CodeStoreResources codeStore,
-                                             IActivityMonitor monitor,
-                                             ReadOnlySpan<char> resourceName,
-                                             out ResourceLocator locator )
-    {
-        locator = codeStore.GetSingleResource( monitor, resourceName );
-        return locator.IsValid;
-    }
-
-    /// <inheritdoc cref="CodeStoreResources.GetSingleFolder(IActivityMonitor, ReadOnlySpan{char})"/>
-    /// <param name="codeStore">This <see cref="CodeStoreResources"/>.</param>
-    public static bool TryGetSingleFolder( this CodeStoreResources codeStore,
-                                           IActivityMonitor monitor,
-                                           ReadOnlySpan<char> folderName,
-                                           out ResourceFolder folder )
-    {
-        folder = codeStore.GetSingleFolder( monitor, folderName );
-        return folder.IsValid;
-    }
-
 }

@@ -12,12 +12,12 @@ namespace CK.Core;
 /// </summary>
 public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDependentItemContainerRef
 {
-    readonly IReadOnlyDictionary<object,ResPackageDescriptor> _collector;
+    readonly IResPackageDescriptorContext _context;
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
-    readonly CodeStoreResources _resources;
-    readonly CodeStoreResources _afterResources;
+    readonly StoreContainer _resources;
+    readonly StoreContainer _afterResources;
     readonly string? _localPath;
     ResPackageDescriptor? _package;
     List<ResPackageDescriptor>? _requires;
@@ -26,16 +26,16 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     List<ResPackageDescriptor>? _children;
     bool _isGroup;
 
-    internal ResPackageDescriptor( IReadOnlyDictionary<object, ResPackageDescriptor> collector,
+    internal ResPackageDescriptor( IResPackageDescriptorContext context,
                                    string fullName,
                                    Type? type,
                                    NormalizedPath defaultTargetPath,
-                                   CodeStoreResources resources,
-                                   CodeStoreResources afterResources,
+                                   StoreContainer resources,
+                                   StoreContainer afterResources,
                                    string? localPath )
     {
         Throw.DebugAssert( resources != afterResources );
-        _collector = collector;
+        _context = context;
         _fullName = fullName;
         _type = type;
         _defaultTargetPath = defaultTargetPath;
@@ -60,14 +60,35 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public string? LocalPath => _localPath;
 
     /// <summary>
-    /// Gets the <see cref="CodeStoreResources"/> for this package.
+    /// Gets the "Res" resources for this package.
     /// </summary>
-    public CodeStoreResources Resources => _resources;
+    public IResourceContainer Resources => _resources;
 
     /// <summary>
-    /// Gets the <see cref="CodeStoreResources"/> that apply after this package's <see cref="Children"/>.
+    /// Gets the "Res[After]" resources for this package.
+    /// They apply after this package's <see cref="Children"/>.
     /// </summary>
-    public CodeStoreResources AfterResources => _afterResources;
+    public IResourceContainer AfterResources => _afterResources;
+
+    /// <summary>
+    /// Removes a resource that must belong to <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// from the stored resources (strictly speaking, the resource is "hidden").
+    /// <para>
+    /// This enable code generators to take control of a resource that they want to handle directly.
+    /// The resource will no more appear in the stores and won't be handled by
+    /// <see cref="ResourceSpaceFolderHandler"/> and <see cref="ResourceSpaceFileHandler"/>.
+    /// </para>
+    /// <para>
+    /// How the removed resource is "transfered" (or not) in the <see cref="ResourceSpaceCollector.GeneratedCodeContainer"/>
+    /// is up to the code generators.
+    /// </para>
+    /// </summary>
+    /// <param name="resource">The resource to remove from stores.</param>
+    public void RemoveCodeHandledResource( ResourceLocator resource )
+    {
+        Throw.CheckArgument( resource.Container == Resources || resource.Container == AfterResources );
+        _context.RegisterCodeHandledResources( resource );
+    }
 
     /// <summary>
     /// Gets the default target path that will prefix resources that are items.
@@ -94,7 +115,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         {
             if( value != null )
             {
-                if( value._collector != _collector )
+                if( value._context != _context )
                 {
                     Throw.ArgumentException( nameof( value ), $"Package mismatch. The package '{value.FullName}' belongs to another collector." );
                 }
@@ -127,7 +148,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// </summary>
     public IList<ResPackageDescriptor> Groups => _groups ??= new List<ResPackageDescriptor>();
 
-    internal bool InitializeFromType( IActivityMonitor monitor )
+    internal bool InitializeFromType( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
     {
         Throw.DebugAssert( _type != null );
         bool success = true;
@@ -138,29 +159,33 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                                                      GenType: a.GetType().GetGenericTypeDefinition(),
                                                      GenArgs: a.GetType().GetGenericArguments()) );
 
-        HandlePackage( monitor, ref success, attributes, genAttributes );
+        HandlePackage( monitor, packageIndex, ref success, attributes, genAttributes );
 
         // No error frm now on, only warnings.
         // Starts with the type: any duplicate is necessarily from a generic attribute parameter.
         HandleMultiType( monitor,
+                         packageIndex,
                          genAttributes,
                          ref _requires,
                          "Requires",
                          typeof( RequiresAttribute<> ), typeof( RequiresAttribute<,> ), typeof( RequiresAttribute<,,> ),
                          typeof( RequiresAttribute<,,,> ), typeof( RequiresAttribute<,,,,> ), typeof( RequiresAttribute<,,,,,> ) );
         HandleMultiType( monitor,
+                         packageIndex,
                          genAttributes,
                          ref _requiredBy,
                          "RequiredBy",
                          typeof( RequiredByAttribute<> ), typeof( RequiredByAttribute<,> ), typeof( RequiredByAttribute<,,> ),
                          typeof( RequiredByAttribute<,,,> ), typeof( RequiredByAttribute<,,,,> ), typeof( RequiredByAttribute<,,,,,> ) );
         HandleMultiType( monitor,
+                         packageIndex,
                          genAttributes,
                          ref _groups,
                          "Groups",
                          typeof( GroupsAttribute<> ), typeof( GroupsAttribute<,> ), typeof( GroupsAttribute<,,> ),
                          typeof( GroupsAttribute<,,,> ), typeof( GroupsAttribute<,,,,> ), typeof( GroupsAttribute<,,,,,> ) );
         HandleMultiType( monitor,
+                         packageIndex,
                          genAttributes,
                          ref _children,
                          "Children",
@@ -171,28 +196,29 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         var req = attributes.OfType<RequiresAttribute>().FirstOrDefault();
         if( req != null )
         {
-            HandleMultiName( monitor, req.CommaSeparatedPackageFullnames, ref _requires, "Requires" );
+            HandleMultiName( monitor, packageIndex, req.CommaSeparatedPackageFullnames, ref _requires, "Requires" );
         }
         var reqBy = attributes.OfType<RequiredByAttribute>().FirstOrDefault();
         if( reqBy != null )
         {
-            HandleMultiName( monitor, reqBy.CommaSeparatedPackageFullnames, ref _requiredBy, "RequiredBy" );
+            HandleMultiName( monitor, packageIndex, reqBy.CommaSeparatedPackageFullnames, ref _requiredBy, "RequiredBy" );
         }
         var groups = attributes.OfType<GroupsAttribute>().FirstOrDefault();
         if( groups != null )
         {
-            HandleMultiName( monitor, groups.CommaSeparatedPackageFullnames, ref _groups, "Groups" );
+            HandleMultiName( monitor, packageIndex, groups.CommaSeparatedPackageFullnames, ref _groups, "Groups" );
         }
         var children = attributes.OfType<ChildrenAttribute>().FirstOrDefault();
         if( children != null )
         {
-            HandleMultiName( monitor, children.CommaSeparatedPackageFullnames, ref _children, "Children" );
+            HandleMultiName( monitor, packageIndex, children.CommaSeparatedPackageFullnames, ref _children, "Children" );
         }
 
         return success;
     }
 
     void HandleMultiName( IActivityMonitor monitor,
+                          IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex,
                           string[] commaSeparatedPackageFullnames,
                           ref List<ResPackageDescriptor>? list, string relName )
     {
@@ -200,7 +226,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         {
             foreach( var name in n.Split(',',StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries ) )
             {
-                if( !_collector.TryGetValue( name, out var package ) )
+                if( !packageIndex.TryGetValue( name, out var package ) )
                 {
                     monitor.Warn( $"[{relName}( \"{name}\" )] on type '{_type:N}' skipped as target full name is not registered in this ResourceSpace." );
                 }
@@ -234,6 +260,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     }
 
     void HandlePackage( IActivityMonitor monitor,
+                        IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex,
                         ref bool success,
                         object[] attributes,
                         IEnumerable<(object Attribute, Type GenType, Type[] GenArgs)> genAttributes )
@@ -241,7 +268,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         var packageNAttr = attributes.OfType<PackageAttribute>().FirstOrDefault();
         if( packageNAttr != null )
         {
-            if( !_collector.TryGetValue( packageNAttr.PackageFullName, out var package ) )
+            if( !packageIndex.TryGetValue( packageNAttr.PackageFullName, out var package ) )
             {
                 monitor.Warn( $"[Package( \"{packageNAttr.PackageFullName}\" )] on type '{_type:N}' skipped as target full name is not registered in this ResourceSpace." );
             }
@@ -260,7 +287,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
             }
             else
             {
-                if( !_collector.TryGetValue( packageTAttr, out var package ) )
+                if( !packageIndex.TryGetValue( packageTAttr, out var package ) )
                 {
                     monitor.Warn( $"[Package<{packageTAttr:N}>] on type '{_type:N}' skipped as type target is not registered in this ResourceSpace." );
                 }
@@ -270,6 +297,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     }
 
     void HandleMultiType( IActivityMonitor monitor,
+                          IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex,
                           IEnumerable<(object Attribute, Type GenType, Type[] GenArgs)> genAttributes,
                           ref List<ResPackageDescriptor>? list,
                           string relName,
@@ -277,7 +305,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     {
         foreach( var t in genAttributes.Where( a => genTypes.Contains( a.GenType ) ) )
         {
-            if( !_collector.TryGetValue( t, out var package ) )
+            if( !packageIndex.TryGetValue( t, out var package ) )
             {
                 monitor.Warn( $"[{relName}<{t:N}>] on type '{_type:N}' skipped as type target is not registered in this ResourceSpace." );
             }

@@ -38,7 +38,7 @@ public sealed class ResourceSpaceData
     /// <summary>
     /// Gets the packages indexed by their <see cref="ResPackage.FullName"/>, <see cref="ResPackage.Type"/> (if
     /// the package is defined by a type), and by the <see cref="CodeStoreResources.Code"/> and <see cref="CodeStoreResources.Store"/>
-    /// resource containers of <see cref="ResPackage.BeforeResources"/> and <see cref="ResPackage.AfterResources"/>.
+    /// resource containers of <see cref="ResPackage.Resources"/> and <see cref="ResPackage.ResourcesAfter"/>.
     /// </summary>
     public IReadOnlyDictionary<object, ResPackage> PackageIndex => _packageIndex;
 

@@ -52,17 +52,17 @@ public sealed class ResourceSpaceDataBuilder
         //       change anything.
         static ResPackage CreateCodePackage( ResPackageDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
         {
-            var codeContainer = generatedCodeContainer ?? new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
+            var codeContainer = generatedCodeContainer ?? new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             // Code package has no content and is by construction the first package: its index and
             // the indexes of its resources are known.
             return new ResPackage( dataCacheBuilder,
                                    "<Code>",
                                    defaultTargetPath: default,
                                    idxBeforeResources: 0,
-                                   beforeResources: new CodeStoreResources( noHeadRes, noHeadRes ),
+                                   beforeResources: noHeadRes,
                                    idxAfterResources: 1,
-                                   afterResources: new CodeStoreResources( codeContainer, noHeadRes ),
+                                   afterResources: codeContainer,
                                    localPath: null,
                                    isGroup: false,
                                    type: null,
@@ -81,7 +81,7 @@ public sealed class ResourceSpaceDataBuilder
         //       change anything.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
                                             ResPackageDataCacheBuilder dataCacheBuilder,
-                                            ImmutableArray< ResPackage> appRequires,
+                                            ImmutableArray<ResPackage> appRequires,
                                             int index )
         {
             IResourceContainer appResStore;
@@ -99,9 +99,9 @@ public sealed class ResourceSpaceDataBuilder
                                              "<App>",
                                              defaultTargetPath: default,
                                              idxBeforeResources: 2 * index,
-                                             beforeResources: new CodeStoreResources( noAppRes, appResStore ),
+                                             beforeResources: appResStore,
                                              idxAfterResources: 2 * index + 1,
-                                             afterResources: new CodeStoreResources( noAppRes, noAppRes ),
+                                             afterResources: noAppRes,
                                              localPath: appLocalPath,
                                              isGroup: false,
                                              type: null,
@@ -162,8 +162,8 @@ public sealed class ResourceSpaceDataBuilder
         packageIndex.Add( codePackage.FullName, codePackage );
         if( generatedCodeContainer != null )
         {
-            Throw.DebugAssert( codePackage.AfterResources.Resources.Code == generatedCodeContainer );
-            resourceIndex.Add( generatedCodeContainer, codePackage.AfterResources );
+            Throw.DebugAssert( codePackage.ResourcesAfter.Resources == generatedCodeContainer );
+            resourceIndex.Add( generatedCodeContainer, codePackage.ResourcesAfter );
         }
 
         // This is the common requirements of all ResPackage that have no requirement.
@@ -178,11 +178,9 @@ public sealed class ResourceSpaceDataBuilder
             if( s.HeadForGroup != null )
             {
                 ResPackageDescriptor d = s.Item;
-                // Close the CodeGen resources.
-                if( d.Resources.Code is CodeGenResourceContainer c1 ) c1.Close();
-                if( d.AfterResources.Code is CodeGenResourceContainer c2 ) c2.Close();
-                Throw.DebugAssert( d.Resources.Store is not CodeGenResourceContainer
-                                   && d.AfterResources.Store is not CodeGenResourceContainer );
+                // Close the CodeGen resources (if they are code generated).
+                if( d.Resources is CodeGenResourceContainer c1 ) c1.Close();
+                if( d.AfterResources is CodeGenResourceContainer c2 ) c2.Close();
 
                 Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
                                    !s.Requires.Intersect( s.Children ).Any() );
@@ -210,13 +208,11 @@ public sealed class ResourceSpaceDataBuilder
                 {
                     packageIndex.Add( p.Type, p );
                 }
-                resourceIndex.Add( p.BeforeResources.Resources.Store, p.BeforeResources );
-                resourceIndex.Add( p.BeforeResources.Resources.Code, p.BeforeResources );
-                resourceIndex.Add( p.AfterResources.Resources.Store, p.AfterResources );
-                resourceIndex.Add( p.AfterResources.Resources.Code, p.AfterResources );
+                resourceIndex.Add( p.Resources.Resources, p.Resources );
+                resourceIndex.Add( p.ResourcesAfter.Resources, p.ResourcesAfter );
                 // Enlist the package resources.
-                allPackageResources[p.BeforeResources.Index] = p.BeforeResources;
-                allPackageResources[p.AfterResources.Index] = p.AfterResources;
+                allPackageResources[p.Resources.Index] = p.Resources;
+                allPackageResources[p.ResourcesAfter.Index] = p.ResourcesAfter;
                 // Track the watch root.
                 if( p.LocalPath != null )
                 {
@@ -253,7 +249,7 @@ public sealed class ResourceSpaceDataBuilder
                 // watch the "<App> folder.
                 watchRoot = appLocalPath;
             }
-            resourceIndex.Add( appPackage.BeforeResources.Resources.Store, appPackage.BeforeResources );
+            resourceIndex.Add( appPackage.Resources.Resources, appPackage.Resources );
             bLocal.Add( appPackage );
         }
         Throw.DebugAssert( "Expected size reached.", packageIndex.Count == packageIndexSize );
@@ -263,6 +259,8 @@ public sealed class ResourceSpaceDataBuilder
         space._exposedPackages = new OneBasedArray( packages );
         space._localPackages = bLocal.MoveToImmutable();
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
+        space._codePackage = codePackage;
+        space._appPackage = appPackage;
         Throw.DebugAssert( (space._localPackages.Length != 0) == (watchRoot != null) );
 
         space._watchRoot = watchRoot;

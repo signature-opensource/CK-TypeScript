@@ -75,50 +75,6 @@ public static class ResourceContainerGlobalizationExtension
         return true;
     }
 
-    /// <summary>
-    /// Does a <see cref="LoadTranslations(CodeStoreResources, IActivityMonitor, IReadOnlySet{NormalizedCultureInfo}, out TranslationDefinitionSet?, string, bool)"/>
-    /// on the <see cref="CodeStoreResources.GetSingleFolder(IActivityMonitor, ReadOnlySpan{char})"/>.
-    /// <para>
-    /// Translations don't "merge" between Store and Code: the folder in Code, if it exists, fully replaces the Store resources.
-    /// If needed, it is up to the code to generate a resource folder that account for all stored resources.
-    /// </para>
-    /// </summary>
-    /// <param name="resources">This Code and Store resources.</param>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="activeCultures">The cultures to consider. Cultures not in this set are skipped.</param>
-    /// <param name="translations">The loaded translations. Can be null on success if no "<paramref name="folder"/>/" exists.</param>
-    /// <param name="folder">The folder to load (typically "locales" or "ts-locales").</param>
-    /// <param name="isOverrideFolder">True for pure override folder (no new resources are allowed).</param>
-    /// <returns>True on success, false on error.</returns>
-    public static bool LoadTranslations( this CodeStoreResources resources,
-                                         IActivityMonitor monitor,
-                                         ActiveCultureSet activeCultures,
-                                         out TranslationDefinitionSet? translations,
-                                         string folder,
-                                         bool isOverrideFolder = false )
-    {
-        Throw.CheckNotNullOrWhiteSpaceArgument( folder );
-        if( resources.TryGetSingleFolder( monitor, folder, out var content ) )
-        {
-            bool unactiveCultureWarned = false;
-            using( monitor.OpenInfo( $"Reading {content}." ) )
-            {
-                var defaultSet = CreateRoot( monitor, activeCultures, content, isOverrideFolder );
-                if( defaultSet != null )
-                {
-                    // Whe Code overrides, we may decide here to merge the content.AllResources with
-                    // the Store's folder content here. This will enable Code to be able to provide only
-                    // some culture overrides instead of being obliged (when overriding) to provide all the
-                    // cultures.
-                    translations = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
-                    return translations != null;
-                }
-            }
-        }
-        translations = null;
-        return true;
-    }
-
     static TranslationDefinitionSet? CreateRoot( IActivityMonitor monitor, ActiveCultureSet activeCultures, ResourceFolder folder, bool isOverrideFolder )
     {
         if( folder.TryGetResource( "default.jsonc", out var defFile )
