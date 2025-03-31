@@ -25,7 +25,29 @@ sealed class ResPackageDataCache : IInternalResPackageDataCache
         _stableAggregates = stableAggregates;
     }
 
-    void IResPackageDataCache.LocalOnly() { }
+    void IResPackageDataCache.LocalImplementationOnly() { }
+
+    public void Write( ICKBinaryWriter w )
+    {
+        w.WriteNonNegativeSmallInt32( _dataCacheLength );
+        Write( w, _localAggregates );
+        Write( w, _stableAggregates );
+
+        static void Write( ICKBinaryWriter w, List<AggregateKey> aggregateKeys )
+        {
+            w.WriteNonNegativeSmallInt32( aggregateKeys.Count );
+            foreach( var k in aggregateKeys )
+            {
+                var indexes = k.PackageIndexes;
+                w.WriteNonNegativeSmallInt32( indexes.Length );
+                foreach( var i in indexes )
+                {
+                    w.Write( i );
+                }
+            }
+        }
+
+    }
 
     public int DataCacheLength => _dataCacheLength;
 

@@ -1,10 +1,8 @@
-using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace CK.Core;
@@ -219,12 +217,7 @@ public sealed partial class ResPackage
     /// </summary>
     public IResPackageResources ResourcesAfter => _resourcesAfter;
 
-    /// <summary>
-    /// Gets a non null fully qualified path of this package's resources if this is a local package.
-    /// <para>
-    /// By convention, this is the "/Res" path (not the "Res[After]" one).
-    /// </para>
-    /// </summary>
+    /// <inheritdoc cref="ResPackageDescriptor.LocalPath"/>
     public string? LocalPath => _localPath;
 
     /// <summary>
@@ -349,53 +342,5 @@ public sealed partial class ResPackage
         return type != null && !fullName.EndsWith( type.Name )
                 ? $"{fullName} ({type.Name})"
                 : fullName;
-    }
-
-    sealed class BeforeRes : IResPackageResources
-    {
-        readonly ResPackage _package;
-        readonly IResourceContainer _resources;
-        readonly int _index;
-
-        public BeforeRes( ResPackage package, IResourceContainer resources, int index )
-        {
-            _package = package;
-            _resources = resources;
-            _index = index;
-        }
-
-        public bool IsAfter => false;
-
-        public int Index => _index;
-
-        public IEnumerable<IResPackageResources> Reachables => _package.ReachablePackages.Select( p => p.ResourcesAfter );
-
-        public IResourceContainer Resources => _resources;
-
-        public ResPackage Package => _package;
-    }
-
-    sealed class AfterRes : IResPackageResources
-    {
-        readonly ResPackage _package;
-        readonly IResourceContainer _resources;
-        readonly int _index;
-
-        public AfterRes( ResPackage package, IResourceContainer resources, int index )
-        {
-            _package = package;
-            _resources = resources;
-            _index = index;
-        }
-
-        public bool IsAfter => true;
-
-        public int Index => _index;
-
-        public IEnumerable<IResPackageResources> Reachables => _package.AfterReachablePackages.Select( p => p.ResourcesAfter ).Append( _package.Resources );
-
-        public IResourceContainer Resources => _resources;
-
-        public ResPackage Package => _package;
     }
 }

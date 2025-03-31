@@ -2,6 +2,7 @@ using CK.Core;
 using CK.TypeScript.LiveEngine;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -22,25 +23,27 @@ monitor.Output.RegisterClient( new ColoredActivityMonitorConsoleClient() );
 CancellationTokenSource ctrlCHandler = new CancellationTokenSource();
 using var sigInt = PosixSignalRegistration.Create( PosixSignal.SIGINT, c => ctrlCHandler.Cancel() );
 
-var pathContext = new LiveStatePathContext( Environment.CurrentDirectory );
-var stateFilesFilter = new CKGenTransformFilter( pathContext );
-
 // Brutal but enough: by design versions are aligned. We don't need to bother
 // with different versions. But this doesn't (shouldn't) handle native libraries.
 // If native library support is required, this would need to be enhanced.
 AssemblyLoadContext.Default.Resolving += static ( AssemblyLoadContext ctx, AssemblyName a ) =>
 {
-    return ctx.LoadFromAssemblyPath( System.IO.Path.Combine( AppContext.BaseDirectory, a.Name + ".dll" ) );
+    return ctx.LoadFromAssemblyPath( Path.Combine( AppContext.BaseDirectory, a.Name + ".dll" ) );
 };
 
+var ckGenAppPath = Path.Combine( Environment.CurrentDirectory, "ck-gen-app" ) + Path.DirectorySeparatorChar;
+var liveStateFilePath = ckGenAppPath + ResourceSpace.LiveStateFileName;
+
+CKGenAppFilter? stateFilesFilter = null;
 while( !ctrlCHandler.IsCancellationRequested )
 {
     monitor.Info( $"""
                     Waiting for file:
-                    -> {pathContext.PrimaryStateFile}
+                    -> {liveStateFilePath}
                     """ );
-    var liveState = await LiveState.WaitForStateAsync( monitor, pathContext, ctrlCHandler.Token );
+    var liveState = await LiveState.WaitForStateAsync( monitor, liveStateFilePath, ctrlCHandler.Token );
     monitor.Info( "Running watcher." );
+    stateFilesFilter ??= new CKGenAppFilter( liveState );
     var runner = new Runner( liveState, stateFilesFilter );
     await runner.RunAsync( monitor, ctrlCHandler.Token );
     monitor.Info( "Watcher stopped." );

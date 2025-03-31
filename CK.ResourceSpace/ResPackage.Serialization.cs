@@ -3,12 +3,14 @@ using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 
 namespace CK.Core;
 
 [SerializationVersion(0)]
 public sealed partial class ResPackage : ICKSlicedSerializable
 {
+    [EditorBrowsable( EditorBrowsableState.Never )]
     public ResPackage( IBinaryDeserializer d, ITypeReadInfo info )
     {
         var r = d.Reader;
@@ -25,6 +27,8 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _requiresHasLocalPackage = r.ReadBoolean();
         _reachableHasLocalPackage = r.ReadBoolean();
         _reachablePackages = d.ReadNullableObject<IReadOnlySet<ResPackage>>() ?? ImmutableHashSet<ResPackage>.Empty;
+        _resources = d.ReadObject<BeforeRes>();
+        _resourcesAfter = d.ReadObject<AfterRes>();
 
         int expectedSize = r.ReadNonNegativeSmallInt32();
         if( expectedSize > 0 )
@@ -61,14 +65,9 @@ public sealed partial class ResPackage : ICKSlicedSerializable
 
         _reachableAggregateId = new AggregateId( r );
         _childrenAggregateId = new AggregateId( r );
-
-        var bRes = d.ReadObject<IResourceContainer>();
-        _resources = new BeforeRes( this, bRes, r.ReadNonNegativeSmallInt32() );
-
-        var aRes = d.ReadObject<IResourceContainer>();
-        _resourcesAfter = new AfterRes( this, aRes, r.ReadNonNegativeSmallInt32() );
     }
 
+    [EditorBrowsable( EditorBrowsableState.Never )]
     public void Write( IBinarySerializer s )
     {
         var w = s.Writer;
@@ -81,6 +80,8 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         s.WriteValue( _requires );
         s.WriteValue( _children );
         s.WriteObject( _resourceIndex );
+        s.WriteObject( _resources );
+        s.WriteObject( _resourcesAfter );
 
         w.Write( _requiresHasLocalPackage );
         w.Write( _reachableHasLocalPackage );
@@ -104,10 +105,5 @@ public sealed partial class ResPackage : ICKSlicedSerializable
 
         _reachableAggregateId.Write( w );
         _childrenAggregateId.Write( w );
-
-        s.WriteObject( _resources.Resources );
-        w.WriteNonNegativeSmallInt32( _resources.Index );
-        s.WriteObject( _resourcesAfter.Resources );
-        w.WriteNonNegativeSmallInt32( _resourcesAfter.Index );
     }
 }

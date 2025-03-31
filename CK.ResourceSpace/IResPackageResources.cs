@@ -45,5 +45,11 @@ public interface IResPackageResources
     /// Gets the package that defines these resources.
     /// </summary>
     ResPackage Package { get; }
+
+    /// <summary>
+    /// Gets the local folder path if the <see cref="Resources"/> are in a <see cref="FileSystemResourceContainer"/>
+    /// with a true <see cref="FileSystemResourceContainer.HasLocalFilePathSupport"/>.
+    /// </summary>
+    string? LocalPath { get; }
 }
 

@@ -1,22 +1,20 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 
 namespace CK.Core;
 
 /// <summary>
-/// Provided context to the <see cref="ResPackageDescriptor"/>.
-/// </summary>
-interface IResPackageDescriptorContext
-{
-    void RegisterCodeHandledResources( ResourceLocator resource );
-}
-
-/// <summary>
 /// Builder for <see cref="ResourceSpaceCollector"/> that is the first step to produce a
 /// <see cref="ResourceSpace"/>. This enable resource packages to be registered from a type (that must be decorated
 /// with at least one <see cref="IEmbeddedResourceTypeAttribute"/> attribute) or from any <see cref="IResourceContainer"/>.
+/// <para>
+/// This initial builder also collects all the fundamental information required to fully update a target
+/// code generated folder including the Live state.
+/// </para>
 /// </summary>
 public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
 {
@@ -30,26 +28,110 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     int _localPackageCount;
     int _typedPackageCount;
     IResourceContainer? _generatedCodeContainer;
+    string _ckGenPath;
     string? _appResourcesLocalPath;
+    string? _ckWatchFolderPath;
 
+    /// <summary>
+    /// Initializes a new collector that must be configured.
+    /// </summary>
     public ResourceSpaceCollectorBuilder()
     {
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
         _codeHandledResources = new HashSet<ResourceLocator>();
+        _ckGenPath = string.Empty;
     }
 
     /// <summary>
-    /// Gets or sets the Code generated resource container.
-    /// When let to null, an empty container is used.
+    /// Required code generated target path that will be created or updated.
+    /// <para>
+    /// This folder is updated on each generation. It cannot be below nor above the <see cref="AppResourcesLocalPath"/>
+    /// or the <see cref="CKWatchFolderPath"/>.
+    /// </para>
     /// </summary>
-    public IResourceContainer? GeneratedCodeContainer { get => _generatedCodeContainer; set => _generatedCodeContainer = value; }
+    public string CKGenPath
+    {
+        get => _ckGenPath;
+        set
+        {
+            Throw.CheckArgument( !string.IsNullOrWhiteSpace( value ) );
+            Throw.CheckArgument( Path.IsPathFullyQualified( value ) );
+            value = Path.GetFullPath( value );
+            if( value[^1] != Path.DirectorySeparatorChar )
+            {
+                value += Path.DirectorySeparatorChar;
+            }
+            _ckGenPath = value;
+        }
+    }
 
     /// <summary>
-    /// Gets or sets the path of the application local resources.
+    /// Gets or sets the "&lt;Code&gt;" head package generated resource container.
     /// When let to null, an empty container is used.
     /// </summary>
-    public string? AppResourcesLocalPath { get => _appResourcesLocalPath; set => _appResourcesLocalPath = value; }
+    public IResourceContainer? GeneratedCodeContainer
+    {
+        get => _generatedCodeContainer;
+        set => _generatedCodeContainer = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the path of the "&lt;App&gt;" tail package application local resources.
+    /// When let to null, an empty container is used.
+    /// <para>
+    /// When not null, this path is fully qualified and ends with <see cref="Path.DirectorySeparatorChar"/>
+    /// and will be created if it doesn't exist.
+    /// </para>
+    /// </summary>
+    public string? AppResourcesLocalPath
+    {
+        get => _appResourcesLocalPath;
+        set
+        {
+            if( value != null )
+            {
+                Throw.CheckArgument( Path.IsPathFullyQualified( value ) );
+                value = Path.GetFullPath( value );
+                if( value[^1] != Path.DirectorySeparatorChar )
+                {
+                    value += Path.DirectorySeparatorChar;
+                }
+            }
+            _appResourcesLocalPath = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the folder that contains the Live state.
+    /// This is optional as this defaults to "<see cref="AppResourcesLocalPath"/>/.ck-watch/".
+    /// It will be created if it doesn't exist.
+    /// <para>
+    /// By setting it to <see cref="ResourceSpaceCollector.NoLiveState"/>, no Live state is created
+    /// even if <see cref="AppResourcesLocalPath"/> is specified.
+    /// </para>
+    /// </summary>
+    public string? CKWatchFolderPath
+    {
+        get => _ckWatchFolderPath;
+        set
+        {
+            if( value != null )
+            {
+                if( value != ResourceSpaceCollector.NoLiveState )
+                {
+                    Throw.DebugAssert( ResourceSpaceCollector.NoLiveState == "none" );
+                    Throw.CheckArgument( """CKWatchFolderPath must be "none" or a fully qualified path.""", Path.IsPathFullyQualified( value ) );
+                    value = Path.GetFullPath( value );
+                    if( value[^1] != Path.DirectorySeparatorChar )
+                    {
+                        value += Path.DirectorySeparatorChar;
+                    }
+                }
+            }
+            _ckWatchFolderPath = value;
+        }
+    }
 
     /// <summary>
     /// Registers a package. It must not already exist: <paramref name="fullName"/>, <paramref name="resourceStore"/>
@@ -149,8 +231,7 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
                                           type,
                                           defaultTargetPath,
                                           resources: new StoreContainer( _codeHandledResources, resourceStore ),
-                                          afterResources: new StoreContainer( _codeHandledResources, resourceAfterStore ),
-                                          localPath );
+                                          afterResources: new StoreContainer( _codeHandledResources, resourceAfterStore ) );
         _packages.Add( p );
         _packageIndex.Add( fullName, p );
         _packageIndex.Add( resourceStore, p );
@@ -207,17 +288,48 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
                     catch( Exception ex )
                     {
                         monitor.Error( $"While reading {descriptor}.", ex );
+                        success = false;
                     }
                 }
             }
         }
-        return success
-                ? new ResourceSpaceCollector( _packageIndex,
-                                              _packages,
-                                              _localPackageCount,
-                                              _generatedCodeContainer,
-                                              _appResourcesLocalPath,
-                                              _typedPackageCount )
-                : null;
+        if( !success ) return null;
+
+        if( string.IsNullOrEmpty( _ckGenPath ) )
+        {
+            monitor.Error( "CKGenPath is required." );
+            return null;
+        }
+        if( _appResourcesLocalPath != null
+            && (_appResourcesLocalPath.StartsWith( _ckGenPath ) || _ckGenPath.StartsWith( _appResourcesLocalPath )) )
+        {
+            monitor.Error( $"""
+                Invalid AppResourcesLocalPath: it must not be above or below CKGenPath.
+                CKGenPath: {_ckGenPath}
+                AppResourcesLocalPath: {_appResourcesLocalPath}
+                """ );
+            return null;
+        }
+        var ckWatchFolderPath = _ckWatchFolderPath
+                                        ?? (_appResourcesLocalPath == null
+                                                ? ResourceSpaceCollector.NoLiveState
+                                                : _appResourcesLocalPath + ".ck-watch" + Path.DirectorySeparatorChar);
+        if( ckWatchFolderPath.StartsWith( _ckGenPath ) || _ckGenPath.StartsWith( ckWatchFolderPath ) )
+        {
+            monitor.Error( $"""
+                Invalid CKWatchFolderPath: it must not be above or below CKGenPath.
+                CKGenPath: {_ckGenPath}
+                CKWatchFolderPath: {ckWatchFolderPath}
+                """ );
+            return null;
+        }
+        return new ResourceSpaceCollector( _packageIndex,
+                                           _packages,
+                                           _localPackageCount,
+                                           _generatedCodeContainer,
+                                           _ckGenPath,
+                                           _appResourcesLocalPath,
+                                           ckWatchFolderPath,
+                                           _typedPackageCount );
     }
 }

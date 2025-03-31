@@ -6,9 +6,7 @@ using System.IO;
 namespace CK.Core;
 
 /// <summary>
-/// Exposes mutable <see cref="ResPackageDescriptor"/> for a resource space and
-/// the "&lt;Code&gt;" <see cref="GeneratedCodeContainer"/> to be assigned as well as
-/// the "&lt;App&gt;" <see cref="AppResourcesLocalPath"/> local path.
+/// Exposes mutable <see cref="ResPackageDescriptor"/> for a resource space.
 /// <para>
 /// This is the input of the <see cref="ResourceSpaceDataBuilder"/> that topologically sorts
 /// the descriptors to produce the immutable <see cref="ResourceSpaceData.Packages"/>.
@@ -16,25 +14,36 @@ namespace CK.Core;
 /// </summary>
 public sealed class ResourceSpaceCollector
 {
+    /// <summary>
+    /// Marker for <see cref="CKWatchFolderPath"/> when no Live state must be created.
+    /// </summary>
+    public const string NoLiveState = "none";
+
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     readonly List<ResPackageDescriptor> _packages;
     readonly int _localPackageCount;
     readonly int _typedPackageCount;
-    IResourceContainer? _generatedCodeContainer;
-    string? _appResourcesLocalPath;
+    readonly IResourceContainer? _generatedCodeContainer;
+    readonly string _ckGenPath;
+    readonly string? _appResourcesLocalPath;
+    readonly string _ckWatchFolderPath;
 
     internal ResourceSpaceCollector( Dictionary<object, ResPackageDescriptor> packageIndex,
                                      List<ResPackageDescriptor> packages,
                                      int localPackageCount,
                                      IResourceContainer? generatedCodeContainer,
+                                     string ckGenPath,
                                      string? appResourcesLocalPath,
+                                     string ckWatchFolderPath,
                                      int typedPackageCount )
     {
         _packageIndex = packageIndex;
         _packages = packages;
         _localPackageCount = localPackageCount;
         _generatedCodeContainer = generatedCodeContainer;
+        _ckGenPath = ckGenPath;
         _appResourcesLocalPath = appResourcesLocalPath;
+        _ckWatchFolderPath = ckWatchFolderPath;
         _typedPackageCount = typedPackageCount;
     }
 
@@ -78,33 +87,25 @@ public sealed class ResourceSpaceCollector
     public ResPackageDescriptor? FindByType( Type type ) => _packageIndex.GetValueOrDefault( type );
 
     /// <summary>
-    /// Gets or sets the Code generated resource container.
-    /// When let to null, an empty container is used.
+    /// Gets the Code generated resource container. See <see cref="ResourceSpaceCollectorBuilder.GeneratedCodeContainer"/>.
     /// </summary>
-    public IResourceContainer? GeneratedCodeContainer { get => _generatedCodeContainer; set => _generatedCodeContainer = value; }
+    public IResourceContainer? GeneratedCodeContainer => _generatedCodeContainer;
 
     /// <summary>
-    /// Gets or sets the path of the application local resources.
-    /// When let to null, an empty container is used.
-    /// <para>
-    /// When not null, this path is fully qualified and ends with <see cref="Path.DirectorySeparatorChar"/>.
-    /// </para>
+    /// Gets the file system code generated target path. This ends with <see cref="Path.DirectorySeparatorChar"/>.
+    /// See <see cref="ResourceSpaceCollectorBuilder.CKGenPath"/>.
     /// </summary>
-    public string? AppResourcesLocalPath
-    {
-        get => _appResourcesLocalPath;
-        set
-        {
-            if( value != null )
-            {
-                Throw.CheckArgument( Path.IsPathFullyQualified( value ) );
-                value = Path.GetFullPath( value );
-                if( value[^1] != Path.DirectorySeparatorChar )
-                {
-                    value += Path.DirectorySeparatorChar;
-                }
-            }
-            _appResourcesLocalPath = value;
-        }
-    }
+    public string CKGenPath => _ckGenPath;
+
+    /// <summary>
+    /// Gets the path of the application local resources. See <see cref="ResourceSpaceCollectorBuilder.AppResourcesLocalPath"/>.
+    /// </summary>
+    public string? AppResourcesLocalPath => _appResourcesLocalPath;
+
+    /// <summary>
+    /// Gets the folder that contains the Live state.
+    /// <see cref="NoLiveState"/> if no Live state must be created.
+    /// See <see cref="ResourceSpaceCollectorBuilder.CKWatchFolderPath"/>.
+    /// </summary>
+    public string CKWatchFolderPath => _ckWatchFolderPath;
 }

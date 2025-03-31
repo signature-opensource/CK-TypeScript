@@ -88,7 +88,8 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
 
     /// <inheritdoc />
     /// <remarks>
-    /// This is the root directory ending with a <see cref="Path.DirectorySeparatorChar"/>.
+    /// Because this is a FileSystemResourceContainer, it is the root directory ending with
+    /// a <see cref="Path.DirectorySeparatorChar"/>.
     /// </remarks>
     public string ResourcePrefix => _root;
 

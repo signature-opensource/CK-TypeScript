@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.Transform.Core;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace CK.Core;
 public sealed class TransformableFileHandler : ResourceSpaceFileHandler
 {
     readonly TransformerHost _host;
+    List<TransformableItem>? _items;
 
     /// <summary>
     /// Initializes a new <see cref="TransformableFileHandler"/> for all the file extensions from
@@ -26,11 +28,53 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
     protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData, FolderExclusion folderFilter )
     {
         bool success = true;
-        var mappings = new Dictionary<NormalizedPath, ResourceLocator>();
-        foreach( var r in spaceData.AllPackageResources )
+        _items = new List<TransformableItem>();
+        foreach( var resources in spaceData.AllPackageResources )
         {
-            success &= Register( monitor, r.Resources, mappings );
+            foreach( var r in resources.Resources.AllResources )
+            {
+                if( folderFilter.IsExcluded( r ) ) continue;
+                var language = _host.FindFromFilename( r.Name );
+                if( language != null )
+                {
+                    if( language.TransformLanguage.IsTransformerLanguage )
+                    {
+
+                    }
+                    else
+                    {
+                        var target = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
+                        _items.Add( new TransformableItem( resources, r, language, target ) );
+                    }
+                }
+            }
         }
         return success;
     }
+
+    /// <summary>
+    /// Saves the resources into the <paramref name="target"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="target">The target.</param>
+    /// <returns>True on succes, false one error (errors have been logged).</returns>
+    protected override bool Install( IActivityMonitor monitor, ResourceSpaceFileInstaller target )
+    {
+        Throw.CheckState( _items != null );
+        bool success = true;
+        foreach( var i in _items )
+        {
+            var text = i.GetText( monitor );
+            if( text == null )
+            {
+                success = false;
+            }
+            else
+            {
+                target.Write( i.Target, text );
+            }
+        }
+        return success;
+    }
+
 }

@@ -16,15 +16,20 @@ public sealed class TypeScriptPathContext
 {
     readonly string _targetProjectPath;
     readonly string _ckGenPath;
-    readonly string _ckGenTransformPath;
+    readonly string _ckGenAppPath;
 
     public TypeScriptPathContext( TypeScriptBinPathAspectConfiguration tsConfig )
+        : this( tsConfig.TargetProjectPath )
     {
-        var targetProjectPath = Path.GetFullPath( tsConfig.TargetProjectPath );
+    }
+
+    public TypeScriptPathContext( string targetProjectPath )
+    {
+        targetProjectPath = Path.GetFullPath( targetProjectPath );
         if( !Path.EndsInDirectorySeparator( targetProjectPath ) ) targetProjectPath += Path.DirectorySeparatorChar;
         _targetProjectPath = targetProjectPath;
         _ckGenPath = targetProjectPath + "ck-gen" + Path.DirectorySeparatorChar;
-        _ckGenTransformPath = targetProjectPath + "ck-gen-transform" + Path.DirectorySeparatorChar;
+        _ckGenAppPath = targetProjectPath + "ck-gen-app" + Path.DirectorySeparatorChar;
     }
 
     /// <summary>
@@ -38,7 +43,7 @@ public sealed class TypeScriptPathContext
     public string CKGenPath => _ckGenPath;
 
     /// <summary>
-    /// Gets the fully qualified "ck-gen-transform/" path ending with <see cref="Path.DirectorySeparatorChar"/>.
+    /// Gets the fully qualified "ck-gen-app/" path ending with <see cref="Path.DirectorySeparatorChar"/>.
     /// </summary>
-    public string CKGenTransformPath => _ckGenTransformPath;
+    public string CKGenAppPath => _ckGenAppPath;
 }

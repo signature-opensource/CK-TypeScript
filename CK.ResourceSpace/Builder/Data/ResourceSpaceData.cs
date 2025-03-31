@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,9 +16,11 @@ namespace CK.Core;
 /// to eventually produce a <see cref="ResourceSpace"/>.
 /// </para>
 /// </summary>
-public sealed class ResourceSpaceData
+public sealed partial class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
+    readonly string _ckGenPath;
+    readonly string _ckWatchFolderPath;
 
     // _packages, _localPackages, _allPackageResources, _exposedPackages, _reachablePackageSetCache,
     // _codePackage, _appPackage and _watchRoot are set by the ResourceSpaceDataBuilder.Build method.
@@ -30,10 +33,15 @@ public sealed class ResourceSpaceData
     [AllowNull]internal ResPackage _appPackage;
     internal string? _watchRoot;
 
-    internal ResourceSpaceData( IReadOnlyDictionary<object, ResPackage> packageIndex )
+    internal ResourceSpaceData( string ckGenPath, string cKWatchFolderPath, IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
+        _ckGenPath = ckGenPath;
+        _ckWatchFolderPath = cKWatchFolderPath;
         _packageIndex = packageIndex;
     }
+
+    /// <inheritdoc cref="ResourceSpaceCollector.CKGenPath"/>
+    public string CKGenPath => _ckGenPath;
 
     /// <summary>
     /// Gets the packages indexed by their <see cref="ResPackage.FullName"/>, <see cref="ResPackage.Type"/> (if
@@ -82,8 +90,17 @@ public sealed class ResourceSpaceData
     public IResPackageDataCache ResPackageDataCache => _resPackageDataCache;
 
     /// <summary>
-    /// Gets the watch root. Null only if no local packages exist and "&lt;App&gt;" package
+    /// Gets the watch root. Null if no local packages exist and "&lt;App&gt;" package
     /// has no defined folder (<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> was not set).
+    /// <para>
+    /// This is also null if <see cref="CKWatchFolderPath"/> is <see cref="ResourceSpaceCollector.NoLiveState"/>.
+    /// </para>
     /// </summary>
-    public string? WatchRoot => _watchRoot; 
+    public string? WatchRoot => _watchRoot;
+
+    /// <summary>
+    /// Gets the folder that contains the Live state.
+    /// Can be <see cref="ResourceSpaceCollector.NoLiveState"/>.
+    /// </summary>
+    public string CKWatchFolderPath => _ckWatchFolderPath;
 }

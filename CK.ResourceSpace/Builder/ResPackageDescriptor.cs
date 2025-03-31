@@ -2,6 +2,8 @@ using CK.EmbeddedResources;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Xml;
 
@@ -31,8 +33,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                                    Type? type,
                                    NormalizedPath defaultTargetPath,
                                    StoreContainer resources,
-                                   StoreContainer afterResources,
-                                   string? localPath )
+                                   StoreContainer afterResources )
     {
         Throw.DebugAssert( resources != afterResources );
         _context = context;
@@ -41,7 +42,11 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         _defaultTargetPath = defaultTargetPath;
         _resources = resources;
         _afterResources = afterResources;
-        _localPath = localPath;
+        var local = resources.LocalPath ?? afterResources.LocalPath;
+        if( local != null )
+        {
+            _localPath = Path.GetDirectoryName( local ) + Path.DirectorySeparatorChar;
+        }
     }
 
     /// <summary>
@@ -55,7 +60,18 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public Type? Type => _type;
 
     /// <summary>
-    /// Gets a non null fully qualified path of this package's resources if this is a local package.
+    /// Gets whether this is a local package: its <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// is a <see cref="FileSystemResourceContainer"/> with a true <see cref="FileSystemResourceContainer.HasLocalFilePathSupport"/>.
+    /// </summary>
+    [MemberNotNullWhen(true,nameof(LocalPath))]
+    public bool IsLocalPackage => _localPath != null;
+
+    /// <summary>
+    /// Gets this package local path.
+    /// <para>
+    /// When not null, it ends with <see cref="Path.DirectorySeparatorChar"/> and is the parent folder of
+    /// the "Res/" and/or "Res[After]" folders.
+    /// </para>
     /// </summary>
     public string? LocalPath => _localPath;
 

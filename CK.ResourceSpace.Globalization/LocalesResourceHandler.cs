@@ -1,4 +1,5 @@
 
+using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,10 @@ using System.Text.Json;
 
 namespace CK.Core;
 
-public class LocalesResourceHandler : ResourceSpaceFolderHandler
+/// <summary>
+/// Locales folder handler. See <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(IResourceContainer, CK.Core.IActivityMonitor, CK.Core.ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>.
+/// </summary>
+public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
 {
     readonly LocalesCache _cache;
     readonly InstallOption _installOption;
@@ -46,6 +50,13 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
         MinimalNoEmptySet
     }
 
+    /// <summary>
+    /// Iniitalizes a new locales resources handler.
+    /// </summary>
+    /// <param name="packageDataCache">The package data cache.</param>
+    /// <param name="rootFolderName">The folder name (typically "locales", "ts-locales", etc.).</param>
+    /// <param name="activeCultures">The required active cultures.</param>
+    /// <param name="installOption">How the final locale files must be generated.</param>
     public LocalesResourceHandler( IResPackageDataCache packageDataCache,
                                    string rootFolderName,
                                    ActiveCultureSet activeCultures,
@@ -67,6 +78,12 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// </summary>
     public FinalTranslationSet? FinalTranslations => _finalTranslations;
 
+    /// <summary>
+    /// Checks that the <see cref="FinalTranslations"/> is not ambiguous.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="spaceData">The resource data.</param>
+    /// <returns>True if the FinalTranslations can be successfully computed and that no ambiguous resources exist.</returns>
     protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData )
     {
         FinalTranslationSet? r = _cache.Obtain( monitor, spaceData.AppPackage );
@@ -79,7 +96,7 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
                                       But is also defined in:
                                       {kv.Value.Ambiguities!.Select( r => $"{r.Origin.ToString()} with text '{r.Text}'." ).Concatenate( Environment.NewLine )}.
                                       """ );
-                                      
+
             monitor.Error( $"""
                 Ambiguities detected in final translations:
                 {ambiguities.Concatenate( Environment.NewLine )}
@@ -96,7 +113,7 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="target">The target.</param>
     /// <returns>True on succes, false one error (errors have been logged).</returns>
-    public bool Install( IActivityMonitor monitor, ResourceSpaceFileInstaller target )
+    protected override bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller target )
     {
         Throw.CheckState( FinalTranslations != null );
         try
@@ -126,7 +143,7 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
     }
 
-    void WriteExistingSets( IActivityMonitor monitor, NormalizedPath folder, ResourceSpaceFileInstaller target, bool rootPropagated )
+    void WriteExistingSets( IActivityMonitor monitor, NormalizedPath folder, IResourceSpaceFileInstaller target, bool rootPropagated )
     {
         Throw.DebugAssert( _finalTranslations != null );
         foreach( var set in _finalTranslations.AllTranslationSets.Where( set => set.Translations.Count > 0 ) )
@@ -139,7 +156,7 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
     }
 
-    void WriteAllCultures( IActivityMonitor monitor, NormalizedPath folder, ResourceSpaceFileInstaller target, bool rootPropagated )
+    void WriteAllCultures( IActivityMonitor monitor, NormalizedPath folder, IResourceSpaceFileInstaller target, bool rootPropagated )
     {
         Throw.DebugAssert( _finalTranslations != null );
         foreach( var c in _cache.ActiveCultures.AllActiveCultures )
@@ -163,7 +180,7 @@ public class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
     }
 
-    static void WriteJson( ResourceSpaceFileInstaller target,
+    static void WriteJson( IResourceSpaceFileInstaller target,
                            NormalizedPath fPath,
                            IEnumerable<KeyValuePair<string, FinalTranslationValue>> translations )
     {

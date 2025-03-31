@@ -7,6 +7,10 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Text.Json;
 using CK.EmbeddedResources;
+using CK.Transform.Core;
+using CK.TypeScript.Transform;
+using CK.Html.Transform;
+using CK.Less.Transform;
 
 namespace CK.Setup;
 
@@ -25,7 +29,6 @@ public sealed partial class TypeScriptContext
     readonly TSContextInitializer _initializer;
     readonly TypeScriptRoot _tsRoot;
     readonly PocoCodeGenerator _pocoGenerator;
-    readonly FileSystemResourceContainer? _ckGenTransform;
 
     internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                 TypeScriptBinPathAspectConfiguration tsBinPathConfig,
@@ -52,13 +55,6 @@ public sealed partial class TypeScriptContext
         _tsRoot.AfterCodeGeneration += OnAfterCodeGeneration;
         Root.Root.EnsureBarrel();
         _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
-        // The "ck-gen-transform" is not necessarily here.
-        var ckGenTPath = tsBinPathConfig.TargetProjectPath.AppendPart( "ck-gen-transform" );
-        // Exposes the "ck-gen-transform" container only if the folder is here.
-        if( Directory.Exists( ckGenTPath ) )
-        {
-            _ckGenTransform = new FileSystemResourceContainer( ckGenTPath, "ck-gen-transform/" );
-        }
     }
 
     void OnFolderCreated( TypeScriptFolder f )
@@ -171,12 +167,6 @@ public sealed partial class TypeScriptContext
     public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _initializer.GlobalCodeGenerators;
 
     /// <summary>
-    /// Gets the "/ck-gen-transform" container if the folder exists in
-    /// the <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/>.
-    /// </summary>
-    public IResourceContainer? CKGenTransform => _ckGenTransform;
-
-    /// <summary>
     /// Relays the <see cref="TypeScriptRoot.BeforeCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
     /// as the sender.
     /// <para>
@@ -225,10 +215,14 @@ public sealed partial class TypeScriptContext
         // New approach (CK-ReaDI oriented) here to manage the resources.
 
         var typeScriptContext = this;
+
+        var tsPathContext = new TypeScriptPathContext( _binPathConfiguration );
         var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
         // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
         // logically depends on it. Its resources will be reachable from any package.
         resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
+        resSpaceCollectorBuilder.AppResourcesLocalPath = tsPathContext.CKGenAppPath;
+
         // We collect packages from the TypeScriptPackage type that exist.
         // Currently these are IRealObject (this will not be the case in the future) and we use
         // the current TypeScriptPackageAttributeImpl instances.
@@ -268,6 +262,14 @@ public sealed partial class TypeScriptContext
                                                                                          "ts-locales",
                                                                                          typeScriptContext.ActiveCultures,
                                                                                          LocalesResourceHandler.InstallOption.Full ) );
+        var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
+        success &= resSpaceBuilder.RegisterHandler( monitor, new TransformableFileHandler( transformerHost ) );
+
+        var resSpace = resSpaceBuilder.Build( monitor );
+        if( resSpace == null ) return false;
+        var installer = new ResourceSpaceFileInstaller( tsPathContext.TargetProjectPath );
+        if( !resSpace.Install( monitor, installer ) ) return false;
+        if( !resSpace.WriteLiveState( monitor ) ) return false;
 
         // Here 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,

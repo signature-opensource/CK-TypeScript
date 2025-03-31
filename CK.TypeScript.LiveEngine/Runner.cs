@@ -14,20 +14,20 @@ sealed class Runner
     readonly FileWatcher? _secondary;
     readonly Timer _timer;
 
-    public Runner( LiveState liveState, CKGenTransformFilter stateFilesFilter )
+    public Runner( LiveState liveState, CKGenAppFilter stateFilesFilter )
     {
         _liveState = liveState;
-        var needPrimaryOnly = liveState.Paths.CKGenTransformPath.StartsWith( liveState.WatchRootPath );
+        var needPrimaryOnly = liveState.CKGenAppPath.StartsWith( liveState.WatchRoot );
         _channel = Channel.CreateUnbounded<object?>( new UnboundedChannelOptions() { SingleReader = true, SingleWriter = needPrimaryOnly } );
-        var localPackagesFilter = new LocalPackagesFilter( liveState.LocalPackages );
-        _primary = new FileWatcher( liveState.WatchRootPath,
+        var localPackagesFilter = new LocalPackagesFilter( liveState.SpaceData.LocalPackages );
+        _primary = new FileWatcher( liveState.WatchRoot,
                                     _channel.Writer,
                                     needPrimaryOnly
                                         ? new BothFilesFilter( localPackagesFilter, stateFilesFilter )
                                         : localPackagesFilter );
         if( !needPrimaryOnly )
         {
-            _secondary = new FileWatcher( liveState.Paths.CKGenTransformPath, _channel.Writer, stateFilesFilter );
+            _secondary = new FileWatcher( liveState.CKGenAppPath, _channel.Writer, stateFilesFilter );
         }
         _timer = new Timer( OnTimer );
     }
@@ -50,7 +50,7 @@ sealed class Runner
                     monitor.Info( "Stopped signal received." );
                     break;
                 }
-                if( e == CKGenTransformFilter.PrimaryStateFileChanged )
+                if( e == CKGenAppFilter.PrimaryStateFileChanged )
                 {
                     monitor.Info( "Primary state has been modified." );
                     break;

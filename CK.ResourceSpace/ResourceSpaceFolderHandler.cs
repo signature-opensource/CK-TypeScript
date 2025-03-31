@@ -33,5 +33,14 @@ public abstract class ResourceSpaceFolderHandler
     /// <returns>True on success, false on error. Errors must be logged.</returns>
     internal protected abstract bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData );
 
+    /// <summary>
+    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor, ResourceSpaceFileInstaller)"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="installer">The target installer.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    internal protected abstract bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller installer );
+
     public sealed override string ToString() => $"{GetType().Name} - Folder '{_rootFolderName}/'";
+
 }

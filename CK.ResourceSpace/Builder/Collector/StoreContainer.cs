@@ -12,17 +12,24 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
 {
     readonly IResourceContainer _container;
     readonly HashSet<ResourceLocator> _codeHandledResources;
+    readonly string? _localPath;
 
     public StoreContainer( HashSet<ResourceLocator> codeHandledResources, IResourceContainer container )
     {
         _codeHandledResources = codeHandledResources;
         _container = container;
+        _localPath = container is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
+                        ? fs.ResourcePrefix
+                        : null;
     }
 
     public StoreContainer( IBinaryDeserializer d, ITypeReadInfo info )
     {
         _codeHandledResources = d.ReadObject<HashSet<ResourceLocator>>();
         _container = d.ReadObject<IResourceContainer>();
+        _localPath = _container is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
+                        ? fs.ResourcePrefix
+                        : null;
     }
 
     public void Write( IBinarySerializer s )
@@ -30,6 +37,12 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
         s.WriteObject( _codeHandledResources );
         s.WriteObject( _container );
     }
+
+    /// <summary>
+    /// Gets the local resources path if this StoreContainer is a FileSystemResourceContainer with a
+    /// true HasLocalFilePathSupport.
+    /// </summary>
+    public string? LocalPath => _localPath;
 
     public bool IsValid => _container.IsValid;
 

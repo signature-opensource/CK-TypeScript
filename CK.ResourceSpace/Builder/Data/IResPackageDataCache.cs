@@ -8,6 +8,6 @@ namespace CK.Core;
 /// </summary>
 public interface IResPackageDataCache
 {
-    internal void LocalOnly();
+    internal void LocalImplementationOnly();
 }
 

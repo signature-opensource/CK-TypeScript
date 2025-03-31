@@ -1,9 +1,9 @@
-﻿sealed class BothFilesFilter : IFileEventFilter
+sealed class BothFilesFilter : IFileEventFilter
 {
     readonly LocalPackagesFilter _f1;
-    readonly CKGenTransformFilter _f2;
+    readonly CKGenAppFilter _f2;
 
-    public BothFilesFilter( LocalPackagesFilter f1, CKGenTransformFilter f2 )
+    public BothFilesFilter( LocalPackagesFilter f1, CKGenAppFilter f2 )
     {
         _f1 = f1;
         _f2 = f2;

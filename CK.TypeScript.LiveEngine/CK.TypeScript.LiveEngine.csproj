@@ -14,11 +14,9 @@
         </PackageReference>    </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CK.EmbeddedResources.Assets\CK.EmbeddedResources.Assets.csproj" />
-        <ProjectReference Include="..\CK.EmbeddedResources.Globalization\CK.EmbeddedResources.Globalization.csproj" />
-        <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
-        <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
-        <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
+        <ProjectReference Include="..\CK.ResourceSpace.Assets\CK.ResourceSpace.Assets.csproj" />
+        <ProjectReference Include="..\CK.ResourceSpace.Globalization\CK.ResourceSpace.Globalization.csproj" />
+        <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
     </ItemGroup>
 
 </Project>

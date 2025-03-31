@@ -10,7 +10,7 @@ namespace CK.Core;
 /// </summary>
 /// <typeparam name="T">
 /// Associated data type. It should be immutable and is fully "implemented" by the
-/// <see cref="Create(CK.Core.IActivityMonitor, CK.Core.ResPackage)"/>, <see cref="Combine(CK.Core.IActivityMonitor, CK.Core.IResPackageResources, T)"/>
+/// <see cref="Create(IActivityMonitor, ResPackage)"/>, <see cref="Combine(IActivityMonitor, IResPackageResources, T)"/>
 /// and <see cref="Aggregate(T, T)"/>.
 /// </typeparam>
 public abstract class ResPackageDataHandler<T> where T : class

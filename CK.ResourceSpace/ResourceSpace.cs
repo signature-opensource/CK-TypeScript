@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace CK.Core;
 
@@ -14,8 +15,15 @@ namespace CK.Core;
 /// </summary>
 public sealed class ResourceSpace
 {
+    /// <summary>
+    /// The Live state file name.
+    /// </summary>
     public const string LiveStateFileName = "LiveState.dat";
-    public static int CurrentVersion = 0;
+
+    /// <summary>
+    /// The current serialization format version.
+    /// </summary>
+    public static byte CurrentVersion = 0;
 
     readonly ResourceSpaceData _data;
     readonly ImmutableArray<ResourceSpaceFolderHandler> _folderHandlers;
@@ -47,6 +55,7 @@ public sealed class ResourceSpace
     /// </summary>
     public ImmutableArray<ResourceSpaceFileHandler> FileHandlers => _fileHandlers;
 
+    // Called by the ResourceSpaceBuilder.Build().
     internal bool Initialize( IActivityMonitor monitor )
     {
         bool success = true;
@@ -62,35 +71,82 @@ public sealed class ResourceSpace
     }
 
     /// <summary>
-    /// Writes the live state.
+    /// Generates resources into the <see cref="ResourceSpaceData.CKGenPath"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="ckWatchFolderPath">
-    /// Defaults to the "<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/>/.ck-watch" (that is <see cref="ResourceSpaceData.AppPackage"/>'s
-    /// <see cref="ResPackage.LocalPath"/>) when AppResourcesLocalPath is defined.
-    /// If both this parameter and AppResourcesLocalPath are null, live state is not saved even if there are local packages.
-    /// </param>
-    public bool WriteLiveState( IActivityMonitor monitor, string? ckWatchFolderPath = null )
+    /// <returns>True on success, false otherwise.</returns>
+    public bool Install( IActivityMonitor monitor )
     {
-        ckWatchFolderPath ??= _data.AppPackage.LocalPath;
-        if( ckWatchFolderPath == null )
+        var installer = ResourceSpaceFileInstaller.Create( monitor, _data.CKGenPath );
+        if( installer == null ) return false;
+
+        bool success = true;
+        if( _data.CKWatchFolderPath != ResourceSpaceCollector.NoLiveState )
         {
-            monitor.Warn( """
+            success &= ClearLiveState( monitor, _data.CKWatchFolderPath );
+        }
+        foreach( var f in _folderHandlers )
+        {
+            success &= f.Install( monitor, installer );
+        }
+        foreach( var f in _fileHandlers )
+        {
+            success &= f.Install( monitor, installer );
+        }
+
+        installer.Cleanup( monitor, success );
+
+        if( success && _data.CKWatchFolderPath != ResourceSpaceCollector.NoLiveState )
+        {
+            if( _data.CKWatchFolderPath == ResourceSpaceCollector.NoLiveState )
+            {
+                monitor.Warn( """
                 No AppResourcesLocalPath has been set and no target watch folder has been specified.
                 Skipping Live state generation.
                 """ );
-            return true;
+            }
+            success &= WriteLiveState( monitor, _data.CKWatchFolderPath );
         }
-        if( !Path.IsPathFullyQualified( ckWatchFolderPath )
-            || File.Exists( ckWatchFolderPath )
-            || !ckWatchFolderPath.EndsWith( Path.DirectorySeparatorChar ) )
+        return success;
+    }
+
+    static bool ClearLiveState( IActivityMonitor monitor, string ckWatchFolderPath )
+    {
+        Throw.DebugAssert( ckWatchFolderPath.EndsWith( Path.DirectorySeparatorChar ) );
+        if( File.Exists( ckWatchFolderPath ) )
         {
             monitor.Error( $"""
-                    Invalid ck-watch state folder. It must not be a file, must be a fully qualified folder path that ends with '{Path.DirectorySeparatorChar}':
+                    Invalid ck-watch state folder. It must not be a file':
                     {ckWatchFolderPath}
                     """ );
             return false;
         }
+        var stateFile = ckWatchFolderPath + LiveStateFileName;
+        if( File.Exists( stateFile ) )
+        {
+            int retryCount = 0;
+            retry:
+            try
+            {
+                File.Delete( stateFile );
+                monitor.Trace( $"Deleted state file '{stateFile}'." );
+            }
+            catch( Exception ex )
+            {
+                if( ++retryCount < 3 )
+                {
+                    monitor.Warn( $"While clearing state file '{stateFile}'.", ex );
+                    Thread.Sleep( retryCount * 100 );
+                    goto retry;
+                }
+                monitor.Warn( $"Unable to delete state file '{stateFile}'.", ex );
+            }
+        }
+        return true;
+    }
+
+    bool WriteLiveState( IActivityMonitor monitor, string ckWatchFolderPath )
+    {
         if( _data.WatchRoot == null )
         {
             monitor.Info( """
@@ -122,16 +178,16 @@ public sealed class ResourceSpace
         using( var streamLive = new FileStream( ckWatchFolderPath + LiveStateFileName, FileMode.Create ) )
         using( var s = BinarySerializer.Create( streamLive, new BinarySerializerContext() ) )
         {
-            s.Writer.Write( (byte)CurrentVersion );
-            s.Writer.Write( ckWatchFolderPath );
-            s.Writer.Write( _data.WatchRoot );
+            s.Writer.Write( CurrentVersion );
+            s.WriteObject( _data );
             s.Writer.WriteNonNegativeSmallInt32( liveHandlers.Count );
             foreach( var h in liveHandlers )
             {
+                s.WriteTypeInfo( h.GetType() );
                 success &= h.WriteLiveState( monitor, s, ckWatchFolderPath );
             }
         }
         return success;
     }
-    
+
 }
