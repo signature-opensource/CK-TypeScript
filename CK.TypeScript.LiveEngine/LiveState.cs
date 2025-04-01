@@ -55,15 +55,46 @@ public sealed class LiveState
         }
     }
 
+    sealed class UpdateInstaller : ResourceSpaceFileInstaller
+    {
+        public readonly List<string> Written;
+
+        public UpdateInstaller( string targetPath )
+            : base( targetPath )
+        {
+            Written = new List<string>();
+        }
+
+        protected override void OnWrite( string path ) => Written.Add( path );
+    }
+
     /// <summary>
     /// Applies any changes.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     public void ApplyChanges( IActivityMonitor monitor )
     {
+        var success = true;
+        var installer = new UpdateInstaller( _spaceData.CKGenPath );
         foreach( var u in _updaters )
         {
-            u.ApplyChanges( monitor );
+            try
+            {
+                success &= u.ApplyChanges( monitor, installer );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( ex );
+                success = false;
+            }
+        }
+        using( monitor.OpenInfo( $"Updated {installer.Written.Count} files." ) )
+        {
+            monitor.Trace( installer.Written.Concatenate() );
+            if( !success )
+            {
+                monitor.CloseGroup( "Failed!" );
+            }
         }
     }
 
