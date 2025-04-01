@@ -61,8 +61,8 @@ sealed class Runner
                         monitor.Warn( $"File system watcher error.", ex );
                         break;
                     case ChangedEvent p:
-                        monitor.Debug( $"Change: '{p.Package}' {p.SubPath}" );
-                        _liveState.OnChange( monitor, p.Package, p.SubPath );
+                        monitor.Debug( $"Change: '{p.Resources.Package}' {p.SubPath}" );
+                        _liveState.OnChange( monitor, p.Resources, p.SubPath );
                         if( !_timer.Change( 80, Timeout.Infinite ) )
                         {
                             monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, "Failed to update Timer duetime." );

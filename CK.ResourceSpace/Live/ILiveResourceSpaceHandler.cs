@@ -25,10 +25,14 @@ public interface ILiveResourceSpaceHandler
     /// <summary>
     /// Restores a <see cref="ILiveUpdater"/> from previously written data by <see cref="WriteLiveState(IActivityMonitor, IBinarySerializer, string)"/>.
     /// Nothing prevents the live updater to be implemented by this handler.
+    /// <para>
+    /// This SHOULD be <c>static abstract</c> but because of <see href="https://github.com/dotnet/csharplang/issues/5955"/> this is only a
+    /// <c>static virtual</c> that returns null by default.
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="data">The deserialized resource space data.</param>
     /// <param name="d">The deserializer for the primary <see cref="ResourceSpace.LiveStateFileName"/>.</param>
     /// <returns>The live updater on success, null on error. Errors must be logged.</returns>
-    public static abstract ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResourceSpaceData data, IBinaryDeserializer d );
+    public static virtual ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResourceSpaceData data, IBinaryDeserializer d ) => null;
 }

@@ -267,9 +267,7 @@ public sealed partial class TypeScriptContext
 
         var resSpace = resSpaceBuilder.Build( monitor );
         if( resSpace == null ) return false;
-        var installer = new ResourceSpaceFileInstaller( tsPathContext.TargetProjectPath );
-        if( !resSpace.Install( monitor, installer ) ) return false;
-        if( !resSpace.WriteLiveState( monitor ) ) return false;
+        return resSpace.Install( monitor );
 
         // Here 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,

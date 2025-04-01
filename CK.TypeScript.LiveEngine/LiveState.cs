@@ -22,11 +22,11 @@ public sealed class LiveState
     {
         // Are we internal (DebugAssert) or public (CheckArgument) here?
         // Consider that this may be called out of control.
-        Throw.CheckArgument( spaceData.AppPackage.LocalPath != null );
+        Throw.CheckArgument( "TypeScript always has the <App> ck-gen-app/ folder.", spaceData.AppPackage.Resources.LocalPath != null );
         Throw.CheckArgument( spaceData.WatchRoot != null );
         _spaceData = spaceData;
         _updaters = updaters;
-        _ckGenAppPath = spaceData.AppPackage.LocalPath;
+        _ckGenAppPath = spaceData.AppPackage.Resources.LocalPath;
         _watchRoot = spaceData.WatchRoot;
     }
 
@@ -42,10 +42,17 @@ public sealed class LiveState
     /// Called by the file watcher.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="package">The package that owns the changed resource or null when it is the ck-gen-app/ folder.</param>
+    /// <param name="resources">The resources folder.</param>
     /// <param name="subPath">The path in the resource folder.</param>
-    public void OnChange( IActivityMonitor monitor, ResPackage? package, string subPath )
+    public void OnChange( IActivityMonitor monitor, IResPackageResources resources, string subPath )
     {
+        foreach( var u in _updaters )
+        {
+            if( u.OnChange( monitor, resources, subPath ) )
+            {
+                break;
+            }
+        }
     }
 
     /// <summary>
@@ -107,7 +114,7 @@ public sealed class LiveState
                 return null;
             }
             bool success = true;
-            var updaters = new ILiveUpdater[r.ReadNonNegativeSmallInt32()]
+            var updaters = new ILiveUpdater[r.ReadNonNegativeSmallInt32()];
             for( int i = 0; i < updaters.Length; ++i )
             {
                 var t = d.ReadTypeInfo().ResolveLocalType();
