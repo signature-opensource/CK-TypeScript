@@ -3,55 +3,41 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.Core;
 
-sealed class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
+/// <summary>
+/// Simple implementation of <see cref="IResourceSpaceFileInstaller"/> that can be specialized.
+/// </summary>
+public class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
 {
     readonly string _targetPath;
     readonly char[] _pathBuffer;
-    readonly HashSet<string> _existing;
 
-    ResourceSpaceFileInstaller( string targetPath )
+    /// <summary>
+    /// Initialize a new installer on a target path.
+    /// </summary>
+    /// <param name="targetPath">The target folder. The directory must exist.</param>
+    public ResourceSpaceFileInstaller( string targetPath )
     {
         Throw.CheckArgument( Path.IsPathFullyQualified( targetPath ) && targetPath.EndsWith( Path.DirectorySeparatorChar ) );
+        Throw.CheckState( Directory.Exists( targetPath ) );
         _targetPath = targetPath;
         _pathBuffer = new char[1024];
         targetPath.CopyTo( _pathBuffer );
-        _existing = new HashSet<string>( Directory.EnumerateFiles( _targetPath, "*", SearchOption.AllDirectories ) );
-        _existing.Remove( ".gitignore" );
     }
 
-    public static ResourceSpaceFileInstaller? Create( IActivityMonitor monitor, string ckGenPath )
-    {
-        Throw.CheckArgument( Path.IsPathFullyQualified( ckGenPath ) && ckGenPath.EndsWith( Path.DirectorySeparatorChar ) );
-        if( !Path.Exists( ckGenPath ) )
-        {
-            monitor.Info( $"Creating code generated target path: {ckGenPath}" );
-            try
-            {
-                Directory.CreateDirectory( ckGenPath );
-            }
-            catch( Exception ex )
-            {
-                monitor.Error( $"While creating code generated target path: {ckGenPath}", ex );
-                return null;
-            }
-        }
-        try
-        {
-            var r = new ResourceSpaceFileInstaller( ckGenPath );
-            monitor.Info( $"Code generated target path contains {r._existing.Count} files that will be updated." );
-            return r;
-        }
-        catch( Exception ex )
-        {
-            monitor.Error( $"While collecting existing files in code generated target path: {ckGenPath}", ex );
-            return null;
-        }
+    /// <summary>
+    /// Gets the target path. Ends with <see cref="Path.DirectorySeparatorChar"/>.
+    /// </summary>
+    protected string TargetPath => _targetPath;
 
+    /// <summary>
+    /// Called before each write with the full path of the file that will be written.
+    /// </summary>
+    /// <param name="path">The full file path.</param>
+    protected virtual void OnWrite( string path )
+    {
     }
 
     public void Write( ResourceLocator resource )
@@ -69,20 +55,20 @@ sealed class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
     public void Write( NormalizedPath filePath, string text )
     {
         string path = GetNormalizedTargetPath( filePath.Path );
-        _existing.Remove( path );
+        OnWrite( path );
         File.WriteAllText( path, text );
     }
 
     public Stream OpenWriteStream( NormalizedPath filePath )
     {
         string path = GetNormalizedTargetPath( filePath.Path );
-        _existing.Remove( path );
+        OnWrite( path );
         return new FileStream( path, FileMode.Create );
     }
 
     void DoWrite( string filePath, ResourceLocator resource )
     {
-        _existing.Remove( filePath );
+        OnWrite( filePath );
         if( resource.LocalFilePath != null )
         {
             File.Copy( resource.LocalFilePath, filePath, overwrite: true );
@@ -106,41 +92,5 @@ sealed class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
         }
         var path = _pathBuffer.AsSpan( 0, _targetPath.Length + resName.Length ).ToString();
         return path;
-    }
-
-    internal void Cleanup( IActivityMonitor monitor, bool success )
-    {
-        if( _existing.Count == 0 )
-        {
-            monitor.Info( "No previous file exist that have not been regenerated. Nothing to delete." );
-        }
-        else
-        {
-            if( success )
-            {
-                using( monitor.OpenInfo( $"Deleting {_existing.Count} previous files." ) )
-                {
-                    foreach( var p in _existing )
-                    {
-                        monitor.Debug( $"Deleting '{p.AsSpan( _targetPath.Length )}'." );
-                        try
-                        {
-                            if( File.Exists( p ) ) File.Delete( p );
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( $"While deleting '{p}'. Ignoring.", ex );
-                        }
-                    }
-                }
-            }
-            else
-            {
-                monitor.Info( $"""
-                                Skipping deletion of {_existing.Count} previous files:
-                                {_existing.Order().Concatenate( " > " + Environment.NewLine )}They will be deleted on the the next successful run.
-                                """ );
-            }
-        }
     }
 }

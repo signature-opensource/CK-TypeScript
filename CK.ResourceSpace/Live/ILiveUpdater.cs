@@ -11,8 +11,11 @@ public interface ILiveUpdater
     /// level occurred.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="resources">The package's resources that changed.</param>
-    /// <param name="filePath">The full file path.</param>
+    /// <param name="resources">
+    /// The package's resources that changed.
+    /// <see cref="IResPackageResources.LocalPath"/> is necessarily not null.
+    /// </param>
+    /// <param name="filePath">The path in the <paramref name="resources"/>.</param>
     /// <returns>Must return true if the change is handled by this handler, false if the change doesn't concern this handler.</returns>
     bool OnChange( IActivityMonitor monitor, IResPackageResources resources, string filePath );
 
@@ -20,6 +23,7 @@ public interface ILiveUpdater
     /// Must apply all changes collected so far.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
+    /// <param name="installer">The target installer.</param>
     /// <returns>True on success, false otherwise. Errors must be logged.</returns>
-    bool ApplyChanges( IActivityMonitor monitor );
+    bool ApplyChanges( IActivityMonitor monitor, IResourceSpaceFileInstaller installer );
 }

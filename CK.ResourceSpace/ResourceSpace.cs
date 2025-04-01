@@ -77,7 +77,7 @@ public sealed class ResourceSpace
     /// <returns>True on success, false otherwise.</returns>
     public bool Install( IActivityMonitor monitor )
     {
-        var installer = ResourceSpaceFileInstaller.Create( monitor, _data.CKGenPath );
+        var installer = InitialFileInstaller.Create( monitor, _data.CKGenPath );
         if( installer == null ) return false;
 
         bool success = true;
