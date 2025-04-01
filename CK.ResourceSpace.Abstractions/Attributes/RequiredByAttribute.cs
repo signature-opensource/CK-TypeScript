@@ -4,6 +4,10 @@ namespace CK.Core;
 /// Decorates a <see cref="IResourceGroupPackage"/> or <see cref="IResourcePackage"/> with
 /// any number of reverse dependencies thar are package full names separated by commas
 /// or as independent strings.
+/// <para>
+/// The typed attributes (<see cref="RequiredByAttribute{T}"/>, ..., <see cref="RequiredByAttribute{T1, T2, T3, T4, T5, T6}"/>)
+/// should be preferred when the types are accessible.
+/// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class RequiredByAttribute : Attribute

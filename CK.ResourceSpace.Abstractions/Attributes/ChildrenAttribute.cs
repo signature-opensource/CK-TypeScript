@@ -5,6 +5,10 @@ namespace CK.Core;
 /// any number of other package full names that the decorated type contains.
 /// Each string can be a single package full name or comma separated multiple
 /// package full names. 
+/// <para>
+/// The typed attributes (<see cref="ChildrenAttribute{T}"/>, ..., <see cref="ChildrenAttribute{T1, T2, T3, T4, T5, T6}"/>)
+/// should be preferred when the children types are accessible.
+/// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class ChildrenAttribute : Attribute
