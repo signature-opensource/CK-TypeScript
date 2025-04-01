@@ -12,6 +12,21 @@ namespace CK.Core;
 /// <summary>
 /// Helper that captures a compact tree of <see cref="ActiveCulture"/>.
 /// All parent cultures are guaranteed to exist.
+/// <para>
+/// Serialization of cultures cannot be straightforward: depending on the context, we may want to
+/// <see cref="NormalizedCultureInfo.EnsureNormalizedCultureInfo(string)"/> or, more safely, to only
+/// <see cref="NormalizedCultureInfo.FindNormalizedCultureInfo(string)"/>.
+/// For this <see cref="ActiveCultureSet"/>, the only really interesting serialization is the one that
+/// preserves the <see cref="ActiveCulture.Index"/>: this must use a <c>EnsureNormalizedCultureInfo</c>
+/// call to restore the state.
+/// </para>
+/// <para>
+/// To prevent bad use of this API, active cultures are not directly serializable,
+/// serialization of a set must be explicitly handled by storing the <see cref="AllActiveCultures"/>'s
+/// <see cref="ExtendedCultureInfo.Name">culture names</see> in the array order (note that <see cref="ToString()"/>
+/// does the job) and restore the set by providing the ensured NormalizedCultureInfo list to the constructor: index
+/// will be correctly restored.
+/// </para>
 /// </summary>
 public sealed class ActiveCultureSet
 {
