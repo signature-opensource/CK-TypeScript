@@ -6,14 +6,14 @@ namespace CK.EmbeddedResources;
 
 public sealed partial class TranslationDefinitionSet
 {
-    sealed class SubSet : ITranslationDefinitionSet
+    sealed class SubDef : ITranslationDefinitionSet
     {
         readonly TranslationDefinitionSet _root;
         readonly ActiveCulture _culture;
         readonly ResourceLocator _origin;
         readonly IReadOnlyDictionary<string, TranslationDefinition> _translations;
 
-        public SubSet( TranslationDefinitionSet root,
+        public SubDef( TranslationDefinitionSet root,
                        ActiveCulture culture,
                        ResourceLocator origin,
                        IReadOnlyDictionary<string, TranslationDefinition> translations )
@@ -30,14 +30,14 @@ public sealed partial class TranslationDefinitionSet
 
         public IReadOnlyDictionary<string, TranslationDefinition> Translations => _translations;
 
-        public IEnumerable<ITranslationDefinitionSet> Children => Culture.Children.Select( c => _root._subSets[c.Index] ).Where( s => s != null )!;
+        public IEnumerable<ITranslationDefinitionSet> Children => Culture.Children.Select( c => _root._subDefs[c.Index] ).Where( s => s != null )!;
     }
 
     internal bool CheckNoSubSet( IActivityMonitor monitor, ActiveCulture c, string cultureName, ResourceLocator o )
     {
-        if( _subSets[c.Index] != null )
+        if( _subDefs[c.Index] != null )
         {
-            monitor.Error( $"Duplicate files found for culture '{cultureName}': {o} and {_subSets[c.Index]!.Origin} lead to the same culture." );
+            monitor.Error( $"Duplicate files found for culture '{cultureName}': {o} and {_subDefs[c.Index]!.Origin} lead to the same culture." );
             return false;
         }
         return true;
@@ -45,9 +45,9 @@ public sealed partial class TranslationDefinitionSet
 
     internal ITranslationDefinitionSet CreateSubSet( ActiveCulture culture, ResourceLocator o, Dictionary<string, TranslationDefinition> translations )
     {
-        Throw.DebugAssert( _subSets[culture.Index] == null );
-        var subSet = new SubSet( this, culture, o, translations );
-        _subSets[culture.Index] = subSet;
+        Throw.DebugAssert( _subDefs[culture.Index] == null );
+        var subSet = new SubDef( this, culture, o, translations );
+        _subDefs[culture.Index] = subSet;
         return subSet;
     }
 

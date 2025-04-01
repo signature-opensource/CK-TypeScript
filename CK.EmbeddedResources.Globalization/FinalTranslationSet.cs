@@ -10,16 +10,18 @@ namespace CK.EmbeddedResources;
 /// <summary>
 /// Translations associated to a <see cref="ActiveCultureSet"/>.
 /// Only empty sets can be created directly, actual sets are read from resources:
-/// see <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(IResourceContainer, IActivityMonitor, ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>
-/// and <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(CodeStoreResources, IActivityMonitor, ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>.
+/// see <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(IResourceContainer, IActivityMonitor, ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>.
+/// <para>
+/// Serialization is externalized by <see cref="Serialize"/>/<see cref="Deserialize(SerializedData)"/> and has to be
+/// done explicitly.
+/// </para>
 /// </summary>
 public sealed partial class FinalTranslationSet : IFinalTranslationSet
 {
     readonly IReadOnlyDictionary<string, FinalTranslationValue> _translations;
     readonly ActiveCultureSet _activeCultures;
     readonly IFinalTranslationSet?[] _subSets;
-    // Unfortunate required post-instantiation mutability for Combine. 
-    internal bool _isAmbiguous;
+    readonly bool _isAmbiguous;
 
     internal FinalTranslationSet( ActiveCultureSet activeCultures,
                                   IReadOnlyDictionary<string, FinalTranslationValue>? translations,
@@ -31,7 +33,18 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         _subSets = subSets;
         _isAmbiguous = isAmbiguous;
         subSets[0] = this;
+        for( int i = 1; i < subSets.Length; i++ )
+        {
+            var sub = subSets[i];
+            if( sub != null )
+            {
+                Throw.DebugAssert( sub is SubSet s && s._root == null );
+                ((SubSet)sub)._root = this;
+            }
+        }
     }
+
+    internal IFinalTranslationSet? RawAt( int index ) => _subSets[index];
 
     /// <summary>
     /// Initializes a new empty final translation set.
@@ -113,9 +126,9 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         Throw.CheckArgument( Culture == other.Culture );
         var translations = AggregateTranslations( this, other, out bool isAmbiguous );
 
-        bool subSetsChanged = false;
-        var subSets = CloneSubSets();
-        for( int i = 1; i < subSets.Length; ++i )
+        bool clonedChanged = false;
+        var cloned = CloneSubSets();
+        for( int i = 1; i < cloned.Length; ++i )
         {
             var mine = _subSets[i];
             var their = other._subSets[i];
@@ -123,8 +136,8 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
             {
                 if( their != null )
                 {
-                    subSets[i] = their;
-                    subSetsChanged = true;
+                    cloned[i] = new SubSet( their );
+                    clonedChanged = true;
                     isAmbiguous |= their.IsAmbiguous;
                 }
             }
@@ -135,22 +148,20 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
                     var agg = AggregateTranslations( mine, their, out var aggAmbiguous );
                     if( agg != mine.Translations )
                     {
-                        subSetsChanged = true;
-                        subSets[i] = agg == their.Translations
-                                        ? their
-                                        : new SubSet( this, mine.Culture, agg, aggAmbiguous );
+                        clonedChanged = true;
+                        cloned[i] = new SubSet( mine.Culture, agg, aggAmbiguous );
                         isAmbiguous |= aggAmbiguous;
                     }
                 }
             }
         }
 
-        if( translations == _translations && !subSetsChanged )
+        if( translations == _translations && !clonedChanged )
         {
             Throw.DebugAssert( isAmbiguous == _isAmbiguous );
             return this;
         }
-        return new FinalTranslationSet( _activeCultures, translations, subSets, isAmbiguous );
+        return new FinalTranslationSet( _activeCultures, translations, cloned, isAmbiguous );
     }
 
     static IReadOnlyDictionary<string, FinalTranslationValue> AggregateTranslations( IFinalTranslationSet set1,
@@ -202,5 +213,9 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         return result;
     }
 
+    /// <summary>
+    /// Returns the all the active culture names.
+    /// </summary>
+    /// <returns>Teh active culture names.</returns>
     public override string ToString() => _activeCultures.ToString();
 }

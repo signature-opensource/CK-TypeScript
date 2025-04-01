@@ -22,7 +22,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     readonly ActiveCultureSet _activeCultures;
     readonly ResourceLocator _origin;
     readonly IReadOnlyDictionary<string, TranslationDefinition> _definitions;
-    readonly ITranslationDefinitionSet?[] _subSets;
+    readonly ITranslationDefinitionSet?[] _subDefs;
 
     internal TranslationDefinitionSet( ActiveCultureSet activeCultures,
                                        ResourceLocator origin,
@@ -31,8 +31,8 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
         _activeCultures = activeCultures;
         _origin = origin;
         _definitions = translations ?? ImmutableDictionary<string, TranslationDefinition>.Empty;
-        _subSets = new ITranslationDefinitionSet[activeCultures.Count];
-        _subSets[0] = this;
+        _subDefs = new ITranslationDefinitionSet[activeCultures.Count];
+        _subDefs[0] = this;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     public ResourceLocator Origin => _origin;
 
     /// <inheritdoc />
-    public IEnumerable<ITranslationDefinitionSet> Children => Culture.Children.Select( c => _subSets[c.Index] ).Where( s => s != null )!;
+    public IEnumerable<ITranslationDefinitionSet> Children => Culture.Children.Select( c => _subDefs[c.Index] ).Where( s => s != null )!;
 
     /// <summary>
     /// Creates a new initial <see cref="FinalTranslationSet"/> from this definition that is independent
@@ -66,19 +66,18 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     /// </summary>
     public FinalTranslationSet? ToInitialFinalSet( IActivityMonitor monitor )
     {
-        var translations = CreateInitialTranslations( monitor, this );
-        bool success = translations != null;
-        var subSets = new IFinalTranslationSet[_subSets.Length];
-        var result = new FinalTranslationSet( _activeCultures, translations, subSets, isAmbiguous: false );
+        var rootTranslations = CreateInitialTranslations( monitor, this );
+        bool success = rootTranslations != null;
+        var subSets = new IFinalTranslationSet[_subDefs.Length];
         for( int i = 1; i < subSets.Length; ++i )
         {
-            var def = _subSets[i];
+            var def = _subDefs[i];
             if( def != null )
             {
-                translations = CreateInitialTranslations( monitor, def );
+                var translations = CreateInitialTranslations( monitor, def );
                 if( translations != null )
                 {
-                    subSets[i] = new FinalTranslationSet.SubSet( result, def.Culture, translations, isAmbiguous: false );
+                    subSets[i] = new FinalTranslationSet.SubSet( def.Culture, translations, isAmbiguous: false );
                 }
                 else
                 {
@@ -86,7 +85,9 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
                 }
             }
         }
-        return success ? result : null;
+        return success
+                ? new FinalTranslationSet( _activeCultures, rootTranslations, subSets, isAmbiguous: false )
+                : null;
 
     }
 
@@ -133,42 +134,41 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
         var (rootTranslations, isAmbiguous) = CombineTranslations( monitor, this, baseSet, isRoot: true );
         bool success = rootTranslations != null;
 
-        var subSets = baseSet.CloneSubSets();
-        // We create a result only when actually needed.
-        FinalTranslationSet? result = null;
-        for( int i = 1; i < subSets.Length; ++i )
+        var clonedChanged = false;
+        var cloned = baseSet.CloneSubSets();
+        for( int i = 1; i < cloned.Length; ++i )
         {
-            var otherSet = subSets[i];
-            var def = _subSets[i];
+            var clonedSet = cloned[i];
+            var def = _subDefs[i];
             if( def == null )
             {
-                if( otherSet != null )
+                if( clonedSet != null )
                 {
-                    isAmbiguous |= otherSet.IsAmbiguous;
+                    isAmbiguous |= clonedSet.IsAmbiguous;
                 }
             }
             else
             {
-                if( otherSet == null )
+                if( clonedSet == null )
                 {
                     var t = CreateInitialTranslations( monitor, def );
                     success &= t != null;
                     if( success )
                     {
                         Throw.DebugAssert( t != null );
-                        result ??= new FinalTranslationSet( _activeCultures, rootTranslations, subSets, false );
-                        subSets[i] = new FinalTranslationSet.SubSet( result, def.Culture, t, isAmbiguous: false );
+                        clonedChanged = true;
+                        cloned[i] = new FinalTranslationSet.SubSet( def.Culture, t, isAmbiguous: false );
                     }
                 }
                 else
                 {
-                    var (t, a) = CombineTranslations( monitor, def, otherSet, isRoot: false );
+                    var (t, a) = CombineTranslations( monitor, def, baseSet.RawAt( i )!, isRoot: false );
                     success &= t != null;
                     if( success )
                     {
                         Throw.DebugAssert( t != null );
-                        result ??= new FinalTranslationSet( _activeCultures, rootTranslations, subSets, false );
-                        subSets[i] = new FinalTranslationSet.SubSet( result, def.Culture, t, a );
+                        clonedChanged = true;
+                        cloned[i] = new FinalTranslationSet.SubSet( def.Culture, t, a );
                         isAmbiguous |= a;
                     }
                 }
@@ -176,16 +176,11 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
         }
         if( success )
         {
-            if( result == null )
+            if( !clonedChanged && rootTranslations == baseSet.Translations )
             {
-                if( rootTranslations == baseSet.Translations )
-                {
-                    return baseSet;
-                }
-                result = new FinalTranslationSet( _activeCultures, rootTranslations, subSets, false );
+                return baseSet;
             }
-            result._isAmbiguous = isAmbiguous;
-            return result;
+            return new FinalTranslationSet( _activeCultures, rootTranslations, cloned, isAmbiguous );
         }
         return null;
     }

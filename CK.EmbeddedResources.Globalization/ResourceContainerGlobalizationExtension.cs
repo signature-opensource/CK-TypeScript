@@ -10,7 +10,7 @@ using System.Text.Json;
 namespace CK.EmbeddedResources;
 
 /// <summary>
-/// Extends <see cref="IResourceContainer"/> and <see cref="CodeStoreResources"/> with LoadLocales methods.
+/// Extends <see cref="IResourceContainer"/> with LoadLocales methods.
 /// </summary>
 public static class ResourceContainerGlobalizationExtension
 {
