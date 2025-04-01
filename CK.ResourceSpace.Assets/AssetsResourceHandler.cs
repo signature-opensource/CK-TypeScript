@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CK.Core;
 
-public class AssetsResourceHandler : ResourceSpaceFolderHandler
+public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
 {
     readonly AssetCache _cache;
     FinalResourceAssetSet? _finalAssets;
@@ -14,7 +14,7 @@ public class AssetsResourceHandler : ResourceSpaceFolderHandler
     public AssetsResourceHandler( IResPackageDataCache packageDataCache, string rootFolderName )
         : base( rootFolderName )
     {
-        _cache = new AssetCache( this, packageDataCache );
+        _cache = new AssetCache( packageDataCache, rootFolderName );
     }
 
     /// <summary>
@@ -26,7 +26,7 @@ public class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// Gets the final assets that have been successfully initialized.
     /// <see cref="FinalResourceAssetSet.IsAmbiguous"/> is necessarily false.
     /// </summary>
-    public FinalResourceAssetSet? FinalAssets => _finalAssets; 
+    public FinalResourceAssetSet? FinalAssets => _finalAssets;
 
     protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData )
     {
@@ -35,10 +35,10 @@ public class AssetsResourceHandler : ResourceSpaceFolderHandler
         if( r.IsAmbiguous )
         {
             var ambiguities = r.Assets.Where( kv => kv.Value.Ambiguities != null )
-                                      .Select( kv => $"'{kv.Key}' is mapped by {kv.Value.Origin} but also to {kv.Value.Ambiguities!.Select( r => r.ToString()).Concatenate()}." );
+                                      .Select( kv => $"'{kv.Key}' is mapped by {kv.Value.Origin} but also to {kv.Value.Ambiguities!.Select( r => r.ToString() ).Concatenate()}." );
             monitor.Error( $"""
                 Ambiguities detected in assets:
-                {ambiguities.Concatenate(Environment.NewLine)}
+                {ambiguities.Concatenate( Environment.NewLine )}
                 """ );
             return false;
         }
@@ -69,5 +69,4 @@ public class AssetsResourceHandler : ResourceSpaceFolderHandler
             return false;
         }
     }
-
 }

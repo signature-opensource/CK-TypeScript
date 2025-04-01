@@ -5,12 +5,12 @@ namespace CK.Core;
 
 sealed class AssetCache : ResPackageDataHandler<FinalResourceAssetSet>
 {
-    readonly AssetsResourceHandler _handler;
+    readonly string _rootFolderName;
 
-    public AssetCache( AssetsResourceHandler handler, IResPackageDataCache cache )
+    public AssetCache( IResPackageDataCache cache, string rootFolderName )
         : base( cache )
     {
-        _handler = handler;
+        _rootFolderName = rootFolderName;
     }
 
     protected override FinalResourceAssetSet Aggregate( FinalResourceAssetSet data1, FinalResourceAssetSet data2 )
@@ -23,7 +23,7 @@ sealed class AssetCache : ResPackageDataHandler<FinalResourceAssetSet>
         if( resources.Resources.LoadAssets( monitor,
                                             resources.Package.DefaultTargetPath,
                                             out var definitions,
-                                            _handler.RootFolderName ) )
+                                            _rootFolderName ) )
         {
             return definitions != null
                     ? definitions.Combine( monitor, data )
@@ -38,7 +38,7 @@ sealed class AssetCache : ResPackageDataHandler<FinalResourceAssetSet>
         if( package.Resources.Resources.LoadAssets( monitor,
                                                            package.DefaultTargetPath,
                                                            out var definitions,
-                                                           _handler.RootFolderName ) )
+                                                           _rootFolderName ) )
         {
             initial = definitions != null
                             ? definitions.ToInitialFinalSet( monitor )
