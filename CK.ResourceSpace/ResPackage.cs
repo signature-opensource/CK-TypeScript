@@ -109,7 +109,7 @@ public sealed partial class ResPackage
         }
         else
         {
-            _childrenAggregateId = dataCacheBuilder.Register( _children );
+            _childrenAggregateId = dataCacheBuilder.RegisterAggregate( _children );
             // ComputeAllContentReachablePackage computes the _childrenHasLocalPackage, we compute it first.
             // It contains the children (just like the _afterReachablePackages computed below).
             var allAfterReachablePackages = new HashSet<ResPackage>( _allReachablePackages );

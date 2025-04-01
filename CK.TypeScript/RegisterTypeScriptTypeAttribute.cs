@@ -7,7 +7,7 @@ namespace CK.TypeScript;
 /// Extends the <see cref="RegisterPocoTypeAttribute"/> to also register an external
 /// type as a TypeScript type.
 /// <para>
-/// This attribute can only decorate a TypeScriptPackage: when set on any other Real Object, this is simply ignored.
+/// This attribute can only decorate a TypeScriptPackage: when set on any other object, this is simply ignored.
 /// </para>
 /// </summary>
 public sealed class RegisterTypeScriptTypeAttribute : RegisterPocoTypeAttribute, ITypeScriptTypeDecorationAttribute

@@ -60,7 +60,7 @@ sealed class ResPackageDataCacheBuilder
     public IReadOnlySet<ResPackage> RegisterAndShare( HashSet<ResPackage> packages, out AggregateId aggregateId )
     {
         Throw.DebugAssert( packages.Count > 0 );
-        aggregateId = Register( packages );
+        aggregateId = RegisterAggregate( packages );
         if( !_reachableIndex.TryGetValue( aggregateId, out var exists ) )
         {
             exists = packages;
@@ -69,7 +69,7 @@ sealed class ResPackageDataCacheBuilder
         return exists;
     }
 
-    public AggregateId Register( IReadOnlyCollection<ResPackage> packages )
+    public AggregateId RegisterAggregate( IReadOnlyCollection<ResPackage> packages )
     {
         int nbLocal = 0;
         int nbStable = 0;

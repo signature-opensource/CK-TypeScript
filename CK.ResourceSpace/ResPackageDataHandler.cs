@@ -11,7 +11,7 @@ namespace CK.Core;
 /// <typeparam name="T">
 /// Associated data type. It should be immutable and is fully "implemented" by the
 /// <see cref="Create(IActivityMonitor, ResPackage)"/>, <see cref="Combine(IActivityMonitor, IResPackageResources, T)"/>
-/// and <see cref="Aggregate(T, T)"/>.
+/// and <see cref="Aggregate(T, T)"/> methods.
 /// </typeparam>
 public abstract class ResPackageDataHandler<T> where T : class
 {
@@ -173,4 +173,18 @@ public abstract class ResPackageDataHandler<T> where T : class
     /// <returns>Aggregated data. Can be <paramref name="data1"/> or <paramref name="data2"/>.</returns>
     protected abstract T Aggregate( T data1, T data2 );
 
+    /// <summary>
+    /// Read only access to the cached data. Indexed by <see cref="ResPackage.Index"/>.
+    /// </summary>
+    protected ReadOnlySpan<T?> CachedData => _data.AsSpan();
+
+    /// <summary>
+    /// Read only access to internal cached aggregated data of stable aggregates.
+    /// </summary>
+    protected ReadOnlySpan<T?> StableAggregateCache => _stableAggregateCache.AsSpan();
+
+    /// <summary>
+    /// Read only access to internal cached data of local data.
+    /// </summary>
+    protected ReadOnlySpan<T?> LocalAggregateCache => _localAggregateCache.AsSpan();
 }

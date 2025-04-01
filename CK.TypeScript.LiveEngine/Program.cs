@@ -43,7 +43,7 @@ while( !ctrlCHandler.IsCancellationRequested )
                     """ );
     var liveState = await LiveState.WaitForStateAsync( monitor, liveStateFilePath, ctrlCHandler.Token );
     monitor.Info( "Running watcher." );
-    stateFilesFilter ??= new CKGenAppFilter( liveState );
+    stateFilesFilter ??= new CKGenAppFilter( liveStateFilePath, liveState );
     var runner = new Runner( liveState, stateFilesFilter );
     await runner.RunAsync( monitor, ctrlCHandler.Token );
     monitor.Info( "Watcher stopped." );

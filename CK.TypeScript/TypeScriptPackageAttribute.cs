@@ -8,17 +8,13 @@ namespace CK.TypeScript;
 /// <summary>
 /// Required attribute for <see cref="TypeScriptPackage"/>.
 /// <para>
-/// A package is associated to embedded resources from <see cref="ResourceFolderPath"/> ("./Res" by default)
+/// A package is associated to embedded resources in "Res/" and/or "Res[After]/" folders.
 /// and is often decorated with other attributes:
 /// <list type="bullet">
 ///     <item>
-///     <see cref="TypeScriptResourceAttribute"/> enables a file from the <see cref="ResourceFolderPath"/> to
-///     be extracted to another location than the package's <see cref="TypeScriptFolder"/> by specifying a
-///     <see cref="TypeScriptResourceAttribute.TargetFolder"/>.
-///     </item>
-///     <item>
-///     <see cref="TypeScriptFileAttribute"/> is like <see cref="TypeScriptResourceAttribute"/> but in addition
-///     can declare exported type names from the file.
+///     <see cref="TypeScriptFileAttribute"/> can be use to specify one or more exported symbol names for a
+///     TypeScript file and can be used to install it to another location than the package's <see cref="TypeScriptFolder"/>
+///     by specifying a <see cref="TypeScriptFileAttribute.TargetFolder"/>.
 ///     </item>
 ///     <item>
 ///     <see cref="TypeScriptImportLibraryAttribute"/> enables a package to import an external npm library.
