@@ -37,12 +37,12 @@ public abstract partial class ResourceSpaceFileHandler
                                                  FolderExclusion folderFilter );
 
     /// <summary>
-    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor, ResourceSpaceFileInstaller)"/>.
+    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="installer">The target installer.</param>
     /// <returns>True on success, false otherwise.</returns>
-    internal protected abstract bool Install( IActivityMonitor monitor, ResourceSpaceFileInstaller installer );
+    internal protected abstract bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller installer );
 
     public sealed override string ToString() => $"{GetType().Name} - Files '*{_fileExtensions.Concatenate( "', *'" )}'";
 

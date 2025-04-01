@@ -23,7 +23,7 @@ public sealed class ResourceSpace
     /// <summary>
     /// The current serialization format version.
     /// </summary>
-    public static byte CurrentVersion = 0;
+    public static readonly byte CurrentVersion = 0;
 
     readonly ResourceSpaceData _data;
     readonly ImmutableArray<ResourceSpaceFolderHandler> _folderHandlers;

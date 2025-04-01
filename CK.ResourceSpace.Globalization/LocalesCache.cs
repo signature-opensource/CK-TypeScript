@@ -40,9 +40,9 @@ sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
     {
         FinalTranslationSet? initial = null;
         if( package.Resources.Resources.LoadTranslations( monitor,
-                                                                _activeCultures,
-                                                                out var definitions,
-                                                                _handler.RootFolderName ) )
+                                                          _activeCultures,
+                                                          out var definitions,
+                                                          _handler.RootFolderName ) )
         {
             initial = definitions != null
                             ? definitions.ToInitialFinalSet( monitor )

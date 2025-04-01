@@ -34,7 +34,7 @@ public abstract class ResourceSpaceFolderHandler
     internal protected abstract bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData );
 
     /// <summary>
-    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor, ResourceSpaceFileInstaller)"/>.
+    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="installer">The target installer.</param>

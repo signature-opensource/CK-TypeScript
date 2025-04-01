@@ -25,7 +25,7 @@ public interface IResPackageResources
 
     /// <summary>
     /// 
-    /// TODO: replaces this by a bool IsReachable( IResPackageResource ) and/or bool IsReachable( CodeStoreResources )
+    /// TODO: replaces this by a bool IsReachable( IResPackageResource )
     ///       that will handle the closure.
     /// 
     /// Gets the other package resources that are reachable from this one.

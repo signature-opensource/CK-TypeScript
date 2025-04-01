@@ -12,7 +12,6 @@ public sealed partial class ResPackage
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
-    readonly string? _localPath;
     readonly ImmutableArray<ResPackage> _requires;
     readonly IReadOnlySet<ResPackage> _reachablePackages;
     readonly AggregateId _reachableAggregateId;
@@ -33,14 +32,12 @@ public sealed partial class ResPackage
     readonly bool _afterReachableHasLocalPackage;
     readonly bool _allAfterReachableHasLocalPackage;
     // Implementation notes:
-    // ResPackage doesn't reference the ResourceSpaceData
-    // because it is serialized into the live world, and the ResourceSpaceData
-    // is not live.
+    // ResPackage doesn't reference the ResourceSpaceData.
     // To be able to locate the package of a resource (to check reachability of resources)
     // we however need a resourceIndex.
     // This resource index is shared by all ResPackage and is the only "global" context
     // we really need.
-    IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
+    readonly IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
 
     internal ResPackage( ResPackageDataCacheBuilder dataCacheBuilder,
                          string fullName,
@@ -49,7 +46,6 @@ public sealed partial class ResPackage
                          IResourceContainer beforeResources,
                          int idxAfterResources,
                          IResourceContainer afterResources,
-                         string? localPath,
                          bool isGroup,
                          Type? type,
                          ImmutableArray<ResPackage> requires,
@@ -58,7 +54,6 @@ public sealed partial class ResPackage
     {
         _fullName = fullName;
         _defaultTargetPath = defaultTargetPath;
-        _localPath = localPath;
         _isGroup = isGroup;
         _index = index;
         _requires = requires;
@@ -217,14 +212,10 @@ public sealed partial class ResPackage
     /// </summary>
     public IResPackageResources ResourcesAfter => _resourcesAfter;
 
-    /// <inheritdoc cref="ResPackageDescriptor.LocalPath"/>
-    public string? LocalPath => _localPath;
-
     /// <summary>
     /// Gets whether this is a locally available package.
     /// </summary>
-    [MemberNotNullWhen(true,nameof(LocalPath))]
-    public bool IsLocalPackage => _localPath != null;
+    public bool IsLocalPackage => _resources.LocalPath != null || _resourcesAfter.LocalPath != null;
 
     /// <summary>
     /// Gets the type if this package is defined by a type.

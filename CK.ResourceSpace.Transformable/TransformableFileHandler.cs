@@ -58,7 +58,7 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="target">The target.</param>
     /// <returns>True on succes, false one error (errors have been logged).</returns>
-    protected override bool Install( IActivityMonitor monitor, ResourceSpaceFileInstaller target )
+    protected override bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller target )
     {
         Throw.CheckState( _items != null );
         bool success = true;

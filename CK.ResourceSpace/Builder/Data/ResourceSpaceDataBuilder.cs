@@ -62,7 +62,6 @@ public sealed class ResourceSpaceDataBuilder
                                    beforeResources: noHeadRes,
                                    idxAfterResources: 1,
                                    afterResources: codeContainer,
-                                   localPath: null,
                                    isGroup: false,
                                    type: null,
                                    requires: ImmutableArray<ResPackage>.Empty,
@@ -101,7 +100,6 @@ public sealed class ResourceSpaceDataBuilder
                                              beforeResources: appResStore,
                                              idxAfterResources: 2 * index + 1,
                                              afterResources: noAppRes,
-                                             localPath: appLocalPath,
                                              isGroup: false,
                                              type: null,
                                              requires: appRequires,
@@ -118,7 +116,7 @@ public sealed class ResourceSpaceDataBuilder
         // We have 1 + <Code> + descriptorPackageCount + <App> total packages.
         // The [0] index is null! and is an invalid index: ResPackage.Index is one-based.
         var bAll = ImmutableArray.CreateBuilder<ResPackage>( descriptorPackageCount + 3 );
-        // We have 2 * (<Code> + descriptorPackageCount + <App>) total IResPackageResources (the After and Before CodeStoreResources).
+        // We have 2 * (<Code> + descriptorPackageCount + <App>) total IResPackageResources (the After and Before).
         // We don't use a list/builder here because indexes are provided by the SortedItems.
         // IResPackageResources.Index is zero based.
         var allPackageResources = new IResPackageResources[ 2 * (descriptorPackageCount+2) ];
@@ -196,7 +194,6 @@ public sealed class ResourceSpaceDataBuilder
                                         d.Resources,
                                         s.Index,
                                         d.AfterResources,
-                                        d.LocalPath,
                                         d.IsGroup,
                                         d.Type,
                                         requires,
@@ -244,12 +241,9 @@ public sealed class ResourceSpaceDataBuilder
         packageIndex.Add( appPackage.FullName, appPackage );
         if( appLocalPath != null )
         {
-            if( watchRoot == null )
-            {
-                // If we have no packages, watchRoot is null: we'll only
-                // watch the "<App> folder.
-                watchRoot = appLocalPath;
-            }
+            // If we have no packages, watchRoot is null: we'll only
+            // watch the "<App> folder.
+            watchRoot ??= appLocalPath;
             resourceIndex.Add( appPackage.Resources.Resources, appPackage.Resources );
             bLocal.Add( appPackage );
         }

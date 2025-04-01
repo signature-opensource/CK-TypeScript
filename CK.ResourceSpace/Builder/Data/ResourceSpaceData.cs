@@ -44,9 +44,8 @@ public sealed partial class ResourceSpaceData
     public string CKGenPath => _ckGenPath;
 
     /// <summary>
-    /// Gets the packages indexed by their <see cref="ResPackage.FullName"/>, <see cref="ResPackage.Type"/> (if
-    /// the package is defined by a type), and by the <see cref="CodeStoreResources.Code"/> and <see cref="CodeStoreResources.Store"/>
-    /// resource containers of <see cref="ResPackage.Resources"/> and <see cref="ResPackage.ResourcesAfter"/>.
+    /// Gets the packages indexed by their <see cref="ResPackage.FullName"/> and <see cref="ResPackage.Type"/> (if
+    /// the package is defined by a type).
     /// </summary>
     public IReadOnlyDictionary<object, ResPackage> PackageIndex => _packageIndex;
 

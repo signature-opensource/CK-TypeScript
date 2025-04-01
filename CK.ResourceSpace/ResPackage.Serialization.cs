@@ -17,7 +17,6 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _fullName = r.ReadString();
         _type = d.ReadNullableObject<Type>();
         _defaultTargetPath = r.ReadString();
-        _localPath = r.ReadNullableString();
         _isGroup = r.ReadBoolean();
         _index = r.ReadInt32();
         _requires = d.ReadValue<ImmutableArray<ResPackage>>();
@@ -74,7 +73,6 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         w.Write( _fullName );
         s.WriteNullableObject( _type );
         w.Write( _defaultTargetPath.Path );
-        w.WriteNullableString( _localPath );
         w.Write( _isGroup );
         w.Write( _index );
         s.WriteValue( _requires );

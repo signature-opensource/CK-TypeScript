@@ -9,7 +9,7 @@ namespace CK.EmbeddedResources;
 
 /// <summary>
 /// <summary>
-/// Extends <see cref="IResourceContainer"/> and <see cref="CodeStoreResources"/> with LoadAssets methods.
+/// Extends <see cref="IResourceContainer"/> with LoadAssets methods.
 /// </summary>
 /// </summary>
 public static class ResourceContainerAssetsExtension

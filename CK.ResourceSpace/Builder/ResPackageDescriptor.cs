@@ -20,7 +20,6 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     readonly NormalizedPath _defaultTargetPath;
     readonly StoreContainer _resources;
     readonly StoreContainer _afterResources;
-    readonly string? _localPath;
     ResPackageDescriptor? _package;
     List<ResPackageDescriptor>? _requires;
     List<ResPackageDescriptor>? _requiredBy;
@@ -42,11 +41,6 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         _defaultTargetPath = defaultTargetPath;
         _resources = resources;
         _afterResources = afterResources;
-        var local = resources.LocalPath ?? afterResources.LocalPath;
-        if( local != null )
-        {
-            _localPath = Path.GetDirectoryName( local ) + Path.DirectorySeparatorChar;
-        }
     }
 
     /// <summary>
@@ -63,17 +57,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// Gets whether this is a local package: its <see cref="Resources"/> or <see cref="AfterResources"/>
     /// is a <see cref="FileSystemResourceContainer"/> with a true <see cref="FileSystemResourceContainer.HasLocalFilePathSupport"/>.
     /// </summary>
-    [MemberNotNullWhen(true,nameof(LocalPath))]
-    public bool IsLocalPackage => _localPath != null;
-
-    /// <summary>
-    /// Gets this package local path.
-    /// <para>
-    /// When not null, it ends with <see cref="Path.DirectorySeparatorChar"/> and is the parent folder of
-    /// the "Res/" and/or "Res[After]" folders.
-    /// </para>
-    /// </summary>
-    public string? LocalPath => _localPath;
+    public bool IsLocalPackage => _resources.LocalPath != null || _afterResources.LocalPath != null;
 
     /// <summary>
     /// Gets the "Res" resources for this package.
