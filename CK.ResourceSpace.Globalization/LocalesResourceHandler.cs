@@ -51,7 +51,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     }
 
     /// <summary>
-    /// Iniitalizes a new locales resources handler.
+    /// Initializes a new locales resources handler.
     /// </summary>
     /// <param name="packageDataCache">The package data cache.</param>
     /// <param name="rootFolderName">The folder name (typically "locales", "ts-locales", etc.).</param>
@@ -63,7 +63,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
                                    InstallOption installOption )
         : base( rootFolderName )
     {
-        _cache = new LocalesCache( this, packageDataCache, activeCultures );
+        _cache = new LocalesCache( packageDataCache, activeCultures, RootFolderName );
         _installOption = installOption;
     }
 

@@ -5,14 +5,14 @@ namespace CK.Core;
 
 sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
 {
-    readonly LocalesResourceHandler _handler;
     readonly ActiveCultureSet _activeCultures;
+    readonly string _rootFolderName;
 
-    public LocalesCache( LocalesResourceHandler handler, IResPackageDataCache cache, ActiveCultureSet activeCultures )
+    public LocalesCache( IResPackageDataCache cache, ActiveCultureSet activeCultures, string rootFolderName )
         : base( cache )
     {
-        _handler = handler;
         _activeCultures = activeCultures;
+        _rootFolderName = rootFolderName;
     }
 
     public ActiveCultureSet ActiveCultures => _activeCultures;
@@ -27,7 +27,7 @@ sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
         if( resources.Resources.LoadTranslations( monitor,
                                                   _activeCultures,
                                                   out var definitions,
-                                                  _handler.RootFolderName ) )
+                                                  _rootFolderName ) )
         {
             return definitions != null
                     ? definitions.Combine( monitor, data )
@@ -42,7 +42,7 @@ sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
         if( package.Resources.Resources.LoadTranslations( monitor,
                                                           _activeCultures,
                                                           out var definitions,
-                                                          _handler.RootFolderName ) )
+                                                          _rootFolderName ) )
         {
             initial = definitions != null
                             ? definitions.ToInitialFinalSet( monitor )
@@ -50,4 +50,5 @@ sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
         }
         return initial;
     }
+
 }
