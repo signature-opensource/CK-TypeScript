@@ -214,10 +214,11 @@ public sealed partial class TypeScriptContext
         }
         // New approach (CK-ReaDI oriented) here to manage the resources.
 
+        var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
+
         var typeScriptContext = this;
 
         var tsPathContext = new TypeScriptPathContext( _binPathConfiguration );
-        var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
         // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
         // logically depends on it. Its resources will be reachable from any package.
         resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
@@ -269,7 +270,7 @@ public sealed partial class TypeScriptContext
         if( resSpace == null ) return false;
         return resSpace.Install( monitor );
 
-        // Here 
+
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,
                                                ImmutableArray<ITSCodeGenerator> globals,
                                                TypeScriptContext context )
@@ -302,10 +303,10 @@ public sealed partial class TypeScriptContext
         }
 
         static bool GeneratePackageCode( IActivityMonitor monitor,
-                                         ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                                         IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
                                          TypeScriptContext context )
         {
-            using( monitor.OpenInfo( $"Starting code generation for the {packages.Length} TypeScript packages." ) )
+            using( monitor.OpenInfo( $"Starting code generation for the {packages.Count} TypeScript packages." ) )
             {
                 var success = true;
                 foreach( var p in packages )

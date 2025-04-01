@@ -33,20 +33,15 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImpl
 
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
-    protected override void OnInitialize( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, ITypeAttributesCache owner )
-    {
-        if( tsPackage.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out _resource ) )
-        {
-            _targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
-            _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
-            tsPackage.RemoveResource( _resource );
-        }
-    }
-
-
     protected internal override bool GenerateCode( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context )
     {
         Throw.DebugAssert( "If initialization failed, we never reach this point.", _resource.IsValid );
+        //if( tsPackage.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out _resource ) )
+        //{
+        //    _targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
+        //    _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
+        //    tsPackage.RemoveResource( _resource );
+        //}
         var file = context.Root.Root.CreateResourceFile( in _resource, _targetPath );
         Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
         foreach( var tsType in Attribute.TypeNames )

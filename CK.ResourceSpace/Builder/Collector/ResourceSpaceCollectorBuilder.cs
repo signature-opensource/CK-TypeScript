@@ -151,18 +151,18 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     /// The package resources to apply after the <see cref="ResPackageDescriptor.Children"/>.
     /// Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
     /// </param>
-    /// <returns>True on success, false otherwise.</returns>
-    public bool RegisterPackage( IActivityMonitor monitor,
-                                 string fullName,
-                                 NormalizedPath defaultTargetPath,
-                                 IResourceContainer resourceStore,
-                                 IResourceContainer resourceAfterStore )
+    /// <returns>The package descriptor on success, null on error.</returns>
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                                  string fullName,
+                                                  NormalizedPath defaultTargetPath,
+                                                  IResourceContainer resourceStore,
+                                                  IResourceContainer resourceAfterStore )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fullName );
         Throw.CheckArgument( resourceStore is not null && resourceStore.IsValid );
         Throw.CheckArgument( resourceAfterStore is not null && resourceStore.IsValid );
         Throw.CheckArgument( resourceStore != resourceAfterStore );
-        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore ) != null;
+        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore );
     }
 
     /// <summary>
@@ -171,23 +171,24 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The type that defines the package.</param>
     /// <param name="defaultTargetPath">The default target path associated to the package's resources.</param>
-    /// <returns>True on success, false otherwise.</returns>
-    public bool RegisterPackage( IActivityMonitor monitor,
-                                 Type type,
-                                 NormalizedPath defaultTargetPath )
+    /// <returns>The package descriptor on success, null on error.</returns>
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                                  Type type,
+                                                  NormalizedPath defaultTargetPath )
     {
         Throw.CheckNotNullArgument( type );
         Throw.CheckArgument( "Dynamic assembly is not supported.", type.FullName != null );
         if( _packageIndex.TryGetValue( type, out var already ) )
         {
             monitor.Error( $"Duplicate package registration: type '{type:C}' is already registered as '{already}'." );
-            return false;
+            return null;
         }
         IResourceContainer resourceStore = type.CreateResourcesContainer( monitor );
         IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true );
 
         return resourceStore.IsValid && resourceAfterStore.IsValid
-               && DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore ) != null;
+               ? DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore )
+               : null;
     }
 
     ResPackageDescriptor? DoRegister( IActivityMonitor monitor,

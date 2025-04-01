@@ -50,10 +50,6 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             {
                 allBinPathConfigurations.RemoveAt( i-- );
             }
-            else
-            {
-                CompleteActiveCultureSet( ts );
-            }
         }
         return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
 
@@ -145,36 +141,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             }
             return success;
         }
-
-        static void CompleteActiveCultureSet( TypeScriptBinPathAspectConfiguration ts )
-        {
-            ts.ActiveCultures.Add( NormalizedCultureInfo.CodeDefault );
-            List<NormalizedCultureInfo>? missing = null;
-            foreach( var culture in ts.ActiveCultures )
-            {
-                foreach( var parent in culture.Fallbacks )
-                {
-                    if( !ts.ActiveCultures.Contains( parent ) )
-                    {
-                        missing ??= new List<NormalizedCultureInfo>();
-                        missing.Add( parent );
-                    }
-                }
-            }
-            if( missing != null )
-            {
-                foreach( var m in missing )
-                {
-                    ts.ActiveCultures.Add( m );
-                    foreach( var f in m.Fallbacks )
-                    {
-                        ts.ActiveCultures.Add( f );
-                    }
-                }
-            }
-        }
     }
-
 
     bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;
 

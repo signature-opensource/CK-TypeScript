@@ -1,7 +1,6 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.TypeScript.CodeGen;
-using CK.TypeScript.LiveEngine;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -24,38 +23,6 @@ public sealed partial class TypeScriptContext // Save
         {
             var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
             var targetCKGenFolder = BinPathConfiguration.TargetCKGenPath;
-
-            // If live state must be built, it's time to build it.
-            var liveState = _initializer.LiveState;
-            if( liveState != null )
-            {
-                using( monitor.OpenInfo( "Initializing ck-watch live state." ) )
-                {
-                    liveState.ClearState( monitor );
-                    foreach( var p in _initializer.Packages )
-                    {
-                        // Skips any fake (empty by design) resource containers.
-                        if( p.Resources is EmptyResourceContainer ) continue;
-                        Throw.DebugAssert( p.Resources is AssemblyResourceContainer or FileSystemResourceContainer );
-
-                        if( p.Resources is FileSystemResourceContainer local )
-                        {
-                            liveState.AddLocalPackage( monitor,
-                                                       local,
-                                                       p.TypeScriptFolder );
-                        }
-                        else
-                        {
-                            liveState.AddRegularPackage( monitor,
-                                                         Unsafe.As<AssemblyResourceContainer>( p.Resources ),
-                                                         p.TypeScriptFolder,
-                                                         p.TSLocales,
-                                                         p.Assets );
-                        }
-                    }
-                }
-            }
-
             // If a ck-gen/dist folder exists, we delete it no matter what.
             // This applies to NpmPackage integration mode. 
             // When UseSrcFolder is false, its files appear in the list of cleanup files and
@@ -121,33 +88,28 @@ public sealed partial class TypeScriptContext // Save
                 }
                 else
                 {
-                    if( liveState != null )
+                    var liveEnginePath = typeof( TypeScript.LiveEngine.LiveState ).Assembly.Location;
+                    if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
+                                                                                        out var relative ) )
                     {
-                        var liveEnginePath = typeof( LiveState ).Assembly.Location;
-                        if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
-                                                                                         out var relative ) )
-                        {
-                            _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
-                            dotnet "$PROJECT_CWD/{relative}"
-                            """;
-                        }
-                        else
-                        {
-                            monitor.Warn( $"""
-                                Unable to compute reltive path from:
-                                {BinPathConfiguration.TargetProjectPath}
-                                to:
-                                {liveEnginePath}
-                                No 'yarn ck-watch' command available.
-                                """ );
-                            _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
-                        }
+                        _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
+                        dotnet "$PROJECT_CWD/{relative}"
+                        """;
+                    }
+                    else
+                    {
+                        monitor.Warn( $"""
+                            Unable to compute reltive path from:
+                            {BinPathConfiguration.TargetProjectPath}
+                            to:
+                            {liveEnginePath}
+                            No 'yarn ck-watch' command available.
+                            """ );
+                        _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
                     }
                     success &= _integrationContext.Run( monitor, saver );
                 }
             }
-            // Whatever occured above, if we have a live state, write it.
-            liveState?.WriteState( monitor );
         }
         return success;
     }

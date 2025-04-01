@@ -44,18 +44,8 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
         else
         {
             tsPackage.AddExtension( this );
-            OnInitialize(  monitor, tsPackage, owner );
         }
     }
-
-    /// <summary>
-    /// Enables initialization for this extension.
-    /// Errors must be logged: this will stop the setup process.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="tsPackage">The associated package.</param>
-    /// <param name="owner">The decorated type.</param>
-    protected abstract void OnInitialize( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, ITypeAttributesCache owner );
 
     /// <summary>
     /// Called by the <see cref="TypeScriptPackageAttributeImpl.GenerateCode(IActivityMonitor, TypeScriptContext)"/>.

@@ -17,5 +17,10 @@
         <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
         <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
         <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
+        <!-- TypeScript Engine doesn't use the LiveEngine. This reference is here to bring the
+             LiveEngine package and is used only to compute the relative path to the LiveEngine
+             dll from the TargetProject path in order to compute the yarn "ck-watch" command that is
+             "dotnet "$PROJECT_CWD/{relative}". -->
+        <ProjectReference Include="..\CK.TypeScript.LiveEngine\CK.TypeScript.LiveEngine.csproj" />
     </ItemGroup>
 </Project>

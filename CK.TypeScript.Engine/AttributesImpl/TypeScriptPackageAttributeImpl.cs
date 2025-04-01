@@ -124,9 +124,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     }
 
     /// <summary>
-    /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/> in the order
-    /// of the topological sort of the <see cref="TypeScriptPackage"/>. A package is initialized after its subordinated
-    /// packages (its content).
+    /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/>.
     /// </summary>
     /// <param name="monitor">The monitor.</param>
     /// <param name="initializer">The TypeScriptContext initializer.</param>
@@ -136,12 +134,12 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         bool success = true;
 
         // Handle the RegisterTypeScriptTypeAttribute.
+        bool overrideError = false;
         foreach( var r in _owner.GetTypeCustomAttributes<RegisterTypeScriptTypeAttribute>() )
         {
             success &= initializer.EnsureRegister( monitor, r.Type, mustBePocoType: false, attr =>
             {
-                // A Register can override because of package ordering...
-                // Even if this is weird.
+                // A Register cannot override.
                 if( attr != null )
                 {
                     if( r.TypeName != attr.TypeName
@@ -150,24 +148,53 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
                        || r.SameFileAs != attr.SameFileAs
                        || r.SameFolderAs != attr.SameFolderAs )
                     {
-                        monitor.Warn( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
-                        return attr.ApplyOverride( r );
+                        monitor.Error( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
+                        overrideError = true;
+                        // We MAY handle override here.
+                        // But, first, it means that this must occur once the ResPackage are available (ResourceSpaceDataBuilder
+                        // has done the topological sort of the ResPackageDescriptor).
+                        // And... Is this a good idea?
+                        // 
+                        // monitor.Warn( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
+                        // return attr.ApplyOverride( r );
                     }
                     return attr;
                 }
                 return new TypeScriptAttribute( r );
             } );
         }
+        return success && !overrideError;
+    }
+
+
+    internal protected virtual bool ConfigurePackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollectorBuilder spaceBuilder )
+    {
+        var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
+        if( d != null ) return false;
+        bool success = true;
+        foreach( var e in _extensions )
+        {
+            success &= e.OnConfigurePackage( monitor, this, context, d, spaceBuilder );
+        }
         return success;
     }
 
     /// <summary>
-    /// Called in the order of the topological sort of the <see cref="TypeScriptPackage"/>. This is called after
-    /// the subordinated packages (the package's content).
-    /// <para>
-    /// At this level, if <see cref="TypeScriptPackageAttribute.ConsiderExplicitResourceOnly"/> is false (the default), embedded resources
-    /// are copied to the <see cref="TypeScriptFolder"/>.
-    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor.</param>
+    /// <param name="context">The TypeScriptContext.</param>
+    /// <returns>True on success, false otherwise (errors must be logged).</returns>
+    internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
+    {
+        bool success = true;
+        foreach( var e in _extensions )
+        {
+            success &= e.GenerateCode( monitor, this, context );
+        }
+        return success;
+    }
+
+    /// <summary>
     /// </summary>
     /// <param name="monitor">The monitor.</param>
     /// <param name="context">The TypeScriptContext.</param>

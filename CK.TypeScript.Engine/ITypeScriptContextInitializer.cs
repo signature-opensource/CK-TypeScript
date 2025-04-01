@@ -66,9 +66,9 @@ public interface ITypeScriptContextInitializer
     TypeScriptIntegrationContext? IntegrationContext { get; }
 
     /// <summary>
-    /// Gets the TypeScript packages topologically ordered.
+    /// Gets the TypeScript packages.
     /// </summary>
-    ImmutableArray<TypeScriptPackageAttributeImpl> Packages { get; }
+    IReadOnlyList<TypeScriptPackageAttributeImpl> Packages { get; }
 
     /// <summary>
     /// Gets the initial object mapping for <see cref="TypeScriptContext.Root"/> folder's memory.
