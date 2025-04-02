@@ -1,5 +1,7 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CK.EmbeddedResources;
 
@@ -39,6 +41,41 @@ public static class ResourceContainerExtensions
             return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Tries to get an existing resource in this container and <paramref name="otherContainers"/>.
+    /// This logs an error if it is not found.
+    /// </summary>
+    /// <param name="container">This container.</param>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="resourceName">The local resource name (can contain any folder prefix).</param>
+    /// <param name="locator">The resulting locator.</param>
+    /// <param name="otherContainers">Any other containers to lookup.</param>
+    /// <returns>True if the resource exists, false otherwise.</returns>
+    public static bool TryGetExpectedResource( this IResourceContainer container,
+                                               IActivityMonitor monitor,
+                                               string resourceName,
+                                               out ResourceLocator locator,
+                                               params IResourceContainer[] otherContainers )
+    {
+        if( otherContainers.Length == 0 )
+        {
+            return TryGetExpectedResource( container, monitor, resourceName, out locator );
+        }
+        if( container.TryGetResource( resourceName, out locator ) )
+        {
+            return true;
+        }
+        foreach( var c in otherContainers )
+        {
+            if( container.TryGetResource( resourceName, out locator ) )
+            {
+                return true;
+            }
+        }
+        monitor.Error( $"Unable to find expected resource '{resourceName}' from {container.DisplayName} and {otherContainers.Select( c => c.DisplayName ).Concatenate()}." );
+        return false;
     }
 
     /// <summary>

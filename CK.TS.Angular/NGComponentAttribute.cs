@@ -18,18 +18,8 @@ public class NgComponentAttribute : TypeScriptPackageAttribute
     }
 
     private protected NgComponentAttribute( string actualAttributeTypeAssemblyQualifiedName,
-                                            string? finalCallerFilePath,
-                                            bool disableResources = false )
-    : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath, disableResources )
-    {
-    }
-
-
-    // Internal: Only AppComponent uses this to disableResources.
-    internal NgComponentAttribute( bool disableResources,
-                                   string actualAttributeTypeAssemblyQualifiedName,
-                                   [CallerFilePath]string? finalCallerFilePath = null )
-        : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath, disableResources )
+                                            string? finalCallerFilePath )
+    : base( actualAttributeTypeAssemblyQualifiedName, finalCallerFilePath )
     {
     }
 

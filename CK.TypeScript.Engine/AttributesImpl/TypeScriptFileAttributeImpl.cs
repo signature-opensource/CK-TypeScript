@@ -33,17 +33,16 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImpl
 
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
-    protected internal override bool GenerateCode( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context )
+    protected internal override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResourceSpaceCollectorBuilder spaceBuilder )
     {
-        Throw.DebugAssert( "If initialization failed, we never reach this point.", _resource.IsValid );
-        //if( tsPackage.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out _resource ) )
-        //{
-        //    _targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
-        //    _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
-        //    tsPackage.RemoveResource( _resource );
-        //}
-        var file = context.Root.Root.CreateResourceFile( in _resource, _targetPath );
-        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+        if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out _resource ) )
+        {
+            return false;
+        }
+        NormalizedPath targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
+        targetPath = targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
+        var file = context.Root.Root.CreateResourceFile( in _resource, targetPath );
+        Throw.DebugAssert( file is ResourceTypeScriptFile );
         foreach( var tsType in Attribute.TypeNames )
         {
             if( string.IsNullOrWhiteSpace( tsType ) ) continue;

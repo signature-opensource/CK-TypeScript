@@ -43,15 +43,4 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
     /// </summary>
     public string Route => Attribute.Route ?? FileComponentName;
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
-    {
-        base.OnConfigure( monitor, o );
-        // Makes the TargetComponent a requirement for this Real Object if this is not
-        // the AppComponent
-        if( Attribute.TargetComponent != typeof( AppComponent ) )
-        {
-            o.Requires.AddNew( Attribute.TargetComponent, StObjRequirementBehavior.ErrorIfNotStObj );
-        }
-    }
-
 }

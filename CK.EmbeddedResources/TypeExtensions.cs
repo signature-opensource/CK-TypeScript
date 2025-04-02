@@ -16,8 +16,8 @@ public static class TypeExtensions
     /// is a local one for a type that must be decorated with at least one <see cref="IEmbeddedResourceTypeAttribute"/>
     /// attribute.
     /// <para>
-    /// On success, the container is bound to the corresponding embedded ressources "Res/" folder or to the file system
-    /// "Res\" folder.
+    /// On success, the container is bound to the corresponding "Res/" (or "Res[After]/") folder from embedded ressources
+    /// or the file system.
     /// </para>
     /// <para>
     /// It may not be <see cref="IResourceContainer.IsValid"/> (an error has been logged).

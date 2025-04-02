@@ -91,6 +91,25 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     }
 
     /// <summary>
+    /// Finds the <paramref name="resourceName"/> that must exist in <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="resourceName">The resource name to find.</param>
+    /// <param name="resource">The found resource.</param>
+    /// <returns>True on success, false if the resource cannot be found (an error is logged).</returns>
+    public bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor, string resourceName, out ResourceLocator resource )
+    {
+        if( !_resources.TryGetExpectedResource( monitor, resourceName, out resource, _afterResources ) )
+        {
+            return false;
+        }
+        _context.RegisterCodeHandledResources( resource );
+        return true;
+    }
+
+
+    /// <summary>
     /// Gets the default target path that will prefix resources that are items.
     /// </summary>
     public NormalizedPath DefaultTargetPath => _defaultTargetPath;

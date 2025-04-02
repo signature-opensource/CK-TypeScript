@@ -14,7 +14,7 @@ namespace CK.TypeScript.Engine;
 /// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
 /// </para>
 /// </summary>
-public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, IStObjStructuralConfigurator
+public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
@@ -89,40 +89,6 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         _extensions.Add( e );
     }
 
-    void IStObjStructuralConfigurator.Configure( IActivityMonitor monitor, IStObjMutableItem o )
-    {
-        if( _attr.Package != null )
-        {
-            if( o.Container.Type == null ) o.Container.Type = _attr.Package;
-            else if( o.Container.Type != _attr.Package )
-            {
-                monitor.Error( $"{o.ToString()}: [TypeScriptPackage] sets Package to be '{_attr.Package.Name}' but it is already '{o.Container.Type:N}'." );
-            }
-        }
-        else if( !typeof( RootTypeScriptPackage ).IsAssignableFrom( o.ClassType ) )
-        {
-            o.Container.Type = typeof( RootTypeScriptPackage );
-            o.Container.StObjRequirementBehavior = StObjRequirementBehavior.None;
-        }
-        // Keeps the potentially configured item kind (allows TypeScriptPackages to be Group rather than Container).
-        if( o.ItemKind == DependentItemKindSpec.Unknown )
-        {
-            o.ItemKind = DependentItemKindSpec.Container;
-        }
-        OnConfigure( monitor, o );
-    }
-
-    /// <summary>
-    /// See <see cref="IStObjStructuralConfigurator.Configure(IActivityMonitor, IStObjMutableItem)"/>.
-    /// If <see cref="TypeScriptPackageAttribute.Package"/> is not null, it has already been set on <see cref="IStObjMutableItem.Container"/>:
-    /// at this level, this does nothing.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="o">The mutable item.</param>
-    protected virtual void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
-    {
-    }
-
     /// <summary>
     /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/>.
     /// </summary>
@@ -132,7 +98,6 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     internal bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
         bool success = true;
-
         // Handle the RegisterTypeScriptTypeAttribute.
         bool overrideError = false;
         foreach( var r in _owner.GetTypeCustomAttributes<RegisterTypeScriptTypeAttribute>() )
@@ -166,47 +131,25 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         return success && !overrideError;
     }
 
-
-    internal protected virtual bool ConfigurePackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollectorBuilder spaceBuilder )
+    internal protected virtual bool ConfigureResPackage( IActivityMonitor monitor,
+                                                      TypeScriptContext context,
+                                                      ResourceSpaceCollectorBuilder spaceBuilder )
     {
         var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
-        if( d != null ) return false;
-        bool success = true;
-        foreach( var e in _extensions )
-        {
-            success &= e.OnConfigurePackage( monitor, this, context, d, spaceBuilder );
-        }
-        return success;
+        if( d == null ) return false;
+        return OnConfiguredPackage( monitor, context, spaceBuilder, d );
     }
 
-    /// <summary>
-    /// </summary>
-    /// <param name="monitor">The monitor.</param>
-    /// <param name="context">The TypeScriptContext.</param>
-    /// <returns>True on success, false otherwise (errors must be logged).</returns>
-    internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
+    protected virtual bool OnConfiguredPackage( IActivityMonitor monitor,
+                                                TypeScriptContext context,
+                                                ResourceSpaceCollectorBuilder spaceBuilder,
+                                                ResPackageDescriptor d )
     {
         bool success = true;
         foreach( var e in _extensions )
         {
-            success &= e.GenerateCode( monitor, this, context );
+            success &= e.OnConfiguredPackage( monitor, this, context, d, spaceBuilder );
         }
         return success;
     }
-
-    /// <summary>
-    /// </summary>
-    /// <param name="monitor">The monitor.</param>
-    /// <param name="context">The TypeScriptContext.</param>
-    /// <returns>True on success, false otherwise (errors must be logged).</returns>
-    internal protected virtual bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
-    {
-        bool success = true;
-        foreach( var e in _extensions )
-        {
-            success &= e.GenerateCode( monitor, this, context );
-        }
-        return success;
-    }
-
 }

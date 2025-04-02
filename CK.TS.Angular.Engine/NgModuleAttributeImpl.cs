@@ -38,29 +38,18 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
-    {
-        base.OnConfigure( monitor, o );
-        if( o.Container.Type == typeof( RootTypeScriptPackage ) )
-        {
-            o.Container.Type = typeof( AppComponent );
-        }
-    }
-
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
+    protected override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollectorBuilder spaceBuilder, ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
-        if( !Resources.TryGetExpectedResource( monitor, fName, out var res ) )
+        if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
         {
             return false;
         }
-        // Removes the resource so that base.GenerateCode doesn't handle it.
-        RemoveResource( res );
         var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
         Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
 
-        return base.GenerateCode( monitor, context )
+        return base.OnConfiguredPackage( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().RegisterModule( monitor, this, tsType );
     }
 

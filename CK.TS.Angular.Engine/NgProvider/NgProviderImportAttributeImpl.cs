@@ -17,7 +17,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeI
 
     public new NgProviderImportAttribute Attribute => Unsafe.As<NgProviderImportAttribute>( base.Attribute );
 
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context )
+    protected override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResourceSpaceCollectorBuilder spaceBuilder )
     {
         var ckGen = context.GetAngularCodeGen().CKGenAppModule;
 

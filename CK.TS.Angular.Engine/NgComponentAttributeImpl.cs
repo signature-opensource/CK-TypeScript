@@ -7,6 +7,7 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Resources;
 
 namespace CK.TS.Angular.Engine;
 
@@ -53,7 +54,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     }
 
     /// <summary>
-    /// Gets the component name that is the C# <see cref="TypeScriptFileAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
+    /// Gets the component name that is the C# <see cref="TypeScriptPackageAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
     /// </summary>
     public string ComponentName => DecoratedType.Name;
 
@@ -69,35 +70,33 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
-    {
-        base.OnConfigure( monitor, o );
-        if( !IsAppComponent && o.Container.Type == typeof(RootTypeScriptPackage) )
-        {
-            o.Container.Type = typeof( AppComponent );
-        }
-    }
 
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
+    protected override bool ConfigureResPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollectorBuilder spaceBuilder )
     {
-        var fName = _snakeName + ".component.ts";
-
-        // If we are on the AppComponent, don't try to lookup the resources (there are no resources).
+        // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
         {
             return true;
         }
-        // The component.ts resource must exist.
-        if( !Resources.TryGetExpectedResource( monitor, fName, out var res ) )
+        return base.ConfigureResPackage( monitor, context, spaceBuilder );
+    }
+
+    protected override bool OnConfiguredPackage( IActivityMonitor monitor,
+                                                 TypeScriptContext context,
+                                                 ResourceSpaceCollectorBuilder spaceBuilder,
+                                                 ResPackageDescriptor d )
+    {
+        Throw.DebugAssert( !IsAppComponent );
+        var fName = _snakeName + ".component.ts";
+        if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
         {
             return false;
         }
         var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
         Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-
-        return base.GenerateCode( monitor, context )
-                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
+        return base.OnConfiguredPackage( monitor, context, spaceBuilder, d )
+               && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]

@@ -199,6 +199,10 @@ public sealed partial class TypeScriptContext
     internal bool Run( IActivityMonitor monitor )
     {
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
+
+        // New approach (CK-ReaDI oriented) here to manage the resources.
+        var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
+
         bool success;
         using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
@@ -208,14 +212,10 @@ public sealed partial class TypeScriptContext
                       // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
                       // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
                       && ResolveRegisteredTypes( monitor )
-                      && GeneratePackageCode( monitor, _initializer.Packages, this )
+                      && ConfigureResPackages( monitor, _initializer.Packages, this, resSpaceCollectorBuilder )
                       // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
                       && _tsRoot.GenerateCode( monitor );
         }
-        // New approach (CK-ReaDI oriented) here to manage the resources.
-
-        var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
-
         var typeScriptContext = this;
 
         var tsPathContext = new TypeScriptPathContext( _binPathConfiguration );
@@ -224,17 +224,6 @@ public sealed partial class TypeScriptContext
         resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
         resSpaceCollectorBuilder.AppResourcesLocalPath = tsPathContext.CKGenAppPath;
 
-        // We collect packages from the TypeScriptPackage type that exist.
-        // Currently these are IRealObject (this will not be the case in the future) and we use
-        // the current TypeScriptPackageAttributeImpl instances.
-        foreach( var p in _initializer.Packages )
-        {
-            success &= resSpaceCollectorBuilder.RegisterPackage( monitor, p.DecoratedType, p.TypeScriptFolder );
-        }
-        if( !success )
-        {
-            return false;
-        }
         // The resource space perimeter is initialized:
         // - It is composed of the currently empty TypeScriptRoot.
         // - And all the TypeScript packages.
@@ -302,18 +291,19 @@ public sealed partial class TypeScriptContext
             return true;
         }
 
-        static bool GeneratePackageCode( IActivityMonitor monitor,
-                                         IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
-                                         TypeScriptContext context )
+        static bool ConfigureResPackages( IActivityMonitor monitor,
+                                          IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
+                                          TypeScriptContext context,
+                                          ResourceSpaceCollectorBuilder spaceBuilder )
         {
-            using( monitor.OpenInfo( $"Starting code generation for the {packages.Count} TypeScript packages." ) )
+            using( monitor.OpenInfo( $"Configuring {packages.Count} TypeScript resource packages." ) )
             {
                 var success = true;
                 foreach( var p in packages )
                 {
                     try
                     {
-                        success &= p.GenerateCode( monitor, context );
+                        success &= p.ConfigureResPackage( monitor, context, spaceBuilder );
                     }
                     catch( Exception ex )
                     {
