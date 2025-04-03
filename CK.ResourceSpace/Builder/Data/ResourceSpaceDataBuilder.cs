@@ -5,13 +5,12 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Resources;
 using System.Runtime.InteropServices;
 
 namespace CK.Core;
 
 /// <summary>
-/// Handles a <see cref="ResourceSpaceCollector"/> to topologically sort its configured <see cref="ResPackageDescriptor"/>
+/// Handles a <see cref="ResourceSpaceCollector"/>: topologically sorts its configured <see cref="ResPackageDescriptor"/>
 /// to produce a <see cref="ResourceSpaceData"/> with its final <see cref="ResPackage"/>.
 /// </summary>
 public sealed class ResourceSpaceDataBuilder
@@ -31,6 +30,10 @@ public sealed class ResourceSpaceDataBuilder
     /// <returns>The space data on success, null otherwise.</returns>
     public ResourceSpaceData? Build( IActivityMonitor monitor )
     {
+        if( !_collector.CloseRegistrations( monitor ) )
+        {
+            return null;
+        }
         var sortResult = DependencySorter<ResPackageDescriptor>.OrderItems( monitor,
                                                                             _collector.Packages,
                                                                             discoverers: null );
@@ -93,12 +96,13 @@ public sealed class ResourceSpaceDataBuilder
                 appResStore = new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             }
             var noAppRes = new EmptyResourceContainer( "<App>", isDisabled: true );
+            int idxResources = 2 * (index - 1); 
             var appPackage = new ResPackage( dataCacheBuilder,
                                              "<App>",
                                              defaultTargetPath: default,
-                                             idxBeforeResources: 2 * index,
+                                             idxBeforeResources: idxResources,
                                              beforeResources: appResStore,
-                                             idxAfterResources: 2 * index + 1,
+                                             idxAfterResources: idxResources + 1,
                                              afterResources: noAppRes,
                                              isGroup: false,
                                              type: null,
@@ -157,6 +161,10 @@ public sealed class ResourceSpaceDataBuilder
         bAll.Add( null! );
         bAll.Add( codePackage );
         packageIndex.Add( codePackage.FullName, codePackage );
+        Throw.DebugAssert( codePackage.Resources.Index == 0 );
+        allPackageResources[0] = codePackage.Resources;
+        Throw.DebugAssert( codePackage.ResourcesAfter.Index == 1 );
+        allPackageResources[1] = codePackage.ResourcesAfter;
         if( generatedCodeContainer != null )
         {
             Throw.DebugAssert( codePackage.ResourcesAfter.Resources == generatedCodeContainer );
@@ -190,9 +198,9 @@ public sealed class ResourceSpaceDataBuilder
                 var p = new ResPackage( dataCacheBuilder,
                                         d.FullName,
                                         d.DefaultTargetPath,
-                                        s.HeadForGroup.Index,
+                                        s.HeadForGroup.Index + 2,
                                         d.Resources,
-                                        s.Index,
+                                        s.Index + 2,
                                         d.AfterResources,
                                         d.IsGroup,
                                         d.Type,
@@ -238,7 +246,12 @@ public sealed class ResourceSpaceDataBuilder
         // The FileSystemResourceContainer normalizes the path (ends with Path.DirectorySeparator)
         // and this must be normalized!
         var appPackage = CreateAppPackage( ref appLocalPath, dataCacheBuilder, bAppRequirements.DrainToImmutable(), bAll.Count );
+        bAll.Add( appPackage );
         packageIndex.Add( appPackage.FullName, appPackage );
+        Throw.DebugAssert( appPackage.Resources.Index == allPackageResources.Length - 2 );
+        allPackageResources[^2] = appPackage.Resources;
+        Throw.DebugAssert( appPackage.ResourcesAfter.Index == allPackageResources.Length - 1 );
+        allPackageResources[^1] = appPackage.ResourcesAfter;
         if( appLocalPath != null )
         {
             // If we have no packages, watchRoot is null: we'll only
@@ -253,6 +266,7 @@ public sealed class ResourceSpaceDataBuilder
         space._packages = packages;
         space._exposedPackages = new OneBasedArray( packages );
         space._localPackages = bLocal.MoveToImmutable();
+        Throw.DebugAssert( allPackageResources.All( r => r != null ) );
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
         space._codePackage = codePackage;
         space._appPackage = appPackage;

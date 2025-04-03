@@ -1,10 +1,7 @@
-using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.Core;
 
@@ -52,7 +49,7 @@ sealed class InitialFileInstaller : ResourceSpaceFileInstaller
         }
     }
 
-    protected override void OnWrite( string path ) => _existing.Add( path );
+    protected override void OnWrite( string path ) => _existing.Remove( path );
 
     internal void Cleanup( IActivityMonitor monitor, bool success )
     {
@@ -84,7 +81,7 @@ sealed class InitialFileInstaller : ResourceSpaceFileInstaller
             {
                 monitor.Info( $"""
                                 Skipping deletion of {_existing.Count} previous files:
-                                {_existing.Order().Concatenate( " > " + Environment.NewLine )}They will be deleted on the the next successful run.
+                                {_existing.Order().Concatenate( " > " + Environment.NewLine )}They may be deleted on the the next successful run.
                                 """ );
             }
         }

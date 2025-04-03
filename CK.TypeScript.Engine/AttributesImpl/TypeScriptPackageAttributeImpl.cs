@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.EmbeddedResources;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
@@ -133,7 +132,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer
 
     internal protected virtual bool ConfigureResPackage( IActivityMonitor monitor,
                                                       TypeScriptContext context,
-                                                      ResourceSpaceCollectorBuilder spaceBuilder )
+                                                      ResourceSpaceCollector spaceBuilder )
     {
         var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
         if( d == null ) return false;
@@ -142,7 +141,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer
 
     protected virtual bool OnConfiguredPackage( IActivityMonitor monitor,
                                                 TypeScriptContext context,
-                                                ResourceSpaceCollectorBuilder spaceBuilder,
+                                                ResourceSpaceCollector spaceBuilder,
                                                 ResPackageDescriptor d )
     {
         bool success = true;

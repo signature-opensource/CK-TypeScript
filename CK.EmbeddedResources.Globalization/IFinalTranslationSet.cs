@@ -1,5 +1,4 @@
 using CK.Core;
-using Microsoft.VisualBasic;
 using System.Collections.Generic;
 
 namespace CK.EmbeddedResources;

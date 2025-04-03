@@ -43,10 +43,14 @@ public abstract class BaseFile
     public string Name => _name;
 
     /// <summary>
+    /// Gets this file path (not prefixed by '/').
+    /// </summary>
+    public string FilePath => _folder.Path.IsEmptyPath ? _name : _folder.Path.Path + '/' + _name;
+
+    /// <summary>
     /// Gets the file name extension including the leading dot.
     /// </summary>
     public ReadOnlySpan<char> Extension => Path.GetExtension( _name.AsSpan() );
-
 
     /// <summary>
     /// Gets whether this file holds a stream (<see cref="GetStream()"/> and <see cref="WriteStream()"/> can be called)

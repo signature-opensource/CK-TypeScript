@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.EmbeddedResources;
 using CK.Setup;
 using CK.TypeScript;
 using CK.TypeScript.Engine;
@@ -38,7 +37,7 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
-    protected override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollectorBuilder spaceBuilder, ResPackageDescriptor d )
+    protected override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollector spaceBuilder, ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
         if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
@@ -46,7 +45,7 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
             return false;
         }
         var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+        Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
 
         return base.OnConfiguredPackage( monitor, context, spaceBuilder, d )

@@ -1,4 +1,3 @@
-using Shouldly;
 using NUnit.Framework;
 
 namespace CK.Transform.Core.Tests;

@@ -93,7 +93,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     {
         w.Write( _displayName );
         w.Write( _names.Length );
-        for( int i = 0; i < _names.Length;++i )
+        for( int i = 0; i < _names.Length; ++i )
         {
             w.Write( _pathStore[i] );
             var content = _streamStore[i];
@@ -110,19 +110,20 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
                     w.Write( bytes.Length );
                     w.Write( bytes );
                 }
-                else if( content is Action<Stream> writer )
-                {
-                    using var b = Util.RecyclableStreamManager.GetStream();
-                    writer( b );
-                    WriteRecyclable( w, b );
-                }
                 else
                 {
-                    Throw.DebugAssert( content is Func<Stream> );
                     using var b = Util.RecyclableStreamManager.GetStream();
-                    using( var s = Unsafe.As<Func<Stream>>( content )() )
+                    if( content is Action<Stream> writer )
                     {
-                        s.CopyTo( b );
+                        writer( b );
+                    }
+                    else
+                    {
+                        Throw.DebugAssert( content is Func<Stream> );
+                        using( var s = Unsafe.As<Func<Stream>>( content )() )
+                        {
+                            s.CopyTo( b );
+                        }
                     }
                     WriteRecyclable( w, b );
                 }

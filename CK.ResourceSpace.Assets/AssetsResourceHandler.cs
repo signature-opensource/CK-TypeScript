@@ -1,7 +1,6 @@
 
 using CK.EmbeddedResources;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace CK.Core;

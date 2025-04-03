@@ -1,4 +1,3 @@
-using CK.Core;
 using System.Collections.Immutable;
 
 namespace CK.Core;

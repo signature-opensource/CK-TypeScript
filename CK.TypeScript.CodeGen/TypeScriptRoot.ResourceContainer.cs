@@ -27,7 +27,7 @@ public sealed partial class TypeScriptRoot : IResourceContainer
     {
         get
         {
-            return _root.AllFilesRecursive.Select( f => new ResourceLocator( this, f.Folder.Path.Path + '/' + f.Name ) );
+            return _root.AllFilesRecursive.Select( f => new ResourceLocator( this, f.FilePath ) );
         }
     }
 
@@ -63,7 +63,7 @@ public sealed partial class TypeScriptRoot : IResourceContainer
         var f = _root.FindFolder( folder.FullFolderName.AsSpan() );
         if( f != null )
         {
-            return f.AllFilesRecursive.Select( f => new ResourceLocator( this, f.Folder.Path.Path + '/' + f.Name ) );
+            return f.AllFilesRecursive.Select( f => new ResourceLocator( this, f.FilePath ) );
         }
         return Array.Empty<ResourceLocator>();
     }
@@ -71,14 +71,14 @@ public sealed partial class TypeScriptRoot : IResourceContainer
     ResourceLocator IResourceContainer.GetResource( ReadOnlySpan<char> resourceName )
     {
         var f = _root.FindFile( resourceName );
-        return f != null ? new ResourceLocator( this, f.Folder.Path.Path + '/' + f.Name ) : default;
+        return f != null ? new ResourceLocator( this, f.FilePath ) : default;
     }
 
     ResourceLocator IResourceContainer.GetResource( ResourceFolder folder, ReadOnlySpan<char> resourceName )
     {
         folder.CheckContainer( this );
         var f = _root.FindFolder( folder.FullFolderName.AsSpan() )?.FindFile( resourceName );
-        return f != null ? new ResourceLocator( this, f.Folder.Path.Path + '/' + f.Name ) : default;
+        return f != null ? new ResourceLocator( this, f.FilePath ) : default;
     }
 
     IEnumerable<ResourceLocator> IResourceContainer.GetResources( ResourceFolder folder )
@@ -87,7 +87,7 @@ public sealed partial class TypeScriptRoot : IResourceContainer
         var f = _root.FindFolder( folder.FullFolderName.AsSpan() );
         if( f != null )
         {
-            return f.AllFiles.Select( f => new ResourceLocator( this, f.Folder.Path + '/' + f.Name ) );
+            return f.AllFiles.Select( f => new ResourceLocator( this, f.FilePath ) );
         }
         return Array.Empty<ResourceLocator>();
     }

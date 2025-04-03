@@ -1,32 +1,20 @@
 using CK.EmbeddedResources;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
-using System.Xml;
 
 namespace CK.Core;
 
 /// <summary>
 /// Builder for <see cref="ResourceSpaceCollector"/> that is the first step to produce a
-/// <see cref="ResourceSpace"/>. This enable resource packages to be registered from a type (that must be decorated
-/// with at least one <see cref="IEmbeddedResourceTypeAttribute"/> attribute) or from any <see cref="IResourceContainer"/>.
+/// <see cref="ResourceSpace"/>. 
 /// <para>
-/// This initial builder also collects all the fundamental information required to fully update a target
+/// This initial builder collects all the fundamental information required to fully update a target
 /// code generated folder including the Live state.
 /// </para>
 /// </summary>
-public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
+public sealed class ResourceSpaceConfiguration
 {
-    // Packages are indexed by their FullName, their Type if package is defined
-    // by type and by their Resources Store container.
-    // The IResourceContainer key is used by this builder only to check that no resource
-    // containers are shared by 2 packages.
-    readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
-    readonly HashSet<ResourceLocator> _codeHandledResources;
-    readonly List<ResPackageDescriptor> _packages;
-    int _localPackageCount;
-    int _typedPackageCount;
+    readonly CoreCollector _coreCollector;
     IResourceContainer? _generatedCodeContainer;
     string _ckGenPath;
     string? _appResourcesLocalPath;
@@ -35,11 +23,9 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     /// <summary>
     /// Initializes a new collector that must be configured.
     /// </summary>
-    public ResourceSpaceCollectorBuilder()
+    public ResourceSpaceConfiguration()
     {
-        _packageIndex = new Dictionary<object, ResPackageDescriptor>();
-        _packages = new List<ResPackageDescriptor>();
-        _codeHandledResources = new HashSet<ResourceLocator>();
+        _coreCollector = new CoreCollector();
         _ckGenPath = string.Empty;
     }
 
@@ -48,6 +34,9 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     /// <para>
     /// This folder is updated on each generation. It cannot be below nor above the <see cref="AppResourcesLocalPath"/>
     /// or the <see cref="CKWatchFolderPath"/>.
+    /// </para>
+    /// <para>
+    /// The path must be fully qualified. It is normalized to end with <see cref="Path.DirectorySeparatorChar"/>.
     /// </para>
     /// </summary>
     public string CKGenPath
@@ -145,11 +134,11 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     /// <param name="fullName">The package full name.</param>
     /// <param name="defaultTargetPath">The default target path associated to the package's resources.</param>
     /// <param name="resourceStore">
-    /// The package resources. Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
+    /// The package resources. Must be <see cref="IResourceContainer.IsValid"/>.
     /// </param>
     /// <param name="resourceAfterStore">
     /// The package resources to apply after the <see cref="ResPackageDescriptor.Children"/>.
-    /// Must be <see cref="IResourceContainer.IsValid"/> and not a <see cref="CodeGenResourceContainer"/>.
+    /// Must be <see cref="IResourceContainer.IsValid"/>.
     /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
@@ -158,11 +147,7 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
                                                   IResourceContainer resourceStore,
                                                   IResourceContainer resourceAfterStore )
     {
-        Throw.CheckNotNullOrWhiteSpaceArgument( fullName );
-        Throw.CheckArgument( resourceStore is not null && resourceStore.IsValid );
-        Throw.CheckArgument( resourceAfterStore is not null && resourceStore.IsValid );
-        Throw.CheckArgument( resourceStore != resourceAfterStore );
-        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore );
+        return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore );
     }
 
     /// <summary>
@@ -176,78 +161,7 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
                                                   Type type,
                                                   NormalizedPath defaultTargetPath )
     {
-        Throw.CheckNotNullArgument( type );
-        Throw.CheckArgument( "Dynamic assembly is not supported.", type.FullName != null );
-        if( _packageIndex.TryGetValue( type, out var already ) )
-        {
-            monitor.Error( $"Duplicate package registration: type '{type:C}' is already registered as '{already}'." );
-            return null;
-        }
-        IResourceContainer resourceStore = type.CreateResourcesContainer( monitor );
-        IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true );
-
-        return resourceStore.IsValid && resourceAfterStore.IsValid
-               ? DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore )
-               : null;
-    }
-
-    ResPackageDescriptor? DoRegister( IActivityMonitor monitor,
-                                      string fullName,
-                                      Type? type,
-                                      NormalizedPath defaultTargetPath,
-                                      IResourceContainer resourceStore,
-                                      IResourceContainer resourceAfterStore )
-    {
-        if( _packageIndex.TryGetValue( fullName, out var already ) )
-        {
-            monitor.Error( $"Duplicate package registration: FullName is already registered as '{already}'." );
-            return null;
-        }
-        if( _packageIndex.TryGetValue( resourceStore, out already ) )
-        {
-            monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
-            return null;
-        }
-        if( _packageIndex.TryGetValue( resourceAfterStore, out already ) )
-        {
-            monitor.Error( $"Package resources mismatch: {resourceAfterStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
-            return null;
-        }
-        // The resource store may not be local (it may be an empty one) but if the resourceAfterStore
-        // is local, then this package is a local one.
-        // For simplicity we only keep a single local path at the package level and by design we
-        // privilegiate the "/Res" over the "/Res[After]".
-        // Live engine will be in charge to handle the single or two FileSystemResourceContainer at their level.
-        string? localPath = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
-                                ? fs.ResourcePrefix
-                                : resourceAfterStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport
-                                    ? fsA.ResourcePrefix
-                                    : null;
-        if( localPath != null )
-        {
-            ++_localPackageCount;
-        }
-        var p = new ResPackageDescriptor( this,
-                                          fullName,
-                                          type,
-                                          defaultTargetPath,
-                                          resources: new StoreContainer( _codeHandledResources, resourceStore ),
-                                          afterResources: new StoreContainer( _codeHandledResources, resourceAfterStore ) );
-        _packages.Add( p );
-        _packageIndex.Add( fullName, p );
-        _packageIndex.Add( resourceStore, p );
-        _packageIndex.Add( resourceAfterStore, p );
-        if( type != null )
-        {
-            ++_typedPackageCount; 
-            _packageIndex.Add( type, p );
-        }
-        return p;
-    }
-
-    void IResPackageDescriptorContext.RegisterCodeHandledResources( ResourceLocator resource )
-    {
-        _codeHandledResources.Add( resource );
+        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath );
     }
 
     /// <summary>
@@ -258,44 +172,6 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
     /// <returns>The collector with initialized packages or null on error.</returns>
     public ResourceSpaceCollector? Build( IActivityMonitor monitor )
     {
-        bool success = true;
-        foreach( var r in _packages )
-        {
-            Throw.DebugAssert( r.Package == null );
-            if( r.Type != null )
-            {
-                success &= r.InitializeFromType( monitor, _packageIndex );
-                // Detect a useless Package.xml for the type: currently, there's
-                // no "merge" possible, the type drives.
-                var descriptor = r.Resources.GetResource( "Package.xml" );
-                if( descriptor.IsValid )
-                {
-                    monitor.Warn( $"Found {descriptor} for type '{r.Type:N}'. Ignored." );
-                }
-            }
-            else
-            {
-                var descriptor = r.Resources.GetResource( "Package.xml" );
-                if( descriptor.IsValid )
-                {
-                    try
-                    {
-                        using( var s = descriptor.GetStream() )
-                        using( var xmlReader = XmlReader.Create( s ) )
-                        {
-                            r.InitializeFromPackageDescriptor( monitor, xmlReader );
-                        }
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Error( $"While reading {descriptor}.", ex );
-                        success = false;
-                    }
-                }
-            }
-        }
-        if( !success ) return null;
-
         if( string.IsNullOrEmpty( _ckGenPath ) )
         {
             monitor.Error( "CKGenPath is required." );
@@ -324,13 +200,11 @@ public sealed class ResourceSpaceCollectorBuilder : IResPackageDescriptorContext
                 """ );
             return null;
         }
-        return new ResourceSpaceCollector( _packageIndex,
-                                           _packages,
-                                           _localPackageCount,
+        return new ResourceSpaceCollector( _coreCollector,
                                            _generatedCodeContainer,
                                            _ckGenPath,
                                            _appResourcesLocalPath,
-                                           ckWatchFolderPath,
-                                           _typedPackageCount );
+                                           ckWatchFolderPath );
     }
+
 }

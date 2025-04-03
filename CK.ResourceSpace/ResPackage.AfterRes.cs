@@ -3,7 +3,6 @@ using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Resources;
 
 namespace CK.Core;
 
@@ -39,13 +38,12 @@ public sealed partial class ResPackage
         }
 
         [EditorBrowsable( EditorBrowsableState.Never )]
-        public void Write( IBinarySerializer s )
+        public static void Write( IBinarySerializer s, in AfterRes o )
         {
-            s.WriteObject( _package );
-            s.WriteObject( _resources );
-            s.Writer.WriteNonNegativeSmallInt32( _index );
+            s.WriteObject( o._package );
+            s.WriteObject( o._resources );
+            s.Writer.WriteNonNegativeSmallInt32( o._index );
         }
-
 
         public bool IsAfter => true;
 

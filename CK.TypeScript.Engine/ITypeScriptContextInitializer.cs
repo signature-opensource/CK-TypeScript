@@ -4,7 +4,6 @@ using CK.TypeScript;
 using CK.TypeScript.Engine;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace CK.Setup;
 

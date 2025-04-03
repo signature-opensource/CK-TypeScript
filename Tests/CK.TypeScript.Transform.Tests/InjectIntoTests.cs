@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Transform.Core;
-using Shouldly;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 

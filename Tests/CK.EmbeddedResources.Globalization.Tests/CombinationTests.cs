@@ -1,7 +1,6 @@
 using CK.Core;
 using NUnit.Framework;
 using Shouldly;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.EmbeddedResources.Globalization.Tests;

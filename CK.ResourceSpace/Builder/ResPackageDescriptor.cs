@@ -2,8 +2,6 @@ using CK.EmbeddedResources;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Xml;
 
@@ -14,7 +12,7 @@ namespace CK.Core;
 /// </summary>
 public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDependentItemContainerRef
 {
-    readonly IResPackageDescriptorContext _context;
+    readonly ResPackageDescriptorContext _context;
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
@@ -27,7 +25,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     List<ResPackageDescriptor>? _children;
     bool _isGroup;
 
-    internal ResPackageDescriptor( IResPackageDescriptorContext context,
+    internal ResPackageDescriptor( ResPackageDescriptorContext context,
                                    string fullName,
                                    Type? type,
                                    NormalizedPath defaultTargetPath,
@@ -167,7 +165,44 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// </summary>
     public IList<ResPackageDescriptor> Groups => _groups ??= new List<ResPackageDescriptor>();
 
-    internal bool InitializeFromType( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
+    internal bool Initialize( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
+    {
+        bool success = true;
+        if( _type != null )
+        {
+            success &= InitializeFromType( monitor, packageIndex );
+            // Detect a useless Package.xml for the type: currently, there's
+            // no "merge" possible, the type drives.
+            var descriptor = _resources.GetResource( "Package.xml" );
+            if( descriptor.IsValid )
+            {
+                monitor.Warn( $"Found {descriptor} for type '{_type:N}'. Ignored." );
+            }
+        }
+        else
+        {
+            var descriptor = _resources.GetResource( "Package.xml" );
+            if( descriptor.IsValid )
+            {
+                try
+                {
+                    using( var s = descriptor.GetStream() )
+                    using( var xmlReader = XmlReader.Create( s ) )
+                    {
+                        InitializeFromPackageDescriptor( monitor, xmlReader );
+                    }
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( $"While reading {descriptor}.", ex );
+                    success = false;
+                }
+            }
+        }
+        return success;
+    }
+
+    bool InitializeFromType( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
     {
         Throw.DebugAssert( _type != null );
         bool success = true;
@@ -350,7 +385,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         }
     }
 
-    internal void InitializeFromPackageDescriptor( IActivityMonitor monitor, XmlReader xmlReader )
+    void InitializeFromPackageDescriptor( IActivityMonitor monitor, XmlReader xmlReader )
     {
         throw new NotImplementedException();
     }

@@ -4,9 +4,6 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Text.Json;
-using CK.EmbeddedResources;
 using CK.Transform.Core;
 using CK.TypeScript.Transform;
 using CK.Html.Transform;
@@ -198,47 +195,55 @@ public sealed partial class TypeScriptContext
 
     internal bool Run( IActivityMonitor monitor )
     {
+        using var _ = monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" );
+
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
-
-        // New approach (CK-ReaDI oriented) here to manage the resources.
-        var resSpaceCollectorBuilder = new ResourceSpaceCollectorBuilder();
-
         bool success;
-        using( monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
-        {
-            success = // Initializes the global generators.
-                      StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, this )
-                      // Calls Root.TSTypes.ResolveType for each RegisteredType:
-                      // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
-                      // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution). 
-                      && ResolveRegisteredTypes( monitor )
-                      && ConfigureResPackages( monitor, _initializer.Packages, this, resSpaceCollectorBuilder )
-                      // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
-                      && _tsRoot.GenerateCode( monitor );
-        }
+
         var typeScriptContext = this;
 
-        var tsPathContext = new TypeScriptPathContext( _binPathConfiguration );
+        // New approach (CK-ReaDI oriented) here to manage the resources.
+        var resSpaceConfiguration = new ResourceSpaceConfiguration();
+        resSpaceConfiguration.CKGenPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
+        resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
         // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
         // logically depends on it. Its resources will be reachable from any package.
-        resSpaceCollectorBuilder.GeneratedCodeContainer = typeScriptContext.Root;
-        resSpaceCollectorBuilder.AppResourcesLocalPath = tsPathContext.CKGenAppPath;
+        resSpaceConfiguration.GeneratedCodeContainer = typeScriptContext.Root;
 
-        // The resource space perimeter is initialized:
-        // - It is composed of the currently empty TypeScriptRoot.
-        // - And all the TypeScript packages.
-        //
-        // With CK-ReaDI, publishing this ResourceSpaceCollectorBuilder here will allow
+        var resSpaceCollector = resSpaceConfiguration.Build( monitor );
+        if( resSpaceCollector == null ) return false;
+
+
+        // With CK-ReaDI, publishing this ResourceSpaceCollector here will allow
         // any code to register additional packages in it, including totally "virtual"
         // ones that could produce .ts or other resources based on an existing resource that is
         // a schema or any description of code.
+
+        // Here we manually trigger TypeScriptPackage registration.
+        success = ConfigureResPackages( monitor, _initializer.Packages, typeScriptContext, resSpaceCollector );
+
+        // Today, the GlobalCodeGenerators have no access to the resources.
+        // With CK-ReaDI, they could have a similar ConfigureResPackages. They would then be able
+        // to create new ResPackage in addition to (as of today) registering import libraries, creating
+        // TypeScriptFile and registering to events (that should ideally not exist...).
+        if( success ) success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
+
+        // Resolving registered types:
+        // Calls Root.TSTypes.ResolveType for each RegisteredType:
+        // - When the RegisteredType is a PocoType, TSTypeManager.ResolveTSType is called with the IPocoType (object resolution).
+        // - When the RegisteredType is only a C# type, TSTypeManager.ResolveTSType is called with the type (C# type resolution).
         //
-        var resSpaceCollector = resSpaceCollectorBuilder.Build( monitor );
-        if( resSpaceCollector == null ) return false;
-        // With CK-ReaDI, publishing this resSpaceCollector here will allow any code
-        // to mutate the package descriptor. May be not that useful.
-        // The ResourceSpaceDataBuilder will also be initialized (but its Build method
-        // will be called only when the ResSpaceCollector is no more needed by other components).
+        // This event based approach works but is not ideal. The problem is that Type resolution needs "defferring" and some
+        // modularity for more than one piece of code to resolve and implement a type.
+        // This may be replaced with a RegisteredTypes ReaDI object but this is not obvious.
+        if( success ) success = ResolveRegisteredTypes( monitor );
+
+        // This is the last step that generates all the TypeScriptFiles that must be generated (runs all
+        // the deferred Implementors).
+        // This raises events and closes Type registration.
+        // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
+        if( success ) success = _tsRoot.GenerateCode( monitor );
+
         var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
         var resSpaceData = resSpaceDataBuilder.Build( monitor );
         if( resSpaceData == null ) return false;
@@ -294,7 +299,7 @@ public sealed partial class TypeScriptContext
         static bool ConfigureResPackages( IActivityMonitor monitor,
                                           IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
                                           TypeScriptContext context,
-                                          ResourceSpaceCollectorBuilder spaceBuilder )
+                                          ResourceSpaceCollector spaceBuilder )
         {
             using( monitor.OpenInfo( $"Configuring {packages.Count} TypeScript resource packages." ) )
             {
@@ -369,5 +374,4 @@ public sealed partial class TypeScriptContext
         }
         return success;
     }
-
 }

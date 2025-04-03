@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Immutable;
-
 namespace CK.Core;
 
 /// <summary>

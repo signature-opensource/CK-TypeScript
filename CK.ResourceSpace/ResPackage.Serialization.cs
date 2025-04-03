@@ -67,41 +67,41 @@ public sealed partial class ResPackage : ICKSlicedSerializable
     }
 
     [EditorBrowsable( EditorBrowsableState.Never )]
-    public void Write( IBinarySerializer s )
+    public static void Write( IBinarySerializer s, in ResPackage o )
     {
         var w = s.Writer;
-        w.Write( _fullName );
-        s.WriteNullableObject( _type );
-        w.Write( _defaultTargetPath.Path );
-        w.Write( _isGroup );
-        w.Write( _index );
-        s.WriteValue( _requires );
-        s.WriteValue( _children );
-        s.WriteObject( _resourceIndex );
-        s.WriteObject( _resources );
-        s.WriteObject( _resourcesAfter );
+        w.Write( o._fullName );
+        s.WriteNullableObject( o._type );
+        w.Write( o._defaultTargetPath.Path );
+        w.Write( o._isGroup );
+        w.Write( o._index );
+        s.WriteValue( o._requires );
+        s.WriteValue( o._children );
+        s.WriteObject( o._resourceIndex );
+        s.WriteObject( o._resources );
+        s.WriteObject( o._resourcesAfter );
 
-        w.Write( _requiresHasLocalPackage );
-        w.Write( _reachableHasLocalPackage );
+        w.Write( o._requiresHasLocalPackage );
+        w.Write( o._reachableHasLocalPackage );
 
 
-        s.WriteNullableObject( _reachablePackages != ImmutableHashSet<ResPackage>.Empty
-                                ? _reachablePackages
+        s.WriteNullableObject( o._reachablePackages != ImmutableHashSet<ResPackage>.Empty
+                                ? o._reachablePackages
                                 : null );
-        Throw.DebugAssert( _allReachablePackages == _reachablePackages || _allReachablePackages.Count > 1 );
-        w.WriteNonNegativeSmallInt32( _allReachablePackages != _reachablePackages
-                                            ? _allReachablePackages.Count
+        Throw.DebugAssert( o._allReachablePackages == o._reachablePackages || o._allReachablePackages.Count > 1 );
+        w.WriteNonNegativeSmallInt32( o._allReachablePackages != o._reachablePackages
+                                            ? o._allReachablePackages.Count
                                             : 0 );
 
-        if( _children.Length > 0 )
+        if( o._children.Length > 0 )
         {
-            s.WriteNullableObject( _afterReachablePackages != ImmutableHashSet<ResPackage>.Empty
-                                    ? _afterReachablePackages
+            s.WriteNullableObject( o._afterReachablePackages != ImmutableHashSet<ResPackage>.Empty
+                                    ? o._afterReachablePackages
                                     : null );
-            w.WriteNonNegativeSmallInt32( _allAfterReachablePackages.Count );
+            w.WriteNonNegativeSmallInt32( o._allAfterReachablePackages.Count );
         }
 
-        _reachableAggregateId.Write( w );
-        _childrenAggregateId.Write( w );
+        o._reachableAggregateId.Write( w );
+        o._childrenAggregateId.Write( w );
     }
 }

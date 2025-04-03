@@ -1,7 +1,4 @@
 using System;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace CK.Core;
 
@@ -46,11 +43,11 @@ public abstract class ResPackageDataHandler<T> where T : class
     /// <returns>The data on success, null on error.</returns>
     public T? Obtain( IActivityMonitor monitor, ResPackage package )
     {
-        var d = _data[package.Index];
+        var d = _data[package.Index - 1];
         if( d == null )
         {
             d = Build( monitor, package );
-            _data[package.Index] = d;
+            _data[package.Index - 1] = d;
         }
         return d;
     }

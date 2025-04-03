@@ -3,13 +3,12 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 namespace CK.Core;
 
 /// <summary>
-/// Final production initiated by a <see cref="ResourceSpaceCollectorBuilder"/>.
+/// Final production initiated by a <see cref="ResourceSpaceConfiguration"/>.
 /// Once available, all registered <see cref="FolderHandlers"/> and <see cref="FileHandlers"/>
 /// have been successfully initialized.
 /// </summary>

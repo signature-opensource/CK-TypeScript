@@ -1,5 +1,4 @@
 using CK.Core;
-using System.Runtime.CompilerServices;
 
 namespace CK.EmbeddedResources;
 

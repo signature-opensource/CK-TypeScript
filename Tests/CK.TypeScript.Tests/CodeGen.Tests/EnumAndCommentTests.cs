@@ -1,7 +1,6 @@
 using CK.Core;
 using CK.Testing;
 using CK.TypeScript.CodeGen;
-using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

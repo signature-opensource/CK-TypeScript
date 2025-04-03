@@ -1,11 +1,6 @@
 using CK.BinarySerialization;
-using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Security.Cryptography;
-using System;
-using System.Xml.Linq;
-using System.Diagnostics;
 using System.ComponentModel;
 
 namespace CK.Core;
@@ -33,17 +28,17 @@ public sealed partial class ResourceSpaceData : ICKSlicedSerializable
     }
 
     [EditorBrowsable( EditorBrowsableState.Never )]
-    public void Write( IBinarySerializer s )
+    public static void Write( IBinarySerializer s, in ResourceSpaceData o )
     {
-        s.WriteValue( _localPackages );
-        s.WriteValue( _packages );
-        s.WriteValue( _allPackageResources );
-        s.WriteObject( _packageIndex );
+        s.WriteValue( o._localPackages );
+        s.WriteValue( o._packages );
+        s.WriteValue( o._allPackageResources );
+        s.WriteObject( o._packageIndex );
 
         ICKBinaryWriter w = s.Writer;
-        ((ResPackageDataCache)_resPackageDataCache).Write( w );
-        w.WriteNullableString( _watchRoot );
-        w.Write( _ckGenPath );
-        w.Write( _ckWatchFolderPath );
+        ((ResPackageDataCache)o._resPackageDataCache).Write( w );
+        w.WriteNullableString( o._watchRoot );
+        w.Write( o._ckGenPath );
+        w.Write( o._ckWatchFolderPath );
     }
 }

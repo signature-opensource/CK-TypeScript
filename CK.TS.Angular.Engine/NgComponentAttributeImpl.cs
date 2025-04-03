@@ -1,13 +1,10 @@
 using CK.Core;
-using CK.EmbeddedResources;
 using CK.Setup;
-using CK.TypeScript;
 using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Resources;
 
 namespace CK.TS.Angular.Engine;
 
@@ -71,7 +68,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
 
-    protected override bool ConfigureResPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollectorBuilder spaceBuilder )
+    protected override bool ConfigureResPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceCollector spaceBuilder )
     {
         // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
@@ -83,7 +80,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
 
     protected override bool OnConfiguredPackage( IActivityMonitor monitor,
                                                  TypeScriptContext context,
-                                                 ResourceSpaceCollectorBuilder spaceBuilder,
+                                                 ResourceSpaceCollector spaceBuilder,
                                                  ResPackageDescriptor d )
     {
         Throw.DebugAssert( !IsAppComponent );

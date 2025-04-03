@@ -48,17 +48,17 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
     }
 
     /// <summary>
-    /// Called by the <see cref="TypeScriptPackageAttributeImpl.ConfigureResPackage(IActivityMonitor, TypeScriptContext, ResourceSpaceCollectorBuilder)"/>.
+    /// Called by the <see cref="TypeScriptPackageAttributeImpl.ConfigureResPackage(IActivityMonitor, TypeScriptContext, ResourceSpaceConfiguration)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="tsPackage">The package attribute.</param>
     /// <param name="context">The TypeScript context.</param>
-    /// <param name="d">The package to congigure.</param>
-    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <param name="d">The package to configure.</param>
+    /// <param name="spaceBuilder">The package's collector.</param>
     /// <returns>Must return true on success, false on error (errors must be logged).</returns>
     protected internal abstract bool OnConfiguredPackage( IActivityMonitor monitor,
                                                          TypeScriptPackageAttributeImpl tsPackage,
                                                          TypeScriptContext context,
                                                          ResPackageDescriptor d,
-                                                         ResourceSpaceCollectorBuilder spaceBuilder );
+                                                         ResourceSpaceCollector spaceBuilder );
 }

@@ -1,11 +1,7 @@
-using CK.Core;
-using CK.EmbeddedResources;
 using CK.Transform.Core;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 
 namespace CK.Core;
 

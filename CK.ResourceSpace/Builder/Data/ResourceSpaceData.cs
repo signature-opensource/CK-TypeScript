@@ -1,10 +1,6 @@
-using CK.BinarySerialization;
-using CK.EmbeddedResources;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 namespace CK.Core;
 
@@ -50,7 +46,7 @@ public sealed partial class ResourceSpaceData
     public IReadOnlyDictionary<object, ResPackage> PackageIndex => _packageIndex;
 
     /// <summary>
-    /// Gets the "&lt;Code&gt;" special head package.
+    /// Gets the "&lt;Code&gt;" head package.
     /// </summary>
     public ResPackage CodePackage => _codePackage;
 
@@ -64,18 +60,18 @@ public sealed partial class ResourceSpaceData
     public IReadOnlyList<ResPackage> Packages => _packages;
 
     /// <summary>
-    /// Gets the "&lt;App&gt;" special tail package.
+    /// Gets the local packages.
+    /// </summary>
+    public ImmutableArray<ResPackage> LocalPackages => _localPackages;
+
+    /// <summary>
+    /// Gets the "&lt;App&gt;" tail package.
     /// <para>
     /// When <see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> is defined, its <see cref="ResPackage.LocalPath"/>
     /// is the AppResourcesLocalPath.
     /// </para>
     /// </summary>
     public ResPackage AppPackage => _appPackage;
-
-    /// <summary>
-    /// Gets the local packages.
-    /// </summary>
-    public ImmutableArray<ResPackage> LocalPackages => _localPackages;
 
     /// <summary>
     /// Gets all the topologically ordered <see cref="IResPackageResources"/> indexed
