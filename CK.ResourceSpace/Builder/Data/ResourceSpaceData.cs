@@ -16,7 +16,7 @@ public sealed partial class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     readonly string _ckGenPath;
-    readonly string _ckWatchFolderPath;
+    readonly string _liveStatePath;
 
     // _packages, _localPackages, _allPackageResources, _exposedPackages, _reachablePackageSetCache,
     // _codePackage, _appPackage and _watchRoot are set by the ResourceSpaceDataBuilder.Build method.
@@ -32,7 +32,7 @@ public sealed partial class ResourceSpaceData
     internal ResourceSpaceData( string ckGenPath, string cKWatchFolderPath, IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
         _ckGenPath = ckGenPath;
-        _ckWatchFolderPath = cKWatchFolderPath;
+        _liveStatePath = cKWatchFolderPath;
         _packageIndex = packageIndex;
     }
 
@@ -88,7 +88,7 @@ public sealed partial class ResourceSpaceData
     /// Gets the watch root. Null if no local packages exist and "&lt;App&gt;" package
     /// has no defined folder (<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> was not set).
     /// <para>
-    /// This is also null if <see cref="CKWatchFolderPath"/> is <see cref="ResourceSpaceCollector.NoLiveState"/>.
+    /// This is also null if <see cref="LiveStatePath"/> is <see cref="ResourceSpaceCollector.NoLiveState"/>.
     /// </para>
     /// </summary>
     public string? WatchRoot => _watchRoot;
@@ -97,5 +97,5 @@ public sealed partial class ResourceSpaceData
     /// Gets the folder that contains the Live state.
     /// Can be <see cref="ResourceSpaceCollector.NoLiveState"/>.
     /// </summary>
-    public string CKWatchFolderPath => _ckWatchFolderPath;
+    public string LiveStatePath => _liveStatePath;
 }

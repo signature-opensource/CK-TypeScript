@@ -147,7 +147,7 @@ public sealed class ResourceSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResourceSpaceData( _collector.CKGenPath, _collector.CKWatchFolderPath, packageIndex );
+        var space = new ResourceSpaceData( _collector.CKGenPath, _collector.LiveStatePath, packageIndex );
 
         // ResPackageDataCache builder is used a vehicle to transmit the resourceIndex that will be filled
         // below to all the ResPackage (to avoid yet another constructor parameter).
@@ -174,7 +174,7 @@ public sealed class ResourceSpaceDataBuilder
         // This is the common requirements of all ResPackage that have no requirement.
         ImmutableArray<ResPackage> requiresCode = [codePackage];
         // The Watch root is the longest common parent of all the ResPackage.LocalPath.
-        // We compute it if and only if the CKWatchFolderPath is not ResourceSpaceCollector.NoLiveState.
+        // We compute it if and only if the LiveStatePath is not ResourceSpaceCollector.NoLiveState.
         string? watchRoot = null;
 
         var bAppRequirements = ImmutableArray.CreateBuilder<ResPackage>();
@@ -220,7 +220,7 @@ public sealed class ResourceSpaceDataBuilder
                 allPackageResources[p.ResourcesAfter.Index] = p.ResourcesAfter;
                 // Track the watch root.
                 var local = p.Resources.LocalPath ?? p.ResourcesAfter.LocalPath;
-                if( local != null && _collector.CKWatchFolderPath != ResourceSpaceCollector.NoLiveState )
+                if( local != null && _collector.LiveStatePath != ResourceSpaceCollector.NoLiveState )
                 {
                     if( watchRoot == null )
                     {
@@ -270,7 +270,7 @@ public sealed class ResourceSpaceDataBuilder
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
         space._codePackage = codePackage;
         space._appPackage = appPackage;
-        Throw.DebugAssert( _collector.CKWatchFolderPath == ResourceSpaceCollector.NoLiveState
+        Throw.DebugAssert( _collector.LiveStatePath == ResourceSpaceCollector.NoLiveState
                            || (space._localPackages.Length != 0) == (watchRoot != null) );
 
         space._watchRoot = watchRoot;

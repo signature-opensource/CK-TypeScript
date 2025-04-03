@@ -138,9 +138,9 @@ public sealed class LiveState
                 return null;
             }
             var spaceData = d.ReadObject<ResourceSpaceData>();
-            if( spaceData.CKWatchFolderPath + ResourceSpace.LiveStateFileName != liveStateFilePath )
+            if( spaceData.LiveStatePath + ResourceSpace.LiveStateFileName != liveStateFilePath )
             {
-                monitor.Error( $"Invalid paths. Expected '{ResourceSpace.LiveStateFileName}' to be in '{spaceData.CKWatchFolderPath}'." );
+                monitor.Error( $"Invalid paths. Expected '{ResourceSpace.LiveStateFileName}' to be in '{spaceData.LiveStatePath}'." );
                 return null;
             }
             bool success = true;

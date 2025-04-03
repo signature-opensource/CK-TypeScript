@@ -18,7 +18,7 @@ namespace CK.Core;
 public sealed class ResourceSpaceCollector
 {
     /// <summary>
-    /// Marker for <see cref="CKWatchFolderPath"/> when no Live state must be created.
+    /// Marker for <see cref="LiveStatePath"/> when no Live state must be created.
     /// </summary>
     public const string NoLiveState = "none";
 
@@ -26,19 +26,19 @@ public sealed class ResourceSpaceCollector
     readonly IResourceContainer? _generatedCodeContainer;
     readonly string _ckGenPath;
     readonly string? _appResourcesLocalPath;
-    readonly string _ckWatchFolderPath;
+    readonly string _liveStatePath;
 
     internal ResourceSpaceCollector( CoreCollector coreCollector,
                                      IResourceContainer? generatedCodeContainer,
                                      string ckGenPath,
                                      string? appResourcesLocalPath,
-                                     string ckWatchFolderPath )
+                                     string liveStatePath )
     {
         _coreCollector = coreCollector;
         _generatedCodeContainer = generatedCodeContainer;
         _ckGenPath = ckGenPath;
         _appResourcesLocalPath = appResourcesLocalPath;
-        _ckWatchFolderPath = ckWatchFolderPath;
+        _liveStatePath = liveStatePath;
     }
 
     internal bool CloseRegistrations( IActivityMonitor monitor ) => _coreCollector.Close( monitor );
@@ -101,9 +101,9 @@ public sealed class ResourceSpaceCollector
     /// <summary>
     /// Gets the folder that contains the Live state.
     /// <see cref="NoLiveState"/> if no Live state must be created.
-    /// See <see cref="ResourceSpaceConfiguration.CKWatchFolderPath"/>.
+    /// See <see cref="ResourceSpaceConfiguration.LiveStatePath"/>.
     /// </summary>
-    public string CKWatchFolderPath => _ckWatchFolderPath;
+    public string LiveStatePath => _liveStatePath;
 
     /// <inheritdoc cref="ResourceSpaceConfiguration.RegisterPackage(IActivityMonitor, string, NormalizedPath, IResourceContainer, IResourceContainer)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,

@@ -33,7 +33,7 @@ sealed class CKGenAppFilter : IFileEventFilter
             // the "ck-gen-app/.ck-watch/", we ignore it: may be handlers have updated
             // cached files and it's not our business.
             if( path.StartsWith( ckGenApp, StringComparison.Ordinal )
-                && !path.StartsWith( _liveState.SpaceData.CKWatchFolderPath ) )
+                && !path.StartsWith( _liveState.SpaceData.LiveStatePath ) )
             {
                 return new ChangedEvent( _liveState.SpaceData.AppPackage.Resources, path.Substring( ckGenApp.Length ) );
             }

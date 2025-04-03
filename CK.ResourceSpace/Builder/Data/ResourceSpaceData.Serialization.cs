@@ -24,7 +24,7 @@ public sealed partial class ResourceSpaceData : ICKSlicedSerializable
         _resPackageDataCache = LiveResPackageDataCache.Read( r, _packages );
         _watchRoot = r.ReadNullableString();
         _ckGenPath = r.ReadString();
-        _ckWatchFolderPath = r.ReadString();
+        _liveStatePath = r.ReadString();
     }
 
     [EditorBrowsable( EditorBrowsableState.Never )]
@@ -39,6 +39,6 @@ public sealed partial class ResourceSpaceData : ICKSlicedSerializable
         ((ResPackageDataCache)o._resPackageDataCache).Write( w );
         w.WriteNullableString( o._watchRoot );
         w.Write( o._ckGenPath );
-        w.Write( o._ckWatchFolderPath );
+        w.Write( o._liveStatePath );
     }
 }

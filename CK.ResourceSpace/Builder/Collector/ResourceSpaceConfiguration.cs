@@ -18,7 +18,7 @@ public sealed class ResourceSpaceConfiguration
     IResourceContainer? _generatedCodeContainer;
     string _ckGenPath;
     string? _appResourcesLocalPath;
-    string? _ckWatchFolderPath;
+    string? _liveStatePath;
 
     /// <summary>
     /// Initializes a new collector that must be configured.
@@ -33,7 +33,7 @@ public sealed class ResourceSpaceConfiguration
     /// Required code generated target path that will be created or updated.
     /// <para>
     /// This folder is updated on each generation. It cannot be below nor above the <see cref="AppResourcesLocalPath"/>
-    /// or the <see cref="CKWatchFolderPath"/>.
+    /// or the <see cref="LiveStatePath"/>.
     /// </para>
     /// <para>
     /// The path must be fully qualified. It is normalized to end with <see cref="Path.DirectorySeparatorChar"/>.
@@ -100,9 +100,9 @@ public sealed class ResourceSpaceConfiguration
     /// even if <see cref="AppResourcesLocalPath"/> is specified.
     /// </para>
     /// </summary>
-    public string? CKWatchFolderPath
+    public string? LiveStatePath
     {
-        get => _ckWatchFolderPath;
+        get => _liveStatePath;
         set
         {
             if( value != null )
@@ -110,7 +110,7 @@ public sealed class ResourceSpaceConfiguration
                 if( value != ResourceSpaceCollector.NoLiveState )
                 {
                     Throw.DebugAssert( ResourceSpaceCollector.NoLiveState == "none" );
-                    Throw.CheckArgument( """CKWatchFolderPath must be "none" or a fully qualified path.""", Path.IsPathFullyQualified( value ) );
+                    Throw.CheckArgument( """LiveStatePath must be "none" or a fully qualified path.""", Path.IsPathFullyQualified( value ) );
                     value = Path.GetFullPath( value );
                     if( value[^1] != Path.DirectorySeparatorChar )
                     {
@@ -118,7 +118,7 @@ public sealed class ResourceSpaceConfiguration
                     }
                 }
             }
-            _ckWatchFolderPath = value;
+            _liveStatePath = value;
         }
     }
 
@@ -187,16 +187,16 @@ public sealed class ResourceSpaceConfiguration
                 """ );
             return null;
         }
-        var ckWatchFolderPath = _ckWatchFolderPath
+        var liveStatePath = _liveStatePath
                                         ?? (_appResourcesLocalPath == null
                                                 ? ResourceSpaceCollector.NoLiveState
                                                 : _appResourcesLocalPath + ".ck-watch" + Path.DirectorySeparatorChar);
-        if( ckWatchFolderPath.StartsWith( _ckGenPath ) || _ckGenPath.StartsWith( ckWatchFolderPath ) )
+        if( liveStatePath.StartsWith( _ckGenPath ) || _ckGenPath.StartsWith( liveStatePath ) )
         {
             monitor.Error( $"""
-                Invalid CKWatchFolderPath: it must not be above or below CKGenPath.
+                Invalid LiveStatePath: it must not be above or below CKGenPath.
                 CKGenPath: {_ckGenPath}
-                CKWatchFolderPath: {ckWatchFolderPath}
+                LiveStatePath: {liveStatePath}
                 """ );
             return null;
         }
@@ -204,7 +204,7 @@ public sealed class ResourceSpaceConfiguration
                                            _generatedCodeContainer,
                                            _ckGenPath,
                                            _appResourcesLocalPath,
-                                           ckWatchFolderPath );
+                                           liveStatePath );
     }
 
 }

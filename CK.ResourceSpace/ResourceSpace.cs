@@ -80,9 +80,9 @@ public sealed class ResourceSpace
         if( installer == null ) return false;
 
         bool success = true;
-        if( _data.CKWatchFolderPath != ResourceSpaceCollector.NoLiveState )
+        if( _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
         {
-            success &= ClearLiveState( monitor, _data.CKWatchFolderPath );
+            success &= ClearLiveState( monitor, _data.LiveStatePath );
         }
         foreach( var f in _folderHandlers )
         {
@@ -95,16 +95,16 @@ public sealed class ResourceSpace
 
         installer.Cleanup( monitor, success );
 
-        if( success && _data.CKWatchFolderPath != ResourceSpaceCollector.NoLiveState )
+        if( success && _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
         {
-            if( _data.CKWatchFolderPath == ResourceSpaceCollector.NoLiveState )
+            if( _data.LiveStatePath == ResourceSpaceCollector.NoLiveState )
             {
                 monitor.Warn( """
                 No AppResourcesLocalPath has been set and no target watch folder has been specified.
                 Skipping Live state generation.
                 """ );
             }
-            success &= WriteLiveState( monitor, _data.CKWatchFolderPath );
+            success &= WriteLiveState( monitor, _data.LiveStatePath );
         }
         return success;
     }
