@@ -31,6 +31,20 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
         _fullName = fullResourceName;
     }
 
+    ResourceLocator( string fullResourceName, IResourceContainer container )
+    {
+        _container = container;
+        _fullName = fullResourceName;
+    }
+
+    /// <summary>
+    /// Unsafe initialization of a <see cref="ResourceLocator"/>: no check are done.
+    /// </summary>
+    /// <param name="container">The container.</param>
+    /// <param name="fullResourceName">The full resource name.</param>
+    /// <returns>A resource locator.</returns>
+    public static ResourceLocator UnsafeCreate( IResourceContainer container, string fullResourceName ) => new ResourceLocator( fullResourceName, container );
+
     /// <summary>
     /// Gets whether this locator is valid: the <see cref="Container"/> is not null
     /// and the <see cref="FullResourceName"/> is not null, not empty nor whitespace.

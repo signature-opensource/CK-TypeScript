@@ -11,6 +11,10 @@ namespace CK.EmbeddedResources;
 /// By default <see cref="HasLocalFilePathSupport"/> is true but this can be changed when
 /// instantiating the container to prrvent direct access to the file system.
 /// </para>
+/// <para>
+/// This container implementation is "unstable" by design: <see cref="ResourceFolder"/> and <see cref="ResourceLocator"/>
+/// can "disappear" when deleted from the file system.
+/// </para>
 /// </summary>
 [SerializationVersion( 0 )]
 public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersionedBinarySerializable

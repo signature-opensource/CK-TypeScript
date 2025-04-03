@@ -37,6 +37,20 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
         _fullName = fullFolderName;
     }
 
+    ResourceFolder( string fullFolderName, IResourceContainer container )
+    {
+        _container = container;
+        _fullName = fullFolderName;
+    }
+
+    /// <summary>
+    /// Unsafe initialization of a <see cref="ResourceFolder"/>: no check are done.
+    /// </summary>
+    /// <param name="container">The container.</param>
+    /// <param name="fullFolderName">The full folder name.</param>
+    /// <returns>A resource folder.</returns>
+    public static ResourceFolder UnsafeCreate( IResourceContainer container, string fullFolderName ) => new ResourceFolder( fullFolderName, container );
+
     /// <summary>
     /// Gets whether this folder is valid: the <see cref="Container"/> is not null
     /// and the <see cref="FullFolderName"/> is not null, not empty nor whitespace.
