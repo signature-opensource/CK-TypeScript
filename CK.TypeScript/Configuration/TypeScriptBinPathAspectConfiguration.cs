@@ -15,7 +15,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 {
     NormalizedPath _targetProjectPath;
     NormalizedPath _targetCKGenPath;
-    bool _useSrcFolder;
 
     /// <summary>
     /// Initializes a new empty configuration.
@@ -26,7 +25,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         Types = new List<TypeScriptTypeConfiguration>();
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
-        ModuleSystem = TSModuleSystem.Default;
         GitIgnoreCKGenFolder = true;
         AutoInstallJest = true;
     }
@@ -63,7 +61,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     }
 
     /// <summary>
-    /// Gets the '/ck-gen/src' or '/ck-gen' whether <see cref="UseSrcFolder"/> is true or false.
+    /// Gets the '/ck-gen' path.
     /// </summary>
     public NormalizedPath TargetCKGenPath
     {
@@ -72,28 +70,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             if( _targetCKGenPath.IsEmptyPath )
             {
                 _targetCKGenPath = _targetProjectPath.AppendPart( "ck-gen" );
-                if( _useSrcFolder ) _targetCKGenPath = _targetCKGenPath.AppendPart( "src" );
             }
             return _targetCKGenPath;
-        }
-    }
-
-    /// <summary>
-    /// Gets or sets whether the generated files will be in '/ck-gen/src' instead of '/ck-gen'.
-    /// <para>
-    /// Defaults to false. Automatically sets to true when <see cref="IntegrationMode"/> is <see cref="CKGenIntegrationMode.NpmPackage"/>.
-    /// </para>
-    /// </summary>
-    public bool UseSrcFolder
-    {
-        get => _useSrcFolder;
-        set
-        {
-            if( _useSrcFolder != value )
-            {
-                _targetCKGenPath = default;
-                _useSrcFolder = value;
-            }
         }
     }
 
@@ -134,15 +112,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// Gets or sets how the /ck-gen generated sources are integrated in the <see cref="TargetProjectPath"/>.
     /// </summary>
     public CKGenIntegrationMode IntegrationMode { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether we are building a package. In this mode, the target <see cref="TargetCKGenPath"/> is protected: when a file
-    /// doesn't match the result of the generation the file is not overwritten instead a ".G.ext" is written and an error is raised.
-    /// <para>
-    /// Defaults to false.
-    /// </para>
-    /// </summary>
-    public bool CKGenBuildMode { get; set; }
 
     /// <summary>
     /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>",
@@ -190,12 +159,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public bool GitIgnoreCKGenFolder { get; set; }
 
     /// <summary>
-    /// Choose the <see cref="TSModuleSystem"/>.
-    /// Defaults to <see cref="TSModuleSystem.Default"/>.
-    /// </summary>
-    public TSModuleSystem ModuleSystem { get; set; }
-
-    /// <summary>
     /// True to add <c>"composite": true</c> to the /ck-gen/tsconfig.json.
     /// <para>
     /// It is up to the developper to ensure that a <c>"references": [ { "path": "./ck-gen" } ]</c> exists in
@@ -203,7 +166,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// See https://www.typescriptlang.org/docs/handbook/project-references.html.
     /// </para>
     /// <para>
-    /// Unforunately, this is currently not supported by Jest.
+    /// Unfortunately, this is currently not supported by Jest nor by Angular (see <see cref="CKGenIntegrationMode"/>).
     /// </para>
     /// </summary>
     public bool EnableTSProjectReferences { get; set; }
@@ -240,11 +203,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? true;
 
         AutoInstallJest = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallJest ) ?? true;
-
-        CKGenBuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xCKGenBuildMode ) ?? false;
-        UseSrcFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseSrcFolder ) ?? false;
-        var tsModuleSystem = (string?)e.Attribute( TypeScriptAspectConfiguration.xModuleSystem );
-        ModuleSystem = tsModuleSystem == null ? TSModuleSystem.Default : Enum.Parse<TSModuleSystem>( tsModuleSystem, ignoreCase: true );
         EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
 
         ActiveCultures.Clear();
@@ -285,15 +243,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                 : null,
                GitIgnoreCKGenFolder is false
                 ? new XAttribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder, false )
-                : null,
-               CKGenBuildMode
-                ? new XAttribute( TypeScriptAspectConfiguration.xCKGenBuildMode, true )
-                : null,
-               UseSrcFolder
-                ? new XAttribute( TypeScriptAspectConfiguration.xUseSrcFolder, true )
-                : null,
-               ModuleSystem != TSModuleSystem.Default
-                ? new XAttribute( TypeScriptAspectConfiguration.xModuleSystem, ModuleSystem.ToString() )
                 : null,
                EnableTSProjectReferences
                 ? new XAttribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences, true )

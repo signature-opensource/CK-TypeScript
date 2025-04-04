@@ -40,21 +40,6 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xAutoInstallJest = XNamespace.None + "AutoInstallJest";
 
     /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> attribute name.
-    /// </summary>
-    public static readonly XName xCKGenBuildMode = XNamespace.None + "CKGenBuildMode";
-
-    /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.UseSrcFolder"/> attribute name.
-    /// </summary>
-    public static readonly XName xUseSrcFolder = XNamespace.None + "UseSrcFolder";
-
-    /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.ModuleSystem"/> attribute name.
-    /// </summary>
-    public static readonly XName xModuleSystem = XNamespace.None + "ModuleSystem";
-
-    /// <summary>
     /// The <see cref="TypeScriptBinPathAspectConfiguration.ActiveCultures"/> attribute name.
     /// </summary>
     public static readonly XName xActiveCultures = XNamespace.None + "ActiveCultures";

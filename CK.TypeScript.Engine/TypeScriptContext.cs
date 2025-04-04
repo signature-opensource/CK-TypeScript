@@ -206,9 +206,6 @@ public sealed partial class TypeScriptContext
         var resSpaceConfiguration = new ResourceSpaceConfiguration();
         resSpaceConfiguration.CKGenPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
         resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
-        // The TypeScriptRoot is a IResourceContainer: this is the root code package. Every package
-        // logically depends on it. Its resources will be reachable from any package.
-        resSpaceConfiguration.GeneratedCodeContainer = typeScriptContext.Root;
 
         var resSpaceCollector = resSpaceConfiguration.Build( monitor );
         if( resSpaceCollector == null ) return false;
@@ -243,8 +240,17 @@ public sealed partial class TypeScriptContext
         // This raises events and closes Type registration (generates the code for all ITSFileCSharpType, running
         // the deferred Implementors).
         // 
-        if( success ) success = _tsRoot.GenerateCode( monitor );
-
+        if( success && _tsRoot.GenerateCode( monitor ) )
+        {
+            // Must now save the TypeScript files in a GeneratedCodeContainer and
+            // assign it to the resource space.
+            throw new NotImplementedException();
+        }
+        else
+        {
+            // Time to give up.
+            return false;
+        }
         var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
         var resSpaceData = resSpaceDataBuilder.Build( monitor );
         if( resSpaceData == null ) return false;

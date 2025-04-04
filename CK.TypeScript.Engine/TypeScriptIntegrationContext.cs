@@ -144,14 +144,6 @@ public sealed partial class TypeScriptIntegrationContext
             monitor.Error( $"The target {what} cannot be read. This needs to be manually fixed." );
             return null;
         }
-        if( configuration.IntegrationMode == CKGenIntegrationMode.NpmPackage )
-        {
-            if( !configuration.UseSrcFolder )
-            {
-                monitor.Warn( $"Using UseSrcFolder = true because IntegrationMode is NpmPackage." );
-                configuration.UseSrcFolder = true;
-            }
-        }
         var boundLessPackages = packageJson.Dependencies.Values.Where( d => d.IsLatestDependency );
         if( boundLessPackages.Any() )
         {
@@ -419,7 +411,7 @@ public sealed partial class TypeScriptIntegrationContext
 
     internal bool Run( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
     {
-        Throw.DebugAssert( _configuration.IntegrationMode is CKGenIntegrationMode.Inline or CKGenIntegrationMode.NpmPackage );
+        Throw.DebugAssert( _configuration.IntegrationMode is CKGenIntegrationMode.Inline );
 
         // Obtains the yarn path or error.
         var yarnPath = YarnHelper.EnsureYarnInstallAndGetPath( monitor,
@@ -436,9 +428,7 @@ public sealed partial class TypeScriptIntegrationContext
         // Setup the target project dependencies according to the integration mode.
         using( monitor.OpenInfo( $"Updating target package.json dependencies from code generated ones." ) )
         {
-            var updates = _configuration.IntegrationMode is CKGenIntegrationMode.NpmPackage
-                            ? saver.GeneratedDependencies.Values.Where( d => d.DependencyKind == DependencyKind.PeerDependency )
-                            : saver.GeneratedDependencies.Values;
+            var updates = saver.GeneratedDependencies.Values;
             if( !_targetPackageJson.Dependencies.AddOrUpdate( monitor, updates, LogLevel.Info, cloneDependencies: false ) )
             {
                 return false;
@@ -473,7 +463,6 @@ public sealed partial class TypeScriptIntegrationContext
         }
         var success = _configuration.IntegrationMode switch
         {
-            CKGenIntegrationMode.NpmPackage => NpmPackageIntegrate( monitor, saver ),
             CKGenIntegrationMode.Inline => TSPathInlineIntegrate( monitor, saver ),
             _ => Throw.NotSupportedException<bool>()
         };
@@ -519,103 +508,9 @@ public sealed partial class TypeScriptIntegrationContext
         }
     }
 
-    bool NpmPackageIntegrate( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
-    {
-        using var _ = monitor.OpenInfo( "NpmPackage integration mode." );
-        // Generates "/ck-gen": "package.json", "tsconfig.json" and potentially "tsconfig-cjs.json" and "tsconfig-es6.json" files.
-        // This may fail if there's an error in the dependencies declared by the code generator (in LibraryImport).
-        var ckGenPackageJson = SaveCKGenBuildConfig( monitor,
-                                                     _ckGenFolder,
-                                                     saver.GeneratedDependencies,
-                                                     _configuration.ModuleSystem,
-                                                     _configuration.UseSrcFolder,
-                                                     _configuration.EnableTSProjectReferences );
-        if( ckGenPackageJson == null )
-        {
-            return false;
-        }
-        Throw.DebugAssert( ckGenPackageJson.FilePath.RemoveLastPart() == _ckGenFolder );
-        // If the tsConfig is empty (it doesn't exist), let's create a default one: a tsconfig.json is 
-        // required by our jest.config.js (and it should always exist).
-        if( _tsConfigJson.IsEmpty )
-        {
-            _tsConfigJson.CompileOptionsSourceMap = true;
-            _tsConfigJson.CompileOptionsDeclaration = true;
-            _tsConfigJson.EnsureDefault( monitor );
-            _tsConfigJson.Save();
-        }
-
-        // The workspace dependency.
-        PackageDependency ckGenDep = new PackageDependency( "@local/ck-gen", SVersionBound.None, DependencyKind.DevDependency, "NpmPackage mode" );
-
-        if( _initialEmptyTargetPackage )
-        {
-            _targetPackageJson.Name ??= _targetPackageJson.SafeName;
-            _targetPackageJson.Private = true;
-            _targetPackageJson.EnsureWorkspace( "ck-gen" );
-            _targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, cloneAddedDependency: false );
-        }
-        else
-        {
-            // We always ensure that the workspaces:["ck-gen"] and the "@local/ck-gen" dependency are here.
-            if( _targetPackageJson.Workspaces?.Contains( "*" ) is not true && _targetPackageJson.EnsureWorkspace( "ck-gen" ) )
-            {
-                monitor.Info( $"Added \"ck-gen\" workspace." );
-            }
-            if( !_targetPackageJson.Dependencies.TryGetValue( "@local/ck-gen", out var ck )
-                || !ck.IsWorkspaceDependency
-                || ck.DependencyKind != DependencyKind.DevDependency )
-            {
-                if( ck == null )
-                {
-                    _targetPackageJson.Dependencies.AddOrUpdate( monitor, ckGenDep, LogLevel.None, false );
-                    monitor.Info( $"Added \"@local/ck-gen\" as a workspace development dependency." );
-                }
-                else
-                {
-                    ck.UnconditionalSetVersion( SVersionBound.None );
-                    ck.UnconditionalSetDependencyKind( DependencyKind.DevDependency );
-                    monitor.Info( $"Fixed \"@local/ck-gen\" as a workspace development dependency." );
-                }
-            }
-        }
-        // We must first save the target package.json to ensure that the Yarn TypeScript sdk is here.
-        // Then we save the ck-gen/package.
-        if( !SaveTargetPackageJsonAndYarnInstall( monitor )
-            || !SaveCKGenPackageJsonAndYarnInstall( monitor, ckGenPackageJson, _ckGenFolder ) )
-        {
-            return false;
-        }
-
-        // Tries to build the ck-gen/ folder. We ar done.
-        return YarnHelper.DoRunYarn( monitor, _ckGenFolder, "run build", _yarnPath );
-
-        static bool SaveCKGenPackageJsonAndYarnInstall( IActivityMonitor monitor, PackageJsonFile packageJson, NormalizedPath ckGenFolder )
-        {
-            using var _ = monitor.OpenInfo( "Saving ck-gen/package.json, running Yarn install if needed." );
-            var finalCommand = new StringBuilder( "/C yarn install" );
-            PackageDependency[] manualPeerDeps = ExtractLatestDependencies( packageJson, finalCommand );
-            packageJson.Save();
-            if( !RunSavePackageJsonFinalCommand( monitor, finalCommand, ckGenFolder ) )
-            {
-                return false;
-            }
-            ReloadAndUpdateLatestDependencies( monitor, packageJson, manualPeerDeps );
-            return true;
-        }
-    }
-
     bool TSPathInlineIntegrate( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
     {
         using var _ = monitor.OpenInfo( "Inline integration mode." );
-        // If this fails, we don't care: this is purely informational.
-        SaveCKGenBuildConfig( monitor,
-                              _ckGenFolder,
-                              saver.GeneratedDependencies,
-                              _configuration.ModuleSystem,
-                              _configuration.UseSrcFolder,
-                              _configuration.EnableTSProjectReferences,
-                              filePrefix: "CouldBe." );
         if( _initialEmptyTargetPackage )
         {
             _targetPackageJson.Name ??= _targetPackageJson.SafeName;
@@ -623,14 +518,14 @@ public sealed partial class TypeScriptIntegrationContext
         }
         else
         {
-            // Remove NpmPackage mode if any.
+            // [Legacy] Remove NpmPackage mode if any.
             if( _targetPackageJson.Dependencies.Remove( "@local/ck-gen" ) )
             {
-                monitor.Info( "Removed '@local/ck-gen' package dependency (NpmPackage integration mode)." );
+                monitor.Info( "Removed '@local/ck-gen' package dependency (Legacy NpmPackage integration mode)." );
             }
             if( _targetPackageJson.Workspaces?.Remove( "ck-gen" ) is true )
             {
-                monitor.Info( $"Removed 'ck-gen' Yarn workspace (NpmPackage integration mode)." );
+                monitor.Info( $"Removed 'ck-gen' Yarn workspace (Legacy NpmPackage integration mode)." );
             }
         }
 
@@ -660,224 +555,6 @@ public sealed partial class TypeScriptIntegrationContext
         // Installs everything.
         // We don't build anything (we don't knwon the build command at this level).
         return SaveTargetPackageJsonAndYarnInstall( monitor );
-    }
-
-    /// <summary>
-    /// Generates "/ck-gen/package.json", "/ck-gen/tsconfig.json" and potentially "/ck-gen/tsconfig-cjs.json" and "/ck-gen/tsconfig-es6.json".
-    /// </summary>
-    internal static PackageJsonFile? SaveCKGenBuildConfig( IActivityMonitor monitor,
-                                                           NormalizedPath ckGenFolder,
-                                                           DependencyCollection deps,
-                                                           TSModuleSystem moduleSystem,
-                                                           bool useSrcFolder,
-                                                           bool enableTSProjectReferences,
-                                                           string? filePrefix = null )
-    {
-        using var gLog = monitor.OpenInfo( $"Saving TypeScript and TypeScript configuration files..." );
-        if( !GenerateTSConfigJson( monitor, ckGenFolder, moduleSystem, useSrcFolder, enableTSProjectReferences, filePrefix ) )
-        {
-            return null;
-        }
-        return GeneratePackageJson( monitor, ckGenFolder, moduleSystem, deps, filePrefix );
-
-        static PackageJsonFile? GeneratePackageJson( IActivityMonitor monitor,
-                                                     NormalizedPath ckGenFolder,
-                                                     TSModuleSystem moduleSystem,
-                                                     DependencyCollection deps,
-                                                     string? filePrefix )
-        {
-            var packageJsonPath = Path.Combine( ckGenFolder, filePrefix + "package.json" );
-            using( monitor.OpenTrace( $"Creating '{packageJsonPath}'." ) )
-            {
-                // The /ck-gen/package.json dependencies is bound to the generated one (into which
-                // typescript has been added).
-                var p = PackageJsonFile.Create( packageJsonPath, deps, "ck-gen package.json" );
-                p.Name = "@local/ck-gen";
-
-                if( moduleSystem is TSModuleSystem.ES6 or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )
-                {
-                    p.Module = "./dist/es6/index.js";
-                }
-                if( moduleSystem is TSModuleSystem.CJS or TSModuleSystem.ES6AndCJS or TSModuleSystem.CJSAndES6 )
-                {
-                    p.Main = "./dist/cjs/index.js";
-                }
-                var buildScript = "tsc -p tsconfig.json";
-                if( moduleSystem == TSModuleSystem.ES6AndCJS )
-                {
-                    buildScript += " && tsc -p tsconfig-cjs.json";
-                }
-                else if( moduleSystem == TSModuleSystem.CJSAndES6 )
-                {
-                    buildScript += " && tsc -p tsconfig-es6.json";
-                }
-                p.Scripts.Add( "build", buildScript );
-                p.Private = true;
-                p.Save();
-                return p;
-            }
-        }
-
-        static bool GenerateTSConfigJson( IActivityMonitor monitor,
-                                          NormalizedPath ckGenFolder,
-                                          TSModuleSystem moduleSystem,
-                                          bool useSrcFolder,
-                                          bool enableTSProjectReferences,
-                                          string? filePrefix )
-        {
-            var sb = new StringBuilder();
-            var tsConfigFile = Path.Combine( ckGenFolder, filePrefix + "tsconfig.json" );
-            using( monitor.OpenTrace( $"Creating '{tsConfigFile}'." ) )
-            {
-                string module, modulePath;
-                string? otherModule = null, otherModulePath = null;
-                string? unusedDist = null;
-                var unusedConfigFiles = new List<string>();
-                switch( moduleSystem )
-                {
-                    case TSModuleSystem.ES6:
-                        module = "ES6";
-                        modulePath = "es6";
-                        unusedDist = "dist/cjs";
-                        unusedConfigFiles.AddRangeArray( "tsconfig-cjs.json", "tsconfig-es6.json" );
-                        break;
-                    case TSModuleSystem.ES6AndCJS:
-                        module = "ES6";
-                        modulePath = "es6";
-                        otherModule = "CommonJS";
-                        otherModulePath = "cjs";
-                        unusedConfigFiles.Add( "tsconfig-es6.json" );
-                        break;
-                    case TSModuleSystem.CJS:
-                        module = "CommonJS";
-                        modulePath = "cjs";
-                        unusedDist = "dist/es6";
-                        unusedConfigFiles.AddRangeArray( "tsconfig-cjs.json", "tsconfig-es6.json" );
-                        break;
-                    case TSModuleSystem.CJSAndES6:
-                        module = "CommonJS";
-                        modulePath = "cjs";
-                        otherModule = "ES6";
-                        otherModulePath = "es6";
-                        unusedConfigFiles.Add( "tsconfig-cjs.json" );
-                        break;
-                    default: throw new CKException( "" );
-                }
-                DeleteUnused( monitor, ckGenFolder, unusedDist, unusedConfigFiles );
-
-                // Allow this project to be "composite" (this is currently not supported by Jest).
-                var tsBuildMode = "";
-                if( enableTSProjectReferences )
-                {
-                    tsBuildMode = """
-                                  ,
-                                      "composite": true
-                                  """;
-                }
-                string closer;
-                if( useSrcFolder )
-                {
-                    closer = """
-                        ,
-                            "rootDir": "src",
-                            "baseUrl": "./src",
-                            "paths": {
-                              "@local/ck-gen": [ "./" ],
-                              "@local/ck-gen/*": [ "./*" ]
-                            }
-                          },
-                          "include": [ "src/**/*" ]
-                        }
-
-                        """;
-                }
-                else
-                {
-                    closer = $$"""
-                        ,
-                            "paths": {
-                              "@local/ck-gen": [ "./" ],
-                              "@local/ck-gen/*": [ "./*" ]
-                            }
-                          },
-                          "exclude": [ "{{filePrefix}}tsconfig*.json", "{{filePrefix}}package.json" ]
-                        }
-                        """;
-
-                }
-                File.WriteAllText( tsConfigFile, $$"""
-                        {
-                          "compilerOptions": {
-                            "strict": true,
-                            "target": "es2022",
-                            "moduleResolution": "node",
-                            "lib": ["es2022", "dom"],
-                            "module": "{{module}}",
-                            "outDir": "./dist/{{modulePath}}",
-                            "sourceMap": true,
-                            "declaration": true,
-                            "declarationMap": true,
-                            "esModuleInterop": true,
-                            "skipLibCheck": true,
-                            "resolveJsonModule": true{{tsBuildMode}}{{closer}}
-                        """ );
-                if( otherModule != null )
-                {
-                    var tsConfigOtherFile = Path.Combine( ckGenFolder, $"{filePrefix}tsconfig-{otherModulePath}.json" );
-                    monitor.Trace( $"Creating '{tsConfigOtherFile}'." );
-                    File.WriteAllText( tsConfigOtherFile, $$"""
-                                                {
-                                                  "extends": "./tsconfig.json",
-                                                  "compilerOptions": {
-                                                    "module": "{{otherModule}}",
-                                                    "outDir": "./dist/{{otherModulePath}}"
-                                                  },
-                                                }
-                                                """ );
-                }
-            }
-            return true;
-
-            static void DeleteUnused( IActivityMonitor monitor, NormalizedPath outputPath, string? unusedDist, List<string> unusedConfigFiles )
-            {
-                if( unusedDist != null )
-                {
-                    var p = Path.Combine( outputPath, unusedDist );
-                    if( Directory.Exists( p ) )
-                    {
-                        using( monitor.OpenInfo( $"Deleting no more used folder '{unusedDist}'." ) )
-                        {
-                            try
-                            {
-                                Directory.Delete( p, true );
-                            }
-                            catch( Exception ex )
-                            {
-                                monitor.Warn( $"Unable to delete directory '{p}'. Ignoring.", ex );
-                            }
-                        }
-                    }
-                }
-                foreach( var f in unusedConfigFiles )
-                {
-                    var p = Path.Combine( outputPath, f );
-                    if( File.Exists( p ) )
-                    {
-                        using( monitor.OpenInfo( $"Deleting useless file '{f}'." ) )
-                        {
-                            try
-                            {
-                                File.Delete( p );
-                            }
-                            catch( Exception ex )
-                            {
-                                monitor.Warn( $"Unable to delete file '{p}'. Ignoring.", ex );
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
 }

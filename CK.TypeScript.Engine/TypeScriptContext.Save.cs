@@ -21,39 +21,9 @@ public sealed partial class TypeScriptContext // Save
         {
             var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
             var targetCKGenFolder = BinPathConfiguration.TargetCKGenPath;
-            // If a ck-gen/dist folder exists, we delete it no matter what.
-            // This applies to NpmPackage integration mode. 
-            // When UseSrcFolder is false, its files appear in the list of cleanup files and
-            // it should be recompiled anyway.
-            // In Inline mode, there is no dist/. And when there is no integration at all, the /dist
-            // shouldn't exist.
-            string distFolder = ckGenFolder + "/dist";
-            if( Directory.Exists( distFolder ) )
-            {
-                monitor.Info( "Found a 'ck-gen/dist' folder. Deleting it" );
-                DeleteFolder( monitor, distFolder, recursive: true );
-            }
-            var saver = BinPathConfiguration.CKGenBuildMode
-                        ? new BuildModeSaver( Root, targetCKGenFolder )
-                        : new TypeScriptFileSaveStrategy( Root, targetCKGenFolder );
+            var saver = new TypeScriptFileSaveStrategy( Root, targetCKGenFolder );
             // We want a root barrel for the generated module.
             Root.Root.EnsureBarrel();
-            // If we are not using the ck-gen/src folder, ignore the files that are not
-            // directly concerned by the code generation.
-            if( !_binPathConfiguration.UseSrcFolder )
-            {
-                saver.CleanupIgnoreFiles.Add( ".gitignore" );
-                if( _binPathConfiguration.IntegrationMode != CKGenIntegrationMode.None )
-                {
-                    var prefix = _binPathConfiguration.IntegrationMode != CKGenIntegrationMode.NpmPackage
-                                    ? "CouldBe."
-                                    : null;
-                    saver.CleanupIgnoreFiles.Add( prefix + "package.json" );
-                    saver.CleanupIgnoreFiles.Add( prefix + "tsconfig.json" );
-                    saver.CleanupIgnoreFiles.Add( prefix + "tsconfig-cjs.json" );
-                    saver.CleanupIgnoreFiles.Add( prefix + "tsconfig-es6.json" );
-                }
-            }
             // Saving the root.  
             int? savedCount = Root.Save( monitor, saver );
             if( !savedCount.HasValue )

@@ -30,21 +30,6 @@ public static partial class TSTestHelperExtensions
         return p.AppendPart( RemoveAsyncSuffix( testName ) );
     }
 
-    /// <summary>
-    /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
-    /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built in <see cref="CKGenIntegrationMode.NpmPackage"/>.
-    /// No VSCode support nor TypeScript test tooling is installed.
-    /// </summary>
-    /// <param name="helper">This helper.</param>
-    /// <param name="testName">The current test name.</param>
-    /// <returns>The TSBuildOnly test path.</returns>
-    public static NormalizedPath GetTypeScriptBuildOnlyTargetProjectPath( this IMonitorTestHelper helper, [CallerMemberName] string? testName = null )
-    {
-        var p = helper.TestProjectFolder.AppendPart( "TSBuildOnly" );
-        EnsureGitIgnore( helper, p );
-        return p.AppendPart( RemoveAsyncSuffix( testName ) );
-    }
-
     static void EnsureGitIgnore( IMonitorTestHelper helper, NormalizedPath p )
     {
         if( !Directory.Exists( p ) )
@@ -63,36 +48,12 @@ public static partial class TSTestHelperExtensions
     }
 
     /// <summary>
-    /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSNpmPackageTests/<paramref name="testName"/>" path
-    /// for real tests. Yarn is installed, VSCode support is setup, "/ck-gen" yarn workspace is built, a script "test" command is
-    /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
-    /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
-    /// the modified files.
-    /// <para>
-    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
-    /// the TypeScript tests.
-    /// </para>
-    /// </summary>
-    /// <param name="this">This helper.</param>
-    /// <param name="testName">The current test name.</param>
-    /// <returns>The TSNpmPackageTests test path.</returns>
-    public static NormalizedPath GetTypeScriptNpmPackageTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
-    {
-        var p = GetPath( @this, "TSNpmPackageTests", testName );
-        TEMPMigrate( @this, testName, p );
-        MigrateAny( @this, testName, p, "TSInlineTests", "TSBuildOnly", "TSGeneratedOnly" );
-        return p;
-    }
-
-    /// <summary>
     /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSInlineTests/<paramref name="testName"/>" path
     /// for real tests. Yarn is installed, VSCode support is setup, a script "test" command is
-    /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
-    /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
-    /// the modified files.
+    /// available and a "src/sample.spec.ts" file is ready to be used.
     /// <para>
-    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
-    /// the TypeScript tests.
+    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can
+    /// be used to execute the TypeScript tests.
     /// </para>
     /// </summary>
     /// <param name="this">This helper.</param>
@@ -101,8 +62,7 @@ public static partial class TSTestHelperExtensions
     public static NormalizedPath GetTypeScriptInlineTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
     {
         var p = GetPath( @this, "TSInlineTests", testName );
-        TEMPMigrate( @this, testName, p );
-        MigrateAny( @this, testName, p, "TSNpmPackageTests", "TSBuildOnly", "TSGeneratedOnly" );
+        MigrateAny( @this, testName, p, "TSBuildOnly", "TSGeneratedOnly" );
         return p;
     }
 
@@ -112,21 +72,12 @@ public static partial class TSTestHelperExtensions
         {
             if( MoveDirectory( GetPath( @this, o, testName ), p ) )
             {
-
                 return;
             }
         }
     }
 
     static NormalizedPath GetPath( IBasicTestHelper @this, string type, string? testName ) => @this.TestProjectFolder.AppendPart( type ).AppendPart( RemoveAsyncSuffix( testName ) );
-
-    static void TEMPMigrate( IBasicTestHelper @this, string? testName, NormalizedPath p )
-    {
-        if( !MoveDirectory( @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) ), p ) )
-        {
-            MoveDirectory( @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) ), p );
-        }
-    }
 
     static bool MoveDirectory( NormalizedPath old, NormalizedPath p )
     {
@@ -149,8 +100,6 @@ public static partial class TSTestHelperExtensions
     enum GenerateMode
     {
         GenerateOnly,
-        BuildOnly,
-        NpmPackage,
         Inline
     }
 

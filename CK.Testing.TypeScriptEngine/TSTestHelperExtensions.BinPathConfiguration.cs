@@ -35,11 +35,6 @@ public static partial class TSTestHelperExtensions
 
     /// <summary>
     /// Applies the options driven by <paramref name="targetProjectPath"/> to this <see cref="TypeScriptBinPathAspectConfiguration"/>
-    /// <para>
-    /// <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> is false: to preserve the current ck-gen/ folder
-    /// and manually validate the changes, set it to true.
-    /// </para>
-    /// </summary>
     /// <param name="tsBinPathAspect">This configuration.</param>
     /// <param name="targetProjectPath">
     /// Obtained from <see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)"/> or one of
@@ -55,15 +50,11 @@ public static partial class TSTestHelperExtensions
         var testMode = targetProjectPath.Parts[^2] switch
         {
             "TSGeneratedOnly" => GenerateMode.GenerateOnly,
-            "TSBuildOnly" => GenerateMode.BuildOnly,
-            "TSNpmPackageTests" => GenerateMode.NpmPackage,
             "TSInlineTests" => GenerateMode.Inline,
             _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath ), $"""
                                                         Unsupported target project path: '{targetProjectPath}'.
                                                         $"The target path must be obtained with TestHelper methods:
                                                         - GetTypeScriptGeneratedOnlyTargetProjectPath()
-                                                        - GetTypeScriptBuildOnlyTargetProjectPath()
-                                                        - GetTypeScriptNpmPackageTargetProjectPath() 
                                                         - GetTypeScriptInlineTargetProjectPath() 
                                                         """ )
         };
@@ -73,29 +64,6 @@ public static partial class TSTestHelperExtensions
             tsBinPathAspect.AutoInstallJest = false;
             tsBinPathAspect.InstallYarn = YarnInstallOption.None;
             tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.None;
-        }
-        else
-        {
-            if( testMode == GenerateMode.BuildOnly )
-            {
-                tsBinPathAspect.AutoInstallJest = false;
-                tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
-            }
-            else
-            {
-                if( testMode == GenerateMode.Inline )
-                {
-                    tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.Inline;
-                }
-                else if( testMode == GenerateMode.NpmPackage )
-                {
-                    tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
         }
         tsBinPathAspect.Types.Clear();
         tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
