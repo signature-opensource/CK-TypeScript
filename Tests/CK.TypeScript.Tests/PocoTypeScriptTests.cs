@@ -85,7 +85,7 @@ public class PocoTypeScriptTests
     [Test]
     public async Task recursive_type_dont_import_themselves_Async()
     {
-        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IRecursive ) );
         engineConfig.FirstBinPath.Types.Add( typeof( IRecursive ) );

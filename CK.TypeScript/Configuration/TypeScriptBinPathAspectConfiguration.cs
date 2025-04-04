@@ -110,6 +110,9 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 
     /// <summary>
     /// Gets or sets how the /ck-gen generated sources are integrated in the <see cref="TargetProjectPath"/>.
+    /// <para>
+    /// Defaults to <see cref="CKGenIntegrationMode.Inline"/>.
+    /// </para>
     /// </summary>
     public CKGenIntegrationMode IntegrationMode { get; set; }
 

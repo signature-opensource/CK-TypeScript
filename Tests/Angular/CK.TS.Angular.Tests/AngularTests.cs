@@ -23,9 +23,6 @@ public class AngularTests
         ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
         ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-US" ) );
 
-
-        ts.CKGenBuildMode = false;
-
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ),
                                               // CK.Ng.AspNet.Auth folder.

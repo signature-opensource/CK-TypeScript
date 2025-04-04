@@ -1,16 +1,12 @@
 {
-  "name": "npmpackage",
+  "name": "c2",
   "private": true,
   "packageManager": "yarn@4.6.0",
   "scripts": {
     "test": "jest",
     "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
-  "workspaces": [
-    "ck-gen"
-  ],
   "devDependencies": {
-    "@local/ck-gen": "workspace:*",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.9",
     "@yarnpkg/sdks": "^3.2",
@@ -21,6 +17,9 @@
     "typescript": "=5.4.5"
   },
   "ckVersion": 1,
+  "dependencies": {
+    "axios": "^1.7.9"
+  },
   "peerDependencies": {
     "rxjs": "^7.8.1"
   }

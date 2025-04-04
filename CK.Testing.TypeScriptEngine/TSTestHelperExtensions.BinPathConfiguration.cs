@@ -11,10 +11,6 @@ public static partial class TSTestHelperExtensions
     /// Ensures that a <see cref="TypeScriptAspect"/> is available in <see cref="EngineConfiguration.Aspects"/> and that
     /// this <see cref="BinPathConfiguration"/> contains a <see cref="TypeScriptBinPathAspectConfiguration"/> configured
     /// for the <paramref name="targetProjectPath"/>.
-    /// <para>
-    /// <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> is false: to preserve the current ck-gen/ folder
-    /// and manually validate the changes, set it to true.
-    /// </para>
     /// </summary>
     /// <param name="binPath">This BinPath configuration to configure.</param>
     /// <param name="targetProjectPath">

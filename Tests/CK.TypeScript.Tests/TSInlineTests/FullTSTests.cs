@@ -104,7 +104,7 @@ public class FullTSTests
     [Test]
     public async Task TypeScriptRunner_with_global_CKTypeScriptEnv_Async()
     {
-        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         var types = new[]
         {
@@ -113,8 +113,7 @@ public class FullTSTests
             typeof( IWithTyped )
         };
         configuration.FirstBinPath.Types.Add( types );
-        var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
-        tsConfig.UseSrcFolder = true;
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,
@@ -165,7 +164,7 @@ public class FullTSTests
     [Test]
     public async Task CrisLike_commands_and_results_Async()
     {
-        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         var tsTypes = new[]
         {
@@ -221,7 +220,7 @@ public class FullTSTests
     [Test]
     public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_DefaultTypeScriptVersion_Async()
     {
-        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
         System.IO.File.WriteAllText( targetProjectPath.AppendPart( ".gitignore" ), "*" );

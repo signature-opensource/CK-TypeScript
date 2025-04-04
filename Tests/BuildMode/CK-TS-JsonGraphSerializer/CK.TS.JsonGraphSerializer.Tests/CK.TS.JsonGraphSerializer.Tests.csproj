@@ -13,6 +13,6 @@
     <ProjectReference Include="..\CK.TS.JsonGraphSerializer\CK.TS.JsonGraphSerializer.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Clients\Inline\ck-gen\CK\Core\" />
+    <Folder Include="Clients\C1\ck-gen\" />
   </ItemGroup>
 </Project>

@@ -41,18 +41,16 @@ public class MultipleTypeScriptTests
         binPath.Types.Add( typeof( ISamplePoco ), typeof( BringAxiosPackageAsDependency ), typeof( BringRxJSPackageAsPeerDependency ) );
         var ts1 = new TypeScriptBinPathAspectConfiguration()
         {
-            TargetProjectPath = "Clients/NpmPackage",
-            IntegrationMode = CKGenIntegrationMode.NpmPackage,
-            TypeFilterName = "TypeScriptN",
+            TargetProjectPath = "Clients/C1",
+            TypeFilterName = "TypeScriptC1",
         };
         ts1.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
 
         var ts2 = new TypeScriptBinPathAspectConfiguration()
         {
-            TargetProjectPath = "Clients/Inline",
+            TargetProjectPath = "Clients/C2",
             IntegrationMode = CKGenIntegrationMode.Inline,
-            TypeFilterName = "TypeScriptI",
-            CKGenBuildMode = true
+            TypeFilterName = "TypeScriptC2",
         };
         ts2.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
 
@@ -63,11 +61,11 @@ public class MultipleTypeScriptTests
         await engineConfig.RunSuccessfullyAsync();
 
         // Runs the Jest tests.
-        var t1 = TestHelper.TestProjectFolder.Combine( "Clients/NpmPackage" );
+        var t1 = TestHelper.TestProjectFolder.Combine( "Clients/C1" );
         await using var r1 = TestHelper.CreateTypeScriptRunner( t1 );
         r1.Run();
 
-        var t2 = TestHelper.TestProjectFolder.Combine( "Clients/Inline" );
+        var t2 = TestHelper.TestProjectFolder.Combine( "Clients/C2" );
         await using var r2 = TestHelper.CreateTypeScriptRunner( t2 );
         r2.Run();
     }

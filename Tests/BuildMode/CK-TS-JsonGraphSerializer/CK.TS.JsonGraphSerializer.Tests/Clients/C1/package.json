@@ -1,5 +1,5 @@
 {
-  "name": "inline",
+  "name": "c1",
   "private": true,
   "packageManager": "yarn@4.6.0",
   "scripts": {
@@ -17,9 +17,6 @@
     "typescript": "=5.4.5"
   },
   "ckVersion": 1,
-  "dependencies": {
-    "axios": "^1.7.9"
-  },
   "peerDependencies": {
     "rxjs": "^7.8.1"
   }
