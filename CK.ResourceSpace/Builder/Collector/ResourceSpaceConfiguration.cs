@@ -1,5 +1,6 @@
 using CK.EmbeddedResources;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace CK.Core;
@@ -57,12 +58,24 @@ public sealed class ResourceSpaceConfiguration
 
     /// <summary>
     /// Gets or sets the "&lt;Code&gt;" head package generated resource container.
-    /// When let to null, an empty container is used.
+    /// When let to null, an empty container is considered until a non null container is configured
+    /// with <see cref="ResourceSpaceCollector.GeneratedCodeContainer"/>, <see cref="ResourceSpaceDataBuilder.GeneratedCodeContainer"/>,
+    /// <see cref="ResourceSpaceData.GeneratedCodeContainer"/> or (last chance) with <see cref="ResourceSpaceBuilder.GeneratedCodeContainer"/>.
+    /// <para>
+    /// This possibly late assignation of the code generated container enables code generator to be able to generate code
+    /// based on the topologically ordered <see cref="ResourceSpaceData.Packages"/>. Not all code generators require this:
+    /// some can assign the code from this initial configuration. 
+    /// </para>
     /// </summary>
+    [DisallowNull]
     public IResourceContainer? GeneratedCodeContainer
     {
         get => _generatedCodeContainer;
-        set => _generatedCodeContainer = value;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            _generatedCodeContainer = value;
+        }
     }
 
     /// <summary>

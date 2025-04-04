@@ -3,6 +3,7 @@ using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -16,10 +17,29 @@ namespace CK.Core;
 public sealed class ResourceSpaceDataBuilder
 {
     readonly ResourceSpaceCollector _collector;
-     
+    IResourceContainer? _generatedCodeContainer;
+
     public ResourceSpaceDataBuilder( ResourceSpaceCollector collector )
     {
         _collector = collector;
+        _generatedCodeContainer = collector.GeneratedCodeContainer;
+    }
+
+    /// <summary>
+    /// Gets or sets the configured Code generated resource container.
+    /// This can only be set if this has not been previously set (ie. this is null).
+    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// </summary>
+    [DisallowNull]
+    public IResourceContainer? GeneratedCodeContainer
+    {
+        get => _generatedCodeContainer;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            Throw.CheckState( "This can be set only once.", GeneratedCodeContainer is null );
+            _generatedCodeContainer = value;
+        }
     }
 
     /// <summary>
@@ -48,6 +68,8 @@ public sealed class ResourceSpaceDataBuilder
 
         // The "<Code>" package is the first package and represents the generated code.
         // It is empty (no child) and only contains the generated code as AfterResources by design.
+        // The code container, if not yet knwon, is a ResourceContainerWrapper that can transition from
+        // an empty default container to the real code container when set.
         // This package is not local as it is not bound to any local path.
         // All packages that require no other package require it.
         // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
@@ -55,7 +77,8 @@ public sealed class ResourceSpaceDataBuilder
         static ResPackage CreateCodePackage( ResPackageDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
         {
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
-            var codeContainer = generatedCodeContainer ?? new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
+            var codeContainer = generatedCodeContainer
+                                ?? new ResourceContainerWrapper( new EmptyResourceContainer( "Empty <Code>", isDisabled: false ) );
             // Code package has no content and is by construction the first package: its index and
             // the indexes of its resources are known.
             return new ResPackage( dataCacheBuilder,
@@ -113,7 +136,6 @@ public sealed class ResourceSpaceDataBuilder
         }
 
         var descriptorPackageCount = _collector.Packages.Count;
-        var generatedCodeContainer = _collector.GeneratedCodeContainer;
         string? appLocalPath = _collector.AppResourcesLocalPath;
         var localCount = _collector.LocalPackageCount;
 
@@ -130,10 +152,9 @@ public sealed class ResourceSpaceDataBuilder
         // - Plus the name of the "<Code>" and "<App>" packages.
         var packageIndexSize = descriptorPackageCount + _collector.TypedPackageCount + 2;
         // The final size of the _resourceIndex (the IResourceContainer to IResPackageResources map
-        // for Code and Store for BeforeResources and AfterResources.
-        // This is by default. AppResourcesLocalPath and GeneratedCodeContainer can add 2 more keys.
-        var resourceIndexSize = descriptorPackageCount * 4;
-        if( generatedCodeContainer != null ) ++resourceIndexSize;
+        // for Code and Store for BeforeResources and AfterResources plus the GeneratedCodeContainer or the wrapper).
+        // This is by default. AppResourcesLocalPath can add 1 more key.
+        var resourceIndexSize = 1 + descriptorPackageCount * 4;
         // If the AppResourcesLocalPath is specified, then the tailPackage is a local package
         // and the resource index has one more entry for the app local FileSystemResourceContainer.
         if( appLocalPath != null )
@@ -147,7 +168,7 @@ public sealed class ResourceSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResourceSpaceData( _collector.CKGenPath, _collector.LiveStatePath, packageIndex );
+        var space = new ResourceSpaceData( _generatedCodeContainer, _collector.CKGenPath, _collector.LiveStatePath, packageIndex );
 
         // ResPackageDataCache builder is used a vehicle to transmit the resourceIndex that will be filled
         // below to all the ResPackage (to avoid yet another constructor parameter).
@@ -157,7 +178,7 @@ public sealed class ResourceSpaceDataBuilder
                                                                resourceIndex );
 
        // Create the code package and adds it where it must be (at [1], after the null [0]).
-        ResPackage codePackage = CreateCodePackage( dataCacheBuilder, generatedCodeContainer );
+        ResPackage codePackage = CreateCodePackage( dataCacheBuilder, _generatedCodeContainer );
         bAll.Add( null! );
         bAll.Add( codePackage );
         packageIndex.Add( codePackage.FullName, codePackage );
@@ -165,11 +186,9 @@ public sealed class ResourceSpaceDataBuilder
         allPackageResources[0] = codePackage.Resources;
         Throw.DebugAssert( codePackage.ResourcesAfter.Index == 1 );
         allPackageResources[1] = codePackage.ResourcesAfter;
-        if( generatedCodeContainer != null )
-        {
-            Throw.DebugAssert( codePackage.ResourcesAfter.Resources == generatedCodeContainer );
-            resourceIndex.Add( generatedCodeContainer, codePackage.ResourcesAfter );
-        }
+        Throw.DebugAssert( codePackage.ResourcesAfter.Resources == _generatedCodeContainer
+                            || codePackage.ResourcesAfter.Resources is ResourceContainerWrapper );
+        resourceIndex.Add( codePackage.ResourcesAfter.Resources, codePackage.ResourcesAfter );
 
         // This is the common requirements of all ResPackage that have no requirement.
         ImmutableArray<ResPackage> requiresCode = [codePackage];

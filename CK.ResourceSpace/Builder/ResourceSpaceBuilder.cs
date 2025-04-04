@@ -1,6 +1,8 @@
+using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.Core;
@@ -27,6 +29,18 @@ public sealed class ResourceSpaceBuilder
     /// Gets the <see cref="ResourceSpaceData"/>.
     /// </summary>
     public ResourceSpaceData SpaceData => _spaceData;
+
+    /// <summary>
+    /// Gets or sets the configured Code generated resource container.
+    /// This can only be set if this has not been previously set (ie. this is null).
+    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// </summary>
+    [DisallowNull]
+    public IResourceContainer? GeneratedCodeContainer
+    {
+        get => _spaceData.GeneratedCodeContainer;
+        set => _spaceData.GeneratedCodeContainer = value;
+    }
 
     /// <summary>
     /// Adds a <see cref="ResourceSpaceFileHandler"/>.
@@ -93,6 +107,16 @@ public sealed class ResourceSpaceBuilder
     /// <returns>The space on success, null otherwise.</returns>
     public ResourceSpace? Build( IActivityMonitor monitor )
     {
+        var codeGen = _spaceData.GeneratedCodeContainer;
+        if( codeGen == null )
+        {
+            // Definitly assigns the code generated container. This is a no-op
+            // for the ResourceContainerWrapper.InnerContainer (assigned to itself)
+            // but this "publish" the wrapped empty container in the _generatedCodeContainer
+            // space data field.
+            // This "closes" the possibilty to re-assign it.
+            _spaceData.GeneratedCodeContainer = _spaceData.CodePackage.ResourcesAfter.Resources;
+        }
         var space = new ResourceSpace( _spaceData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
         return space.Initialize( monitor )
                 ? space

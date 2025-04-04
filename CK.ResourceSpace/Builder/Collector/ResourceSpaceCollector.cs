@@ -1,6 +1,7 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace CK.Core;
@@ -23,10 +24,10 @@ public sealed class ResourceSpaceCollector
     public const string NoLiveState = "none";
 
     readonly CoreCollector _coreCollector;
-    readonly IResourceContainer? _generatedCodeContainer;
     readonly string _ckGenPath;
     readonly string? _appResourcesLocalPath;
     readonly string _liveStatePath;
+    IResourceContainer? _generatedCodeContainer;
 
     internal ResourceSpaceCollector( CoreCollector coreCollector,
                                      IResourceContainer? generatedCodeContainer,
@@ -83,9 +84,21 @@ public sealed class ResourceSpaceCollector
     public ResPackageDescriptor? FindByType( Type type ) => PackageIndex.GetValueOrDefault( type );
 
     /// <summary>
-    /// Gets the Code generated resource container. See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// Gets or sets the configured Code generated resource container.
+    /// This can only be set if this has not been previously set (ie. this is null).
+    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
     /// </summary>
-    public IResourceContainer? GeneratedCodeContainer => _generatedCodeContainer;
+    [DisallowNull]
+    public IResourceContainer? GeneratedCodeContainer
+    {
+        get => _generatedCodeContainer;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            Throw.CheckState( "This can be set only once.", GeneratedCodeContainer is null );
+            _generatedCodeContainer = value;
+        }
+    }
 
     /// <summary>
     /// Gets the file system code generated target path. This ends with <see cref="Path.DirectorySeparatorChar"/>.

@@ -1,3 +1,4 @@
+using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -17,6 +18,10 @@ public sealed partial class ResourceSpaceData
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     readonly string _ckGenPath;
     readonly string _liveStatePath;
+    // Last mutable code container. Duplicating it is required, because even if we inspect
+    // the ResourceContainerWrapper.InnerContainer, an empty container may be a non yet
+    // assigned container or a definitly assigned empty one.
+    IResourceContainer? _generatedCodeContainer;
 
     // _packages, _localPackages, _allPackageResources, _exposedPackages, _reachablePackageSetCache,
     // _codePackage, _appPackage and _watchRoot are set by the ResourceSpaceDataBuilder.Build method.
@@ -29,11 +34,33 @@ public sealed partial class ResourceSpaceData
     [AllowNull]internal ResPackage _appPackage;
     internal string? _watchRoot;
 
-    internal ResourceSpaceData( string ckGenPath, string cKWatchFolderPath, IReadOnlyDictionary<object, ResPackage> packageIndex )
+    internal ResourceSpaceData( IResourceContainer? generatedCodeContainer,
+                                string ckGenPath,
+                                string cKWatchFolderPath,
+                                IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
+        _generatedCodeContainer = generatedCodeContainer;
         _ckGenPath = ckGenPath;
         _liveStatePath = cKWatchFolderPath;
         _packageIndex = packageIndex;
+    }
+
+    /// <summary>
+    /// Gets or sets the configured Code generated resource container.
+    /// This can only be set if this has not been previously set (ie. this is null).
+    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// </summary>
+    [DisallowNull]
+    public IResourceContainer? GeneratedCodeContainer
+    {
+        get => _generatedCodeContainer;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            Throw.CheckState( "This can be set only once.", GeneratedCodeContainer is null );
+            _generatedCodeContainer = value;
+            ((ResourceContainerWrapper)_codePackage.ResourcesAfter.Resources).InnerContainer = value;
+        }
     }
 
     /// <inheritdoc cref="ResourceSpaceCollector.CKGenPath"/>
@@ -85,6 +112,12 @@ public sealed partial class ResourceSpaceData
     public IResPackageDataCache ResPackageDataCache => _resPackageDataCache;
 
     /// <summary>
+    /// Gets the folder that contains the Live state.
+    /// Can be <see cref="ResourceSpaceCollector.NoLiveState"/>.
+    /// </summary>
+    public string LiveStatePath => _liveStatePath;
+
+    /// <summary>
     /// Gets the watch root. Null if no local packages exist and "&lt;App&gt;" package
     /// has no defined folder (<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> was not set).
     /// <para>
@@ -93,9 +126,4 @@ public sealed partial class ResourceSpaceData
     /// </summary>
     public string? WatchRoot => _watchRoot;
 
-    /// <summary>
-    /// Gets the folder that contains the Live state.
-    /// Can be <see cref="ResourceSpaceCollector.NoLiveState"/>.
-    /// </summary>
-    public string LiveStatePath => _liveStatePath;
 }

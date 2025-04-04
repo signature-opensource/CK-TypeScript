@@ -11,7 +11,7 @@ namespace CK.Setup;
 /// <summary>
 /// Aspect that drives TypeScript code generation. Handles (and initialized) by the <see cref="TypeScriptAspectConfiguration"/>.
 /// </summary>
-public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
+public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
 {
     // This enables deferring the TypeScript generation at the final step of CS code generation.
     // A first part must run during the CS code generation to be able to register PocoTypeSet.

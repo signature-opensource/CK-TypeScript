@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +20,11 @@ namespace CK.EmbeddedResources;
 /// The <see cref="IResourceContainer"/> is explicitly implemented: the point of this
 /// container is to be manipulated as its contract.
 /// </para>
+/// <para>
+/// This container is not directly serializable (because it references another container this
+/// requires a graph serialization and this library only relies on simple serialization).
+/// Its <see cref="InnerContainer"/> must be serialized and, if needed, a wrapper can be recreated.
+/// </para>
 /// </summary>
 public sealed class ResourceContainerWrapper : IResourceContainer
 {
@@ -28,21 +33,28 @@ public sealed class ResourceContainerWrapper : IResourceContainer
     /// <summary>
     /// Initializes a new <see cref="ResourceContainerWrapper"/> on a container.
     /// </summary>
-    /// <param name="container">The inner container.</param>
+    /// <param name="container">The inner container. Cannot be a <see cref="ResourceContainerWrapper"/>.</param>
     public ResourceContainerWrapper( IResourceContainer container )
     {
         Throw.CheckNotNullArgument( container );
+        Throw.CheckArgument( container is not ResourceContainerWrapper );
         _container = container;
     }
 
     /// <summary>
-    /// Sets the current inner container.
+    /// Gets or sets the inner container.
+    /// Setting a <see cref="ResourceContainerWrapper"/> currently raises a <see cref="ArgumentException"/>.
+    /// This prevents any cycles to be created.
     /// </summary>
-    /// <param name="container">The new inner container.</param>
-    public void SetInnerContainer( IResourceContainer container )
+    public IResourceContainer InnerContainer
     {
-        Throw.CheckNotNullArgument( container );
-        _container = container;
+        get => _container;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            Throw.CheckArgument( value is not ResourceContainerWrapper );
+            _container = value;
+        }
     }
 
     bool IResourceContainer.IsValid => _container.IsValid;

@@ -240,8 +240,9 @@ public sealed partial class TypeScriptContext
 
         // This is the last step that generates all the TypeScriptFiles that must be generated (runs all
         // the deferred Implementors).
-        // This raises events and closes Type registration.
-        // Calls the TypeScriptRoot to generate the code for all ITSFileCSharpType (run the deferred Implementors).
+        // This raises events and closes Type registration (generates the code for all ITSFileCSharpType, running
+        // the deferred Implementors).
+        // 
         if( success ) success = _tsRoot.GenerateCode( monitor );
 
         var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
