@@ -8,6 +8,11 @@ namespace CK.Core;
 /// <summary>
 /// Specialized <see cref="ResourceSpaceFileInstaller"/> that tracks written files
 /// and can cleanup any previously existing files.
+/// <para>
+/// Deferred files cleanup minimizes impacts on file watchers: we don't destroy/recreate the
+/// target folder. Instead we update the existing files in place and then remove any files that
+/// have not been generated.
+/// </para>
 /// </summary>
 sealed class InitialFileInstaller : ResourceSpaceFileInstaller
 {

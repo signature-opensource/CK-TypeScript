@@ -71,13 +71,14 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <summary>
     /// Removes a resource that must belong to <see cref="Resources"/> or <see cref="AfterResources"/>
     /// from the stored resources (strictly speaking, the resource is "hidden").
+    /// The same resource can be removed more than once: the resource is searched in the actual container. 
     /// <para>
     /// This enable code generators to take control of a resource that they want to handle directly.
-    /// The resource will no more appear in the stores and won't be handled by
+    /// The resource will no more appear in the final stores and won't be handled by
     /// <see cref="ResourceSpaceFolderHandler"/> and <see cref="ResourceSpaceFileHandler"/>.
     /// </para>
     /// <para>
-    /// How the removed resource is "transfered" (or not) in the <see cref="ResourceSpaceCollector.GeneratedCodeContainer"/>
+    /// How the removed resource is "transferred" (or not) in the <see cref="ResourceSpaceCollector.GeneratedCodeContainer"/>
     /// is up to the code generators.
     /// </para>
     /// </summary>
@@ -91,6 +92,9 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <summary>
     /// Finds the <paramref name="resourceName"/> that must exist in <see cref="Resources"/> or <see cref="AfterResources"/>
     /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
+    /// <para>
+    /// The same resource can be removed more than once: the resource is searched in the actual container. 
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="resourceName">The resource name to find.</param>
