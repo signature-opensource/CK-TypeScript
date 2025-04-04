@@ -40,7 +40,7 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
 
     public Type Type => _type;
 
-    IMinimalTypeScriptFile ITSDeclaredFileType.File => _file;
+    TypeScriptFileBase ITSDeclaredFileType.File => _file;
 
     public override TypeScriptFile File => _file;
 

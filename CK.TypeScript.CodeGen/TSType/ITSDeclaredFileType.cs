@@ -8,6 +8,6 @@ public interface ITSDeclaredFileType : ITSType
     /// <summary>
     /// Gets the file that declares this type.
     /// </summary>
-    IMinimalTypeScriptFile File { get; }
+    TypeScriptFileBase File { get; }
 }
 

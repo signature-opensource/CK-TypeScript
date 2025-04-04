@@ -21,7 +21,7 @@ abstract class ImportFromBase : ITSImportLine
 
     public virtual LibraryImport? FromLibrary => null;
 
-    public virtual IMinimalTypeScriptFile? FromTypeScriptFile => null;
+    public virtual TypeScriptFileBase? FromTypeScriptFile => null;
 
     public string? DefaultImportSymbol => _defaultImportSymbol;
 

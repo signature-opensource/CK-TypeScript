@@ -14,8 +14,8 @@ public sealed partial class TypeScriptFolder
 {
     readonly TypeScriptRoot _root;
     TypeScriptFolder? _firstChild;
-    readonly TypeScriptFolder? _next;
-    internal BaseFile? _firstFile;
+    TypeScriptFolder? _next;
+    internal TypeScriptFileBase? _firstFile;
     readonly NormalizedPath _path;
     bool _wantBarrel;
 
@@ -36,13 +36,21 @@ public sealed partial class TypeScriptFolder
         _root = root;
     }
 
-    internal TypeScriptFolder( TypeScriptFolder parent, string name )
+    internal TypeScriptFolder( TypeScriptFolder parent, string name, TypeScriptFolder? previous )
     {
         _root = parent._root;
         Parent = parent;
         _path = parent._path.AppendPart( name );
-        _next = parent._firstChild;
-        parent._firstChild = this;
+        if( previous == null )
+        {
+            _next = parent._firstChild;
+            parent._firstChild = this;
+        }
+        else
+        {
+            _next = previous._next;
+            previous._next = this;
+        }
     }
 
     /// <summary>
@@ -84,24 +92,27 @@ public sealed partial class TypeScriptFolder
 
     TypeScriptFolder FindOrCreateLocalFolder( string name )
     {
-        return FindLocalFolder( name ) ?? CreateLocalFolder( name );
+        return FindLocalFolder( name, out var previous ) ?? CreateLocalFolder( name, previous );
     }
 
-    TypeScriptFolder? FindLocalFolder( ReadOnlySpan<char> name )
+    TypeScriptFolder? FindLocalFolder( ReadOnlySpan<char> name, out TypeScriptFolder? previous )
     {
+        previous = null;
         var c = _firstChild;
         while( c != null )
         {
-            if( name.Equals( c.Name, StringComparison.Ordinal ) ) return c;
+            int cmp = name.CompareTo( c.Name, StringComparison.Ordinal );
+            if( cmp == 0 ) return c;
+            if( cmp > 0 ) previous = c;
             c = c._next;
         }
         return null;
     }
 
-    TypeScriptFolder CreateLocalFolder( string name )
+    TypeScriptFolder CreateLocalFolder( string name, TypeScriptFolder? previous )
     {
         CheckCreateLocalName( name, isFolder: true );
-        var f = new TypeScriptFolder( this, name );
+        var f = new TypeScriptFolder( this, name, previous );
         _root.OnFolderCreated( f );
         return f;
     }
@@ -115,8 +126,8 @@ public sealed partial class TypeScriptFolder
             throw new ArgumentException( e, nameof( fileOrFolderName ) );
         }
         if( isFolder
-                 ? FindLocalFile( fileOrFolderName ) != null
-                 : FindLocalFolder( fileOrFolderName ) != null )
+                 ? FindLocalFile( fileOrFolderName, out _ ) != null
+                 : FindLocalFolder( fileOrFolderName, out _ ) != null )
         {
             throw new InvalidOperationException( $"Unable to create {(isFolder ? "folder" : "file")} named '{fileOrFolderName}'. A {(isFolder ? "file" : "folder")} with this name exists." );
         }
@@ -129,7 +140,7 @@ public sealed partial class TypeScriptFolder
         {
             return $"Invalid character '{fileOrFolderName[bad]}' in '{fileOrFolderName}'.";
         }
-        if( fileOrFolderName == BaseFile._hiddenFileName )
+        if( fileOrFolderName == TypeScriptFileBase._hiddenFileName )
         {
             return $"Forbidden name '{fileOrFolderName}'.";
         }
@@ -159,25 +170,6 @@ public sealed partial class TypeScriptFolder
     /// </summary>
     /// <param name="path">The path to the subordinated folder to find.</param>
     /// <returns>The existing folder or null.</returns>
-    public TypeScriptFolder? FindFolder( NormalizedPath path )
-    {
-        var f = this;
-        if( !path.IsEmptyPath )
-        {
-            foreach( var name in path.Parts )
-            {
-                f = f.FindLocalFolder( name );
-                if( f == null ) return null;
-            }
-        }
-        return f;
-    }
-
-    /// <summary>
-    /// Finds an existing subordinated folder by its path or returns null.
-    /// </summary>
-    /// <param name="path">The path to the subordinated folder to find.</param>
-    /// <returns>The existing folder or null.</returns>
     public TypeScriptFolder? FindFolder( ReadOnlySpan<char> path )
     {
         var f = this;
@@ -186,7 +178,7 @@ public sealed partial class TypeScriptFolder
             Span<Range> ranges = stackalloc Range[256];
             foreach( var r in SplitPath( path, ranges ) )
             {
-                f = f.FindLocalFolder( path[r] );
+                f = f.FindLocalFolder( path[r], out _ );
                 if( f == null ) return null;
             }
         }
@@ -221,7 +213,7 @@ public sealed partial class TypeScriptFolder
 
     /// <summary>
     /// Finds a folder below this one by returning its depth.
-    /// This returns 0 when this is the same as <paramref name="other"/>
+    /// This returns 0 when <paramref name="other"/> is this folder.
     /// and -1 if other is not subordinated to this folder.
     /// </summary>
     /// <param name="other">The other folder to locate.</param>
@@ -318,7 +310,7 @@ public sealed partial class TypeScriptFolder
                     result += r.Value;
                     folder = folder._next;
                 }
-                if( _wantBarrel && FindLocalFile( "index.ts" ) == null )
+                if( _wantBarrel && FindLocalFile( "index.ts", out _ ) == null )
                 {
                     var b = new StringBuilder();
                     AddExportsToBarrel( default, b );
@@ -348,7 +340,7 @@ public sealed partial class TypeScriptFolder
 
     void AddExportsToBarrel( NormalizedPath subPath, StringBuilder b )
     {
-        if( !subPath.IsEmptyPath && (_wantBarrel || FindLocalFile( "index.ts" ) != null) )
+        if( !subPath.IsEmptyPath && (_wantBarrel || FindLocalFile( "index.ts", out _ ) != null) )
         {
             b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
         }
@@ -357,7 +349,7 @@ public sealed partial class TypeScriptFolder
             var file = _firstFile;
             while( file != null )
             {
-                if( file is IMinimalTypeScriptFile ts && ts.AllTypes.Any() )
+                if( file is TypeScriptFileBase ts && ts.AllTypes.Any() )
                 {
                     AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
                 }

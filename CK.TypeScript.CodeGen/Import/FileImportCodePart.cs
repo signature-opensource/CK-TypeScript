@@ -29,14 +29,14 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     public void ImportFromLibrary( (LibraryImport Library, string SubPath) source, string symbolNames ) => DoEnsure( source.Library, source.SubPath ).Add( symbolNames );
 
-    public ITSImportLine EnsureFile( IMinimalTypeScriptFile file )
+    public ITSImportLine EnsureFile( TypeScriptFileBase file )
     {
         return _file == file
                 ? (_importFromFileSelfReference ??= new ImportFromFileSelfReference( _file ))
                 : DoEnsure( file );
     }
 
-    public void ImportFromFile( IMinimalTypeScriptFile file, string symbolNames ) => EnsureFile( file ).Add( symbolNames );
+    public void ImportFromFile( TypeScriptFileBase file, string symbolNames ) => EnsureFile( file ).Add( symbolNames );
 
     ImportFromLibrary DoEnsure( LibraryImport library, string subPath )
     {
@@ -61,7 +61,7 @@ sealed class FileImportCodePart : ITSFileImportSection
         return line;
     }
 
-    ImportFromFile DoEnsure( IMinimalTypeScriptFile file )
+    ImportFromFile DoEnsure( TypeScriptFileBase file )
     {
         Throw.CheckNotNullArgument( file );
         _importsFromFiles ??= new List<ImportFromFile>();
@@ -141,7 +141,7 @@ sealed class FileImportCodePart : ITSFileImportSection
             switch( owner )
             {
                 case ValueTuple<LibraryImport, string> lib: DoEnsure( lib.Item1, lib.Item2 ).SetSnapshot( defSymbol, name ); break;
-                case IMinimalTypeScriptFile file: DoEnsure( file ).SetSnapshot( defSymbol, name ); break;
+                case TypeScriptFileBase file: DoEnsure( file ).SetSnapshot( defSymbol, name ); break;
                 default:
                     Throw.DebugAssert( owner is null );
                     _importFromLocalCKGen ??= new ImportFromLocalCKGen( this );

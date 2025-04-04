@@ -5,25 +5,28 @@ using System.Collections.Generic;
 namespace CK.TypeScript.CodeGen;
 
 /// <summary>
-/// <see cref="BaseFile.Extension"/> is ".ts".
+/// 
 /// </summary>
-public sealed class ResourceTypeScriptFile : ResourceTextFileBase, IMinimalTypeScriptFile
+public sealed class ResourceTypeScriptFile : TypeScriptFileBase
 {
-    TypeDeclarationImpl _declared;
+    readonly ResourceLocator _locator;
 
-    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, in ResourceLocator locator )
-        : base( folder, name, in locator )
+    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, in ResourceLocator locator, TypeScriptFileBase? previous )
+        : base( folder, name, previous )
     {
+        _locator = locator;
     }
 
-    /// <inheritdoc />
-    public IEnumerable<ITSDeclaredFileType> AllTypes => _declared.AllTypes;
+    /// <summary>
+    /// Gets the resource.
+    /// </summary>
+    public ResourceLocator Locator => _locator;
 
-    /// <inheritdoc />
-    public ITSDeclaredFileType DeclareType( string typeName, Action<ITSFileImportSection>? additionalImports = null, string? defaultValueSource = null )
-    {
-        return _declared.DeclareType( this, typeName, additionalImports, defaultValueSource );
-    }
+    /// <summary>
+    /// Gets the resource textual content.
+    /// </summary>
+    /// <returns>This file's content.</returns>
+    public override string GetCurrentText() => _locator.ReadAsText();
 }
 
 

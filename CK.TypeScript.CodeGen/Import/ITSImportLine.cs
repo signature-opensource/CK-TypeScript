@@ -4,7 +4,7 @@ namespace CK.TypeScript.CodeGen;
 
 /// <summary>
 /// TypeScript imports are grouped by their source module: a source of import is either a <see cref="LibraryImport"/> or
-/// a <see cref="IMinimalTypeScriptFile"/> or the "@local/ck-gen" alias.
+/// a <see cref="TypeScriptFileBase"/> or the "@local/ck-gen" alias.
 /// </summary>
 public interface ITSImportLine
 {
@@ -21,7 +21,7 @@ public interface ITSImportLine
     /// <summary>
     /// Gets the non null source file if this line of imports is a generated code file.
     /// </summary>
-    IMinimalTypeScriptFile? FromTypeScriptFile { get; }
+    TypeScriptFileBase? FromTypeScriptFile { get; }
 
     /// <summary>
     /// Gets the name of the symbol that imports the default export of <see cref="FromLibrary"/>

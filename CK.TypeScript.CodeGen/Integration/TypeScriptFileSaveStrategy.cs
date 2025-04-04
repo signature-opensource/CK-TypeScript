@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace CK.TypeScript.CodeGen;
 
+
 /// <summary>
 /// Template method that centralizes deferred files cleanup and
 /// provides a hook when saving <see cref="TypeScriptFile"/>.
@@ -107,7 +108,7 @@ public class TypeScriptFileSaveStrategy
     }
 
     /// <summary>
-    /// At this level simply writes the <see cref="BaseFile.GetStream()"/> or
+    /// At this level simply writes the <see cref="TypeScriptFileBase.GetStream()"/> or
     /// the <see cref="TextFileBase.GetCurrentText()"/> and removes the <paramref name="filePath"/>
     /// from <see cref="CleanupFiles"/>.
     /// <para>
@@ -117,7 +118,7 @@ public class TypeScriptFileSaveStrategy
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="file">The file to save.</param>
     /// <param name="filePath">The full file target path.</param>
-    public virtual void SaveFile( IActivityMonitor monitor, BaseFile file, NormalizedPath filePath )
+    public virtual void SaveFile( IActivityMonitor monitor, TypeScriptFileBase file, NormalizedPath filePath )
     {
         monitor.Trace( $"Saving '{file.Name}'." );
         if( file.HasStream )

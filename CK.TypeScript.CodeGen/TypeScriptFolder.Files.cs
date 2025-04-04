@@ -13,11 +13,11 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// Gets the files that this folder contains.
     /// Use <see cref="AllFilesRecursive"/> to get all the subordinated files.
     /// </summary>
-    public IEnumerable<BaseFile> AllFiles
+    public IEnumerable<TypeScriptFileBase> AllFiles
     {
         get
         {
-            BaseFile? c = _firstFile;
+            TypeScriptFileBase? c = _firstFile;
             while( c != null )
             {
                 yield return c;
@@ -29,32 +29,35 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// <summary>
     /// Gets all the files that this folder and its sub folders contain.
     /// </summary>
-    public IEnumerable<BaseFile> AllFilesRecursive => AllFiles.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
+    public IEnumerable<TypeScriptFileBase> AllFilesRecursive => AllFiles.Concat( Folders.SelectMany( s => s.AllFilesRecursive ) );
 
-    BaseFile? FindLocalFile( ReadOnlySpan<char> name )
+    TypeScriptFileBase? FindLocalFile( ReadOnlySpan<char> name, out TypeScriptFileBase? previous )
     {
+        previous = null; 
         var c = _firstFile;
         while( c != null )
         {
-            if( name.Equals( c.Name, StringComparison.Ordinal ) ) return c;
+            int cmp = name.CompareTo( c.Name, StringComparison.Ordinal );
+            if( cmp == 0 ) return c;
+            if( cmp > 0 ) previous = c;
             c = c._next;
         }
         return null;
     }
 
-    BaseFile? DoFindFile( NormalizedPath path, out TypeScriptFolder? closest )
+    TypeScriptFileBase? DoFindFile( NormalizedPath path, out TypeScriptFolder? closest )
     {
         Throw.CheckArgument( !path.IsEmptyPath );
         closest = this;
         for( int i = 0; i < path.Parts.Count - 1; i++ )
         {
-            closest = closest.FindLocalFolder( path.Parts[i] );
+            closest = closest.FindLocalFolder( path.Parts[i], out _ );
             if( closest == null ) return null;
         }
-        return closest.FindLocalFile( path.LastPart );
+        return closest.FindLocalFile( path.LastPart, out _ );
     }
 
-    BaseFile? DoFindFile( ReadOnlySpan<char> path, out TypeScriptFolder? closest )
+    TypeScriptFileBase? DoFindFile( ReadOnlySpan<char> path, out TypeScriptFolder? closest )
     {
         Throw.CheckArgument( !path.IsEmpty );
         closest = this;
@@ -62,25 +65,25 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         var ranges = SplitPath( path, rangeStore );
         for( int i = 0; i < ranges.Length - 1; i++ )
         {
-            closest = closest.FindLocalFolder( path[ranges[i]] );
+            closest = closest.FindLocalFolder( path[ranges[i]], out _ );
             if( closest == null ) return null;
         }
-        return closest.FindLocalFile( path[ranges[^1]] );
+        return closest.FindLocalFile( path[ranges[^1]], out _ );
     }
 
     /// <summary>
-    /// Finds a <see cref="BaseFile"/> in this folder or a subordinated folder.
+    /// Finds a <see cref="TypeScriptFileBase"/> in this folder or a subordinated folder.
     /// </summary>
     /// <param name="path">The file's path to find or create. Must not be empty.</param>
     /// <returns>The file or null if not found.</returns>
-    public BaseFile? FindFile( NormalizedPath path ) => DoFindFile( path, out var _ );
+    public TypeScriptFileBase? FindFile( NormalizedPath path ) => DoFindFile( path, out var _ );
 
     /// <summary>
-    /// Finds a <see cref="BaseFile"/> in this folder or a subordinated folder.
+    /// Finds a <see cref="TypeScriptFileBase"/> in this folder or a subordinated folder.
     /// </summary>
     /// <param name="path">The file's path to find or create. Must not be empty.</param>
     /// <returns>The file or null if not found.</returns>
-    public BaseFile? FindFile( ReadOnlySpan<char> path ) => DoFindFile( path, out var _ );
+    public TypeScriptFileBase? FindFile( ReadOnlySpan<char> path ) => DoFindFile( path, out var _ );
 
     /// <summary>
     /// Finds or creates a file in this folder or a subordinated folder.
@@ -111,7 +114,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         var name = path.LastPart;
         Throw.CheckArgument( name.EndsWith( ".ts" ) );
         var folder = FindOrCreateParentFolder( path );
-        var baseFile = folder.FindLocalFile( name );
+        var baseFile = folder.FindLocalFile( name, out var previous );
         if( baseFile is TypeScriptFile file )
         {
             created = false;
@@ -123,7 +126,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
                                  !folder.IsRoot || !name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) );
             CheckCreateLocalName( name, isFolder: false );
             created = true;
-            file = new TypeScriptFile( folder, name );
+            file = new TypeScriptFile( folder, name, previous );
             _root.OnTypeScriptFileCreated( file );
             return file;
         }
@@ -133,39 +136,35 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
 
     /// <summary>
     /// Creates a file from a resource in this folder or a subordinated folder.
-    /// The result type depends on the path extension.
     /// <para>
-    /// Even if this method is named Create, it allows creation from the exact same resource locator (same container, same resource name)
-    /// to enable multile glob resources registrations and individual ones to work together (individual registration '.ts' can declare types).
+    /// When the <paramref name="path"/> file exists, it must be the exact same resource locator (same container, same resource name).
     /// </para>
     /// </summary>
     /// <param name="locator">The resource locator of the file.</param>
     /// <param name="path">The file's path to create. Must not be empty.</param>
-    /// <returns>The file that is a <see cref="IResourceFile"/>.</returns>
-    public BaseFile CreateResourceFile( in ResourceLocator locator, NormalizedPath path )
+    /// <returns>The resource file.</returns>
+    public ResourceTypeScriptFile FindOrCreateResourceFile( in ResourceLocator locator, NormalizedPath path )
     {
         Throw.CheckArgument( !path.IsEmptyPath );
         var folder = FindOrCreateParentFolder( path );
         var name = path.LastPart;
-        var f = folder.FindLocalFile( name );
+        var f = folder.FindLocalFile( name, out var previous );
         if( f != null )
         {
             if( f is TypeScriptFile )
             {
                 throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file is a TypeScript generated file." );
             }
-            Throw.DebugAssert( "TypeScript is the only type of file that may not come from a resource.", f is IResourceFile );
-            // See comments!
-            var rF = Unsafe.As<IResourceFile>( f );
+            Throw.DebugAssert( f is ResourceTypeScriptFile );
+            var rF = Unsafe.As<ResourceTypeScriptFile>( f );
             if( rF.Locator == locator )
             {
-                return f;
+                return rF;
             }
             throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file already comes from {rF.Locator}." );
         }
         CheckCreateLocalName( name, isFolder: false );
-        f = BaseFile.CreateResourceFile( folder, name, in locator );
-        return f;
+        return new ResourceTypeScriptFile( folder, name, locator, previous );
     }
 
 }
