@@ -9,6 +9,12 @@ namespace CK.Core;
 public interface ILiveResourceSpaceHandler
 {
     /// <summary>
+    /// Gets whether this live support is disabled.
+    /// This defaults to false but may be explictly configured for some handlers.
+    /// </summary>
+    bool DisableLiveUpdate { get; }
+
+    /// <summary>
     /// Writes the live state in the primary live state file and/or into auxiliary files in the <paramref name="ckWatchFolderPath"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

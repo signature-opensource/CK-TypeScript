@@ -15,8 +15,9 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
     /// <see cref="TransformerHost.LockLanguages()"/>'s <see cref="TransformLanguage.FileExtensions"/>.
     /// </summary>
     /// <param name="transformerHost">The transfomer host that will be used by this file handler.</param>
-    public TransformableFileHandler( TransformerHost transformerHost )
-        : base( transformerHost.LockLanguages().SelectMany( l => l.TransformLanguage.FileExtensions ).Distinct().ToImmutableArray() )
+    public TransformableFileHandler( IResourceSpaceItemInstaller? installer, TransformerHost transformerHost )
+        : base( installer,
+                transformerHost.LockLanguages().SelectMany( l => l.TransformLanguage.FileExtensions ).Distinct().ToImmutableArray() )
     {
         _host = transformerHost;
     }
@@ -48,14 +49,14 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
         return success;
     }
 
-    /// <summary>
-    /// Saves the resources into the <paramref name="target"/>.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="target">The target.</param>
-    /// <returns>True on succes, false one error (errors have been logged).</returns>
-    protected override bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller target )
+    /// <inheritdoc />
+    protected override bool Install( IActivityMonitor monitor )
     {
+        if( Installer is null )
+        {
+            monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
+            return true;
+        }
         Throw.CheckState( _items != null );
         bool success = true;
         foreach( var i in _items )
@@ -67,7 +68,7 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
             }
             else
             {
-                target.Write( i.Target, text );
+                Installer.Write( i.Target, text );
             }
         }
         return success;

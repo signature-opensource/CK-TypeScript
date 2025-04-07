@@ -54,7 +54,7 @@ public sealed class LiveState
         }
     }
 
-    sealed class UpdateInstaller : ResourceSpaceFileInstaller
+    sealed class UpdateInstaller : SimpleFileSystemInstaller
     {
         public readonly List<string> Written;
 

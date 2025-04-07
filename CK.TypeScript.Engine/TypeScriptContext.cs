@@ -263,14 +263,16 @@ public sealed partial class TypeScriptContext
         // It exposes all the read only packages inculding the head "<Code>" and tail "<App>" packages.
         // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
         // final ResourceSpace.
+        var installer = new InitialFileSystemInstaller( _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" ) );
         var resSpaceBuilder = new ResourceSpaceBuilder( resSpaceData );
-        success &= resSpaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( resSpaceData.ResPackageDataCache, "ts-assets" ) );
-        success &= resSpaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( resSpaceData.ResPackageDataCache,
+        success &= resSpaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer, resSpaceData.ResPackageDataCache, "ts-assets" ) );
+        success &= resSpaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( installer,
+                                                                                         resSpaceData.ResPackageDataCache,
                                                                                          "ts-locales",
                                                                                          typeScriptContext.ActiveCultures,
                                                                                          LocalesResourceHandler.InstallOption.Full ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
-        success &= resSpaceBuilder.RegisterHandler( monitor, new TransformableFileHandler( transformerHost ) );
+        success &= resSpaceBuilder.RegisterHandler( monitor, new TransformableFileHandler( installer, transformerHost ) );
 
         var resSpace = resSpaceBuilder.Build( monitor );
         if( resSpace == null ) return false;

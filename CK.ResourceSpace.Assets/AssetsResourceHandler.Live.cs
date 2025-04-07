@@ -21,7 +21,7 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler, ILiveUpd
         throw new System.NotImplementedException();
     }
 
-    public bool ApplyChanges( IActivityMonitor monitor, IResourceSpaceFileInstaller installer )
+    public bool ApplyChanges( IActivityMonitor monitor, IResourceSpaceItemInstaller installer )
     {
         throw new System.NotImplementedException();
     }

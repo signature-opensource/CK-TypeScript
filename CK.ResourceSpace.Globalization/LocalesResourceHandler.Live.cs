@@ -28,7 +28,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler, ILiveUp
         throw new NotImplementedException();
     }
 
-    bool ILiveUpdater.ApplyChanges( IActivityMonitor monitor, IResourceSpaceFileInstaller installer )
+    bool ILiveUpdater.ApplyChanges( IActivityMonitor monitor, IResourceSpaceItemInstaller installer )
     {
         throw new NotImplementedException();
     }

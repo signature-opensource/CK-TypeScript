@@ -54,11 +54,12 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <param name="rootFolderName">The folder name (typically "locales", "ts-locales", etc.).</param>
     /// <param name="activeCultures">The required active cultures.</param>
     /// <param name="installOption">How the final locale files must be generated.</param>
-    public LocalesResourceHandler( IResPackageDataCache packageDataCache,
+    public LocalesResourceHandler( IResourceSpaceItemInstaller? installer,
+                                   IResPackageDataCache packageDataCache,
                                    string rootFolderName,
                                    ActiveCultureSet activeCultures,
                                    InstallOption installOption )
-        : base( rootFolderName )
+        : base( installer, rootFolderName )
     {
         _cache = new LocalesCache( packageDataCache, activeCultures, RootFolderName );
         _installOption = installOption;
@@ -105,13 +106,17 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     }
 
     /// <summary>
-    /// Saves the initialized <see cref="FinalTranslations"/> into the <paramref name="target"/>.
+    /// Saves the initialized <see cref="FinalTranslations"/> into into this <see cref="ResourceSpaceFolderHandler.Installer"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="target">The target.</param>
     /// <returns>True on succes, false one error (errors have been logged).</returns>
-    protected override bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller target )
+    protected override bool Install( IActivityMonitor monitor )
     {
+        if( Installer is null )
+        {
+            monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
+            return true;
+        }
         Throw.CheckState( FinalTranslations != null );
         try
         {
@@ -119,16 +124,16 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
             switch( _installOption )
             {
                 case InstallOption.Full:
-                    WriteAllCultures( monitor, folder, target, rootPropagated: true );
+                    WriteAllCultures( monitor, folder, Installer, rootPropagated: true );
                     break;
                 case InstallOption.FullNoEmptySet:
-                    WriteExistingSets( monitor, folder, target, rootPropagated: true );
+                    WriteExistingSets( monitor, folder, Installer, rootPropagated: true );
                     break;
                 case InstallOption.Minimal:
-                    WriteAllCultures( monitor, folder, target, rootPropagated: false );
+                    WriteAllCultures( monitor, folder, Installer, rootPropagated: false );
                     break;
                 case InstallOption.MinimalNoEmptySet:
-                    WriteExistingSets( monitor, folder, target, rootPropagated: false );
+                    WriteExistingSets( monitor, folder, Installer, rootPropagated: false );
                     break;
             }
             return true;
@@ -140,7 +145,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
     }
 
-    void WriteExistingSets( IActivityMonitor monitor, NormalizedPath folder, IResourceSpaceFileInstaller target, bool rootPropagated )
+    void WriteExistingSets( IActivityMonitor monitor, NormalizedPath folder, IResourceSpaceItemInstaller target, bool rootPropagated )
     {
         Throw.DebugAssert( _finalTranslations != null );
         foreach( var set in _finalTranslations.AllTranslationSets.Where( set => set.Translations.Count > 0 ) )
@@ -153,7 +158,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
     }
 
-    void WriteAllCultures( IActivityMonitor monitor, NormalizedPath folder, IResourceSpaceFileInstaller target, bool rootPropagated )
+    void WriteAllCultures( IActivityMonitor monitor, NormalizedPath folder, IResourceSpaceItemInstaller target, bool rootPropagated )
     {
         Throw.DebugAssert( _finalTranslations != null );
         foreach( var c in _cache.ActiveCultures.AllActiveCultures )
@@ -177,7 +182,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
     }
 
-    static void WriteJson( IResourceSpaceFileInstaller target,
+    static void WriteJson( IResourceSpaceItemInstaller target,
                            NormalizedPath fPath,
                            IEnumerable<KeyValuePair<string, FinalTranslationValue>> translations )
     {

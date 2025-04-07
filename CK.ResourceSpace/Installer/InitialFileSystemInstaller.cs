@@ -6,7 +6,7 @@ using System.Linq;
 namespace CK.Core;
 
 /// <summary>
-/// Specialized <see cref="ResourceSpaceFileInstaller"/> that tracks written files
+/// Specialized <see cref="SimpleFileSystemInstaller"/> that tracks written files
 /// and can cleanup any previously existing files.
 /// <para>
 /// Deferred files cleanup minimizes impacts on file watchers: we don't destroy/recreate the
@@ -14,49 +14,43 @@ namespace CK.Core;
 /// have not been generated.
 /// </para>
 /// </summary>
-sealed class InitialFileInstaller : ResourceSpaceFileInstaller
+public sealed class InitialFileSystemInstaller : SimpleFileSystemInstaller
 {
     readonly HashSet<string> _existing;
 
-    InitialFileInstaller( string targetPath )
+    /// <summary>
+    /// Initializes a new <see cref="InitialFileSystemInstaller"/>.
+    /// </summary>
+    /// <param name="targetPath">The target folder.</param>
+    public InitialFileSystemInstaller( string targetPath )
         : base( targetPath )
     {
-        _existing = new HashSet<string>( Directory.EnumerateFiles( TargetPath, "*", SearchOption.AllDirectories ) );
-        _existing.Remove( ".gitignore" );
+        _existing = new HashSet<string>();
     }
 
-    public static InitialFileInstaller? Create( IActivityMonitor monitor, string ckGenPath )
+    public override bool Open( IActivityMonitor monitor, ResourceSpace resSpace )
     {
-        Throw.CheckArgument( Path.IsPathFullyQualified( ckGenPath ) && ckGenPath.EndsWith( Path.DirectorySeparatorChar ) );
-        if( !Path.Exists( ckGenPath ) )
+        if( !base.Open( monitor, resSpace ) )
         {
-            monitor.Info( $"Creating code generated target path: {ckGenPath}" );
-            try
-            {
-                Directory.CreateDirectory( ckGenPath );
-            }
-            catch( Exception ex )
-            {
-                monitor.Error( $"While creating code generated target path: {ckGenPath}", ex );
-                return null;
-            }
+            return false;
         }
         try
         {
-            var r = new InitialFileInstaller( ckGenPath );
-            monitor.Info( $"Code generated target path contains {r._existing.Count} files that will be updated." );
-            return r;
+            _existing.AddRange( Directory.EnumerateFiles( TargetPath, "*", SearchOption.AllDirectories ) );
+            _existing.Remove( ".gitignore" );
+            monitor.Info( $"Code generated target path contains {_existing.Count} files that will be updated." );
+            return true;
         }
         catch( Exception ex )
         {
-            monitor.Error( $"While collecting existing files in code generated target path: {ckGenPath}", ex );
-            return null;
+            monitor.Error( $"While collecting existing files in code generated target path: {TargetPath}", ex );
+            return false;
         }
     }
 
     protected override void OnWrite( string path ) => _existing.Remove( path );
 
-    internal void Cleanup( IActivityMonitor monitor, bool success )
+    public override void Close( IActivityMonitor monitor, bool success )
     {
         if( _existing.Count == 0 )
         {

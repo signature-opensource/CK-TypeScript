@@ -10,8 +10,10 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     readonly AssetCache _cache;
     FinalResourceAssetSet? _finalAssets;
 
-    public AssetsResourceHandler( IResPackageDataCache packageDataCache, string rootFolderName )
-        : base( rootFolderName )
+    public AssetsResourceHandler( IResourceSpaceItemInstaller? installer,
+                                  IResPackageDataCache packageDataCache,
+                                  string rootFolderName )
+        : base( installer, rootFolderName )
     {
         _cache = new AssetCache( packageDataCache, rootFolderName );
     }
@@ -46,19 +48,23 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     }
 
     /// <summary>
-    /// Saves the initialized <see cref="FinalAssets"/> into the <paramref name="target"/>.
+    /// Saves the initialized <see cref="FinalAssets"/> into this <see cref="ResourceSpaceFolderHandler.Installer"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="target">The target.</param>
     /// <returns>True on succes, false one error (errors have been logged).</returns>
-    protected override bool Install( IActivityMonitor monitor, IResourceSpaceFileInstaller target )
+    protected override bool Install( IActivityMonitor monitor )
     {
+        if( Installer is null )
+        {
+            monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
+            return true;
+        }
         Throw.CheckState( FinalAssets != null );
         try
         {
             foreach( var a in FinalAssets.Assets )
             {
-                target.Write( a.Key, a.Value.Origin );
+                Installer.Write( a.Key, a.Value.Origin );
             }
             return true;
         }

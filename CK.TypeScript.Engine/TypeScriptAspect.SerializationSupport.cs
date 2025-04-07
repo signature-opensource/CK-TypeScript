@@ -43,7 +43,7 @@ public sealed partial class TypeScriptAspect
             {
                 Throw.NotSupportedException(
                     "Due to binary serialization limitation, ResourceContainerWrapper can only wrap " +
-                    "a CodeGenResourceContainer or EmptyResourceContainer." );
+                    "a CodeGenResourceContainer or a EmptyResourceContainer." );
             }
         }
     }

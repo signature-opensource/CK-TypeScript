@@ -1,5 +1,6 @@
 using CK.BinarySerialization;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -68,7 +69,7 @@ public sealed class ResourceSpace
         }
         return success;
     }
-
+        
     /// <summary>
     /// Generates resources into the <see cref="ResourceSpaceData.CKGenPath"/>.
     /// </summary>
@@ -76,24 +77,47 @@ public sealed class ResourceSpace
     /// <returns>True on success, false otherwise.</returns>
     public bool Install( IActivityMonitor monitor )
     {
-        var installer = InitialFileInstaller.Create( monitor, _data.CKGenPath );
-        if( installer == null ) return false;
-
+        var installers = new HashSet<IResourceSpaceItemInstaller>();
         bool success = true;
+        foreach( var h in _folderHandlers )
+        {
+            var i = h.Installer;
+            if( i != null && installers.Add( i ) )
+            {
+                try
+                {
+                    if( !i.Open( monitor, this ) )
+                    {
+                        success = false;
+                        break;
+                    }
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( ex );
+                    success = false;
+                    break;
+                }
+            }
+        }
+        if( !success )
+        {
+            CallClose( monitor, installers, success );
+            return false;
+        }
         if( _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
         {
             success &= ClearLiveState( monitor, _data.LiveStatePath );
         }
         foreach( var f in _folderHandlers )
         {
-            success &= f.Install( monitor, installer );
+            success &= f.Install( monitor );
         }
         foreach( var f in _fileHandlers )
         {
-            success &= f.Install( monitor, installer );
+            success &= f.Install( monitor );
         }
-
-        installer.Cleanup( monitor, success );
+        CallClose( monitor, installers, success );
 
         if( success && _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
         {
@@ -107,6 +131,21 @@ public sealed class ResourceSpace
             success &= WriteLiveState( monitor, _data.LiveStatePath );
         }
         return success;
+    }
+
+    void CallClose( IActivityMonitor monitor, HashSet<IResourceSpaceItemInstaller> installers, bool success )
+    {
+        foreach( var i in installers )
+        {
+            try
+            {
+                i.Close( monitor, success );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While closing '{i}'.", ex );
+            }
+        }
     }
 
     static bool ClearLiveState( IActivityMonitor monitor, string ckWatchFolderPath )
@@ -156,11 +195,12 @@ public sealed class ResourceSpace
         }
         var liveHandlers = _folderHandlers.OfType<ILiveResourceSpaceHandler>()
                                           .Concat( _fileHandlers.OfType<ILiveResourceSpaceHandler>() )
+                                          .Where( h => !h.DisableLiveUpdate )
                                           .ToList();
         if( liveHandlers.Count == 0 )
         {
             monitor.Info( $"""
-                No Live resource handlers exist in the {_folderHandlers.Length} folders and {_fileHandlers.Length} files resource handlers.
+                No enabled Live resource handlers exist in the {_folderHandlers.Length} folders and {_fileHandlers.Length} files resource handlers.
                 Skipping Live state generation.
                 """ );
             return true;

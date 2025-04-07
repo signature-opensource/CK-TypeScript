@@ -53,7 +53,7 @@ public sealed partial class TypeScriptContext // Save
                 else
                 {
                     monitor.Warn( $"""
-                        Unable to compute reltive path from:
+                        Unable to compute relative path from:
                         {BinPathConfiguration.TargetProjectPath}
                         to:
                         {liveEnginePath}

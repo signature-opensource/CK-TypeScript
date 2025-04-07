@@ -5,9 +5,9 @@ using System.IO;
 namespace CK.Core;
 
 /// <summary>
-/// Simple implementation of <see cref="IResourceSpaceFileInstaller"/> that can be specialized.
+/// Simple implementation of <see cref="IFileSystemInstaller"/> that can be specialized.
 /// </summary>
-public class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
+public class SimpleFileSystemInstaller : IFileSystemInstaller
 {
     readonly string _targetPath;
     readonly char[] _pathBuffer;
@@ -15,41 +15,81 @@ public class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
     /// <summary>
     /// Initialize a new installer on a target path.
     /// </summary>
-    /// <param name="targetPath">The target folder. The directory must exist.</param>
-    public ResourceSpaceFileInstaller( string targetPath )
+    /// <param name="targetPath">The target folder.</param>
+    public SimpleFileSystemInstaller( string targetPath )
     {
         Throw.CheckArgument( Path.IsPathFullyQualified( targetPath ) && targetPath.EndsWith( Path.DirectorySeparatorChar ) );
-        Throw.CheckState( Directory.Exists( targetPath ) );
         _targetPath = targetPath;
         _pathBuffer = new char[1024];
         targetPath.CopyTo( _pathBuffer );
     }
 
     /// <summary>
+    /// See <see cref="IResourceSpaceItemInstaller.Open(IActivityMonitor, ResourceSpace)"/>.
+    /// Ensures that the <see cref="TargetPath"/> exists by creating it if needed.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="resSpace">The resource space to install.</param>
+    /// <returns>True on sucess, false on error.</returns>
+    public virtual bool Open( IActivityMonitor monitor, ResourceSpace resSpace )
+    {
+        if( !Path.Exists( TargetPath ) )
+        {
+            monitor.Info( $"Creating code generated target path: {TargetPath}" );
+            try
+            {
+                Directory.CreateDirectory( TargetPath );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While creating code generated target path: {TargetPath}", ex );
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// See <see cref="IResourceSpaceItemInstaller.Close(IActivityMonitor, bool)"/>.
+    /// Does nothing at this level.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="success">Whether the install succeeded or not.</param>
+    public virtual void Close( IActivityMonitor monitor, bool success )
+    {
+    }
+
+    /// <summary>
     /// Gets the target path. Ends with <see cref="Path.DirectorySeparatorChar"/>.
     /// </summary>
-    protected string TargetPath => _targetPath;
+    public string TargetPath => _targetPath;
 
     /// <summary>
     /// Called before each write with the full path of the file that will be written.
+    /// <para>
+    /// Does nothing at this level.
+    /// </para>
     /// </summary>
     /// <param name="path">The full file path.</param>
     protected virtual void OnWrite( string path )
     {
     }
 
+    /// <inheritdoc />
     public void Write( ResourceLocator resource )
     {
         string path = GetNormalizedTargetPath( resource.ResourceName );
         DoWrite( path, resource );
     }
 
+    /// <inheritdoc />
     public void Write( NormalizedPath filePath, ResourceLocator resource )
     {
         string path = GetNormalizedTargetPath( filePath.Path );
         DoWrite( path, resource );
     }
 
+    /// <inheritdoc />
     public void Write( NormalizedPath filePath, string text )
     {
         string path = GetNormalizedTargetPath( filePath.Path );
@@ -57,6 +97,7 @@ public class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
         File.WriteAllText( path, text );
     }
 
+    /// <inheritdoc />
     public Stream OpenWriteStream( NormalizedPath filePath )
     {
         string path = GetNormalizedTargetPath( filePath.Path );
@@ -91,4 +132,6 @@ public class ResourceSpaceFileInstaller : IResourceSpaceFileInstaller
         var path = _pathBuffer.AsSpan( 0, _targetPath.Length + resName.Length ).ToString();
         return path;
     }
+
+    public override string ToString() => $"Installer: {_targetPath}";
 }
