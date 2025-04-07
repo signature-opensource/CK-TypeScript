@@ -105,7 +105,9 @@ public sealed class TypeScriptFile : TypeScriptFileBase
                                    string closer = "}\n" )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
-        return new TSFileType( this, typeName, additionalImports, defaultValueSource, closer );
+        var t = new TSFileType( this, typeName, additionalImports, defaultValueSource, closer );
+        Folder.SetHasExportedSymbol();
+        return t;
     }
 
     /// <summary>
@@ -128,6 +130,7 @@ public sealed class TypeScriptFile : TypeScriptFileBase
         Throw.CheckNotNullArgument( type );
         var t = new TSCSharpType( this, typeName, additionalImports, type, defaultValueSource, closer );
         Root.TSTypes.RegisterType( type, t );
+        Folder.SetHasExportedSymbol();
         return t;
     }
 

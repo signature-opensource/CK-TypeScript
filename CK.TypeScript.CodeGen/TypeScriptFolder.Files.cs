@@ -122,9 +122,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         }
         if( baseFile == null )
         {
-            Throw.CheckArgument( "Cannot create a 'index.ts' at the root (this is the default barrel).",
-                                 !folder.IsRoot || !name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) );
-            CheckCreateLocalName( name, isFolder: false );
+            folder.CheckCreateLocalName( name, isFolder: false );
             created = true;
             file = new TypeScriptFile( folder, name, previous );
             _root.OnTypeScriptFileCreated( file );
@@ -163,7 +161,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
             }
             throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file already comes from {rF.Locator}." );
         }
-        CheckCreateLocalName( name, isFolder: false );
+        folder.CheckCreateLocalName( name, isFolder: false );
         return new ResourceTypeScriptFile( folder, name, locator, previous );
     }
 

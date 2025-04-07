@@ -33,6 +33,22 @@ public abstract partial class TypeScriptFileBase
         _name = name;
         if( !ReferenceEquals( name, _hiddenFileName ) )
         {
+            bool isBarrelFile = name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase );
+            if( folder.IsRoot && isBarrelFile )
+            {
+                Throw.ArgumentException( "fileName", "Cannot create a 'index.ts' at the root (this is the default barrel)." );
+            }
+            if( isBarrelFile )
+            {
+                // While publishing, the existence of this 'index.ts' file is checked
+                // and automatic generation is skipped.
+                folder.EnsureBarrel();
+                folder.SetHasExportedSymbol();
+            }
+            else
+            {
+                folder.IncrementFileCount();
+            }
             if( previous == null )
             {
                 _next = folder._firstFile;
@@ -81,9 +97,10 @@ public abstract partial class TypeScriptFileBase
                                             string? defaultValueSource = null )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
-        _declaredOnlyTypes ??= new List<ITSDeclaredFileType>();
         var t = new TSDeclaredType( this, typeName, additionalImports, defaultValueSource );
+        _declaredOnlyTypes ??= new List<ITSDeclaredFileType>();
         _declaredOnlyTypes.Add( t );
+        _folder.SetHasExportedSymbol();
         return t;
     }
 
@@ -97,17 +114,6 @@ public abstract partial class TypeScriptFileBase
     /// Gets this file path (not prefixed by '/').
     /// </summary>
     public string FilePath => _folder.Path.IsEmptyPath ? _name : _folder.Path.Path + '/' + _name;
-
-    /// <summary>
-    /// Saves this file into a folder on the file system.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
-    public void Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
-    {
-        var filePath = saver._currentTarget.AppendPart( Name );
-        saver.SaveFile( monitor, this, filePath );
-    }
 
     /// <summary>
     /// Overridden to return this file name.

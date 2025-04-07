@@ -93,6 +93,21 @@ public sealed class LibraryManager
     public IReadOnlyDictionary<string, SVersionBound> LibraryVersionConfiguration => _libVersionsConfig;
 
     /// <summary>
+    /// Creates a <see cref="DependencyCollection"/> from this <see cref="LibraryImports"/>.
+    /// By default only <see cref="LibraryImport.IsUsed"/> corresponding package is exported.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="usedDependenciesOnly">False to export all the libraries including the ones that are not used.</param>
+    /// <returns>The dependencies or null on error.</returns>
+    public DependencyCollection? ExportDependencyCollection( IActivityMonitor monitor, bool usedDependenciesOnly = true )
+    {
+        var dependencies = new DependencyCollection( _ignoreVersionsBound );
+        return dependencies.AddOrUpdate( monitor, _libraries.Values.Where( i => !usedDependenciesOnly || i.IsUsed ).Select( i => i.PackageDependency ) )
+                ? dependencies
+                : null;
+    }
+
+    /// <summary>
     /// Creates a <see cref="PackageDependency"/> under control of the <paramref name="libVersionsConfig"/>.
     /// </summary>
     /// <param name="monitor">The monitpr to use.</param>

@@ -33,6 +33,7 @@ public sealed class ResourceSpaceBuilder
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
     /// This can only be set if this has not been previously set (ie. this is null).
+    /// This is the last possibility to set the generated code.
     /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
     /// </summary>
     [DisallowNull]

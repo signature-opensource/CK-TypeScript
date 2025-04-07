@@ -50,6 +50,7 @@ public sealed partial class TypeScriptContext
         _tsRoot.BeforeCodeGeneration += OnBeforeCodeGeneration;
         _tsRoot.AfterDeferredCodeGeneration += OnAfterDeferredCodeGeneration;
         _tsRoot.AfterCodeGeneration += OnAfterCodeGeneration;
+        // We want a root barrel for the ck-gen/ module.
         Root.Root.EnsureBarrel();
         _pocoGenerator = new PocoCodeGenerator( this, initializer.TypeScriptExchangeableSet, jsonExchangeableNames );
     }
@@ -240,24 +241,28 @@ public sealed partial class TypeScriptContext
         // This raises events and closes Type registration (generates the code for all ITSFileCSharpType, running
         // the deferred Implementors).
         // 
-        if( success && _tsRoot.GenerateCode( monitor ) )
-        {
-            // Must now save the TypeScript files in a GeneratedCodeContainer and
-            // assign it to the resource space.
-            throw new NotImplementedException();
-        }
-        else
+        if( !success || !_tsRoot.GenerateCode( monitor ) )
         {
             // Time to give up.
             return false;
         }
+        // Must now save the TypeScript files in a GeneratedCodeContainer and
+        // assign it to the resource space.
+        var codeTarget = new CodeGenResourceContainerTarget();
+        if( !_tsRoot.Publish( monitor, codeTarget ) )
+        {
+            return false;
+        }
+        Throw.DebugAssert( codeTarget.Result != null );
+        resSpaceCollector.GeneratedCodeContainer = codeTarget.Result;
+
         var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
         var resSpaceData = resSpaceDataBuilder.Build( monitor );
         if( resSpaceData == null ) return false;
         // When a ResourceSpaceData is available, we are almost done.
         // It exposes all the read only packages inculding the head "<Code>" and tail "<App>" packages.
         // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
-        // final ResorceSpace.
+        // final ResourceSpace.
         var resSpaceBuilder = new ResourceSpaceBuilder( resSpaceData );
         success &= resSpaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( resSpaceData.ResPackageDataCache, "ts-assets" ) );
         success &= resSpaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( resSpaceData.ResPackageDataCache,

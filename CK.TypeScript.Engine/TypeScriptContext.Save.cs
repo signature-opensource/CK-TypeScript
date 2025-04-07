@@ -2,6 +2,7 @@ using CK.Core;
 using CK.TypeScript.CodeGen;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace CK.Setup;
@@ -19,19 +20,10 @@ public sealed partial class TypeScriptContext // Save
         bool success = true;
         using( monitor.OpenInfo( $"Saving generated TypeScript for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
-            var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
-            var targetCKGenFolder = BinPathConfiguration.TargetCKGenPath;
-            var saver = new TypeScriptFileSaveStrategy( Root, targetCKGenFolder );
-            // We want a root barrel for the generated module.
-            Root.Root.EnsureBarrel();
-            // Saving the root.  
-            int? savedCount = Root.Save( monitor, saver );
-            if( !savedCount.HasValue )
-            {
-                return false;
-            }
+            var generatedDependencies = _tsRoot.LibraryManager.ExportDependencyCollection( monitor );
+            if( generatedDependencies == null ) return false;
             // Fix stupid mistake in code that may have declared typescript as a regular dependency.
-            if( saver.GeneratedDependencies.TryGetValue( "typescript", out var typeScriptFromCode ) )
+            if( generatedDependencies.TryGetValue( "typescript", out var typeScriptFromCode ) )
             {
                 if( typeScriptFromCode.DependencyKind != DependencyKind.DevDependency )
                 {
@@ -40,43 +32,36 @@ public sealed partial class TypeScriptContext // Save
                     typeScriptFromCode.UnconditionalSetDependencyKind( DependencyKind.DevDependency );
                 }
             }
-            if( savedCount.Value == 0 )
+            if( BinPathConfiguration.GitIgnoreCKGenFolder )
             {
-                monitor.Warn( $"No files or folders have been generated in '{ckGenFolder}'. Skipping TypeScript integration." );
+                File.WriteAllText( Path.Combine( BinPathConfiguration.TargetCKGenPath, ".gitignore" ), "*" );
+            }
+            if( _integrationContext == null )
+            {
+                monitor.Info( "Skipping any TypeScript project setup since IntegrationMode is None." );
             }
             else
             {
-                if( BinPathConfiguration.GitIgnoreCKGenFolder )
+                var liveEnginePath = typeof( TypeScript.LiveEngine.LiveState ).Assembly.Location;
+                if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
+                                                                                    out var relative ) )
                 {
-                    File.WriteAllText( Path.Combine( ckGenFolder, ".gitignore" ), "*" );
-                }
-                if( _integrationContext == null )
-                {
-                    monitor.Info( "Skipping any TypeScript project setup since IntegrationMode is None." );
+                    _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
+                    dotnet "$PROJECT_CWD/{relative}"
+                    """;
                 }
                 else
                 {
-                    var liveEnginePath = typeof( TypeScript.LiveEngine.LiveState ).Assembly.Location;
-                    if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
-                                                                                        out var relative ) )
-                    {
-                        _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
-                        dotnet "$PROJECT_CWD/{relative}"
-                        """;
-                    }
-                    else
-                    {
-                        monitor.Warn( $"""
-                            Unable to compute reltive path from:
-                            {BinPathConfiguration.TargetProjectPath}
-                            to:
-                            {liveEnginePath}
-                            No 'yarn ck-watch' command available.
-                            """ );
-                        _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
-                    }
-                    success &= _integrationContext.Run( monitor, saver );
+                    monitor.Warn( $"""
+                        Unable to compute reltive path from:
+                        {BinPathConfiguration.TargetProjectPath}
+                        to:
+                        {liveEnginePath}
+                        No 'yarn ck-watch' command available.
+                        """ );
+                    _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
                 }
+                success &= _integrationContext.Run( monitor, generatedDependencies );
             }
         }
         return success;

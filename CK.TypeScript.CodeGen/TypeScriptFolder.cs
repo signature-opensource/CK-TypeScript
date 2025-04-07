@@ -1,9 +1,12 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
+using static CK.Core.CheckedWriteStream;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -13,11 +16,14 @@ namespace CK.TypeScript.CodeGen;
 public sealed partial class TypeScriptFolder
 {
     readonly TypeScriptRoot _root;
+    readonly TypeScriptFolder? _parent;
     TypeScriptFolder? _firstChild;
     TypeScriptFolder? _next;
     internal TypeScriptFileBase? _firstFile;
+    int _fileCount;
     readonly NormalizedPath _path;
     bool _wantBarrel;
+    bool _hasExportedSymbol;
 
     // We consider the largest set of invalid characters and
     // only remove the '/' for paths.
@@ -39,7 +45,7 @@ public sealed partial class TypeScriptFolder
     internal TypeScriptFolder( TypeScriptFolder parent, string name, TypeScriptFolder? previous )
     {
         _root = parent._root;
-        Parent = parent;
+        _parent = parent;
         _path = parent._path.AppendPart( name );
         if( previous == null )
         {
@@ -73,7 +79,7 @@ public sealed partial class TypeScriptFolder
     /// <summary>
     /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
     /// </summary>
-    public TypeScriptFolder? Parent { get; }
+    public TypeScriptFolder? Parent => _parent;
 
     /// <summary>
     /// Gets the root TypeScript context.
@@ -81,14 +87,50 @@ public sealed partial class TypeScriptFolder
     public TypeScriptRoot Root => _root;
 
     /// <summary>
-    /// Gets whether this folder has a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel).
+    /// Gets whether this folder has a barrel (see <see href="https://basarat.gitbook.io/typescript/main-1/barrel"/>).
+    /// When true, a 'index.ts' barrel file will be published if <see cref="HasExportedSymbol"/> is true.
     /// </summary>
     public bool HasBarrel => _wantBarrel;
 
     /// <summary>
     /// Definitely sets <see cref="HasBarrel"/> to true.
     /// </summary>
-    public void EnsureBarrel() => _wantBarrel = true;
+    public void EnsureBarrel()
+    {
+        if( !_wantBarrel )
+        {
+            _wantBarrel = true;
+            if( _hasExportedSymbol ) IncrementFileCount();
+        }
+    }
+
+    /// <summary>
+    /// Gets whether at least one of the file in this folder or any subfolder exports a type name.
+    /// </summary>
+    public bool HasExportedSymbol => _hasExportedSymbol;
+
+    internal void SetHasExportedSymbol()
+    {
+        if( !_hasExportedSymbol )
+        {
+            _hasExportedSymbol = true;
+            _parent?.SetHasExportedSymbol();
+            if( _wantBarrel ) IncrementFileCount();
+        }
+    }
+
+    internal void IncrementFileCount()
+    {
+        ++_fileCount;
+        _parent?.IncrementFileCount();
+    }
+
+    /// <summary>
+    /// Gets the total number of files that this folder will publish.
+    /// This can differ from the <see cref="AllFilesRecursive"/> count because of the 'index.ts'
+    /// barrel management.
+    /// </summary>
+    public int FileCount => _fileCount;
 
     TypeScriptFolder FindOrCreateLocalFolder( string name )
     {
@@ -125,16 +167,26 @@ public sealed partial class TypeScriptFolder
         {
             throw new ArgumentException( e, nameof( fileOrFolderName ) );
         }
-        if( isFolder
-                 ? FindLocalFile( fileOrFolderName, out _ ) != null
-                 : FindLocalFolder( fileOrFolderName, out _ ) != null )
+        bool tsExtension = fileOrFolderName.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase );
+        if( isFolder )
         {
-            throw new InvalidOperationException( $"Unable to create {(isFolder ? "folder" : "file")} named '{fileOrFolderName}'. A {(isFolder ? "file" : "folder")} with this name exists." );
+            if( tsExtension )
+            {
+                Throw.ArgumentException( "folderName", $"Folder '{fileOrFolderName}' cannot end with '.ts'." );
+            }
+        }
+        else 
+        {
+            if( !tsExtension )
+            {
+                Throw.ArgumentException( "fileName", $"File '{fileOrFolderName}' must end with '.ts'." );
+            }
         }
     }
 
     internal static string? GetInvalidFileOrFolderNameError( string fileOrFolderName, bool isFolder )
     {
+        Throw.CheckNotNullOrWhiteSpaceArgument( fileOrFolderName );
         int bad = fileOrFolderName.IndexOfAny( isFolder ? _invalidPathChars : _invalidFileNameChars );
         if( bad >= 0 )
         {
@@ -273,102 +325,4 @@ public sealed partial class TypeScriptFolder
             return result;
         }
     }
-
-    /// <summary>
-    /// Saves this folder, its files and all its subordinated folders, into a folder on the file system.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
-    /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
-    public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
-    {
-        using( monitor.OpenTrace( IsRoot ? $"Saving TypeScript Root folder into {saver.Target}" : $"Saving /{Name}." ) )
-        {
-            var parentTarget = saver._currentTarget;
-            var target = IsRoot ? saver.Target : parentTarget.AppendPart( Name );
-            saver._currentTarget = target;
-            try
-            {
-                int result = 0;
-
-                bool createdDirectory = false;
-                if( _firstFile != null )
-                {
-                    Directory.CreateDirectory( target );
-                    createdDirectory = true;
-                    foreach( var file in AllFiles )
-                    {
-                        file.Save( monitor, saver );
-                        ++result;
-                    }
-                }
-                var folder = _firstChild;
-                while( folder != null )
-                {
-                    var r = folder.Save( monitor, saver );
-                    if( !r.HasValue ) return null;
-                    result += r.Value;
-                    folder = folder._next;
-                }
-                if( _wantBarrel && FindLocalFile( "index.ts", out _ ) == null )
-                {
-                    var b = new StringBuilder();
-                    AddExportsToBarrel( default, b );
-                    if( b.Length > 0 )
-                    {
-                        if( !createdDirectory ) Directory.CreateDirectory( target );
-
-                        var index = target.AppendPart( "index.ts" );
-                        File.WriteAllText( index, b.ToString() );
-                        saver.CleanupFiles?.Remove( index );
-                        ++result;
-                    }
-                }
-                return result;
-            }
-            catch( Exception ex )
-            {
-                monitor.Error( ex );
-                return null;
-            }
-            finally
-            {
-                saver._currentTarget = parentTarget;
-            }
-        }
-    }
-
-    void AddExportsToBarrel( NormalizedPath subPath, StringBuilder b )
-    {
-        if( !subPath.IsEmptyPath && (_wantBarrel || FindLocalFile( "index.ts", out _ ) != null) )
-        {
-            b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
-        }
-        else
-        {
-            var file = _firstFile;
-            while( file != null )
-            {
-                if( file is TypeScriptFileBase ts && ts.AllTypes.Any() )
-                {
-                    AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
-                }
-                file = file._next;
-            }
-            var folder = _firstChild;
-            while( folder != null )
-            {
-                folder.AddExportsToBarrel( subPath.AppendPart( folder.Name ), b );
-                folder = folder._next;
-            }
-
-            static void AddExportFile( NormalizedPath subPath, StringBuilder b, ReadOnlySpan<char> fileName )
-            {
-                b.Append( "export * from './" ).Append( subPath );
-                if( !subPath.IsEmptyPath ) b.Append( '/' );
-                b.Append( fileName ).AppendLine( "';" );
-            }
-        }
-    }
-
 }

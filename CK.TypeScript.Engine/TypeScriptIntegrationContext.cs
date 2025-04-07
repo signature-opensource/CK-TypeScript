@@ -37,7 +37,7 @@ public sealed partial class TypeScriptIntegrationContext
     PackageDependency? _settledTypeScriptDep;
     bool _shouldAlignYarnSdkVersion;
     // We must keep this as a member to be able to expose SettleTypeScriptDependency() on the BeforeEventArgs. 
-    TypeScriptFileSaveStrategy? _saver;
+    DependencyCollection? _saver;
     // Not null when AutoInstallJest is true. Can be substituted by BeforeEventArgs. 
     JestSetupHandler? _jestSetup;
     // Cached content of the target package.json file.
@@ -185,7 +185,7 @@ public sealed partial class TypeScriptIntegrationContext
         _typeScriptSdkVersion = YarnHelper.GetYarnSdkTypeScriptVersion( monitor, _configuration.TargetProjectPath );
 
         // The code MAY have declared the typescript dependency.
-        PackageDependency? fromCodeDeclared = _saver.GeneratedDependencies.GetValueOrDefault( "typescript" );
+        PackageDependency? fromCodeDeclared = _saver.GetValueOrDefault( "typescript" );
 
         // If we have a configured version for TypeScript, this is the one that should be used, no matter what.
         if( _libVersionsConfig.TryGetValue( "typescript", out SVersionBound fromConfiguration ) )
@@ -218,7 +218,7 @@ public sealed partial class TypeScriptIntegrationContext
         // For the moment, continue to use AddOrReplace (honor TypeScriptAspect.IgnoreVersionsBound).
         //
         if( fromCodeDeclared != typeScriptDep
-            && !_saver.GeneratedDependencies.AddOrUpdate( monitor, typeScriptDep, cloneAddedDependency: false ) )
+            && !_saver.AddOrUpdate( monitor, typeScriptDep, cloneAddedDependency: false ) )
         {
             return false;
         }
@@ -409,7 +409,7 @@ public sealed partial class TypeScriptIntegrationContext
         return true;
     }
 
-    internal bool Run( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
+    internal bool Run( IActivityMonitor monitor, DependencyCollection generatedDependencies )
     {
         Throw.DebugAssert( _configuration.IntegrationMode is CKGenIntegrationMode.Inline );
 
@@ -428,7 +428,7 @@ public sealed partial class TypeScriptIntegrationContext
         // Setup the target project dependencies according to the integration mode.
         using( monitor.OpenInfo( $"Updating target package.json dependencies from code generated ones." ) )
         {
-            var updates = saver.GeneratedDependencies.Values;
+            var updates = generatedDependencies.Values;
             if( !_targetPackageJson.Dependencies.AddOrUpdate( monitor, updates, LogLevel.Info, cloneDependencies: false ) )
             {
                 return false;
@@ -447,7 +447,7 @@ public sealed partial class TypeScriptIntegrationContext
             }
         }
         // Raising OnBeforeIntegration.
-        _saver = saver;
+        _saver = generatedDependencies;
         var hBefore = OnBeforeIntegration;
         if( hBefore != null
             && !RaiseEvent( monitor, hBefore, new BeforeEventArgs( monitor, this, _yarnPath ), nameof( OnBeforeIntegration ) ) )
@@ -463,7 +463,7 @@ public sealed partial class TypeScriptIntegrationContext
         }
         var success = _configuration.IntegrationMode switch
         {
-            CKGenIntegrationMode.Inline => TSPathInlineIntegrate( monitor, saver ),
+            CKGenIntegrationMode.Inline => TSPathInlineIntegrate( monitor ),
             _ => Throw.NotSupportedException<bool>()
         };
         // Assumes that the /src folder exists.
@@ -508,7 +508,7 @@ public sealed partial class TypeScriptIntegrationContext
         }
     }
 
-    bool TSPathInlineIntegrate( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
+    bool TSPathInlineIntegrate( IActivityMonitor monitor )
     {
         using var _ = monitor.OpenInfo( "Inline integration mode." );
         if( _initialEmptyTargetPackage )

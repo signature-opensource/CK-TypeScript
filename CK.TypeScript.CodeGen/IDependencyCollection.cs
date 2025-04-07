@@ -6,7 +6,7 @@ namespace CK.TypeScript.CodeGen;
 
 /// <summary>
 /// Mutable collection of <see cref="PackageDependency"/>.
-/// See <see cref="TypeScriptFileSaveStrategy.GeneratedDependencies"/>.
+/// See <see cref="TypeScriptFileCollector.GeneratedDependencies"/>.
 /// <para>
 /// Npm "latest" version can be managed by using the <see cref="SVersionBound.All"/>
 /// and "workspace:" dependencies can be managed with <see cref="SVersionBound.None"/>.
