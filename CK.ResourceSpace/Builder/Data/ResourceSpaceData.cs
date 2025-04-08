@@ -16,7 +16,6 @@ namespace CK.Core;
 public sealed partial class ResourceSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
-    readonly string _ckGenPath;
     readonly string _liveStatePath;
     // Last mutable code container. Duplicating it is required, because even if we inspect
     // the ResourceContainerWrapper.InnerContainer, an empty container may be a non yet
@@ -35,12 +34,10 @@ public sealed partial class ResourceSpaceData
     internal string? _watchRoot;
 
     internal ResourceSpaceData( IResourceContainer? generatedCodeContainer,
-                                string ckGenPath,
                                 string cKWatchFolderPath,
                                 IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
         _generatedCodeContainer = generatedCodeContainer;
-        _ckGenPath = ckGenPath;
         _liveStatePath = cKWatchFolderPath;
         _packageIndex = packageIndex;
     }
@@ -62,9 +59,6 @@ public sealed partial class ResourceSpaceData
             ((ResourceContainerWrapper)_codePackage.ResourcesAfter.Resources).InnerContainer = value;
         }
     }
-
-    /// <inheritdoc cref="ResourceSpaceCollector.CKGenPath"/>
-    public string CKGenPath => _ckGenPath;
 
     /// <summary>
     /// Gets the packages indexed by their <see cref="ResPackage.FullName"/> and <see cref="ResPackage.Type"/> (if

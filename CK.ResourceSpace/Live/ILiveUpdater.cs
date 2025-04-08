@@ -23,7 +23,6 @@ public interface ILiveUpdater
     /// Must apply all changes collected so far.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="installer">The target installer.</param>
     /// <returns>True on success, false otherwise. Errors must be logged.</returns>
-    bool ApplyChanges( IActivityMonitor monitor, IResourceSpaceItemInstaller installer );
+    bool ApplyChanges( IActivityMonitor monitor );
 }

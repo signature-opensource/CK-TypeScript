@@ -5,20 +5,26 @@ using System.IO;
 namespace CK.Core;
 
 /// <summary>
-/// Simple implementation of <see cref="IFileSystemInstaller"/> that can be specialized.
+/// Basic implementation that can be specialized.
 /// </summary>
-public class SimpleFileSystemInstaller : IFileSystemInstaller
+public class FileSystemInstaller : IResourceSpaceItemInstaller
 {
     readonly string _targetPath;
     readonly char[] _pathBuffer;
 
     /// <summary>
     /// Initialize a new installer on a target path.
+    /// The path must be fully qualified. It is normalized to end with <see cref="Path.DirectorySeparatorChar"/>.
     /// </summary>
     /// <param name="targetPath">The target folder.</param>
-    public SimpleFileSystemInstaller( string targetPath )
+    public FileSystemInstaller( string targetPath )
     {
-        Throw.CheckArgument( Path.IsPathFullyQualified( targetPath ) && targetPath.EndsWith( Path.DirectorySeparatorChar ) );
+        Throw.CheckArgument( Path.IsPathFullyQualified( targetPath ) );
+        targetPath = Path.GetFullPath( targetPath );
+        if( targetPath[^1] != Path.DirectorySeparatorChar )
+        {
+            targetPath += Path.DirectorySeparatorChar;
+        }
         _targetPath = targetPath;
         _pathBuffer = new char[1024];
         targetPath.CopyTo( _pathBuffer );
@@ -33,16 +39,64 @@ public class SimpleFileSystemInstaller : IFileSystemInstaller
     /// <returns>True on sucess, false on error.</returns>
     public virtual bool Open( IActivityMonitor monitor, ResourceSpace resSpace )
     {
-        if( !Path.Exists( TargetPath ) )
+        return CheckLiveStateCoherency( monitor, resSpace.ResourceSpaceData )
+               && EnsureTargetPath( monitor );
+    }
+
+    /// <summary>
+    /// Checks that the <see cref="TargetPath"/> exists or creates it.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <returns>True on sucess, false on error.</returns>
+    protected bool EnsureTargetPath( IActivityMonitor monitor )
+    {
+        if( !Path.Exists( _targetPath ) )
         {
-            monitor.Info( $"Creating code generated target path: {TargetPath}" );
+            monitor.Info( $"Creating code generated target path: {_targetPath}" );
             try
             {
-                Directory.CreateDirectory( TargetPath );
+                Directory.CreateDirectory( _targetPath );
             }
             catch( Exception ex )
             {
-                monitor.Error( $"While creating code generated target path: {TargetPath}", ex );
+                monitor.Error( $"While creating code generated target path: {_targetPath}", ex );
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Checks that if <see cref="ResourceSpaceData.WatchRoot"/> is not null, the <see cref="TargetPath"/>
+    /// is independent of <see cref="ResourceSpaceData.LiveStatePath"/> and the "<App>" resources folder
+    /// (not above not below them).
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="data">The resource space.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected bool CheckLiveStateCoherency( IActivityMonitor monitor, ResourceSpaceData data )
+    {
+        if( data.WatchRoot != null )
+        {
+            var appResourcesLocalPath = data.AppPackage.Resources.LocalPath;
+            if( appResourcesLocalPath != null
+               && (appResourcesLocalPath.StartsWith( TargetPath ) || TargetPath.StartsWith( appResourcesLocalPath )) )
+            {
+                monitor.Error( $"""
+                    Invalid AppResourcesLocalPath: it must not be above or below TargetPath.
+                    CKGenPath: {TargetPath}
+                    AppResourcesLocalPath: {appResourcesLocalPath}
+                    """ );
+                return false;
+            }
+            var liveStatePath = data.LiveStatePath;
+            if( liveStatePath.StartsWith( TargetPath ) || TargetPath.StartsWith( liveStatePath ) )
+            {
+                monitor.Error( $"""
+                Invalid LiveStatePath: it must not be above or below TargetPath.
+                CKGenPath: {TargetPath}
+                LiveStatePath: {liveStatePath}
+                """ );
                 return false;
             }
         }
@@ -61,6 +115,9 @@ public class SimpleFileSystemInstaller : IFileSystemInstaller
 
     /// <summary>
     /// Gets the target path. Ends with <see cref="Path.DirectorySeparatorChar"/>.
+    /// <para>
+    /// <see cref="Open(IActivityMonitor, ResourceSpace)"/> creates it if needed.
+    /// </para>
     /// </summary>
     public string TargetPath => _targetPath;
 

@@ -6,7 +6,7 @@ using System.Linq;
 namespace CK.Core;
 
 /// <summary>
-/// Specialized <see cref="SimpleFileSystemInstaller"/> that tracks written files
+/// Specialized <see cref="FileSystemInstaller"/> that tracks written files
 /// and can cleanup any previously existing files.
 /// <para>
 /// Deferred files cleanup minimizes impacts on file watchers: we don't destroy/recreate the
@@ -14,7 +14,7 @@ namespace CK.Core;
 /// have not been generated.
 /// </para>
 /// </summary>
-public sealed class InitialFileSystemInstaller : SimpleFileSystemInstaller
+public sealed class InitialFileSystemInstaller : FileSystemInstaller
 {
     readonly HashSet<string> _existing;
 

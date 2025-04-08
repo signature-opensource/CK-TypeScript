@@ -15,7 +15,11 @@ public partial class NgProviderAttributeImpl : TypeScriptPackageAttributeImplExt
 
     public new NgProviderAttribute Attribute => Unsafe.As<NgProviderAttribute>( base.Attribute );
 
-    protected override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResourceSpaceCollector spaceBuilder )
+    protected override bool OnConfiguredPackage( IActivityMonitor monitor,
+                                                 TypeScriptPackageAttributeImpl tsPackage,
+                                                 TypeScriptContext context,
+                                                 ResPackageDescriptor d,
+                                                 ResourceSpaceConfiguration resourcesConfiguration )
     {
         var angular = context.GetAngularCodeGen();
         var source = Type.ToCSharpName() + Attribute.SourceNameSuffix;

@@ -24,20 +24,17 @@ public sealed class ResourceSpaceCollector
     public const string NoLiveState = "none";
 
     readonly CoreCollector _coreCollector;
-    readonly string _ckGenPath;
     readonly string? _appResourcesLocalPath;
     readonly string _liveStatePath;
     IResourceContainer? _generatedCodeContainer;
 
     internal ResourceSpaceCollector( CoreCollector coreCollector,
                                      IResourceContainer? generatedCodeContainer,
-                                     string ckGenPath,
                                      string? appResourcesLocalPath,
                                      string liveStatePath )
     {
         _coreCollector = coreCollector;
         _generatedCodeContainer = generatedCodeContainer;
-        _ckGenPath = ckGenPath;
         _appResourcesLocalPath = appResourcesLocalPath;
         _liveStatePath = liveStatePath;
     }
@@ -99,12 +96,6 @@ public sealed class ResourceSpaceCollector
             _generatedCodeContainer = value;
         }
     }
-
-    /// <summary>
-    /// Gets the file system code generated target path. This ends with <see cref="Path.DirectorySeparatorChar"/>.
-    /// See <see cref="ResourceSpaceConfiguration.CKGenPath"/>.
-    /// </summary>
-    public string CKGenPath => _ckGenPath;
 
     /// <summary>
     /// Gets the path of the application local resources. See <see cref="ResourceSpaceConfiguration.AppResourcesLocalPath"/>.

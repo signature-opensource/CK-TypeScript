@@ -31,8 +31,6 @@ public sealed class LiveState
 
     public ResourceSpaceData SpaceData => _spaceData;
 
-    public string CKGenPath => _spaceData.CKGenPath;
-
     public string CKGenAppPath => _ckGenAppPath;
 
     public string WatchRoot => _watchRoot;
@@ -54,19 +52,6 @@ public sealed class LiveState
         }
     }
 
-    sealed class UpdateInstaller : SimpleFileSystemInstaller
-    {
-        public readonly List<string> Written;
-
-        public UpdateInstaller( string targetPath )
-            : base( targetPath )
-        {
-            Written = new List<string>();
-        }
-
-        protected override void OnWrite( string path ) => Written.Add( path );
-    }
-
     /// <summary>
     /// Applies any changes.
     /// </summary>
@@ -74,25 +59,16 @@ public sealed class LiveState
     public void ApplyChanges( IActivityMonitor monitor )
     {
         var success = true;
-        var installer = new UpdateInstaller( _spaceData.CKGenPath );
         foreach( var u in _updaters )
         {
             try
             {
-                success &= u.ApplyChanges( monitor, installer );
+                success &= u.ApplyChanges( monitor );
             }
             catch( Exception ex )
             {
                 monitor.Error( ex );
                 success = false;
-            }
-        }
-        using( monitor.OpenInfo( $"Updated {installer.Written.Count} files." ) )
-        {
-            monitor.Trace( installer.Written.Concatenate() );
-            if( !success )
-            {
-                monitor.CloseGroup( "Failed!" );
             }
         }
     }

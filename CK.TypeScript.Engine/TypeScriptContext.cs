@@ -205,8 +205,13 @@ public sealed partial class TypeScriptContext
 
         // New approach (CK-ReaDI oriented) here to manage the resources.
         var resSpaceConfiguration = new ResourceSpaceConfiguration();
-        resSpaceConfiguration.CKGenPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
         resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
+
+        // ResPackageDescriptor can be registered on the initial ResourceSpaceConfiguration (but also on the
+        // following ResourceSpaceCollector). By registering our discovered TypeScriptPackage here, we maximize
+        // the possibilities for other participants to use them.
+        // We manually trigger TypeScriptPackage registration.
+        success = ConfigureResPackages( monitor, resSpaceConfiguration, _initializer.Packages, typeScriptContext );
 
         var resSpaceCollector = resSpaceConfiguration.Build( monitor );
         if( resSpaceCollector == null ) return false;
@@ -216,9 +221,6 @@ public sealed partial class TypeScriptContext
         // any code to register additional packages in it, including totally "virtual"
         // ones that could produce .ts or other resources based on an existing resource that is
         // a schema or any description of code.
-
-        // Here we manually trigger TypeScriptPackage registration.
-        success = ConfigureResPackages( monitor, _initializer.Packages, typeScriptContext, resSpaceCollector );
 
         // Today, the GlobalCodeGenerators have no access to the resources.
         // With CK-ReaDI, they could have a similar ConfigureResPackages. They would then be able
@@ -311,9 +313,9 @@ public sealed partial class TypeScriptContext
         }
 
         static bool ConfigureResPackages( IActivityMonitor monitor,
+                                          ResourceSpaceConfiguration resourcesConfiguration,
                                           IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
-                                          TypeScriptContext context,
-                                          ResourceSpaceCollector spaceBuilder )
+                                          TypeScriptContext context )
         {
             using( monitor.OpenInfo( $"Configuring {packages.Count} TypeScript resource packages." ) )
             {
@@ -322,7 +324,7 @@ public sealed partial class TypeScriptContext
                 {
                     try
                     {
-                        success &= p.ConfigureResPackage( monitor, context, spaceBuilder );
+                        success &= p.ConfigureResPackage( monitor, context, resourcesConfiguration );
                     }
                     catch( Exception ex )
                     {

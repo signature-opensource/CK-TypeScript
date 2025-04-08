@@ -54,11 +54,11 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
     /// <param name="tsPackage">The package attribute.</param>
     /// <param name="context">The TypeScript context.</param>
     /// <param name="d">The package to configure.</param>
-    /// <param name="spaceBuilder">The package's collector.</param>
+    /// <param name="resourcesConfiguration">The package's configuration.</param>
     /// <returns>Must return true on success, false on error (errors must be logged).</returns>
     protected internal abstract bool OnConfiguredPackage( IActivityMonitor monitor,
-                                                         TypeScriptPackageAttributeImpl tsPackage,
-                                                         TypeScriptContext context,
-                                                         ResPackageDescriptor d,
-                                                         ResourceSpaceCollector spaceBuilder );
+                                                          TypeScriptPackageAttributeImpl tsPackage,
+                                                          TypeScriptContext context,
+                                                          ResPackageDescriptor d,
+                                                          ResourceSpaceConfiguration resourcesConfiguration );
 }

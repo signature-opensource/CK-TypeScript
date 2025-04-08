@@ -17,7 +17,6 @@ public sealed class ResourceSpaceConfiguration
 {
     readonly CoreCollector _coreCollector;
     IResourceContainer? _generatedCodeContainer;
-    string _ckGenPath;
     string? _appResourcesLocalPath;
     string? _liveStatePath;
 
@@ -27,33 +26,6 @@ public sealed class ResourceSpaceConfiguration
     public ResourceSpaceConfiguration()
     {
         _coreCollector = new CoreCollector();
-        _ckGenPath = string.Empty;
-    }
-
-    /// <summary>
-    /// Required code generated target path that will be created or updated.
-    /// <para>
-    /// This folder is updated on each generation. It cannot be below nor above the <see cref="AppResourcesLocalPath"/>
-    /// or the <see cref="LiveStatePath"/>.
-    /// </para>
-    /// <para>
-    /// The path must be fully qualified. It is normalized to end with <see cref="Path.DirectorySeparatorChar"/>.
-    /// </para>
-    /// </summary>
-    public string CKGenPath
-    {
-        get => _ckGenPath;
-        set
-        {
-            Throw.CheckArgument( !string.IsNullOrWhiteSpace( value ) );
-            Throw.CheckArgument( Path.IsPathFullyQualified( value ) );
-            value = Path.GetFullPath( value );
-            if( value[^1] != Path.DirectorySeparatorChar )
-            {
-                value += Path.DirectorySeparatorChar;
-            }
-            _ckGenPath = value;
-        }
     }
 
     /// <summary>
@@ -79,7 +51,8 @@ public sealed class ResourceSpaceConfiguration
     }
 
     /// <summary>
-    /// Gets or sets the path of the "&lt;App&gt;" tail package application local resources.
+    /// Gets or sets the path of the "&lt;App&gt;" tail package application local resources 
+    /// (the <see cref="ResourceSpaceData.AppPackage"/>'s <see cref="ResPackage.Resources"/>' <see cref="IResPackageResources.LocalPath"/>).
     /// When let to null, an empty container is used.
     /// <para>
     /// When not null, this path is fully qualified and ends with <see cref="Path.DirectorySeparatorChar"/>
@@ -185,37 +158,12 @@ public sealed class ResourceSpaceConfiguration
     /// <returns>The collector with initialized packages or null on error.</returns>
     public ResourceSpaceCollector? Build( IActivityMonitor monitor )
     {
-        if( string.IsNullOrEmpty( _ckGenPath ) )
-        {
-            monitor.Error( "CKGenPath is required." );
-            return null;
-        }
-        if( _appResourcesLocalPath != null
-            && (_appResourcesLocalPath.StartsWith( _ckGenPath ) || _ckGenPath.StartsWith( _appResourcesLocalPath )) )
-        {
-            monitor.Error( $"""
-                Invalid AppResourcesLocalPath: it must not be above or below CKGenPath.
-                CKGenPath: {_ckGenPath}
-                AppResourcesLocalPath: {_appResourcesLocalPath}
-                """ );
-            return null;
-        }
         var liveStatePath = _liveStatePath
                                         ?? (_appResourcesLocalPath == null
                                                 ? ResourceSpaceCollector.NoLiveState
                                                 : _appResourcesLocalPath + ".ck-watch" + Path.DirectorySeparatorChar);
-        if( liveStatePath.StartsWith( _ckGenPath ) || _ckGenPath.StartsWith( liveStatePath ) )
-        {
-            monitor.Error( $"""
-                Invalid LiveStatePath: it must not be above or below CKGenPath.
-                CKGenPath: {_ckGenPath}
-                LiveStatePath: {liveStatePath}
-                """ );
-            return null;
-        }
         return new ResourceSpaceCollector( _coreCollector,
                                            _generatedCodeContainer,
-                                           _ckGenPath,
                                            _appResourcesLocalPath,
                                            liveStatePath );
     }

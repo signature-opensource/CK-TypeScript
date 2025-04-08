@@ -23,7 +23,6 @@ public sealed partial class ResourceSpaceData : ICKSlicedSerializable
         var r = d.Reader;
         _resPackageDataCache = LiveResPackageDataCache.Read( r, _packages );
         _watchRoot = r.ReadNullableString();
-        _ckGenPath = r.ReadString();
         _liveStatePath = r.ReadString();
     }
 
@@ -38,7 +37,6 @@ public sealed partial class ResourceSpaceData : ICKSlicedSerializable
         ICKBinaryWriter w = s.Writer;
         ((ResPackageDataCache)o._resPackageDataCache).Write( w );
         w.WriteNullableString( o._watchRoot );
-        w.Write( o._ckGenPath );
         w.Write( o._liveStatePath );
     }
 }

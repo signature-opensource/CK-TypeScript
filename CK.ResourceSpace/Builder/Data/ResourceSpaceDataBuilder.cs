@@ -168,7 +168,7 @@ public sealed class ResourceSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResourceSpaceData( _generatedCodeContainer, _collector.CKGenPath, _collector.LiveStatePath, packageIndex );
+        var space = new ResourceSpaceData( _generatedCodeContainer, _collector.LiveStatePath, packageIndex );
 
         // ResPackageDataCache builder is used a vehicle to transmit the resourceIndex that will be filled
         // below to all the ResPackage (to avoid yet another constructor parameter).
@@ -273,7 +273,7 @@ public sealed class ResourceSpaceDataBuilder
         allPackageResources[^1] = appPackage.ResourcesAfter;
         if( appLocalPath != null )
         {
-            // If we have no packages, watchRoot is null: we'll only
+            // If we have no local packages, watchRoot is null: we'll only
             // watch the "<App> folder.
             watchRoot ??= appLocalPath;
             resourceIndex.Add( appPackage.Resources.Resources, appPackage.Resources );
@@ -291,7 +291,6 @@ public sealed class ResourceSpaceDataBuilder
         space._appPackage = appPackage;
         Throw.DebugAssert( _collector.LiveStatePath == ResourceSpaceCollector.NoLiveState
                            || (space._localPackages.Length != 0) == (watchRoot != null) );
-
         space._watchRoot = watchRoot;
         // The space is initialized with all its packages.
         // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now

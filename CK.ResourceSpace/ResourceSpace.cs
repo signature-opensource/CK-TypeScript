@@ -71,7 +71,7 @@ public sealed class ResourceSpace
     }
         
     /// <summary>
-    /// Generates resources into the <see cref="ResourceSpaceData.CKGenPath"/>.
+    /// Installs resources.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>True on success, false otherwise.</returns>
@@ -81,28 +81,21 @@ public sealed class ResourceSpace
         bool success = true;
         foreach( var h in _folderHandlers )
         {
-            var i = h.Installer;
-            if( i != null && installers.Add( i ) )
+            if( !(success = OpenInstaller( monitor, this, installers, h.Installer )) )
             {
-                try
-                {
-                    if( !i.Open( monitor, this ) )
-                    {
-                        success = false;
-                        break;
-                    }
-                }
-                catch( Exception ex )
-                {
-                    monitor.Error( ex );
-                    success = false;
-                    break;
-                }
+                break;
+            }
+        }
+        foreach( var h in _fileHandlers )
+        {
+            if( !(success = OpenInstaller( monitor, this, installers, h.Installer )) )
+            {
+                break;
             }
         }
         if( !success )
         {
-            CallClose( monitor, installers, success );
+            CloseInstallers( monitor, installers, success );
             return false;
         }
         if( _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
@@ -117,7 +110,7 @@ public sealed class ResourceSpace
         {
             success &= f.Install( monitor );
         }
-        CallClose( monitor, installers, success );
+        CloseInstallers( monitor, installers, success );
 
         if( success && _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
         {
@@ -131,21 +124,47 @@ public sealed class ResourceSpace
             success &= WriteLiveState( monitor, _data.LiveStatePath );
         }
         return success;
-    }
 
-    void CallClose( IActivityMonitor monitor, HashSet<IResourceSpaceItemInstaller> installers, bool success )
-    {
-        foreach( var i in installers )
+        static bool OpenInstaller( IActivityMonitor monitor,
+                                   ResourceSpace s,
+                                   HashSet<IResourceSpaceItemInstaller> installers,
+                                   IResourceSpaceItemInstaller? i )
         {
-            try
+            if( i != null && installers.Add( i ) )
             {
-                i.Close( monitor, success );
+                try
+                {
+                    if( !i.Open( monitor, s ) )
+                    {
+                        return false;
+                    }
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( ex );
+                    return false;
+                }
             }
-            catch( Exception ex )
+            return true;
+        }
+
+        static void CloseInstallers( IActivityMonitor monitor,
+                                     HashSet<IResourceSpaceItemInstaller> installers,
+                                     bool success )
+        {
+            foreach( var i in installers )
             {
-                monitor.Error( $"While closing '{i}'.", ex );
+                try
+                {
+                    i.Close( monitor, success );
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( $"While closing '{i}'.", ex );
+                }
             }
         }
+
     }
 
     static bool ClearLiveState( IActivityMonitor monitor, string ckWatchFolderPath )

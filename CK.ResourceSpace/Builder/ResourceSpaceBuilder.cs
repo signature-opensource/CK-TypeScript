@@ -47,7 +47,7 @@ public sealed class ResourceSpaceBuilder
     /// Adds a <see cref="ResourceSpaceFileHandler"/>.
     /// <para>
     /// If a handler with a common <see cref="ResourceSpaceHandler.FileExtensions"/> already
-    /// exists, this is an error.
+    /// exists, a warnig is emitted.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -66,8 +66,7 @@ public sealed class ResourceSpaceBuilder
                                             f => h.FileExtensions.Any( e => e.Equals( f, StringComparison.OrdinalIgnoreCase ) ) ) );
         if( conflict.Any() )
         {
-            monitor.Error( $"Unable to add handler '{h}'. At least one file extension is already handled by '{conflict.First()}'." );
-            return false;
+            monitor.Warn( $"Handler '{h}' has some file extension in common with at least '{conflict.First()}'." );
         }
         _fileHandlers.Add( h );
         return true;
