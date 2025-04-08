@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular.Engine;
 
-public partial class NgProviderAttributeImpl : TypeScriptPackageAttributeImplExtension
+public partial class NgProviderAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
     public NgProviderAttributeImpl( NgProviderAttribute attr, Type type )
         : base( attr, type )
@@ -15,11 +15,11 @@ public partial class NgProviderAttributeImpl : TypeScriptPackageAttributeImplExt
 
     public new NgProviderAttribute Attribute => Unsafe.As<NgProviderAttribute>( base.Attribute );
 
-    protected override bool OnConfiguredPackage( IActivityMonitor monitor,
-                                                 TypeScriptPackageAttributeImpl tsPackage,
-                                                 TypeScriptContext context,
-                                                 ResPackageDescriptor d,
-                                                 ResourceSpaceConfiguration resourcesConfiguration )
+    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                    TypeScriptGroupOrPackageAttributeImpl tsPackage,
+                                                    TypeScriptContext context,
+                                                    ResPackageDescriptor d,
+                                                    ResourceSpaceConfiguration resourcesConfiguration )
     {
         var angular = context.GetAngularCodeGen();
         var source = Type.ToCSharpName() + Attribute.SourceNameSuffix;

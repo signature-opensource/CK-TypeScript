@@ -4,12 +4,12 @@ using System.Runtime.CompilerServices;
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Non generic base class of <see cref="NgRoutedComponentAttribute{T}"/>.
+/// Required attribute for <see cref="NgRoutedComponent"/>.
 /// </summary>
 public class NgRoutedComponentAttribute : NgComponentAttribute
 {
-    private protected NgRoutedComponentAttribute( Type targetRoutedComponent,
-                                                  [CallerFilePath] string? callerFilePath = null )
+    public NgRoutedComponentAttribute( Type targetRoutedComponent,
+                                       [CallerFilePath] string? callerFilePath = null )
         : base( "CK.TS.Angular.Engine.NgRoutedComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
     {
         TargetComponent = targetRoutedComponent;

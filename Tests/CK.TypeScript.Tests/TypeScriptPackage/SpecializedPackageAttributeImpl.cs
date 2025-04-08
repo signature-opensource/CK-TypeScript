@@ -5,9 +5,9 @@ using System;
 
 namespace CK.TypeScript.Tests;
 
-public class SpecializedPackageAttributeImpl : TypeScriptPackageAttributeImpl
+public class SpecializedPackageAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
-    public SpecializedPackageAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type )
+    public SpecializedPackageAttributeImpl( IActivityMonitor monitor, SpecializedPackageAttribute attr, Type type )
         : base( monitor, attr, type )
     {
     }

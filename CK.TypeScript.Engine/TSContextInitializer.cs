@@ -17,7 +17,7 @@ sealed class TSContextInitializer
     readonly IPocoTypeSet _typeScriptExchangeableSet;
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
-    readonly IReadOnlyList<TypeScriptPackageAttributeImpl> _packages;
+    readonly IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> _packages;
     readonly IDictionary<object, object?>? _rootMemory;
 
     /// <summary>
@@ -31,9 +31,9 @@ sealed class TSContextInitializer
     public ImmutableArray<ITSCodeGenerator> GlobalCodeGenerators => _globals;
 
     /// <summary>
-    /// Gets the TypeScriptPackageAttributeImpl.
+    /// Gets the TypeScriptGroupOrPackageAttributeImpl.
     /// </summary>
-    public IReadOnlyList<TypeScriptPackageAttributeImpl> Packages => _packages;
+    public IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages => _packages;
 
     /// <summary>
     /// Gets the set of Poco compliant types that must be handled in TypeScript.
@@ -122,7 +122,7 @@ sealed class TSContextInitializer
                           IPocoTypeSet s,
                           TypeScriptIntegrationContext? integrationContext,
                           ImmutableDictionary<string, SVersionBound> libVersionsConfig,
-                          IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
+                          IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
                           IDictionary<object, object?>? rootMemory )
     {
         _registeredTypes = r;
@@ -203,10 +203,10 @@ sealed class TSContextInitializer
                                                                   IEnumerable<ITypeAttributesCache> attributes,
                                                                   IPocoTypeSet allExchangeableSet,
                                                                   out List<ITSCodeGeneratorFactory> globals,
-                                                                  out List<TypeScriptPackageAttributeImpl> packages )
+                                                                  out List<TypeScriptGroupOrPackageAttributeImpl> packages )
     {
         globals = new List<ITSCodeGeneratorFactory>();
-        packages = new List<TypeScriptPackageAttributeImpl>();
+        packages = new List<TypeScriptGroupOrPackageAttributeImpl>();
         using( monitor.OpenInfo( "Analyzing types with [TypeScript], [TypeScriptPackage] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
         {
             // These variables are reused per type.
@@ -231,13 +231,13 @@ sealed class TSContextInitializer
                         }
                         tsAttrImpl = a;
                     }
-                    else if( m is TypeScriptPackageAttributeImpl p )
+                    else if( m is TypeScriptGroupOrPackageAttributeImpl p )
                     {
                         if( ++typeScriptPackageAttrCount == 2 )
                         {
                             monitor.Error( $"""
                                     TypeScript package '{attributeCache.Type:N}' is decorated with more than one [TypeScriptPackage] or specialized attribute:
-                                    [{attributeCache.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>().Select( a => a.Attribute.GetType().Name ).Concatenate( "], [" )}]
+                                    [{attributeCache.GetTypeCustomAttributes<TypeScriptGroupOrPackageAttributeImpl>().Select( a => a.Attribute.GetType().Name ).Concatenate( "], [" )}]
                                     """ );
                             success = false;
                         }
@@ -333,7 +333,7 @@ sealed class TSContextInitializer
         readonly Dictionary<Type, RegisteredType> _regTypes;
         readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
         readonly IPocoTypeSet _allExchangeableSet;
-        readonly IReadOnlyList<TypeScriptPackageAttributeImpl> _packages;
+        readonly IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> _packages;
         Dictionary<object,object?>? _rootMemory;
 
         public Initializer( TypeScriptBinPathAspectConfiguration binPathConfiguration,
@@ -341,7 +341,7 @@ sealed class TSContextInitializer
                             Dictionary<Type, RegisteredType> regTypes,
                             IPocoJsonSerializationServiceEngine? jsonSerialization,
                             IPocoTypeSet allExchangeableSet,
-                            IReadOnlyList<TypeScriptPackageAttributeImpl> packages )
+                            IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages )
         {
             _binPathConfiguration = binPathConfiguration;
             _integrationContext = integrationContext;
@@ -363,7 +363,7 @@ sealed class TSContextInitializer
 
         public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
 
-        public IReadOnlyList<TypeScriptPackageAttributeImpl> Packages => _packages;
+        public IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages => _packages;
 
         // Lazy instantiation of the RootMemory.
         internal Dictionary<object, object?>? RootMemory => _rootMemory;
@@ -415,7 +415,7 @@ sealed class TSContextInitializer
                                                        Dictionary<Type, RegisteredType> regTypes,
                                                        IPocoTypeSet allExchangeableSet,
                                                        IPocoJsonSerializationServiceEngine? jsonSerialization,
-                                                       List<TypeScriptPackageAttributeImpl> packages,
+                                                       List<TypeScriptGroupOrPackageAttributeImpl> packages,
                                                        List<ITSCodeGeneratorFactory> globalFactories,
                                                        out ImmutableArray<ITSCodeGenerator> globals,
                                                        out IDictionary<object,object?>? rootMemory )
@@ -441,7 +441,7 @@ sealed class TSContextInitializer
             {
                 foreach( var p in packages )
                 {
-                    success &= p.InitializeTypeScriptPackage( monitor, i );
+                    success &= p.HandleRegisterTypeScriptTypeAttributes( monitor, i );
                 }
                 if( success )
                 {

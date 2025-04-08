@@ -25,7 +25,7 @@ public static class YarnHelper
     /// The current yarn version that is embedded in the CK.TypeScript.Engine assembly
     /// and can be automatically installed. See <see cref="TypeScriptBinPathAspectConfiguration.InstallYarn"/>.
     /// </summary>
-    public const string AutomaticYarnVersion = "4.6.0";
+    public const string AutomaticYarnVersion = "4.8.1";
 
     const string _yarnFileName = $"yarn-{AutomaticYarnVersion}.cjs";
     const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";

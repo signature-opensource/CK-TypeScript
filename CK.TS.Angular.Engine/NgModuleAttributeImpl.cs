@@ -11,7 +11,7 @@ namespace CK.TS.Angular.Engine;
 /// <summary>
 /// Implements <see cref="NgModuleAttribute"/>.
 /// </summary>
-public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
+public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
     readonly string _snakeName;
 
@@ -37,7 +37,7 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
-    protected override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
+    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
         if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
@@ -48,7 +48,7 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
         Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
 
-        return base.OnConfiguredPackage( monitor, context, spaceBuilder, d )
+        return base.OnConfiguredDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().RegisterModule( monitor, this, tsType );
     }
 

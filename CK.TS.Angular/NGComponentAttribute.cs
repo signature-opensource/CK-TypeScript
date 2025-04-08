@@ -3,16 +3,17 @@ using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular;
 
-
 /// <summary>
-/// Non generic base class of <see cref="NgComponentAttribute{T}"/>.
+/// Required decoration of <see cref="NgComponent"/>.
+/// <para>
+/// A NgComponent is a <see cref="TypeScriptPackage"/>.
+/// </para>
 /// </summary>
-/// <typeparam name="T">The package to which this component belongs.</typeparam>
 public class NgComponentAttribute : TypeScriptPackageAttribute
 {
     internal const string BaseActualAttributeTypeAssemblyQualifiedName = "CK.TS.Angular.Engine.NgComponentAttributeImpl, CK.TS.Angular.Engine";
 
-    internal protected NgComponentAttribute( [CallerFilePath] string? callerFilePath = null )
+    public NgComponentAttribute( [CallerFilePath] string? callerFilePath = null )
         : base( BaseActualAttributeTypeAssemblyQualifiedName, callerFilePath )
     {
     }

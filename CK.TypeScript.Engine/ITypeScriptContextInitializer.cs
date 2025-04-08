@@ -67,7 +67,7 @@ public interface ITypeScriptContextInitializer
     /// <summary>
     /// Gets the TypeScript packages.
     /// </summary>
-    IReadOnlyList<TypeScriptPackageAttributeImpl> Packages { get; }
+    IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages { get; }
 
     /// <summary>
     /// Gets the initial object mapping for <see cref="TypeScriptContext.Root"/> folder's memory.

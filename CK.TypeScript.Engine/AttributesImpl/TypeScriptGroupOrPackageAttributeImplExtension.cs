@@ -10,12 +10,12 @@ namespace CK.TypeScript.Engine;
 /// Base class for associated attributes to a <c>[TypeScriptPackage]</c> (a <see cref="TypeScriptPackageAttribute"/>
 /// or a specialization).
 /// </summary>
-public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContextBoundInitializer, ITSCodeGeneratorAutoDiscovery
+public abstract class TypeScriptGroupOrPackageAttributeImplExtension : IAttributeContextBoundInitializer, ITSCodeGeneratorAutoDiscovery
 {
     readonly Attribute _attr;
     readonly Type _type;
 
-    protected TypeScriptPackageAttributeImplExtension( Attribute attr, Type type )
+    protected TypeScriptGroupOrPackageAttributeImplExtension( Attribute attr, Type type )
     {
         _attr = attr;
         _type = type;
@@ -36,7 +36,7 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
 
     void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
     {
-        var tsPackage = owner.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>().SingleOrDefault();
+        var tsPackage = owner.GetTypeCustomAttributes<TypeScriptGroupOrPackageAttributeImpl>().SingleOrDefault();
         if( tsPackage == null )
         {
             monitor.Error( $"[{AttributeName}] on '{owner.Type:N}' requires the [TypeScriptPackage] (or a specialization) to also be declared." );
@@ -48,7 +48,7 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
     }
 
     /// <summary>
-    /// Called by the <see cref="TypeScriptPackageAttributeImpl.ConfigureResPackage(IActivityMonitor, TypeScriptContext, ResourceSpaceConfiguration)"/>.
+    /// Called by the <see cref="TypeScriptGroupOrPackageAttributeImpl.ConfigureResDescriptor(IActivityMonitor, TypeScriptContext, ResourceSpaceConfiguration)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="tsPackage">The package attribute.</param>
@@ -56,8 +56,8 @@ public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContex
     /// <param name="d">The package to configure.</param>
     /// <param name="resourcesConfiguration">The package's configuration.</param>
     /// <returns>Must return true on success, false on error (errors must be logged).</returns>
-    protected internal abstract bool OnConfiguredPackage( IActivityMonitor monitor,
-                                                          TypeScriptPackageAttributeImpl tsPackage,
+    protected internal abstract bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                          TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                           TypeScriptContext context,
                                                           ResPackageDescriptor d,
                                                           ResourceSpaceConfiguration resourcesConfiguration );

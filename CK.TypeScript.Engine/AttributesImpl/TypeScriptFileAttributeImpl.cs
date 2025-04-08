@@ -10,7 +10,7 @@ namespace CK.TypeScript.Engine;
 /// <summary>
 /// Creates a TypeScript resource file (from an embedded '.ts' resource).
 /// </summary>
-public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImplExtension
+public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
     EmbeddedResources.ResourceLocator _resource;
     NormalizedPath _targetPath;
@@ -32,7 +32,7 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImpl
 
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
-    protected internal override bool OnConfiguredPackage( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResourceSpaceConfiguration spaceBuilder )
+    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptGroupOrPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResourceSpaceConfiguration spaceBuilder )
     {
         if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out _resource ) )
         {

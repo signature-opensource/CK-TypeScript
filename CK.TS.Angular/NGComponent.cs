@@ -10,7 +10,6 @@ namespace CK.TS.Angular;
 /// The type name must end with "Component".
 /// </para>
 /// </summary>
-[CKTypeDefiner]
 [Setup.AlsoRegisterType( typeof( AppComponent ) )]
 // AlsoRegisterType will be replaced with CK.Core.RegisterCKType but this is not
 // supported yet because of the current use of the old CK.StObj.Engine.

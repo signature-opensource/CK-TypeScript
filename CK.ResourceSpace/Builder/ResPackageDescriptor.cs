@@ -117,7 +117,10 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public NormalizedPath DefaultTargetPath => _defaultTargetPath;
 
     /// <summary>
-    /// Gets or sets whether this package is a group.
+    /// Gets or sets whether this is a group instead of a regular package.
+    /// <para>
+    /// Defaults to false.
+    /// </para>
     /// </summary>
     public bool IsGroup { get => _isGroup; set => _isGroup = value; }
 

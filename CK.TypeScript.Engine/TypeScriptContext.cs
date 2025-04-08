@@ -314,7 +314,7 @@ public sealed partial class TypeScriptContext
 
         static bool ConfigureResPackages( IActivityMonitor monitor,
                                           ResourceSpaceConfiguration resourcesConfiguration,
-                                          IReadOnlyList<TypeScriptPackageAttributeImpl> packages,
+                                          IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
                                           TypeScriptContext context )
         {
             using( monitor.OpenInfo( $"Configuring {packages.Count} TypeScript resource packages." ) )
@@ -324,7 +324,7 @@ public sealed partial class TypeScriptContext
                 {
                     try
                     {
-                        success &= p.ConfigureResPackage( monitor, context, resourcesConfiguration );
+                        success &= p.ConfigureResDescriptor( monitor, context, resourcesConfiguration );
                     }
                     catch( Exception ex )
                     {

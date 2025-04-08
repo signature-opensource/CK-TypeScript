@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace CK.TS.Angular.Engine;
 
-public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeImplExtension
+public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
     public NgProviderImportAttributeImpl( NgProviderImportAttribute attr, Type type )
         : base( attr, type )
@@ -17,8 +17,8 @@ public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeI
 
     public new NgProviderImportAttribute Attribute => Unsafe.As<NgProviderImportAttribute>( base.Attribute );
 
-    protected override bool OnConfiguredPackage( IActivityMonitor monitor,
-                                                 TypeScriptPackageAttributeImpl tsPackage,
+    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                 TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                  TypeScriptContext context,
                                                  ResPackageDescriptor d,
                                                  ResourceSpaceConfiguration resourcesConfiguration )

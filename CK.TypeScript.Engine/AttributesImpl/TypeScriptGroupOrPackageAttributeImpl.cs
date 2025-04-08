@@ -8,16 +8,17 @@ using System.Reflection;
 namespace CK.TypeScript.Engine;
 
 /// <summary>
-/// Implementation class of the <see cref="TypeScriptPackageAttribute"/>.
+/// Implementation class of the <see cref="TypeScriptPackageAttribute"/> and <see cref="TypeScriptGroupAttribute"/>.
 /// <para>
-/// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
+/// This must be used as the base class of specialized TypeScriptGroup/PackageAttribute implementations.
 /// </para>
 /// </summary>
-public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, ITSCodeGeneratorAutoDiscovery
+public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundInitializer, ITSCodeGeneratorAutoDiscovery
 {
-    readonly TypeScriptPackageAttribute _attr;
+    readonly Attribute _attr;
     readonly Type _type;
-    readonly List<TypeScriptPackageAttributeImplExtension> _extensions;
+    readonly List<TypeScriptGroupOrPackageAttributeImplExtension> _extensions;
+    readonly bool _isGroup;
     NormalizedPath _typeScriptFolder;
     // This is here only to support RegisterTypeScriptType registration...
     // This is bad and must be refactored.
@@ -38,7 +39,9 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     /// <summary>
     /// Gets the attribute.
     /// </summary>
-    public TypeScriptPackageAttribute Attribute => _attr;
+    public Attribute Attribute => _attr;
+
+    public bool IsGroup => _isGroup;
 
     /// <summary>
     /// Gets the decorated type.
@@ -46,33 +49,50 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
     public Type DecoratedType => _type;
 
     /// <summary>
-    /// Initializes a new <see cref="TypeScriptPackageAttributeImpl"/>.
+    /// Initializes a new <see cref="TypeScriptGroupOrPackageAttributeImpl"/>.
     /// </summary>
     /// <param name="monitor">Required monitor.</param>
     /// <param name="attr">The attribute.</param>
     /// <param name="type">The decorated type.</param>
-    public TypeScriptPackageAttributeImpl( IActivityMonitor monitor, TypeScriptPackageAttribute attr, Type type )
+    public TypeScriptGroupOrPackageAttributeImpl( IActivityMonitor monitor, Attribute attr, Type type )
     {
         _attr = attr;
         _type = type;
-        if( !typeof( TypeScriptPackage ).IsAssignableFrom( type ) )
-        {
-            monitor.Error( $"[TypeScriptPackage] can only decorate a TypeScriptPackage: '{type:N}' is not a TypeScriptPackage." );
-        }
 
-        _extensions = new List<TypeScriptPackageAttributeImplExtension>();
+        string attrTypeName;
+        string? folder;
+        if( attr is TypeScriptGroupAttribute g )
+        {
+            folder = g.TypeScriptFolder;
+            attrTypeName = "Group";
+            _isGroup = true;
+        }
+        else
+        {
+            if( attr is not TypeScriptPackageAttribute p )
+            {
+                throw new ArgumentException( "Attribute type can only be TypeScriptGroupAttribute or TypeScriptPackageAttribute." );
+            }
+            folder = p.TypeScriptFolder;
+            attrTypeName = "Package";
+        }
+        if( !(_isGroup ? typeof( TypeScriptGroup ) : typeof( TypeScriptPackage ) ).IsAssignableFrom( type ) )
+        {
+            monitor.Error( $"[TypeScript{attrTypeName}] can only decorate a TypeScript{attrTypeName}: '{type:N}' is not a TypeScript{attrTypeName}." );
+        }
+        _extensions = new List<TypeScriptGroupOrPackageAttributeImplExtension>();
         // Initializes TypeScriptFolder.
         Throw.DebugAssert( type.Namespace != null );
-        if( string.IsNullOrWhiteSpace( attr.TypeScriptFolder ) )
+        if( string.IsNullOrWhiteSpace( folder ) )
         {
             _typeScriptFolder = type.Namespace.Replace( '.', '/' );
         }
         else
         {
-            _typeScriptFolder = new NormalizedPath( attr.TypeScriptFolder );
+            _typeScriptFolder = new NormalizedPath( folder );
             if( _typeScriptFolder.IsRooted )
             {
-                monitor.Warn( $"[TypeScriptPackage] on '{type:C}': TypeScriptFolder is rooted, this is useless and removed." );
+                monitor.Warn( $"[TypeScript{attrTypeName}] on '{type:C}': TypeScriptFolder is rooted, this is useless and removed." );
                 _typeScriptFolder = _typeScriptFolder.With( NormalizedPathRootKind.None );
             }
         }
@@ -83,18 +103,12 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         _owner = owner;
     }
 
-    internal void AddExtension( TypeScriptPackageAttributeImplExtension e )
+    internal void AddExtension( TypeScriptGroupOrPackageAttributeImplExtension e )
     {
         _extensions.Add( e );
     }
 
-    /// <summary>
-    /// Called once the <see cref="ITSCodeGeneratorFactory"/> have created their <see cref="ITSCodeGenerator"/>.
-    /// </summary>
-    /// <param name="monitor">The monitor.</param>
-    /// <param name="initializer">The TypeScriptContext initializer.</param>
-    /// <returns>True on success, false otherwise (errors must be logged).</returns>
-    internal bool InitializeTypeScriptPackage( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    internal bool HandleRegisterTypeScriptTypeAttributes( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
         bool success = true;
         // Handle the RegisterTypeScriptTypeAttribute.
@@ -130,24 +144,25 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer,
         return success && !overrideError;
     }
 
-    internal protected virtual bool ConfigureResPackage( IActivityMonitor monitor,
-                                                      TypeScriptContext context,
-                                                      ResourceSpaceConfiguration spaceBuilder )
+    internal protected virtual bool ConfigureResDescriptor( IActivityMonitor monitor,
+                                                            TypeScriptContext context,
+                                                            ResourceSpaceConfiguration spaceBuilder )
     {
         var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
         if( d == null ) return false;
-        return OnConfiguredPackage( monitor, context, spaceBuilder, d );
+        d.IsGroup = _isGroup;
+        return OnConfiguredDescriptor( monitor, context, spaceBuilder, d );
     }
 
-    protected virtual bool OnConfiguredPackage( IActivityMonitor monitor,
-                                                TypeScriptContext context,
-                                                ResourceSpaceConfiguration spaceBuilder,
-                                                ResPackageDescriptor d )
+    protected virtual bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                   TypeScriptContext context,
+                                                   ResourceSpaceConfiguration spaceBuilder,
+                                                   ResPackageDescriptor d )
     {
         bool success = true;
         foreach( var e in _extensions )
         {
-            success &= e.OnConfiguredPackage( monitor, this, context, d, spaceBuilder );
+            success &= e.OnConfiguredDescriptor( monitor, this, context, d, spaceBuilder );
         }
         return success;
     }

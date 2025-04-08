@@ -11,7 +11,7 @@ namespace CK.TS.Angular.Engine;
 /// <summary>
 /// Implements <see cref="NgModuleAttribute"/>.
 /// </summary>
-public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
+public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
     readonly string _snakeName;
 
@@ -51,7 +51,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     }
 
     /// <summary>
-    /// Gets the component name that is the C# <see cref="TypeScriptPackageAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
+    /// Gets the component name that is the C# <see cref="TypeScriptGroupOrPackageAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
     /// </summary>
     public string ComponentName => DecoratedType.Name;
 
@@ -68,20 +68,20 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
 
-    protected override bool ConfigureResPackage( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceConfiguration spaceBuilder )
+    protected override bool ConfigureResDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceConfiguration spaceBuilder )
     {
         // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
         {
             return true;
         }
-        return base.ConfigureResPackage( monitor, context, spaceBuilder );
+        return base.ConfigureResDescriptor( monitor, context, spaceBuilder );
     }
 
-    protected override bool OnConfiguredPackage( IActivityMonitor monitor,
-                                                 TypeScriptContext context,
-                                                 ResourceSpaceConfiguration spaceBuilder,
-                                                 ResPackageDescriptor d )
+    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                    TypeScriptContext context,
+                                                    ResourceSpaceConfiguration spaceBuilder,
+                                                    ResPackageDescriptor d )
     {
         Throw.DebugAssert( !IsAppComponent );
         var fName = _snakeName + ".component.ts";
@@ -90,9 +90,9 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
             return false;
         }
         var file = context.Root.Root.FindOrCreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+        Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-        return base.OnConfiguredPackage( monitor, context, spaceBuilder, d )
+        return base.OnConfiguredDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 
