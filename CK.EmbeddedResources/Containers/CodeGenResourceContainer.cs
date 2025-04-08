@@ -115,8 +115,8 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
                 Throw.ArgumentException( $"Added path must be sorted: previous '{_previous}' is greater than '{path}'." );
             }
             Throw.CheckState( "The planned number of resources must not be exceeded.", _count < _pathStore.Length );
-            _pathStore[_count++] = path;
-            _streamStore[_count] = content;
+            _pathStore[_count] = path;
+            _streamStore[_count++] = content;
         }
 
         /// <summary>

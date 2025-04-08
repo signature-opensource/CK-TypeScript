@@ -1,6 +1,7 @@
 using CK.EmbeddedResources;
 using System;
 using System.IO;
+using System.IO.Enumeration;
 
 namespace CK.Core;
 
@@ -135,21 +136,21 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
     /// <inheritdoc />
     public void Write( ResourceLocator resource )
     {
-        string path = GetNormalizedTargetPath( resource.ResourceName );
+        string path = GetTargetPathAndEnsureDirectory( resource.ResourceName );
         DoWrite( path, resource );
     }
 
     /// <inheritdoc />
     public void Write( NormalizedPath filePath, ResourceLocator resource )
     {
-        string path = GetNormalizedTargetPath( filePath.Path );
+        string path = GetTargetPathAndEnsureDirectory( filePath.Path );
         DoWrite( path, resource );
     }
 
     /// <inheritdoc />
     public void Write( NormalizedPath filePath, string text )
     {
-        string path = GetNormalizedTargetPath( filePath.Path );
+        string path = GetTargetPathAndEnsureDirectory( filePath.Path );
         OnWrite( path );
         File.WriteAllText( path, text );
     }
@@ -157,7 +158,7 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
     /// <inheritdoc />
     public Stream OpenWriteStream( NormalizedPath filePath )
     {
-        string path = GetNormalizedTargetPath( filePath.Path );
+        string path = GetTargetPathAndEnsureDirectory( filePath.Path );
         OnWrite( path );
         return new FileStream( path, FileMode.Create );
     }
@@ -178,7 +179,7 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
         }
     }
 
-    string GetNormalizedTargetPath( ReadOnlySpan<char> resName )
+    string GetTargetPathAndEnsureDirectory( ReadOnlySpan<char> resName )
     {
         var dest = _pathBuffer.AsSpan( _targetPath.Length, resName.Length );
         resName.CopyTo( dest );
@@ -186,8 +187,16 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
         {
             dest.Replace( NormalizedPath.DirectorySeparatorChar, Path.DirectorySeparatorChar );
         }
-        var path = _pathBuffer.AsSpan( 0, _targetPath.Length + resName.Length ).ToString();
-        return path;
+        var sPath = _pathBuffer.AsSpan( 0, _targetPath.Length + resName.Length );
+        // No choice here: we must instantiate a string to ensure that the directory exists.
+        // Caching the known directories may not be a great idea or is it?
+        // Perf tests here may be welcome...
+        var sDir = Path.GetDirectoryName( sPath );
+        if( sDir.Length != 0 )
+        {
+            Directory.CreateDirectory( sDir.ToString() );
+        }
+        return sPath.ToString();
     }
 
     public override string ToString() => $"Installer: {_targetPath}";

@@ -1,6 +1,7 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 
@@ -77,6 +78,15 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     public FinalTranslationSet? FinalTranslations => _finalTranslations;
 
     /// <summary>
+    /// Gets whether this is empty: there is only the "en" <see cref="ActiveCultureSet.Root"/> default active culture
+    /// and there is no translation at all for this root.
+    /// <para>
+    /// This is always empty until <see cref="Initialize(IActivityMonitor, ResourceSpaceData)"/> is called.
+    /// </para>
+    /// </summary>
+    public bool IsEmpty => _cache.ActiveCultures.Count == 1 && _finalTranslations?.Translations.Count == 0;
+
+    /// <summary>
     /// Checks that the <see cref="FinalTranslations"/> is not ambiguous.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -115,6 +125,11 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         if( Installer is null )
         {
             monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
+            return true;
+        }
+        if( IsEmpty )
+        {
+            monitor.Warn( $"No '{RootFolderName}' collected. Skipped." );
             return true;
         }
         Throw.CheckState( FinalTranslations != null );

@@ -248,7 +248,7 @@ public sealed partial class TypeScriptContext
             // Time to give up.
             return false;
         }
-        // Must now save the TypeScript files in a GeneratedCodeContainer and
+        // Must now publish the TypeScript files in a GeneratedCodeContainer and
         // assign it to the resource space.
         var codeTarget = new CodeGenResourceContainerTarget();
         if( !_tsRoot.Publish( monitor, codeTarget ) )

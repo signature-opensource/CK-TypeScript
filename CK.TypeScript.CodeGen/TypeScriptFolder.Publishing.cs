@@ -25,8 +25,9 @@ public sealed partial class TypeScriptFolder
         public void EnterFolder( string name )
         {
             name.AsSpan().CopyTo( _pathBuffer.Slice( _path.Length ) );
-            _path = _pathBuffer.Slice( 0, _path.Length + name.Length + 1 );
-            _pathBuffer[_path.Length] = '/';
+            int len = _path.Length + name.Length;
+            _path = _pathBuffer.Slice( 0, len + 1 );
+            _pathBuffer[len] = '/';
         }
 
         public void LeaveFolder( string name )
@@ -38,7 +39,7 @@ public sealed partial class TypeScriptFolder
         public void Publish( string name, string content )
         {
             name.AsSpan().CopyTo( _pathBuffer.Slice( _path.Length ) );
-            _target.Add( _path.Slice( 0, _path.Length + name.Length ), content );
+            _target.Add( _pathBuffer.Slice( 0, _path.Length + name.Length ), content );
         }
     }
 
@@ -51,7 +52,7 @@ public sealed partial class TypeScriptFolder
         var cFile = _firstFile;
         using( monitor.OpenTrace( IsRoot ? "Publishing TypeScript Root folder." : $"Saving /{Name}." ) )
         {
-            target.EnterFolder( Name );
+            if( !IsRoot ) target.EnterFolder( Name );
             bool hasBarrel = false;
             do
             {
@@ -78,7 +79,7 @@ public sealed partial class TypeScriptFolder
                 }
             }
             while( cFile != null || cFolder != null );
-            target.LeaveFolder( Name );
+            if( !IsRoot ) target.LeaveFolder( Name );
 
             if( _wantBarrel && !hasBarrel && _hasExportedSymbol )
             {

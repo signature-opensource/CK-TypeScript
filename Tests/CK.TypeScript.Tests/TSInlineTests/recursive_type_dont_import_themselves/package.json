@@ -2,13 +2,10 @@
   "name": "recursive_type_dont_import_themselves",
   "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
-  "workspaces": [
-    "ck-gen"
-  ],
   "devDependencies": {
-    "@local/ck-gen": "workspace:*",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.9",
     "@yarnpkg/sdks": "^3.2",
