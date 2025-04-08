@@ -20,5 +20,5 @@
     "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "ckVersion": 1,
-  "packageManager": "yarn@4.6.0"
+  "packageManager": "yarn@4.8.1"
 }
