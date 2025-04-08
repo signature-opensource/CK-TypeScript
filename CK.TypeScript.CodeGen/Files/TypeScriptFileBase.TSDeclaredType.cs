@@ -9,10 +9,14 @@ public abstract partial class TypeScriptFileBase
     {
         readonly TypeScriptFileBase _file;
 
-        public TSDeclaredType( TypeScriptFileBase file, string typeName, Action<ITSFileImportSection>? additionalImports, string? defaultValueSource )
+        public TSDeclaredType( TypeScriptFileBase file,
+                               string typeName,
+                               Action<ITSFileImportSection>? additionalImports,
+                               string? defaultValueSource )
             : base( file.Root.TSTypes, typeName, additionalImports, defaultValueSource )
         {
             _file = file;
+            _file.Folder.SetHasExportedSymbol();
         }
 
         public override TypeScriptFileBase File => _file;

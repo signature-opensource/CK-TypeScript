@@ -17,20 +17,21 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
     readonly bool _hasError;
 
     internal TSDeferredType( TSTypeManager typeManager,
-                              Type t,
-                              string typeName,
-                              TypeScriptFile file,
-                              string? defaultValue,
-                              TSValueWriter? tryWriteValue,
-                              TSCodeGenerator? codeGenerator,
-                              string partCloser,
-                              bool hasError )
+                             Type t,
+                             string typeName,
+                             TypeScriptFile file,
+                             string? defaultValue,
+                             TSValueWriter? tryWriteValue,
+                             TSCodeGenerator? codeGenerator,
+                             string partCloser,
+                             bool hasError )
         : base( typeManager, typeName )
     {
         Throw.DebugAssert( t != null );
         Throw.DebugAssert( file != null );
         _type = t;
         _file = file;
+        file.Folder.SetHasExportedSymbol();
         _tryWriteValue = tryWriteValue;
         _codeGenerator = codeGenerator;
         _defaultValueSource = defaultValue;

@@ -6,9 +6,6 @@
     <PackageReference Include="CK.Poco.Exc.Json" Version="29.0.2--0000-develop" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CK.EmbeddedResources.Abstractions\CK.EmbeddedResources.Abstractions.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CK.EmbeddedResources.Abstractions\CK.EmbeddedResources.Abstractions.csproj" />
+    <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
   </ItemGroup>
 </Project>

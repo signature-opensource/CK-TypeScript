@@ -6,7 +6,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// <summary>
 /// Concrete command where <see cref="ICommandAbsWithResult"/> works with <see cref="NamedRecord"/>.
 /// </summary>
-[TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
+[TypeScriptType( SameFolderAs = typeof( ICommandAbs ) )]
 public interface INamedRecordWithResultCommand : ICommand, ICommandAbsWithResult
 {
     /// <summary>

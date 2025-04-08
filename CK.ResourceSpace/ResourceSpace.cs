@@ -13,7 +13,7 @@ namespace CK.Core;
 /// Once available, all registered <see cref="FolderHandlers"/> and <see cref="FileHandlers"/>
 /// have been successfully initialized.
 /// </summary>
-public sealed class ResourceSpace
+public sealed partial class ResourceSpace
 {
     /// <summary>
     /// The Live state file name.
@@ -247,5 +247,4 @@ public sealed class ResourceSpace
         }
         return success;
     }
-
 }

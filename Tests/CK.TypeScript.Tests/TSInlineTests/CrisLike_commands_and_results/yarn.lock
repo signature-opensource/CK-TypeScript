@@ -727,17 +727,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@local/ck-gen@workspace:*, @local/ck-gen@workspace:ck-gen":
-  version: 0.0.0-use.local
-  resolution: "@local/ck-gen@workspace:ck-gen"
-  dependencies:
-    "@types/luxon": "npm:^3.4.2"
-    decimal.js-light: "npm:=2.5.1"
-    luxon: "npm:^3.5"
-    typescript: "npm:=5.5.4"
-  languageName: unknown
-  linkType: soft
-
 "@nodelib/fs.scandir@npm:2.1.5":
   version: 2.1.5
   resolution: "@nodelib/fs.scandir@npm:2.1.5"
@@ -973,10 +962,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/luxon@npm:^3.4.2":
-  version: 3.4.2
-  resolution: "@types/luxon@npm:3.4.2"
-  checksum: 10/fd89566e3026559f2bc4ddcc1e70a2c16161905ed50be9473ec0cfbbbe919165041408c4f6e06c4bcf095445535052e2c099087c76b1b38e368127e618fc968d
+"@types/luxon@npm:^3.6.2":
+  version: 3.6.2
+  resolution: "@types/luxon@npm:3.6.2"
+  checksum: 10/73ca30059e0b1e352ce3a208837bc042e0bae9cf6e5b42f63de9ddfe15348a9e9bf9fcde3d4034038be24cb24adc579ae984cadff3bf70432e54fed1ad249d12
   languageName: node
   linkType: hard
 
@@ -1728,15 +1717,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "crislike_commands_and_results@workspace:."
   dependencies:
-    "@local/ck-gen": "workspace:*"
     "@types/jest": "npm:^29.5.12"
-    "@types/luxon": "npm:^3.4.2"
+    "@types/luxon": "npm:^3.6.2"
     "@types/node": "npm:^20.14.2"
     "@yarnpkg/sdks": "npm:^3.2"
-    decimal.js-light: "npm:>=2.5.1"
+    decimal.js-light: "npm:=2.5.1"
     jest: "npm:^29.7"
     jest-environment-jsdom: "npm:^29.7"
-    luxon: "npm:=3.4.4"
+    luxon: "npm:=3.5.0"
     ts-jest: "npm:^29.1.4"
     typescript: "npm:=5.5.4"
   languageName: unknown
@@ -1799,7 +1787,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"decimal.js-light@npm:=2.5.1, decimal.js-light@npm:>=2.5.1":
+"decimal.js-light@npm:=2.5.1":
   version: 2.5.1
   resolution: "decimal.js-light@npm:2.5.1"
   checksum: 10/6360911e31221a9b8b90e23020aa969d104e182c5c6518589cdfedc3ced31bf1f19cf931e265bd451ae6ee3a35ee15e81f5456a86813606fda96f8374616688f
@@ -3298,14 +3286,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"luxon@npm:=3.4.4":
-  version: 3.4.4
-  resolution: "luxon@npm:3.4.4"
-  checksum: 10/c14164bc338987349075a08e63ea3ff902866735f7f5553a355b27be22667919765ff96fde4d3413d0e9a0edc4ff9e2e74ebcb8f86eae0ce8b14b27330d87d6e
-  languageName: node
-  linkType: hard
-
-"luxon@npm:^3.5":
+"luxon@npm:=3.5.0":
   version: 3.5.0
   resolution: "luxon@npm:3.5.0"
   checksum: 10/48f86e6c1c96815139f8559456a3354a276ba79bcef0ae0d4f2172f7652f3ba2be2237b0e103b8ea0b79b47715354ac9fac04eb1db3485dcc72d5110491dd47f

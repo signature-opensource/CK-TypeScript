@@ -22,7 +22,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// Commented enumeration.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public enum CommentedEnum
     {
         /// <summary>
@@ -110,7 +110,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// An interface with comment.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface ICommented
     {
         /// <summary>
@@ -167,7 +167,7 @@ public class EnumAndCommentTests
     /// </summary>
     /// <typeparam name="T1">The FIRST generic type!</typeparam>
     /// <typeparam name="T2">The SECOND generic type!</typeparam>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IGeneric<T1, T2>
     {
         /// <summary>
@@ -226,7 +226,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// Class doc.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public class FullClass
     {
         /// <summary>
@@ -287,7 +287,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// WithCodeReference doc.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public class WithCodeReference
     {
         /// <summary>
@@ -363,7 +363,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// A buggy reference: <see cref="TypeNotFound"/>.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public class BuggyReference
     {
     }

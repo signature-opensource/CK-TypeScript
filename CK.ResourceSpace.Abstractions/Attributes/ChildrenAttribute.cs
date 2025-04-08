@@ -1,7 +1,7 @@
 namespace CK.Core;
 
 /// <summary>
-/// Decorates a <see cref="IResourceGroupPackage"/> or <see cref="IResourcePackage"/> with
+/// Decorates a <see cref="IResourceGroup"/> or <see cref="IResourcePackage"/> with
 /// any number of other package full names that the decorated type contains.
 /// Each string can be a single package full name or comma separated multiple
 /// package full names. 
@@ -26,7 +26,7 @@ public sealed class ChildrenAttribute : Attribute
     }
 
     /// <summary>
-    /// Gets the set of <see cref="IResourceGroupPackage"/> full names.
+    /// Gets the set of <see cref="IResourceGroup"/> full names.
     /// </summary>
     public string[] CommaSeparatedPackageFullnames { get; }
 }

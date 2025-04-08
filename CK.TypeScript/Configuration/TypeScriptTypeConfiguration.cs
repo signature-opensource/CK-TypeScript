@@ -6,10 +6,10 @@ using System.Xml.Linq;
 namespace CK.Setup;
 
 /// <summary>
-/// Configuration of a type that must be generated. This is the external version of <see cref="TypeScriptAttribute"/>.
+/// Configuration of a type that must be generated. This is the external version of <see cref="TypeScriptTypeAttribute"/>.
 /// <para>
 /// <see cref="ToAttribute(IActivityMonitor, Func{string, Type?})"/> checks the validity and creates the
-/// corresponding attribute. Then <see cref="TypeScriptAttribute.ApplyOverride(TypeScriptAttribute?)"/> is used if the
+/// corresponding attribute. Then <see cref="TypeScriptTypeAttribute.ApplyOverride(TypeScriptTypeAttribute?)"/> is used if the
 /// type is decorated with the TypeScriptAttribute. The configuration overrides the declare attribute values.
 /// </para>
 /// </summary>
@@ -118,22 +118,22 @@ public sealed class TypeScriptTypeConfiguration
     public string Type { get; set; }
 
     /// <summary>
-    /// Gets or sets the TypeScript type name to use. See <see cref="TypeScriptAttribute.TypeName"/>.
+    /// Gets or sets the TypeScript type name to use. See <see cref="TypeScriptTypeAttribute.TypeName"/>.
     /// </summary>
     public string? TypeName { get; set; }
 
     /// <summary>
-    /// See <see cref="TypeScriptAttribute.Folder"/>.
+    /// See <see cref="TypeScriptTypeAttribute.Folder"/>.
     /// </summary>
     public string? Folder { get; set; }
 
     /// <summary>
-    /// See <see cref="TypeScriptAttribute.FileName"/>.
+    /// See <see cref="TypeScriptTypeAttribute.FileName"/>.
     /// </summary>
     public string? FileName { get; set; }
 
     /// <summary>
-    /// See <see cref="TypeScriptAttribute.SameFolderAs"/>.
+    /// See <see cref="TypeScriptTypeAttribute.SameFolderAs"/>.
     /// <para>
     /// This is the assembly qualified name name of the type (for IPoco, it is the primary
     /// interface assemby qualified name or <see cref="ExternalNameAttribute"/>).
@@ -142,7 +142,7 @@ public sealed class TypeScriptTypeConfiguration
     public string? SameFolderAs { get; set; }
 
     /// <summary>
-    /// See <see cref="TypeScriptAttribute.SameFileAs"/>.
+    /// See <see cref="TypeScriptTypeAttribute.SameFileAs"/>.
     /// <para>
     /// This is the assembly qualified name name of the type (for IPoco, it is the primary
     /// interface assemby qualified name or <see cref="ExternalNameAttribute"/>).
@@ -151,12 +151,12 @@ public sealed class TypeScriptTypeConfiguration
     public string? SameFileAs { get; set; }
 
     /// <summary>
-    /// Tries to create a <see cref="TypeScriptAttribute"/> from this configuration.
+    /// Tries to create a <see cref="TypeScriptTypeAttribute"/> from this configuration.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="typeResolver">Type resolver for <see cref="SameFolderAs"/> and <see cref="SameFileAs"/>.</param>
     /// <returns>The type script arrtibute or null on error.</returns>
-    public TypeScriptAttribute? ToAttribute( IActivityMonitor monitor, Func<string, Type?> typeResolver )
+    public TypeScriptTypeAttribute? ToAttribute( IActivityMonitor monitor, Func<string, Type?> typeResolver )
     {
         bool success = true;
         if( TypeName != null ) success &= ValidNotEmpty( monitor, this, "TypeName", TypeName );
@@ -177,7 +177,7 @@ public sealed class TypeScriptTypeConfiguration
             if( Folder != null ) success &= Error( monitor, this, "Folder", "SameFolderAs" );
         }
         return success
-                ? new TypeScriptAttribute() { FileName = FileName, Folder = Folder, SameFileAs = tSameFile, SameFolderAs = tSameFolder }
+                ? new TypeScriptTypeAttribute() { FileName = FileName, Folder = Folder, SameFileAs = tSameFile, SameFolderAs = tSameFolder }
                 : null;
 
         static bool Error( IActivityMonitor monitor, TypeScriptTypeConfiguration c, string n1, string n2 )

@@ -4,22 +4,22 @@ using System;
 namespace CK.TypeScript.Engine;
 
 /// <summary>
-/// Implementation class of the <see cref="TypeScriptAttribute"/>.
+/// Implementation class of the <see cref="TypeScriptTypeAttribute"/>.
 /// This is not a <see cref="ITSCodeGeneratorType"/>: it just captures the
-/// optional configuration of TypeScript code generation (<see cref="TypeScriptAttribute.FileName"/>,
-/// <see cref="TypeScriptAttribute.Folder"/>, etc.).
+/// optional configuration of TypeScript code generation (<see cref="TypeScriptTypeAttribute.FileName"/>,
+/// <see cref="TypeScriptTypeAttribute.Folder"/>, etc.).
 /// </summary>
 /// <remarks>
 /// This class can be specialized, typically to implement a ITSCodeGeneratorType.
 /// </remarks>
-public class TypeScriptAttributeImpl : ITSCodeGeneratorAutoDiscovery
+public class TypeScriptTypeAttributeImpl : ITSCodeGeneratorAutoDiscovery
 {
     /// <summary>
-    /// Initializes a new <see cref="TypeScriptAttributeImpl"/>.
+    /// Initializes a new <see cref="TypeScriptTypeAttributeImpl"/>.
     /// </summary>
     /// <param name="a">The attribute.</param>
     /// <param name="type">The decorated type.</param>
-    public TypeScriptAttributeImpl( TypeScriptAttribute a, Type type )
+    public TypeScriptTypeAttributeImpl( TypeScriptTypeAttribute a, Type type )
     {
         Attribute = a;
         Type = type;
@@ -33,6 +33,6 @@ public class TypeScriptAttributeImpl : ITSCodeGeneratorAutoDiscovery
     /// <summary>
     /// Gets the attribute.
     /// </summary>
-    public TypeScriptAttribute Attribute { get; }
+    public TypeScriptTypeAttribute Attribute { get; }
 
 }

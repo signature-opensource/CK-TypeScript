@@ -7,7 +7,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// <summary>
 /// Concrete command where <see cref="ICommandAbsWithNullableKey"/> works with any command.
 /// </summary>
-[TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
+[TypeScriptType( SameFolderAs = typeof( ICommandAbs ) )]
 public interface ICommandCommand : ICommand, ICommandAbsWithNullableKey
 {
     /// <summary>

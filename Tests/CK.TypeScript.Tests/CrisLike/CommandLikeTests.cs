@@ -18,7 +18,7 @@ public class CommandLikeTests
     /// <summary>
     /// Power level.
     /// </summary>
-    [TypeScript( SameFolderAs = typeof( ICommandOne ) )]
+    [TypeScriptType( SameFolderAs = typeof( ICommandOne ) )]
     public enum Power
     {
         /// <summary>
@@ -40,7 +40,7 @@ public class CommandLikeTests
     /// <summary>
     /// The command n°1 has a <see cref="Friend"/> command.
     /// </summary>
-    [TypeScript( Folder = "TheFolder" )]
+    [TypeScriptType( Folder = "TheFolder" )]
     public interface ICommandOne : ICommand
     {
         /// <summary>
@@ -70,7 +70,7 @@ public class CommandLikeTests
         ICommandThree FriendThree { get; set; }
     }
 
-    [TypeScript( SameFileAs = typeof( ICommandOne ) )]
+    [TypeScriptType( SameFileAs = typeof( ICommandOne ) )]
     public interface ICommandThree : ICommand
     {
         int NumberThree { get; set; }

@@ -152,9 +152,9 @@ public sealed class ResourceSpaceDataBuilder
         // - Plus the name of the "<Code>" and "<App>" packages.
         var packageIndexSize = descriptorPackageCount + _collector.TypedPackageCount + 2;
         // The final size of the _resourceIndex (the IResourceContainer to IResPackageResources map
-        // for Code and Store for BeforeResources and AfterResources plus the GeneratedCodeContainer or the wrapper).
+        // for BeforeResources and AfterResources plus the GeneratedCodeContainer or the wrapper).
         // This is by default. AppResourcesLocalPath can add 1 more key.
-        var resourceIndexSize = 1 + descriptorPackageCount * 4;
+        var resourceIndexSize = 1 + descriptorPackageCount * 2;
         // If the AppResourcesLocalPath is specified, then the tailPackage is a local package
         // and the resource index has one more entry for the app local FileSystemResourceContainer.
         if( appLocalPath != null )
@@ -226,6 +226,11 @@ public sealed class ResourceSpaceDataBuilder
                                         requires,
                                         children,
                                         bAll.Count );
+                bAll.Add( p );
+                if( p.IsLocalPackage )
+                {
+                    bLocal.Add( p );
+                }
                 // Index it.
                 packageIndex.Add( p.FullName, p );
                 if( p.Type != null )
@@ -241,23 +246,21 @@ public sealed class ResourceSpaceDataBuilder
                 var local = p.Resources.LocalPath ?? p.ResourcesAfter.LocalPath;
                 if( local != null && _collector.LiveStatePath != ResourceSpaceCollector.NoLiveState )
                 {
+                    Throw.DebugAssert( local.EndsWith( Path.DirectorySeparatorChar ) );
                     if( watchRoot == null )
                     {
-                        watchRoot = Path.GetDirectoryName( local ) + Path.DirectorySeparatorChar;
+                        watchRoot = local.Substring( 0, local.LastIndexOf( Path.DirectorySeparatorChar, local.Length - 2) + 1 );
                     }
                     else
                     {
                         watchRoot = CommonParentPath( watchRoot, local );
                     }
+                    Throw.DebugAssert( watchRoot.EndsWith( Path.DirectorySeparatorChar ) );
                 }
                 // Rank is 1-based. Rank = 1 is for the head of the Group.
                 if( s.Rank == 2 )
                 {
                     bAppRequirements.Add( p );
-                }
-                if( p.IsLocalPackage )
-                {
-                    bLocal.Add( p );
                 }
             }
         }

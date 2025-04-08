@@ -62,7 +62,7 @@ public interface ITSCodeGenerator
     /// Can configure the <see cref="RequireTSFromTypeEventArgs"/> if the <see cref="RequireTSFromTypeEventArgs.Type"/>
     /// can be handled by this generator.
     /// <para>
-    /// If a <see cref="TypeScriptAttribute"/> decorates the type ot the type has been configured, the builder properties
+    /// If a <see cref="TypeScriptTypeAttribute"/> decorates the type ot the type has been configured, the builder properties
     /// reflects its configuration.
     /// </para>
     /// <para>

@@ -8,7 +8,7 @@ namespace CK.Setup;
 /// </summary>
 public readonly struct RegisteredType
 {
-    internal RegisteredType( IReadOnlyList<ITSCodeGeneratorType>? generators, IPocoType? pocoType, TypeScriptAttribute? attr )
+    internal RegisteredType( IReadOnlyList<ITSCodeGeneratorType>? generators, IPocoType? pocoType, TypeScriptTypeAttribute? attr )
     {
         Generators = generators;
         PocoType = pocoType;
@@ -22,7 +22,7 @@ public readonly struct RegisteredType
     /// <item>And has only one or more attribute that implement <see cref="ITSCodeGeneratorType"/> type specific generators.</item>
     /// </list>
     /// </summary>
-    public readonly TypeScriptAttribute? Attribute;
+    public readonly TypeScriptTypeAttribute? Attribute;
 
     /// <summary>
     /// Optional list of <see cref="ITSCodeGeneratorType"/> type specific generators.

@@ -100,7 +100,6 @@ public abstract partial class TypeScriptFileBase
         var t = new TSDeclaredType( this, typeName, additionalImports, defaultValueSource );
         _declaredOnlyTypes ??= new List<ITSDeclaredFileType>();
         _declaredOnlyTypes.Add( t );
-        _folder.SetHasExportedSymbol();
         return t;
     }
 

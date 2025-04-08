@@ -10,7 +10,7 @@ namespace CK.TypeScript.Engine;
 /// Base class for associated attributes to a <c>[TypeScriptPackage]</c> (a <see cref="TypeScriptPackageAttribute"/>
 /// or a specialization).
 /// </summary>
-public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContextBoundInitializer
+public abstract class TypeScriptPackageAttributeImplExtension : IAttributeContextBoundInitializer, ITSCodeGeneratorAutoDiscovery
 {
     readonly Attribute _attr;
     readonly Type _type;

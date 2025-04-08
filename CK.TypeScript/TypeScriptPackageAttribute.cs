@@ -22,8 +22,8 @@ namespace CK.TypeScript;
 /// </list>
 /// </para>
 /// <para>
-/// This attribute defines a root package that doesn't belong to any other package. The <see cref="TypeScriptPackageAttribute{T}"/>
-/// must be used to define a subordinated package.
+/// This attribute defines a root package that doesn't belong to any other package.
+/// To specify a owning package, use the [Package&lt;T&gt;] attribute.
 /// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]

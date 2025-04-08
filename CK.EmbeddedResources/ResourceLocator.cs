@@ -171,5 +171,4 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
             throw new ArgumentException( $"The resource {ToString()} doesn't belong to this '{expectedContainer.DisplayName}'." );
         }
     }
-
 }

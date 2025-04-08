@@ -1,7 +1,7 @@
 namespace CK.Core;
 
 /// <summary>
-/// Decorates a <see cref="IResourceGroupPackage"/> or <see cref="IResourcePackage"/> with
+/// Decorates a <see cref="IResourceGroup"/> or <see cref="IResourcePackage"/> with
 /// any number of package full names separated by commas or as independent strings.
 /// <para>
 /// The typed attributes (<see cref="RequiresAttribute{T}"/>, ..., <see cref="RequiresAttribute{T1, T2, T3, T4, T5, T6}"/>)

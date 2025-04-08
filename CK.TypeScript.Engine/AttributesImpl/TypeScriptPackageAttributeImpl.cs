@@ -13,7 +13,7 @@ namespace CK.TypeScript.Engine;
 /// This must be used as the base class of specialized TypeScriptPackageAttribute implementations.
 /// </para>
 /// </summary>
-public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer
+public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer, ITSCodeGeneratorAutoDiscovery
 {
     readonly TypeScriptPackageAttribute _attr;
     readonly Type _type;
@@ -124,7 +124,7 @@ public class TypeScriptPackageAttributeImpl : IAttributeContextBoundInitializer
                     }
                     return attr;
                 }
-                return new TypeScriptAttribute( r );
+                return new TypeScriptTypeAttribute( r );
             } );
         }
         return success && !overrideError;

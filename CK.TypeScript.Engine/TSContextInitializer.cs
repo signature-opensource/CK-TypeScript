@@ -210,7 +210,7 @@ sealed class TSContextInitializer
         using( monitor.OpenInfo( "Analyzing types with [TypeScript], [TypeScriptPackage] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
         {
             // These variables are reused per type.
-            TypeScriptAttributeImpl? tsAttrImpl;
+            TypeScriptTypeAttributeImpl? tsAttrImpl;
             var generators = new List<ITSCodeGeneratorType>();
 
             bool success = true;
@@ -222,7 +222,7 @@ sealed class TSContextInitializer
 
                 foreach( var m in attributeCache.GetTypeCustomAttributes<ITSCodeGeneratorAutoDiscovery>() )
                 {
-                    if( m is TypeScriptAttributeImpl a )
+                    if( m is TypeScriptTypeAttributeImpl a )
                     {
                         if( tsAttrImpl != null )
                         {
@@ -258,8 +258,8 @@ sealed class TSContextInitializer
                     // Did this type appear in the configuration?
                     // If yes, the configuration must override the values from the code.
                     RegisteredType reg = registeredTypes.GetValueOrDefault( attributeCache.Type );
-                    TypeScriptAttribute? configuredAttr = reg.Attribute;
-                    TypeScriptAttribute? a = tsAttrImpl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
+                    TypeScriptTypeAttribute? configuredAttr = reg.Attribute;
+                    TypeScriptTypeAttribute? a = tsAttrImpl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
                     IPocoType? pocoType = reg.PocoType;
                     // If the type is configured then its configuredAttr is not null: the work on whether it is
                     // a IPocoType has been done by step 1.
@@ -373,7 +373,7 @@ sealed class TSContextInitializer
         public bool EnsureRegister( IActivityMonitor monitor,
                                     Type t,
                                     bool mustBePocoType,
-                                    Func<TypeScriptAttribute?, TypeScriptAttribute?>? attributeConfigurator = null )
+                                    Func<TypeScriptTypeAttribute?, TypeScriptTypeAttribute?>? attributeConfigurator = null )
         {
             // If the type is already registered, applies the attributeConfigurator and updates the registration.
             if( _regTypes.TryGetValue( t, out RegisteredType regType ) )

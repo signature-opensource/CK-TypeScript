@@ -32,10 +32,10 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
                         : null;
     }
 
-    public void Write( IBinarySerializer s )
+    public static void Write( IBinarySerializer s, in StoreContainer o )
     {
-        s.WriteObject( _codeHandledResources );
-        s.WriteObject( _container );
+        s.WriteObject( o._codeHandledResources );
+        s.WriteObject( o._container );
     }
 
     /// <summary>

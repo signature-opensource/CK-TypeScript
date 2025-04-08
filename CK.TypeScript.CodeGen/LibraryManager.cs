@@ -17,7 +17,7 @@ public sealed class LibraryManager
     /// Default "@types/luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
     /// overrides this default.
     /// </summary>
-    public const string LuxonTypesVersion = "^3.4.2";
+    public const string LuxonTypesVersion = "^3.6.2";
 
     /// <summary>
     /// Default "luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)

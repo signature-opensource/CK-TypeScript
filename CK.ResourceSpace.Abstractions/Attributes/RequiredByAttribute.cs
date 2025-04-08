@@ -1,7 +1,7 @@
 namespace CK.Core;
 
 /// <summary>
-/// Decorates a <see cref="IResourceGroupPackage"/> or <see cref="IResourcePackage"/> with
+/// Decorates a <see cref="IResourceGroup"/> or <see cref="IResourcePackage"/> with
 /// any number of reverse dependencies thar are package full names separated by commas
 /// or as independent strings.
 /// <para>
