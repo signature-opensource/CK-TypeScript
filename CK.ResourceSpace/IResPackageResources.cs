@@ -19,6 +19,16 @@ public interface IResPackageResources
     int Index { get; }
 
     /// <summary>
+    /// Gets whether this is the "&lt;App&gt;" resource (<see cref="IsAfter"/> is false).
+    /// </summary>
+    bool IsAppResources { get; }
+
+    /// <summary>
+    /// Gets whether this is the "&lt;Code&gt;" resource (<see cref="IsAfter"/> is true).
+    /// </summary>
+    bool IsCodeResources { get; }
+
+    /// <summary>
     /// Gets the resources.
     /// </summary>
     IResourceContainer Resources { get; }

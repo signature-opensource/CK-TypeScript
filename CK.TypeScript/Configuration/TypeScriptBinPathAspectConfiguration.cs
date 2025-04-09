@@ -21,7 +21,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </summary>
     public TypeScriptBinPathAspectConfiguration()
     {
-        Barrels = new HashSet<NormalizedPath>();
+        Barrels = new HashSet<string>();
         Types = new List<TypeScriptTypeConfiguration>();
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
@@ -181,7 +181,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// A barrel is systematically generated at the root OutputPath level. This allows sub folders to also have barrels.
     /// </para>
     /// </summary>
-    public HashSet<NormalizedPath> Barrels { get; }
+    public HashSet<string> Barrels { get; }
 
     /// <inheritdoc />
     protected override void InitializeOnlyThisFrom( XElement e )
@@ -190,7 +190,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         Barrels.Clear();
         Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                 .Elements( TypeScriptAspectConfiguration.xBarrel )
-                                                    .Select( c => new NormalizedPath( (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) ) );
+                                                    .Select( c => (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) );
         DefaultTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xDefaultTypeScriptVersion );
 
         var tsIntegrationMode = (string?)e.Attribute( TypeScriptAspectConfiguration.xIntegrationMode );

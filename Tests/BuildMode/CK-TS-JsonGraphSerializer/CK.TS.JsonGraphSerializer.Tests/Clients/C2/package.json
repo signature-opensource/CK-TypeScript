@@ -1,7 +1,7 @@
 {
   "name": "c2",
   "private": true,
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.8.1",
   "scripts": {
     "test": "jest",
     "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""

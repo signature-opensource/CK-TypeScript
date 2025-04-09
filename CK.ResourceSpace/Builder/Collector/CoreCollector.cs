@@ -70,6 +70,11 @@ sealed class CoreCollector
             monitor.Error( $"Duplicate package registration: FullName is already registered as '{already}'." );
             return null;
         }
+        if( type != null && _packageIndex.TryGetValue( type, out already ) )
+        {
+            monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );
+            return null;
+        }
         if( _packageIndex.TryGetValue( resourceStore, out already ) )
         {
             monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );

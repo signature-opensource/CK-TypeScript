@@ -245,7 +245,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
                 {
                     if( def.Override is ResourceOverrideKind.Regular )
                     {
-                        monitor.Warn( $"Invalid override 'O:{key}' in {definition.Origin}: the key doesn't exist, there's nothing to override." );
+                        monitor.Warn( $"Invalid override 'O:{key}' in {definition.Origin}: this key is not defined by any reachable translation sets." );
                     }
                     else
                     {

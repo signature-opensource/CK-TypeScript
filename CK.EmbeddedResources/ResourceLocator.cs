@@ -133,7 +133,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     public override string ToString()
     {
         return IsValid
-                ? $"'{ResourceName}' in '{_container.DisplayName}'"
+                ? $"'{ResourceName}' in {_container.DisplayName}"
                 : "";
     }
 

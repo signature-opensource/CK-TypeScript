@@ -5,7 +5,7 @@ using CK.Core;
 namespace CK.Ng.AspNet.Auth;
 
 [TypeScriptPackage]
-[Requires<CK.AspNet.Auth.TSPackage>]
+[Requires<CK.AspNet.Auth.TSPackage, CK.Ng.Axios.TSPackage>]
 [NgProviderImport( "AXIOS, provideNgAuthSupport, AuthService" )]
 [NgProviderImport( "AxiosInstance", LibraryName = "axios" )]
 [NgProvider( "{ provide: AuthService, deps:[AXIOS], useFactory: (a : AxiosInstance) => new AuthService( a ) }" )]

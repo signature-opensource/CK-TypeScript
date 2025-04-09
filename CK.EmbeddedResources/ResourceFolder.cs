@@ -158,7 +158,7 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
     public override string ToString()
     {
         return IsValid
-                ? $"Folder '{FolderName}' in '{Container.DisplayName}'"
+                ? $"Folder '{FolderName}' in {Container.DisplayName}"
                 : "";
     }
 

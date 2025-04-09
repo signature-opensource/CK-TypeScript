@@ -56,8 +56,8 @@ public sealed partial class TypeScriptFolder
             bool hasBarrel = false;
             do
             {
-                // Publish files until a folder has a lexically ordered name greater.
-                while( cFile != null && (cFolder == null || cFile.Name.CompareTo( cFolder.Name ) < 0) )
+                // Publish files until a folder has a lexically ordered greater name including the separator!
+                while( cFile != null && (cFolder == null || cFile.Name.AsSpan().CompareTo( cFolder.NameWithSeparator, StringComparison.Ordinal ) < 0) )
                 {
                     if( !hasBarrel && cFile.Name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) )
                     {
@@ -85,7 +85,7 @@ public sealed partial class TypeScriptFolder
             {
                 var b = target.BarrelStringBuilder;
                 Throw.DebugAssert( b.Length == 0 );
-                AddExportsToBarrel( "", b );
+                AddExportsToBarrel( "/", b );
                 Throw.DebugAssert( "Because HasExportedSymbol.", b.Length > 0 );
                 monitor.Trace( "Publishing automatically generated 'index.ts' barrel." );
                 target.Publish( "index.ts", b.ToString() );
@@ -96,9 +96,9 @@ public sealed partial class TypeScriptFolder
 
     void AddExportsToBarrel( string subPath, StringBuilder b )
     {
-        if( subPath.Length > 0 && _wantBarrel && _hasExportedSymbol )
+        if( subPath.Length > 1 && _wantBarrel && _hasExportedSymbol )
         {
-            b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
+            b.Append( "export * from '." ).Append( subPath ).AppendLine( "';" );
         }
         else
         {
@@ -114,14 +114,14 @@ public sealed partial class TypeScriptFolder
             var folder = _firstChild;
             while( folder != null )
             {
-                folder.AddExportsToBarrel( subPath + '/' + folder.Name, b );
+                folder.AddExportsToBarrel( subPath + folder.NameWithSeparator.ToString(), b );
                 folder = folder._next;
             }
 
             static void AddExportFile( string subPath, StringBuilder b, ReadOnlySpan<char> fileName )
             {
-                b.Append( "export * from './" ).Append( subPath );
-                if( subPath.Length > 0 ) b.Append( '/' );
+                b.Append( "export * from '." ).Append( subPath );
+                //if( subPath.Length > 0 ) b.Append( '/' );
                 b.Append( fileName ).AppendLine( "';" );
             }
         }

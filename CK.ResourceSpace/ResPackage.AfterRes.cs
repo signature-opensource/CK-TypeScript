@@ -24,6 +24,7 @@ public sealed partial class ResPackage
             _localPath = resources is StoreContainer c
                         ? c.LocalPath
                         : null;
+            Throw.DebugAssert( IsCodeResources == (_package.FullName == "<Code>") );
         }
 
         [EditorBrowsable( EditorBrowsableState.Never )]
@@ -35,6 +36,7 @@ public sealed partial class ResPackage
             _localPath = _resources is StoreContainer c
                       ? c.LocalPath
                       : null;
+            Throw.DebugAssert( IsCodeResources == (_package.FullName == "<Code>") );
         }
 
         [EditorBrowsable( EditorBrowsableState.Never )]
@@ -49,6 +51,10 @@ public sealed partial class ResPackage
 
         public int Index => _index;
 
+        public bool IsCodeResources => _index == 1;
+
+        public bool IsAppResources => false;
+
         public IEnumerable<IResPackageResources> Reachables => _package.AfterReachablePackages.Select( p => p.ResourcesAfter ).Append( _package.Resources );
 
         public IResourceContainer Resources => _resources;
@@ -56,5 +62,7 @@ public sealed partial class ResPackage
         public ResPackage Package => _package;
 
         public string? LocalPath => _localPath;
+
+        public override string ToString() => $"After {_package}";
     }
 }

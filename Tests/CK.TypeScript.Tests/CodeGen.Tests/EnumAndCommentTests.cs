@@ -15,7 +15,6 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TypeScript.Tests;
 
-
 [TestFixture]
 public class EnumAndCommentTests
 {

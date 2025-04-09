@@ -39,7 +39,8 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         {
             int cmp = name.CompareTo( c.Name, StringComparison.Ordinal );
             if( cmp == 0 ) return c;
-            if( cmp > 0 ) previous = c;
+            if( cmp < 0 ) break;
+            previous = c;
             c = c._next;
         }
         return null;
@@ -70,13 +71,6 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         }
         return closest.FindLocalFile( path[ranges[^1]], out _ );
     }
-
-    /// <summary>
-    /// Finds a <see cref="TypeScriptFileBase"/> in this folder or a subordinated folder.
-    /// </summary>
-    /// <param name="path">The file's path to find or create. Must not be empty.</param>
-    /// <returns>The file or null if not found.</returns>
-    public TypeScriptFileBase? FindFile( NormalizedPath path ) => DoFindFile( path, out var _ );
 
     /// <summary>
     /// Finds a <see cref="TypeScriptFileBase"/> in this folder or a subordinated folder.
@@ -122,7 +116,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
         }
         if( baseFile == null )
         {
-            folder.CheckCreateLocalName( name, isFolder: false );
+            CheckCreateLocalName( name, isFolder: false );
             created = true;
             file = new TypeScriptFile( folder, name, previous );
             _root.OnTypeScriptFileCreated( file );
@@ -161,7 +155,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
             }
             throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file already comes from {rF.Locator}." );
         }
-        folder.CheckCreateLocalName( name, isFolder: false );
+        CheckCreateLocalName( name, isFolder: false );
         return new ResourceTypeScriptFile( folder, name, locator, previous );
     }
 

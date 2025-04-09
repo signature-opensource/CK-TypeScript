@@ -708,16 +708,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@local/ck-gen@workspace:*, @local/ck-gen@workspace:ck-gen":
-  version: 0.0.0-use.local
-  resolution: "@local/ck-gen@workspace:ck-gen"
-  dependencies:
-    axios: "npm:^1.8.1"
-    rxjs: "npm:^7.8.2"
-    typescript: "npm:=5.4.5"
-  languageName: unknown
-  linkType: soft
-
 "@nodelib/fs.scandir@npm:2.1.5":
   version: 2.1.5
   resolution: "@nodelib/fs.scandir@npm:2.1.5"
@@ -1254,14 +1244,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.8.1":
-  version: 1.8.1
-  resolution: "axios@npm:1.8.1"
+"axios@npm:^1.8.4":
+  version: 1.8.4
+  resolution: "axios@npm:1.8.4"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10/5a09a2b39e724e018bc94d0424bb1a6042e71864039fbcc8c8d9dd50f3acd9d01f81b895994c9b46bc82c026afa3dfd1ec343a27bfe4723b70841f3b3dd6edfa
+  checksum: 10/a10f0dd836613924e48cf03dc2eff3fd21b14f764807aedaee4880a70c0f142aaebdb21da7ce27104d4c16ca00d0e452a20a20851f60e385a8d5bad1ae909d46
   languageName: node
   linkType: hard
 
@@ -1417,6 +1407,24 @@ __metadata:
   checksum: 10/0448524a562b37d4d7ed9efd91685a5b77a50672c556ea254ac9a6d30e3403a517d8981f10e565db24e8339413b43c97ca2951f10e399c6125a0d8911f5679bb
   languageName: node
   linkType: hard
+
+"c1@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "c1@workspace:."
+  dependencies:
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:^22.10.9"
+    "@yarnpkg/sdks": "npm:^3.2"
+    axios: "npm:^1.8.4"
+    jest: "npm:^29.7"
+    jest-environment-jsdom: "npm:^29.7"
+    rxjs: "npm:^7.8.1"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:=5.4.5"
+  peerDependencies:
+    rxjs: ^7.8.1
+  languageName: unknown
+  linkType: soft
 
 "cacache@npm:^19.0.1":
   version: 19.0.1
@@ -3569,24 +3577,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"npmpackage@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "npmpackage@workspace:."
-  dependencies:
-    "@local/ck-gen": "workspace:*"
-    "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:^22.10.9"
-    "@yarnpkg/sdks": "npm:^3.2"
-    jest: "npm:^29.7"
-    jest-environment-jsdom: "npm:^29.7"
-    rxjs: "npm:^7.8.1"
-    ts-jest: "npm:^29.2.5"
-    typescript: "npm:=5.4.5"
-  peerDependencies:
-    rxjs: ^7.8.1
-  languageName: unknown
-  linkType: soft
-
 "nwsapi@npm:^2.2.2":
   version: 2.2.16
   resolution: "nwsapi@npm:2.2.16"
@@ -3988,15 +3978,6 @@ __metadata:
   dependencies:
     tslib: "npm:^2.1.0"
   checksum: 10/b10cac1a5258f885e9dd1b70d23c34daeb21b61222ee735d2ec40a8685bdca40429000703a44f0e638c27a684ac139e1c37e835d2a0dc16f6fc061a138ae3abb
-  languageName: node
-  linkType: hard
-
-"rxjs@npm:^7.8.2":
-  version: 7.8.2
-  resolution: "rxjs@npm:7.8.2"
-  dependencies:
-    tslib: "npm:^2.1.0"
-  checksum: 10/03dff09191356b2b87d94fbc1e97c4e9eb3c09d4452399dddd451b09c2f1ba8d56925a40af114282d7bc0c6fe7514a2236ca09f903cf70e4bbf156650dddb49d
   languageName: node
   linkType: hard
 

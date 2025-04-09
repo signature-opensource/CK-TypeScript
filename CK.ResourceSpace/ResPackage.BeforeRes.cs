@@ -49,6 +49,10 @@ public sealed partial class ResPackage
 
         public int Index => _index;
 
+        public bool IsCodeResources => false;
+
+        public bool IsAppResources => _package.FullName == "<App>";
+
         public IEnumerable<IResPackageResources> Reachables => _package.ReachablePackages.Select( p => p.ResourcesAfter );
 
         public IResourceContainer Resources => _resources;
@@ -56,5 +60,7 @@ public sealed partial class ResPackage
         public ResPackage Package => _package;
 
         public string? LocalPath => _localPath;
+
+        public override string ToString() => $"Before {_package}";
     }
 }

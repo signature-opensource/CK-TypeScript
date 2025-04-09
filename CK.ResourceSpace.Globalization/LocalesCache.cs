@@ -27,7 +27,8 @@ sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
         if( resources.Resources.LoadTranslations( monitor,
                                                   _activeCultures,
                                                   out var definitions,
-                                                  _rootFolderName ) )
+                                                  _rootFolderName,
+                                                  isOverrideFolder: resources.IsAppResources ) )
         {
             return definitions != null
                     ? definitions.Combine( monitor, data )

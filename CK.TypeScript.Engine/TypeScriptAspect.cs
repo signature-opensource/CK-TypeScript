@@ -46,9 +46,17 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
         for( int i = 0; i < allBinPathConfigurations.Count; i++ )
         {
             TypeScriptBinPathAspectConfiguration ts = allBinPathConfigurations[i];
+
             if( !KeepValidTargetProjectPath( monitor, basePath, ts ) )
             {
                 allBinPathConfigurations.RemoveAt( i-- );
+            }
+            else
+            {
+                // Ugly... Should we implement a NormalizedFolderPath?
+                var normalizedBarrels = ts.Barrels.Select( NormalizeFolderPath ).ToList();
+                ts.Barrels.Clear();
+                ts.Barrels.AddRange( normalizedBarrels );
             }
         }
         return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
@@ -141,6 +149,23 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
             }
             return success;
         }
+
+        static string NormalizeFolderPath( string p )
+        {
+            if( p.Length > 0 )
+            {
+                p = p.Replace( '\\', '/' );
+                if( p[0] == '/' )
+                {
+                    if( p.Length == 1 ) return string.Empty;
+                    p = p.Substring( 1, p.Length - 1 );
+                }
+                if( p[^1] == '/' ) return p;
+                return p + '/';
+            }
+            return p;
+        }
+
     }
 
     bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;

@@ -57,7 +57,7 @@ public sealed partial class ResPackage : ICKSlicedSerializable
             expectedSize = r.ReadNonNegativeSmallInt32();
             var allAfterReachablePackages = new HashSet<ResPackage>( expectedSize );
             allAfterReachablePackages.AddRange( _allReachablePackages );
-            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( allAfterReachablePackages );
+            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllAfterReachablePackage( allAfterReachablePackages );
             _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
             _allAfterReachablePackages = allAfterReachablePackages;
         }

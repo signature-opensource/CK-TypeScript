@@ -61,7 +61,7 @@ abstract class ImportFromBase : ITSImportLine
         if( _defaultImportSymbol != null && symbolName != _defaultImportSymbol )
         {
             Throw.InvalidOperationException( $"""
-                          Conflicting import of the default export in '{File.Folder.Path}/{File.Name}'.
+                          Conflicting import of the default export in '{File.Folder.Path}{File.Name}'.
                           Symbol '{_defaultImportSymbol}' is already defined, importing '{symbolName}' is not posssible.
                           """ );
         }

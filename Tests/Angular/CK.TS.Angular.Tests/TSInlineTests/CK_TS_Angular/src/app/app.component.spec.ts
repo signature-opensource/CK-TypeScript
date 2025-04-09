@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { CKGenAppModule } from '@local/ck-gen';
+import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 
 describe( 'AppComponent', () => {
   beforeEach( async () => {

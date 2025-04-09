@@ -23,9 +23,8 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
                                                  ResPackageDescriptor d,
                                                  ResourceSpaceConfiguration resourcesConfiguration )
     {
-        var ckGen = context.GetAngularCodeGen().CKGenAppModule;
+        ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 
-        ITSFileImportSection imports = ckGen.File.Imports;
         if( Attribute.LibraryName == "@local/ck-gen" )
         {
             imports.ImportFromLocalCKGen( Attribute.SymbolNames );

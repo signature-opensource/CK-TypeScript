@@ -50,6 +50,9 @@ public sealed partial class ResPackage
                          ImmutableArray<ResPackage> children,
                          int index )
     {
+        Throw.DebugAssert( "ResPackage.Index is 1-based.", index > 0 );
+        Throw.DebugAssert( "The <Code> package is the first one.", (index == 1) == (fullName == "<Code>") );
+        Throw.DebugAssert( "The <App> package is the last one.", (index == dataCacheBuilder.TotalPackageCount) == (fullName == "<App>") );
         _fullName = fullName;
         _defaultTargetPath = defaultTargetPath;
         _isGroup = isGroup;
@@ -82,7 +85,7 @@ public sealed partial class ResPackage
             var allReachablePackages = new HashSet<ResPackage>();
             _allReachableHasLocalPackage = ComputeAllReachablePackages( allReachablePackages )
                                            || _reachableHasLocalPackage;
-            Throw.DebugAssert( "allIsRequired should have been false!", allReachablePackages.Count > _reachablePackages.Count );
+            Throw.DebugAssert( allReachablePackages.IsSupersetOf( _reachablePackages ) );
             _allReachablePackages = allReachablePackages;
         }
         else
@@ -111,7 +114,7 @@ public sealed partial class ResPackage
             // ComputeAllContentReachablePackage computes the _childrenHasLocalPackage, we compute it first.
             // It contains the children (just like the _afterReachablePackages computed below).
             var allAfterReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
-            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllContentReachablePackage( allAfterReachablePackages );
+            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllAfterReachablePackage( allAfterReachablePackages );
             _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
             _allAfterReachablePackages = allAfterReachablePackages;
 
@@ -139,12 +142,12 @@ public sealed partial class ResPackage
                 {
                     rL = l = true;
                 }
-                allRequired |= p._reachablePackages != p._allReachablePackages;
+                allRequired |= p._reachablePackages.Count > 0;
                 // Consider the children of the requirement (and only them).
                 foreach( var c in p._children )
                 {
                     l |= p.IsLocalPackage;
-                    allRequired |= p._reachablePackages != p._allReachablePackages;
+                    allRequired |= p._reachablePackages.Count > 0;
                     set.Add( c );
                 }
             }
@@ -154,11 +157,9 @@ public sealed partial class ResPackage
 
     bool ComputeAllReachablePackages( HashSet<ResPackage> set )
     {
-        // Don't start from the ReachablePackages. Simply aggregates
-        // the requirement's AllReachablePackages.
         Throw.DebugAssert( "Initial set must be empty.", set.Count == 0 );
         bool l = false;
-        foreach( var p in _requires )
+        foreach( var p in _reachablePackages )
         {
             if( set.Add( p ) )
             {
@@ -169,9 +170,9 @@ public sealed partial class ResPackage
         return l;
     }
 
-    (bool,bool) ComputeAllContentReachablePackage( HashSet<ResPackage> set )
+    (bool,bool) ComputeAllAfterReachablePackage( HashSet<ResPackage> set )
     {
-        // We extend our AllReachablePackages with our content's AllContentReachable.
+        // We extend our AllReachablePackages with our content's AllAfterReachable.
         Throw.DebugAssert( "Initial set must be the AllReachablePackages.",
                            set.SetEquals( _allReachablePackages ) );
         bool cL = false;

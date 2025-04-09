@@ -73,7 +73,7 @@ public sealed class ResourceSpaceDataBuilder
         // This package is not local as it is not bound to any local path.
         // All packages that require no other package require it.
         // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
-        //       change anything.
+        //       change anything but this choice is settled now.
         static ResPackage CreateCodePackage( ResPackageDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
         {
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
@@ -96,13 +96,21 @@ public sealed class ResourceSpaceDataBuilder
         }
 
         // The "<App>" package is the last package and represents the Application being setup.
-        // It is empty (no child) and only contains BeforeResources with an empty Code resources
-        // container disabled by design and a Store FileSystemResourceContainer on the AppResourcesLocalPath.
+        // It is empty (no child) and only contains BeforeResources with a FileSystemResourceContainer
+        // on the AppResourcesLocalPath and an empty container disabled by design AfterResources.
+        // Note: We could choose the AfterResources to hold the app resources, this wouldn't
+        //       change anything but this choice is settled now, it mirrors the <Code> resources.
+        //       The allPackageResources is:
+        //         - Before Code => Empty by design.
+        //         - After Code => CodeGenerated.
+        //         - ... all other package's resources.
+        //         - Before App => App resource folder.
+        //         - After App => Empty by design.
+        //
         // It is a local package by design except if AppResourcesLocalPath is null.
         // It requires all packages that are not required by other packages.
+        //
         // It is initialized below after the others (once we know its requirements) and the indexes.
-        // Note: We could choose the AfterResources to hold the app resources, this wouldn't
-        //       change anything.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
                                             ResPackageDataCacheBuilder dataCacheBuilder,
                                             ImmutableArray<ResPackage> appRequires,
@@ -211,9 +219,9 @@ public sealed class ResourceSpaceDataBuilder
                                    !s.Requires.Intersect( s.Children ).Any() );
                 // Requirements and children have already been indexed.
                 ImmutableArray<ResPackage> requires = s.Requires.Any()
-                                                        ? s.Requires.Select( s => packageIndex[s.Item] ).ToImmutableArray()
+                                                        ? s.Requires.Select( s => packageIndex[s.Item.FullName] ).ToImmutableArray()
                                                         : requiresCode;
-                ImmutableArray<ResPackage> children = s.Children.Select( s => packageIndex[s.Item] ).ToImmutableArray();
+                ImmutableArray<ResPackage> children = s.Children.Select( s => packageIndex[s.Item.FullName] ).ToImmutableArray();
                 var p = new ResPackage( dataCacheBuilder,
                                         d.FullName,
                                         d.DefaultTargetPath,
@@ -258,7 +266,7 @@ public sealed class ResourceSpaceDataBuilder
                     Throw.DebugAssert( watchRoot.EndsWith( Path.DirectorySeparatorChar ) );
                 }
                 // Rank is 1-based. Rank = 1 is for the head of the Group.
-                if( s.Rank == 2 )
+                if( s.HeadForGroup.Rank == 1 )
                 {
                     bAppRequirements.Add( p );
                 }
@@ -267,7 +275,10 @@ public sealed class ResourceSpaceDataBuilder
         // We now can initialize the "<App>" package.
         // The FileSystemResourceContainer normalizes the path (ends with Path.DirectorySeparator)
         // and this must be normalized!
-        var appPackage = CreateAppPackage( ref appLocalPath, dataCacheBuilder, bAppRequirements.DrainToImmutable(), bAll.Count );
+        var appPackage = CreateAppPackage( ref appLocalPath,
+                                           dataCacheBuilder,
+                                           bAppRequirements.Count > 0 ? bAppRequirements.DrainToImmutable() : requiresCode,
+                                           bAll.Count );
         bAll.Add( appPackage );
         packageIndex.Add( appPackage.FullName, appPackage );
         Throw.DebugAssert( appPackage.Resources.Index == allPackageResources.Length - 2 );
@@ -299,6 +310,18 @@ public sealed class ResourceSpaceDataBuilder
         // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now
         // compute the aggregation sets.
         space._resPackageDataCache = dataCacheBuilder.Build( monitor, packages );
+        // Post conditions:
+        Throw.DebugAssert( "OneBased array of packages.",
+                           packages[0] == null
+                           && space._exposedPackages.SequenceEqual( packages.Skip( 1 ) )
+                           && space._exposedPackages.All( p => p != null ) );
+        Throw.DebugAssert( "<Code> can reach nothing.",
+                           codePackage.ReachablePackages.Count == 0 && codePackage.AllReachablePackages.Count == 0
+                           && codePackage.AfterReachablePackages.Count == 0 && codePackage.AllAfterReachablePackages.Count == 0 );
+        Throw.DebugAssert( "<Code> can be reached from any packages.",
+                           packages.Skip( 1 ).Where( p => p != codePackage ).All( p => p.AllReachablePackages.Contains( codePackage ) ) );
+        Throw.DebugAssert( "All packages can be reached from <App>.",
+                           appPackage.AllReachablePackages.SetEquals( packages.Skip( 1 ).Where( p => p != appPackage ) ) );
         return space;
     }
 

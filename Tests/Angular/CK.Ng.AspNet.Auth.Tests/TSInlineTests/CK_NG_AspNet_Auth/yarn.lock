@@ -5882,7 +5882,7 @@ __metadata:
     axios-cookiejar-support: "npm:^5.0.3"
     jest: "npm:^29.7"
     jest-environment-jsdom: "npm:^29.7"
-    jest-preset-angular: "npm:^14.2.4"
+    jest-preset-angular: "npm:^14.5.4"
     rxjs: "npm:~7.8"
     tough-cookie: "npm:^5"
     ts-jest: "npm:^29.2.5"
@@ -7939,7 +7939,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-environment-jsdom@npm:^29.0.0, jest-environment-jsdom@npm:^29.7":
+"jest-environment-jsdom@npm:^29.7, jest-environment-jsdom@npm:^29.7.0":
   version: 29.7.0
   resolution: "jest-environment-jsdom@npm:29.7.0"
   dependencies:
@@ -8066,28 +8066,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-preset-angular@npm:^14.2.4":
-  version: 14.2.4
-  resolution: "jest-preset-angular@npm:14.2.4"
+"jest-preset-angular@npm:^14.5.4":
+  version: 14.5.4
+  resolution: "jest-preset-angular@npm:14.5.4"
   dependencies:
     bs-logger: "npm:^0.2.6"
     esbuild: "npm:>=0.15.13"
     esbuild-wasm: "npm:>=0.15.13"
-    jest-environment-jsdom: "npm:^29.0.0"
-    jest-util: "npm:^29.0.0"
-    pretty-format: "npm:^29.0.0"
-    ts-jest: "npm:^29.0.0"
+    jest-environment-jsdom: "npm:^29.7.0"
+    jest-util: "npm:^29.7.0"
+    pretty-format: "npm:^29.7.0"
+    ts-jest: "npm:^29.3.0"
   peerDependencies:
-    "@angular-devkit/build-angular": ">=15.0.0 <19.0.0"
-    "@angular/compiler-cli": ">=15.0.0 <19.0.0"
-    "@angular/core": ">=15.0.0 <19.0.0"
-    "@angular/platform-browser-dynamic": ">=15.0.0 <19.0.0"
+    "@angular/compiler-cli": ">=15.0.0 <20.0.0"
+    "@angular/core": ">=15.0.0 <20.0.0"
+    "@angular/platform-browser-dynamic": ">=15.0.0 <20.0.0"
     jest: ^29.0.0
+    jsdom: ">=20.0.0"
     typescript: ">=4.8"
   dependenciesMeta:
     esbuild:
       optional: true
-  checksum: 10/d457158b804d9ca54f59a1a52990451a433c03ad556dc82afc0681d0fe87021abed800a02611edf216e7b70b43a1fe6d9ee254b8fd6b1795609f38f00595ec9f
+  peerDependenciesMeta:
+    jsdom:
+      optional: true
+  checksum: 10/ba403657d6087e054cde746c20095da84604056637a44efd97fcc70fbf7d1da5b7f74ef985b015fa2dd71e095c3ce32b269a863942cdd8e1f9316f3935ebe1ae
   languageName: node
   linkType: hard
 
@@ -10780,6 +10783,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"semver@npm:^7.7.1":
+  version: 7.7.1
+  resolution: "semver@npm:7.7.1"
+  bin:
+    semver: bin/semver.js
+  checksum: 10/4cfa1eb91ef3751e20fc52e47a935a0118d56d6f15a837ab814da0c150778ba2ca4f1a4d9068b33070ea4273629e615066664c2cfcd7c272caf7a8a0f6518b2c
+  languageName: node
+  linkType: hard
+
 "send@npm:0.19.0":
   version: 0.19.0
   resolution: "send@npm:0.19.0"
@@ -11558,7 +11570,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-jest@npm:^29.0.0, ts-jest@npm:^29.2.5":
+"ts-jest@npm:^29.2.5":
   version: 29.2.5
   resolution: "ts-jest@npm:29.2.5"
   dependencies:
@@ -11592,6 +11604,44 @@ __metadata:
   bin:
     ts-jest: cli.js
   checksum: 10/f89e562816861ec4510840a6b439be6145f688b999679328de8080dc8e66481325fc5879519b662163e33b7578f35243071c38beb761af34e5fe58e3e326a958
+  languageName: node
+  linkType: hard
+
+"ts-jest@npm:^29.3.0":
+  version: 29.3.1
+  resolution: "ts-jest@npm:29.3.1"
+  dependencies:
+    bs-logger: "npm:^0.2.6"
+    ejs: "npm:^3.1.10"
+    fast-json-stable-stringify: "npm:^2.1.0"
+    jest-util: "npm:^29.0.0"
+    json5: "npm:^2.2.3"
+    lodash.memoize: "npm:^4.1.2"
+    make-error: "npm:^1.3.6"
+    semver: "npm:^7.7.1"
+    type-fest: "npm:^4.38.0"
+    yargs-parser: "npm:^21.1.1"
+  peerDependencies:
+    "@babel/core": ">=7.0.0-beta.0 <8"
+    "@jest/transform": ^29.0.0
+    "@jest/types": ^29.0.0
+    babel-jest: ^29.0.0
+    jest: ^29.0.0
+    typescript: ">=4.3 <6"
+  peerDependenciesMeta:
+    "@babel/core":
+      optional: true
+    "@jest/transform":
+      optional: true
+    "@jest/types":
+      optional: true
+    babel-jest:
+      optional: true
+    esbuild:
+      optional: true
+  bin:
+    ts-jest: cli.js
+  checksum: 10/a3450dde2821608bd83cb063eb33fe67c450fd99bf94b4fff12c50f789124fa652e74bd1890068cc1e1a929013fa677fae72da8d864528f1587ec44a9b94d985
   languageName: node
   linkType: hard
 
@@ -11645,6 +11695,13 @@ __metadata:
   version: 0.21.3
   resolution: "type-fest@npm:0.21.3"
   checksum: 10/f4254070d9c3d83a6e573bcb95173008d73474ceadbbf620dd32d273940ca18734dff39c2b2480282df9afe5d1675ebed5499a00d791758748ea81f61a38961f
+  languageName: node
+  linkType: hard
+
+"type-fest@npm:^4.38.0":
+  version: 4.39.1
+  resolution: "type-fest@npm:4.39.1"
+  checksum: 10/8f3fc947cb072effd9ba240425397b4d3c08901b344409bc12a0aabf43fd309f87fa214d7ee0b600f6e2335b435f40992cd22c0ce4bc7ab8dc5a987200f83bcc
   languageName: node
   linkType: hard
 

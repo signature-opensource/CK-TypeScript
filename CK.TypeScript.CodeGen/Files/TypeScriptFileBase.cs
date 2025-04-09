@@ -110,11 +110,6 @@ public abstract partial class TypeScriptFileBase
     public abstract string GetCurrentText();
 
     /// <summary>
-    /// Gets this file path (not prefixed by '/').
-    /// </summary>
-    public string FilePath => _folder.Path.IsEmptyPath ? _name : _folder.Path.Path + '/' + _name;
-
-    /// <summary>
     /// Overridden to return this file name.
     /// </summary>
     /// <returns>The <see cref="Name"/>.</returns>

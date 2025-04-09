@@ -199,13 +199,25 @@ public sealed partial class TypeScriptContext
         using var _ = monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" );
 
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
-        bool success;
+        bool success = true;
 
         var typeScriptContext = this;
 
         // New approach (CK-ReaDI oriented) here to manage the resources.
         var resSpaceConfiguration = new ResourceSpaceConfiguration();
         resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
+
+        // Some GlobalCodeGenerators may generate TypeScript types that are required by package registrations:
+        // this is the case of the Angular engine that injects its AngularCodeGen instance in the awful Root.Memory
+        // and NgComponent registers themselves on it.
+        // So we call StartGlobalCodeGeneration now...
+        // If another GlobalCodeGenerators needs the ResPackage, we must add a new method on ITSCodeGenerator (something like
+        // "OnPackageReady") and call it. This imperative paradigm is intrinsically limited...
+        // ReaDI handles this transparently: the global generators can be any ReaDI object with (IActivityMonitor, TypeScriptContext)
+        // parameters... And if the same object wants to generate code in the TypeScriptContext based on the topologically ordered
+        // set of packages, another method with (IActivityMonitor, TypeScriptContext, ResourceSpaceData) can be written.
+        //
+        success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
 
         // ResPackageDescriptor can be registered on the initial ResourceSpaceConfiguration (but also on the
         // following ResourceSpaceCollector). By registering our discovered TypeScriptPackage here, we maximize
@@ -226,7 +238,7 @@ public sealed partial class TypeScriptContext
         // With CK-ReaDI, they could have a similar ConfigureResPackages. They would then be able
         // to create new ResPackage in addition to (as of today) registering import libraries, creating
         // TypeScriptFile and registering to events (that should ideally not exist...).
-        if( success ) success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
+        // if( success ) success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
 
         // Resolving registered types:
         // Calls Root.TSTypes.ResolveType for each RegisteredType:
@@ -248,7 +260,23 @@ public sealed partial class TypeScriptContext
             // Time to give up.
             return false;
         }
-        // Must now publish the TypeScript files in a GeneratedCodeContainer and
+
+        var dataSpaceBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
+        var spaceData = dataSpaceBuilder.Build( monitor );
+        if( spaceData == null ) return false;
+
+        // When a ResourceSpaceData is available, we are almost done.
+        // It exposes all the read only packages including the head "<Code>" and tail "<App>" packages
+        // topologically ordered.
+        // The "<Code>" may still be empty: setting the GeneratedCodeContainer can be defferred up to
+        // the ResourceSpaceBuilder.
+
+        // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
+        // final ResourceSpace.
+
+        var installer = new InitialFileSystemInstaller( _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" ) );
+        var spaceBuilder = new ResourceSpaceBuilder( spaceData );
+        // Last chance to publish the TypeScript files in a GeneratedCodeContainer and
         // assign it to the resource space.
         var codeTarget = new CodeGenResourceContainerTarget();
         if( !_tsRoot.Publish( monitor, codeTarget ) )
@@ -256,28 +284,27 @@ public sealed partial class TypeScriptContext
             return false;
         }
         Throw.DebugAssert( codeTarget.Result != null );
-        resSpaceCollector.GeneratedCodeContainer = codeTarget.Result;
+        spaceBuilder.GeneratedCodeContainer = codeTarget.Result;
 
-        var resSpaceDataBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
-        var resSpaceData = resSpaceDataBuilder.Build( monitor );
-        if( resSpaceData == null ) return false;
-        // When a ResourceSpaceData is available, we are almost done.
-        // It exposes all the read only packages inculding the head "<Code>" and tail "<App>" packages.
-        // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
-        // final ResourceSpace.
-        var installer = new InitialFileSystemInstaller( _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" ) );
-        var resSpaceBuilder = new ResourceSpaceBuilder( resSpaceData );
-        success &= resSpaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer, resSpaceData.ResPackageDataCache, "ts-assets" ) );
-        success &= resSpaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( installer,
-                                                                                         resSpaceData.ResPackageDataCache,
+
+        success &= spaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer, spaceData.ResPackageDataCache, "ts-assets" ) );
+        success &= spaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( installer,
+                                                                                         spaceData.ResPackageDataCache,
                                                                                          "ts-locales",
                                                                                          typeScriptContext.ActiveCultures,
                                                                                          LocalesResourceHandler.InstallOption.Full ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
-        success &= resSpaceBuilder.RegisterHandler( monitor, new TransformableFileHandler( installer, transformerHost ) );
+        success &= spaceBuilder.RegisterHandler( monitor, new TransformableFileHandler( installer, transformerHost ) );
 
-        var resSpace = resSpaceBuilder.Build( monitor );
+        var resSpace = spaceBuilder.Build( monitor );
         if( resSpace == null ) return false;
+        //
+        // Currently, Install must be called. We should either:
+        // 1 - Integrate the Install to the ResourceSpaceBuilder.Build().
+        // 2 - Introduce a ResourceSpaceInstaller builder.
+        // But because of the "handler => installer" rule, 1 seems the good choice... but it seems odd to not have
+        // a distinct phasis for the install...
+        // 
         return resSpace.Install( monitor );
 
 

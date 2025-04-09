@@ -1408,6 +1408,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"c2@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "c2@workspace:."
+  dependencies:
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:^22.10.9"
+    "@yarnpkg/sdks": "npm:^3.2"
+    axios: "npm:^1.7.9"
+    jest: "npm:^29.7"
+    jest-environment-jsdom: "npm:^29.7"
+    rxjs: "npm:^7.8.1"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:=5.4.5"
+  peerDependencies:
+    rxjs: ^7.8.1
+  languageName: unknown
+  linkType: soft
+
 "cacache@npm:^19.0.1":
   version: 19.0.1
   resolution: "cacache@npm:19.0.1"
@@ -2409,24 +2427,6 @@ __metadata:
   checksum: 10/cd45e923bee15186c07fa4c89db0aace24824c482fb887b528304694b2aa6ff8a898da8657046a5dcf3e46cd6db6c61629551f9215f208d7c3f157cf9b290521
   languageName: node
   linkType: hard
-
-"inline@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "inline@workspace:."
-  dependencies:
-    "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:^22.10.9"
-    "@yarnpkg/sdks": "npm:^3.2"
-    axios: "npm:^1.7.9"
-    jest: "npm:^29.7"
-    jest-environment-jsdom: "npm:^29.7"
-    rxjs: "npm:^7.8.1"
-    ts-jest: "npm:^29.2.5"
-    typescript: "npm:=5.4.5"
-  peerDependencies:
-    rxjs: ^7.8.1
-  languageName: unknown
-  linkType: soft
 
 "ip-address@npm:^9.0.5":
   version: 9.0.5

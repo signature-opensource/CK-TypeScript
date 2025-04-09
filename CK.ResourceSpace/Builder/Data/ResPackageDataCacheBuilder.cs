@@ -52,6 +52,8 @@ sealed class ResPackageDataCacheBuilder
         _resourceIndex = resourceIndex;
     }
 
+    public int TotalPackageCount => _totalPackageCount;
+
     public IReadOnlySet<ResPackage> RegisterAndShare( HashSet<ResPackage> packages, out AggregateId aggregateId )
     {
         Throw.DebugAssert( packages.Count > 0 );

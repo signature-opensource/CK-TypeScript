@@ -1,7 +1,7 @@
 import { RouterOutlet } from '@angular/router';
-import { CKGenAppModule, CKGenInjected, LoginComponent, SomeAuthService, PublicTopbarComponent } from '@local/ck-gen';
+import { CKGenAppModule, CKGenInjected } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { Component, inject } from '@angular/core';
-
+import {LoginComponent, SomeAuthService, PublicTopbarComponent } from '@local/ck-gen';
 
 const ckGenInjected: CKGenInjected = [LoginComponent,PublicTopbarComponent];
 

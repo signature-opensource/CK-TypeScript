@@ -37,12 +37,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         [AllowNull] ComponentManager _components;
         [AllowNull] LibraryImport _angularCore;
         [AllowNull] LibraryImport _angularRouter;
-        [AllowNull] ITSFileType _ckGenAppModule;
+        [AllowNull] TypeScriptFile _ckGenAppModule;
         [AllowNull] ITSCodePart _importModulePart;
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
 
-        public ITSFileType CKGenAppModule => _ckGenAppModule;
+        public ITSFileImportSection CKGenAppModuleImports => _ckGenAppModule.Imports;
 
         public ComponentManager ComponentManager => _components;
 
@@ -62,7 +62,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module, ITSDeclaredFileType tsType )
         {
-            _ckGenAppModule.File.Imports.Import( tsType );
+            _ckGenAppModule.Imports.Import( tsType );
             if( !_importModulePart.IsEmpty )
             {
                 _importModulePart.Append( ", " );
@@ -79,10 +79,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             _angularRouter = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/router", DependencyKind.Dependency );
             _components = new ComponentManager( context );
 
-            var f = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
-            f.Imports.ImportFromLibrary( _angularCore, "NgModule, Provider, EnvironmentProviders" );
-            _ckGenAppModule = f.CreateType( "CKGenAppModule", additionalImports: null, defaultValueSource: null );
-            _ckGenAppModule.TypePart.Append( """
+            _ckGenAppModule = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
+            _ckGenAppModule.Imports.ImportFromLibrary( _angularCore, "NgModule, Provider, EnvironmentProviders" );
+            _ckGenAppModule.Body.Append( """
 
                 export type CKGenInjected = any[];
                 
@@ -147,6 +146,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 .Append( """
 
                     ] );
+                }
                 """ );
 
             Throw.DebugAssert( "Inline mode => IntegrationContext.", context.IntegrationContext != null );
@@ -174,8 +174,10 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 {
                     CreateAngularApp( e.Monitor, e );
                 }
-                // Adds the jest-preset-angular if not alreay here.
-                e.AddOrUpdateTargetProjectDependency( "jest-preset-angular", SVersionBound.All, DependencyKind.DevDependency );
+                // Adds the jest-preset-angular "14.5.4" if not alreay here.
+                e.AddOrUpdateTargetProjectDependency( "jest-preset-angular",
+                                                      new SVersionBound( SVersion.Create( 14, 5, 4 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                      DependencyKind.DevDependency );
                 e.JestSetup = new AngularJestSetupHandler( e.IntegrationContext );
             }
 
@@ -488,20 +490,44 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
             {
                 var app = File.ReadAllText( appFilePath );
-                if( Regex.IsMatch( app, """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""", RegexOptions.CultureInvariant ) )
+                if( Regex.IsMatch( app,
+                                   """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen/CK/Angular/CKGenAppModule'\s*;""",
+                                   RegexOptions.CultureInvariant ) )
                 {
-                    monitor.Trace( "File 'src/app/component.ts' imports the CKGenAppModule. Skipping transformation." );
+                    monitor.Trace( "File 'src/app/component.ts' imports the CKGenAppModule from its module. Skipping transformation." );
                 }
                 else
                 {
-                    using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
+                    var importLine = "import { CKGenAppModule, CKGenInjected } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
+                    var m = Regex.Match( app,
+                                         """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""",
+                                         RegexOptions.CultureInvariant );
+                    if( m.Success )
                     {
-                        InjectBeforeComponent( monitor, """
+                        monitor.Warn( $"""
+                            Fixing 'src/app/component.ts' CKGenAppModule import. Replacing:
+                            {m.Value}
+                            With:
+                            {importLine}
+                            """ );
+                        app = app.Substring( 0, m.Index ) + importLine + app.Substring( m.Index + m.Length );
+                        File.WriteAllText( appFilePath, app );
+                    }
+                    else
+                    {
+                        using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
+                        {
+                            InjectBeforeComponent( monitor, """
                             const ckGenInjected: CKGenInjected = [];
 
                             """, ref app );
-                        bool success = AddInImports( monitor, ref app );
-                        AddImportAndConclude( monitor, appFilePath, success, ref app, "import { CKGenAppModule, CKGenInjected } from '@local/ck-gen';" );
+                            bool success = AddInImports( monitor, ref app );
+                            AddImportAndConclude( monitor,
+                                                  appFilePath,
+                                                  success,
+                                                  ref app,
+                                                  importLine );
+                        }
                     }
                 }
 
@@ -551,29 +577,46 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
             static void TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
             {
+                const string importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
                 var app = File.ReadAllText( configFilePath );
-                if( app.Contains( "import { CKGenAppModule } from '@local/ck-gen';" ) )
+                if( app.Contains( importLine ) )
                 {
-                    monitor.Trace( "File 'src/app/app.config.ts' imports the CKGenAppModule. Skipping transformation." );
+                    monitor.Trace( "File 'src/app/app.config.ts' imports the CKGenAppModule from its module. Skipping transformation." );
                 }
                 else
                 {
-                    using( monitor.OpenInfo( "Transforming file 'src/app/app.config.ts'." ) )
+                    const string legacyLine = "import { CKGenAppModule } from '@local/ck-gen';";
+                    int idx = app.IndexOf( legacyLine );
+                    if( idx >= 0 )
                     {
-                        bool success = true;
-                        int idx = app.IndexOf( "provideRouter(routes)" );
-                        if( idx < 0 )
+                        monitor.Warn( $"""
+                                Fixing 'src/app/app.config.ts' CKGenAppModule import. Replacing:
+                                {legacyLine}
+                                With:
+                                {importLine}
+                                """ );
+                        app = app.Substring( 0, idx ) + importLine + app.Substring( idx + legacyLine.Length );
+                        File.WriteAllText( configFilePath, app );
+                    }
+                    else
+                    {
+                        using( monitor.OpenInfo( "Transforming file 'src/app/app.config.ts'." ) )
                         {
-                            monitor.Warn( "Unable to find the 'provideRouter(routes)' substring." );
-                            success = false;
+                            bool success = true;
+                            idx = app.IndexOf( "provideRouter(routes)" );
+                            if( idx < 0 )
+                            {
+                                monitor.Warn( "Unable to find the 'provideRouter(routes)' substring." );
+                                success = false;
+                            }
+                            else
+                            {
+                                Throw.DebugAssert( "provideRouter(routes)".Length == 21 );
+                                app = app.Insert( idx + 21, ", ...CKGenAppModule.Providers," );
+                                monitor.Info( "Added '...CKGenAppModule.Providers' in providers." );
+                            }
+                            AddImportAndConclude( monitor, configFilePath, success, ref app, importLine );
                         }
-                        else
-                        {
-                            Throw.DebugAssert( "provideRouter(routes)".Length == 21 );
-                            app = app.Insert( idx + 21, ", ...CKGenAppModule.Providers," );
-                            monitor.Info( "Added '...CKGenAppModule.Providers' in providers." );
-                        }
-                        AddImportAndConclude( monitor, configFilePath, success, ref app, "import { CKGenAppModule } from '@local/ck-gen';" );
                     }
                 }
             }
@@ -734,7 +777,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 //    ensure first """
                 //      {
                 //        "glob": "**/*",
-                //        "input": "ck-gen/assets"
+                //        "input": "ck-gen/ts-assets"
                 //      }
                 //      """;
                 var text = File.ReadAllText( angularJsonPath );
@@ -743,13 +786,13 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             """ );
                 if( m.Success )
                 {
-                    if( !text.AsSpan( m.Index + m.Length ).Contains( "ck-gen/assets", StringComparison.Ordinal ) )
+                    if( !text.AsSpan( m.Index + m.Length ).Contains( "ck-gen/ts-assets", StringComparison.Ordinal ) )
                     {
                         var start = text.Substring( 0, m.Index + m.Length - 1 );
-                        start += """{ "glob": "**/*", "input": "ck-gen/assets" }, """;
+                        start += """{ "glob": "**/*", "input": "ck-gen/ts-assets" }, """;
                         start += text.Substring( m.Index + m.Length - 1 );
                         File.WriteAllText( angularJsonPath, start );
-                        monitor.Info( "Added ck-gen/assets to angular.json assets." );
+                        monitor.Info( "Added ck-gen/ts-assets to angular.json assets." );
                     }
                 }
             }

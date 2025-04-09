@@ -326,7 +326,7 @@ public sealed partial class TSTypeManager
             var defName = e.TypeName != e.DefaultTypeName
                             ? $" (using explicit type name '{e.TypeName}' instead of default '{e.DefaultTypeName}')"
                             : null;
-            monitor.Trace( $"Type '{t:C}' will be generated in '{folder.Path}/{file.Name}'{defName}." );
+            monitor.Trace( $"Type '{t:C}' will be generated in '{folder.Path}{file.Name}'{defName}." );
         }
         if( t.IsEnum )
         {

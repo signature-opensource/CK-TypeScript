@@ -171,7 +171,7 @@ public static class ResourceContainerGlobalizationExtension
                     {
                         monitor.Error( $"""
                                         Missing key in default translation file.
-                                        Key '{kv.Value}' defined in translation file {locator} doesn't exist in {root.Origin}.
+                                        Key '{kv.Key}' defined in translation file {locator} doesn't exist in {root.Origin}.
                                         """ );
                         success = false;
                     }

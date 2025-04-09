@@ -2,6 +2,8 @@ using CK.Core;
 using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,9 +21,10 @@ public sealed partial class TypeScriptFolder
     readonly TypeScriptFolder? _parent;
     TypeScriptFolder? _firstChild;
     TypeScriptFolder? _next;
+    readonly string _path;
+    readonly string _name;
     internal TypeScriptFileBase? _firstFile;
     int _fileCount;
-    readonly NormalizedPath _path;
     bool _wantBarrel;
     bool _hasExportedSymbol;
 
@@ -39,6 +42,8 @@ public sealed partial class TypeScriptFolder
 
     internal TypeScriptFolder( TypeScriptRoot root )
     {
+        _path = string.Empty;
+        _name = string.Empty;
         _root = root;
     }
 
@@ -46,7 +51,8 @@ public sealed partial class TypeScriptFolder
     {
         _root = parent._root;
         _parent = parent;
-        _path = parent._path.AppendPart( name );
+        _path = parent._path + name + '/';
+        _name = name;
         if( previous == null )
         {
             _next = parent._firstChild;
@@ -64,17 +70,27 @@ public sealed partial class TypeScriptFolder
     /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
     /// it necessarily not empty and without '.ts' extension.
     /// </summary>
-    public string Name => _path.LastPart;
+    public string Name => _name;
+
+    /// <summary>
+    /// Gets "<see cref="Name"/>/" or an empty span if <see cref="IsRoot"/> is true.
+    /// </summary>
+    public ReadOnlySpan<char> NameWithSeparator => _parent == null
+                                                    ? default
+                                                    : _path.AsSpan( _parent._path.Length );
 
     /// <summary>
     /// Gets this folder's path from <see cref="Root"/>.
+    /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>.
+    /// It never starts with '/' but always end with '/'
     /// </summary>
-    public NormalizedPath Path => _path;
+    public string Path => _path;
 
     /// <summary>
     /// Gets whether this folder is the root one.
     /// </summary>
-    public bool IsRoot => _path.IsEmptyPath;
+    [MemberNotNullWhen( false, nameof( Parent ) )]
+    public bool IsRoot => _parent == null;
 
     /// <summary>
     /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
@@ -145,7 +161,8 @@ public sealed partial class TypeScriptFolder
         {
             int cmp = name.CompareTo( c.Name, StringComparison.Ordinal );
             if( cmp == 0 ) return c;
-            if( cmp > 0 ) previous = c;
+            if( cmp < 0 ) break;
+            previous = c;
             c = c._next;
         }
         return null;
@@ -159,7 +176,7 @@ public sealed partial class TypeScriptFolder
         return f;
     }
 
-    void CheckCreateLocalName( string fileOrFolderName, bool isFolder )
+    static void CheckCreateLocalName( string fileOrFolderName, bool isFolder )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fileOrFolderName );
         var e = GetInvalidFileOrFolderNameError( fileOrFolderName, isFolder );
