@@ -204,11 +204,6 @@ public sealed class ResourceSpaceDataBuilder
         // We compute it if and only if the LiveStatePath is not ResourceSpaceCollector.NoLiveState.
         string? watchRoot = null;
 
-        Throw.DebugAssert( typeof( IDependencySorterResult ).GetProperty( "MaxGroupRank" ) == null );
-        int tempMaxGroupRank = sortResult.SortedItems.Count > 0
-                                ? sortResult.SortedItems.Max( s => s.IsGroup ? s.Rank : 0 )
-                                : 0;
-
         var bAppRequirements = ImmutableArray.CreateBuilder<ResPackage>();
         foreach( var s in sortResult.SortedItems )
         {
@@ -270,7 +265,7 @@ public sealed class ResourceSpaceDataBuilder
                     }
                     Throw.DebugAssert( watchRoot.EndsWith( Path.DirectorySeparatorChar ) );
                 }
-                if( s.Rank == tempMaxGroupRank )
+                if( s.IsEntryPoint )
                 {
                     bAppRequirements.Add( p );
                 }

@@ -713,11 +713,13 @@ __metadata:
   resolution: "@local/ck-gen@workspace:ck-gen"
   dependencies:
     "@stdlib/number-ctor": "npm:~0.1"
-    "@stdlib/symbol-ctor": "npm:^0.2.2"
-    "@stdlib/utils-native-class": "npm:^0.2.2"
-    axios: "npm:^1.8.1"
+    "@stdlib/symbol-ctor": "npm:~0.2.2"
+    "@stdlib/utils-native-class": "npm:~0.2.2"
+    axios: "npm:^1.8.3"
     tslib: "npm:=2.7.0"
     typescript: "npm:=5.4.5"
+  peerDependencies:
+    "@stdlib/symbol-ctor": ~0.2.2
   languageName: unknown
   linkType: soft
 
@@ -851,7 +853,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@stdlib/utils-native-class@npm:^0.2.2":
+"@stdlib/utils-native-class@npm:~0.2.2":
   version: 0.2.2
   resolution: "@stdlib/utils-native-class@npm:0.2.2"
   dependencies:
@@ -1311,14 +1313,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.8.1":
-  version: 1.8.1
-  resolution: "axios@npm:1.8.1"
+"axios@npm:^1.8.3":
+  version: 1.8.4
+  resolution: "axios@npm:1.8.4"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10/5a09a2b39e724e018bc94d0424bb1a6042e71864039fbcc8c8d9dd50f3acd9d01f81b895994c9b46bc82c026afa3dfd1ec343a27bfe4723b70841f3b3dd6edfa
+  checksum: 10/a10f0dd836613924e48cf03dc2eff3fd21b14f764807aedaee4880a70c0f142aaebdb21da7ce27104d4c16ca00d0e452a20a20851f60e385a8d5bad1ae909d46
   languageName: node
   linkType: hard
 
