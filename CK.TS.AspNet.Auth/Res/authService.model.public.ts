@@ -1,4 +1,4 @@
-import { AuthLevel } from '@local/ck-gen';
+import { AuthLevel } from '@local/ck-gen/CK/Auth/AuthLevel';
 
 /** Defines the status of the user schemes (see @see IUserSchemeInfo). */
 export enum SchemeUsageStatus {

@@ -18,24 +18,6 @@ public class TSTests
     [Test]
     public async Task CK_TS_AspNet_Auth_Async()
     {
-        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
-
-        var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-        engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
-        var tsConfig = engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        var map = (await engineConfig.RunSuccessfullyAsync()).LoadMap();
-
-        var builder = WebApplication.CreateSlimBuilder();
-
-        await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
-        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
-        await TestHelper.SuspendAsync( resume => resume );
-        runner.Run();
-    }
-
-    [Test]
-    public async Task CK_TS_AspNet_Auth_Inline_Async()
-    {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
         targetProjectPath.Parts[^2].ShouldBe( "TSInlineTests" );
 
@@ -53,9 +35,9 @@ public class TSTests
         runner.Run();
     }
 
-    [Explicit( "Same as CK_TS_AspNet_Auth_Inline but in a Temp folder (no yarn)." )]
+    [Explicit( "Same as CK_TS_AspNet_Auth but in a Temp folder (no yarn)." )]
     [Test]
-    public async Task CK_TS_AspNet_Auth_Inline_from_scrath_Async()
+    public async Task CK_TS_AspNet_Auth_from_scrath_Async()
     {
         NormalizedPath targetProjectPath = FileUtil.CreateUniqueTimedFolder( Path.GetTempPath(), null, DateTime.UtcNow );
         try

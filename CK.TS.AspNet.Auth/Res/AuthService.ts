@@ -1,11 +1,11 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
-import { AuthLevel } from '@local/ck-gen';
+import { AuthLevel } from '@local/ck-gen/CK/Auth/AuthLevel';
 
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
 import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';
 import { WebFrontAuthError } from './authService.model.extension';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
-import { StdAuthenticationTypeSystem } from './type-system';
+import { StdAuthenticationTypeSystem } from './type-system/StdAuthenticationTypeSystem';
 import { PopupDescriptor } from './PopupDescriptor';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {

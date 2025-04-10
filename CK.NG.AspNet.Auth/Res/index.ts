@@ -1,2 +1,2 @@
-export * from './NgAuthService'
-export * from './auth-service-support'
+export * from './NgAuthService';
+export * from './auth-service-support';
