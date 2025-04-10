@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { HttpInterceptorFn } from '@angular/common/http';
-import { AuthService } from '@local/ck-gen';
+import { AuthService } from '@local/ck-gen/CK/AspNet/Auth/AuthService';
 
 export const authInterceptor: HttpInterceptorFn = ( request, next ) => {
     const authService = inject(AuthService);

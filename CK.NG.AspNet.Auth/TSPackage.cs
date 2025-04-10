@@ -8,7 +8,8 @@ namespace CK.Ng.AspNet.Auth;
 [Requires<CK.AspNet.Auth.TSPackage, CK.Ng.Axios.TSPackage>]
 [NgProviderImport( "AXIOS, provideNgAuthSupport, AuthService" )]
 [NgProviderImport( "AxiosInstance", LibraryName = "axios" )]
-[NgProvider( "{ provide: AuthService, deps:[AXIOS], useFactory: (a : AxiosInstance) => new AuthService( a ) }" )]
+[NgProviderImport( "inject", LibraryName = "@angular/core" )]
+[NgProvider( "{ provide: AuthService, useFactory: () => new AuthService( inject( AXIOS ) ) }" )]
 [NgProvider( "provideNgAuthSupport()", "#Support" )]
 public class TSPackage : TypeScriptPackage
 {

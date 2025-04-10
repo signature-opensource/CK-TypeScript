@@ -1,6 +1,6 @@
 import { EnvironmentProviders, inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { AuthService, } from '@local/ck-gen';
+import { AuthService } from '@local/ck-gen/CK/AspNet/Auth/AuthService';
 import { authInterceptor } from './auth-interceptor';
 
 /**
