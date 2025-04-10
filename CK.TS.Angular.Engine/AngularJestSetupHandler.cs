@@ -51,7 +51,15 @@ sealed class AngularJestSetupHandler : TypeScriptIntegrationContext.JestSetupHan
                     // Do NOT alter the comments below.
                     // Start-CKTypeScriptEnv
                     CKTypeScriptEnv: {}
-                    // Stop-CKTypeScriptEnv-Stop
+                    // Stop-CKTypeScriptEnv
+                },
+                // TestHelper.CreateTypeScriptTestRunner also replaces the 'http://localhost' (that is the default)
+                // with the server address (like 'http://[::1]:55235' - a free dynamic port is used). 
+                // Do NOT alter the comments below.
+                testEnvironmentOptions: { 
+                    // Start-CKTypeScriptSrv
+                    url: 'http://localhost' 
+                    // Stop-CKTypeScriptSrv
                 },
                 setupFilesAfterEnv: ['<rootDir>/{{JestSetupTSFileName}}']
             };

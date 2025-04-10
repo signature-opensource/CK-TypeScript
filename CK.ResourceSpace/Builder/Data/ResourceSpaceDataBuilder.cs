@@ -204,6 +204,11 @@ public sealed class ResourceSpaceDataBuilder
         // We compute it if and only if the LiveStatePath is not ResourceSpaceCollector.NoLiveState.
         string? watchRoot = null;
 
+        Throw.DebugAssert( typeof( IDependencySorterResult ).GetProperty( "MaxGroupRank" ) == null );
+        int tempMaxGroupRank = sortResult.SortedItems.Count > 0
+                                ? sortResult.SortedItems.Max( s => s.IsGroup ? s.Rank : 0 )
+                                : 0;
+
         var bAppRequirements = ImmutableArray.CreateBuilder<ResPackage>();
         foreach( var s in sortResult.SortedItems )
         {
@@ -265,8 +270,7 @@ public sealed class ResourceSpaceDataBuilder
                     }
                     Throw.DebugAssert( watchRoot.EndsWith( Path.DirectorySeparatorChar ) );
                 }
-                // Rank is 1-based. Rank = 1 is for the head of the Group.
-                if( s.HeadForGroup.Rank == 1 )
+                if( s.Rank == tempMaxGroupRank )
                 {
                     bAppRequirements.Add( p );
                 }
@@ -293,6 +297,12 @@ public sealed class ResourceSpaceDataBuilder
             resourceIndex.Add( appPackage.Resources.Resources, appPackage.Resources );
             bLocal.Add( appPackage );
         }
+        monitor.Debug( bAll.Skip( 1 )
+                           .Select( x => $"""
+                           {x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string(' ', x.ToString().Length)} |{c}" ))}
+                           """ )
+                           .Concatenate( Environment.NewLine ) );
+
         Throw.DebugAssert( "Expected size reached.", packageIndex.Count == packageIndexSize );
         Throw.DebugAssert( "Expected size reached.", resourceIndex.Count == resourceIndexSize );
         var packages = bAll.MoveToImmutable();

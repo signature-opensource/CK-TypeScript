@@ -124,20 +124,25 @@ public static partial class TSTestHelperExtensions
     /// </summary>
     /// <param name="this">This helper.</param>
     /// <param name="targetProjectPath">
-    /// The test target project path. Usually obtained by:
+    /// The test target project path. Should be obtained by:
     /// <list type="bullet">
     ///     <item><see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptInlineTargetProjectPath()</see></item>
-    ///     <item>or <see cref="GetTypeScriptNpmPackageTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptBuildModeTargetProjectPath()</see></item>
     /// </list>
     /// </param>
-    /// <param name="environmentVariables">Optional environment variables to set.</param>
+    /// <param name="serverAddress">Optional server address that will replace the default "http://localhost".</param>
+    /// <param name="environmentVariables">Optional environment variables to set (will apeear in CKTypeScriptEnv).</param>
     /// <param name="command">Yarn command that will be executed.</param>
     public static Runner CreateTypeScriptRunner( this IMonitorTestHelper @this,
                                                  NormalizedPath targetProjectPath,
+                                                 string? serverAddress = null,
                                                  Dictionary<string, string>? environmentVariables = null,
                                                  string command = "test" )
     {
-        TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).ShouldBeTrue();
+        TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor,
+                                                                      targetProjectPath,
+                                                                      out var afterRun,
+                                                                      serverAddress,
+                                                                      environmentVariables ).ShouldBeTrue();
         return new Runner( @this, targetProjectPath, environmentVariables, command, afterRun );
     }
 

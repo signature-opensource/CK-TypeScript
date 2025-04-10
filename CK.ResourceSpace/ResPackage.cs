@@ -163,8 +163,8 @@ public sealed partial class ResPackage
         {
             if( set.Add( p ) )
             {
-                l |= p._allReachableHasLocalPackage;
-                set.UnionWith( p._allReachablePackages );
+                l |= p._allAfterReachableHasLocalPackage;
+                set.UnionWith( p._allAfterReachablePackages );
             }
         }
         return l;

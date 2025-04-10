@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Core;
 
@@ -14,9 +15,10 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
     readonly HashSet<ResourceLocator> _codeHandledResources;
     readonly string? _localPath;
 
-    public StoreContainer( HashSet<ResourceLocator> codeHandledResources, IResourceContainer container )
+    public StoreContainer( ResPackageDescriptorContext context, IResourceContainer container )
     {
-        _codeHandledResources = codeHandledResources;
+        Throw.DebugAssert( context.CodeHandledResources is HashSet<ResourceLocator> );
+        _codeHandledResources = Unsafe.As<HashSet<ResourceLocator>>( context.CodeHandledResources );
         _container = container;
         _localPath = container is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                         ? fs.ResourcePrefix
@@ -37,6 +39,15 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
         s.WriteObject( o._codeHandledResources );
         s.WriteObject( o._container );
     }
+
+    /// <summary>
+    /// Gets the real container: resources can be looked up skipping the CodeHandledResources
+    /// set of removed resources.
+    /// The StoreContainer is not a ResourceContainerWrapper: it doesn't subsitute its identity
+    /// to the inner one, it just acts as a filter on resources that have been removed from the
+    /// 
+    /// </summary>
+    public IResourceContainer InnerContainer => _container;
 
     /// <summary>
     /// Gets the local resources path if this StoreContainer is a FileSystemResourceContainer with a

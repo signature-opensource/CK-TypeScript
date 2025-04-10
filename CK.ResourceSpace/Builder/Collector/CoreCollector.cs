@@ -11,7 +11,6 @@ sealed class CoreCollector
     // The IResourceContainer key is used by this builder only to check that no resource
     // containers are shared by 2 packages.
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
-    readonly HashSet<ResourceLocator> _codeHandledResources;
     readonly List<ResPackageDescriptor> _packages;
     readonly ResPackageDescriptorContext _packageDescriptorContext;
     int _localPackageCount;
@@ -21,16 +20,15 @@ sealed class CoreCollector
     {
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
-        _codeHandledResources = new HashSet<ResourceLocator>();
         _packageDescriptorContext = new ResPackageDescriptorContext();
 
     }
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                              string fullName,
-                                              NormalizedPath defaultTargetPath,
-                                              IResourceContainer resourceStore,
-                                              IResourceContainer resourceAfterStore )
+                                                  string fullName,
+                                                  NormalizedPath defaultTargetPath,
+                                                  IResourceContainer resourceStore,
+                                                  IResourceContainer resourceAfterStore )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fullName );
         Throw.CheckArgument( resourceStore is not null && resourceStore.IsValid );
@@ -40,8 +38,8 @@ sealed class CoreCollector
     }
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                              Type type,
-                                              NormalizedPath defaultTargetPath )
+                                                  Type type,
+                                                  NormalizedPath defaultTargetPath )
     {
         Throw.CheckNotNullArgument( type );
         Throw.CheckArgument( "Dynamic assembly is not supported.", type.FullName != null );
@@ -59,11 +57,11 @@ sealed class CoreCollector
     }
 
     ResPackageDescriptor? DoRegister( IActivityMonitor monitor,
-                                  string fullName,
-                                  Type? type,
-                                  NormalizedPath defaultTargetPath,
-                                  IResourceContainer resourceStore,
-                                  IResourceContainer resourceAfterStore )
+                                      string fullName,
+                                      Type? type,
+                                      NormalizedPath defaultTargetPath,
+                                      IResourceContainer resourceStore,
+                                      IResourceContainer resourceAfterStore )
     {
         if( _packageIndex.TryGetValue( fullName, out var already ) )
         {
@@ -89,8 +87,8 @@ sealed class CoreCollector
                                           fullName,
                                           type,
                                           defaultTargetPath,
-                                          resources: new StoreContainer( _codeHandledResources, resourceStore ),
-                                          afterResources: new StoreContainer( _codeHandledResources, resourceAfterStore ) );
+                                          resources: new StoreContainer( _packageDescriptorContext, resourceStore ),
+                                          afterResources: new StoreContainer( _packageDescriptorContext, resourceAfterStore ) );
         bool isLocal = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                        || resourceAfterStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport;
         if( isLocal )

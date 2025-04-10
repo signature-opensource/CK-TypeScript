@@ -99,7 +99,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <returns>True on success, false if the resource cannot be found (an error is logged).</returns>
     public bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor, string resourceName, out ResourceLocator resource )
     {
-        if( !_resources.TryGetExpectedResource( monitor, resourceName, out resource, _afterResources ) )
+        if( !_resources.InnerContainer.TryGetExpectedResource( monitor, resourceName, out resource, _afterResources.InnerContainer ) )
         {
             return false;
         }
@@ -117,8 +117,8 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <returns>True if the resource has been found and removed, false otherwise.</returns>
     public bool RemoveCodeHandledResource( string resourceName, out ResourceLocator resource )
     {
-        if( _resources.TryGetResource( resourceName, out resource )
-            || _afterResources.TryGetResource( resourceName, out resource ) )
+        if( _resources.InnerContainer.TryGetResource( resourceName, out resource )
+            || _afterResources.InnerContainer.TryGetResource( resourceName, out resource ) )
         {
             _context.RegisterCodeHandledResources( resource );
             return true;
@@ -380,31 +380,33 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                           string relName,
                           params Type[] genTypes )
     {
-        foreach( var t in genAttributes.Where( a => genTypes.Contains( a.GenType ) ) )
+        foreach( var genAttribute in genAttributes.Where( a => genTypes.Contains( a.GenType ) ) )
         {
-            if( !packageIndex.TryGetValue( t, out var package ) )
+            foreach( var t in genAttribute.GenArgs )
             {
-                monitor.Warn( $"[{relName}<{t:N}>] on type '{_type:N}' skipped as type target is not registered in this ResourceSpace." );
-            }
-            else
-            {
-                if( list == null )
+                if( !packageIndex.TryGetValue( t, out var package ) )
                 {
-                    list = new List<ResPackageDescriptor> { package };
+                    monitor.Warn( $"[{relName}<{t:N}>] on type '{_type:N}' skipped as type target is not registered in this ResourceSpace." );
                 }
                 else
                 {
-                    if( list.Contains( package ) )
+                    if( list == null )
                     {
-                        monitor.Warn( $"Duplicate '[{relName}<{t:N}>]' on type '{_type:N}'. Ignored." );
+                        list = new List<ResPackageDescriptor> { package };
                     }
                     else
                     {
-                        list.Add( package );
+                        if( list.Contains( package ) )
+                        {
+                            monitor.Warn( $"Duplicate '[{relName}<{t:N}>]' on type '{_type:N}'. Ignored." );
+                        }
+                        else
+                        {
+                            list.Add( package );
+                        }
                     }
                 }
             }
-
         }
     }
 

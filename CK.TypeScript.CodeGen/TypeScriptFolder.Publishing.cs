@@ -50,7 +50,7 @@ public sealed partial class TypeScriptFolder
         Throw.DebugAssert( _firstChild != null || _firstFile != null );
         var cFolder = _firstChild;
         var cFile = _firstFile;
-        using( monitor.OpenTrace( IsRoot ? "Publishing TypeScript Root folder." : $"Saving /{Name}." ) )
+        using( monitor.OpenTrace( IsRoot ? "Publishing TypeScript Root folder to the Code generated container." : $"-> '/{Name}'" ) )
         {
             if( !IsRoot ) target.EnterFolder( Name );
             bool hasBarrel = false;
@@ -66,7 +66,7 @@ public sealed partial class TypeScriptFolder
                     }
                     else
                     {
-                        monitor.Trace( $"Publishing '{cFile.Name}'." );
+                        monitor.Trace( $"-> '{cFile.Name}'." );
                     }
                     target.Publish( cFile.Name, cFile.GetCurrentText() );
                     cFile = cFile._next;

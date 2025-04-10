@@ -1,64 +1,46 @@
-import axios, { AxiosInstance } from 'axios';
-import { AuthLevel, AuthService, AXIOS } from '@local/ck-gen';
-import { NgAuthService, CKGenAppModule } from '@local/ck-gen';
+import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
+import { NgAuthService, AuthLevel } from '@local/ck-gen';
 import { TestBed } from '@angular/core/testing';
-import { CookieJar } from 'tough-cookie';
-import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 import { AppComponent } from './app.component';
 
-if ( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout( 30 * 60 * 1000 ); // 30 minutes
+if (process.env["VSCODE_INSPECTOR_OPTIONS"]) jest.setTimeout(30 * 60 * 1000); // 30 minutes
 
-const serverAddress = CKTypeScriptEnv['SERVER_ADDRESS'] ?? "";
-const describeWithServer = serverAddress ? describe : describe.skip;
+describe('NgAuthService integration tests', () => {
+  beforeAll(async () => {
+  });
 
-describeWithServer( 'NgAuthService integration tests', () => {
-    beforeAll( async () => {
-    } );
+  beforeEach(async () => {
+    await TestBed.configureTestingModule(
+      {
+        imports: [AppComponent],
+        providers: CKGenAppModule.Providers
+      }).compileComponents();
 
-    beforeEach( async () => {
-        const axiosInstance = axios.create();
-        const cookieJar = new CookieJar();
-        addCookieJar(axiosInstance);
-        axiosInstance.defaults.jar = cookieJar;
-        await TestBed.configureTestingModule(
-            {
-                imports: [AppComponent],
-                providers: [
-                    { provide: AXIOS, useValue: axiosInstance },
-                    { provide: AuthService, deps:[AXIOS], useFactory: (a : AxiosInstance) => new AuthService( a, {
-                      identityEndPoint: serverAddress
-                    } ) },
-                    ...CKGenAppModule.Providers.exclude("CK.Ng.Axios.TSPackage").exclude("CK.Ng.AspNet.Auth.TSPackage")
-                ]
+    const ngAuthService = TestBed.inject(NgAuthService);
+    await ngAuthService.authService.isInitialized;
+  });
 
-            } ).compileComponents();
+  it('ngAuthService authInfos should be correctly updated', async () => {
+    const ngAuthService = TestBed.inject(NgAuthService);
+    const authService = ngAuthService.authService;
 
-      const ngAuthService = TestBed.inject(NgAuthService);
-      await ngAuthService.authService.isInitialized;
-    } );
+    expect(authService.authenticationInfo.level).toBe(AuthLevel.None);
+    expect(authService.availableSchemes.length).toBeGreaterThan(0);
 
-    it( 'ngAuthService authInfos should be correctly updated', async () => {
+    expect(ngAuthService.authenticationInfo()).toStrictEqual(authService.authenticationInfo);
+    await authService.basicLogin('Albert', 'success');
+    expect(ngAuthService.authenticationInfo().level).toBe(AuthLevel.Normal);
+    expect(ngAuthService.authenticationInfo()).toStrictEqual(authService.authenticationInfo);
 
-        const ngAuthService = TestBed.inject( NgAuthService );
-        const authService = ngAuthService.authService;
+    let current = ngAuthService.authenticationInfo();
+    expect(current.user.userName).toBe('Albert');
+    expect(current.level).toBe(AuthLevel.Normal);
 
-      expect(authService.authenticationInfo.level).toBe(AuthLevel.None);
-      expect(authService.availableSchemes.length).toBeGreaterThan(0);
+    await authService.logout();
+    expect(ngAuthService.authenticationInfo()).toStrictEqual(authService.authenticationInfo);
 
-        expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
-        await authService.basicLogin( 'Albert', 'success' );
-        expect( ngAuthService.authenticationInfo().level ).toBe( AuthLevel.Normal );
-        expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
-
-        let current = ngAuthService.authenticationInfo();
-        expect( current.user.userName ).toBe( 'Albert' );
-        expect( current.level ).toBe( AuthLevel.Normal );
-
-        await authService.logout();
-        expect( ngAuthService.authenticationInfo() ).toStrictEqual( authService.authenticationInfo );
-
-        current = ngAuthService.authenticationInfo();
-        expect( current.user.userId ).toBe( 0 );
-        expect( current.user.userName ).toBe( '' );
-    } );
-} );
+    current = ngAuthService.authenticationInfo();
+    expect(current.user.userId).toBe(0);
+    expect(current.user.userName).toBe('');
+  });
+});

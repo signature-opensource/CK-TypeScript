@@ -18,6 +18,12 @@ sealed class ResPackageDescriptorContext
 
     public bool Closed => _closed;
 
+    /// <summary>
+    /// IReadOnlySet to force the use of RegisterCodeHandledResources.
+    /// StoreContainer constructor casts this to back to HashSet<ResourceLocator>.
+    /// </summary>
+    public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
+
     public void Close()
     {
         Throw.DebugAssert( !Closed );

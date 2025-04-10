@@ -117,6 +117,7 @@ public class FullTSTests
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,
+                                                                    serverAddress: null,
                                                                     new Dictionary<string, string>()
                                                                     {
                                                                         { "SET_BY_THE_UNIT_TEST", "YES!" }
