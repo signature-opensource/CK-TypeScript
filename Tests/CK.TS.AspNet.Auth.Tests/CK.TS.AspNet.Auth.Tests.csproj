@@ -16,7 +16,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="TSInlineTests\CK_TS_AspNet_Auth_Inline\ck-gen\CK\Core\" />
-  </ItemGroup>
 </Project>

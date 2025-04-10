@@ -1,0 +1,13 @@
+{
+  "name": "recursive_type_dont_import_themselves",
+  "private": true,
+  "packageManager": "yarn@4.6.0",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@yarnpkg/sdks": "^3.2.1",
+    "typescript": "=5.4.5"
+  },
+  "ckVersion": 1
+}
