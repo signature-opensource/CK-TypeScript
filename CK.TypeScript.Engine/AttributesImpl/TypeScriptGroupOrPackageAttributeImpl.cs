@@ -3,6 +3,7 @@ using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
 
 namespace CK.TypeScript.Engine;
@@ -151,6 +152,13 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
         if( d == null ) return false;
         d.IsGroup = _isGroup;
+        // Handles barrel.
+        if( d.RemoveCodeHandledResource( "index.ts", out var barrel ) )
+        {
+            var targetPath = _typeScriptFolder.AppendPart( "index.ts" );
+            context.Root.Root.FindOrCreateResourceFile( in barrel, targetPath );
+            monitor.Trace( $"Exported barrel '{targetPath}'." );
+        }
         return OnConfiguredDescriptor( monitor, context, spaceBuilder, d );
     }
 

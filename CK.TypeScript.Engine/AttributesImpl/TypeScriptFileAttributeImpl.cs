@@ -13,7 +13,6 @@ namespace CK.TypeScript.Engine;
 public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
     EmbeddedResources.ResourceLocator _resource;
-    NormalizedPath _targetPath;
 
     /// <summary>
     /// Initializes a new <see cref="TypeScriptFileAttributeImpl"/>.
@@ -41,7 +40,6 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         NormalizedPath targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
         targetPath = targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
         var file = context.Root.Root.FindOrCreateResourceFile( in _resource, targetPath );
-        Throw.DebugAssert( file is ResourceTypeScriptFile );
         foreach( var tsType in Attribute.TypeNames )
         {
             if( string.IsNullOrWhiteSpace( tsType ) ) continue;

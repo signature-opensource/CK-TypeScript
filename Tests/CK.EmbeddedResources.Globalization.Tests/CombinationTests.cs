@@ -44,7 +44,7 @@ public class CombinationTests
         {
             set.ShouldNotBeNull().ToInitialFinalSet( TestHelper.Monitor ).ShouldBeNull();
             logs.ShouldContain( """
-                Invalid initial set of translation definitions 'locales/default.jsonc' in 'P'.
+                Invalid initial set of translation definitions 'locales/default.jsonc' in P.
                 No translation can be defined as regular override ("O:"). Only optional ("O?" - that will be skipped) and always ("O!:" - that will be kept) are allowed.
                 The following resources are regular override definitions:
                 Regular

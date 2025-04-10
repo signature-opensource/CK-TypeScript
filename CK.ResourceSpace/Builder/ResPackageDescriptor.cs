@@ -92,9 +92,6 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <summary>
     /// Finds the <paramref name="resourceName"/> that must exist in <see cref="Resources"/> or <see cref="AfterResources"/>
     /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
-    /// <para>
-    /// The same resource can be removed more than once: the resource is searched in the actual container. 
-    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="resourceName">The resource name to find.</param>
@@ -108,6 +105,25 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         }
         _context.RegisterCodeHandledResources( resource );
         return true;
+    }
+
+    /// <summary>
+    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="resourceName">The resource name to find.</param>
+    /// <param name="resource">The found (and removed) resource.</param>
+    /// <returns>True if the resource has been found and removed, false otherwise.</returns>
+    public bool RemoveCodeHandledResource( string resourceName, out ResourceLocator resource )
+    {
+        if( _resources.TryGetResource( resourceName, out resource )
+            || _afterResources.TryGetResource( resourceName, out resource ) )
+        {
+            _context.RegisterCodeHandledResources( resource );
+            return true;
+        }
+        return false;
     }
 
 

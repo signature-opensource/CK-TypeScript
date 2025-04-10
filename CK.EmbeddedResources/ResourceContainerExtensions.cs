@@ -32,7 +32,10 @@ public static class ResourceContainerExtensions
     /// <param name="resourceName">The local resource name (can contain any folder prefix).</param>
     /// <param name="locator">The resulting locator.</param>
     /// <returns>True if the resource exists, false otherwise.</returns>
-    public static bool TryGetExpectedResource( this IResourceContainer container, IActivityMonitor monitor, string resourceName, out ResourceLocator locator )
+    public static bool TryGetExpectedResource( this IResourceContainer container,
+                                               IActivityMonitor monitor,
+                                               string resourceName,
+                                               out ResourceLocator locator )
     {
         if( !container.TryGetResource( resourceName, out locator ) )
         {

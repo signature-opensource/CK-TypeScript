@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { CKGenAppModule, NgAuthService } from '@local/ck-gen';
+import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
+import { NgAuthService } from '@local/ck-gen';
 
 describe('AppComponent without backend...', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -9,7 +10,7 @@ describe('AppComponent without backend...', () => {
   // The app is available (but the AuthService is on error).
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent],
+      imports: [AppComponent],     
       providers: CKGenAppModule.Providers,
     }).compileComponents();
     fixture = TestBed.createComponent(AppComponent);
