@@ -78,7 +78,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// <see cref="ResourceSpaceFolderHandler"/> and <see cref="ResourceSpaceFileHandler"/>.
     /// </para>
     /// <para>
-    /// How the removed resource is "transferred" (or not) in the <see cref="ResourceSpaceCollector.GeneratedCodeContainer"/>
+    /// How the removed resource is "transferred" (or not) in the <see cref="ResSpaceCollector.GeneratedCodeContainer"/>
     /// is up to the code generators.
     /// </para>
     /// </summary>
@@ -144,7 +144,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// Gets or sets the package that owns this one.
     /// <para>
     /// It must belong to the same collector otherwise an <see cref="ArgumentException"/> is thrown.
-    /// Before calling <see cref="ResourceSpaceDataBuilder.Build(IActivityMonitor)"/>, <see cref="IsGroup"/> must
+    /// Before calling <see cref="ResSpaceDataBuilder.Build(IActivityMonitor)"/>, <see cref="IsGroup"/> must
     /// be false otherwise this will be an error.
     /// </para>
     /// </summary>

@@ -204,7 +204,7 @@ public sealed partial class TypeScriptContext
         var typeScriptContext = this;
 
         // New approach (CK-ReaDI oriented) here to manage the resources.
-        var resSpaceConfiguration = new ResourceSpaceConfiguration();
+        var resSpaceConfiguration = new ResSpaceConfiguration();
         resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
 
         // Some GlobalCodeGenerators may generate TypeScript types that are required by package registrations:
@@ -261,7 +261,7 @@ public sealed partial class TypeScriptContext
             return false;
         }
 
-        var dataSpaceBuilder = new ResourceSpaceDataBuilder( resSpaceCollector );
+        var dataSpaceBuilder = new ResSpaceDataBuilder( resSpaceCollector );
         var spaceData = dataSpaceBuilder.Build( monitor );
         if( spaceData == null ) return false;
 
@@ -275,7 +275,7 @@ public sealed partial class TypeScriptContext
         // final ResourceSpace.
 
         var installer = new InitialFileSystemInstaller( _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" ) );
-        var spaceBuilder = new ResourceSpaceBuilder( spaceData );
+        var spaceBuilder = new ResSpaceBuilder( spaceData );
         // Last chance to publish the TypeScript files in a GeneratedCodeContainer and
         // assign it to the resource space.
         var codeTarget = new CodeGenResourceContainerTarget();
@@ -340,7 +340,7 @@ public sealed partial class TypeScriptContext
         }
 
         static bool ConfigureResPackages( IActivityMonitor monitor,
-                                          ResourceSpaceConfiguration resourcesConfiguration,
+                                          ResSpaceConfiguration resourcesConfiguration,
                                           IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
                                           TypeScriptContext context )
         {

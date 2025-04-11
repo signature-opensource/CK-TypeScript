@@ -29,7 +29,7 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// </summary>
     public FinalResourceAssetSet? FinalAssets => _finalAssets;
 
-    protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData )
+    protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData )
     {
         FinalResourceAssetSet? r = _cache.Obtain( monitor, spaceData.AppPackage );
         if( r == null ) return false;

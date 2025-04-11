@@ -16,7 +16,7 @@ public interface IResourceSpaceItemInstaller
     /// <param name="monitor">The monitor to uses.</param>
     /// <param name="resSpace">The resource space.</param>
     /// <returns>True on success, false if anything prevents the install to succeed (errors should be logged).</returns>
-    bool Open( IActivityMonitor monitor, ResourceSpace resSpace );
+    bool Open( IActivityMonitor monitor, ResSpace resSpace );
 
     /// <summary>
     /// Writes a resource content.

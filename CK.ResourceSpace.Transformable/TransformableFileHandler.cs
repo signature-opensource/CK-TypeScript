@@ -22,7 +22,7 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
         _host = transformerHost;
     }
 
-    protected override bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData, FolderExclusion folderFilter )
+    protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData, FolderExclusion folderFilter )
     {
         bool success = true;
         _items = new List<TransformableItem>();

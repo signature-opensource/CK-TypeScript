@@ -43,11 +43,6 @@ sealed class CoreCollector
     {
         Throw.CheckNotNullArgument( type );
         Throw.CheckArgument( "Dynamic assembly is not supported.", type.FullName != null );
-        if( _packageIndex.TryGetValue( type, out var already ) )
-        {
-            monitor.Error( $"Duplicate package registration: type '{type:C}' is already registered as '{already}'." );
-            return null;
-        }
         IResourceContainer resourceStore = type.CreateResourcesContainer( monitor );
         IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true );
 
@@ -68,11 +63,6 @@ sealed class CoreCollector
             monitor.Error( $"Duplicate package registration: FullName is already registered as '{already}'." );
             return null;
         }
-        if( type != null && _packageIndex.TryGetValue( type, out already ) )
-        {
-            monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );
-            return null;
-        }
         if( _packageIndex.TryGetValue( resourceStore, out already ) )
         {
             monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
@@ -83,12 +73,23 @@ sealed class CoreCollector
             monitor.Error( $"Package resources mismatch: {resourceAfterStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
             return null;
         }
+        bool isGroup = true;
+        if( type != null )
+        {
+            isGroup = !typeof( IResourcePackage ).IsAssignableFrom( type ); ;
+            if( _packageIndex.TryGetValue( type, out already ) )
+            {
+                monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );
+                return null;
+            }
+        }
         var p = new ResPackageDescriptor( _packageDescriptorContext,
                                           fullName,
                                           type,
                                           defaultTargetPath,
                                           resources: new StoreContainer( _packageDescriptorContext, resourceStore ),
                                           afterResources: new StoreContainer( _packageDescriptorContext, resourceAfterStore ) );
+        p.IsGroup = isGroup;
         bool isLocal = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
                        || resourceAfterStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport;
         if( isLocal )

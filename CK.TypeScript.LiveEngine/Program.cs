@@ -7,11 +7,12 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
+using System.Threading.Tasks;
 
-var (logFilter,launchDebugger) = DisplayHeaderAndHandleArguments( args );
+var (logFilter, launchDebugger) = DisplayHeaderAndHandleArguments( args );
 
 // Don't try to attach a debugger if one is already attached.
-if( launchDebugger && !Debugger.IsAttached)
+if( launchDebugger && !Debugger.IsAttached )
 {
     Debugger.Launch();
 }
@@ -32,22 +33,9 @@ AssemblyLoadContext.Default.Resolving += static ( AssemblyLoadContext ctx, Assem
 };
 
 var ckGenAppPath = Path.Combine( Environment.CurrentDirectory, "ck-gen-app" ) + Path.DirectorySeparatorChar;
-var liveStateFilePath = ckGenAppPath + ResourceSpace.LiveStateFileName;
+var liveStateFilePath = ckGenAppPath + ResSpace.LiveStateFileName;
 
-CKGenAppFilter? stateFilesFilter = null;
-while( !ctrlCHandler.IsCancellationRequested )
-{
-    monitor.Info( $"""
-                    Waiting for file:
-                    -> {liveStateFilePath}
-                    """ );
-    var liveState = await LiveState.WaitForStateAsync( monitor, liveStateFilePath, ctrlCHandler.Token );
-    monitor.Info( "Running watcher." );
-    stateFilesFilter ??= new CKGenAppFilter( liveStateFilePath, liveState );
-    var runner = new Runner( liveState, stateFilesFilter );
-    await runner.RunAsync( monitor, ctrlCHandler.Token );
-    monitor.Info( "Watcher stopped." );
-}
+await Runner.RunAsync( monitor, liveStateFilePath, ctrlCHandler.Token );
 
 static (LogFilter LogFilter, bool LaunchDebugger) DisplayHeaderAndHandleArguments( string[] args )
 {
@@ -115,5 +103,6 @@ static (LogFilter LogFilter, bool LaunchDebugger) DisplayHeaderAndHandleArgument
         }
     }
     Console.WriteLine( $"Using --verbosity {logName}" );
-    return (log, Array.IndexOf( args, "--debug-launch" ) >= 0 );
+    return (log, Array.IndexOf( args, "--debug-launch" ) >= 0);
 }
+

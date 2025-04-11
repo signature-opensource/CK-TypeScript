@@ -42,11 +42,11 @@ public abstract partial class ResourceSpaceFileHandler : IResourceSpaceHandler
     /// <param name="folderFilter">The filter for resources or folder to use.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
     internal protected abstract bool Initialize( IActivityMonitor monitor,
-                                                 ResourceSpaceData spaceData,
+                                                 ResSpaceData spaceData,
                                                  FolderExclusion folderFilter );
 
     /// <summary>
-    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor)"/> (even if <see cref="Installer"/> is null).
+    /// Called by <see cref="ResSpace.Install(IActivityMonitor)"/> (even if <see cref="Installer"/> is null).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>True on success, false otherwise.</returns>

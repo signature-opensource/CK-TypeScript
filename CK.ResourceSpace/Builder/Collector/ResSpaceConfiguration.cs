@@ -6,14 +6,14 @@ using System.IO;
 namespace CK.Core;
 
 /// <summary>
-/// Builder for <see cref="ResourceSpaceCollector"/> that is the first step to produce a
-/// <see cref="ResourceSpace"/>. 
+/// Builder for <see cref="ResSpaceCollector"/> that is the first step to produce a
+/// <see cref="ResSpace"/>. 
 /// <para>
 /// This initial builder collects all the fundamental information required to fully update a target
 /// code generated folder including the Live state.
 /// </para>
 /// </summary>
-public sealed class ResourceSpaceConfiguration
+public sealed class ResSpaceConfiguration
 {
     readonly CoreCollector _coreCollector;
     IResourceContainer? _generatedCodeContainer;
@@ -23,7 +23,7 @@ public sealed class ResourceSpaceConfiguration
     /// <summary>
     /// Initializes a new collector that must be configured.
     /// </summary>
-    public ResourceSpaceConfiguration()
+    public ResSpaceConfiguration()
     {
         _coreCollector = new CoreCollector();
     }
@@ -31,11 +31,11 @@ public sealed class ResourceSpaceConfiguration
     /// <summary>
     /// Gets or sets the "&lt;Code&gt;" head package generated resource container.
     /// When let to null, an empty container is considered until a non null container is configured
-    /// with <see cref="ResourceSpaceCollector.GeneratedCodeContainer"/>, <see cref="ResourceSpaceDataBuilder.GeneratedCodeContainer"/>,
-    /// <see cref="ResourceSpaceData.GeneratedCodeContainer"/> or (last chance) with <see cref="ResourceSpaceBuilder.GeneratedCodeContainer"/>.
+    /// with <see cref="ResSpaceCollector.GeneratedCodeContainer"/>, <see cref="ResSpaceDataBuilder.GeneratedCodeContainer"/>,
+    /// <see cref="ResSpaceData.GeneratedCodeContainer"/> or (last chance) with <see cref="ResSpaceBuilder.GeneratedCodeContainer"/>.
     /// <para>
     /// This possibly late assignation of the code generated container enables code generator to be able to generate code
-    /// based on the topologically ordered <see cref="ResourceSpaceData.Packages"/>. Not all code generators require this:
+    /// based on the topologically ordered <see cref="ResSpaceData.Packages"/>. Not all code generators require this:
     /// some can assign the code from this initial configuration. 
     /// </para>
     /// </summary>
@@ -52,7 +52,7 @@ public sealed class ResourceSpaceConfiguration
 
     /// <summary>
     /// Gets or sets the path of the "&lt;App&gt;" tail package application local resources 
-    /// (the <see cref="ResourceSpaceData.AppPackage"/>'s <see cref="ResPackage.Resources"/>' <see cref="IResPackageResources.LocalPath"/>).
+    /// (the <see cref="ResSpaceData.AppPackage"/>'s <see cref="ResPackage.Resources"/>' <see cref="IResPackageResources.LocalPath"/>).
     /// When let to null, an empty container is used.
     /// <para>
     /// When not null, this path is fully qualified and ends with <see cref="Path.DirectorySeparatorChar"/>
@@ -82,7 +82,7 @@ public sealed class ResourceSpaceConfiguration
     /// This is optional as this defaults to "<see cref="AppResourcesLocalPath"/>/.ck-watch/".
     /// It will be created if it doesn't exist.
     /// <para>
-    /// By setting it to <see cref="ResourceSpaceCollector.NoLiveState"/>, no Live state is created
+    /// By setting it to <see cref="ResSpaceCollector.NoLiveState"/>, no Live state is created
     /// even if <see cref="AppResourcesLocalPath"/> is specified.
     /// </para>
     /// </summary>
@@ -93,9 +93,9 @@ public sealed class ResourceSpaceConfiguration
         {
             if( value != null )
             {
-                if( value != ResourceSpaceCollector.NoLiveState )
+                if( value != ResSpaceCollector.NoLiveState )
                 {
-                    Throw.DebugAssert( ResourceSpaceCollector.NoLiveState == "none" );
+                    Throw.DebugAssert( ResSpaceCollector.NoLiveState == "none" );
                     Throw.CheckArgument( """LiveStatePath must be "none" or a fully qualified path.""", Path.IsPathFullyQualified( value ) );
                     value = Path.GetFullPath( value );
                     if( value[^1] != Path.DirectorySeparatorChar )
@@ -138,6 +138,22 @@ public sealed class ResourceSpaceConfiguration
 
     /// <summary>
     /// Registers a package. It must not already exist: <paramref name="type"/> must not have been already registered.
+    /// <para>
+    /// The <see cref="ResPackageDescriptor.DefaultTargetPath"/> is derived from the type's namespace:
+    /// "The/Type/Namespace" (the dots of the namespace are replaced with a '/'.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="type">The type that defines the package.</param>
+    /// <returns>The package descriptor on success, null on error.</returns>
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type )
+    {
+        var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
+        return _coreCollector.RegisterPackage( monitor, type, targetPath );
+    }
+
+    /// <summary>
+    /// Registers a package. It must not already exist: <paramref name="type"/> must not have been already registered.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The type that defines the package.</param>
@@ -156,13 +172,13 @@ public sealed class ResourceSpaceConfiguration
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The collector with initialized packages or null on error.</returns>
-    public ResourceSpaceCollector? Build( IActivityMonitor monitor )
+    public ResSpaceCollector? Build( IActivityMonitor monitor )
     {
         var liveStatePath = _liveStatePath
                                         ?? (_appResourcesLocalPath == null
-                                                ? ResourceSpaceCollector.NoLiveState
+                                                ? ResSpaceCollector.NoLiveState
                                                 : _appResourcesLocalPath + ".ck-watch" + Path.DirectorySeparatorChar);
-        return new ResourceSpaceCollector( _coreCollector,
+        return new ResSpaceCollector( _coreCollector,
                                            _generatedCodeContainer,
                                            _appResourcesLocalPath,
                                            liveStatePath );

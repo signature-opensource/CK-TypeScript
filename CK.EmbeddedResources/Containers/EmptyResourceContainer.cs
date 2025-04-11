@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 
 namespace CK.EmbeddedResources;
@@ -15,12 +16,6 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     readonly bool _isDisabled;
     readonly string _resourcePrefix;
     readonly bool _isValid;
-
-    /// <summary>
-    /// A default empty container named "Final Container".
-    /// Can be used as an empty object where a container is required but without direct content in it.
-    /// </summary>
-    public static readonly EmptyResourceContainer FakeFinalContainer = new EmptyResourceContainer( "Final Container", false );
 
     /// <summary>
     /// Initializes a new empty container with a display name.
@@ -44,19 +39,18 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     }
 
     /// <summary>
-    /// Reads an empty resource container previously serialized by <see cref="WriteData(ICKBinaryWriter)"/>.
+    /// Initializes a new empty resource container previously serialized by <see cref="WriteData(ICKBinaryWriter)"/>.
     /// </summary>
     /// <param name="r">The reader.</param>
     /// <param name="version">The serialized version.</param>
-    /// <returns>The container.</returns>
-    public static EmptyResourceContainer Read( ICKBinaryReader r, int version )
+    [EditorBrowsable( EditorBrowsableState.Never )]
+    public EmptyResourceContainer( ICKBinaryReader r, int version )
     {
         Throw.CheckArgument( version == 0 );
-        if( r.ReadByte() == 0 )
-        {
-            return FakeFinalContainer;
-        }
-        return new EmptyResourceContainer( r.ReadString(), r.ReadBoolean(), r.ReadString(), r.ReadBoolean() );
+        _displayName = r.ReadString();
+        _isDisabled = r.ReadBoolean();
+        _resourcePrefix = r.ReadString();
+        _isValid = r.ReadBoolean();
     }
 
     /// <summary>
@@ -66,18 +60,10 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     /// <param name="w">The target writer.</param>
     public void WriteData( ICKBinaryWriter w )
     {
-        if( this == FakeFinalContainer )
-        {
-            w.Write( (byte)0 );
-        }
-        else
-        {
-            w.Write( (byte)1 );
-            w.Write( _displayName );
-            w.Write( _isDisabled );
-            w.Write( _resourcePrefix );
-            w.Write( _isValid );
-        }
+        w.Write( _displayName );
+        w.Write( _isDisabled );
+        w.Write( _resourcePrefix );
+        w.Write( _isValid );
     }
 
     /// <inheritdoc />

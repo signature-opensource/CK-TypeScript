@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace CK.Core;
 
@@ -38,15 +39,54 @@ public abstract class ResourceSpaceFolderHandler : IResourceSpaceHandler
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="spaceData">The space data to consider.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
-    internal protected abstract bool Initialize( IActivityMonitor monitor, ResourceSpaceData spaceData );
+    internal protected abstract bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData );
 
     /// <summary>
-    /// Called by <see cref="ResourceSpace.Install(IActivityMonitor)"/> (even if <see cref="Installer"/> is null).
+    /// Called by <see cref="ResSpace.Install(IActivityMonitor)"/> (even if <see cref="Installer"/> is null).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>True on success, false otherwise.</returns>
     internal protected abstract bool Install( IActivityMonitor monitor );
 
+    /// <summary>
+    /// Returns this handler's type name and <see cref="RootFolderName"/>.
+    /// </summary>
+    /// <returns>A readable string.</returns>
     public sealed override string ToString() => $"{GetType().Name} - Folder '{_rootFolderName}/'";
+
+    /// <summary>
+    /// Helper available to all <see cref="ILiveUpdater.OnChange(IActivityMonitor, IResPackageResources, string)"/>.
+    /// </summary>
+    /// <param name="rootFolderName">The folder's handler <see cref="RootFolderName"/>.</param>
+    /// <param name="filePath">The changed file path.</param>
+    /// <param name="localFilePath">
+    /// The local file path (without the <paramref name="rootFolderName"/>).
+    /// Can be empty or starts with the <see cref="Path.DirectorySeparatorChar"/>.
+    /// </param>
+    /// <returns>True if this file should be considered, false otherwise.</returns>
+    public static bool IsFileInRootFolder( string rootFolderName, string filePath, out ReadOnlySpan<char> localFilePath )
+    {
+        int lenRoot = rootFolderName.Length;
+        int remainder = filePath.Length - lenRoot;
+        if( remainder >= 0 )
+        {
+            var sF = filePath.AsSpan();
+            if( sF.StartsWith( rootFolderName ) )
+            {
+                if( remainder == 0 )
+                {
+                    localFilePath = default;
+                    return true;
+                }
+                if( sF[lenRoot] == Path.DirectorySeparatorChar )
+                {
+                    localFilePath = sF.Slice( lenRoot );
+                    return true;
+                }
+            }
+        }
+        localFilePath = default;
+        return false;
+    }
 
 }

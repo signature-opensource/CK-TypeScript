@@ -32,15 +32,15 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
     }
 
     /// <summary>
-    /// See <see cref="IResourceSpaceItemInstaller.Open(IActivityMonitor, ResourceSpace)"/>.
+    /// See <see cref="IResourceSpaceItemInstaller.Open(IActivityMonitor, ResSpace)"/>.
     /// Ensures that the <see cref="TargetPath"/> exists by creating it if needed.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="resSpace">The resource space to install.</param>
     /// <returns>True on sucess, false on error.</returns>
-    public virtual bool Open( IActivityMonitor monitor, ResourceSpace resSpace )
+    public virtual bool Open( IActivityMonitor monitor, ResSpace resSpace )
     {
-        return CheckLiveStateCoherency( monitor, resSpace.ResourceSpaceData )
+        return CheckLiveStateCoherency( monitor, resSpace.Data )
                && EnsureTargetPath( monitor );
     }
 
@@ -68,14 +68,14 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
     }
 
     /// <summary>
-    /// Checks that if <see cref="ResourceSpaceData.WatchRoot"/> is not null, the <see cref="TargetPath"/>
-    /// is independent of <see cref="ResourceSpaceData.LiveStatePath"/> and the "<App>" resources folder
+    /// Checks that if <see cref="ResSpaceData.WatchRoot"/> is not null, the <see cref="TargetPath"/>
+    /// is independent of <see cref="ResSpaceData.LiveStatePath"/> and the "<App>" resources folder
     /// (not above not below them).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="data">The resource space.</param>
     /// <returns>True on success, false on error.</returns>
-    protected bool CheckLiveStateCoherency( IActivityMonitor monitor, ResourceSpaceData data )
+    protected bool CheckLiveStateCoherency( IActivityMonitor monitor, ResSpaceData data )
     {
         if( data.WatchRoot != null )
         {
@@ -117,7 +117,7 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
     /// <summary>
     /// Gets the target path. Ends with <see cref="Path.DirectorySeparatorChar"/>.
     /// <para>
-    /// <see cref="Open(IActivityMonitor, ResourceSpace)"/> creates it if needed.
+    /// <see cref="Open(IActivityMonitor, ResSpace)"/> creates it if needed.
     /// </para>
     /// </summary>
     public string TargetPath => _targetPath;

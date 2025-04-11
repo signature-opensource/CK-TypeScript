@@ -9,11 +9,11 @@ using System.Threading;
 namespace CK.Core;
 
 /// <summary>
-/// Final production initiated by a <see cref="ResourceSpaceConfiguration"/>.
+/// Final production initiated by a <see cref="ResSpaceConfiguration"/>.
 /// Once available, all registered <see cref="FolderHandlers"/> and <see cref="FileHandlers"/>
 /// have been successfully initialized.
 /// </summary>
-public sealed partial class ResourceSpace
+public sealed partial class ResSpace
 {
     /// <summary>
     /// The Live state file name.
@@ -25,12 +25,12 @@ public sealed partial class ResourceSpace
     /// </summary>
     public static readonly byte CurrentVersion = 0;
 
-    readonly ResourceSpaceData _data;
+    readonly ResSpaceData _data;
     readonly ImmutableArray<ResourceSpaceFolderHandler> _folderHandlers;
     readonly ImmutableArray<ResourceSpaceFileHandler> _fileHandlers;
     readonly ResourceSpaceFileHandler.FolderExclusion _folderExclusion;
     
-    internal ResourceSpace( ResourceSpaceData data,
+    internal ResSpace( ResSpaceData data,
                             ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
                             ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
     {
@@ -43,7 +43,7 @@ public sealed partial class ResourceSpace
     /// <summary>
     /// Gets the resources data.
     /// </summary>
-    public ResourceSpaceData ResourceSpaceData => _data;
+    public ResSpaceData Data => _data;
 
     /// <summary>
     /// Gets the successfully initialized <see cref="ResourceSpaceFolderHandler"/>.
@@ -98,7 +98,7 @@ public sealed partial class ResourceSpace
             CloseInstallers( monitor, installers, success );
             return false;
         }
-        if( _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
+        if( _data.LiveStatePath != ResSpaceCollector.NoLiveState )
         {
             success &= ClearLiveState( monitor, _data.LiveStatePath );
         }
@@ -112,9 +112,9 @@ public sealed partial class ResourceSpace
         }
         CloseInstallers( monitor, installers, success );
 
-        if( success && _data.LiveStatePath != ResourceSpaceCollector.NoLiveState )
+        if( success && _data.LiveStatePath != ResSpaceCollector.NoLiveState )
         {
-            if( _data.LiveStatePath == ResourceSpaceCollector.NoLiveState )
+            if( _data.LiveStatePath == ResSpaceCollector.NoLiveState )
             {
                 monitor.Warn( """
                 No AppResourcesLocalPath has been set and no target watch folder has been specified.
@@ -126,7 +126,7 @@ public sealed partial class ResourceSpace
         return success;
 
         static bool OpenInstaller( IActivityMonitor monitor,
-                                   ResourceSpace s,
+                                   ResSpace s,
                                    HashSet<IResourceSpaceItemInstaller> installers,
                                    IResourceSpaceItemInstaller? i )
         {

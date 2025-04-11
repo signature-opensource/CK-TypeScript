@@ -12,12 +12,12 @@ namespace CK.TypeScript.LiveEngine;
 
 public sealed class LiveState
 {
-    readonly ResourceSpaceData _spaceData;
+    readonly ResSpaceData _spaceData;
     readonly ImmutableArray<ILiveUpdater> _updaters;
     readonly string _ckGenAppPath;
     readonly string _watchRoot;
 
-    internal LiveState( ResourceSpaceData spaceData, ImmutableArray<ILiveUpdater> updaters )
+    internal LiveState( ResSpaceData spaceData, ImmutableArray<ILiveUpdater> updaters )
     {
         // Are we internal (DebugAssert) or public (CheckArgument) here?
         // Consider that this may be called out of control.
@@ -29,7 +29,7 @@ public sealed class LiveState
         _watchRoot = spaceData.WatchRoot;
     }
 
-    public ResourceSpaceData SpaceData => _spaceData;
+    public ResSpaceData SpaceData => _spaceData;
 
     public string CKGenAppPath => _ckGenAppPath;
 
@@ -95,7 +95,7 @@ public sealed class LiveState
             {
                 var r = BinaryDeserializer.Deserialize( stream, new BinaryDeserializerContext(),
                     d => ReadLiveState( monitor, d, liveStateFilePath ) );
-                return r.IsValid ? r.GetResult() : null; 
+                return r.GetResult(); 
             }
         }
         catch( Exception e )
@@ -108,15 +108,15 @@ public sealed class LiveState
         {
             var r = d.Reader;
             byte v = r.ReadByte();
-            if( v != ResourceSpace.CurrentVersion )
+            if( v != ResSpace.CurrentVersion )
             {
-                monitor.Error( $"Invalid version '{v}', expected '{ResourceSpace.CurrentVersion}'." );
+                monitor.Error( $"Invalid version '{v}', expected '{ResSpace.CurrentVersion}'." );
                 return null;
             }
-            var spaceData = d.ReadObject<ResourceSpaceData>();
-            if( spaceData.LiveStatePath + ResourceSpace.LiveStateFileName != liveStateFilePath )
+            var spaceData = d.ReadObject<ResSpaceData>();
+            if( spaceData.LiveStatePath + ResSpace.LiveStateFileName != liveStateFilePath )
             {
-                monitor.Error( $"Invalid paths. Expected '{ResourceSpace.LiveStateFileName}' to be in '{spaceData.LiveStatePath}'." );
+                monitor.Error( $"Invalid paths. Expected '{ResSpace.LiveStateFileName}' to be in '{spaceData.LiveStatePath}'." );
                 return null;
             }
             bool success = true;
@@ -125,7 +125,7 @@ public sealed class LiveState
             {
                 var t = d.ReadTypeInfo().ResolveLocalType();
                 var o = t.InvokeMember( nameof( ILiveResourceSpaceHandler.ReadLiveState ),
-                                        BindingFlags.Public | BindingFlags.Static,
+                                        BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod,
                                         null,
                                         null,
                                         [monitor, spaceData, d] );

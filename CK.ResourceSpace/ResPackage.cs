@@ -135,7 +135,7 @@ public sealed partial class ResPackage
     public bool IsGroup => _isGroup;
 
     /// <summary>
-    /// Gets the index in the <see cref="ResourceSpaceData.Packages"/>.
+    /// Gets the index in the <see cref="ResSpaceData.Packages"/>.
     /// This is 1-based (0 is an invalid index).
     /// </summary>
     public int Index => _index;

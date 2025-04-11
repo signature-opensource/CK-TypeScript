@@ -3,6 +3,7 @@ using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Resources;
 
 namespace CK.Core;
 
@@ -21,10 +22,14 @@ public sealed partial class ResPackage
             _package = package;
             _resources = resources;
             _index = index;
-            _localPath = resources is StoreContainer c
-                            ? c.LocalPath
-                            : null;
+            _localPath = GetLocalPath( resources );
         }
+
+        static string? GetLocalPath( IResourceContainer resources ) => resources is StoreContainer c
+                                                                        ? c.LocalPath
+                                                                        : resources is FileSystemResourceContainer f
+                                                                            ? f.ResourcePrefix
+                                                                            : null;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public BeforeRes( IBinaryDeserializer d, ITypeReadInfo info )
@@ -32,9 +37,7 @@ public sealed partial class ResPackage
             _package = d.ReadObject<ResPackage>();
             _resources = d.ReadObject<IResourceContainer>();
             _index = d.Reader.ReadNonNegativeSmallInt32();
-            _localPath = _resources is StoreContainer c
-                            ? c.LocalPath
-                            : null;
+            _localPath = GetLocalPath( _resources );
         }
 
         [EditorBrowsable( EditorBrowsableState.Never )]

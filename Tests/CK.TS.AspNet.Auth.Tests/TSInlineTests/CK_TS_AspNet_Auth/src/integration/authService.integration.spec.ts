@@ -7,8 +7,6 @@ import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-
 
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
-const describeWithServer = window.origin !== 'http://localhost' ? describe : describe.skip;
-
 /*
  * These tests require a webfrontauth() in order to run them.
  * It needs to have:
@@ -19,7 +17,7 @@ const describeWithServer = window.origin !== 'http://localhost' ? describe : des
  *      }
  *  - A not null sliding expiration
  */
-describeWithServer('AuthService', function() {
+describe('AuthService', function() {
     let authService: AuthService;
 
     const anonymous: IUserInfo = {

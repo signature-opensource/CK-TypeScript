@@ -20,7 +20,7 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler, ILiveUpd
         return true;
     }
 
-    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResourceSpaceData data, IBinaryDeserializer d )
+    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData data, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
         var rootFolderName = d.Reader.ReadString();

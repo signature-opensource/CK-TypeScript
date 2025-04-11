@@ -12,11 +12,11 @@ namespace CK.Core;
 /// with at least one <see cref="IEmbeddedResourceTypeAttribute"/> attribute) or from any <see cref="IResourceContainer"/>
 /// in any order.
 /// <para>
-/// This is the input of the <see cref="ResourceSpaceDataBuilder"/> that topologically sorts
-/// the descriptors to produce the immutable <see cref="ResourceSpaceData.Packages"/>.
+/// This is the input of the <see cref="ResSpaceDataBuilder"/> that topologically sorts
+/// the descriptors to produce the immutable <see cref="ResSpaceData.Packages"/>.
 /// </para>
 /// </summary>
-public sealed class ResourceSpaceCollector
+public sealed class ResSpaceCollector
 {
     /// <summary>
     /// Marker for <see cref="LiveStatePath"/> when no Live state must be created.
@@ -28,7 +28,7 @@ public sealed class ResourceSpaceCollector
     readonly string _liveStatePath;
     IResourceContainer? _generatedCodeContainer;
 
-    internal ResourceSpaceCollector( CoreCollector coreCollector,
+    internal ResSpaceCollector( CoreCollector coreCollector,
                                      IResourceContainer? generatedCodeContainer,
                                      string? appResourcesLocalPath,
                                      string liveStatePath )
@@ -50,8 +50,8 @@ public sealed class ResourceSpaceCollector
     /// <summary>
     /// Gets the package descriptors.
     /// <para>
-    /// This doesn't contain the "&lt;Code&gt;" and "&lt;App&gt;" packages: the <see cref="ResourceSpaceDataBuilder"/>
-    /// generates them in the <see cref="ResourceSpaceData"/>.
+    /// This doesn't contain the "&lt;Code&gt;" and "&lt;App&gt;" packages: the <see cref="ResSpaceDataBuilder"/>
+    /// generates them in the <see cref="ResSpaceData"/>.
     /// </para>
     /// </summary>
     public IReadOnlyCollection<ResPackageDescriptor> Packages => _coreCollector.Packages;
@@ -83,7 +83,7 @@ public sealed class ResourceSpaceCollector
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
     /// This can only be set if this has not been previously set (ie. this is null).
-    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// See <see cref="ResSpaceConfiguration.GeneratedCodeContainer"/>.
     /// </summary>
     [DisallowNull]
     public IResourceContainer? GeneratedCodeContainer
@@ -98,18 +98,18 @@ public sealed class ResourceSpaceCollector
     }
 
     /// <summary>
-    /// Gets the path of the application local resources. See <see cref="ResourceSpaceConfiguration.AppResourcesLocalPath"/>.
+    /// Gets the path of the application local resources. See <see cref="ResSpaceConfiguration.AppResourcesLocalPath"/>.
     /// </summary>
     public string? AppResourcesLocalPath => _appResourcesLocalPath;
 
     /// <summary>
     /// Gets the folder that contains the Live state.
     /// <see cref="NoLiveState"/> if no Live state must be created.
-    /// See <see cref="ResourceSpaceConfiguration.LiveStatePath"/>.
+    /// See <see cref="ResSpaceConfiguration.LiveStatePath"/>.
     /// </summary>
     public string LiveStatePath => _liveStatePath;
 
-    /// <inheritdoc cref="ResourceSpaceConfiguration.RegisterPackage(IActivityMonitor, string, NormalizedPath, IResourceContainer, IResourceContainer)"/>
+    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, string, NormalizedPath, IResourceContainer, IResourceContainer)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   string fullName,
                                                   NormalizedPath defaultTargetPath,
@@ -119,11 +119,18 @@ public sealed class ResourceSpaceCollector
         return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore );
     }
 
-    /// <inheritdoc cref="ResourceSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, NormalizedPath)"/>
+    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, NormalizedPath)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
                                                   NormalizedPath defaultTargetPath )
     {
         return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath );
+    }
+
+    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type)"/>
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type )
+    {
+        var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
+        return _coreCollector.RegisterPackage( monitor, type, targetPath );
     }
 }

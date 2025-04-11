@@ -68,7 +68,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
 
-    protected override bool ConfigureResDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceConfiguration spaceBuilder )
+    protected override bool ConfigureResDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
     {
         // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
@@ -80,7 +80,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
 
     protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                     TypeScriptContext context,
-                                                    ResourceSpaceConfiguration spaceBuilder,
+                                                    ResSpaceConfiguration spaceBuilder,
                                                     ResPackageDescriptor d )
     {
         Throw.DebugAssert( !IsAppComponent );

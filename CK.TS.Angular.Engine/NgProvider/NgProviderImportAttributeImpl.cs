@@ -21,7 +21,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
                                                  TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                  TypeScriptContext context,
                                                  ResPackageDescriptor d,
-                                                 ResourceSpaceConfiguration resourcesConfiguration )
+                                                 ResSpaceConfiguration resourcesConfiguration )
     {
         ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 

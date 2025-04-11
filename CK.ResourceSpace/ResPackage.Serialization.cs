@@ -26,33 +26,27 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _resources = d.ReadObject<BeforeRes>();
         _afterResources = d.ReadObject<AfterRes>();
 
+        // Note: we cannot check any invariant that consider other packages because
+        //       we are in the middle of the serialized graph.
         if( _requires.Length == 0 )
         {
             _reachables = ImmutableHashSet<ResPackage>.Empty;
-            Throw.DebugAssert( _requiresAggregateId == default );
         }
         else
         {
             _reachables = d.ReadObject<IReadOnlySet<ResPackage>>();
             _requiresAggregateId = new AggregateId( r );
-            Throw.DebugAssert( _requiresAggregateId != default
-                               && _requiresAggregateId.HasLocal == _reachables.Any( r => r.IsEventuallyLocalDependent ) );
         }
 
         if( _children.Length == 0 )
         {
             _afterReachables = _reachables;
-            Throw.DebugAssert( _childrenAggregateId == default );
         }
         else
         {
             _afterReachables = d.ReadObject<IReadOnlySet<ResPackage>>();
             _childrenAggregateId = new AggregateId( r );
-            Throw.DebugAssert( _childrenAggregateId != default
-                              && _childrenAggregateId.HasLocal == _children.SelectMany( c => c.AfterReachables ).Concat( _children )
-                                                                           .Any( r => r.IsEventuallyLocalDependent ) );
         }
-        Throw.DebugAssert( _afterReachables == _reachables || _afterReachables.IsProperSupersetOf( _reachables ) );
     }
 
     [EditorBrowsable( EditorBrowsableState.Never )]

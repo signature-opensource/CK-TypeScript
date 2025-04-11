@@ -11,15 +11,15 @@ using System.Runtime.InteropServices;
 namespace CK.Core;
 
 /// <summary>
-/// Handles a <see cref="ResourceSpaceCollector"/>: topologically sorts its configured <see cref="ResPackageDescriptor"/>
-/// to produce a <see cref="ResourceSpaceData"/> with its final <see cref="ResPackage"/>.
+/// Handles a <see cref="ResSpaceCollector"/>: topologically sorts its configured <see cref="ResPackageDescriptor"/>
+/// to produce a <see cref="ResSpaceData"/> with its final <see cref="ResPackage"/>.
 /// </summary>
-public sealed class ResourceSpaceDataBuilder
+public sealed class ResSpaceDataBuilder
 {
-    readonly ResourceSpaceCollector _collector;
+    readonly ResSpaceCollector _collector;
     IResourceContainer? _generatedCodeContainer;
 
-    public ResourceSpaceDataBuilder( ResourceSpaceCollector collector )
+    public ResSpaceDataBuilder( ResSpaceCollector collector )
     {
         _collector = collector;
         _generatedCodeContainer = collector.GeneratedCodeContainer;
@@ -28,7 +28,7 @@ public sealed class ResourceSpaceDataBuilder
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
     /// This can only be set if this has not been previously set (ie. this is null).
-    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// See <see cref="ResSpaceConfiguration.GeneratedCodeContainer"/>.
     /// </summary>
     [DisallowNull]
     public IResourceContainer? GeneratedCodeContainer
@@ -43,12 +43,12 @@ public sealed class ResourceSpaceDataBuilder
     }
 
     /// <summary>
-    /// Produces the <see cref="ResourceSpaceData"/> with its final <see cref="ResPackage"/>
+    /// Produces the <see cref="ResSpaceData"/> with its final <see cref="ResPackage"/>
     /// toplogically sorted. 
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The space data on success, null otherwise.</returns>
-    public ResourceSpaceData? Build( IActivityMonitor monitor )
+    public ResSpaceData? Build( IActivityMonitor monitor )
     {
         if( !_collector.CloseRegistrations( monitor ) )
         {
@@ -176,7 +176,7 @@ public sealed class ResourceSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResourceSpaceData( _generatedCodeContainer, _collector.LiveStatePath, packageIndex );
+        var space = new ResSpaceData( _generatedCodeContainer, _collector.LiveStatePath, packageIndex );
 
         // ResPackageDataCache builder is used a vehicle to transmit the resourceIndex that will be filled
         // below to all the ResPackage (to avoid yet another constructor parameter).
@@ -252,7 +252,7 @@ public sealed class ResourceSpaceDataBuilder
                 allPackageResources[p.AfterResources.Index] = p.AfterResources;
                 // Track the watch root.
                 var local = p.Resources.LocalPath ?? p.AfterResources.LocalPath;
-                if( local != null && _collector.LiveStatePath != ResourceSpaceCollector.NoLiveState )
+                if( local != null && _collector.LiveStatePath != ResSpaceCollector.NoLiveState )
                 {
                     Throw.DebugAssert( local.EndsWith( Path.DirectorySeparatorChar ) );
                     if( watchRoot == null )
@@ -308,7 +308,7 @@ public sealed class ResourceSpaceDataBuilder
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
         space._codePackage = codePackage;
         space._appPackage = appPackage;
-        Throw.DebugAssert( _collector.LiveStatePath == ResourceSpaceCollector.NoLiveState
+        Throw.DebugAssert( _collector.LiveStatePath == ResSpaceCollector.NoLiveState
                            || (space._localPackages.Length != 0) == (watchRoot != null) );
         space._watchRoot = watchRoot;
         // The space is initialized with all its packages.

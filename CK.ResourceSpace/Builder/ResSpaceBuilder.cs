@@ -8,17 +8,17 @@ using System.Linq;
 namespace CK.Core;
 
 /// <summary>
-/// Handles <see cref="ResourceSpaceData"/> and enables <see cref="ResourceSpaceFolderHandler"/>
+/// Handles <see cref="ResSpaceData"/> and enables <see cref="ResourceSpaceFolderHandler"/>
 /// and <see cref="ResourceSpaceFileHandler"/> to be registered in order to produce a
-/// final <see cref="ResourceSpaceData"/>.
+/// final <see cref="ResSpaceData"/>.
 /// </summary>
-public sealed class ResourceSpaceBuilder
+public sealed class ResSpaceBuilder
 {
-    readonly ResourceSpaceData _spaceData;
+    readonly ResSpaceData _spaceData;
     readonly List<ResourceSpaceFolderHandler> _folderHandlers;
     readonly List<ResourceSpaceFileHandler> _fileHandlers;
 
-    public ResourceSpaceBuilder( ResourceSpaceData spaceData )
+    public ResSpaceBuilder( ResSpaceData spaceData )
     {
         _spaceData = spaceData;
         _folderHandlers = new List<ResourceSpaceFolderHandler>();
@@ -26,14 +26,14 @@ public sealed class ResourceSpaceBuilder
     }
 
     /// <summary>
-    /// Gets the <see cref="ResourceSpaceData"/>.
+    /// Gets the <see cref="ResSpaceData"/>.
     /// </summary>
-    public ResourceSpaceData SpaceData => _spaceData;
+    public ResSpaceData SpaceData => _spaceData;
 
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
     /// This can only be set if this has not been previously set (ie. this is null).
-    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// See <see cref="ResSpaceConfiguration.GeneratedCodeContainer"/>.
     /// <para>
     /// This is the last possibility to set the generated code.
     /// </para>
@@ -103,11 +103,11 @@ public sealed class ResourceSpaceBuilder
     }
 
     /// <summary>
-    /// Tries to build the <see cref="ResourceSpace"/>. 
+    /// Tries to build the <see cref="ResSpace"/>. 
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The space on success, null otherwise.</returns>
-    public ResourceSpace? Build( IActivityMonitor monitor )
+    public ResSpace? Build( IActivityMonitor monitor )
     {
         var codeGen = _spaceData.GeneratedCodeContainer;
         if( codeGen == null )
@@ -119,7 +119,7 @@ public sealed class ResourceSpaceBuilder
             // This "closes" the possibilty to re-assign it.
             _spaceData.GeneratedCodeContainer = _spaceData.CodePackage.AfterResources.Resources;
         }
-        var space = new ResourceSpace( _spaceData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
+        var space = new ResSpace( _spaceData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
         return space.Initialize( monitor )
                 ? space
                 : null;

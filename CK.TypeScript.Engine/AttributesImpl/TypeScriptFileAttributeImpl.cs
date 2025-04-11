@@ -29,7 +29,7 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
 
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
-    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptGroupOrPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResourceSpaceConfiguration spaceBuilder )
+    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptGroupOrPackageAttributeImpl tsPackage, TypeScriptContext context, ResPackageDescriptor d, ResSpaceConfiguration spaceBuilder )
     {
         if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out var resource ) )
         {

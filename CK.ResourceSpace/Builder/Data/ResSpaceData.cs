@@ -6,14 +6,14 @@ using System.Diagnostics.CodeAnalysis;
 namespace CK.Core;
 
 /// <summary>
-/// <see cref="ResourceSpace"/> core data is produced by the <see cref="ResourceSpaceDataBuilder"/>:
+/// <see cref="ResSpace"/> core data is produced by the <see cref="ResSpaceDataBuilder"/>:
 /// this contains the final <see cref="ResPackage"/> topologically ordered.
 /// <para>
-/// This can now be consumed by a <see cref="ResourceSpaceBuilder"/> that can be configured with resource handlers
-/// to eventually produce a <see cref="ResourceSpace"/>.
+/// This can now be consumed by a <see cref="ResSpaceBuilder"/> that can be configured with resource handlers
+/// to eventually produce a <see cref="ResSpace"/>.
 /// </para>
 /// </summary>
-public sealed partial class ResourceSpaceData
+public sealed partial class ResSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     readonly string _liveStatePath;
@@ -33,7 +33,7 @@ public sealed partial class ResourceSpaceData
     [AllowNull]internal ResPackage _appPackage;
     internal string? _watchRoot;
 
-    internal ResourceSpaceData( IResourceContainer? generatedCodeContainer,
+    internal ResSpaceData( IResourceContainer? generatedCodeContainer,
                                 string cKWatchFolderPath,
                                 IReadOnlyDictionary<object, ResPackage> packageIndex )
     {
@@ -45,7 +45,7 @@ public sealed partial class ResourceSpaceData
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
     /// This can only be set if this has not been previously set (ie. this is null).
-    /// See <see cref="ResourceSpaceConfiguration.GeneratedCodeContainer"/>.
+    /// See <see cref="ResSpaceConfiguration.GeneratedCodeContainer"/>.
     /// </summary>
     [DisallowNull]
     public IResourceContainer? GeneratedCodeContainer
@@ -56,7 +56,13 @@ public sealed partial class ResourceSpaceData
             Throw.CheckNotNullArgument( value );
             Throw.CheckState( "This can be set only once.", GeneratedCodeContainer is null );
             _generatedCodeContainer = value;
-            ((ResourceContainerWrapper)_codePackage.AfterResources.Resources).InnerContainer = value;
+            // Ignore auto assignation: this just lock the container
+            // (If the value is another ResourceContainerWrapper, this will throw and it's fine: we
+            // don't want cycles!)
+            if( _codePackage.AfterResources.Resources != value )
+            {
+                ((ResourceContainerWrapper)_codePackage.AfterResources.Resources).InnerContainer = value;
+            }
         }
     }
 
@@ -88,7 +94,7 @@ public sealed partial class ResourceSpaceData
     /// <summary>
     /// Gets the "&lt;App&gt;" tail package.
     /// <para>
-    /// When <see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> is defined, its <see cref="ResPackage.LocalPath"/>
+    /// When <see cref="ResSpaceCollector.AppResourcesLocalPath"/> is defined, its <see cref="ResPackage.LocalPath"/>
     /// is the AppResourcesLocalPath.
     /// </para>
     /// </summary>
@@ -107,15 +113,15 @@ public sealed partial class ResourceSpaceData
 
     /// <summary>
     /// Gets the folder that contains the Live state.
-    /// Can be <see cref="ResourceSpaceCollector.NoLiveState"/>.
+    /// Can be <see cref="ResSpaceCollector.NoLiveState"/>.
     /// </summary>
     public string LiveStatePath => _liveStatePath;
 
     /// <summary>
     /// Gets the watch root. Null if no local packages exist and "&lt;App&gt;" package
-    /// has no defined folder (<see cref="ResourceSpaceCollector.AppResourcesLocalPath"/> was not set).
+    /// has no defined folder (<see cref="ResSpaceCollector.AppResourcesLocalPath"/> was not set).
     /// <para>
-    /// This is also null if <see cref="LiveStatePath"/> is <see cref="ResourceSpaceCollector.NoLiveState"/>.
+    /// This is also null if <see cref="LiveStatePath"/> is <see cref="ResSpaceCollector.NoLiveState"/>.
     /// </para>
     /// </summary>
     public string? WatchRoot => _watchRoot;

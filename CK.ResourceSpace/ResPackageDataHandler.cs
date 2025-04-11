@@ -20,7 +20,7 @@ public abstract class ResPackageDataHandler<T> where T : class
     /// <summary>
     /// Initializes a new ReachablePackageDataCache.
     /// </summary>
-    /// <param name="cache">The required cache provided by the <see cref="ResourceSpaceData.ResPackageDataCache"/>.</param>
+    /// <param name="cache">The required cache provided by the <see cref="ResSpaceData.ResPackageDataCache"/>.</param>
     protected ResPackageDataHandler( IResPackageDataCache cache )
     {
         var c = (IInternalResPackageDataCache)cache;

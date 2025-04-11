@@ -4,7 +4,7 @@ using System;
 
 namespace CK.Core;
 
-public sealed partial class ResourceSpace
+public sealed partial class ResSpace
 {
     // Handles ResourceContainerWrapper, ResourceLocator and ResourceFolder binary serialization
     // that are not implemented in CK.EmbeddedResources assembly to limit it only to simple serialization.
@@ -58,7 +58,7 @@ public sealed partial class ResourceSpace
         }
     }
 
-    static ResourceSpace()
+    static ResSpace()
     {
         BinarySerializer.DefaultSharedContext.AddSerializationDriver( typeof( ResourceLocator ), new ResourceLocatorSerializer() );
         BinaryDeserializer.DefaultSharedContext.AddDeserializerDriver( new ResourceLocatorDeserializer() );

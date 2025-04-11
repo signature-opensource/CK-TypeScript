@@ -6,10 +6,10 @@ using System.ComponentModel;
 namespace CK.Core;
 
 [SerializationVersion(0)]
-public sealed partial class ResourceSpaceData : ICKSlicedSerializable
+public sealed partial class ResSpaceData : ICKSlicedSerializable
 {
     [EditorBrowsable( EditorBrowsableState.Never )]
-    public ResourceSpaceData( IBinaryDeserializer d, ITypeReadInfo info )
+    public ResSpaceData( IBinaryDeserializer d, ITypeReadInfo info )
     {
         _localPackages = d.ReadValue<ImmutableArray<ResPackage>>();
         _packages = d.ReadValue<ImmutableArray<ResPackage>>();
@@ -27,7 +27,7 @@ public sealed partial class ResourceSpaceData : ICKSlicedSerializable
     }
 
     [EditorBrowsable( EditorBrowsableState.Never )]
-    public static void Write( IBinarySerializer s, in ResourceSpaceData o )
+    public static void Write( IBinarySerializer s, in ResSpaceData o )
     {
         s.WriteValue( o._localPackages );
         s.WriteValue( o._packages );

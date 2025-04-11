@@ -19,7 +19,7 @@ public partial class NgProviderAttributeImpl : TypeScriptGroupOrPackageAttribute
                                                     TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                     TypeScriptContext context,
                                                     ResPackageDescriptor d,
-                                                    ResourceSpaceConfiguration resourcesConfiguration )
+                                                    ResSpaceConfiguration resourcesConfiguration )
     {
         var angular = context.GetAngularCodeGen();
         var source = Type.ToCSharpName() + Attribute.SourceNameSuffix;

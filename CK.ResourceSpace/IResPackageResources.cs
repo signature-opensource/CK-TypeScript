@@ -14,7 +14,7 @@ public interface IResPackageResources
     bool IsAfter { get; }
 
     /// <summary>
-    /// Gets the index of this package resources in the <see cref="ResourceSpaceData.AllPackageResources"/>.
+    /// Gets the index of this package resources in the <see cref="ResSpaceData.AllPackageResources"/>.
     /// </summary>
     int Index { get; }
 

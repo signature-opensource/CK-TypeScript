@@ -48,7 +48,7 @@ public abstract class TypeScriptGroupOrPackageAttributeImplExtension : IAttribut
     }
 
     /// <summary>
-    /// Called by the <see cref="TypeScriptGroupOrPackageAttributeImpl.ConfigureResDescriptor(IActivityMonitor, TypeScriptContext, ResourceSpaceConfiguration)"/>.
+    /// Called by the <see cref="TypeScriptGroupOrPackageAttributeImpl.ConfigureResDescriptor(IActivityMonitor, TypeScriptContext, ResSpaceConfiguration)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="tsPackage">The package attribute.</param>
@@ -60,5 +60,5 @@ public abstract class TypeScriptGroupOrPackageAttributeImplExtension : IAttribut
                                                           TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                           TypeScriptContext context,
                                                           ResPackageDescriptor d,
-                                                          ResourceSpaceConfiguration resourcesConfiguration );
+                                                          ResSpaceConfiguration resourcesConfiguration );
 }

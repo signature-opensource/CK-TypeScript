@@ -28,7 +28,7 @@ public sealed class InitialFileSystemInstaller : FileSystemInstaller
         _existing = new HashSet<string>();
     }
 
-    public override bool Open( IActivityMonitor monitor, ResourceSpace resSpace )
+    public override bool Open( IActivityMonitor monitor, ResSpace resSpace )
     {
         if( !base.Open( monitor, resSpace ) )
         {

@@ -37,7 +37,7 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
-    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResourceSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
+    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
         if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )

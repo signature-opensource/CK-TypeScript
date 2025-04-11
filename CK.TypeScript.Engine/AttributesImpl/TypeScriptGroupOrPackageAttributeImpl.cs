@@ -147,7 +147,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
 
     internal protected virtual bool ConfigureResDescriptor( IActivityMonitor monitor,
                                                             TypeScriptContext context,
-                                                            ResourceSpaceConfiguration spaceBuilder )
+                                                            ResSpaceConfiguration spaceBuilder )
     {
         var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
         if( d == null ) return false;
@@ -164,7 +164,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
 
     protected virtual bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                    TypeScriptContext context,
-                                                   ResourceSpaceConfiguration spaceBuilder,
+                                                   ResSpaceConfiguration spaceBuilder,
                                                    ResPackageDescriptor d )
     {
         bool success = true;

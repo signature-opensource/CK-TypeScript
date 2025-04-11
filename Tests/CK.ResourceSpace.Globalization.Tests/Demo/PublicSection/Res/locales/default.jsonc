@@ -1,0 +1,11 @@
+{
+    // The default.json is the "en" culture.
+
+    // This file is read as a jsonc (json with comments) so
+    // don't hesitate to comment!
+
+    "Public": {
+        "Title": "Resource Globalization Demo"
+    }
+}
+    
