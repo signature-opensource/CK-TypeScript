@@ -7,8 +7,7 @@ import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-
 
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
 
-const serverAddress = CKTypeScriptEnv.SERVER_ADDRESS ?? "";
-const describeWithServer = serverAddress ? describe : describe.skip;
+const describeWithServer = window.origin !== 'http://localhost' ? describe : describe.skip;
 
 /*
  * These tests require a webfrontauth() in order to run them.
@@ -47,7 +46,7 @@ describeWithServer('AuthService', function() {
         addCookieJar(axiosInstance);
         axiosInstance.defaults.jar = cookieJar;
 
-        authService = await AuthService.createAsync( axiosInstance, { identityEndPoint: serverAddress } );
+        authService = await AuthService.createAsync( axiosInstance );
     });
 
     beforeEach(async function() {

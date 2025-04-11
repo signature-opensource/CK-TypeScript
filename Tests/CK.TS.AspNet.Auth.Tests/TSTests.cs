@@ -34,9 +34,9 @@ public class TSTests
         runner.Run();
     }
 
-    [Explicit( "Same as CK_TS_AspNet_Auth_Inline but in a Temp folder (no yarn)." )]
+    [Explicit( "Same as CK_TS_AspNet_Auth but in a Temp folder (no yarn)." )]
     [Test]
-    public async Task CK_TS_AspNet_Auth_Inline_from_scrath_Async()
+    public async Task CK_TS_AspNet_Auth_from_scrath_Async()
     {
         NormalizedPath targetProjectPath = FileUtil.CreateUniqueTimedFolder( Path.GetTempPath(), null, DateTime.UtcNow );
         try
@@ -47,7 +47,6 @@ public class TSTests
             configuration.EnsureAspect<TypeScriptAspectConfiguration>();
             var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
             ts.TargetProjectPath = targetProjectPath;
-            ts.IntegrationMode = CKGenIntegrationMode.Inline;
             var r = await configuration.RunSuccessfullyAsync();
 
             File.Exists( targetProjectPath.Combine( "src/sample.spec.ts" ) ).ShouldBeTrue();
