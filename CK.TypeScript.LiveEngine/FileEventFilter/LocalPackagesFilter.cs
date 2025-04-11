@@ -20,7 +20,7 @@ sealed class LocalPackagesFilter : IFileEventFilter
         {
             e = p.Resources.LocalPath != null ? CreateEvent( path, p.Resources ) : null;
             if( e != null ) break;
-            e = p.ResourcesAfter.LocalPath != null ? CreateEvent( path, p.ResourcesAfter ) : null;
+            e = p.AfterResources.LocalPath != null ? CreateEvent( path, p.AfterResources ) : null;
             if( e != null ) break;
         }
         return e;

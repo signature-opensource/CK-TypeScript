@@ -13,6 +13,8 @@ readonly struct AggregateId : IEquatable<AggregateId>, ICKSimpleBinarySerializab
         _stableKeyId = stableKeyId;
     }
 
+    public bool HasLocal => _localKeyId != 0;
+
     public bool Equals( AggregateId other ) => _localKeyId == other._localKeyId && _stableKeyId == other._stableKeyId;
 
     public override bool Equals( object? obj ) => obj is AggregateId id && Equals( id );

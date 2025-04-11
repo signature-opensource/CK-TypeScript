@@ -55,8 +55,6 @@ public sealed partial class ResPackage
 
         public bool IsAppResources => false;
 
-        public IEnumerable<IResPackageResources> Reachables => _package.AfterReachablePackages.Select( p => p.ResourcesAfter ).Append( _package.Resources );
-
         public IResourceContainer Resources => _resources;
 
         public ResPackage Package => _package;

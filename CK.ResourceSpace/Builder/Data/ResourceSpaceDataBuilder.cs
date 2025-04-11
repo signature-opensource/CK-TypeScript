@@ -192,11 +192,11 @@ public sealed class ResourceSpaceDataBuilder
         packageIndex.Add( codePackage.FullName, codePackage );
         Throw.DebugAssert( codePackage.Resources.Index == 0 );
         allPackageResources[0] = codePackage.Resources;
-        Throw.DebugAssert( codePackage.ResourcesAfter.Index == 1 );
-        allPackageResources[1] = codePackage.ResourcesAfter;
-        Throw.DebugAssert( codePackage.ResourcesAfter.Resources == _generatedCodeContainer
-                            || codePackage.ResourcesAfter.Resources is ResourceContainerWrapper );
-        resourceIndex.Add( codePackage.ResourcesAfter.Resources, codePackage.ResourcesAfter );
+        Throw.DebugAssert( codePackage.AfterResources.Index == 1 );
+        allPackageResources[1] = codePackage.AfterResources;
+        Throw.DebugAssert( codePackage.AfterResources.Resources == _generatedCodeContainer
+                            || codePackage.AfterResources.Resources is ResourceContainerWrapper );
+        resourceIndex.Add( codePackage.AfterResources.Resources, codePackage.AfterResources );
 
         // This is the common requirements of all ResPackage that have no requirement.
         ImmutableArray<ResPackage> requiresCode = [codePackage];
@@ -246,12 +246,12 @@ public sealed class ResourceSpaceDataBuilder
                     packageIndex.Add( p.Type, p );
                 }
                 resourceIndex.Add( p.Resources.Resources, p.Resources );
-                resourceIndex.Add( p.ResourcesAfter.Resources, p.ResourcesAfter );
+                resourceIndex.Add( p.AfterResources.Resources, p.AfterResources );
                 // Enlist the package resources.
                 allPackageResources[p.Resources.Index] = p.Resources;
-                allPackageResources[p.ResourcesAfter.Index] = p.ResourcesAfter;
+                allPackageResources[p.AfterResources.Index] = p.AfterResources;
                 // Track the watch root.
-                var local = p.Resources.LocalPath ?? p.ResourcesAfter.LocalPath;
+                var local = p.Resources.LocalPath ?? p.AfterResources.LocalPath;
                 if( local != null && _collector.LiveStatePath != ResourceSpaceCollector.NoLiveState )
                 {
                     Throw.DebugAssert( local.EndsWith( Path.DirectorySeparatorChar ) );
@@ -282,8 +282,8 @@ public sealed class ResourceSpaceDataBuilder
         packageIndex.Add( appPackage.FullName, appPackage );
         Throw.DebugAssert( appPackage.Resources.Index == allPackageResources.Length - 2 );
         allPackageResources[^2] = appPackage.Resources;
-        Throw.DebugAssert( appPackage.ResourcesAfter.Index == allPackageResources.Length - 1 );
-        allPackageResources[^1] = appPackage.ResourcesAfter;
+        Throw.DebugAssert( appPackage.AfterResources.Index == allPackageResources.Length - 1 );
+        allPackageResources[^1] = appPackage.AfterResources;
         if( appLocalPath != null )
         {
             // If we have no local packages, watchRoot is null: we'll only
@@ -320,13 +320,11 @@ public sealed class ResourceSpaceDataBuilder
                            packages[0] == null
                            && space._exposedPackages.SequenceEqual( packages.Skip( 1 ) )
                            && space._exposedPackages.All( p => p != null ) );
-        Throw.DebugAssert( "<Code> can reach nothing.",
-                           codePackage.ReachablePackages.Count == 0 && codePackage.AllReachablePackages.Count == 0
-                           && codePackage.AfterReachablePackages.Count == 0 && codePackage.AllAfterReachablePackages.Count == 0 );
+        Throw.DebugAssert( "<Code> can reach nothing.", codePackage.AfterReachables.Count == 0 );
         Throw.DebugAssert( "<Code> can be reached from any packages.",
-                           packages.Skip( 1 ).Where( p => p != codePackage ).All( p => p.AllReachablePackages.Contains( codePackage ) ) );
+                           packages.Skip( 1 ).Where( p => p != codePackage ).All( p => p.AfterReachables.Contains( codePackage ) ) );
         Throw.DebugAssert( "All packages can be reached from <App>.",
-                           appPackage.AllReachablePackages.SetEquals( packages.Skip( 1 ).Where( p => p != appPackage ) ) );
+                           appPackage.AfterReachables.SetEquals( packages.Skip( 1 ).Where( p => p != appPackage ) ) );
         return space;
     }
 

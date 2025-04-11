@@ -54,13 +54,21 @@ sealed class ResPackageDataCacheBuilder
 
     public int TotalPackageCount => _totalPackageCount;
 
-    public IReadOnlySet<ResPackage> RegisterAndShare( HashSet<ResPackage> packages, out AggregateId aggregateId )
+    public IReadOnlySet<ResPackage> GetClosure( IReadOnlyCollection<ResPackage> packages, out AggregateId aggregateId )
     {
         Throw.DebugAssert( packages.Count > 0 );
         aggregateId = RegisterAggregate( packages );
         if( !_reachableIndex.TryGetValue( aggregateId, out var exists ) )
         {
-            exists = packages;
+            var closure = new HashSet<ResPackage>();
+            foreach( var p in packages )
+            {
+                if( closure.Add( p ) )
+                {
+                    closure.UnionWith( p.AfterReachables );
+                }
+            }
+            exists = closure;
             _reachableIndex.Add( aggregateId, exists );
         }
         return exists;

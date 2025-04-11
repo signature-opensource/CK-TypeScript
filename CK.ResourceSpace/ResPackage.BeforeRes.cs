@@ -53,8 +53,6 @@ public sealed partial class ResPackage
 
         public bool IsAppResources => _package.FullName == "<App>";
 
-        public IEnumerable<IResPackageResources> Reachables => _package.ReachablePackages.Select( p => p.ResourcesAfter );
-
         public IResourceContainer Resources => _resources;
 
         public ResPackage Package => _package;

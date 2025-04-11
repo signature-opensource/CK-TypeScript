@@ -56,7 +56,7 @@ public sealed partial class ResourceSpaceData
             Throw.CheckNotNullArgument( value );
             Throw.CheckState( "This can be set only once.", GeneratedCodeContainer is null );
             _generatedCodeContainer = value;
-            ((ResourceContainerWrapper)_codePackage.ResourcesAfter.Resources).InnerContainer = value;
+            ((ResourceContainerWrapper)_codePackage.AfterResources.Resources).InnerContainer = value;
         }
     }
 

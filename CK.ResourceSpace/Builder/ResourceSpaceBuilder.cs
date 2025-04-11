@@ -117,7 +117,7 @@ public sealed class ResourceSpaceBuilder
             // but this "publish" the wrapped empty container in the _generatedCodeContainer
             // space data field.
             // This "closes" the possibilty to re-assign it.
-            _spaceData.GeneratedCodeContainer = _spaceData.CodePackage.ResourcesAfter.Resources;
+            _spaceData.GeneratedCodeContainer = _spaceData.CodePackage.AfterResources.Resources;
         }
         var space = new ResourceSpace( _spaceData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
         return space.Initialize( monitor )

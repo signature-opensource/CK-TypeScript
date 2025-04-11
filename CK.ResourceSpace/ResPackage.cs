@@ -2,6 +2,7 @@ using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -11,24 +12,17 @@ public sealed partial class ResPackage
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
     readonly ImmutableArray<ResPackage> _requires;
-    readonly IReadOnlySet<ResPackage> _reachablePackages;
-    readonly AggregateId _reachableAggregateId;
+    readonly AggregateId _requiresAggregateId;
     readonly ImmutableArray<ResPackage> _children;
     readonly AggregateId _childrenAggregateId;
-    readonly IReadOnlySet<ResPackage> _allReachablePackages;
+    readonly IReadOnlySet<ResPackage> _reachables;
+    readonly IReadOnlySet<ResPackage> _afterReachables;
+
     readonly BeforeRes _resources;
-    readonly AfterRes _resourcesAfter;
+    readonly AfterRes _afterResources;
     readonly int _index;
     readonly bool _isGroup;
-    readonly bool _requiresHasLocalPackage;
-    readonly bool _reachableHasLocalPackage;
-    readonly bool _allReachableHasLocalPackage;
-    // Content information.
-    readonly IReadOnlySet<ResPackage> _afterReachablePackages;
-    readonly IReadOnlySet<ResPackage> _allAfterReachablePackages;
-    readonly bool _childrenHasLocalPackage;
-    readonly bool _afterReachableHasLocalPackage;
-    readonly bool _allAfterReachableHasLocalPackage;
+
     // Implementation notes:
     // ResPackage doesn't reference the ResourceSpaceData.
     // To be able to locate the package of a resource (to check reachability of resources)
@@ -63,132 +57,46 @@ public sealed partial class ResPackage
         _resourceIndex = dataCacheBuilder._resourceIndex;
         // Initializes the resources.
         _resources = new BeforeRes( this, beforeResources, idxBeforeResources );
-        _resourcesAfter = new AfterRes( this, afterResources, idxAfterResources );
+        _afterResources = new AfterRes( this, afterResources, idxAfterResources );
 
-        // Reacheable is the core set (deduplicated Requires + Requires' Children).
-        bool allIsRequired;
-        if( requires.Length > 0 )
+        if( _requires.Length == 0 )
         {
-            var reachablePackages = new HashSet<ResPackage>();
-            (_requiresHasLocalPackage, _reachableHasLocalPackage, allIsRequired) = ComputeReachablePackages( reachablePackages );
-            _reachablePackages = dataCacheBuilder.RegisterAndShare( reachablePackages, out _reachableAggregateId );
+            _reachables = ImmutableHashSet<ResPackage>.Empty;
+            Throw.DebugAssert( _requiresAggregateId == default );
         }
         else
         {
-            allIsRequired = false;
-            _reachablePackages = ImmutableHashSet<ResPackage>.Empty;
-            Throw.DebugAssert( _reachableAggregateId == default );
+            _reachables = dataCacheBuilder.GetClosure( _requires, out _requiresAggregateId );
+            Throw.DebugAssert( _requiresAggregateId != default
+                               && _requiresAggregateId.HasLocal == _reachables.Any( r => r.IsEventuallyLocalDependent ) );
         }
-        // AllReacheable. ComputeReachablePackages above computed the allIsRequired.
-        if( allIsRequired )
-        {
-            var allReachablePackages = new HashSet<ResPackage>();
-            _allReachableHasLocalPackage = ComputeAllReachablePackages( allReachablePackages )
-                                           || _reachableHasLocalPackage;
-            Throw.DebugAssert( allReachablePackages.IsSupersetOf( _reachablePackages ) );
-            _allReachablePackages = allReachablePackages;
-        }
-        else
-        {
-            _allReachablePackages = _reachablePackages;
-            _allReachableHasLocalPackage = _reachableHasLocalPackage;
-        }
-        // Content:
-        // AfterReachable is the ReachablePackages + Children.
-        // AllAfterReacheable is the AllReachable + Children's AllAfterReachable.
-        // For both of them, if we have no children, they are the Reachable (resp. AllReachable)
-        // and _childrenHasLocalPackage obviously remains false.
-        Throw.DebugAssert( "ReachablePackages and Children don't overlap.",
-                           !_reachablePackages.Overlaps( children ) );
+        Throw.DebugAssert( "Reachables and Children don't overlap.", !_reachables.Overlaps( children ) );
+
         if( children.Length == 0 )
         {
-            _afterReachablePackages = _reachablePackages;
-            _afterReachableHasLocalPackage = _reachableHasLocalPackage;
-            _allAfterReachablePackages = _allReachablePackages;
-            _allAfterReachableHasLocalPackage = _allReachableHasLocalPackage;
+            _afterReachables = _reachables;
             Throw.DebugAssert( _childrenAggregateId == default );
         }
         else
         {
             _childrenAggregateId = dataCacheBuilder.RegisterAggregate( _children );
-            // ComputeAllContentReachablePackage computes the _childrenHasLocalPackage, we compute it first.
-            // It contains the children (just like the _afterReachablePackages computed below).
-            var allAfterReachablePackages = new HashSet<ResPackage>( _allReachablePackages );
-            (_childrenHasLocalPackage, _allAfterReachableHasLocalPackage) = ComputeAllAfterReachablePackage( allAfterReachablePackages );
-            _allAfterReachableHasLocalPackage |= _allReachableHasLocalPackage;
-            _allAfterReachablePackages = allAfterReachablePackages;
-
-            _afterReachableHasLocalPackage = _reachableHasLocalPackage || _childrenHasLocalPackage;
-            var afterReachablePackages = new HashSet<ResPackage>( _reachablePackages.Count + children.Length );
-            afterReachablePackages.AddRange( _reachablePackages );
-            afterReachablePackages.AddRange( _children );
-            _afterReachablePackages = afterReachablePackages;
-        }
-    }
-
-    (bool,bool,bool) ComputeReachablePackages( HashSet<ResPackage> set )
-    {
-        Throw.DebugAssert( "Initial set must be empty.", set.Count == 0 );
-        bool allRequired = false;
-        bool rL = false;
-        bool l = false;
-        foreach( var p in _requires )
-        {
-            // Adds the requirements. A previously added requirement's child
-            // may also appear in our requirements.
-            if( set.Add( p ) )
+            var closure = new HashSet<ResPackage>( _reachables );
+            foreach( var c in _children )
             {
-                if( p.IsLocalPackage )
+                if( closure.Add( c ) )
                 {
-                    rL = l = true;
-                }
-                allRequired |= p._reachablePackages.Count > 0;
-                // Consider the children of the requirement (and only them).
-                foreach( var c in p._children )
-                {
-                    l |= p.IsLocalPackage;
-                    allRequired |= p._reachablePackages.Count > 0;
-                    set.Add( c );
+                    closure.UnionWith( c._afterReachables );
                 }
             }
+            _afterReachables = closure;
+            Throw.DebugAssert( _childrenAggregateId != default
+                              && _childrenAggregateId.HasLocal == _children.SelectMany( c => c.AfterReachables ).Concat( _children )
+                                                                           .Any( r => r.IsEventuallyLocalDependent ) );
         }
-        return (rL,l,allRequired);
+        Throw.DebugAssert( _afterReachables == _reachables || _afterReachables.IsProperSupersetOf( _reachables ) );
     }
 
-    bool ComputeAllReachablePackages( HashSet<ResPackage> set )
-    {
-        Throw.DebugAssert( "Initial set must be empty.", set.Count == 0 );
-        bool l = false;
-        foreach( var p in _reachablePackages )
-        {
-            if( set.Add( p ) )
-            {
-                l |= p._allAfterReachableHasLocalPackage;
-                set.UnionWith( p._allAfterReachablePackages );
-            }
-        }
-        return l;
-    }
-
-    (bool,bool) ComputeAllAfterReachablePackage( HashSet<ResPackage> set )
-    {
-        // We extend our AllReachablePackages with our content's AllAfterReachable.
-        Throw.DebugAssert( "Initial set must be the AllReachablePackages.",
-                           set.SetEquals( _allReachablePackages ) );
-        bool cL = false;
-        bool l = false;
-        foreach( var p in _children )
-        {
-            Throw.DebugAssert( !set.Contains( p ) );
-            set.Add( p );
-            cL |= p.IsLocalPackage;
-            l |= p.AllAfterReachableHasLocalPackage;
-            set.UnionWith( p._allAfterReachablePackages );
-        }
-        return (cL,l);
-    }
-
-    internal (AggregateId, AggregateId) GetAggregateIdentifiers() => (_reachableAggregateId, _childrenAggregateId);
+    internal (AggregateId, AggregateId) GetAggregateIdentifiers() => (_requiresAggregateId, _childrenAggregateId);
 
     /// <summary>
     /// Gets this package full name. When built from a type, this is the type's full name.
@@ -209,12 +117,12 @@ public sealed partial class ResPackage
     /// Gets the <see cref="IResPackageResources"/> that apply after this package's <see cref="Children"/>
     /// and these <see cref="Resources"/>.
     /// </summary>
-    public IResPackageResources ResourcesAfter => _resourcesAfter;
+    public IResPackageResources AfterResources => _afterResources;
 
     /// <summary>
     /// Gets whether this is a locally available package.
     /// </summary>
-    public bool IsLocalPackage => _resources.LocalPath != null || _resourcesAfter.LocalPath != null;
+    public bool IsLocalPackage => _resources.LocalPath != null || _afterResources.LocalPath != null;
 
     /// <summary>
     /// Gets the type if this package is defined by a type.
@@ -241,11 +149,6 @@ public sealed partial class ResPackage
     public ImmutableArray<ResPackage> Requires => _requires;
 
     /// <summary>
-    /// Gets whether at least one of the <see cref="Requires"/> is a local package.
-    /// </summary>
-    public bool RequiresHasLocalPackage => _requiresHasLocalPackage;
-
-    /// <summary>
     /// Gets the set of packages that this package contains.
     /// <para>
     /// A child package is not a requirement and a requirement cannot be a child.
@@ -254,72 +157,32 @@ public sealed partial class ResPackage
     public ImmutableArray<ResPackage> Children => _children;
 
     /// <summary>
-    /// Gets whether at least one of the <see cref="Children"/> is a local package.
-    /// </summary>
-    public bool ChildrenHasLocalPackage => _childrenHasLocalPackage;
-
-    /// <summary>
     /// Gets the packages that are reachable from this one: this is
-    /// the <see cref="Requires"/> and the <see cref="Children"/>'s Requires
-    /// (but not our Children). This set is minimal, it doesn't contain any
-    /// transitive dependency.
+    /// the closure of this <see cref="Requires"/> and their <see cref="Reachables"/>.
     /// <para>
     /// This excludes the children of this package, this is the point of view of the "head"
     /// of the package.
     /// </para>
     /// <para>
-    /// The <see cref="AfterReachablePackages"/> is the same minimal set but from
-    /// the point of view of the "tail" of the package from which the children
-    /// of the packages are like package's requirements.
+    /// The <see cref="AfterReachables"/> is the same set but from
+    /// the point of view of the "tail" of the package that includes the <see cref="Reachables"/>
+    /// of the <see cref="Children"/>.
     /// </para>
     /// </summary>
-    public IReadOnlySet<ResPackage> ReachablePackages => _reachablePackages;
+    public IReadOnlySet<ResPackage> Reachables => _reachables;
 
     /// <summary>
-    /// Gets whether at least one of the <see cref="ReachablePackages"/> is a local package.
+    /// Gets the packages that are reachable from the "tail" of this package:
+    /// this extends <see cref="Reachables"/> with the <see cref="Reachables"/>
+    /// of the <see cref="Children"/>.
     /// </summary>
-    public bool ReachableHasLocalPackage => _reachableHasLocalPackage;
+    public IReadOnlySet<ResPackage> AfterReachables => _afterReachables;
 
     /// <summary>
-    /// Gets all the packages that are reachable from this one: this is the transitive closure
-    /// of the <see cref="ReachablePackages"/>.
+    /// Gets whether this <see cref="IsLocalPackage"/> is true or one of the <see cref="AfterReachables"/>
+    /// is local.
     /// </summary>
-    public IReadOnlySet<ResPackage> AllReachablePackages => _allReachablePackages;
-
-    /// <summary>
-    /// Gets whether at least one of the <see cref="AllReachablePackages"/> is a local package.
-    /// </summary>
-    public bool AllReachableHasLocalPackage => _allReachableHasLocalPackage;
-
-    /// <summary>
-    /// Gets the packages that are reachable from the 'tail" of this package: this is
-    /// the <see cref="ReachablePackages"/> plus the <see cref="Children"/>.
-    /// This set is minimal, it doesn't contain any transitive dependency and doesn't contain this package.
-    /// </summary>
-    public IReadOnlySet<ResPackage> AfterReachablePackages => _afterReachablePackages;
-
-    /// <summary>
-    /// Gets whether at least one of the <see cref="AfterReachablePackages"/> is a local package.
-    /// </summary>
-    public bool AfterReachableHasLocalPackage => _afterReachableHasLocalPackage;
-
-    /// <summary>
-    /// Gets all the packages that are reachable from the 'tail" of this package:
-    /// this is the transitive closure of the <see cref="AfterReachablePackages"/> (but
-    /// still without this package).
-    /// </summary>
-    public IReadOnlySet<ResPackage> AllAfterReachablePackages => _allAfterReachablePackages;
-
-    /// <summary>
-    /// Gets whether at least one of the <see cref="AllAfterReachablePackages"/> is a local package.
-    /// </summary>
-    public bool AllAfterReachableHasLocalPackage => _allAfterReachableHasLocalPackage;
-
-    /// <summary>
-    /// Gets whether this package is local dependent: either <see cref="AllAfterReachableHasLocalPackage"/>
-    /// or <see cref="IsLocalPackage"/> is true.
-    /// </summary>
-    public bool IsEventuallyLocalDependent => _afterReachableHasLocalPackage || IsLocalPackage;
+    public bool IsEventuallyLocalDependent => _requiresAggregateId.HasLocal || _childrenAggregateId.HasLocal || IsLocalPackage;
 
     /// <summary>
     /// Gets the <see cref="FullName"/> (type name if this package is defined by a type).
