@@ -1,4 +1,5 @@
 using CK.BinarySerialization;
+using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
@@ -15,13 +16,13 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         _packages = d.ReadValue<ImmutableArray<ResPackage>>();
         _allPackageResources = d.ReadValue<ImmutableArray<IResPackageResources>>();
         _packageIndex = d.ReadObject<IReadOnlyDictionary<object, ResPackage>>();
+        _resourceIndex = d.ReadObject<IReadOnlyDictionary<IResourceContainer, IResPackageResources>>();
 
         _codePackage = _packages[0];
         _appPackage = _packages[^1];
-        _exposedPackages = new OneBasedArray( _packages );
 
         var r = d.Reader;
-        _resPackageDataCache = LiveResPackageDataCache.Read( r, _packages );
+        _resPackageDataCache = LiveSpaceDataCache.Read( r, _packages );
         _watchRoot = r.ReadNullableString();
         _liveStatePath = r.ReadString();
     }
@@ -33,9 +34,10 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         s.WriteValue( o._packages );
         s.WriteValue( o._allPackageResources );
         s.WriteObject( o._packageIndex );
+        s.WriteObject( o._resourceIndex );
 
         ICKBinaryWriter w = s.Writer;
-        ((ResPackageDataCache)o._resPackageDataCache).Write( w );
+        ((SpaceDataCache)o._resPackageDataCache).Write( w );
         w.WriteNullableString( o._watchRoot );
         w.Write( o._liveStatePath );
     }

@@ -8,6 +8,7 @@ namespace CK.Core;
 
 public sealed partial class ResPackage
 {
+    readonly ResSpaceData _spaceData;
     readonly string _fullName;
     readonly Type? _type;
     readonly NormalizedPath _defaultTargetPath;
@@ -23,15 +24,7 @@ public sealed partial class ResPackage
     readonly int _index;
     readonly bool _isGroup;
 
-    // Implementation notes:
-    // ResPackage doesn't reference the ResourceSpaceData.
-    // To be able to locate the package of a resource (to check reachability of resources)
-    // we however need a resourceIndex.
-    // This resource index is shared by all ResPackage and is the only "global" context
-    // we really need.
-    readonly IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
-
-    internal ResPackage( ResPackageDataCacheBuilder dataCacheBuilder,
+    internal ResPackage( SpaceDataCacheBuilder dataCacheBuilder,
                          string fullName,
                          NormalizedPath defaultTargetPath,
                          int idxBeforeResources,
@@ -44,9 +37,8 @@ public sealed partial class ResPackage
                          ImmutableArray<ResPackage> children,
                          int index )
     {
-        Throw.DebugAssert( "ResPackage.Index is 1-based.", index > 0 );
-        Throw.DebugAssert( "The <Code> package is the first one.", (index == 1) == (fullName == "<Code>") );
-        Throw.DebugAssert( "The <App> package is the last one.", (index == dataCacheBuilder.TotalPackageCount) == (fullName == "<App>") );
+        Throw.DebugAssert( "The <Code> package is the first one.", (index == 0) == (fullName == "<Code>") );
+        Throw.DebugAssert( "The <App> package is the last one.", (index == dataCacheBuilder.TotalPackageCount - 1) == (fullName == "<App>") );
         _fullName = fullName;
         _defaultTargetPath = defaultTargetPath;
         _isGroup = isGroup;
@@ -54,7 +46,7 @@ public sealed partial class ResPackage
         _requires = requires;
         _children = children;
         _type = type;
-        _resourceIndex = dataCacheBuilder._resourceIndex;
+        _spaceData = dataCacheBuilder.SpaceData;
         // Initializes the resources.
         _resources = new BeforeRes( this, beforeResources, idxBeforeResources );
         _afterResources = new AfterRes( this, afterResources, idxAfterResources );
@@ -66,7 +58,7 @@ public sealed partial class ResPackage
         }
         else
         {
-            _reachables = dataCacheBuilder.GetClosure( _requires, out _requiresAggregateId );
+            _reachables = dataCacheBuilder.GetReachableClosure( _requires, out _requiresAggregateId );
             Throw.DebugAssert( _requiresAggregateId != default
                                && _requiresAggregateId.HasLocal == _reachables.Any( r => r.IsEventuallyLocalDependent ) );
         }
@@ -96,7 +88,7 @@ public sealed partial class ResPackage
         Throw.DebugAssert( _afterReachables == _reachables || _afterReachables.IsProperSupersetOf( _reachables ) );
     }
 
-    internal (AggregateId, AggregateId) GetAggregateIdentifiers() => (_requiresAggregateId, _childrenAggregateId);
+    internal (AggregateId RequiresAggregateId, AggregateId ChildrenAggregateId) GetAggregateIdentifiers() => (_requiresAggregateId, _childrenAggregateId);
 
     /// <summary>
     /// Gets this package full name. When built from a type, this is the type's full name.

@@ -39,12 +39,13 @@ sealed class CoreCollector
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
-                                                  NormalizedPath defaultTargetPath )
+                                                  NormalizedPath defaultTargetPath,
+                                                  bool ignoreLocal )
     {
         Throw.CheckNotNullArgument( type );
         Throw.CheckArgument( "Dynamic assembly is not supported.", type.FullName != null );
-        IResourceContainer resourceStore = type.CreateResourcesContainer( monitor );
-        IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true );
+        IResourceContainer resourceStore = type.CreateResourcesContainer( monitor, ignoreLocal: ignoreLocal );
+        IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true, ignoreLocal: ignoreLocal );
 
         return resourceStore.IsValid && resourceAfterStore.IsValid
                ? DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore )

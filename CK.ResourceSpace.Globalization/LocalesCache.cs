@@ -3,12 +3,12 @@ using CK.EmbeddedResources;
 
 namespace CK.Core;
 
-sealed class LocalesCache : ResPackageDataHandler<FinalTranslationSet>
+sealed class LocalesCache : ResPackageDataCache<FinalTranslationSet>
 {
     readonly ActiveCultureSet _activeCultures;
     readonly string _rootFolderName;
 
-    public LocalesCache( IResPackageDataCache cache, ActiveCultureSet activeCultures, string rootFolderName )
+    public LocalesCache( ISpaceDataCache cache, ActiveCultureSet activeCultures, string rootFolderName )
         : base( cache )
     {
         _activeCultures = activeCultures;

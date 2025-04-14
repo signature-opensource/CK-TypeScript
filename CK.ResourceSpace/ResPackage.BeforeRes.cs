@@ -25,11 +25,12 @@ public sealed partial class ResPackage
             _localPath = GetLocalPath( resources );
         }
 
-        static string? GetLocalPath( IResourceContainer resources ) => resources is StoreContainer c
-                                                                        ? c.LocalPath
-                                                                        : resources is FileSystemResourceContainer f
-                                                                            ? f.ResourcePrefix
-                                                                            : null;
+        internal static string? GetLocalPath( IResourceContainer resources ) => resources is StoreContainer c
+                                                                                ? c.LocalPath
+                                                                                : resources is FileSystemResourceContainer f
+                                                                                  && f.HasLocalFilePathSupport
+                                                                                    ? f.ResourcePrefix
+                                                                                    : null;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public BeforeRes( IBinaryDeserializer d, ITypeReadInfo info )

@@ -12,7 +12,7 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler, ILiveUpd
     /// </summary>
     public bool DisableLiveUpdate => Installer is not FileSystemInstaller;
 
-    bool ILiveResourceSpaceHandler.WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, string ckWatchFolderPath )
+    bool ILiveResourceSpaceHandler.WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
     {
         Throw.DebugAssert( "Otherwise LiveState would have been disabled.", Installer is FileSystemInstaller );
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
@@ -24,7 +24,7 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler, ILiveUpd
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
         var rootFolderName = d.Reader.ReadString();
-        return new AssetsResourceHandler( installer, data.ResPackageDataCache, rootFolderName );
+        return new AssetsResourceHandler( installer, data.SpaceDataCache, rootFolderName );
     }
 
     public bool OnChange( IActivityMonitor monitor, IResPackageResources resources, string filePath )

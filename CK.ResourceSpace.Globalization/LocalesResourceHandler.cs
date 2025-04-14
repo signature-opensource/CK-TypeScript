@@ -57,7 +57,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <param name="activeCultures">The required active cultures.</param>
     /// <param name="installOption">How the final locale files must be generated.</param>
     public LocalesResourceHandler( IResourceSpaceItemInstaller? installer,
-                                   IResPackageDataCache packageDataCache,
+                                   ISpaceDataCache packageDataCache,
                                    string rootFolderName,
                                    ActiveCultureSet activeCultures,
                                    InstallOption installOption )
@@ -70,7 +70,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <summary>
     /// Gets the cache instance to which this data handler is bound.
     /// </summary>
-    public IResPackageDataCache ResPackageDataCache => _cache.ResPackageDataCache;
+    public ISpaceDataCache ResPackageDataCache => _cache.SpaceCache;
 
     /// <summary>
     /// Gets the final assets that have been successfully initialized.

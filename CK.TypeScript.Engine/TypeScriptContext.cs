@@ -287,9 +287,9 @@ public sealed partial class TypeScriptContext
         spaceBuilder.GeneratedCodeContainer = codeTarget.Result;
 
 
-        success &= spaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer, spaceData.ResPackageDataCache, "ts-assets" ) );
+        success &= spaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer, spaceData.SpaceDataCache, "ts-assets" ) );
         success &= spaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( installer,
-                                                                                         spaceData.ResPackageDataCache,
+                                                                                         spaceData.SpaceDataCache,
                                                                                          "ts-locales",
                                                                                          typeScriptContext.ActiveCultures,
                                                                                          LocalesResourceHandler.InstallOption.Full ) );

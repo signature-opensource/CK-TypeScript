@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
 
 namespace CK.EmbeddedResources;
@@ -11,12 +12,14 @@ public sealed partial class FinalTranslationSet // Serialization
     /// </summary>
     /// <param name="ActiveCultures">The active cultures.</param>
     /// <param name="Translations">The root translations.</param>
-    /// <param name="SubSets">The minimal sub translation sets.</param>
+    /// <param name="SubSets">The sub translation sets. Can contain null translation sets.</param>
     /// <param name="IsAmbiguous">The <see cref="FinalTranslationSet.IsAmbiguous"/>.</param>
     public sealed record SerializedData( ActiveCultureSet ActiveCultures,
-                                         IReadOnlyDictionary<string, FinalTranslationValue>? Translations,
+                                         IReadOnlyDictionary<string, FinalTranslationValue> Translations,
                                          (IReadOnlyDictionary<string, FinalTranslationValue>?, bool)[] SubSets,
-                                         bool IsAmbiguous );
+                                         bool IsAmbiguous )
+    {
+    }
 
     /// <summary>
     /// Creates the minimal data required to restore this translations set.

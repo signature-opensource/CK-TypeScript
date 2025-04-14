@@ -1,4 +1,7 @@
 using CK.BinarySerialization;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Core;
 
@@ -15,13 +18,16 @@ public interface ILiveResourceSpaceHandler
     bool DisableLiveUpdate { get; }
 
     /// <summary>
-    /// Writes the live state in the primary live state file and/or into auxiliary files in the <paramref name="ckWatchFolderPath"/>.
+    /// Writes the live state in the primary live state file and/or into auxiliary files in
+    /// the <see cref="ResSpaceData.LiveStatePath"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="s">The serializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
-    /// <param name="ckWatchFolderPath">Fully qualified path ending with <see cref="System.IO.Path.DirectorySeparatorChar"/>.</param>
+    /// <param name="spaceData">The resource space that has been serialized.</param>
     /// <returns>True on success, false on error. Errorrs must be logged.</returns>
-    bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, string ckWatchFolderPath );
+    bool WriteLiveState( IActivityMonitor monitor,
+                         IBinarySerializer s,
+                         ResSpaceData spaceData );
 
     /// <summary>
     /// Restores a <see cref="ILiveUpdater"/> from previously written data by <see cref="WriteLiveState(IActivityMonitor, IBinarySerializer, string)"/>.
@@ -32,8 +38,10 @@ public interface ILiveResourceSpaceHandler
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="data">The deserialized resource space data.</param>
+    /// <param name="spaceData">The deserialized resource space data.</param>
     /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <returns>The live updater on success, null on error. Errors must be logged.</returns>
-    public static virtual ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData data, IBinaryDeserializer d ) => null;
+    public static virtual ILiveUpdater? ReadLiveState( IActivityMonitor monitor,
+                                                       ResSpaceData spaceData,
+                                                       IBinaryDeserializer d ) => null;
 }

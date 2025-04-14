@@ -1,39 +1,47 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using static CK.Core.SpaceDataCache;
 
 namespace CK.Core;
 
 /// <summary>
-/// Root ResPackageDataCache implementation in engine world.
+/// Root SpaceDataCache implementation in engine world.
 /// </summary>
-sealed class ResPackageDataCache : IInternalResPackageDataCache
+sealed class SpaceDataCache : IInternalSpaceDataCache
 {
-    readonly int _dataCacheLength;
     readonly ImmutableArray<ResPackage> _packages;
     readonly List<AggregateKey> _localAggregates;
     readonly List<AggregateKey> _stableAggregates;
+    readonly IReadOnlyCollection<int> _stableIdentifiers;
+    readonly int _dataCacheLength;
 
-    internal ResPackageDataCache( int dataCacheLength,
-                                  ImmutableArray<ResPackage> packages,
-                                  List<AggregateKey> localAggregates,
-                                  List<AggregateKey> stableAggregates )
+    internal SpaceDataCache( ImmutableArray<ResPackage> packages,
+                             List<AggregateKey> localAggregates,
+                             List<AggregateKey> stableAggregates,
+                             IReadOnlyCollection<int>? stableIdentifiers )
     {
-        _dataCacheLength = dataCacheLength;
+        _dataCacheLength = packages.Length - 1;
         _packages = packages;
         _localAggregates = localAggregates;
         _stableAggregates = stableAggregates;
+        _stableIdentifiers = stableIdentifiers ?? ImmutableArray<int>.Empty;
     }
 
-    void IResPackageDataCache.LocalImplementationOnly() { }
+    void ISpaceDataCache.LocalImplementationOnly() { }
 
     public void Write( ICKBinaryWriter w )
     {
         w.WriteNonNegativeSmallInt32( _dataCacheLength );
-        Write( w, _localAggregates );
-        Write( w, _stableAggregates );
+        // AggregateKeys are not deserialized as AggregateKey but
+        // only as the array of their PackageIndexes (the hash code is skipped).
+        WriteAggregateKeys( w, _localAggregates );
+        WriteAggregateKeys( w, _stableAggregates );
 
-        static void Write( ICKBinaryWriter w, List<AggregateKey> aggregateKeys )
+        w.WriteNonNegativeSmallInt32( _stableIdentifiers.Count );
+        foreach( var id in _stableIdentifiers ) w.Write( id );
+
+        static void WriteAggregateKeys( ICKBinaryWriter w, List<AggregateKey> aggregateKeys )
         {
             w.WriteNonNegativeSmallInt32( aggregateKeys.Count );
             foreach( var k in aggregateKeys )
@@ -46,7 +54,6 @@ sealed class ResPackageDataCache : IInternalResPackageDataCache
                 }
             }
         }
-
     }
 
     public int DataCacheLength => _dataCacheLength;
@@ -55,7 +62,9 @@ sealed class ResPackageDataCache : IInternalResPackageDataCache
 
     public int LocalAggregateCacheLength => _localAggregates.Count;
 
-    public ImmutableArray<ResPackage> ZeroBasedPackages => _packages;
+    public ImmutableArray<ResPackage> Packages => _packages;
+
+    public IReadOnlyCollection<int> StableIdentifiers => _stableIdentifiers;
 
     public ReadOnlySpan<int> GetStableAggregate( int trueAggregateId )
     {

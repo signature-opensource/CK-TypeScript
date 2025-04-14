@@ -74,7 +74,7 @@ public sealed class ResSpaceDataBuilder
         // All packages that require no other package require it.
         // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
         //       change anything but this choice is settled now.
-        static ResPackage CreateCodePackage( ResPackageDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
+        static ResPackage CreateCodePackage( SpaceDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
         {
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
             var codeContainer = generatedCodeContainer
@@ -92,7 +92,7 @@ public sealed class ResSpaceDataBuilder
                                    type: null,
                                    requires: ImmutableArray<ResPackage>.Empty,
                                    children: ImmutableArray<ResPackage>.Empty,
-                                   index: 1 );
+                                   index: 0 );
         }
 
         // The "<App>" package is the last package and represents the Application being setup.
@@ -112,7 +112,7 @@ public sealed class ResSpaceDataBuilder
         //
         // It is initialized below after the others (once we know its requirements) and the indexes.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
-                                            ResPackageDataCacheBuilder dataCacheBuilder,
+                                            SpaceDataCacheBuilder dataCacheBuilder,
                                             ImmutableArray<ResPackage> appRequires,
                                             int index )
         {
@@ -127,7 +127,7 @@ public sealed class ResSpaceDataBuilder
                 appResStore = new EmptyResourceContainer( "Empty <Code>", isDisabled: false );
             }
             var noAppRes = new EmptyResourceContainer( "<App>", isDisabled: true );
-            int idxResources = 2 * (index - 1); 
+            int idxResources = 2 * index; 
             var appPackage = new ResPackage( dataCacheBuilder,
                                              "<App>",
                                              defaultTargetPath: default,
@@ -147,9 +147,8 @@ public sealed class ResSpaceDataBuilder
         string? appLocalPath = _collector.AppResourcesLocalPath;
         var localCount = _collector.LocalPackageCount;
 
-        // We have 1 + <Code> + descriptorPackageCount + <App> total packages.
-        // The [0] index is null! and is an invalid index: ResPackage.Index is one-based.
-        var bAll = ImmutableArray.CreateBuilder<ResPackage>( descriptorPackageCount + 3 );
+        // We have <Code> + descriptorPackageCount + <App> total packages.
+        var bAll = ImmutableArray.CreateBuilder<ResPackage>( descriptorPackageCount + 2 );
         // We have 2 * (<Code> + descriptorPackageCount + <App>) total IResPackageResources (the After and Before).
         // We don't use a list/builder here because indexes are provided by the SortedItems.
         // IResPackageResources.Index is zero based.
@@ -176,18 +175,16 @@ public sealed class ResSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResSpaceData( _generatedCodeContainer, _collector.LiveStatePath, packageIndex );
+        var space = new ResSpaceData( _generatedCodeContainer, _collector.LiveStatePath, packageIndex, resourceIndex );
 
-        // ResPackageDataCache builder is used a vehicle to transmit the resourceIndex that will be filled
-        // below to all the ResPackage (to avoid yet another constructor parameter).
-        var dataCacheBuilder = new ResPackageDataCacheBuilder( descriptorPackageCount,
-                                                               _collector.LocalPackageCount,
-                                                               appLocalPath != null,
-                                                               resourceIndex );
+        // Initialize the SpaceDataCacheBuilder. It carries the space data to the ResPackage constructors.
+        var dataCacheBuilder = new SpaceDataCacheBuilder( space,
+                                                          descriptorPackageCount,
+                                                          _collector.LocalPackageCount,
+                                                          appLocalPath != null );
 
        // Create the code package and adds it where it must be (at [1], after the null [0]).
         ResPackage codePackage = CreateCodePackage( dataCacheBuilder, _generatedCodeContainer );
-        bAll.Add( null! );
         bAll.Add( codePackage );
         packageIndex.Add( codePackage.FullName, codePackage );
         Throw.DebugAssert( codePackage.Resources.Index == 0 );
@@ -211,9 +208,10 @@ public sealed class ResSpaceDataBuilder
             if( s.HeadForGroup != null )
             {
                 ResPackageDescriptor d = s.Item;
+                Throw.DebugAssert( d.Resources is StoreContainer && d.AfterResources is StoreContainer );
                 // Close the CodeGen resources (if they are code generated).
-                if( d.Resources is CodeGenResourceContainer c1 ) c1.Close();
-                if( d.AfterResources is CodeGenResourceContainer c2 ) c2.Close();
+                if( ((StoreContainer)d.Resources).InnerContainer is CodeGenResourceContainer c1 ) c1.Close();
+                if( ((StoreContainer)d.AfterResources).InnerContainer is CodeGenResourceContainer c2 ) c2.Close();
 
                 Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
                                    !s.Requires.Intersect( s.Children ).Any() );
@@ -302,7 +300,6 @@ public sealed class ResSpaceDataBuilder
         Throw.DebugAssert( "Expected size reached.", resourceIndex.Count == resourceIndexSize );
         var packages = bAll.MoveToImmutable();
         space._packages = packages;
-        space._exposedPackages = new OneBasedArray( packages );
         space._localPackages = bLocal.MoveToImmutable();
         Throw.DebugAssert( allPackageResources.All( r => r != null ) );
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
@@ -314,17 +311,13 @@ public sealed class ResSpaceDataBuilder
         // The space is initialized with all its packages.
         // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now
         // compute the aggregation sets.
-        space._resPackageDataCache = dataCacheBuilder.Build( monitor, packages );
+        space._resPackageDataCache = dataCacheBuilder.Build( packages, watchRoot != null );
         // Post conditions:
-        Throw.DebugAssert( "OneBased array of packages.",
-                           packages[0] == null
-                           && space._exposedPackages.SequenceEqual( packages.Skip( 1 ) )
-                           && space._exposedPackages.All( p => p != null ) );
         Throw.DebugAssert( "<Code> can reach nothing.", codePackage.AfterReachables.Count == 0 );
         Throw.DebugAssert( "<Code> can be reached from any packages.",
-                           packages.Skip( 1 ).Where( p => p != codePackage ).All( p => p.AfterReachables.Contains( codePackage ) ) );
+                           packages.Where( p => p != codePackage ).All( p => p.AfterReachables.Contains( codePackage ) ) );
         Throw.DebugAssert( "All packages can be reached from <App>.",
-                           appPackage.AfterReachables.SetEquals( packages.Skip( 1 ).Where( p => p != appPackage ) ) );
+                           appPackage.AfterReachables.SetEquals( packages.Where( p => p != appPackage ) ) );
         return space;
     }
 

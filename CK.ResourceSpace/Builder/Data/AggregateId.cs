@@ -4,7 +4,22 @@ namespace CK.Core;
 
 readonly struct AggregateId : IEquatable<AggregateId>, ICKSimpleBinarySerializable
 {
+    /// <summary>
+    /// <list type="bullet">
+    ///     <item>= 0: No local at all (the aggregate is only composed of stable packages).</item>
+    ///     <item>&gt; 0 and &lt; number of packages: Single package identifier.</item>
+    ///     <item>&gt; number of packages: index in the SpaceDataCache local list offset by the total number of packages.</item>
+    /// </list>
+    /// </summary>
     internal readonly int _localKeyId;
+
+    /// <summary>
+    /// <list type="bullet">
+    ///     <item>= 0: No stable at all.</item>
+    ///     <item>&gt; 0: Single package identifier.</item>
+    ///     <item>&lt; 0: Bitwise complement of the index in the SpaceDataCache stable list offset by the total number of packages.</item>
+    /// </list>
+    /// </summary>
     internal readonly int _stableKeyId;
 
     public AggregateId( int localKeyId, int stableKeyId )
@@ -14,6 +29,8 @@ readonly struct AggregateId : IEquatable<AggregateId>, ICKSimpleBinarySerializab
     }
 
     public bool HasLocal => _localKeyId != 0;
+
+    public bool HasStable => _stableKeyId != 0;
 
     public bool Equals( AggregateId other ) => _localKeyId == other._localKeyId && _stableKeyId == other._stableKeyId;
 

@@ -2,11 +2,13 @@ using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace CK.Core;
 
-sealed class ResPackageDataCacheBuilder
+sealed class SpaceDataCacheBuilder
 {
+    readonly ResSpaceData _spaceData;
     // Contains AggregateKey to index mapping for local and stable.
     // Only AggregateKey for more than one package is computed. The AggregateId
     // (localKeyId and StableKeyId) for single package set is the single package identifier.
@@ -16,7 +18,7 @@ sealed class ResPackageDataCacheBuilder
     readonly List<AggregateKey> _stableAggregates;
     readonly List<AggregateKey> _localAggregates;
     // Reachable packages are deduplicated and shared instances are
-    // exposed by ResPackage.ReachablePackages.
+    // exposed by ResPackage.Reachables.
     readonly Dictionary<AggregateId, HashSet<ResPackage>> _reachableIndex;
     // Reusable buffers (avoiding allocation).
     readonly int[] _localBuffer;
@@ -24,13 +26,11 @@ sealed class ResPackageDataCacheBuilder
     // This considers "<App>" and "<Code>" packages, this is the ResPackageDataCache.DataCacheLength
     // and the offset of true AggregateId keys.
     readonly int _totalPackageCount;
-    // Relay to the ResPackage constructor.
-    internal readonly Dictionary<IResourceContainer, IResPackageResources> _resourceIndex;
 
-    public ResPackageDataCacheBuilder( int descriptorPackageCount,
-                                       int collectorLocalPackageCount,
-                                       bool appHasLocalPath,
-                                       Dictionary<IResourceContainer, IResPackageResources> resourceIndex )
+    public SpaceDataCacheBuilder( ResSpaceData spaceData,
+                                  int descriptorPackageCount,
+                                  int collectorLocalPackageCount,
+                                  bool appHasLocalPath )
     {
         _aggregateIndex = new Dictionary<AggregateKey, int>();
         _reachableIndex = new Dictionary<AggregateId, HashSet<ResPackage>>();
@@ -48,13 +48,15 @@ sealed class ResPackageDataCacheBuilder
         // We include the head "<Code>" package here.
         _stableBuffer = new int[1 + descriptorPackageCount - collectorLocalPackageCount];
         // Consider "<App>" and "<Code>" packages. 
-        _totalPackageCount = collectorLocalPackageCount + 2;
-        _resourceIndex = resourceIndex;
+        _totalPackageCount = descriptorPackageCount + 2;
+        _spaceData = spaceData;
     }
 
     public int TotalPackageCount => _totalPackageCount;
 
-    public IReadOnlySet<ResPackage> GetClosure( IReadOnlyCollection<ResPackage> packages, out AggregateId aggregateId )
+    public ResSpaceData SpaceData => _spaceData;
+
+    public IReadOnlySet<ResPackage> GetReachableClosure( IReadOnlyCollection<ResPackage> packages, out AggregateId aggregateId )
     {
         Throw.DebugAssert( packages.Count > 0 );
         aggregateId = RegisterAggregate( packages );
@@ -89,17 +91,17 @@ sealed class ResPackageDataCacheBuilder
                 _stableBuffer[nbStable++] = p.Index;
             }
         }
-        var stableAggregateId = nbStable switch
-        {
-            0 => 0,
-            1 => _stableBuffer[0],
-            _ => FindOrCreateStable( nbStable ),
-        };
         var localAggregateId = nbLocal switch
         {
             0 => 0,
-            1 => _localBuffer[0],
+            1 => _localBuffer[0] + 1,
             _ => FindOrCreateLocal( nbLocal ),
+        };
+        var stableAggregateId = nbStable switch
+        {
+            0 => 0,
+            1 => _stableBuffer[0] + 1,
+            _ => FindOrCreateStable( nbStable ),
         };
         return new AggregateId( localAggregateId, stableAggregateId );
     }
@@ -109,8 +111,9 @@ sealed class ResPackageDataCacheBuilder
         var key = new AggregateKey( _stableBuffer.AsSpan( 0, nbStable ) );
         if( !_aggregateIndex.TryGetValue( key, out var id ) )
         {
-            id = ~(_totalPackageCount + _stableAggregates.Count);
+            // Add first: offsets the id by 1.
             _stableAggregates.Add( key );
+            id = _totalPackageCount + _stableAggregates.Count;
             _aggregateIndex.Add( key, id );
         }
         return id;
@@ -121,15 +124,43 @@ sealed class ResPackageDataCacheBuilder
         var key = new AggregateKey( _localBuffer.AsSpan( 0, nbLocal ) );
         if( !_aggregateIndex.TryGetValue( key, out var id ) )
         {
-            id = _totalPackageCount + _localAggregates.Count;
             _localAggregates.Add( key );
+            id = _totalPackageCount + _localAggregates.Count;
             _aggregateIndex.Add( key, id );
         }
         return id;
     }
 
-    public ResPackageDataCache Build( IActivityMonitor monitor, ImmutableArray<ResPackage> packages )
+    public SpaceDataCache Build( ImmutableArray<ResPackage> packages, bool withLiveState )
     {
-        return new ResPackageDataCache( _totalPackageCount, packages, _localAggregates, _stableAggregates );
+        Throw.DebugAssert( _totalPackageCount == packages.Length );
+        // Computes the stable identifiers.
+        HashSet<int>? stableIdentifiers = null;
+        if( withLiveState )
+        {
+            stableIdentifiers = new HashSet<int>();
+            foreach( var p in packages )
+            {
+                if( p.IsEventuallyLocalDependent )
+                {
+                    var (requiresAggregateId, childrenAggregateId) = p.GetAggregateIdentifiers();
+                    // This may be a single package identifier (offset by 1)
+                    // or a aggregate identifier (greater than total package count).
+                    if( requiresAggregateId.HasStable )
+                    {
+                        stableIdentifiers.Add( requiresAggregateId._stableKeyId );
+                    }
+                    if( childrenAggregateId.HasStable )
+                    {
+                        stableIdentifiers.Add( childrenAggregateId._stableKeyId );
+                    }
+                }
+                else
+                {
+                    stableIdentifiers.Add( p.Index + 1 );
+                }
+            }
+        }
+        return new SpaceDataCache( packages, _localAggregates, _stableAggregates, stableIdentifiers );
     }
 }

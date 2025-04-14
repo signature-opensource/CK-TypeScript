@@ -31,8 +31,8 @@ public sealed partial class ResSpace
     readonly ResourceSpaceFileHandler.FolderExclusion _folderExclusion;
     
     internal ResSpace( ResSpaceData data,
-                            ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
-                            ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
+                       ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
+                       ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
     {
         _data = data;
         _folderHandlers = folderHandlers;
@@ -100,7 +100,7 @@ public sealed partial class ResSpace
         }
         if( _data.LiveStatePath != ResSpaceCollector.NoLiveState )
         {
-            success &= ClearLiveState( monitor, _data.LiveStatePath );
+            success &= ClearLiveState( monitor );
         }
         foreach( var f in _folderHandlers )
         {
@@ -112,16 +112,22 @@ public sealed partial class ResSpace
         }
         CloseInstallers( monitor, installers, success );
 
-        if( success && _data.LiveStatePath != ResSpaceCollector.NoLiveState )
+        if( success )
         {
-            if( _data.LiveStatePath == ResSpaceCollector.NoLiveState )
+            if( _data.WatchRoot == null )
             {
-                monitor.Warn( """
-                No AppResourcesLocalPath has been set and no target watch folder has been specified.
-                Skipping Live state generation.
-                """ );
+                var msg = _data.LiveStatePath == ResSpaceCollector.NoLiveState
+                            ? "Live state is disabled."
+                            : "No local package exist and no AppResourcesLocalPath has been set.";
+                monitor.Warn( $"""
+                               {msg}
+                               Skipping Live state generation.
+                               """ );
             }
-            success &= WriteLiveState( monitor, _data.LiveStatePath );
+            else
+            {
+                success &= WriteLiveState( monitor );
+            }
         }
         return success;
 
@@ -167,18 +173,10 @@ public sealed partial class ResSpace
 
     }
 
-    static bool ClearLiveState( IActivityMonitor monitor, string ckWatchFolderPath )
+    bool ClearLiveState( IActivityMonitor monitor )
     {
-        Throw.DebugAssert( ckWatchFolderPath.EndsWith( Path.DirectorySeparatorChar ) );
-        if( File.Exists( ckWatchFolderPath ) )
-        {
-            monitor.Error( $"""
-                    Invalid ck-watch state folder. It must not be a file':
-                    {ckWatchFolderPath}
-                    """ );
-            return false;
-        }
-        var stateFile = ckWatchFolderPath + LiveStateFileName;
+        Throw.DebugAssert( _data.LiveStatePath.EndsWith( Path.DirectorySeparatorChar ) );
+        var stateFile = _data.LiveStatePath + LiveStateFileName;
         if( File.Exists( stateFile ) )
         {
             int retryCount = 0;
@@ -202,14 +200,18 @@ public sealed partial class ResSpace
         return true;
     }
 
-    bool WriteLiveState( IActivityMonitor monitor, string ckWatchFolderPath )
+    bool WriteLiveState( IActivityMonitor monitor )
     {
+        var ckWatchFolderPath = _data.LiveStatePath;
         if( _data.WatchRoot == null )
         {
-            monitor.Info( """
-                No local package exist and no AppResourcesLocalPath has been set.
-                Skipping Live state generation.
-                """ );
+            var msg = ckWatchFolderPath == ResSpaceCollector.NoLiveState
+                        ? "Live state is disabled."
+                        : "No local package exist and no AppResourcesLocalPath has been set.";
+            monitor.Info( $"""
+                          {msg}
+                          Skipping Live state generation.
+                          """ );
             return true;
         }
         var liveHandlers = _folderHandlers.OfType<ILiveResourceSpaceHandler>()
@@ -242,7 +244,7 @@ public sealed partial class ResSpace
             foreach( var h in liveHandlers )
             {
                 s.WriteTypeInfo( h.GetType() );
-                success &= h.WriteLiveState( monitor, s, ckWatchFolderPath );
+                success &= h.WriteLiveState( monitor, s, _data );
             }
         }
         return success;

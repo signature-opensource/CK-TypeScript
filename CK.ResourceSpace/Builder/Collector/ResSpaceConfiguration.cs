@@ -145,11 +145,19 @@ public sealed class ResSpaceConfiguration
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The type that defines the package.</param>
+    /// <param name="ignoreLocal">
+    /// True to ignore local folder: even if the resources are in a local folder, this creates
+    /// a <see cref="AssemblyResourceContainer"/> instead of a <see cref="FileSystemResourceContainer"/>
+    /// for both <see cref="ResPackageDescriptor.Resources"/> and <see cref="ResPackageDescriptor.AfterResources"/>.
+    /// <para>
+    /// This is mainly for tests.
+    /// </para>
+    /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type )
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool ignoreLocal = false )
     {
         var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
-        return _coreCollector.RegisterPackage( monitor, type, targetPath );
+        return _coreCollector.RegisterPackage( monitor, type, targetPath, ignoreLocal );
     }
 
     /// <summary>
@@ -158,12 +166,21 @@ public sealed class ResSpaceConfiguration
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The type that defines the package.</param>
     /// <param name="defaultTargetPath">The default target path associated to the package's resources.</param>
+    /// <param name="ignoreLocal">
+    /// True to ignore local folder: even if the resources are in a local folder, this creates
+    /// a <see cref="AssemblyResourceContainer"/> instead of a <see cref="FileSystemResourceContainer"/>
+    /// for both <see cref="ResPackageDescriptor.Resources"/> and <see cref="ResPackageDescriptor.AfterResources"/>.
+    /// <para>
+    /// This is mainly for tests.
+    /// </para>
+    /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
-                                                  NormalizedPath defaultTargetPath )
+                                                  NormalizedPath defaultTargetPath,
+                                                  bool ignoreLocal = false )
     {
-        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath );
+        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, ignoreLocal );
     }
 
     /// <summary>

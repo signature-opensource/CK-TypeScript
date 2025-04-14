@@ -21,9 +21,7 @@ public sealed partial class ResPackage
             _package = package;
             _resources = resources;
             _index = index;
-            _localPath = resources is StoreContainer c
-                        ? c.LocalPath
-                        : null;
+            _localPath = BeforeRes.GetLocalPath( resources );
             Throw.DebugAssert( IsCodeResources == (_package.FullName == "<Code>") );
         }
 

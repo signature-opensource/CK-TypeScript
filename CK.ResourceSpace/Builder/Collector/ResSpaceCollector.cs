@@ -122,15 +122,16 @@ public sealed class ResSpaceCollector
     /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, NormalizedPath)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
-                                                  NormalizedPath defaultTargetPath )
+                                                  NormalizedPath defaultTargetPath,
+                                                  bool ignoreLocal = false )
     {
-        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath );
+        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, ignoreLocal );
     }
 
     /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type)"/>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type )
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool ignoreLocal = false )
     {
         var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
-        return _coreCollector.RegisterPackage( monitor, type, targetPath );
+        return _coreCollector.RegisterPackage( monitor, type, targetPath, ignoreLocal );
     }
 }

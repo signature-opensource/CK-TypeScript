@@ -11,7 +11,7 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     FinalResourceAssetSet? _finalAssets;
 
     public AssetsResourceHandler( IResourceSpaceItemInstaller? installer,
-                                  IResPackageDataCache packageDataCache,
+                                  ISpaceDataCache packageDataCache,
                                   string rootFolderName )
         : base( installer, rootFolderName )
     {
@@ -21,7 +21,7 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// <summary>
     /// Gets the cache instance to which this data handler is bound.
     /// </summary>
-    public IResPackageDataCache ResPackageDataCache => _cache.ResPackageDataCache;
+    public ISpaceDataCache ResPackageDataCache => _cache.SpaceCache;
 
     /// <summary>
     /// Gets the final assets that have been successfully initialized.

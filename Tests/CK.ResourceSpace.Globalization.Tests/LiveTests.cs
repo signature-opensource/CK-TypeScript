@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static CK.ResourceSpace.Globalization.Tests.LiveTests;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.ResourceSpace.Globalization.Tests;
@@ -20,15 +21,36 @@ public class LiveTests
         ModifyAppResources,
     }
 
-    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr" )]
+    public enum LocalFileSupport
+    {
+        /// <summary>
+        /// All the packages are stable (bound to the assembly resources).
+        /// </summary>
+        NoLocal,
+        /// <summary>
+        /// All the packages are local (bound to the resource folders).
+        /// </summary>
+        AllLocal,
+
+        /// <summary>
+        /// 0.5 probability for each package to have its resources bound to the assambly's resources
+        /// or to the local folder.
+        /// </summary>
+        Random,
+    }
+
+    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr", LocalFileSupport.AllLocal )]
+    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr", LocalFileSupport.Random )]
+    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr", LocalFileSupport.NoLocal )]
     public async Task LiveState_in_action_Async( Scenario scenario,
                                                  LocalesResourceHandler.InstallOption install,
                                                  string activeCultures,
+                                                 LocalFileSupport localFileSupport,
                                                  CancellationToken testCancellation )
     {
         var name = $"{scenario}-{install}[{activeCultures}]";
         var testRootPath = TestHelper.TestProjectFolder.AppendPart( name );
-        ResSpace space = Install( testRootPath, activeCultures, install );
+        ResSpace space = Install( testRootPath, activeCultures, install, localFileSupport );
 
         var cts = new CancellationTokenSource();
         using var fromTest = testCancellation.UnsafeRegister( cts => ((CancellationTokenSource)cts!).Cancel(), cts );
@@ -89,15 +111,28 @@ public class LiveTests
 
     static ResSpace Install( NormalizedPath testRootPath,
                              string activeCultures,
-                             LocalesResourceHandler.InstallOption install )
+                             LocalesResourceHandler.InstallOption install,
+                             LocalFileSupport localFileSupport )
     {
         var config = new ResSpaceConfiguration();
         config.AppResourcesLocalPath = testRootPath.AppendPart( "AppResources" );
         var spaceCollector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Gear.SystemState.Package ) );
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.TopBar.Package ) );
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.Footer.Package ) );
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.PublicSection.Package ) );
+
+        var random = new Random();
+        bool IgnoreLocal()
+        {
+            return localFileSupport switch
+            {
+                LocalFileSupport.AllLocal => false,
+                LocalFileSupport.NoLocal => true,
+                _ => random.Next( 2 ) != 0
+            };
+        }
+
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Gear.SystemState.Package ), IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.TopBar.Package ), IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.Footer.Package ), IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.PublicSection.Package ), IgnoreLocal() );
 
         var spaceDataBuilder = new ResSpaceDataBuilder( spaceCollector );
         var spaceData = spaceDataBuilder.Build( TestHelper.Monitor ).ShouldNotBeNull();
@@ -105,7 +140,7 @@ public class LiveTests
         var spaceBuilder = new ResSpaceBuilder( spaceData );
         var installer = new InitialFileSystemInstaller( testRootPath.AppendPart("App") );
         var localesHandler = new LocalesResourceHandler( installer,
-                                                         spaceData.ResPackageDataCache,
+                                                         spaceData.SpaceDataCache,
                                                          "locales",
                                                          new ActiveCultureSet( activeCultures.Split( ",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )
                                                                                              .Select( NormalizedCultureInfo.EnsureNormalizedCultureInfo ) ),

@@ -1,36 +1,46 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
 namespace CK.Core;
 
 /// <summary>
-/// Root ResPackageDataCache implementation in Live world.
+/// SpaceDataCache implementation in the Live world.
 /// </summary>
-sealed class LiveResPackageDataCache : IInternalResPackageDataCache
+sealed class LiveSpaceDataCache : IInternalSpaceDataCache
 {
     readonly int _dataCacheLength;
     readonly ImmutableArray<ResPackage> _packages;
     readonly ImmutableArray<ImmutableArray<int>> _localAggregates;
     readonly ImmutableArray<ImmutableArray<int>> _stableAggregates;
+    readonly int[] _stableIdentifiers;
 
-    LiveResPackageDataCache( ImmutableArray<ResPackage> packages,
-                             int dataCacheLength,
-                             ImmutableArray<ImmutableArray<int>> localAggregates,
-                             ImmutableArray<ImmutableArray<int>> stableAggregates )
+    LiveSpaceDataCache( ImmutableArray<ResPackage> packages,
+                        int dataCacheLength,
+                        ImmutableArray<ImmutableArray<int>> localAggregates,
+                        ImmutableArray<ImmutableArray<int>> stableAggregates,
+                        int[] stableIdentifiers )
     {
         _dataCacheLength = dataCacheLength;
         _packages = packages;
         _localAggregates = localAggregates;
         _stableAggregates = stableAggregates;
+        _stableIdentifiers = stableIdentifiers;
     }
 
-    public static LiveResPackageDataCache Read( ICKBinaryReader r, ImmutableArray<ResPackage> packages )
+    public static LiveSpaceDataCache Read( ICKBinaryReader r, ImmutableArray<ResPackage> packages )
     {
         int dataCacheLength = r.ReadNonNegativeSmallInt32();
         var local = ReadAggregateKeys( r );
         var stable = ReadAggregateKeys( r );
-        return new LiveResPackageDataCache( packages, dataCacheLength, local, stable );
+
+        int[] stableIdentifiers = new int[r.ReadNonNegativeSmallInt32()];
+        for( int i = 0; i < stableIdentifiers.Length; ++i )
+        {
+            stableIdentifiers[i] = r.ReadInt32();
+        }
+        return new LiveSpaceDataCache( packages, dataCacheLength, local, stable, stableIdentifiers );
 
         static ImmutableArray<ImmutableArray<int>> ReadAggregateKeys( ICKBinaryReader r )
         {
@@ -48,7 +58,7 @@ sealed class LiveResPackageDataCache : IInternalResPackageDataCache
         }
     }
 
-    void IResPackageDataCache.LocalImplementationOnly() { }
+    void ISpaceDataCache.LocalImplementationOnly() { }
 
     public int DataCacheLength => _dataCacheLength;
 
@@ -56,7 +66,9 @@ sealed class LiveResPackageDataCache : IInternalResPackageDataCache
 
     public int LocalAggregateCacheLength => _localAggregates.Length;
 
-    public ImmutableArray<ResPackage> ZeroBasedPackages => _packages;
+    public ImmutableArray<ResPackage> Packages => _packages;
+
+    public IReadOnlyCollection<int> StableIdentifiers => _stableIdentifiers;
 
     public ReadOnlySpan<int> GetStableAggregate( int trueAggregateId )
     {

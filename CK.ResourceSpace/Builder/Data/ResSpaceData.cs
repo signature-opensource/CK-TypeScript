@@ -16,6 +16,7 @@ namespace CK.Core;
 public sealed partial class ResSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
+    readonly IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
     readonly string _liveStatePath;
     // Last mutable code container. Duplicating it is required, because even if we inspect
     // the ResourceContainerWrapper.InnerContainer, an empty container may be a non yet
@@ -27,19 +28,20 @@ public sealed partial class ResSpaceData
     internal ImmutableArray<ResPackage> _packages;
     internal ImmutableArray<ResPackage> _localPackages;
     internal ImmutableArray<IResPackageResources> _allPackageResources;
-    [AllowNull]internal IReadOnlyList<ResPackage> _exposedPackages;
-    [AllowNull]internal IResPackageDataCache _resPackageDataCache;
+    [AllowNull]internal ISpaceDataCache _resPackageDataCache;
     [AllowNull]internal ResPackage _codePackage;
     [AllowNull]internal ResPackage _appPackage;
     internal string? _watchRoot;
 
     internal ResSpaceData( IResourceContainer? generatedCodeContainer,
-                                string cKWatchFolderPath,
-                                IReadOnlyDictionary<object, ResPackage> packageIndex )
+                           string cKWatchFolderPath,
+                           IReadOnlyDictionary<object, ResPackage> packageIndex,
+                           IReadOnlyDictionary<IResourceContainer, IResPackageResources> resourceIndex )
     {
         _generatedCodeContainer = generatedCodeContainer;
         _liveStatePath = cKWatchFolderPath;
         _packageIndex = packageIndex;
+        _resourceIndex = resourceIndex;
     }
 
     /// <summary>
@@ -79,12 +81,11 @@ public sealed partial class ResSpaceData
 
     /// <summary>
     /// Gets the packages topologically ordered. <see cref="ResPackage.Index"/> is the index in this array.
-    /// This list is 1-based: the 0 index is invalid.
     /// <para>
     /// This first package is <see cref="CodePackage"/> and the last one is <see cref="AppPackage"/>.
     /// </para>
     /// </summary>
-    public IReadOnlyList<ResPackage> Packages => _packages;
+    public ImmutableArray<ResPackage> Packages => _packages;
 
     /// <summary>
     /// Gets the local packages.
@@ -107,9 +108,34 @@ public sealed partial class ResSpaceData
     public ImmutableArray<IResPackageResources> AllPackageResources => _allPackageResources;
 
     /// <summary>
-    /// Gets the cache from wich <see cref="ResPackageDataHandler{T}"/> can be built.
+    /// Gets the <see cref="IResPackageResources"/> from a <see cref="IResourceContainer"/>.
     /// </summary>
-    public IResPackageDataCache ResPackageDataCache => _resPackageDataCache;
+    /// <param name="resourceContainer">The resource container.</param>
+    /// <param name="packageResources">The corresponding package resources.</param>
+    /// <returns>True when found, false otherwise.</returns>
+    public bool TryGetPackageResources( IResourceContainer resourceContainer, [NotNullWhen( true )] out IResPackageResources? packageResources )
+    {
+        return _resourceIndex.TryGetValue( resourceContainer, out packageResources );
+    }
+
+    /// <summary>
+    /// Gets the <see cref="IResPackageResources"/> from a <see cref="IResourceContainer"/> or throws an <see cref="System.ArgumentException"/>.
+    /// </summary>
+    /// <param name="resourceContainer">The resource container.</param>
+    /// <returns>The corresponding package resources.</returns>
+    public IResPackageResources GetPackageResources( IResourceContainer resourceContainer )
+    {
+        if( !_resourceIndex.TryGetValue( resourceContainer, out var packageResources ) )
+        {
+            Throw.ArgumentException( $"Resource conatiner {resourceContainer} not found among {_packages.Length} packages." );
+        }
+        return packageResources;
+    }
+
+    /// <summary>
+    /// Gets the cache from wich <see cref="ResPackageDataCache{T}"/> can be built.
+    /// </summary>
+    public ISpaceDataCache SpaceDataCache => _resPackageDataCache;
 
     /// <summary>
     /// Gets the folder that contains the Live state.
