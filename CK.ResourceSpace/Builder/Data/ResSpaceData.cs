@@ -108,26 +108,51 @@ public sealed partial class ResSpaceData
     public ImmutableArray<IResPackageResources> AllPackageResources => _allPackageResources;
 
     /// <summary>
-    /// Gets the <see cref="IResPackageResources"/> from a <see cref="IResourceContainer"/>.
+    /// Tries to get the <see cref="IResPackageResources"/> from a <see cref="ResourceLocator"/>.
     /// </summary>
-    /// <param name="resourceContainer">The resource container.</param>
+    /// <param name="locator">The resource.</param>
     /// <param name="packageResources">The corresponding package resources.</param>
     /// <returns>True when found, false otherwise.</returns>
-    public bool TryGetPackageResources( IResourceContainer resourceContainer, [NotNullWhen( true )] out IResPackageResources? packageResources )
+    public bool TryGetPackageResources( ResourceLocator locator, [NotNullWhen( true )] out IResPackageResources? packageResources )
     {
-        return _resourceIndex.TryGetValue( resourceContainer, out packageResources );
+        return _resourceIndex.TryGetValue( locator.Container, out packageResources );
     }
 
     /// <summary>
-    /// Gets the <see cref="IResPackageResources"/> from a <see cref="IResourceContainer"/> or throws an <see cref="System.ArgumentException"/>.
+    /// Tries to get the <see cref="IResPackageResources"/> from a <see cref="ResourceFolder"/>.
     /// </summary>
-    /// <param name="resourceContainer">The resource container.</param>
-    /// <returns>The corresponding package resources.</returns>
-    public IResPackageResources GetPackageResources( IResourceContainer resourceContainer )
+    /// <param name="folder">The resource.</param>
+    /// <param name="packageResources">The corresponding package resources.</param>
+    /// <returns>True when found, false otherwise.</returns>
+    public bool TryGetPackageResources( ResourceFolder folder, [NotNullWhen( true )] out IResPackageResources? packageResources )
     {
-        if( !_resourceIndex.TryGetValue( resourceContainer, out var packageResources ) )
+        return _resourceIndex.TryGetValue( folder.Container, out packageResources );
+    }
+
+    /// <summary>
+    /// Gets the <see cref="IResPackageResources"/> from a <see cref="ResourceLocator"/> or throws an <see cref="System.ArgumentException"/>.
+    /// </summary>
+    /// <param name="locator">The resource.</param>
+    /// <returns>The corresponding package resources.</returns>
+    public IResPackageResources GetPackageResources( ResourceLocator locator )
+    {
+        if( !_resourceIndex.TryGetValue( locator.Container, out var packageResources ) )
         {
-            Throw.ArgumentException( $"Resource conatiner {resourceContainer} not found among {_packages.Length} packages." );
+            Throw.ArgumentException( $"Container for {locator} not found among {_packages.Length} packages." );
+        }
+        return packageResources;
+    }
+
+    /// <summary>
+    /// Gets the <see cref="IResPackageResources"/> from a <see cref="ResourceFolder"/> or throws an <see cref="System.ArgumentException"/>.
+    /// </summary>
+    /// <param name="folder">The resource folder.</param>
+    /// <returns>The corresponding package resources.</returns>
+    public IResPackageResources GetPackageResources( ResourceFolder folder )
+    {
+        if( !_resourceIndex.TryGetValue( folder.Container, out var packageResources ) )
+        {
+            Throw.ArgumentException( $"Container for {folder} not found among {_packages.Length} packages." );
         }
         return packageResources;
     }

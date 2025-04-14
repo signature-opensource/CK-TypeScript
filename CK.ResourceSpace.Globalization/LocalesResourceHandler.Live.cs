@@ -73,7 +73,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
 
                 static void WriteFinalTranslationValue( ICKBinaryWriter w, ResSpaceData spaceData, FinalTranslationValue v, bool withAmbiguities )
                 {
-                    w.WriteNonNegativeSmallInt32( spaceData.GetPackageResources( v.Origin.Container ).Index );
+                    w.WriteNonNegativeSmallInt32( spaceData.GetPackageResources( v.Origin ).Index );
                     w.Write( v.Origin.FullResourceName );
                     w.Write( v.Text );
                     if( withAmbiguities )
@@ -164,19 +164,23 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
             if( !_hasChanged ) return true;
             if( _stableCount > 0 )
             {
-                LoadStableData( monitor );
-                _stableCount = 0;
+                var loadPath = "Folder" + Path.DirectorySeparatorChar + _handler.RootFolderName + ".dat";
+                using( monitor.OpenInfo( $"Loading {_stableCount} cached final translation sets from '.ck-watch/{loadPath}'.") )
+                {
+                    LoadStableData( monitor, loadPath );
+                    _stableCount = 0;
+                }
             }
             var f = _handler.GetUnambiguousFinalTranslations( monitor, _data );
             return f != null && _handler.WriteFinal( monitor, f, _installer );
         }
 
-        void LoadStableData( IActivityMonitor monitor )
+        void LoadStableData( IActivityMonitor monitor, string loadPath )
         {
             try
             {
-                string fileName = _data.LiveStatePath + "Folder" + Path.DirectorySeparatorChar + _handler.RootFolderName + ".dat";
-                using( var data = File.Create( fileName ) )
+                string fileName = _data.LiveStatePath + loadPath;
+                using( var data = File.OpenRead( fileName ) )
                 using( var r = new CKBinaryReader( data ) )
                 {
                     var stableData = ImmutableArray.CreateBuilder<FinalTranslationSet>( _stableCount );

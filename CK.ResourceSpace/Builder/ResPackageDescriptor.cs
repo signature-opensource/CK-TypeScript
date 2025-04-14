@@ -62,11 +62,15 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// </summary>
     public IResourceContainer Resources => _resources;
 
+    internal IResourceContainer ResourcesInnerContainer => _resources.InnerContainer;
+
     /// <summary>
     /// Gets the "Res[After]" resources for this package.
     /// They apply after this package's <see cref="Children"/>.
     /// </summary>
     public IResourceContainer AfterResources => _afterResources;
+
+    internal IResourceContainer AfterResourcesInnerContainer => _afterResources.InnerContainer;
 
     /// <summary>
     /// Removes a resource that must belong to <see cref="Resources"/> or <see cref="AfterResources"/>

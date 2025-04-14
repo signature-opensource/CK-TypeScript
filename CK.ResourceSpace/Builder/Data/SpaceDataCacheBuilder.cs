@@ -131,35 +131,33 @@ sealed class SpaceDataCacheBuilder
         return id;
     }
 
-    public SpaceDataCache Build( ImmutableArray<ResPackage> packages, bool withLiveState )
+    public SpaceDataCache Build( IActivityMonitor monitor, ImmutableArray<ResPackage> packages, bool withLiveState )
     {
         Throw.DebugAssert( _totalPackageCount == packages.Length );
         // Computes the stable identifiers.
         HashSet<int>? stableIdentifiers = null;
         if( withLiveState )
         {
+            // The <App> may not be IsLocalPackage but if we are here (because there's a watch root), then
+            // there's at least one local package and the <App> is necessarily local dependent.
+            Throw.DebugAssert( _spaceData.AppPackage.IsEventuallyLocalDependent );
             stableIdentifiers = new HashSet<int>();
-            foreach( var p in packages )
+            foreach( var p in _spaceData.LocalPackages )
             {
-                if( p.IsEventuallyLocalDependent )
+                Throw.DebugAssert( p.IsLocalPackage );
+                var (requiresAggregateId, childrenAggregateId) = p.GetAggregateIdentifiers();
+                // This may be a single package identifier (offset by 1)
+                // or a aggregate identifier (greater than total package count).
+                if( requiresAggregateId.HasStable )
                 {
-                    var (requiresAggregateId, childrenAggregateId) = p.GetAggregateIdentifiers();
-                    // This may be a single package identifier (offset by 1)
-                    // or a aggregate identifier (greater than total package count).
-                    if( requiresAggregateId.HasStable )
-                    {
-                        stableIdentifiers.Add( requiresAggregateId._stableKeyId );
-                    }
-                    if( childrenAggregateId.HasStable )
-                    {
-                        stableIdentifiers.Add( childrenAggregateId._stableKeyId );
-                    }
+                    stableIdentifiers.Add( requiresAggregateId._stableKeyId );
                 }
-                else
+                if( childrenAggregateId.HasStable )
                 {
-                    stableIdentifiers.Add( p.Index + 1 );
+                    stableIdentifiers.Add( childrenAggregateId._stableKeyId );
                 }
             }
+            monitor.Debug( $"Optimal Stable Aggregated Data set has {stableIdentifiers.Count} cache entries for {_spaceData.LocalPackages.Length} local data." );
         }
         return new SpaceDataCache( packages, _localAggregates, _stableAggregates, stableIdentifiers );
     }

@@ -210,8 +210,8 @@ public sealed class ResSpaceDataBuilder
                 ResPackageDescriptor d = s.Item;
                 Throw.DebugAssert( d.Resources is StoreContainer && d.AfterResources is StoreContainer );
                 // Close the CodeGen resources (if they are code generated).
-                if( ((StoreContainer)d.Resources).InnerContainer is CodeGenResourceContainer c1 ) c1.Close();
-                if( ((StoreContainer)d.AfterResources).InnerContainer is CodeGenResourceContainer c2 ) c2.Close();
+                if( d.ResourcesInnerContainer is CodeGenResourceContainer c1 ) c1.Close();
+                if( d.AfterResourcesInnerContainer is CodeGenResourceContainer c2 ) c2.Close();
 
                 Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
                                    !s.Requires.Intersect( s.Children ).Any() );
@@ -243,8 +243,15 @@ public sealed class ResSpaceDataBuilder
                 {
                     packageIndex.Add( p.Type, p );
                 }
-                resourceIndex.Add( p.Resources.Resources, p.Resources );
-                resourceIndex.Add( p.AfterResources.Resources, p.AfterResources );
+                // Index the actual container, not the StoreContainer that is "transparent".
+                // This is why on the ResSpaceData, there's no GetPackageResources( IResourceContainer )
+                // but only GetPackageResources( ResourceLocator ) and GetPackageResources( ResourceFolder ):
+                // the IResPackageResources.Resources cannot be found, only their inner containers can and these
+                // are the resource's locator and folder containers.
+                Throw.DebugAssert( p.Resources.Resources == d.Resources && p.AfterResources.Resources == d.AfterResources);
+                resourceIndex.Add( d.ResourcesInnerContainer, p.Resources );
+                resourceIndex.Add( d.AfterResourcesInnerContainer, p.AfterResources );
+
                 // Enlist the package resources.
                 allPackageResources[p.Resources.Index] = p.Resources;
                 allPackageResources[p.AfterResources.Index] = p.AfterResources;
@@ -318,6 +325,9 @@ public sealed class ResSpaceDataBuilder
                            packages.Where( p => p != codePackage ).All( p => p.AfterReachables.Contains( codePackage ) ) );
         Throw.DebugAssert( "All packages can be reached from <App>.",
                            appPackage.AfterReachables.SetEquals( packages.Where( p => p != appPackage ) ) );
+        Throw.DebugAssert( "Packages have both resources either stable or local (except the AppPackage.AfterResources that is empty by design).",
+                           packages.All( p => p.IsLocalPackage == (p.Resources.LocalPath != null)
+                                              && (p == space.AppPackage || p.IsLocalPackage == (p.AfterResources.LocalPath != null) ) ) );
         return space;
     }
 
