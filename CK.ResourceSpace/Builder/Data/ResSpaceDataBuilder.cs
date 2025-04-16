@@ -318,7 +318,7 @@ public sealed class ResSpaceDataBuilder
         // The space is initialized with all its packages.
         // The ReachablePackageCacheBuilder has collected all the possible Reachable packages, we can now
         // compute the aggregation sets.
-        space._resPackageDataCache = dataCacheBuilder.Build( packages, watchRoot != null );
+        space._resPackageDataCache = dataCacheBuilder.Build( monitor, packages, watchRoot != null );
         // Post conditions:
         Throw.DebugAssert( "<Code> can reach nothing.", codePackage.AfterReachables.Count == 0 );
         Throw.DebugAssert( "<Code> can be reached from any packages.",

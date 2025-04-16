@@ -7,8 +7,8 @@ readonly struct AggregateId : IEquatable<AggregateId>, ICKSimpleBinarySerializab
     /// <summary>
     /// <list type="bullet">
     ///     <item>= 0: No local at all (the aggregate is only composed of stable packages).</item>
-    ///     <item>&gt; 0 and &lt; number of packages: Single package identifier.</item>
-    ///     <item>&gt; number of packages: index in the SpaceDataCache local list offset by the total number of packages.</item>
+    ///     <item>&gt; 0 and &lt;= number of packages: Single (necesarily local) <see cref="ResPackage.Index"/> incremented by 1.</item>
+    ///     <item>&gt; number of packages: index in the SpaceDataCache local list offset by the total number of packages incremented by 1.</item>
     /// </list>
     /// </summary>
     internal readonly int _localKeyId;
@@ -16,8 +16,8 @@ readonly struct AggregateId : IEquatable<AggregateId>, ICKSimpleBinarySerializab
     /// <summary>
     /// <list type="bullet">
     ///     <item>= 0: No stable at all.</item>
-    ///     <item>&gt; 0: Single package identifier.</item>
-    ///     <item>&lt; 0: Bitwise complement of the index in the SpaceDataCache stable list offset by the total number of packages.</item>
+    ///     <item>&gt; 0 and &lt;= number of packages: Single (necesarily stable) <see cref="ResPackage.Index"/> incremented by 1.</item>
+    ///     <item>&gt; number of packages: index in the SpaceDataCache stable list offset by the total number of packages incremented by 1.</item>
     /// </list>
     /// </summary>
     internal readonly int _stableKeyId;

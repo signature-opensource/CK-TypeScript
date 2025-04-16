@@ -21,7 +21,10 @@ public static class Runner
     /// <param name="liveStateFilePath">The live state path (must end with <see cref="ResSpace.LiveStateFileName"/>).</param>
     /// <param name="cancellation">The cancellation token that will stop the loop. <see cref="CancellationToken.CanBeCanceled"/> must be true.</param>
     /// <returns>The running task.</returns>
-    public static async Task RunAsync( ActivityMonitor loopMonitor, string liveStateFilePath, CancellationToken cancellation )
+    public static async Task RunAsync( ActivityMonitor loopMonitor,
+                                       string liveStateFilePath,
+                                       uint debounceMs,
+                                       CancellationToken cancellation )
     {
         Throw.CheckArgument( liveStateFilePath.EndsWith( ResSpace.LiveStateFileName ) );
         Throw.CheckArgument( cancellation.CanBeCanceled );
@@ -36,7 +39,7 @@ public static class Runner
             var liveState = await LiveState.WaitForStateAsync( loopMonitor, liveStateFilePath, cancellation );
             loopMonitor.Info( "Running watcher." );
             stateFilesFilter ??= new CKGenAppFilter( liveStateFilePath, liveState );
-            var runner = new RunnerState( liveState, stateFilesFilter );
+            var runner = new RunnerState( liveState, stateFilesFilter, debounceMs );
             await runner.RunAsync( loopMonitor, cancellation );
             loopMonitor.Info( "Watcher stopped." );
         }
@@ -45,14 +48,16 @@ public static class Runner
     sealed class RunnerState
     {
         readonly LiveState _liveState;
+        readonly uint _debounceMs;
         readonly Channel<object?> _channel;
         readonly FileWatcher _primary;
         readonly FileWatcher? _secondary;
         readonly Timer _timer;
 
-        public RunnerState( LiveState liveState, CKGenAppFilter stateFilesFilter )
+        public RunnerState( LiveState liveState, CKGenAppFilter stateFilesFilter, uint debounceMs )
         {
             _liveState = liveState;
+            _debounceMs = debounceMs;
             var needPrimaryOnly = liveState.CKGenAppPath.StartsWith( liveState.WatchRoot );
             _channel = Channel.CreateUnbounded<object?>( new UnboundedChannelOptions() { SingleReader = true, SingleWriter = needPrimaryOnly } );
             var localPackagesFilter = new LocalPackagesFilter( liveState.SpaceData.LocalPackages );
@@ -99,7 +104,7 @@ public static class Runner
                         case ChangedEvent p:
                             monitor.Debug( $"Change: '{p.Resources.Package}' {p.SubPath}" );
                             _liveState.OnChange( monitor, p.Resources, p.SubPath );
-                            if( !_timer.Change( 80, Timeout.Infinite ) )
+                            if( !_timer.Change( _debounceMs, unchecked((uint)-1) ) )
                             {
                                 monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, "Failed to update Timer duetime." );
                             }

@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using static CK.ResourceSpace.Globalization.Tests.LiveTests;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.ResourceSpace.Globalization.Tests;
@@ -55,7 +54,7 @@ public class LiveTests
         var cts = new CancellationTokenSource();
         using var fromTest = testCancellation.UnsafeRegister( cts => ((CancellationTokenSource)cts!).Cancel(), cts );
         var runningMonitor = new ActivityMonitor( "Live monitor." );
-        var running = Runner.RunAsync( runningMonitor, space.Data.LiveStatePath + ResSpace.LiveStateFileName, cts.Token );
+        var running = Runner.RunAsync( runningMonitor, space.Data.LiveStatePath + ResSpace.LiveStateFileName, 100, cts.Token );
 
         space.Data.AppPackage.Resources.LocalPath.ShouldNotBeNull( "AppResourcesLocalPath is necessarily a local folder." );
 

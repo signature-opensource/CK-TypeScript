@@ -22,7 +22,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         _appPackage = _packages[^1];
 
         var r = d.Reader;
-        _resPackageDataCache = LiveSpaceDataCache.Read( r, _packages );
+        _resPackageDataCache = LiveSpaceDataCache.Read( r, _packages, _allPackageResources );
         _watchRoot = r.ReadNullableString();
         _liveStatePath = r.ReadString();
     }

@@ -1,8 +1,6 @@
 using CK.BinarySerialization;
 using CK.EmbeddedResources;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace CK.Core;
 

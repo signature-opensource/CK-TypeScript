@@ -10,28 +10,29 @@ namespace CK.Core;
 /// </summary>
 sealed class LiveSpaceDataCache : IInternalSpaceDataCache
 {
-    readonly int _dataCacheLength;
     readonly ImmutableArray<ResPackage> _packages;
     readonly ImmutableArray<ImmutableArray<int>> _localAggregates;
     readonly ImmutableArray<ImmutableArray<int>> _stableAggregates;
     readonly int[] _stableIdentifiers;
+    readonly IResPackageResources[]?[] _impacts;
 
     LiveSpaceDataCache( ImmutableArray<ResPackage> packages,
-                        int dataCacheLength,
                         ImmutableArray<ImmutableArray<int>> localAggregates,
                         ImmutableArray<ImmutableArray<int>> stableAggregates,
-                        int[] stableIdentifiers )
+                        int[] stableIdentifiers,
+                        IResPackageResources[]?[] impacts )
     {
-        _dataCacheLength = dataCacheLength;
         _packages = packages;
         _localAggregates = localAggregates;
         _stableAggregates = stableAggregates;
         _stableIdentifiers = stableIdentifiers;
+        _impacts = impacts;
     }
 
-    public static LiveSpaceDataCache Read( ICKBinaryReader r, ImmutableArray<ResPackage> packages )
+    public static LiveSpaceDataCache Read( ICKBinaryReader r,
+                                           ImmutableArray<ResPackage> packages,
+                                           ImmutableArray<IResPackageResources> allPackageResources )
     {
-        int dataCacheLength = r.ReadNonNegativeSmallInt32();
         var local = ReadAggregateKeys( r );
         var stable = ReadAggregateKeys( r );
 
@@ -40,7 +41,31 @@ sealed class LiveSpaceDataCache : IInternalSpaceDataCache
         {
             stableIdentifiers[i] = r.ReadInt32();
         }
-        return new LiveSpaceDataCache( packages, dataCacheLength, local, stable, stableIdentifiers );
+        IResPackageResources[]?[] impacts;
+        var nbImpact = r.ReadNonNegativeSmallInt32();
+        if( nbImpact == 0 )
+        {
+            impacts = [];
+        }
+        else
+        {
+            impacts = new IResPackageResources[]?[ nbImpact ];
+            for( int i = 0; i < impacts.Length; i++ )
+            {
+                int c = r.ReadSmallInt32();
+                Throw.DebugAssert( c == -1 || c > 0 );
+                if( c != -1 )
+                {
+                    var res = new IResPackageResources[c];
+                    for(int j = 0; j < res.Length; ++j )
+                    {
+                        res[j] = allPackageResources[r.ReadNonNegativeSmallInt32()];
+                    }
+                }
+            }
+        }
+
+        return new LiveSpaceDataCache( packages, local, stable, stableIdentifiers, impacts );
 
         static ImmutableArray<ImmutableArray<int>> ReadAggregateKeys( ICKBinaryReader r )
         {
@@ -60,8 +85,6 @@ sealed class LiveSpaceDataCache : IInternalSpaceDataCache
 
     void ISpaceDataCache.LocalImplementationOnly() { }
 
-    public int DataCacheLength => _dataCacheLength;
-
     public int StableAggregateCacheLength => _stableAggregates.Length;
 
     public int LocalAggregateCacheLength => _localAggregates.Length;
@@ -80,6 +103,13 @@ sealed class LiveSpaceDataCache : IInternalSpaceDataCache
     {
         Throw.DebugAssert( trueAggregateId >= 0 && trueAggregateId < _localAggregates.Length );
         return _localAggregates[trueAggregateId].AsSpan();
+    }
+
+    public ReadOnlySpan<IResPackageResources> GetImpacts( ResPackage package )
+    {
+        int idx = package.Index - 1;
+        Throw.DebugAssert( "Must not ask for <Code> nor <App> impacts.", idx >= 0 && idx < _impacts.Length );
+        return _impacts[idx].AsSpan();
     }
 
 }

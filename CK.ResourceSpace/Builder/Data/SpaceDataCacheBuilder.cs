@@ -1,7 +1,7 @@
-using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 namespace CK.Core;
@@ -47,6 +47,7 @@ sealed class SpaceDataCacheBuilder
                                     : 0];
         // We include the head "<Code>" package here.
         _stableBuffer = new int[1 + descriptorPackageCount - collectorLocalPackageCount];
+        // The space data is being built. We don't rely ont it.
         // Consider "<App>" and "<Code>" packages. 
         _totalPackageCount = descriptorPackageCount + 2;
         _spaceData = spaceData;
@@ -133,9 +134,10 @@ sealed class SpaceDataCacheBuilder
 
     public SpaceDataCache Build( IActivityMonitor monitor, ImmutableArray<ResPackage> packages, bool withLiveState )
     {
-        Throw.DebugAssert( _totalPackageCount == packages.Length );
+        CheckInvariant();
         // Computes the stable identifiers.
         HashSet<int>? stableIdentifiers = null;
+        List<IResPackageResources>?[]? impactLists = null;
         if( withLiveState )
         {
             // The <App> may not be IsLocalPackage but if we are here (because there's a watch root), then
@@ -158,7 +160,85 @@ sealed class SpaceDataCacheBuilder
                 }
             }
             monitor.Debug( $"Optimal Stable Aggregated Data set has {stableIdentifiers.Count} cache entries for {_spaceData.LocalPackages.Length} local data." );
+
+            // No need to hanlde the <Code>: it is not local dependent.
+            // Even if <App> is always impacted by design, we handle it as a regular local dependent package.
+            // This reversed list is not a closure: we only track one level of impacts so we have
+            // the shortest possible lists to marshall. The ResPackageDataCache follows the links.
+            impactLists = new List<IResPackageResources>?[_totalPackageCount - 1];
+            foreach( var p in _spaceData.Packages )
+            {
+                // No need to skip the first <Code> as it is not local dependent.
+                if( p.IsEventuallyLocalDependent )
+                {
+                    foreach( ResPackage source in p.Requires )
+                    {
+                        if( source.IsEventuallyLocalDependent )
+                        {
+                            AddImpact( impactLists, source, p.Resources );
+                        }
+                    }
+                    foreach( var source in p.Children )
+                    {
+                        if( source.IsEventuallyLocalDependent )
+                        {
+                            AddImpact( impactLists, source, p.AfterResources );
+                        }
+                    }
+                }
+            }
         }
-        return new SpaceDataCache( packages, _localAggregates, _stableAggregates, stableIdentifiers );
+        return new SpaceDataCache( packages, _localAggregates, _stableAggregates, stableIdentifiers, impactLists );
     }
+
+    void AddImpact( List<IResPackageResources>?[] impactLists, ResPackage p, IResPackageResources impact )
+    {
+        var impacts = impactLists[p.Index - 1] ??= new List<IResPackageResources>();
+        impacts.Add( impact );
+    }
+
+    [Conditional( "DEBUG" )]
+    public void CheckInvariant()
+    {
+        Throw.DebugAssert( _totalPackageCount == _spaceData.Packages.Length );
+        Throw.DebugAssert( _totalPackageCount * 2 == _spaceData.AllPackageResources.Length );
+        foreach( var p in _spaceData.Packages )
+        {
+            var (requiresAggregateId, childrenAggregateId) = p.GetAggregateIdentifiers();
+
+            var localRequires = p.Requires.Where( p => p.IsEventuallyLocalDependent ).ToHashSet();
+            Throw.DebugAssert( localRequires.SetEquals( GetLocalSources( requiresAggregateId ) ) );
+
+            var localChildren = p.Children.Where( p => p.IsEventuallyLocalDependent ).ToHashSet();
+            Throw.DebugAssert( localChildren.SetEquals( GetLocalSources( childrenAggregateId ) ) );
+        }
+
+        IEnumerable<ResPackage> GetLocalSources( AggregateId aggregateId )
+        {
+            if( aggregateId.HasLocal )
+            {
+                var id = aggregateId._localKeyId - 1;
+                var trueAggregateId = id - _totalPackageCount;
+                if( trueAggregateId < 0 )
+                {
+                    // We depend on a single local package.
+                    var local = _spaceData.Packages[id];
+                    Throw.DebugAssert( local.IsEventuallyLocalDependent );
+                    yield return local;
+                }
+                else
+                {
+                    // Instance of type 'System.ReadOnlySpan<int>' cannot be preserved across 'await' or 'yield' boundary.
+                    var packageIds = _localAggregates[trueAggregateId].PackageIndexes.ToArray();
+                    foreach( var pId in packageIds )
+                    {
+                        var local = _spaceData.Packages[pId];
+                        Throw.DebugAssert( local.IsEventuallyLocalDependent );
+                        yield return local;
+                    }
+                }
+            }
+        }
+    }
+
 }

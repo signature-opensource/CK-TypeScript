@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using static CK.Core.SpaceDataCache;
 
 namespace CK.Core;
 
 /// <summary>
 /// Root SpaceDataCache implementation in engine world.
+/// <para>
+/// This is written in the Live state and read back by the <see cref="LiveSpaceDataCache"/>.
+/// </para>
 /// </summary>
 sealed class SpaceDataCache : IInternalSpaceDataCache
 {
@@ -14,32 +16,53 @@ sealed class SpaceDataCache : IInternalSpaceDataCache
     readonly List<AggregateKey> _localAggregates;
     readonly List<AggregateKey> _stableAggregates;
     readonly IReadOnlyCollection<int> _stableIdentifiers;
-    readonly int _dataCacheLength;
+    readonly IReadOnlyList<IReadOnlyCollection<IResPackageResources>?> _impacts;
 
     internal SpaceDataCache( ImmutableArray<ResPackage> packages,
                              List<AggregateKey> localAggregates,
                              List<AggregateKey> stableAggregates,
-                             IReadOnlyCollection<int>? stableIdentifiers )
+                             IReadOnlyCollection<int>? stableIdentifiers,
+                             IReadOnlyList<IReadOnlyCollection<IResPackageResources>?>? impacts )
     {
-        _dataCacheLength = packages.Length - 1;
         _packages = packages;
         _localAggregates = localAggregates;
         _stableAggregates = stableAggregates;
-        _stableIdentifiers = stableIdentifiers ?? ImmutableArray<int>.Empty;
+        _stableIdentifiers = stableIdentifiers ?? [];
+        _impacts = impacts ?? [];
     }
 
     void ISpaceDataCache.LocalImplementationOnly() { }
 
     public void Write( ICKBinaryWriter w )
     {
-        w.WriteNonNegativeSmallInt32( _dataCacheLength );
         // AggregateKeys are not deserialized as AggregateKey but
         // only as the array of their PackageIndexes (the hash code is skipped).
         WriteAggregateKeys( w, _localAggregates );
         WriteAggregateKeys( w, _stableAggregates );
 
         w.WriteNonNegativeSmallInt32( _stableIdentifiers.Count );
-        foreach( var id in _stableIdentifiers ) w.Write( id );
+        foreach( var id in _stableIdentifiers )
+        {
+            w.Write( id );
+        }
+
+        Throw.DebugAssert( "No <Code> and <App> entry.", _impacts.Count == 0 || _impacts.Count == _packages.Length - 1 );
+        w.WriteNonNegativeSmallInt32( _impacts.Count );
+        foreach( var revertResources in _impacts )
+        {
+            if( revertResources == null )
+            {
+                w.WriteSmallInt32( -1 );
+            }
+            else
+            {
+                w.WriteSmallInt32( revertResources.Count );
+                foreach( var resource in revertResources )
+                {
+                    w.WriteNonNegativeSmallInt32( resource.Index );
+                }
+            }
+        }
 
         static void WriteAggregateKeys( ICKBinaryWriter w, List<AggregateKey> aggregateKeys )
         {
@@ -55,8 +78,6 @@ sealed class SpaceDataCache : IInternalSpaceDataCache
             }
         }
     }
-
-    public int DataCacheLength => _dataCacheLength;
 
     public int StableAggregateCacheLength => _stableAggregates.Count;
 
@@ -76,6 +97,12 @@ sealed class SpaceDataCache : IInternalSpaceDataCache
     {
         Throw.DebugAssert( trueAggregateId >= 0 && trueAggregateId < _localAggregates.Count );
         return _localAggregates[trueAggregateId].PackageIndexes;
+    }
+
+    ReadOnlySpan<IResPackageResources> IInternalSpaceDataCache.GetImpacts( ResPackage p )
+    {
+        // This is called only on the LiveSpaceDataCache.
+        throw new NotSupportedException( "Never called." );
     }
 
 }

@@ -42,4 +42,13 @@ interface IInternalSpaceDataCache : ISpaceDataCache
     /// </summary>
     IReadOnlyCollection<int> StableIdentifiers { get; }
 
+    /// <summary>
+    /// Gets the direct referencers of a local dependent package.
+    /// Must not be called for "&lt;Code&gt;" (that is not local dependent by design)
+    /// nor "&lt;App&gt;" (that is always local dependent).
+    /// </summary>
+    /// <param name="p">The package.</param>
+    /// <returns>The package resources that depends on <paramref name="p"/>.</returns>
+    ReadOnlySpan<IResPackageResources> GetImpacts( ResPackage p );
+
 }

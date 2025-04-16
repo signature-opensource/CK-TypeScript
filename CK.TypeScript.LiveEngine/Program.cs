@@ -7,9 +7,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
-using System.Threading.Tasks;
 
-var (logFilter, launchDebugger) = DisplayHeaderAndHandleArguments( args );
+var (logFilter, debounce, launchDebugger) = DisplayHeaderAndHandleArguments( args );
 
 // Don't try to attach a debugger if one is already attached.
 if( launchDebugger && !Debugger.IsAttached )
@@ -35,9 +34,9 @@ AssemblyLoadContext.Default.Resolving += static ( AssemblyLoadContext ctx, Assem
 var ckGenAppPath = Path.Combine( Environment.CurrentDirectory, "ck-gen-app" ) + Path.DirectorySeparatorChar;
 var liveStateFilePath = ckGenAppPath + ResSpace.LiveStateFileName;
 
-await Runner.RunAsync( monitor, liveStateFilePath, ctrlCHandler.Token );
+await Runner.RunAsync( monitor, liveStateFilePath, debounce, ctrlCHandler.Token );
 
-static (LogFilter LogFilter, bool LaunchDebugger) DisplayHeaderAndHandleArguments( string[] args )
+static (LogFilter LogFilter, uint Debounce, bool LaunchDebugger) DisplayHeaderAndHandleArguments( string[] args )
 {
     Console.WriteLine( $"CK.TypeScript.LiveEngine v{CSemVer.InformationalVersion.ReadFromAssembly( Assembly.GetExecutingAssembly() ).Version}" );
     if( Array.IndexOf( args, "-h" ) >= 0
@@ -56,15 +55,20 @@ static (LogFilter LogFilter, bool LaunchDebugger) DisplayHeaderAndHandleArgument
                                  Diag[nostic]  Debug groups and lines.
 
             --debug-launch:   Launch a debugger when starting.
+
+            -d, --debounce:   Debounce time in milliseconds for file change events.
+                              Default to 100ms.
+                              Provided value is clamped between 40 and 1000.
         """ );
     }
+
     LogFilter log = LogFilter.Normal;
     string logName = nameof( LogFilter.Normal );
     int idxV = Array.IndexOf( args, "--verbosity" );
     if( idxV < 0 ) idxV = Array.IndexOf( args, "-v" );
     if( idxV >= 0 )
     {
-        if( ++idxV < args.Length )
+        if( ++idxV == args.Length )
         {
             Console.WriteLine( "Missing verbosity level." );
             log = LogFilter.Diagnostic;
@@ -103,6 +107,30 @@ static (LogFilter LogFilter, bool LaunchDebugger) DisplayHeaderAndHandleArgument
         }
     }
     Console.WriteLine( $"Using --verbosity {logName}" );
-    return (log, Array.IndexOf( args, "--debug-launch" ) >= 0);
+
+    uint debounce = 100;
+    int idxD = Array.IndexOf( args, "--debounce" );
+    if( idxD < 0 ) idxD = Array.IndexOf( args, "-d" );
+    if( idxD >= 0 )
+    {
+        if( ++idxD == args.Length )
+        {
+            Console.WriteLine( "Missing debounce time." );
+        }
+        else
+        {
+            if( !uint.TryParse( args[idxV], out var dValue ) )
+            {
+                Console.WriteLine( "Invalid debounce time." );
+            }
+            else
+            {
+                debounce = uint.Clamp( dValue, 40, 1000 );
+            }
+        }
+    }
+    Console.WriteLine( $"Using --debounce {debounce}" );
+
+    return (log, debounce, Array.IndexOf( args, "--debug-launch" ) >= 0);
 }
 

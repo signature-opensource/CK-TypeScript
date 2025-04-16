@@ -106,8 +106,8 @@ public sealed partial class ResPackage
     public IResPackageResources Resources => _resources;
 
     /// <summary>
-    /// Gets the <see cref="IResPackageResources"/> that apply after this package's <see cref="Children"/>
-    /// and these <see cref="Resources"/>.
+    /// Gets the <see cref="IResPackageResources"/> that apply after this these <see cref="Resources"/>
+    /// and package's <see cref="Children"/>.
     /// </summary>
     public IResPackageResources AfterResources => _afterResources;
 

@@ -1,6 +1,3 @@
-using CK.BinarySerialization;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
@@ -238,17 +235,58 @@ public abstract class ResPackageDataCache<T> where T : class
     }
 
     /// <summary>
-    /// Read only access to the cached data. Indexed by <see cref="ResPackage.Index"/>.
+    /// Invalidates the cache from the <paramref name="resources"/> (that must be local: <see cref="IResPackageResources.LocalPath"/>
+    /// is not null) up to the "&lt;App&gt;" tail package.
     /// </summary>
-    protected ReadOnlySpan<T?> CachedData => _data.AsSpan();
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="resources">The local resources.</param>
+    public void InvalidateCache( IActivityMonitor monitor, IResPackageResources resources )
+    {
+        Throw.CheckArgument( "The resources must be local.", resources.LocalPath != null );
+        var p = resources.Package;
+        // Our Resources or AfterResources have changed: our associated data
+        // is dirty but the data associated to our aggregates have not changed.
+        _data[p.Index] = null;
+        // We propagate the change of this package to its impacts.
+        foreach( var i in _cache.GetImpacts( p ) )
+        {
+            Invalidate( monitor, i );
+        }
+    }
 
-    /// <summary>
-    /// Read only access to internal cached aggregated data of stable aggregates.
-    /// </summary>
-    protected ReadOnlySpan<T?> StableAggregateCache => _stableAggregateCache.AsSpan();
+    void Invalidate( IActivityMonitor monitor, IResPackageResources i )
+    {
+        var (requiresAggregateId, childrenAggregateId) = i.Package.GetAggregateIdentifiers();
+        if( !i.IsAfter )
+        {
+            // A requires changed: our requiresAggregateId is dirty.
+            Throw.DebugAssert( requiresAggregateId.HasLocal );
+            InvalidateAggregate( requiresAggregateId );
+        }
+        else
+        {
+            // A children changed: our childrenAggregateId is dirty.
+            Throw.DebugAssert( childrenAggregateId.HasLocal );
+            InvalidateAggregate( childrenAggregateId );
+        }
+        // Our cached data is dirty.
+        _data[i.Package.Index] = null;
+        // We recursively propagate the change of this package to its impacts.
+        foreach( var r in _cache.GetImpacts( i.Package ) )
+        {
+            Invalidate( monitor, r );
+        }
+    }
 
-    /// <summary>
-    /// Read only access to internal cached data of local data.
-    /// </summary>
-    protected ReadOnlySpan<T?> LocalAggregateCache => _localAggregateCache.AsSpan();
+    void InvalidateAggregate( AggregateId aggregateId )
+    {
+        Throw.DebugAssert( aggregateId.HasLocal );
+        // Offset by 1.
+        int id = aggregateId._localKeyId - 1;
+        int trueAggId = id - _data.Length;
+        if( trueAggId >= 0 )
+        {
+            _localAggregateCache[trueAggId] = null;
+        }
+    }
 }

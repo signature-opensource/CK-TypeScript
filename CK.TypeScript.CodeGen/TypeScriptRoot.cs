@@ -3,7 +3,6 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text.Json;
 
 namespace CK.TypeScript.CodeGen;

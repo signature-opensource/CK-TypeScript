@@ -150,6 +150,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
             if( localFile.Length == 0 || (localFile.EndsWith( ".jsonc" ) && IsActiveCultureFile( localFile[..^6] ) ) )
             {
                 _hasChanged = true;
+                _handler._cache.InvalidateCache( monitor, resources );
             }
             else
             {

@@ -2,7 +2,6 @@ using CK.Core;
 using CK.TypeScript.CodeGen;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 
 namespace CK.Setup;

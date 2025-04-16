@@ -1,6 +1,4 @@
 using CK.EmbeddedResources;
-using System;
-using System.Collections.Generic;
 
 namespace CK.TypeScript.CodeGen;
 

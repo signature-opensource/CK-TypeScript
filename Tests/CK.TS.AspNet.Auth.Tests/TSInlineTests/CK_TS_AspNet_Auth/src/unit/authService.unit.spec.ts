@@ -294,7 +294,7 @@ describe('AuthService', function () {
                 .withRefreshable(true)
                 .build();
             await authService.basicLogin('', '');
-
+     
             expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).toBe(true);
