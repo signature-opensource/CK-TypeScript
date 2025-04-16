@@ -172,6 +172,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
                     _stableCount = 0;
                 }
             }
+            _hasChanged = false;
             var f = _handler.GetUnambiguousFinalTranslations( monitor, _data );
             return f != null && _handler.WriteFinal( monitor, f, _installer );
         }

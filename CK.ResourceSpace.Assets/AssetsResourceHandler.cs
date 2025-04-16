@@ -5,6 +5,13 @@ using System.Linq;
 
 namespace CK.Core;
 
+/// <summary>
+/// Assets folder handler.
+/// See <see cref="ResourceContainerAssetsExtension.LoadAssets(IResourceContainer, IActivityMonitor, NormalizedPath, out ResourceAssetDefinitionSet?, string)"/>.
+/// <para>
+/// Live support currently uses no cache.
+/// </para>
+/// </summary>
 public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
 {
     readonly AssetCache _cache;
@@ -31,20 +38,27 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
 
     protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData )
     {
+        _finalAssets = GetUnambiguousFinalAssets( monitor, spaceData );
+        return _finalAssets != null;
+    }
+
+    FinalResourceAssetSet? GetUnambiguousFinalAssets( IActivityMonitor monitor, ResSpaceData spaceData )
+    {
         FinalResourceAssetSet? r = _cache.Obtain( monitor, spaceData.AppPackage );
-        if( r == null ) return false;
-        if( r.IsAmbiguous )
+        if( r != null )
         {
-            var ambiguities = r.Assets.Where( kv => kv.Value.Ambiguities != null )
-                                      .Select( kv => $"'{kv.Key}' is mapped by {kv.Value.Origin} but also to {kv.Value.Ambiguities!.Select( r => r.ToString() ).Concatenate()}." );
-            monitor.Error( $"""
+            if( r.IsAmbiguous )
+            {
+                var ambiguities = r.Assets.Where( kv => kv.Value.Ambiguities != null )
+                                          .Select( kv => $"'{kv.Key}' is mapped by {kv.Value.Origin} but also to {kv.Value.Ambiguities!.Select( r => r.ToString() ).Concatenate()}." );
+                monitor.Error( $"""
                 Ambiguities detected in assets:
                 {ambiguities.Concatenate( Environment.NewLine )}
                 """ );
-            return false;
+                return null;
+            }
         }
-        _finalAssets = r;
-        return true;
+        return r;
     }
 
     /// <summary>
@@ -60,11 +74,16 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
             return true;
         }
         Throw.CheckState( FinalAssets != null );
+        return WriteFinal( monitor, FinalAssets, Installer );
+    }
+
+    static bool WriteFinal( IActivityMonitor monitor, FinalResourceAssetSet f, IResourceSpaceItemInstaller installer )
+    {
         try
         {
-            foreach( var a in FinalAssets.Assets )
+            foreach( var a in f.Assets )
             {
-                Installer.Write( a.Key, a.Value.Origin );
+                installer.Write( a.Key, a.Value.Origin );
             }
             return true;
         }
