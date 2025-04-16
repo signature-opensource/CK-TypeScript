@@ -40,6 +40,9 @@ public sealed class FinalResourceAssetSet
     readonly IReadOnlyDictionary<NormalizedPath, FinalResourceAsset> _assets;
     readonly bool _isAmbiguous;
 
+    /// <summary>
+    /// Empty set singleton.
+    /// </summary>
     public static readonly FinalResourceAssetSet Empty = new FinalResourceAssetSet( ImmutableDictionary<NormalizedPath, FinalResourceAsset>.Empty, false );
 
     internal FinalResourceAssetSet( IReadOnlyDictionary<NormalizedPath, FinalResourceAsset> assets, bool isAmbiguous )

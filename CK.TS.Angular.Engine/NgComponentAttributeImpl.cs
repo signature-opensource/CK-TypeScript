@@ -60,6 +60,9 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// </summary>
     public string FileComponentName => _snakeName;
 
+    /// <summary>
+    /// Gets whether this is the <see cref="AppComponent"/>.
+    /// </summary>
     public bool IsAppComponent => DecoratedType == typeof( AppComponent );
 
     /// <summary>
@@ -67,7 +70,13 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// </summary>
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
-
+    /// <summary>
+    /// Overridden to skip the <see cref="IsAppComponent"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <returns>True on success, false on error.</returns>
     protected override bool ConfigureResDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
     {
         // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
@@ -78,6 +87,14 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         return base.ConfigureResDescriptor( monitor, context, spaceBuilder );
     }
 
+    /// <summary>
+    /// Overridden to handle the component "*.component.ts" file name.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <param name="d">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
     protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                     TypeScriptContext context,
                                                     ResSpaceConfiguration spaceBuilder,

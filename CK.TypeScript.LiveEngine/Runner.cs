@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace CK.TypeScript.LiveEngine;
 
+/// <summary>
+/// Encapsulates the watch loop.
+/// </summary>
 public static class Runner
 {
     /// <summary>
@@ -19,6 +22,7 @@ public static class Runner
     /// </summary>
     /// <param name="loopMonitor">The dedicated monitor to use by this loop. Should not be used outside.</param>
     /// <param name="liveStateFilePath">The live state path (must end with <see cref="ResSpace.LiveStateFileName"/>).</param>
+    /// <param name="debounceMs">Debounce time is milliseconds for file changes.</param>
     /// <param name="cancellation">The cancellation token that will stop the loop. <see cref="CancellationToken.CanBeCanceled"/> must be true.</param>
     /// <returns>The running task.</returns>
     public static async Task RunAsync( ActivityMonitor loopMonitor,

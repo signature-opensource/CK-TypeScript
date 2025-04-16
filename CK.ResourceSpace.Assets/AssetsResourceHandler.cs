@@ -17,6 +17,12 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     readonly AssetCache _cache;
     FinalResourceAssetSet? _finalAssets;
 
+    /// <summary>
+    /// Initializes a new assets resources handler.
+    /// </summary>
+    /// <param name="installer">The installer to use.</param>
+    /// <param name="packageDataCache">The package data cache.</param>
+    /// <param name="rootFolderName">The folder name (typically "assets", "ts-assets", etc.).</param>
     public AssetsResourceHandler( IResourceSpaceItemInstaller? installer,
                                   ISpaceDataCache packageDataCache,
                                   string rootFolderName )
@@ -36,6 +42,7 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// </summary>
     public FinalResourceAssetSet? FinalAssets => _finalAssets;
 
+    /// <inheritdoc />
     protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData )
     {
         _finalAssets = GetUnambiguousFinalAssets( monitor, spaceData );

@@ -63,7 +63,7 @@ public readonly struct FinalTranslationValue : IEquatable<FinalTranslationValue>
     /// </para>
     /// </summary>
     /// <param name="ambiguous">The translation that share the same key as this <see cref="Origin"/>.</param>
-    /// <returns>A new resource asset or this one if <paramref name="locator"/> is already known.</returns>
+    /// <returns>A new resource asset or this one if <paramref name="ambiguous"/> is already known.</returns>
     public FinalTranslationValue AddAmbiguity( FinalTranslationValue ambiguous )
     {
         // We decide here that if Text are equal, there's no ambiguity to resolve even if

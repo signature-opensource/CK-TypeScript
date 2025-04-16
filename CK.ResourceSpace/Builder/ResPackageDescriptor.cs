@@ -115,7 +115,6 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
     /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
     /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
     /// <param name="resourceName">The resource name to find.</param>
     /// <param name="resource">The found (and removed) resource.</param>
     /// <returns>True if the resource has been found and removed, false otherwise.</returns>

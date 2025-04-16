@@ -19,6 +19,10 @@ public sealed class ResSpaceDataBuilder
     readonly ResSpaceCollector _collector;
     IResourceContainer? _generatedCodeContainer;
 
+    /// <summary>
+    /// Initializes a new builder.
+    /// </summary>
+    /// <param name="collector">The package collector.</param>
     public ResSpaceDataBuilder( ResSpaceCollector collector )
     {
         _collector = collector;

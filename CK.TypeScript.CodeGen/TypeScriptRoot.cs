@@ -9,14 +9,11 @@ namespace CK.TypeScript.CodeGen;
 
 /// <summary>
 /// Central TypeScript context with options and a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
-/// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
+/// and <see cref="TypeScriptFile"/>.
 /// <para>
 /// The <see cref="TSTypes"/> maps C# types to <see cref="ITSType"/>. Types can be registered directly or
 /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/> that raises a <see cref="TSTypeManager.TSFromTypeRequired"/>
 /// or <see cref="TSTypeManager.TSFromObjectRequired"/> event.
-/// </para>
-/// <para>
-/// Once code generation succeeds, <see cref="Save"/> can be called.
 /// </para>
 /// </summary>
 public sealed partial class TypeScriptRoot

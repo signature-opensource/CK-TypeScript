@@ -84,7 +84,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
     /// <summary>
     /// Gets all the translation sets (including this root).
     /// Order is irrelevant and there may be less sets than <see cref="ActiveCultureSet.Count"/>.
-    /// Nullable sets can be obtained by <see cref="FindTranslationSet"/>.
+    /// Nullable sets can be obtained by <see cref="FindTranslationSet(ActiveCulture)"/>.
     /// </summary>
     public IEnumerable<IFinalTranslationSet> AllTranslationSets => _subSets.Where( s => s != null )!;
 

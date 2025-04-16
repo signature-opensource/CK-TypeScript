@@ -30,7 +30,8 @@ public static partial class TSTestHelperExtensions
     }
 
     /// <summary>
-    /// Applies the options driven by <paramref name="targetProjectPath"/> to this <see cref="TypeScriptBinPathAspectConfiguration"/>
+    /// Applies the options driven by <paramref name="targetProjectPath"/> to this <see cref="TypeScriptBinPathAspectConfiguration"/>.
+    /// </summary>
     /// <param name="tsBinPathAspect">This configuration.</param>
     /// <param name="targetProjectPath">
     /// Obtained from <see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)"/> or one of

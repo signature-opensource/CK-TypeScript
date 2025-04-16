@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CK.TypeScript.LiveEngine;
 
-public sealed class LiveState
+sealed class LiveState
 {
     readonly ResSpaceData _spaceData;
     readonly ImmutableArray<ILiveUpdater> _updaters;

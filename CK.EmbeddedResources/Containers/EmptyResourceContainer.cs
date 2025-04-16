@@ -54,8 +54,7 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     }
 
     /// <summary>
-    /// Writes this empty container. The singleton <see cref="FakeFinalContainer"/> is handled,
-    /// <see cref="Read(ICKBinaryReader, int)"/> will recover it.
+    /// Writes this empty container.
     /// </summary>
     /// <param name="w">The target writer.</param>
     public void WriteData( ICKBinaryWriter w )

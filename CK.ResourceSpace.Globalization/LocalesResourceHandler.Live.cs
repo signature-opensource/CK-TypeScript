@@ -95,7 +95,14 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
 
     }
 
-    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData data, IBinaryDeserializer d )
+    /// <summary>
+    /// Restores a <see cref="ILiveUpdater"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="spaceData">The deserialized resource space data.</param>
+    /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
+    /// <returns>The live updater on success, null on error. Errors are logged.</returns>
+    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
         var cultures = d.Reader.ReadString().Split( ',' ).Select( NormalizedCultureInfo.EnsureNormalizedCultureInfo );
@@ -103,8 +110,8 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
         var rootFolderName = d.Reader.ReadString();
         var options = (InstallOption)d.Reader.ReadNonNegativeSmallInt32();
         var stableCount = d.Reader.ReadNonNegativeSmallInt32();
-        var handler = new LocalesResourceHandler( null, data.SpaceDataCache, rootFolderName, activeCultures, options );
-        return new LiveUpdater( handler, installer, data, stableCount );
+        var handler = new LocalesResourceHandler( null, spaceData.SpaceDataCache, rootFolderName, activeCultures, options );
+        return new LiveUpdater( handler, installer, spaceData, stableCount );
     }
 
     sealed class LiveUpdater : ILiveUpdater

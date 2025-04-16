@@ -149,7 +149,7 @@ public abstract class ResPackageDataCache<T> where T : class
     }
 
     /// <summary>
-    /// Initializer function called for packages that have no <see cref="ResPackage.ReachablePackages"/>.
+    /// Initializer function called for packages that have no <see cref="ResPackage.Reachables"/>.
     /// Returning null indicates a failure, errors must have been logged.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

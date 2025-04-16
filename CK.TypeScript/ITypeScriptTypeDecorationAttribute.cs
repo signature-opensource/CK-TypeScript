@@ -7,7 +7,7 @@ public interface ITypeScriptTypeDecorationAttribute
 {
     /// <summary>
     /// Gets or sets an optional sub folder that will contain the TypeScript generated code.
-    /// There must be no leading '/' or '\': the path is relative to the TypeScript output path of each <see cref="BinPathConfiguration"/>.
+    /// There must be no leading '/' or '\': the path is relative to the TypeScript output path of each BinPath.
     /// <para>
     /// This folder cannot be set to a non null path if <see cref="SameFolderAs"/> or <see cref="SameFileAs"/> is set to a non null type.
     /// </para>
@@ -46,8 +46,6 @@ public interface ITypeScriptTypeDecorationAttribute
 
     /// <summary>
     /// Gets or sets the TypeScript type name to use for this type.
-    /// This takes precedence over the <see cref="ExternalNameAttribute"/> that itself
-    /// takes precedence over the <see cref="MemberInfo.Name"/> of the type.
     /// </summary>
     string? TypeName { get; set; }
 }

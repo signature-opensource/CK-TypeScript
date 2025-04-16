@@ -52,7 +52,7 @@ public static partial class TSTestHelperExtensions
     /// for real tests. Yarn is installed, VSCode support is setup, a script "test" command is
     /// available and a "src/sample.spec.ts" file is ready to be used.
     /// <para>
-    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can
+    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, string?, Dictionary{string, string}?, string)"/> can
     /// be used to execute the TypeScript tests.
     /// </para>
     /// </summary>

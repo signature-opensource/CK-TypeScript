@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace CK.Core;
 
+/// <summary>
+/// Immutable resource package available in a <see cref="ResSpaceData"/>.
+/// </summary>
 public sealed partial class ResPackage
 {
     readonly ResSpaceData _spaceData;

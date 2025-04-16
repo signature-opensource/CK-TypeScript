@@ -33,10 +33,18 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
     }
 
     /// <summary>
-    /// Gets the module name that is the C# <see cref="TypeScriptFileAttributeImpl.DecoratedType"/> name (with "Module" suffix).
+    /// Gets the module name that is the C# <see cref="TypeScriptGroupOrPackageAttributeImpl.DecoratedType"/> name (with "Module" suffix).
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
+    /// <summary>
+    /// Overridden to handle the component "*.module.ts" file name.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <param name="d">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
     protected override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";

@@ -41,7 +41,7 @@ public sealed partial class TypeScriptContext // Save
             }
             else
             {
-                var liveEnginePath = typeof( TypeScript.LiveEngine.LiveState ).Assembly.Location;
+                var liveEnginePath = typeof( TypeScript.LiveEngine.Runner ).Assembly.Location;
                 if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
                                                                                     out var relative ) )
                 {

@@ -68,7 +68,7 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
 
     /// <summary>
     /// Checks that if <see cref="ResSpaceData.WatchRoot"/> is not null, the <see cref="TargetPath"/>
-    /// is independent of <see cref="ResSpaceData.LiveStatePath"/> and the "<App>" resources folder
+    /// is independent of <see cref="ResSpaceData.LiveStatePath"/> and the "&lt;App&gt;" resources folder
     /// (not above not below them).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -198,5 +198,9 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
         return sPath.ToString();
     }
 
+    /// <summary>
+    /// Overridden to return "Installer: <see cref="TargetPath"/>".
+    /// </summary>
+    /// <returns>A readable string.</returns>
     public override string ToString() => $"Installer: {_targetPath}";
 }

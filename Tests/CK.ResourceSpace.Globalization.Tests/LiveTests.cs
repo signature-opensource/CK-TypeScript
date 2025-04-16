@@ -70,7 +70,9 @@ public class LiveTests
                 break;
         }
 
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
         cts.Cancel( throwOnFirstException: true );
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
         await running.WaitAsync( testCancellation );
     }
 

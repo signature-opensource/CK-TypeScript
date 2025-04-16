@@ -28,6 +28,13 @@ public sealed class InitialFileSystemInstaller : FileSystemInstaller
         _existing = new HashSet<string>();
     }
 
+    /// <summary>
+    /// Ensures that the <see cref="FileSystemInstaller.TargetPath"/> exists and collects
+    /// all existing files in it.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="resSpace">The resource space.</param>
+    /// <returns>True on success, false on error.</returns>
     public override bool Open( IActivityMonitor monitor, ResSpace resSpace )
     {
         if( !base.Open( monitor, resSpace ) )
@@ -48,8 +55,17 @@ public sealed class InitialFileSystemInstaller : FileSystemInstaller
         }
     }
 
+    /// <summary>
+    /// Removes the path from the collected existing paths.
+    /// </summary>
+    /// <param name="path">The file path that is installed.</param>
     protected override void OnWrite( string path ) => _existing.Remove( path );
 
+    /// <summary>
+    /// Handles files that has not been installed: on <paramref name="success"/>, they are deleted.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="success">True on success, false if an error occurred.</param>
     public override void Close( IActivityMonitor monitor, bool success )
     {
         if( _existing.Count == 0 )

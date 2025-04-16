@@ -27,7 +27,7 @@ public interface ILiveResourceSpaceHandler
                          ResSpaceData spaceData );
 
     /// <summary>
-    /// Restores a <see cref="ILiveUpdater"/> from previously written data by <see cref="WriteLiveState(IActivityMonitor, IBinarySerializer, string)"/>.
+    /// Restores a <see cref="ILiveUpdater"/> from previously written data by <see cref="WriteLiveState(IActivityMonitor, IBinarySerializer, ResSpaceData)"/>.
     /// Nothing prevents the live updater to be implemented by this handler.
     /// <para>
     /// This SHOULD be <c>static abstract</c> but because of <see href="https://github.com/dotnet/csharplang/issues/5955"/> this is only a

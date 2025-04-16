@@ -41,6 +41,9 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
     /// </summary>
     public Attribute Attribute => _attr;
 
+    /// <summary>
+    /// Gets whether this is <see cref="IResourceGroup"/> rather than a <see cref="IResourcePackage"/>.
+    /// </summary>
     public bool IsGroup => _isGroup;
 
     /// <summary>
@@ -144,6 +147,14 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         return success && !overrideError;
     }
 
+    /// <summary>
+    /// Registers the package in the <paramref name="spaceBuilder"/> and handles
+    /// the "index.ts" barrel file if it exists.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <returns>True on success, false on error.</returns>
     internal protected virtual bool ConfigureResDescriptor( IActivityMonitor monitor,
                                                             TypeScriptContext context,
                                                             ResSpaceConfiguration spaceBuilder )
@@ -161,6 +172,15 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         return OnConfiguredDescriptor( monitor, context, spaceBuilder, d );
     }
 
+    /// <summary>
+    /// Called by <see cref="ConfigureResDescriptor(IActivityMonitor, TypeScriptContext, ResSpaceConfiguration)"/>.
+    /// Calls all <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnConfiguredDescriptor(IActivityMonitor, TypeScriptGroupOrPackageAttributeImpl, TypeScriptContext, ResPackageDescriptor, ResSpaceConfiguration)"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <param name="d">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
     protected virtual bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                    TypeScriptContext context,
                                                    ResSpaceConfiguration spaceBuilder,

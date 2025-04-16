@@ -14,7 +14,7 @@ namespace CK.TS.Angular;
 public sealed class NgProviderAttribute : ContextBoundDelegationAttribute
 {
     /// <summary>
-    /// Initializes a new <see cref="NgProviderAttribute{T}"/> with a single provider definition.
+    /// Initializes a new <see cref="NgProviderAttribute"/> with a single provider definition.
     /// </summary>
     /// <param name="providerCode">Provider definition code.</param>
     /// <param name="sourceNameSuffix">Optional source name suffix added to the C# name of the decorated <see cref="TypeScriptPackage"/> class.</param>

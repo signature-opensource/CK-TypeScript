@@ -86,7 +86,7 @@ public sealed class LibraryManager
     /// Gets the configured versions for external npm packages. These configurations take precedence over the
     /// library versions declared by code via <see cref="RegisterLibrary(IActivityMonitor, string, string?, DependencyKind, string?, LibraryImport[])"/>.
     /// <para>
-    /// These configurations are ignored for libraries that are not used by the code (no <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>
+    /// These configurations are ignored for libraries that are not used by the code (no <see cref="ITSFileImportSection.ImportFromLibrary(LibraryImport, string)"/>
     /// are made).
     /// </para>
     /// </summary>

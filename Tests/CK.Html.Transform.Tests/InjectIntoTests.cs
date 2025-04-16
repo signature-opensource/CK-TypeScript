@@ -44,7 +44,7 @@ public class InjectIntoTests
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().ShouldBe( result );
+        sourceCode.ToString().ReplaceLineEndings().ShouldBe( result.ReplaceLineEndings() );
     }
 
 }

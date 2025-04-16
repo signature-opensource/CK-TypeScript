@@ -22,12 +22,19 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
         return true;
     }
 
-    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData data, IBinaryDeserializer d )
+    /// <summary>
+    /// Restores a <see cref="ILiveUpdater"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="spaceData">The deserialized resource space data.</param>
+    /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
+    /// <returns>The live updater on success, null on error. Errors are logged.</returns>
+    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
         var rootFolderName = d.Reader.ReadString();
-        var handler = new AssetsResourceHandler( installer, data.SpaceDataCache, rootFolderName );
-        return new LiveUpdater( handler, installer, data );
+        var handler = new AssetsResourceHandler( installer, spaceData.SpaceDataCache, rootFolderName );
+        return new LiveUpdater( handler, installer, spaceData );
     }
 
 

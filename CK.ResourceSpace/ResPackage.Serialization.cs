@@ -9,6 +9,11 @@ namespace CK.Core;
 [SerializationVersion(0)]
 public sealed partial class ResPackage : ICKSlicedSerializable
 {
+    /// <summary>
+    /// Deserialization constructor.
+    /// </summary>
+    /// <param name="d">The deserializer.</param>
+    /// <param name="info">The type info.</param>
     [EditorBrowsable( EditorBrowsableState.Never )]
     public ResPackage( IBinaryDeserializer d, ITypeReadInfo info )
     {
@@ -47,6 +52,11 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         }
     }
 
+    /// <summary>
+    /// Serialization function.
+    /// </summary>
+    /// <param name="s">The serializer to use.</param>
+    /// <param name="o">The package to serialize.</param>
     [EditorBrowsable( EditorBrowsableState.Never )]
     public static void Write( IBinarySerializer s, in ResPackage o )
     {

@@ -18,6 +18,10 @@ public sealed class ResSpaceBuilder
     readonly List<ResourceSpaceFolderHandler> _folderHandlers;
     readonly List<ResourceSpaceFileHandler> _fileHandlers;
 
+    /// <summary>
+    /// Initializes a new builder.
+    /// </summary>
+    /// <param name="spaceData">The space data.</param>
     public ResSpaceBuilder( ResSpaceData spaceData )
     {
         _spaceData = spaceData;
@@ -48,7 +52,7 @@ public sealed class ResSpaceBuilder
     /// <summary>
     /// Adds a <see cref="ResourceSpaceFileHandler"/>.
     /// <para>
-    /// If a handler with a common <see cref="ResourceSpaceHandler.FileExtensions"/> already
+    /// If a handler with a common <see cref="ResourceSpaceFileHandler.FileExtensions"/> already
     /// exists, a warnig is emitted.
     /// </para>
     /// </summary>

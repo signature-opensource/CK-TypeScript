@@ -52,6 +52,10 @@ public abstract partial class ResourceSpaceFileHandler : IResourceSpaceHandler
     /// <returns>True on success, false otherwise.</returns>
     internal protected abstract bool Install( IActivityMonitor monitor );
 
+    /// <summary>
+    /// Overridden to return the type of this handler and the extensions it handles.
+    /// </summary>
+    /// <returns>A readable string.</returns>
     public sealed override string ToString() => $"{GetType().Name} - Files '*{_fileExtensions.Concatenate( "', *'" )}'";
 
 }

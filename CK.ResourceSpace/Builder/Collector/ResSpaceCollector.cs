@@ -118,7 +118,7 @@ public sealed class ResSpaceCollector
         return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore );
     }
 
-    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, NormalizedPath)"/>
+    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, NormalizedPath, bool)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
                                                   NormalizedPath defaultTargetPath,
@@ -127,7 +127,7 @@ public sealed class ResSpaceCollector
         return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, ignoreLocal );
     }
 
-    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type)"/>
+    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, bool)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool ignoreLocal = false )
     {
         var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;

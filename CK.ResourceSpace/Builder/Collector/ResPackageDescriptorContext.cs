@@ -20,7 +20,7 @@ sealed class ResPackageDescriptorContext
 
     /// <summary>
     /// IReadOnlySet to force the use of RegisterCodeHandledResources.
-    /// StoreContainer constructor casts this to back to HashSet<ResourceLocator>.
+    /// StoreContainer constructor casts this to back to HashSet&lt;ResourceLocator&gt;.
     /// </summary>
     public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
 

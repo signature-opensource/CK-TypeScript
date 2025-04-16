@@ -95,7 +95,8 @@ public sealed partial class ResSpaceData
     /// <summary>
     /// Gets the "&lt;App&gt;" tail package.
     /// <para>
-    /// When <see cref="ResSpaceCollector.AppResourcesLocalPath"/> is defined, its <see cref="ResPackage.LocalPath"/>
+    /// When <see cref="ResSpaceCollector.AppResourcesLocalPath"/> is defined, its
+    /// <see cref="ResPackage.Resources"/>.<see cref="IResPackageResources.LocalPath">LocalPath</see>
     /// is the AppResourcesLocalPath.
     /// </para>
     /// </summary>

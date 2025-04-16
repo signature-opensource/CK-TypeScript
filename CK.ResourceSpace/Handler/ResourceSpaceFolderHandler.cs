@@ -12,8 +12,9 @@ public abstract class ResourceSpaceFolderHandler : IResourceSpaceHandler
     readonly string _rootFolderName;
 
     /// <summary>
-    /// Initializes a new handler that will manage resources in the provided root folder.
+    /// Initializes a new handler that will handle resources in the provided root folder.
     /// </summary>
+    /// <param name="installer">The target installer to use.</param>
     /// <param name="rootFolderName">Must not be empty, whitespace and there must be no '/' or '\' in it.</param>
     protected ResourceSpaceFolderHandler( IResourceSpaceItemInstaller? installer, string rootFolderName )
     {

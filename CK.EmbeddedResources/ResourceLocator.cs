@@ -102,7 +102,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
 
     /// <summary>
     /// Writes the content of this resource to a stream.
-    /// See <see cref="IResourceContainer.WriteStream(ResourceLocator, Stream)"/>.
+    /// See <see cref="IResourceContainer.WriteStream(in ResourceLocator, Stream)"/>.
     /// </summary>
     /// <param name="target">The target stream.</param>
     public void WriteStream( Stream target ) => _container.WriteStream( this, target );

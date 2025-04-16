@@ -51,6 +51,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <summary>
     /// Initializes a new locales resources handler.
     /// </summary>
+    /// <param name="installer">The installer to use.</param>
     /// <param name="packageDataCache">The package data cache.</param>
     /// <param name="rootFolderName">The folder name (typically "locales", "ts-locales", etc.).</param>
     /// <param name="activeCultures">The required active cultures.</param>
