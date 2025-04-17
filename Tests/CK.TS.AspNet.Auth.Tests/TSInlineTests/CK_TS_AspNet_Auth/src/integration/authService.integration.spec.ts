@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { CookieJar } from 'tough-cookie';
-import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 
 import { AuthService, IAuthenticationInfo, AuthLevel, IUserInfo } from '@local/ck-gen';
 import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-helpers';
@@ -40,10 +38,6 @@ describe('AuthService', function() {
 
     beforeAll(async function() {
         const axiosInstance = axios.create();
-        const cookieJar = new CookieJar();
-        addCookieJar(axiosInstance);
-        axiosInstance.defaults.jar = cookieJar;
-
         authService = await AuthService.createAsync( axiosInstance );
     });
 

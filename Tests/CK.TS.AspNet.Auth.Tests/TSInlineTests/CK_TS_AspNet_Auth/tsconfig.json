@@ -11,7 +11,7 @@
         "declarationMap": false,
         "esModuleInterop": true,
         "isolatedModules": true,
-        "sourceMap": false,
+        "sourceMap": true,
         "target": "es2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",

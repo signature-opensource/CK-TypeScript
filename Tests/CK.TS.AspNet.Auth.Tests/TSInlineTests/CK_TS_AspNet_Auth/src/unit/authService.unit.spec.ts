@@ -39,7 +39,7 @@ describe('AuthService', function () {
     }
 
     beforeAll(function () {
-        authService = new AuthService( axiosInstance, { identityEndPoint: {} } );
+        authService = new AuthService( axiosInstance, { identityEndPoint: "http://no-backend" } );
 
         requestInterceptorId = axiosInstance.interceptors.request.use((config) => {
             return config;
