@@ -123,7 +123,7 @@ public class InjectIntoTests
         Throw.DebugAssert( function != null );
         var sourceCode = h.Transform( TestHelper.Monitor, source, function );
         Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().ReplaceLineEndings().ShouldBe( result.ReplaceLineEndings() );
+        sourceCode.ToString().ShouldBe( result );
     }
 
 }

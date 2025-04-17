@@ -331,7 +331,6 @@ public class RecordTests
     static void CheckFile( string targetProjectPath, string name, string expected )
     {
         File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", name ) )
-            .ReplaceLineEndings()
-            .ShouldContain( expected.ReplaceLineEndings() );
+            .ShouldContain( expected );
     }
 }

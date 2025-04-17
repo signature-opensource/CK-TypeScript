@@ -72,7 +72,7 @@ public class PackageJsonFileTests
         p.Workspaces.ShouldHaveSingleItem();
 
         var reformatted = p.WriteAsString( peerDependenciesAsDepencies: false );
-        reformatted.ReplaceLineEndings().ShouldBe( """
+        reformatted.ShouldBe( """
             {
               "name": "basic-tests",
               "private": true,
@@ -112,7 +112,7 @@ public class PackageJsonFileTests
                 ]
               }
             }
-            """.ReplaceLineEndings(), "It has been reformatted." );
+            """, "It has been reformatted." );
 
         p.Scripts.Add( "build", "tsc" );
         p.Dependencies.Remove( "jest" ).ShouldBeTrue();
@@ -129,7 +129,7 @@ public class PackageJsonFileTests
         p.Main = "./dist/o/cjs";
         p.Module = null;
 
-        p.WriteAsString().ReplaceLineEndings().ShouldBe( """
+        p.WriteAsString().ShouldBe( """
            {
              "name": "new-name",
              "private": true,
@@ -167,7 +167,7 @@ public class PackageJsonFileTests
                ]
              }
            }
-           """.ReplaceLineEndings() );
+           """ );
 
     }
 

@@ -140,7 +140,7 @@ public class CommandLikeTests
         var p = targetProjectPath.Combine( "ck-gen" );
         File.ReadAllText( p.Combine( "TheFolder/Power.ts" ) ).ShouldContain( "export enum Power" );
 
-        var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) ).ReplaceLineEndings();
+        var tOne = File.ReadAllText( p.Combine( "TheFolder/CMDCommandOne.ts" ) );
         tOne.ShouldContain( """import { Power } from './Power';""" );
         tOne.ShouldContain( """import { CommandTwo } from '../Commands/CrisLike/CMDCommandTwo';""" );
 
@@ -160,10 +160,10 @@ public class CommandLikeTests
                  this.power = power ?? Power.None;
                  this.friend = friend ?? new CommandTwo();
                  }
-                 """.ReplaceLineEndings() );
+                 """ );
 
 
-        var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) ).ReplaceLineEndings();
+        var tTwo = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandTwo.ts" ) );
         tTwo.ShouldContain( """import { Power } from '../../TheFolder/Power';""" );
         tTwo.ShouldContain( """import { CommandOne, CommandThree } from '../../TheFolder/CMDCommandOne';""" );
         tTwo.ShouldContain( """import { ICommandModel, ICommand } from '../../CK/Cris/Model';""" );
@@ -187,9 +187,9 @@ public class CommandLikeTests
                 this.anotherFriend = anotherFriend;
                 this.friendThree = friendThree ?? new CommandThree();
                 }
-                """.ReplaceLineEndings() );
+                """ );
 
-        var tFour = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandFour.ts" ) ).ReplaceLineEndings();
+        var tFour = File.ReadAllText( p.Combine( "Commands/CrisLike/CMDCommandFour.ts" ) );
         tFour.ShouldContain( "export class CommandFour implements ICommand {" );
         tFour.ShouldContain( """
                 public constructor()
@@ -203,9 +203,9 @@ public class CommandLikeTests
                 this.uniqueId = uniqueId;
                 this.data = data ?? new RecordData();
                 }
-                """.ReplaceLineEndings() );
+                """ );
 
-        var tRecord = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/RecordData.ts" ) ).ReplaceLineEndings();
+        var tRecord = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/RecordData.ts" ) );
         tRecord.ShouldStartWith( """
             /**
              * Simple record data.
@@ -222,7 +222,7 @@ public class CommandLikeTests
             public superName: string = "")
             {
             }
-            """.ReplaceLineEndings() );
+            """ );
     }
 
     [Test]
@@ -300,7 +300,7 @@ public class CommandLikeTests
         await engineConfig.RunSuccessfullyAsync();
 
         var p = targetProjectPath.Combine( "ck-gen" );
-        var tS = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/StringCommand.ts" ) ).ReplaceLineEndings();
+        var tS = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/StringCommand.ts" ) );
         tS.ShouldStartWith( """
             import { ICommandModel, ICommand } from '../../../Cris/Model';
             import { ICommandAbs } from './ICommandAbs';
@@ -318,9 +318,9 @@ public class CommandLikeTests
             this.keySet = keySet ?? new Set<string>();
             this.keyDictionary = keyDictionary ?? new Map<string,string>();
             }
-            """.ReplaceLineEndings() );
+            """ );
 
-        var tC = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/CommandCommand.ts" ) ).ReplaceLineEndings();
+        var tC = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/CommandCommand.ts" ) );
         tC.ShouldStartWith( """
             import { ICommandModel, ICommand } from '../../../Cris/Model';
             import { ICommandAbsWithNullableKey } from './ICommandAbsWithNullableKey';
@@ -339,7 +339,7 @@ public class CommandLikeTests
             this.keySet = keySet ?? new Set<ExtendedCultureInfo>();
             this.keyDictionary = keyDictionary ?? new Map<string,ICommand>();
             }
-            """.ReplaceLineEndings() );
+            """ );
 
     }
 
@@ -375,7 +375,7 @@ public class CommandLikeTests
         await engineConfig.RunSuccessfullyAsync();
 
         var p = targetProjectPath.Combine( "ck-gen" );
-        var tS = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/SomeResult.ts" ) ).ReplaceLineEndings();
+        var tS = File.ReadAllText( p.Combine( "CK/TypeScript/Tests/CrisLike/SomeResult.ts" ) );
         tS.ShouldContain( """
             export class SomeResult implements IStandardResultPart {
             /**
@@ -400,6 +400,6 @@ public class CommandLikeTests
             }
             readonly _brand!: IStandardResultPart["_brand"] & {"3":any};
             }
-            """.ReplaceLineEndings() );
+            """ );
     }
 }
