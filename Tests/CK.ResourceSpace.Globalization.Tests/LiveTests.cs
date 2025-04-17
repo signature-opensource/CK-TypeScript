@@ -97,16 +97,41 @@ public class LiveTests
         static async Task ChangePublicTitleAsync( NormalizedPath enFinalPath, string appResPathLocales, string changeString )
         {
             var enAppResPath = appResPathLocales + "en.jsonc";
-            File.WriteAllText( enAppResPath, $$"""
-                {
-                  "Public.Title": "{{changeString}}",
-                }
-                """ );
+            RetryAction( () => File.WriteAllText( enAppResPath, $$"""
+                                                        {
+                                                          "Public.Title": "{{changeString}}",
+                                                        }
+                                                        """ ) );
+
             await Task.Delay( 200 );
             var changed = File.ReadAllText( enFinalPath );
             changed.ShouldContain( $$"""
                     "Public.Title": "{{changeString}}"
                     """ );
+        }
+    }
+
+    static void RetryAction( Action a )
+    {
+        const int maxRetryCount = 5;
+        const int perRetryDelay = 30;
+        int retryCount = 0;
+        retry:
+        try
+        {
+            a();
+            return;
+        }
+        catch( Exception ex )
+        {
+            if( ++retryCount <= maxRetryCount )
+            {
+                TestHelper.Monitor.Warn( $"Failed. Retring n°{retryCount} in {retryCount * perRetryDelay}ms.", ex );
+                Thread.Sleep( retryCount * perRetryDelay );
+                goto retry;
+            }
+            TestHelper.Monitor.Error( $"Failed after {maxRetryCount} tries.", ex );
+            throw;
         }
     }
 
