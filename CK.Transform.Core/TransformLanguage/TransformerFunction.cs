@@ -2,12 +2,24 @@ using CK.Core;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Captures a transformer function.
+/// </summary>
 public sealed class TransformerFunction : TopLevelSourceSpan
 {
+    /// <summary>
+    /// Initializes a new transfomer function.
+    /// </summary>
+    /// <param name="createTokenIndex">The start of the span. Must be greater or equal to 0.</param>
+    /// <param name="endTokenIndex">The end of the span. Must be greater than <paramref name="createTokenIndex"/>.</param>
+    /// <param name="language">The target transform language.</param>
+    /// <param name="body">The transform statements.</param>
+    /// <param name="name">Optional treansform function name.</param>
+    /// <param name="target">Optional treansform function target.</param>
     public TransformerFunction( int createTokenIndex,
                                 int endTokenIndex,
                                 TransformLanguage language,
-                                TransformStatementBlock statements,
+                                TransformStatementBlock body,
                                 string? name = null,
                                 string? target = null )
         : base( createTokenIndex, endTokenIndex )
@@ -15,7 +27,7 @@ public sealed class TransformerFunction : TopLevelSourceSpan
         Language = language;
         Name = name;
         Target = target;
-        Body = statements;
+        Body = body;
     }
 
     /// <summary>

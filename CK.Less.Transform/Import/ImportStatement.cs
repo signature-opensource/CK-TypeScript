@@ -157,6 +157,10 @@ public sealed class ImportStatement : SourceSpan
         }
     }
 
+    /// <summary>
+    /// Overridden to return the @import statement.
+    /// </summary>
+    /// <returns>The @import statement.</returns>
     public override string ToString() => Write( new StringBuilder(), _keyword, ImportKeyword.None, _importPath ).ToString();
 
     // This never writes 'once' as it is the default.

@@ -5,15 +5,25 @@ using System.Collections.Generic;
 
 namespace CK.TypeScript.Transform;
 
+/// <summary>
+/// TypeScript language anlayzer.
+/// </summary>
 public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
 {
+    /// <summary>
+    /// Gets "TypeScript".
+    /// </summary>
     public string LanguageName => TypeScriptLanguage._languageName;
 
+    /// <summary>
+    /// Initialize a new TypeScriptAnalyzer.
+    /// </summary>
     public TypeScriptAnalyzer()
     {
         _interpolated = new Stack<int>();
     }
 
+    /// <inheritdoc/>
     protected override void Reset( ReadOnlyMemory<char> text )
     {
         _braceDepth = 0;
@@ -21,12 +31,18 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
         base.Reset( text );
     }
 
+    /// <summary>
+    /// Calls <see cref="TriviaHeadExtensions.AcceptCLikeLineComment(ref TriviaHead)"/>
+    /// and <see cref="TriviaHeadExtensions.AcceptCLikeStarComment(ref TriviaHead)"/>.
+    /// </summary>
+    /// <param name="c">The trivia head.</param>
     protected override void ParseTrivia( ref TriviaHead c )
     {
         c.AcceptCLikeLineComment();
         c.AcceptCLikeStarComment();
     }
 
+    /// <inheritdoc/>
     protected override TokenError? Tokenize( ref TokenizerHead head )
     {
         for(; ; )
@@ -49,6 +65,7 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
         }
     }
 
+    /// <inheritdoc/>
     public AnalyzerResult Parse( ReadOnlyMemory<char> text )
     {
         Reset( text );

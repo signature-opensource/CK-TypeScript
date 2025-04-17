@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace CK.TypeScript.Transform;
 
+/// <summary>
+/// Ensure import statement.
+/// </summary>
 public sealed class EnsureImportStatement : TransformStatement
 {
     readonly ImportStatement _importStatement;
@@ -17,6 +20,7 @@ public sealed class EnsureImportStatement : TransformStatement
         _importStatement = importStatement;
     }
 
+    /// <inheritdoc />
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         bool success = true;
@@ -79,9 +83,9 @@ public sealed class EnsureImportStatement : TransformStatement
                                 // easily only if it contains ONLY this import (by removing the "type" from the statement).
                                 //
                                 // Luckily, there is no namespace or named imports:
-                                // - A type-only import can specify a default import or named bindings, but not both.ts(1363)
+                                // - A type-only import can specify a default import or named bindings, but not both. ts(1363)
                                 // And "type" cannot be on both levels:
-                                // - The 'type' modifier cannot be used on a named import when 'import type' is used on its import statement.ts(2206)
+                                // - The 'type' modifier cannot be used on a named import when 'import type' is used on its import statement. ts(2206)
                                 //  
                                 // When other named import exist, we MUST suffer... because a type import cannot coexist
                                 // with regular ones.

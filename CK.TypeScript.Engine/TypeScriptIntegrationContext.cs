@@ -14,7 +14,7 @@ using DependencyKind = CK.TypeScript.CodeGen.DependencyKind;
 namespace CK.Setup;
 
 /// <summary>
-/// Supports integration for <see cref="CKGenIntegrationMode.Inline"/> and <see cref="CKGenIntegrationMode.NpmPackage"/>.
+/// Supports integration for <see cref="CKGenIntegrationMode.Inline"/>.
 /// </summary>
 public sealed partial class TypeScriptIntegrationContext
 {

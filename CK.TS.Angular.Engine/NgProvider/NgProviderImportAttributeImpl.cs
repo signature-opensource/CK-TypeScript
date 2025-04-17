@@ -8,15 +8,27 @@ using System.Linq;
 
 namespace CK.TS.Angular.Engine;
 
+/// <summary>
+/// Implements <see cref="NgProviderImportAttribute"/>.
+/// </summary>
 public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
+    /// <summary>
+    /// Initializes a new implementation.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
     public NgProviderImportAttributeImpl( NgProviderImportAttribute attr, Type type )
         : base( attr, type )
     {
     }
 
+    /// <summary>
+    /// Gets the attribute.
+    /// </summary>
     public new NgProviderImportAttribute Attribute => Unsafe.As<NgProviderImportAttribute>( base.Attribute );
 
+    /// <inheritdoc />
     protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                  TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                  TypeScriptContext context,

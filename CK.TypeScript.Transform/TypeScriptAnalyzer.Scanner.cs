@@ -98,6 +98,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
         return head.LastToken;
     }
 
+    /// <inheritdoc/>
     protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         Throw.DebugAssert( head.Length > 0 );

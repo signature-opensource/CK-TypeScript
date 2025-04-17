@@ -13,7 +13,7 @@ namespace CK.TypeScript.Transform;
 /// <list type="bullet">
 ///     <item><c>import './type-system.model';</c> (side effetcs only)</item>
 ///     <item><c>import { IUserInfoType, StdKeyType } from './type-system.model';</c> (named imports)</item>
-///     <item><c>import { } from './type-system.model'; (useless but valid)</item>
+///     <item><c>import { } from './type-system.model';</c> (useless but valid)</item>
 ///     <item><c>import type { IUserInfoType, StdKeyType } from './type-system.model';</c> (type only imports)</item>
 ///     <item><c>import { type IUserInfoType, StdKeyType } from './type-system.model';</c> (mixed imports)</item>
 ///     <item><c>import { type IUserInfoType as U, StdKeyType } from './type-system.model';</c> (mixed imports with name alias)</item>

@@ -44,15 +44,20 @@ public readonly struct TranslationDefinition : IEquatable<TranslationDefinition>
     }
 
     /// <summary>
-    /// Check whether <see cref="Text"/> are equal. <see cref="Origin"/>  and <see cref="Override"/> are ignored.
+    /// Check whether <see cref="Text"/> are equal. <see cref="Override"/> is ignored.
     /// </summary>
     /// <param name="other">The other value.</param>
     /// <returns>Whether this <see cref="Text"/> has the same text as the other one.</returns>
     public bool Equals( TranslationDefinition other ) => _text == other._text;
 
-    public override bool Equals( object? obj ) => obj is TranslationDefinition v && Equals( v );
-
+    /// <summary>
+    /// Overridden to return the <see cref="Text"/>.
+    /// </summary>
+    /// <returns></returns>
     public override string ToString() => Text;
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    public override bool Equals( object? obj ) => obj is TranslationDefinition v && Equals( v );
 
     public override int GetHashCode() => _text == null ? 0 : _text.GetHashCode();
 

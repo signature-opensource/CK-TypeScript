@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
+
 sealed class SourceSpanRoot : ISourceSpanRoot
 {
     internal readonly SourceSpanChildren _children;
@@ -14,7 +15,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
     }
 
     /// <summary>
-    /// Adds a span or throws if it intersects any existing <see cref="Children"/>.
+    /// Adds a span or throws if it intersects any existing children.
     /// </summary>
     /// <param name="newOne">The span to add.</param>
     public void Add( SourceSpan newOne )
@@ -28,7 +29,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
     /// <summary>
     /// Adds a span with an updated <see cref="SourceSpan.Span"/>.
     /// Same as <see cref="Add(SourceSpan)"/>: this throws if the updated span intersects
-    /// any existing <see cref="Children"/>.
+    /// any existing children.
     /// </summary>
     /// <param name="newOne">The span to add.</param>
     /// <param name="newSpan">Token span to update.</param>
@@ -42,7 +43,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
     }
 
     /// <summary>
-    /// Adds a span if it doesn't intersect any existing <see cref="Children"/>.
+    /// Adds a span if it doesn't intersect any existing children.
     /// </summary>
     /// <param name="newOne">The span to add.</param>
     /// <returns>True on success, false if the span intersects an existing span.</returns>

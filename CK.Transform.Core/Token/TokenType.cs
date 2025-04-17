@@ -2,6 +2,10 @@ using System;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Type of token that can be extended to support othrogonal classes.
+/// <see cref="TokenTypeExtensions.ReserveTokenClass(int, string)"/>.
+/// </summary>
 [Flags]
 public enum TokenType
 {
@@ -160,6 +164,7 @@ public enum TokenType
     /// <inheritdoc cref="BasicTokenType.CloseBrace"/>
     CloseBrace = BasicTokenType.CloseBrace,
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     Ampersand = BasicTokenType.Ampersand,
     AmpersandEquals = BasicTokenType.AmpersandEquals,
     AmpersandAmpersand = BasicTokenType.AmpersandAmpersand,

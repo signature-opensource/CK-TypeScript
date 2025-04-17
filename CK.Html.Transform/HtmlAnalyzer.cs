@@ -48,6 +48,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         _startingTokens = new List<(Token,int)>();
     }
 
+    /// <inheritdoc/>
     protected override void Reset( ReadOnlyMemory<char> text )
     {
         HandleWhiteSpaceTrivias = false;
@@ -55,6 +56,12 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         base.Reset( text );
     }
 
+    /// <summary>
+    /// When <see cref="Tokenizer.HandleWhiteSpaceTrivias"/> is false, this
+    /// calls <see cref="TriviaHeadExtensions.AcceptXmlComment(ref TriviaHead, bool)"/>
+    /// and <see cref="TriviaHeadExtensions.AcceptXmlCDATA(ref TriviaHead)"/>.
+    /// </summary>
+    /// <param name="c"></param>
     protected override void ParseTrivia( ref TriviaHead c )
     {
         if( !HandleWhiteSpaceTrivias )
@@ -64,6 +71,11 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         }
     }
 
+    /// <summary>
+    /// Do the hard work of handling spans of text as <see cref="HtmlTokenType.Text"/>.
+    /// </summary>
+    /// <param name="head">The head to analyze.</param>
+    /// <returns>The low level token.</returns>
     protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         int iS = 0;
@@ -202,12 +214,14 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
         return new LowLevelToken( TokenType.GenericIdentifier, iS );
     }
 
+    /// <inheritdoc/>
     public AnalyzerResult Parse( ReadOnlyMemory<char> text )
     {
         Reset( text );
         return Parse();
     }
 
+    /// <inheritdoc/>
     protected override TokenError? Tokenize( ref TokenizerHead head )
     {
         for( ; ; )
@@ -255,7 +269,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
                             break;
                         }
                     }
-                    // If we didn't find a matching element name, we let the unmatched closin tag as-is.
+                    // If we didn't find a matching element name, we let the unmatched closing tag as-is.
                     break;
                 // We don't create a 1-length span for <tag/> or <br> (void elements) without attributes.
                 // The token is enough.

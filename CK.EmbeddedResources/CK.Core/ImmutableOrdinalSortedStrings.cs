@@ -181,9 +181,10 @@ public readonly struct ImmutableOrdinalSortedStrings
     public ReadOnlyMemory<string> GetPrefixedStrings( string prefix ) => GetPrefixedStrings( prefix, All.AsMemory() );
 
     /// <summary>
-    /// Gets the range of strings in <see cref="All"/> that start with the <paramref name="prefix"/>.
+    /// Gets the range of strings in <paramref name="tail"/> that start with the <paramref name="prefix"/>.
     /// </summary>
     /// <param name="prefix">Common prefix to search.</param>
+    /// <param name="tail">The strings to consider.</param>
     /// <returns>The resulting strings.</returns>
     internal static ReadOnlyMemory<string> GetPrefixedStrings( string prefix, ReadOnlyMemory<string> tail )
     {

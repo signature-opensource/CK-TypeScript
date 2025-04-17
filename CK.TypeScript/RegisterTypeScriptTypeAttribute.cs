@@ -14,6 +14,10 @@ public sealed class RegisterTypeScriptTypeAttribute : RegisterPocoTypeAttribute,
 {
     TypeScriptTypeDecorationImpl _impl;
 
+    /// <summary>
+    /// Initializes a new <see cref="RegisterTypeScriptTypeAttribute"/>.
+    /// </summary>
+    /// <param name="type">The type to register.</param>
     public RegisterTypeScriptTypeAttribute( Type type )
         : base( type )
     {

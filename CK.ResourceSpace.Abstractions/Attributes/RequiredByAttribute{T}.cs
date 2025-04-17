@@ -84,7 +84,7 @@ public sealed class RequiredByAttribute<T1, T2, T3, T4, T5> : Attribute
 /// <typeparam name="T3">The third package required by this one.</typeparam>
 /// <typeparam name="T4">The fourth package required by this one.</typeparam>
 /// <typeparam name="T5">The fifth package required by this one.</typeparam>
-/// <typeparam name="T5">The sixth package required by this one.</typeparam>
+/// <typeparam name="T6">The sixth package required by this one.</typeparam>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class RequiredByAttribute<T1, T2, T3, T4, T5, T6> : Attribute
     where T1 : IResourceGroup

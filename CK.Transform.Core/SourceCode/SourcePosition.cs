@@ -144,6 +144,7 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
                 : _column.CompareTo( other._column );
     }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public static bool operator >( SourcePosition left, SourcePosition right ) => left.CompareTo( right ) > 0;
 
     public static bool operator >=( SourcePosition left, SourcePosition right ) => left.CompareTo( right ) >= 0;

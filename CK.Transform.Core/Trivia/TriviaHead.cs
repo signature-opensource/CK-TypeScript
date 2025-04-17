@@ -36,8 +36,7 @@ public ref struct TriviaHead
     public readonly ReadOnlySpan<char> Head => _head;
 
     /// <summary>
-    /// Gets the accepted length (that is sum of the collected <see cref="Trivia.Content"/>'s length)
-    /// regardless of the <see cref="Error"/>.
+    /// Gets the accepted length (that is sum of the collected <see cref="Trivia.Content"/>'s length).
     /// </summary>
     public readonly int Length => _length;
 
@@ -124,7 +123,7 @@ public ref struct TriviaHead
     /// that sets an error or accepts a trivia stops the enumeration.
     /// </para>
     /// </summary>
-    /// <param name="parser">The parser function. When empty, only whitespaces are collected.</param>
+    /// <param name="parsers">The parser functions. When empty, only whitespaces are collected.</param>
     public void ParseAny( params ImmutableArray<TriviaParser> parsers )
     {
         if( IsEndOfInput ) return;

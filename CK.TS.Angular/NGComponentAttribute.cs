@@ -13,6 +13,10 @@ public class NgComponentAttribute : TypeScriptPackageAttribute
 {
     internal const string BaseActualAttributeTypeAssemblyQualifiedName = "CK.TS.Angular.Engine.NgComponentAttributeImpl, CK.TS.Angular.Engine";
 
+    /// <summary>
+    /// Initializes a new <see cref="NgComponentAttribute"/>.
+    /// </summary>
+    /// <param name="callerFilePath">The caller path.</param>
     public NgComponentAttribute( [CallerFilePath] string? callerFilePath = null )
         : base( BaseActualAttributeTypeAssemblyQualifiedName, callerFilePath )
     {

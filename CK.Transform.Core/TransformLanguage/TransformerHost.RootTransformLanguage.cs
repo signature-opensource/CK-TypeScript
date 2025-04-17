@@ -22,14 +22,14 @@ public sealed partial class TransformerHost
             {
             }
 
-            /// <summary>
-            /// There is currently no specific statements to transform transformers: the base
-            /// ParseStatement is fine.
-            /// </summary>
-            //protected override TransformStatement? ParseStatement( ref TokenizerHead head )
-            //{
-            //    return base.ParseStatement( ref head );
-            //}
+            // /// <summary>
+            // /// There is currently no specific statements to transform transformers: the base
+            // /// ParseStatement is fine.
+            // /// </summary>
+            // protected override TransformStatement? ParseStatement( ref TokenizerHead head )
+            // {
+            //     return base.ParseStatement( ref head );
+            // }
         }
 
         internal RootTransformLanguage( TransformerHost host )

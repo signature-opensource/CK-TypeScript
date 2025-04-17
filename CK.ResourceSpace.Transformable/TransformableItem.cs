@@ -3,6 +3,9 @@ using CK.Transform.Core;
 
 namespace CK.Core;
 
+/// <summary>
+/// A transformable item is a <see cref="TransformableSource"/> with a <see cref="Target"/>. 
+/// </summary>
 sealed class TransformableItem : TransformableSource
 {
     readonly TransformerHost.Language _originLanguage;

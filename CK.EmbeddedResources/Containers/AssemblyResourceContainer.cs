@@ -12,7 +12,7 @@ namespace CK.EmbeddedResources;
 /// resources exist under the <see cref="ResourcePrefix"/> (it is false only when an error
 /// prevented a correct instantiation).
 /// <para>
-/// This can be created from a <see cref="TypeExtensions.CreateResourcesContainer(Type, IActivityMonitor, string?, bool)">Type</see>
+/// This can be created from a <see cref="TypeExtensions.CreateResourcesContainer(Type, IActivityMonitor, string?, bool, bool)">Type</see>
 /// or a <see cref="AssemblyResources.CreateCKResourceContainer(string, string)">AssemblyResources</see>.
 /// </para>
 /// </summary>

@@ -29,7 +29,7 @@ public enum SpanRelationship
 
     /// <summary>
     /// The first span is before the second one and doesn't intersect it.
-    /// The first span can be the <see cref="Empty"/>.
+    /// The first span can be the <see cref="TokenSpan.Empty"/>.
     /// </summary>
     Independent,
 

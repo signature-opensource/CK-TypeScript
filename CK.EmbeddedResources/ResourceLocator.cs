@@ -137,6 +137,7 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
                 : "";
     }
 
+    /// <inheritdoc cref="Equals(ResourceLocator)"/>.
     public override bool Equals( object? obj ) => obj is ResourceLocator locator && Equals( locator );
 
     /// <inheritdoc cref="Equals(ResourceLocator)"/>.
@@ -151,6 +152,10 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// <returns>Whether the two resource locators are different.</returns>
     public static bool operator !=( ResourceLocator left, ResourceLocator right ) => !(left == right);
 
+    /// <summary>
+    /// Hash code is based on <see cref="Container"/> and <see cref="FullResourceName"/>.
+    /// </summary>
+    /// <returns>The hash code.</returns>
     public override int GetHashCode() => IsValid
                                             ? HashCode.Combine( Container.GetHashCode(), FullResourceName.GetHashCode() )
                                             : 0;

@@ -2,7 +2,9 @@ using System;
 
 namespace CK.TypeScript;
 
-
+/// <summary>
+/// Captures TypeScript type possible decorations.
+/// </summary>
 public interface ITypeScriptTypeDecorationAttribute
 {
     /// <summary>

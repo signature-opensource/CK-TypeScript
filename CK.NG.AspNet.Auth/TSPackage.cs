@@ -4,6 +4,15 @@ using CK.Core;
 
 namespace CK.Ng.AspNet.Auth;
 
+/// <summary>
+/// Provides the default AuthService configured to use the default AXIOS
+/// instance from <see cref="Axios.TSPackage"/>.
+/// <para>
+/// An interceptor is injected into the AxiosInstance that handles the bearer token
+/// for the current authentication information automatically and the initial
+/// authentication information is automatically refreshed from the backend.
+/// </para>
+/// </summary>
 [TypeScriptPackage]
 [Requires<CK.AspNet.Auth.TSPackage, CK.Ng.Axios.TSPackage>]
 [NgProviderImport( "AXIOS, provideNgAuthSupport, AuthService" )]
@@ -13,5 +22,4 @@ namespace CK.Ng.AspNet.Auth;
 [NgProvider( "provideNgAuthSupport()", "#Support" )]
 public class TSPackage : TypeScriptPackage
 {
-    void StObjConstruct( CK.AspNet.Auth.TSPackage aspNetAuth, CK.Ng.Axios.TSPackage axios ) { }
 }

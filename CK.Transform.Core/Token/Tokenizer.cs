@@ -95,9 +95,9 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     void ITokenizerHeadBehavior.ParseTrivia( ref TriviaHead c ) => ParseTrivia( ref c );
 
     /// <summary>
-    /// Must implement <see cref="ITokenizerHeadBehavior.LowLevelTokenize(ReadOnlySpan{char})"/>.
+    /// Must implement <see cref="ILowLevelTokenizer.LowLevelTokenize(ReadOnlySpan{char})"/>.
     /// </summary>
-    /// <param name="c">The head.</param>
+    /// <param name="head">The head.</param>
     protected abstract LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head );
 
     LowLevelToken ILowLevelTokenizer.LowLevelTokenize( ReadOnlySpan<char> head ) => LowLevelTokenize( head );

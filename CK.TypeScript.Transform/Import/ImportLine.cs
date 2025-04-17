@@ -213,6 +213,11 @@ public sealed class ImportLine : IImportLine
         editor.Replace( span.Beg, newToken );
     }
 
+    /// <summary>
+    /// Writes the import line.
+    /// </summary>
+    /// <param name="b">The target builder.</param>
+    /// <returns>The builder.</returns>
     public StringBuilder Write( StringBuilder b )
     {
         b.Append( "import " );
@@ -245,6 +250,10 @@ public sealed class ImportLine : IImportLine
         return b;
     }
 
+    /// <summary>
+    /// Overridden to return the import line.
+    /// </summary>
+    /// <returns>The import line.</returns>
     public override string ToString() => Write( new StringBuilder() ).ToString();
 
 }

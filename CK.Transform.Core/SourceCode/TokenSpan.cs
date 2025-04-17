@@ -152,15 +152,16 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
         return SpanRelationship.Overlapped | swap;
     }
 
+    /// <summary>
+    /// Gets "∅" for an empty span, "[<see cref="Beg"/>,<see cref="End"/>[" otherwise.
+    /// </summary>
+    /// <returns>A readable string.</returns>
+    public override string ToString() => IsEmpty ? "∅" : $"[{_beg},{_end}[";
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public override bool Equals( object? obj ) => obj is TokenSpan r && Equals( r );
 
-    /// <summary>
-    /// Returns the hash code.
-    /// </summary>
-    /// <returns>The hash.</returns>
     public override int GetHashCode() => _beg ^ (int)((uint)_end << 16 | (uint)_end >> 16);
-
-    public override string ToString() => IsEmpty ? "∅" : $"[{_beg},{_end}[";
 
     public static bool operator ==( TokenSpan left, TokenSpan right ) => left.Equals( right );
 

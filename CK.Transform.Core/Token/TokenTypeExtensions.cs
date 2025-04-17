@@ -3,6 +3,9 @@ using System;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Extends <see cref="BasicTokenType"/> and <see cref="TokenType"/>.
+/// </summary>
 public static class TokenTypeExtensions
 {
     static string?[] _classNames;
@@ -90,12 +93,9 @@ public static class TokenTypeExtensions
 
     /// <summary>
     /// Gets whether this is <see cref="TokenType.None"/> or <see cref="TokenType.ErrorClassBit"/> is set.
-    /// <para>
-    /// Only <see cref="TokenErrorNode"/> can carry an error token type.
-    /// </para>
     /// </summary>
     /// <param name="type">This token type.</param>
-    /// <returns>True if this token is an error.</returns>
+    /// <returns>True if this token is None or an error.</returns>
     public static bool IsError( this TokenType type ) => type <= 0;
 
     /// <summary>

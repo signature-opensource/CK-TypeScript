@@ -84,7 +84,7 @@ public sealed class ChildrenAttribute<T1, T2, T3, T4, T5> : Attribute
 /// <typeparam name="T3">The third children package.</typeparam>
 /// <typeparam name="T4">The fourth children package.</typeparam>
 /// <typeparam name="T5">The fifth children package.</typeparam>
-/// <typeparam name="T5">The sixth children package.</typeparam>
+/// <typeparam name="T6">The sixth children package.</typeparam>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class ChildrenAttribute<T1, T2, T3, T4, T5, T6> : Attribute
     where T1 : IResourceGroup

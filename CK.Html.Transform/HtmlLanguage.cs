@@ -9,11 +9,15 @@ public sealed class HtmlLanguage : TransformLanguage
 {
     internal const string _languageName = "Html";
 
+    /// <summary>
+    /// Initializes a new HtmlLanguage instance.
+    /// </summary>
     public HtmlLanguage()
         : base( _languageName, ".html", ".htm" )
     {
     }
 
+    /// <inheritdoc/>
     protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
     {
         var a = new HtmlAnalyzer();

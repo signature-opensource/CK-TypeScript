@@ -162,16 +162,6 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
                 : "";
     }
 
-    public override bool Equals( object? obj ) => obj is ResourceFolder locator && Equals( locator );
-
-    public static bool operator ==( ResourceFolder left, ResourceFolder right ) => left.Equals( right );
-
-    public static bool operator !=( ResourceFolder left, ResourceFolder right ) => !(left == right);
-
-    public override int GetHashCode() => IsValid
-                                            ? HashCode.Combine( Container.GetHashCode(), FullFolderName.GetHashCode() )
-                                            : 0;
-
     /// <summary>
     /// Checks that <see cref="Container"/> is the same as <paramref name="expectedContainer"/> or
     /// throws a <see cref="ArgumentException"/>.
@@ -188,6 +178,17 @@ public readonly struct ResourceFolder : IEquatable<ResourceFolder>
             throw new ArgumentException( $"'{ToString()}' doesn't belong to this '{expectedContainer.DisplayName}'." );
         }
     }
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    public override bool Equals( object? obj ) => obj is ResourceFolder locator && Equals( locator );
+
+    public static bool operator ==( ResourceFolder left, ResourceFolder right ) => left.Equals( right );
+
+    public static bool operator !=( ResourceFolder left, ResourceFolder right ) => !(left == right);
+
+    public override int GetHashCode() => IsValid
+                                            ? HashCode.Combine( Container.GetHashCode(), FullFolderName.GetHashCode() )
+                                            : 0;
 
 
 }

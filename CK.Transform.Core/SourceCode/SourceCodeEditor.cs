@@ -129,8 +129,8 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// <summary>
     /// Replaces one or more tokens with any number of tokens.
     /// <para>
-    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The range (<paramref name="index"/> and <paramref name="count"/>)
-    /// is relative to the current <see cref="SourceCode.Tokens"/>, independent of any previous replace, insert, remove not yet applied.
+    /// The range (<paramref name="index"/> and <paramref name="count"/>) is relative to the current <see cref="SourceCode.Tokens"/>,
+    /// independent of any previous replace, insert, remove not yet applied.
     /// The range must not intersect any previously modified ranges not yet applied.
     /// </para>
     /// </summary>
@@ -146,10 +146,6 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
 
     /// <summary>
     /// Inserts new tokens. Spans that start at <paramref name="index"/> will contain the inserted tokens.
-    /// <para>
-    /// Changes are not visible until <see cref="ApplyChanges"/> is called. The <paramref name="index"/> is relative to the
-    /// current <see cref="SourceCode.Tokens"/> and must not fall into any previously modified ranges not yet applied.
-    /// </para>
     /// </summary>
     /// <param name="index">The index of the inserted tokens.</param>
     /// <param name="tokens">New tokens to insert. Must not be empty.</param>

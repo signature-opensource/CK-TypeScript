@@ -15,16 +15,30 @@ public abstract class TypeScriptGroupOrPackageAttributeImplExtension : IAttribut
     readonly Attribute _attr;
     readonly Type _type;
 
+    /// <summary>
+    /// Initializes a new implementation.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
     protected TypeScriptGroupOrPackageAttributeImplExtension( Attribute attr, Type type )
     {
         _attr = attr;
         _type = type;
     }
 
+    /// <summary>
+    /// Gets the attribute.
+    /// </summary>
     public Attribute Attribute => _attr;
 
+    /// <summary>
+    /// Gets the decorated type.
+    /// </summary>
     public Type Type => _type;
 
+    /// <summary>
+    /// Gets the attribute name without "Attribute" suffix.
+    /// </summary>
     public ReadOnlySpan<char> AttributeName
     {
         get

@@ -15,7 +15,7 @@ public sealed class InjectionPoint : Token
 
     /// <summary>
     /// Get the injection point name without enclosing angle brackets 
-    /// (the <see cref="TokenNode.Text"/> has the brackets).
+    /// (the <see cref="Token.Text"/> has the brackets).
     /// </summary>
     public ReadOnlySpan<char> Name => Text.Span.Slice( 1, Text.Length - 2 );
 }

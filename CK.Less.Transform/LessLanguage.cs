@@ -9,11 +9,15 @@ public sealed class LessLanguage : TransformLanguage
 {
     internal const string _languageName = "Less";
 
+    /// <summary>
+    /// Initializes a new LessLanguage instance.
+    /// </summary>
     public LessLanguage()
         : base( _languageName, ".less", ".css" )
     {
     }
 
+    /// <inheritdoc/>
     protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
     {
         var a = new LessAnalyzer();

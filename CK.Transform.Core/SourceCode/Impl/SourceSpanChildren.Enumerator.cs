@@ -6,6 +6,9 @@ namespace CK.Transform.Core;
 
 public partial class SourceSpanChildren
 {
+    /// <summary>
+    /// Children SourceSpan enumerator.
+    /// </summary>
     public struct Enumerator : IEnumerator<SourceSpan>
     {
         // Not readonly to prevent defensive struct copies.
@@ -19,12 +22,22 @@ public partial class SourceSpanChildren
             _firstChild = firstChild;
         }
 
+        /// <summary>
+        /// Gets the current SourceSpan.
+        /// </summary>
         public readonly SourceSpan Current => _current!;
 
         readonly object IEnumerator.Current => _current!;
 
+        /// <summary>
+        /// Empty implementation.
+        /// </summary>
         public readonly void Dispose() { }
 
+        /// <summary>
+        /// Moves to the next SourceSpan.
+        /// </summary>
+        /// <returns></returns>
         public bool MoveNext()
         {
             if( _current == null )
@@ -41,9 +54,16 @@ public partial class SourceSpanChildren
             return false;
         }
 
+        /// <summary>
+        /// Resets this enumerator.
+        /// </summary>
         public void Reset() => _current = null;
     }
 
+    /// <summary>
+    /// Gets an enumerator on children.
+    /// </summary>
+    /// <returns>The enumerator.</returns>
     public Enumerator GetEnumerator() => new Enumerator( _firstChild );
 
     IEnumerator<SourceSpan> IEnumerable<SourceSpan>.GetEnumerator() => GetEnumerator();

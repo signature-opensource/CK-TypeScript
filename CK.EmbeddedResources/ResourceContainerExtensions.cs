@@ -122,7 +122,7 @@ public static class ResourceContainerExtensions
     /// <summary>
     /// Tries to get an existing folder in this folder.
     /// </summary>
-    /// <param name="folder">This folder.</param>
+    /// <param name="parentFolder">This parent folder.</param>
     /// <param name="folderName">The local resource folder name (can contain any folder prefix).</param>
     /// <param name="folder">The resulting folder.</param>
     /// <returns>True if the folder exists, false otherwise.</returns>

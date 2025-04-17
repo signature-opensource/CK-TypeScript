@@ -191,6 +191,7 @@ public readonly struct Trivia : IEquatable<Trivia>
     /// <returns>The text.</returns>
     public override string ToString() => _content.ToString();
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public bool Equals( Trivia other ) => _tokenType == other._tokenType && _content.Span.SequenceEqual( other._content.Span );
 
     public override int GetHashCode() => HashCode.Combine( _tokenType, _content );

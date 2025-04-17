@@ -82,14 +82,14 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Creates an independent head on the <see cref="RemainingText"/> that uses an alternative <see cref="IParserHeadBehavior"/>:
+    /// Creates an independent head on the <see cref="RemainingText"/> that uses an alternative <see cref="ITokenizerHeadBehavior"/>:
     /// both trivia handling and low level tokenizer are different.
     /// <para>
     /// Use <see cref="CreateSubHead(out int, ILowLevelTokenizer?)"/> to create a subordinated head with the same trivias parser
     /// as this one.
     /// </para>
     /// <para>
-    /// <see cref="SkipTo(int,ref readonly TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
+    /// <see cref="SkipTo(int, ref TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
     /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
@@ -104,7 +104,7 @@ public ref struct TokenizerHead
     /// Creates an independent head on the <see cref="RemainingText"/> that can use an alternative <see cref="ILowLevelTokenizer"/>
     /// but keeps the trivias parser of this head.
     /// <para>
-    /// <see cref="SkipTo(int,ref readonly TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
+    /// <see cref="SkipTo(int, ref TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
     /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
@@ -203,7 +203,7 @@ public ref struct TokenizerHead
 
     /// <summary>
     /// Gets the low-level token type.
-    /// <see cref="TokenType.None"/> if it has not been computed by <see cref="IParserHeadBehavior.LowLevelTokenize(ReadOnlySpan{char})"/>.
+    /// <see cref="TokenType.None"/> if it has not been computed by <see cref="ILowLevelTokenizer.LowLevelTokenize(ReadOnlySpan{char})"/>.
     /// </summary>
     public readonly TokenType LowLevelTokenType => _lowLevelTokenType;
 
@@ -265,9 +265,9 @@ public ref struct TokenizerHead
     /// </para>
     /// </summary>
     /// <param name="tokenLength">The length of the token. Must be positive.</param>
-    /// <param name="text">The resulting <see cref="TokenNode.Text"/>.</param>
-    /// <param name="leading">The resulting <see cref="AbstractNode.LeadingNodes"/>.</param>
-    /// <param name="trailing">The resulting <see cref="AbstractNode.TrailingNodes"/>.</param>
+    /// <param name="text">The resulting <see cref="Token.Text"/>.</param>
+    /// <param name="leading">The resulting <see cref="Token.LeadingTrivias"/>.</param>
+    /// <param name="trailing">The resulting <see cref="Token.TrailingTrivias"/>.</param>
     public void PreAcceptToken( int tokenLength,
                                 out ReadOnlyMemory<char> text,
                                 out ImmutableArray<Trivia> leading,
@@ -352,7 +352,7 @@ public ref struct TokenizerHead
     /// </para>
     /// <para>
     /// This often supposes a closure. To avoid such closure <see cref="PreAcceptToken(int, out ReadOnlyMemory{char}, out ImmutableArray{Trivia}, out ImmutableArray{Trivia})"/>
-    /// and <see cref="Accept(Token)"/> can be used.
+    /// and <see cref="Accept{T}(T)"/> can be used.
     /// </para>
     /// </summary>
     /// <param name="tokenLength">The length of the token. Must be positive.</param>
@@ -486,6 +486,7 @@ public ref struct TokenizerHead
     /// </summary>
     /// <param name="expected">The expected characters.</param>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelToken.TokenType"/>.</param>
+    /// <param name="comparisonType">Optional comparison type.</param>
     /// <param name="errorType">By default, the error type is the expected <paramref name="type"/> | <see cref="TokenType.ErrorClassBit"/>.</param>
     /// <returns>The Token or <see cref="TokenError"/>.</returns>
     public Token MatchToken( ReadOnlySpan<char> expected,

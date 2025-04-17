@@ -14,8 +14,6 @@ namespace CK.Transform.Core;
 /// </para>
 /// <para>
 /// Note that a top-level analyzer is not restricted to parse such top-level constructs.
-/// The <c>TryParseTopLevel</c> is a helper that can be used only when the text is known to (or must)
-/// contain top-level elements.
 /// </para>
 /// </summary>
 /// <typeparam name="T">The type (or base type) of the top-level source span.</typeparam>

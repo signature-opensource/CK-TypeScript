@@ -9,7 +9,7 @@ namespace CK.Setup;
 /// Configuration of a type that must be generated. This is the external version of <see cref="TypeScriptTypeAttribute"/>.
 /// <para>
 /// <see cref="ToAttribute(IActivityMonitor, Func{string, Type?})"/> checks the validity and creates the
-/// corresponding attribute. Then <see cref="TypeScriptTypeAttribute.ApplyOverride(TypeScriptTypeAttribute?)"/> is used if the
+/// corresponding attribute. Then <see cref="TypeScriptTypeAttribute.ApplyOverride(ITypeScriptTypeDecorationAttribute?)"/> is used if the
 /// type is decorated with the TypeScriptAttribute. The configuration overrides the declare attribute values.
 /// </para>
 /// </summary>

@@ -8,6 +8,11 @@ namespace CK.TS.Angular;
 /// </summary>
 public class NgRoutedComponentAttribute : NgComponentAttribute
 {
+    /// <summary>
+    /// Initializes a new <see cref="NgComponentAttribute"/>.
+    /// </summary>
+    /// <param name="targetRoutedComponent">See <see cref="TargetComponent"/>.</param>
+    /// <param name="callerFilePath">The caller path.</param>
     public NgRoutedComponentAttribute( Type targetRoutedComponent,
                                        [CallerFilePath] string? callerFilePath = null )
         : base( "CK.TS.Angular.Engine.NgRoutedComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )

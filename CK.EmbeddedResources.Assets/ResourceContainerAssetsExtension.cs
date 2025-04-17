@@ -76,6 +76,7 @@ public static class ResourceContainerAssetsExtension
     /// <param name="container">This container of resources.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="defaultTargetPath">The default target path: a relative path in the final target root folder.</param>
+    /// <param name="assets">Resulting definitions. Null on error or if the assets folder is not valid.</param>
     /// <param name="folder">The folder to load.</param>
     /// <returns>True on success, false on error.</returns>
     public static bool LoadAssets( this IResourceContainer container,

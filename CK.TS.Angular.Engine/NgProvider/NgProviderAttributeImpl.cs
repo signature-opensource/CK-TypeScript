@@ -6,15 +6,27 @@ using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular.Engine;
 
+/// <summary>
+/// Implements <see cref="NgProviderAttribute"/>.
+/// </summary>
 public partial class NgProviderAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
+    /// <summary>
+    /// Initializes a new implementation.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
     public NgProviderAttributeImpl( NgProviderAttribute attr, Type type )
         : base( attr, type )
     {
     }
 
+    /// <summary>
+    /// Gets the attribute.
+    /// </summary>
     public new NgProviderAttribute Attribute => Unsafe.As<NgProviderAttribute>( base.Attribute );
 
+    /// <inheritdoc />
     protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                     TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                     TypeScriptContext context,

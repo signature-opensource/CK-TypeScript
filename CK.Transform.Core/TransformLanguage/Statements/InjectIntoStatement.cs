@@ -5,8 +5,18 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Inject into &lt;InsertionPoint/&gt; statement. 
+/// </summary>
 public sealed class InjectIntoStatement : TransformStatement
 {
+    /// <summary>
+    /// Initializes a new <see cref="InjectIntoStatement"/>.
+    /// </summary>
+    /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
+    /// <param name="end">The end of the span. Must be greater than <paramref name="beg"/>.</param>
+    /// <param name="content">The content to inject.</param>
+    /// <param name="target">The target injection point.</param>
     public InjectIntoStatement( int beg, int end, RawString content, InjectionPoint target )
         : base( beg, end )
     {
@@ -14,10 +24,17 @@ public sealed class InjectIntoStatement : TransformStatement
         Target = target;
     }
 
+    /// <summary>
+    /// Gets the content to inject.
+    /// </summary>
     public RawString Content { get; }
 
+    /// <summary>
+    /// Gets the target injection point.
+    /// </summary>
     public InjectionPoint Target { get; }
 
+    /// <inheritdoc />
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         bool success = true;
@@ -191,9 +208,10 @@ public sealed class InjectIntoStatement : TransformStatement
 
         /// <summary>
         /// Tests whether the given trivia matches. This is called multiple times and the internal state is updated.
-        /// On success, true is returned and <see cref="TextBefore"/>, <see cref="TextAfter"/>
-        /// and <see cref="TextReplace"/> are updated to reflect the action that should be applied to the current token trivia.
+        /// On success, true is returned and the public readonly fields are updated to reflect the action that
+        /// should be applied to the current token trivia.
         /// </summary>
+        /// <param name="monitor">The monitor for errors.</param>
         /// <param name="t">The trivia to process.</param>
         /// <returns>True on eventual success, false otherwise.</returns>
         [MemberNotNullWhen(true, nameof(OpeningColumnPrefix) )]
@@ -281,7 +299,7 @@ public sealed class InjectIntoStatement : TransformStatement
             return false;
         }
 
-        bool Parse( ReadOnlySpan<char> sTrivia,
+        readonly bool Parse( ReadOnlySpan<char> sTrivia,
                     ReadOnlySpan<char> commentPrefix,
                     out bool isClosing,
                     out ReadOnlySpan<char> injectDef,

@@ -41,6 +41,7 @@ public sealed class EnsureImportStatement : TransformStatement
     /// </summary>
     public string ImportPath => _importPath;
 
+    /// <inheritdoc/>
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         // No need to respect any scope here. @imports can appear anywhere in a less
@@ -85,6 +86,10 @@ public sealed class EnsureImportStatement : TransformStatement
         return new EnsureImportStatement( begEnsure, head.LastTokenIndex + 1, include, exclude, importPath );
     }
 
+    /// <summary>
+    /// Overridden to return the statement.
+    /// </summary>
+    /// <returns>The statement.</returns>
     public override string ToString()
     {
         return ImportStatement.Write( new StringBuilder( "ensure " ), _include, _exclude, _importPath ).ToString();

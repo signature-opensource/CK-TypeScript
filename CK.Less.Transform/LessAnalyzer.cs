@@ -4,16 +4,28 @@ using System;
 
 namespace CK.Less.Transform;
 
+/// <summary>
+/// Analyzer for <see cref="LessLanguage"/>.
+/// </summary>
 public class LessAnalyzer : Tokenizer, IAnalyzer
 {
+    /// <summary>
+    /// Gets "Less".
+    /// </summary>
     public string LanguageName => LessLanguage._languageName;
 
+    /// <summary>
+    /// Calls <see cref="TriviaHeadExtensions.AcceptCLikeLineComment(ref TriviaHead)"/>
+    /// and <see cref="TriviaHeadExtensions.AcceptCLikeStarComment(ref TriviaHead)"/>.
+    /// </summary>
+    /// <param name="c">The trivia head.</param>
     protected override void ParseTrivia( ref TriviaHead c )
     {
         c.AcceptCLikeLineComment();
         c.AcceptCLikeStarComment();
     }
 
+    /// <inheritdoc/>
     protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
         Throw.DebugAssert( head.Length > 0 );
@@ -156,6 +168,7 @@ public class LessAnalyzer : Tokenizer, IAnalyzer
         }
     }
 
+    /// <inheritdoc/>
     protected override TokenError? Tokenize( ref TokenizerHead head )
     {
         for(; ; )
@@ -176,6 +189,7 @@ public class LessAnalyzer : Tokenizer, IAnalyzer
         }
     }
 
+    /// <inheritdoc/>
     public AnalyzerResult Parse( ReadOnlyMemory<char> text )
     {
         Reset( text );

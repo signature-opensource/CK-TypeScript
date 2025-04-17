@@ -15,7 +15,7 @@ namespace CK.EmbeddedResources;
 /// <para>
 /// Instances are created by <see cref="AssemblyExtensions.GetResources(Assembly)"/>.
 /// </para>
-/// At a higher level, the <see cref="CreateResourcesContainerForType(IActivityMonitor, Type, string?)"/> provides
+/// At a higher level, the <see cref="CreateResourcesContainerForType(IActivityMonitor, Type, string?, bool)"/> provides
 /// the <see cref="AssemblyResourceContainer"/> defined in the "/Res" folder of a type definition.
 /// </summary>
 public sealed partial class AssemblyResources
@@ -116,6 +116,7 @@ public sealed partial class AssemblyResources
     /// Should almost always end with "Res/" as it's the standard directory names that automatically
     /// embeds the "ck@" resources. 
     /// </param>
+    /// <param name="displayName">The container display name.</param>
     /// <returns>A resource container. May be empty.</returns>
     public AssemblyResourceContainer CreateCKResourceContainer( string subPath, string displayName )
     {
@@ -146,14 +147,14 @@ public sealed partial class AssemblyResources
     /// one <see cref="IEmbeddedResourceTypeAttribute"/> attribute.
     /// <para>
     /// On success, the container is bound to the corresponding embedded ressources "Res/" folder.
-    /// It may not be <see cref="IsValid"/> (an error has been logged).
+    /// It may not be <see cref="AssemblyResourceContainer.IsValid"/> (an error has been logged).
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>.</param>
-    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "resources of '...' type".</param>
+    /// <param name="containerDisplayName">When null, the <see cref="AssemblyResourceContainer.DisplayName"/> defaults to "resources of '...' type".</param>
     /// <param name="resAfter">True to consider the "Res[After]" folder instead of "Res".</param>
-    /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
+    /// <returns>The resources (IsValid may be false).</returns>
     public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
                                                                       Type type,
                                                                       string? containerDisplayName = null,
@@ -170,16 +171,16 @@ public sealed partial class AssemblyResources
     /// captured by an attribute on the <paramref name="type"/> (typically a <see cref="IEmbeddedResourceTypeAttribute"/>).
     /// <para>
     /// On success, the container is bound to the corresponding embedded ressources "Res/" folder.
-    /// It may not be <see cref="IsValid"/> (an error has been logged).
+    /// It may not be <see cref="AssemblyResourceContainer.IsValid"/> (an error has been logged).
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="callerFilePath">The caller file path. This is required: when null or empty, an error is logged and an invalid container is returned.</param>
     /// <param name="type">The declaring type. Its <see cref="Type.Assembly"/> MUST be this <see cref="Assembly"/>. (This is used for logging).</param>
     /// <param name="attributeName">The attribute name that declares the resource (used for logging).</param>
-    /// <param name="containerDisplayName">When null, the <see cref="DisplayName"/> defaults to "resources of '...' type".</param>
+    /// <param name="containerDisplayName">When null, the <see cref="AssemblyResourceContainer.DisplayName"/> defaults to "resources of '...' type".</param>
     /// <param name="resAfter">True to consider the "Res[After]" folder instead of "Res".</param>
-    /// <returns>The resources (<see cref="IsValid"/> may be false).</returns>
+    /// <returns>The resources (IsValid may be false).</returns>
     public AssemblyResourceContainer CreateResourcesContainerForType( IActivityMonitor monitor,
                                                                       string? callerFilePath,
                                                                       Type type,

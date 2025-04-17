@@ -3,7 +3,7 @@ using CK.EmbeddedResources;
 namespace CK.Core;
 
 /// <summary>
-/// Exposes the <see cref="ResPackage.Resources"/> and <see cref="ResPackage.AfterResources"/>.
+/// Models the <see cref="ResPackage.Resources"/> and <see cref="ResPackage.AfterResources"/>.
 /// </summary>
 public interface IResPackageResources
 {
@@ -17,15 +17,16 @@ public interface IResPackageResources
     /// </summary>
     int Index { get; }
 
-    /// <summary>
-    /// Gets whether this is the "&lt;App&gt;" resource (<see cref="IsAfter"/> is false).
-    /// </summary>
-    bool IsAppResources { get; }
 
     /// <summary>
     /// Gets whether this is the "&lt;Code&gt;" resource (<see cref="IsAfter"/> is true).
     /// </summary>
     bool IsCodeResources { get; }
+
+    /// <summary>
+    /// Gets whether this is the "&lt;App&gt;" resource (<see cref="IsAfter"/> is false).
+    /// </summary>
+    bool IsAppResources { get; }
 
     /// <summary>
     /// Gets the resources.

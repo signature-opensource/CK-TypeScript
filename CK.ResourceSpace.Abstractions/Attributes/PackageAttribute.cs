@@ -10,10 +10,17 @@ namespace CK.Core;
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
 public sealed class PackageAttribute : Attribute
 {
+    /// <summary>
+    /// Initializes a new <see cref="PackageAttribute"/>.
+    /// </summary>
+    /// <param name="packageFullName">The owner package's name.</param>
     public PackageAttribute( string packageFullName )
     {
         PackageFullName = packageFullName;
     }
 
+    /// <summary>
+    /// Gets the owner package's name.
+    /// </summary>
     public string PackageFullName { get; }
 }

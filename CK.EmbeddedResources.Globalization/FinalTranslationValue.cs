@@ -9,7 +9,7 @@ namespace CK.EmbeddedResources;
 /// A translation value is a <see cref="Text"/> that comes from an <see cref="Origin"/>
 /// with potential <see cref="Ambiguities"/>.
 /// <para>
-/// Equality ignores the <see cref="Ambiguities"/: two values are equal if their <see cref="Text"/>
+/// Equality ignores the <see cref="Ambiguities"/>: two values are equal if their <see cref="Text"/>
 /// and <see cref="Origin"/> are equal.
 /// </para>
 /// </summary>
@@ -87,10 +87,19 @@ public readonly struct FinalTranslationValue : IEquatable<FinalTranslationValue>
     /// <returns>Whether this <see cref="Text"/> and <see cref="Origin"/> are the equal to the other one's.</returns>
     public bool Equals( FinalTranslationValue other ) => _text == other._text && _origin == other._origin;
 
+    /// <inheritdoc />
     public override bool Equals( object? obj ) => obj is FinalTranslationValue v && Equals( v );
 
+    /// <summary>
+    /// Overridden to return the <see cref="Text"/>.
+    /// </summary>
+    /// <returns>This Text.</returns>
     public override string ToString() => Text;
 
+    /// <summary>
+    /// HAsh code is based on <see cref="Text"/> and <see cref="Origin"/>.
+    /// </summary>
+    /// <returns>The hash code.</returns>
     public override int GetHashCode() => HashCode.Combine( Text.GetHashCode(), Origin.GetHashCode() );
 
     /// <summary>

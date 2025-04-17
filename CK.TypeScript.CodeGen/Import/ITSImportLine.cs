@@ -49,7 +49,7 @@ public interface ITSImportLine
     /// </para>
     /// <para>
     /// The default exported name must always be the same: if it has alredy been defined to a different name,
-    /// an <see cref="InvalidOperationException"/> is thrown.
+    /// an <see cref="System.InvalidOperationException"/> is thrown.
     /// </para>
     /// </summary>
     /// <param name="symbolNames">Comma separated of type or variable names to import.</param>

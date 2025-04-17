@@ -4,7 +4,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
-
+/// <summary>
+/// Linked list of non overlapping <see cref="SourceSpan"/>.
+/// </summary>
 public partial class SourceSpanChildren : IEnumerable<SourceSpan>
 {
     internal SourceSpan? _firstChild;

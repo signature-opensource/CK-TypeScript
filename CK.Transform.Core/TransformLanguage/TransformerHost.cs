@@ -8,7 +8,7 @@ namespace CK.Transform.Core;
 
 
 /// <summary>
-/// Hosts multiple <see cref="TransformLanguageOld"/>.
+/// Hosts multiple <see cref="Language"/>.
 /// This is NOT thread safe and should never be used concurrently.
 /// </summary>
 public sealed partial class TransformerHost

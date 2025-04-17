@@ -5,7 +5,7 @@ namespace CK.TypeScript.CodeGen;
 public abstract partial class TypeScriptFileBase
 {
     // Pure TS type declaration without a specific TypePart in the file.
-    protected class TSDeclaredType : TSBasicType, ITSDeclaredFileType
+    private protected class TSDeclaredType : TSBasicType, ITSDeclaredFileType
     {
         readonly TypeScriptFileBase _file;
 

@@ -1,4 +1,4 @@
-﻿namespace CK.Transform.Core;
+namespace CK.Transform.Core;
 
 /// <summary>
 /// A top-level <see cref="SourceSpan"/> supports the <see cref="ITopLevelAnalyzer{T}"/>
@@ -6,6 +6,11 @@
 /// </summary>
 public abstract class TopLevelSourceSpan : SourceSpan
 {
+    /// <summary>
+    /// Initializes a new TopLevelSourceSpan.
+    /// </summary>
+    /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
+    /// <param name="end">The end of the span. Must be greater than <paramref name="beg"/>.</param>
     protected TopLevelSourceSpan( int beg, int end )
         : base( beg, end )
     {

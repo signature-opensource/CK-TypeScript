@@ -57,7 +57,6 @@ public interface ITSFileImportSection
     /// </summary>
     /// <param name="monitor">Required monitor since ResolveTSType is called.</param>
     /// <param name="type">The type to import.</param>
-    /// <param name="types">Optional types to import.</param>
     /// <returns>This section to enable fluent syntax.</returns>
     ITSFileImportSection EnsureImport( IActivityMonitor monitor, Type type );
 

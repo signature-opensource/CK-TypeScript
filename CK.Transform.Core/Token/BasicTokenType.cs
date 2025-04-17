@@ -31,7 +31,7 @@ public enum BasicTokenType : byte
     GenericMissingToken,
 
     /// <summary>
-    /// Default type of <see cref="TokenNode.CreateMarker(TokenType)"/>.
+    /// Default type for a marker (can be anything).
     /// </summary>
     GenericMarkerToken,
 
@@ -122,11 +122,12 @@ public enum BasicTokenType : byte
     /// </summary>
     CloseBrace,
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     Ampersand,
     AmpersandEquals,
     AmpersandAmpersand,
     /// <summary>
-    /// <c>&&=</c> has been introduces in ECMAScript 2020.
+    /// <c>&amp;&amp;=</c> has been introduces in ECMAScript 2020.
     /// </summary>
     AmpersandAmpersandEquals,
 

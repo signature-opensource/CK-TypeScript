@@ -4,7 +4,7 @@ namespace CK.Core;
 
 /// <summary>
 /// Models a source file (a resource) that can be a final <see cref="TransformableItem"/>
-/// or a <see cref="TransformerFunctions"/>.
+/// or a <see cref="TransformerFunctionSource"/>.
 /// </summary>
 class TransformableSource
 {

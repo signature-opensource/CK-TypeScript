@@ -84,7 +84,7 @@ public sealed class GroupsAttribute<T1, T2, T3, T4, T5> : Attribute
 /// <typeparam name="T3">The third package group.</typeparam>
 /// <typeparam name="T4">The fourth package group.</typeparam>
 /// <typeparam name="T5">The fifth package group.</typeparam>
-/// <typeparam name="T5">The sixth package group.</typeparam>
+/// <typeparam name="T6">The sixth package group.</typeparam>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class GroupsAttribute<T1, T2, T3, T4, T5, T6> : Attribute
     where T1 : IResourceGroup
