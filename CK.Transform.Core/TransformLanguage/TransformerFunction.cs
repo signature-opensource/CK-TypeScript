@@ -1,29 +1,33 @@
 using CK.Core;
+using System;
 
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Captures a transformer function.
+/// Captures a transformer function. Unlike other <see cref="SourceSpan"/>, the original <see cref="Text"/>
+/// is captured and available.
+/// <para>
+/// This can only be instantiated by <see cref="TransformerHost.TryParseFunction(IActivityMonitor, string)"/>
+/// (or the other parse functions).
+/// </para>
+/// <para>
+/// The <see cref="Language"/> is tied to a <see cref="TransformerHost"/> and cannot be changed,
+/// just like the <see cref="Body"/>. The <see cref="Name"/> and <see cref="Target"/> are mutable:
+/// they can be resolved through the context.
+/// </para>
 /// </summary>
 public sealed class TransformerFunction : TopLevelSourceSpan
 {
-    /// <summary>
-    /// Initializes a new transfomer function.
-    /// </summary>
-    /// <param name="createTokenIndex">The start of the span. Must be greater or equal to 0.</param>
-    /// <param name="endTokenIndex">The end of the span. Must be greater than <paramref name="createTokenIndex"/>.</param>
-    /// <param name="language">The target transform language.</param>
-    /// <param name="body">The transform statements.</param>
-    /// <param name="name">Optional treansform function name.</param>
-    /// <param name="target">Optional treansform function target.</param>
-    public TransformerFunction( int createTokenIndex,
-                                int endTokenIndex,
-                                TransformLanguage language,
-                                TransformStatementBlock body,
-                                string? name = null,
-                                string? target = null )
+    internal TransformerFunction( ReadOnlyMemory<char> text,
+                                  int createTokenIndex,
+                                  int endTokenIndex,
+                                  TransformerHost.Language language,
+                                  TransformStatementBlock body,
+                                  string? name = null,
+                                  string? target = null )
         : base( createTokenIndex, endTokenIndex )
     {
+        Text = text;
         Language = language;
         Name = name;
         Target = target;
@@ -36,14 +40,19 @@ public sealed class TransformerFunction : TopLevelSourceSpan
     public override string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets the transform language.
-    /// </summary>
-    public TransformLanguage Language { get; set; }
-
-    /// <summary>
     /// Gets or sets the target address.
     /// </summary>
     public string? Target { get; set; }
+
+    /// <summary>
+    /// Gets the original text.
+    /// </summary>
+    public ReadOnlyMemory<char> Text { get; }
+
+    /// <summary>
+    /// Gets the transform language.
+    /// </summary>
+    public TransformerHost.Language Language { get; }
 
     /// <summary>
     /// Gets the body.

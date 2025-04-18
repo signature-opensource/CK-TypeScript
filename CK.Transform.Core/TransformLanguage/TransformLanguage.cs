@@ -45,14 +45,17 @@ public abstract class TransformLanguage
     /// Tests the file name against the <see cref="FileExtensions"/>.
     /// </summary>
     /// <param name="fileName">The file name. May be a path.</param>
-    /// <returns>True if the file can be handled by this language analyzer.</returns>
-    public bool IsLangageFilename( ReadOnlySpan<char> fileName )
+    /// <returns>The extension that matched on success, an empty span otherwise.</returns>
+    public ReadOnlySpan<char> CheckLangageFilename( ReadOnlySpan<char> fileName )
     {
         foreach( var e in _fileExtensions )
         {
-            if( fileName.EndsWith( e, StringComparison.Ordinal ) ) return true;
+            if( fileName.EndsWith( e, StringComparison.Ordinal ) )
+            {
+                return e;
+            }
         }
-        return false;
+        return default;
     }
 
     /// <summary>

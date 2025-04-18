@@ -10,8 +10,8 @@ namespace CK.Core;
 /// </summary>
 public sealed class TransformableFileHandler : ResourceSpaceFileHandler
 {
-    readonly TransformerHost _host;
-    List<TransformableItem>? _items;
+    readonly TransformerHost _transformerHost;
+    TransformEnvironment? _environment;
 
     /// <summary>
     /// Initializes a new <see cref="TransformableFileHandler"/> for all the file extensions from
@@ -23,7 +23,7 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
         : base( installer,
                 transformerHost.LockLanguages().SelectMany( l => l.TransformLanguage.FileExtensions ).Distinct().ToImmutableArray() )
     {
-        _host = transformerHost;
+        _transformerHost = transformerHost;
     }
 
     /// <summary>
@@ -36,26 +36,18 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
     protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData, FolderExclusion folderFilter )
     {
         bool success = true;
-        _items = new List<TransformableItem>();
+        var environment = new TransformEnvironment( spaceData, _transformerHost );
         foreach( var resources in spaceData.AllPackageResources )
         {
             foreach( var r in resources.Resources.AllResources )
             {
                 if( folderFilter.IsExcluded( r ) ) continue;
-                var language = _host.FindFromFilename( r.Name );
-                if( language != null )
-                {
-                    if( language.TransformLanguage.IsTransformerLanguage )
-                    {
-
-                    }
-                    else
-                    {
-                        var target = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
-                        _items.Add( new TransformableItem( resources, r, language, target ) );
-                    }
-                }
+                success &= environment.Register( monitor, resources, r );
             }
+        }
+        if( success )
+        {
+            _environment = environment;
         }
         return success;
     }
@@ -68,18 +60,18 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
             monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
             return true;
         }
-        Throw.CheckState( _items != null );
+        Throw.CheckState( _environment != null );
         bool success = true;
-        foreach( var i in _items )
+        foreach( var i in _environment.Items )
         {
-            var text = i.GetText( monitor );
+            var text = i.GetFinalText( monitor, _environment.TransformerHost );
             if( text == null )
             {
                 success = false;
             }
             else
             {
-                Installer.Write( i.Target, text );
+                Installer.Write( i.TargetPath, text );
             }
         }
         return success;

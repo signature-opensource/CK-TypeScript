@@ -29,7 +29,7 @@ public ref struct TokenizerHead
     TokenError? _firstError;
     ReadOnlySpan<char> _lowLevelTokenText;
     TokenType _lowLevelTokenType;
-    int _lastSuccessfulHead;
+    int _remainingTextIndex;
     int _inlineErrorCount;
     int _tokenCountOffset;
 
@@ -96,7 +96,7 @@ public ref struct TokenizerHead
     /// <param name="behavior">Alternative behavior for this new head.</param>
     public readonly TokenizerHead CreateFullSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
     {
-        safetyToken = _lastSuccessfulHead;
+        safetyToken = _remainingTextIndex;
         return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, _triviaBuilder, LastTokenIndex );
     }
 
@@ -111,7 +111,7 @@ public ref struct TokenizerHead
     /// <param name="lowLevelTokenizer">Alternative low level tokenizer for this new head. When null, the same low level tokenizer as this one is used.</param>
     public readonly TokenizerHead CreateSubHead( out int safetyToken, ILowLevelTokenizer? lowLevelTokenizer = null )
     {
-        safetyToken = _lastSuccessfulHead;
+        safetyToken = _remainingTextIndex;
         return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, _triviaBuilder, LastTokenIndex );
     }
 
@@ -123,16 +123,16 @@ public ref struct TokenizerHead
     public void SkipTo( int safetyToken, ref TokenizerHead subHead )
     {
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
-        Throw.CheckState( _lastSuccessfulHead == safetyToken );
+        Throw.CheckState( _remainingTextIndex == safetyToken );
 
-        _head = _headBeforeTrivia.Slice( subHead._lastSuccessfulHead );
-        _lastSuccessfulHead += subHead._lastSuccessfulHead;
+        _head = _headBeforeTrivia.Slice( subHead._remainingTextIndex );
+        _remainingTextIndex += subHead._remainingTextIndex;
         _tokens.AddRange( CollectionsMarshal.AsSpan( subHead._tokens ) );
         _lastToken = subHead._lastToken;
         _firstError ??= subHead._firstError;
         _inlineErrorCount += subHead._inlineErrorCount;
 
-        subHead._lastSuccessfulHead = 0;
+        subHead._remainingTextIndex = 0;
         subHead._tokens.Clear();
         subHead._lastToken = null;
         if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
@@ -183,13 +183,18 @@ public ref struct TokenizerHead
     public readonly int InlineErrorCount => _inlineErrorCount;
 
     /// <summary>
+    /// Gets the position of the <see cref="RemainingText"/> in the whole <see cref="Text"/>.
+    /// </summary>
+    public readonly int RemainingTextIndex => _remainingTextIndex;
+
+    /// <summary>
     /// Gets the remaining text (the <see cref="Text"/> after the last successful token read).
     /// <para>
     /// The <see cref="Head"/> is positioned after the leading trivias of the future token.
     /// </para>
     /// </summary>
     /// <returns></returns>
-    public readonly ReadOnlyMemory<char> RemainingText => _memText.Slice( _lastSuccessfulHead );
+    public readonly ReadOnlyMemory<char> RemainingText => _memText.Slice( _remainingTextIndex );
 
     /// <summary>
     /// Gets the end of input if it has been reached.
@@ -287,7 +292,7 @@ public ref struct TokenizerHead
         // Before preloading the leading trivia for the next token, save the
         // current head position. RemainingText is based on this index.
         _headBeforeTrivia = c.Head;
-        _lastSuccessfulHead = _memText.Length - _head.Length + c.Length;
+        _remainingTextIndex = _memText.Length - _head.Length + c.Length;
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );

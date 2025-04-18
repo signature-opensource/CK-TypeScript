@@ -2,7 +2,7 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Captures the relationship between two <see cref="TokenSpan"/>.
-/// There are 7 oredered cases. By swapping the 2 spans, 13 different relationships exist (Equals is not swapped). 
+/// There are 7 ordered cases. By swapping the 2 spans, 13 different relationships exist (Equals is not swapped). 
 /// </summary>
 public enum SpanRelationship
 {

@@ -168,8 +168,7 @@ public sealed partial class ResPackage
 
     /// <summary>
     /// Gets the packages that are reachable from the "tail" of this package:
-    /// this extends <see cref="Reachables"/> with the <see cref="Reachables"/>
-    /// of the <see cref="Children"/>.
+    /// this extends <see cref="Reachables"/> with the <see cref="Children"/> and their <see cref="Reachables"/>.
     /// </summary>
     public IReadOnlySet<ResPackage> AfterReachables => _afterReachables;
 

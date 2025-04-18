@@ -1,5 +1,6 @@
 using CK.BinarySerialization;
 using CK.EmbeddedResources;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace CK.Core;
@@ -44,6 +45,8 @@ public sealed partial class ResPackage
         }
 
         public bool IsAfter => true;
+
+        public IReadOnlySet<ResPackage> Reachables => _package._afterReachables;
 
         public int Index => _index;
 

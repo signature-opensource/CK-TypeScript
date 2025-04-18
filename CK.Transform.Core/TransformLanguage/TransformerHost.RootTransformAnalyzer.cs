@@ -55,9 +55,10 @@ public sealed partial class TransformerHost
         /// </para>
         /// </summary>
         /// <param name="head">The head.</param>
-        /// <returns>Hard failures are that the target language is not registered. Other errors are inlined.</returns>
+        /// <returns>Hard failure when the target language is not registered. Other errors are inlined.</returns>
         protected override TokenError? Tokenize( ref TokenizerHead head )
         {
+            int begText = head.RemainingTextIndex;
             if( !head.TryAcceptToken( "create", out var _ ) )
             {
                 return null;
@@ -96,7 +97,8 @@ public sealed partial class TransformerHost
                     }
                     else
                     {
-                        if( head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal ) || head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
+                        if( head.LowLevelTokenText.Equals( "as", StringComparison.Ordinal )
+                            || head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
                         {
                             head.AppendMissingToken( "target (identifier or one-line string)" );
                         }
@@ -113,7 +115,8 @@ public sealed partial class TransformerHost
             var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
             var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
             head.SkipTo( safetyToken, ref headStatements );
-            head.AddSourceSpan( new TransformerFunction( startFunction, head.LastTokenIndex + 1, cLang.TransformLanguage, statements, functionName?.ToString(), target ) );
+            var functionText = head.Text.Slice( begText, head.RemainingTextIndex );
+            head.AddSourceSpan( new TransformerFunction( functionText, startFunction, head.LastTokenIndex + 1, cLang, statements, functionName?.ToString(), target ) );
             return null;
         }
 

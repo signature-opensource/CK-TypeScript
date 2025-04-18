@@ -145,19 +145,22 @@ public sealed partial class TransformerHost
     public Language? Find( ReadOnlySpan<char> name ) => Find( _languages, name );
 
     /// <summary>
-    /// Tries to find a <see cref="Language"/> from a file name or path.
+    /// Tries to find a <see cref="Language"/> from a file name.
     /// </summary>
     /// <param name="fileName">The file name or path.</param>
+    /// <param name="extension">The extension that matched.</param>
     /// <returns>The language or null.</returns>
-    public Language? FindFromFilename( ReadOnlySpan<char> fileName )
+    public Language? FindFromFilename( ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension )
     {
         foreach( var l in _languages )
         {
-            if( l.TransformLanguage.IsLangageFilename( fileName ) )
+            extension = l.TransformLanguage.CheckLangageFilename( fileName );
+            if( extension.Length > 0 )
             {
                 return l;
             }
         }
+        extension = default;
         return null;
     }
 

@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using System.Collections.Generic;
 
 namespace CK.Core;
 
@@ -16,7 +17,6 @@ public interface IResPackageResources
     /// Gets the index of this package resources in the <see cref="ResSpaceData.AllPackageResources"/>.
     /// </summary>
     int Index { get; }
-
 
     /// <summary>
     /// Gets whether this is the "&lt;Code&gt;" resource (<see cref="IsAfter"/> is true).
@@ -37,6 +37,12 @@ public interface IResPackageResources
     /// Gets the package that defines these resources.
     /// </summary>
     ResPackage Package { get; }
+
+    /// <summary>
+    /// Gets the reachable packages from these resources: it is this <see cref="Package"/>'s <see cref="ResPackage.AfterReachables"/>
+    /// if <see cref="IsAfter"/> is true, or this Package's <see cref="ResPackage.Reachables"/>.
+    /// </summary>
+    IReadOnlySet<ResPackage> Reachables { get; }
 
     /// <summary>
     /// Gets the local folder path if the <see cref="Resources"/> are in a <see cref="FileSystemResourceContainer"/>
