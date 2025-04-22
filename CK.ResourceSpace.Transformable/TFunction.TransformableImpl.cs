@@ -20,12 +20,65 @@ sealed partial class TFunction
 
         internal readonly TFunction? LastFunction => _lastFunction;
 
-        internal void Add( TFunction f )
+        internal bool TryFindInsertionPoint( IActivityMonitor monitor,
+                                             TFunctionSource source,
+                                             TransformerFunction f,
+                                             out TFunction? before )
+        {
+            int insertIndex = source.Resources.Index;
+            // Start from last: initial setup follows the topology order.
+            before = _lastFunction;
+            while( before != null && before._source.Resources.Index > insertIndex )
+            {
+                before = before._prevFunction;
+            }
+            if( before != null && before._source.Resources == source.Resources )
+            {
+                monitor.Error( $"""
+                    Two transformers targeting the same target cannot be defined in the same set of resources:
+                    {source.Origin} defines:
+                    {f.Text}
+
+                    And {before._source.Origin} defines: 
+                    {before._function.Text}
+
+                    Both targets '{before._target.TransfomableTargetName}'.
+                    """ );
+                return false;   
+            }
+            return true;
+        }
+
+        internal void Add( TFunction f, TFunction? before )
         {
             Throw.DebugAssert( f._nextFunction == null && f._prevFunction == null );
-            if( (f._prevFunction = _lastFunction) == null ) _lastFunction = f;
-            else _lastFunction!._nextFunction = f;
-            _lastFunction = f;
+            if( before == null )
+            {
+                if( _firstFunction == null )
+                {
+                    Throw.DebugAssert( _lastFunction == null );
+                    _firstFunction = _lastFunction = f;
+                }
+                else
+                {
+                    _firstFunction._prevFunction = f;
+                    f._nextFunction = _firstFunction;
+                    _firstFunction = f;
+                }
+            }
+            else
+            {
+                if( (f._nextFunction = before._nextFunction) == null )
+                {
+                    _lastFunction = f;
+                }
+                else
+                {
+                    before._nextFunction!._prevFunction = f;
+                }
+                before._nextFunction = f;
+                f._prevFunction = before;
+            }
         }
 
         internal void Remove( TFunction f )
@@ -59,6 +112,19 @@ sealed partial class TFunction
             var sourceCode = transformerHost.Transform( monitor, text, transformers );
             return sourceCode?.ToString();
         }
+
+#if DEBUG
+        internal bool Contains( TFunction f )
+        {
+            var e = _lastFunction;
+            while( e != null )
+            {
+                if( e == f ) return true;
+                e = e._nextFunction;
+            }
+            return false;
+        }
+#endif
 
     }
 }

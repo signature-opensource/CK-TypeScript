@@ -48,13 +48,44 @@ sealed class TFunctionSource : TransformableSource
     internal bool Initialize( IActivityMonitor monitor, TransformEnvironment environment )
     {
         Throw.DebugAssert( _functions.Count == 0 );
-        Throw.DebugAssert( Origin.ResourceName.EndsWith( ".t" ) );
-
         HandleSourceName( environment.TransformerHost );
 
-        var functions = environment.TransformerHost.TryParseFunctions( monitor, Text );
+        var functions = Parse( monitor, environment );
         if( functions == null ) return false;
         bool success = true;
+        foreach( var (f,target,name) in functions )
+        {
+            if( environment.TransformFunctions.TryGetValue( name, out var homonym ) )
+            {
+                monitor.Error( $"""
+                    Transformer '{name}' in {Origin}:
+                    {f.Text}
+                    Is already defined by {homonym.Source.Origin}:
+                    {homonym.Function.Text}
+                    """ );
+                success = false;
+            }
+            if( !target.TryFindInsertionPoint( monitor, this, f, out var fBefore ) )
+            {
+                success = false;
+            }
+            if( success )
+            {
+                var tF = new TFunction( this, f, target, name );
+                _functions.Add( tF );
+                environment.TransformFunctions.Add( name, tF );
+            }
+        }
+        return success;
+    }
+
+
+    List<(TransformerFunction, ITransformable, string)>? Parse( IActivityMonitor monitor, TransformEnvironment environment )
+    {
+        var functions = environment.TransformerHost.TryParseFunctions( monitor, Text );
+        if( functions == null ) return null;
+        bool success = true;
+        var result = new List<(TransformerFunction, ITransformable, string)>( functions.Count );
         foreach( var f in functions )
         {
             if( _languageHint != null && f.Language != _languageHint )
@@ -71,17 +102,18 @@ sealed class TFunctionSource : TransformableSource
                 }
                 else
                 {
-                    var tF = new TFunction( this, f, target );
-                    _functions.Add( tF );
+                    var functionName = TFunction.ComputeName( this, f, target );
+                    result.Add( (f, target, functionName) );
                 }
             }
         }
-        return success;
+        return success ? result : null;
     }
 
     [MemberNotNull( nameof( _sourceName ) )]
     void HandleSourceName( TransformerHost transformerHost )
     {
+        Throw.DebugAssert( Origin.ResourceName.EndsWith( ".t" ) );
         var rName = Origin.ResourceName;
         int sourceNameLength = rName.Length - 2;
         _languageHint = transformerHost.FindFromFilename( rName.Slice( 0, sourceNameLength ), out var fileExtension );

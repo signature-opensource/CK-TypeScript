@@ -24,7 +24,10 @@ sealed class TransformEnvironment
     // name without a O(n) search because we want to allow "short names" to be used and
     // not impose full name targets. Moreover, this is only used for transformer targets,
     // not all items. So we privielgiate add/remove efficiency.
-    readonly TItem?[] _packageItemHead; 
+    readonly TItem?[] _packageItemHead;
+    // All transformer functions are registered in this dictionary indexed by their name:
+    // this detects homonyms.
+    Dictionary<string, TFunction> _transformFunctions;
 
     public TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost )
     {
@@ -35,11 +38,14 @@ sealed class TransformEnvironment
         // There should not be Items in AppResources (only transformers) but if there are,
         // we don't track them (hence the -1).
         _packageItemHead = new TItem?[spaceData.Packages.Length-1];
+        _transformFunctions = new Dictionary<string, TFunction>();
     }
 
     internal IEnumerable<TItem> Items => _items.Values;
 
     public TransformerHost TransformerHost => _transformerHost;
+
+    internal Dictionary<string, TFunction> TransformFunctions => _transformFunctions;
 
     internal bool Register( IActivityMonitor monitor, IResPackageResources resources, ResourceLocator r )
     {
@@ -55,8 +61,12 @@ sealed class TransformEnvironment
             if( language.TransformLanguage.IsTransformerLanguage )
             {
                 var fSource = new TFunctionSource( resources, r, text );
-                _sources.Add( r, fSource );
-                return true;
+                if( fSource.Initialize( monitor, this ) )
+                {
+                    _sources.Add( r, fSource );
+                    return true;
+                }
+                return false;
             }
             else
             {

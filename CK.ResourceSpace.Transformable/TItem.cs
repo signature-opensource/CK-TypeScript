@@ -29,13 +29,18 @@ sealed class TItem : TransformableSource, ITransformable
 
     public NormalizedPath TargetPath => _target;
 
+    string ITransformable.TransfomableTargetName => _target.Path;
+
     TFunction? ITransformable.FirstFunction => _transformableImpl.FirstFunction;
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 
     public TransformerHost.Language Language => _language;
 
-    void ITransformable.Add( TFunction f ) => _transformableImpl.Add( f );
+    bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, TFunctionSource source, TransformerFunction f, out TFunction? before )
+        => _transformableImpl.TryFindInsertionPoint( monitor, source, f, out before );
+
+    void ITransformable.Add( TFunction f, TFunction? before ) => _transformableImpl.Add( f, before );
 
     void ITransformable.Remove( TFunction f ) => _transformableImpl.Remove( f );
 
