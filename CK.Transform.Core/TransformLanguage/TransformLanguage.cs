@@ -12,6 +12,10 @@ namespace CK.Transform.Core;
 /// A language is identified by its <see cref="LanguageName"/> in a <see cref="TransformerHost"/>
 /// and its <see cref="FileExtensions"/> must also be unique.
 /// </para>
+/// <para>
+/// Implementations should expose a public default constructor to support <see cref="TransformerHost"/>
+/// marshalling.
+/// </para>
 /// </summary>
 public abstract class TransformLanguage
 {
@@ -59,7 +63,7 @@ public abstract class TransformLanguage
     }
 
     /// <summary>
-    /// Gets whether this is the Transform language.
+    /// Gets whether this is the "Transform" language.
     /// </summary>
     public bool IsTransformerLanguage => ReferenceEquals( _languageName, TransformerHost._transformLanguageName );
 

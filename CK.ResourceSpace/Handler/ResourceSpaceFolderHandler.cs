@@ -1,3 +1,4 @@
+using Microsoft.VisualBasic;
 using System;
 using System.IO;
 
@@ -56,32 +57,31 @@ public abstract class ResourceSpaceFolderHandler : IResourceSpaceHandler
     public sealed override string ToString() => $"{GetType().Name} - Folder '{_rootFolderName}/'";
 
     /// <summary>
-    /// Helper available to all <see cref="ILiveUpdater.OnChange(IActivityMonitor, IResPackageResources, string)"/>.
+    /// Helper available to all <see cref="ILiveUpdater.OnChange(IActivityMonitor, PathChangedEvent)"/>.
     /// </summary>
     /// <param name="rootFolderName">The folder's handler <see cref="RootFolderName"/>.</param>
-    /// <param name="filePath">The changed file path.</param>
+    /// <param name="filePath">The changed file path (the <see cref="PathChangedEvent.SubPath"/>).</param>
     /// <param name="localFilePath">
     /// The local file path (without the <paramref name="rootFolderName"/>).
     /// Can be empty or starts with the <see cref="Path.DirectorySeparatorChar"/>.
     /// </param>
     /// <returns>True if this file should be considered, false otherwise.</returns>
-    public static bool IsFileInRootFolder( string rootFolderName, string filePath, out ReadOnlySpan<char> localFilePath )
+    public static bool IsFileInRootFolder( string rootFolderName, ReadOnlySpan<char> filePath, out ReadOnlySpan<char> localFilePath )
     {
         int lenRoot = rootFolderName.Length;
         int remainder = filePath.Length - lenRoot;
         if( remainder >= 0 )
         {
-            var sF = filePath.AsSpan();
-            if( sF.StartsWith( rootFolderName ) )
+            if( filePath.StartsWith( rootFolderName ) )
             {
                 if( remainder == 0 )
                 {
                     localFilePath = default;
                     return true;
                 }
-                if( sF[lenRoot] == Path.DirectorySeparatorChar )
+                if( filePath[lenRoot] == Path.DirectorySeparatorChar )
                 {
-                    localFilePath = sF.Slice( lenRoot );
+                    localFilePath = filePath.Slice( lenRoot );
                     return true;
                 }
             }

@@ -15,7 +15,7 @@ sealed class LocalPackagesFilter : IFileEventFilter
 
     public object? GetChange( string path )
     {
-        ChangedEvent? e = null;
+        PathChangedEvent? e = null;
         foreach( var p in _packages )
         {
             e = p.Resources.LocalPath != null ? CreateEvent( path, p.Resources ) : null;
@@ -25,7 +25,7 @@ sealed class LocalPackagesFilter : IFileEventFilter
         }
         return e;
 
-        static ChangedEvent? CreateEvent( string path, IResPackageResources r )
+        static PathChangedEvent? CreateEvent( string path, IResPackageResources r )
         {
             Throw.DebugAssert( r.LocalPath != null );
             // If the folder itself changes, emit an event with an empty sub path.
@@ -34,12 +34,12 @@ sealed class LocalPackagesFilter : IFileEventFilter
             {
                 if( path.AsSpan().Equals( r.LocalPath.AsSpan( 0, r.LocalPath.Length - 1 ), StringComparison.Ordinal ) )
                 {
-                    return new ChangedEvent( r, string.Empty );
+                    return new PathChangedEvent( r, r.LocalPath );
                 }
             }
             else if( delta >= 0 && path.StartsWith( r.LocalPath, StringComparison.Ordinal ) )
             {
-                return new ChangedEvent( r, path.Substring( r.LocalPath.Length ) );
+                return new PathChangedEvent( r, path );
             }
             return null;
         }

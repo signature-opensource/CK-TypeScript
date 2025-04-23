@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using CK.Transform.Core;
 using System;
@@ -9,7 +10,7 @@ namespace CK.Core;
 /// Models a source file (a resource) that can be a final <see cref="TItem"/>
 /// or a <see cref="TFunctionSource"/>.
 /// </summary>
-class TransformableSource
+partial class TransformableSource
 {
     readonly IResPackageResources _resources;
     readonly ResourceLocator _origin;
@@ -100,4 +101,5 @@ class TransformableSource
     protected virtual void Die( IActivityMonitor monitor ) { }
 
     protected virtual bool Revive( IActivityMonitor monitor, TransformerHost transformerHost ) => true;
+
 }

@@ -143,10 +143,10 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
             return false;
         }
 
-        bool ILiveUpdater.OnChange( IActivityMonitor monitor, IResPackageResources resources, string filePath )
+        bool ILiveUpdater.OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
             // This first filter allows us to exit quickly.
-            if( !IsFileInRootFolder( _handler.RootFolderName, filePath, out ReadOnlySpan<char> localFile ) )
+            if( !IsFileInRootFolder( _handler.RootFolderName, changed.SubPath, out ReadOnlySpan<char> localFile ) )
             {
                 return false;
             }
@@ -157,7 +157,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
             if( localFile.Length == 0 || (localFile.EndsWith( ".jsonc" ) && IsActiveCultureFile( localFile[..^6] ) ) )
             {
                 _hasChanged = true;
-                _handler._cache.InvalidateCache( monitor, resources );
+                _handler._cache.InvalidateCache( monitor, changed.Resources );
             }
             else
             {

@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
@@ -105,12 +106,24 @@ sealed partial class TFunction
             return result;
         }
 
-        internal readonly string? Transform( IActivityMonitor monitor, TransformerHost transformerHost, string text )
+        internal readonly string? Transform( IActivityMonitor monitor, TransformerHost transformerHost, ReadOnlyMemory<char> text )
         {
             var transformers = TryGetTransfomerFunctions( monitor, transformerHost );
             if( transformers == null ) return null;
             var sourceCode = transformerHost.Transform( monitor, text, transformers );
             return sourceCode?.ToString();
+        }
+
+        internal void Read( IBinaryDeserializer d )
+        {
+            _firstFunction = d.ReadNullableObject<TFunction>();
+            _lastFunction = d.ReadNullableObject<TFunction>();
+        }
+
+        internal void Write( IBinarySerializer s )
+        {
+            s.WriteNullableObject( _firstFunction );
+            s.WriteNullableObject( _lastFunction );
         }
 
 #if DEBUG

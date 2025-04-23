@@ -105,9 +105,9 @@ public static class Runner
                         case Exception ex:
                             monitor.Warn( $"File system watcher error.", ex );
                             break;
-                        case ChangedEvent p:
+                        case PathChangedEvent p:
                             monitor.Debug( $"Change: '{p.Resources.Package}' {p.SubPath}" );
-                            _liveState.OnChange( monitor, p.Resources, p.SubPath );
+                            _liveState.OnChange( monitor, p );
                             if( !_timer.Change( _debounceMs, unchecked((uint)-1) ) )
                             {
                                 monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, "Failed to update Timer duetime." );

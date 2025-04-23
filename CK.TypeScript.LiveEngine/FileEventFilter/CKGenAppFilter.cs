@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.TypeScript.LiveEngine;
 using System;
 using System.IO;
@@ -35,7 +36,8 @@ sealed class CKGenAppFilter : IFileEventFilter
             if( path.StartsWith( ckGenApp, StringComparison.Ordinal )
                 && !path.StartsWith( _liveState.SpaceData.LiveStatePath ) )
             {
-                return new ChangedEvent( _liveState.SpaceData.AppPackage.Resources, path.Substring( ckGenApp.Length ) );
+                Throw.DebugAssert( _liveState.SpaceData.AppPackage.Resources.LocalPath == ckGenApp );
+                return new PathChangedEvent( _liveState.SpaceData.AppPackage.Resources, path );
             }
         }
         return null;

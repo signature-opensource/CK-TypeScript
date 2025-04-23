@@ -9,7 +9,7 @@ public sealed partial class ResSpace
     // Handles ResourceContainerWrapper, ResourceLocator and ResourceFolder binary serialization
     // that are not implemented in CK.EmbeddedResources assembly to limit it only to simple serialization.
     //
-    // The ResourceContainerWrapper needs to write its inner container. We use her a surrogate approach: the
+    // The ResourceContainerWrapper needs to write its inner container. We use here a surrogate approach: the
     // CodeGenResourceContainer or EmptyResourceContainer is written as a CodeGenResourceContainer (only these
     // ones are supported).
     //

@@ -1,20 +1,22 @@
 using CK.Transform.Core;
 using System;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Core;
 
 sealed partial class TFunction : ITransformable
 {
-    readonly TFunctionSource _source;
-    TransformerFunction _function;
-    string _functionName;
+    readonly FunctionsSource _source;
+    // The name of the function (see ComputeName) is the key to
+    // detect an update of an existing function vs. a destroy/insert
+    // of a new TFunction.
+    readonly string _functionName;
     ITransformable _target;
     TFunction? _nextFunction;
     TFunction? _prevFunction;
     TransformableImpl _transformableImpl;
+    TransformerFunction _function;
 
-    public TFunction( TFunctionSource source,
+    public TFunction( FunctionsSource source,
                       TransformerFunction function,
                       ITransformable target,
                       string functionName )
@@ -26,7 +28,7 @@ sealed partial class TFunction : ITransformable
         _functionName = functionName;
     }
 
-    internal static string ComputeName( TFunctionSource source, TransformerFunction function, ITransformable target )
+    internal static string ComputeName( FunctionsSource source, TransformerFunction function, ITransformable target )
     {
         var n = function.Name;
         if( n == null )
@@ -44,9 +46,14 @@ sealed partial class TFunction : ITransformable
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 
-    internal TFunctionSource Source => _source;
+    internal FunctionsSource Source => _source;
 
     public TransformerFunction Function => _function;
+
+    internal void SetFunction( TransformerFunction transformerFunction )
+    {
+        _function = transformerFunction;
+    }
 
     bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, TFunctionSource source, TransformerFunction f, out TFunction? before )
             => _transformableImpl.TryFindInsertionPoint( monitor, source, f, out before );
@@ -64,11 +71,11 @@ sealed partial class TFunction : ITransformable
     {
         if( _transformableImpl.HasFunctions )
         {
-            var text = _source.Text.Substring( _function.Span.Beg, _function.Span.Length );
-            text = _transformableImpl.Transform( monitor, transformerHost, text );
+            var text = _transformableImpl.Transform( monitor, transformerHost, _function.Text );
             if( text == null ) return null;
             return transformerHost.TryParseFunction( monitor, text );
         }
         return _function;
     }
+
 }

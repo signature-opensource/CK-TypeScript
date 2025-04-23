@@ -10,6 +10,11 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Hosts multiple <see cref="Language"/>.
 /// This is NOT thread safe and should never be used concurrently.
+/// <para>
+/// The nested <see cref="Language"/> class binds a <see cref="TransformLanguage"/> to
+/// a host instance. New languages can be added until <see cref="LockLanguages"/> is called
+/// and cannot be removed.
+/// </para>
 /// </summary>
 public sealed partial class TransformerHost
 {
@@ -25,6 +30,7 @@ public sealed partial class TransformerHost
         readonly TransformLanguage _language;
         readonly TransformStatementAnalyzer _transformStatementAnalyzer;
         readonly IAnalyzer _targetAnalyzer;
+        readonly int _index;
 
         /// <summary>
         /// Gets the <see cref="TransformLanguage.LanguageName"/>.
@@ -46,9 +52,15 @@ public sealed partial class TransformerHost
         /// </summary>
         public IAnalyzer TargetAnalyzer => _targetAnalyzer;
 
-        internal Language( TransformerHost host, TransformLanguage language )
+        /// <summary>
+        /// Gets the index in the <see cref="TransformerHost.Languages"/> list.
+        /// </summary>
+        public int Index => _index;
+
+        internal Language( TransformerHost host, TransformLanguage language, int index )
         {
             _language = language;
+            _index = index;
             (_transformStatementAnalyzer,_targetAnalyzer) = language.CreateAnalyzers( host );
         }
     }
@@ -69,7 +81,7 @@ public sealed partial class TransformerHost
         }
         if( !hasTransfomer )
         {
-            _languages.Add( new Language( this, _transformLanguage ) );
+            _languages.Add( new Language( this, _transformLanguage, _languages.Count ) );
         }
     }
 
@@ -84,37 +96,13 @@ public sealed partial class TransformerHost
     public bool IsLockedLanguages => _isLockedLanguages;
 
     /// <summary>
-    /// Locks the languages: <see cref="EnsureLanguage(TransformLanguage)"/> and <see cref="RemoveLanguage(TransformLanguage)"/>
-    /// must not be called anymore.
+    /// Locks the languages: <see cref="EnsureLanguage(TransformLanguage)"/> must not be called anymore.
     /// </summary>
     /// <returns>The locked list of supported languages.</returns>
     public IReadOnlyList<Language> LockLanguages()
     {
         _isLockedLanguages = true;
         return _languages;
-    }
-
-    /// <summary>
-    /// Removes a language.
-    /// <para>
-    /// <see cref="IsLockedLanguages"/> must be false otherwise a <see cref="InvalidOperationException"/> is thrown.
-    /// </para>
-    /// </summary>
-    /// <param name="language">The language to remove.</param>
-    /// <returns>True if the language has been removed, false if it was not found or if it is the transform language itself.</returns>
-    public bool RemoveLanguage( TransformLanguage language )
-    {
-        Throw.CheckState( IsLockedLanguages is false );
-        if( !language.IsTransformerLanguage )
-        {
-            var idx = _languages.FindIndex( l => l.LanguageName == language.LanguageName );
-            if( idx >= 0 )
-            {
-                _languages.RemoveAt( idx );
-                return true;
-            }
-        }
-        return false;
     }
 
     /// <summary>
@@ -131,7 +119,7 @@ public sealed partial class TransformerHost
         var l = _languages.FirstOrDefault( l => l.LanguageName == language.LanguageName );
         if( l == null )
         {
-            l = new Language( this, language );
+            l = new Language( this, language, _languages.Count );
             _languages.Add( l );
         }
         return l;
@@ -227,12 +215,20 @@ public sealed partial class TransformerHost
                                   string text,
                                   params IEnumerable<TransformerFunction> transformers )
     {
+        return Transform( monitor, text.AsMemory(), transformers );
+    }
+
+    /// <inheritdoc cref="Transform(IActivityMonitor, string, IEnumerable{TransformerFunction})"/>
+    public SourceCode? Transform( IActivityMonitor monitor,
+                                  ReadOnlyMemory<char> text,
+                                  params IEnumerable<TransformerFunction> transformers )
+    {
         var transformer = transformers.FirstOrDefault();
         Throw.CheckArgument( transformer is not null );
 
-        Language? language = LocalFind( monitor, _languages, transformer, text );
+        Language? language = LocalFind( monitor, _languages, transformer, text.Span );
         if( language == null ) return null;
-        AnalyzerResult? r = language.TargetAnalyzer.TryParse( monitor, text.AsMemory() );
+        AnalyzerResult? r = language.TargetAnalyzer.TryParse( monitor, text );
         if( r == null ) return null;
 
         var codeEditor = new SourceCodeEditor( language.TargetAnalyzer, r.SourceCode );
@@ -242,7 +238,7 @@ public sealed partial class TransformerHost
         {
             if( !t.Language.LanguageName.Equals( language.LanguageName, StringComparison.OrdinalIgnoreCase ) )
             {
-                language = LocalFind( monitor, _languages, transformer, text );
+                language = LocalFind( monitor, _languages, transformer, text.Span );
                 if( language == null || !codeEditor.Reparse( monitor, language.TargetAnalyzer ) )
                 {
                     return null;
@@ -255,7 +251,7 @@ public sealed partial class TransformerHost
         }
         return codeEditor._code;
 
-        static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransformerFunction transformer, string text )
+        static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransformerFunction transformer, ReadOnlySpan<char> text )
         {
             var l = Find( languages, transformer.Language.LanguageName );
             if( l == null )

@@ -4,17 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Threading.Tasks.Sources;
 
 namespace CK.Core;
 
-sealed class TransformEnvironment
+sealed partial class TransformEnvironment
 {
     readonly ResSpaceData _spaceData;
     readonly TransformerHost _transformerHost;
     // Required for Live: this is used to map a file change (the resource)
-    // to the source to shout (until it revives or dies).
+    // to the source to shoot (until it revives or dies).
     readonly Dictionary<ResourceLocator, TransformableSource> _sources;
     // Required to detect duplicate resources mapping to the same target path.
     readonly Dictionary<NormalizedPath, TItem> _items;
@@ -22,12 +20,12 @@ sealed class TransformEnvironment
     // used to find the transformable targets with the help of ResPackage.Reachables
     // and AfterReachables. There's unfortunately no real way to locate a target by its
     // name without a O(n) search because we want to allow "short names" to be used and
-    // not impose full name targets. Moreover, this is only used for transformer targets,
-    // not all items. So we privielgiate add/remove efficiency.
+    // not impose full name targets. Moreover, this is only used to locate transformer targets,
+    // not all items. So we privilegiate add/remove efficiency.
     readonly TItem?[] _packageItemHead;
     // All transformer functions are registered in this dictionary indexed by their name:
     // this detects homonyms.
-    Dictionary<string, TFunction> _transformFunctions;
+    readonly Dictionary<string, TFunction> _transformFunctions;
 
     public TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost )
     {
@@ -46,6 +44,8 @@ sealed class TransformEnvironment
     public TransformerHost TransformerHost => _transformerHost;
 
     internal Dictionary<string, TFunction> TransformFunctions => _transformFunctions;
+
+    internal Dictionary<ResourceLocator, TransformableSource> Sources => _sources;
 
     internal bool Register( IActivityMonitor monitor, IResPackageResources resources, ResourceLocator r )
     {
@@ -117,7 +117,7 @@ sealed class TransformEnvironment
             var candidate = _packageItemHead[p.Index];
             while( candidate != null )
             {
-                if( candidate.Language != f.Language )
+                if( candidate.Language == f.Language )
                 {
                     // This may be externalized in a strategy (configured by a TransformableFileHandler
                     // constructor parameter).
@@ -129,7 +129,7 @@ sealed class TransformEnvironment
                     // - Enables a transformer on "target" to disambiguate items thanks to the expectedPath.
                     //   given 2 items "CK/Ng/AXIOSToken.ts" and "Partner/AXIOSToken.ts", a
                     //   create typescript transformer on "Ng/AXIOSToken" will do the job.
-                    //   There can be enhanced ("CK/AXIOSToken.ts" - by the start, or by introducing globbing)
+                    //   This may be enhanced ("CK/AXIOSToken.ts" - by the start, or by introducing globbing)
                     //   if needed.
                     //
                     //   This doesn't handle "ambient hints" (and it seems not easy to honor them) like an
@@ -228,11 +228,11 @@ sealed class TransformEnvironment
         }
     }
 
-    void GetTargetNameToFind( TFunctionSource source,
-                              TransformerFunction f,
-                              out ReadOnlySpan<char> expectedPath,
-                              out ReadOnlySpan<char> exactName,
-                              out ReadOnlySpan<char> namePrefix )
+    static void GetTargetNameToFind( TFunctionSource source,
+                                     TransformerFunction f,
+                                     out ReadOnlySpan<char> expectedPath,
+                                     out ReadOnlySpan<char> exactName,
+                                     out ReadOnlySpan<char> namePrefix )
     {
         var nameTofind = f.Target;
         if( string.IsNullOrWhiteSpace( nameTofind ) )

@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using CK.Transform.Core;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -8,7 +9,7 @@ namespace CK.Core;
 /// <summary>
 /// Handles files in languages supported by a <see cref="TransformerHost"/>.
 /// </summary>
-public sealed class TransformableFileHandler : ResourceSpaceFileHandler
+public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
 {
     readonly TransformerHost _transformerHost;
     TransformEnvironment? _environment;
@@ -76,5 +77,4 @@ public sealed class TransformableFileHandler : ResourceSpaceFileHandler
         }
         return success;
     }
-
 }

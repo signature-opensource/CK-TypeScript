@@ -52,14 +52,14 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
             _data = data;
         }
 
-        public bool OnChange( IActivityMonitor monitor, IResPackageResources resources, string filePath )
+        public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
-            if( !IsFileInRootFolder( _handler.RootFolderName, filePath, out ReadOnlySpan<char> localFile ) )
+            if( !IsFileInRootFolder( _handler.RootFolderName, changed.SubPath, out ReadOnlySpan<char> localFile ) )
             {
                 return false;
             }
             _hasChanged = true;
-            _handler._cache.InvalidateCache( monitor, resources );
+            _handler._cache.InvalidateCache( monitor, changed.Resources );
             return true;
         }
 

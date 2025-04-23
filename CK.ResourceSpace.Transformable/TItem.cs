@@ -31,11 +31,12 @@ sealed class TItem : TransformableSource, ITransformable
 
     string ITransformable.TransfomableTargetName => _target.Path;
 
+
+    public TransformerHost.Language Language => _language;
+
     TFunction? ITransformable.FirstFunction => _transformableImpl.FirstFunction;
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
-
-    public TransformerHost.Language Language => _language;
 
     bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, TFunctionSource source, TransformerFunction f, out TFunction? before )
         => _transformableImpl.TryFindInsertionPoint( monitor, source, f, out before );
@@ -51,7 +52,7 @@ sealed class TItem : TransformableSource, ITransformable
         Throw.DebugAssert( !IsShot );
         if( _transformableImpl.HasFunctions )
         {
-            return _transformableImpl.Transform( monitor, transformerHost, Text );
+            return _transformableImpl.Transform( monitor, transformerHost, Text.AsMemory() );
         }
         return Text;
     }

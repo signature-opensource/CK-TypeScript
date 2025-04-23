@@ -38,13 +38,12 @@ sealed class LiveState
     /// Called by the file watcher.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="resources">The resources folder.</param>
-    /// <param name="subPath">The path in the resource folder.</param>
-    public void OnChange( IActivityMonitor monitor, IResPackageResources resources, string subPath )
+    /// <param name="changed">The changed event.</param>
+    public void OnChange( IActivityMonitor monitor, PathChangedEvent changed )
     {
         foreach( var u in _updaters )
         {
-            if( u.OnChange( monitor, resources, subPath ) )
+            if( u.OnChange( monitor, changed ) )
             {
                 break;
             }
