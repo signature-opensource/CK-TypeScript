@@ -3,26 +3,34 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 
 namespace CK.Core;
 
-/// <summary>
-/// A TransformerFunctionSource is a <see cref="TransformableSource"/> that defines
-/// a set of <see cref="TransformerFunction"/>.
-/// </summary>
-sealed partial class TFunctionSource : TransformableSource
+partial class FunctionSource : IResourceInput
 {
+    readonly IResPackageResources _resources;
+    protected readonly string _fullResourceName;
+    string _text;
     readonly List<TFunction> _functions;
     int _languageHintIndex;
     string? _sourceName;
 
-    public TFunctionSource( IResPackageResources resources, ResourceLocator origin, string text )
-        : base( resources, origin, text )
+    public FunctionSource( IResPackageResources resources, string fullResourceName, string text )
     {
+        _resources = resources;
+        _fullResourceName = fullResourceName;
+        _text = text;
         _functions = new List<TFunction>();
         _languageHintIndex = -1;
     }
+
+    public IResPackageResources Resources => _resources;
+
+    public ResourceLocator Origin => new ResourceLocator( _resources.Resources, _fullResourceName );
+
+    public string Text => _text;
+
+    protected void SetText( string text ) => _text = text;
 
     [MemberNotNullWhen( true, nameof( _sourceName ) )]
     public bool IsInitialized => _sourceName != null;
@@ -43,12 +51,11 @@ sealed partial class TFunctionSource : TransformableSource
     internal bool Initialize( IActivityMonitor monitor, TransformEnvironment environment )
     {
         Throw.DebugAssert( _functions.Count == 0 );
-        HandleSourceName( environment.TransformerHost );
-
+        _sourceName = HandleSourceName( environment.TransformerHost, Origin, ref _languageHintIndex );
         var functions = Parse( monitor, environment );
         if( functions == null ) return false;
         bool success = true;
-        foreach( var (f,target,name) in functions )
+        foreach( var (f, target, name) in functions )
         {
             if( environment.TransformFunctions.TryGetValue( name, out var homonym ) )
             {
@@ -72,6 +79,22 @@ sealed partial class TFunctionSource : TransformableSource
             }
         }
         return success;
+
+        static string HandleSourceName( TransformerHost transformerHost, in ResourceLocator origin, ref int languageHintIndex )
+        {
+            Throw.DebugAssert( origin.ResourceName.EndsWith( ".t" ) );
+            var rName = origin.ResourceName;
+            int sourceNameLength = rName.Length - 2;
+            var languageHint = transformerHost.FindFromFilename( rName.Slice( 0, sourceNameLength ), out var fileExtension );
+            if( languageHint != null )
+            {
+                languageHintIndex = languageHint.Index;
+                sourceNameLength -= fileExtension.Length;
+            }
+            return rName.Slice( 0, sourceNameLength ).ToString();
+        }
+
+
     }
 
     List<(TransformerFunction, ITransformable, string)>? Parse( IActivityMonitor monitor, TransformEnvironment environment )
@@ -104,31 +127,4 @@ sealed partial class TFunctionSource : TransformableSource
         return success ? result : null;
     }
 
-    [MemberNotNull( nameof( _sourceName ) )]
-    void HandleSourceName( TransformerHost transformerHost )
-    {
-        Throw.DebugAssert( Origin.ResourceName.EndsWith( ".t" ) );
-        var rName = Origin.ResourceName;
-        int sourceNameLength = rName.Length - 2;
-        var languageHint = transformerHost.FindFromFilename( rName.Slice( 0, sourceNameLength ), out var fileExtension );
-        if( languageHint != null )
-        {
-            _languageHintIndex = languageHint.Index;
-            sourceNameLength -= fileExtension.Length;
-        }
-        _sourceName = rName.Slice( 0, sourceNameLength ).ToString();
-    }
-
-    protected override void Die( IActivityMonitor monitor )
-    {
-        foreach( var f in _functions )
-        {
-            f.Die( monitor );
-        }
-    }
-
-    protected override bool Revive( IActivityMonitor monitor, TransformerHost transformerHost )
-    {
-        throw new NotImplementedException();
-    }
 }

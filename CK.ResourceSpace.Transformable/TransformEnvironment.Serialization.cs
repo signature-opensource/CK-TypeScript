@@ -14,29 +14,27 @@ sealed partial class TransformEnvironment
     {
         _spaceData = spaceData;
         _transformerHost = transformerHost;
-        _sources = d.ReadObject<Dictionary<ResourceLocator, TransformableSource>>();
-        _items = d.ReadObject<Dictionary<NormalizedPath, TItem>>();
-        _packageItemHead = d.ReadObject<TItem?[]>();
+        _items = d.ReadObject<Dictionary<NormalizedPath, TransformableItem>>();
         _transformFunctions = d.ReadObject<Dictionary<string, TFunction>>();
-    }
-
-    internal void PostDeserialization( IActivityMonitor monitor )
-    {
-        foreach( var s in _sources.Values )
-        {
-            if( s is TFunctionSource functions )
-            {
-                functions.PostDeserialization( monitor, this );
-            }
-        }
+        _functionSourceCollector = d.ReadObject<List<FunctionSource>>();
     }
 
     internal void Serialize( IBinarySerializer s )
     {
-        s.WriteObject( _sources );
+        Throw.DebugAssert( _functionSourceCollector != null );
         s.WriteObject( _items );
-        s.WriteObject( _packageItemHead );
         s.WriteObject( _transformFunctions );
+        s.WriteObject( _functionSourceCollector );
+    }
+
+    internal void PostDeserialization( IActivityMonitor monitor )
+    {
+        Throw.DebugAssert( _functionSourceCollector != null );
+        foreach( var s in _functionSourceCollector )
+        {
+            s.PostDeserialization( monitor, this );
+        }
+        _functionSourceCollector = null;
     }
 
 }

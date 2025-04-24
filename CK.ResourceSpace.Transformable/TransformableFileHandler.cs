@@ -43,7 +43,9 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
             foreach( var r in resources.Resources.AllResources )
             {
                 if( folderFilter.IsExcluded( r ) ) continue;
-                success &= environment.Register( monitor, resources, r );
+                var language = _transformerHost.FindFromFilename( r.Name, out _ );
+                if( language == null ) continue;
+                success &= environment.Register( monitor, resources, language, r );
             }
         }
         if( success )

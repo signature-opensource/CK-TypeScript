@@ -5,7 +5,7 @@ namespace CK.Core;
 
 sealed partial class TFunction : ITransformable
 {
-    readonly FunctionsSource _source;
+    readonly FunctionSource _source;
     // The name of the function (see ComputeName) is the key to
     // detect an update of an existing function vs. a destroy/insert
     // of a new TFunction.
@@ -16,7 +16,7 @@ sealed partial class TFunction : ITransformable
     TransformableImpl _transformableImpl;
     TransformerFunction _function;
 
-    public TFunction( FunctionsSource source,
+    public TFunction( FunctionSource source,
                       TransformerFunction function,
                       ITransformable target,
                       string functionName )
@@ -28,7 +28,7 @@ sealed partial class TFunction : ITransformable
         _functionName = functionName;
     }
 
-    internal static string ComputeName( FunctionsSource source, TransformerFunction function, ITransformable target )
+    internal static string ComputeName( FunctionSource source, TransformerFunction function, ITransformable target )
     {
         var n = function.Name;
         if( n == null )
@@ -46,7 +46,7 @@ sealed partial class TFunction : ITransformable
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 
-    internal FunctionsSource Source => _source;
+    internal FunctionSource Source => _source;
 
     public TransformerFunction Function => _function;
 
@@ -55,7 +55,7 @@ sealed partial class TFunction : ITransformable
         _function = transformerFunction;
     }
 
-    bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, TFunctionSource source, TransformerFunction f, out TFunction? before )
+    bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, FunctionSource source, TransformerFunction f, out TFunction? before )
             => _transformableImpl.TryFindInsertionPoint( monitor, source, f, out before );
 
     void ITransformable.Add( TFunction f, TFunction? before ) => _transformableImpl.Add( f, before );

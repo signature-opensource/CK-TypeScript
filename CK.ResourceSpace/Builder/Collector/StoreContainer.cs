@@ -45,7 +45,7 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
     /// set of removed resources.
     /// The StoreContainer is not a ResourceContainerWrapper: it doesn't subsitute its identity
     /// to the inner one, it just acts as a filter on resources that have been removed from the
-    /// 
+    /// inner container by the code.
     /// </summary>
     public IResourceContainer InnerContainer => _container;
 

@@ -1,9 +1,9 @@
-﻿using CK.EmbeddedResources;
+using CK.EmbeddedResources;
 
 namespace CK.Core;
 
 /// <summary>
-/// Resource input: the <see cref="Origin"/> caches its <see cref="Text"/>
+/// Resource input: the <see cref="Origin"/> caches its <see cref="Text"/>.
 /// </summary>
 interface IResourceInput
 {

@@ -1,17 +1,13 @@
 
 namespace CK.Core;
 
-sealed partial class LocalItem : TransformableItem, ILocalInput
+sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
 {
     ILocalInput? _prev;
     ILocalInput? _next;
 
-    public LocalItem( IResPackageResources resources,
-                      string fullResourceName,
-                      int languageIndex,
-                      string text,
-                      NormalizedPath targetPath )
-        : base( resources, fullResourceName, languageIndex, text, targetPath )
+    public LocalFunctionSource( IResPackageResources resources, string fullResourceName, string text )
+        : base( resources, fullResourceName, text )
     {
     }
 

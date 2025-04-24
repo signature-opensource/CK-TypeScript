@@ -81,23 +81,20 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             languages[i] = (TransformLanguage)Activator.CreateInstance( t )!;
         }
         var transformerHost = new TransformerHost( languages );
-        var handler = new TransformableFileHandler( installer, spaceData, transformerHost, d );
-        Throw.DebugAssert( handler._environment != null );
-        handler._environment.PostDeserialization( monitor );
-        return new LiveState( handler, spaceData );
+        var environment = new TransformEnvironment( spaceData, transformerHost, d );
+        environment.PostDeserialization( monitor );
+        return new LiveState( environment );
     }
 
 
     sealed class LiveState : ILiveUpdater
     {
-        readonly TransformableFileHandler _handler;
-        readonly ResSpaceData _spaceData;
+        readonly TransformEnvironment _environment;
         readonly HashSet<ResourceLocator> _newCandidates;
 
-        public LiveState( TransformableFileHandler handler, ResSpaceData spaceData )
+        public LiveState( TransformEnvironment environment )
         {
-            _handler = handler;
-            _spaceData = spaceData;
+            _environment = environment;
             _newCandidates = new HashSet<ResourceLocator>();
         }
 
@@ -109,15 +106,10 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
             Throw.DebugAssert( changed.Resources.LocalPath != null );
-            Throw.DebugAssert( _handler._environment != null );
-            if( _handler._transformerHost.FindFromFilename( changed.SubPath, out _ ) != null )
+            if( _environment.TransformerHost.FindFromFilename( changed.SubPath, out _ ) != null )
             {
-                var r = new ResourceLocator( changed.Resources.Resources, changed.FullPath );
-                if( _handler._environment.Sources.TryGetValue( r, out var existing ) )
-                {
-                    existing.Shoot();
-                }
-                else if( changed.FileExists )
+                if( !_environment.Tracker.OnChange( monitor, _environment, changed )
+                    && changed.FileExists )
                 {
                     _newCandidates.Add( r );
                 }

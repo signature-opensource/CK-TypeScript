@@ -44,6 +44,24 @@ public sealed class PathChangedEvent
     public IResPackageResources Resources => _resources;
 
     /// <summary>
+    /// Gets whether <paramref name="subPath"/> is equal to <see cref="SubPath"/> or
+    /// starts with the <see cref="SubPath"/> and the <see cref="Path.DirectorySeparatorChar"/>.
+    /// </summary>
+    /// <param name="subPath">The path to challenge.</param>
+    /// <returns>True if the <paramref name="subPath"/> is <see cref="SubPath"/> or below it.</returns>
+    public bool MatchSubPath( ReadOnlySpan<char> subPath )
+    {
+        var root = SubPath;
+        int delta = subPath.Length - root.Length;
+        if( delta < 0 ) return false;
+        if( delta > 0 )
+        {
+            return subPath[root.Length] == Path.DirectorySeparatorChar && subPath.StartsWith( root, StringComparison.Ordinal );
+        }
+        return subPath.Equals( root, StringComparison.Ordinal );
+    }
+
+    /// <summary>
     /// Gets the full changed path.
     /// </summary>
     public string FullPath => _fullPath;

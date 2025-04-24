@@ -1,6 +1,7 @@
 using CK.EmbeddedResources;
 using CK.Transform.Core;
 using System;
+using System.ComponentModel.Design;
 using static CK.Core.TFunction;
 
 namespace CK.Core;
@@ -9,10 +10,10 @@ namespace CK.Core;
 /// Item source. This works for stable items.
 /// <see cref="LocalItem"/> specializes it.
 /// </summary>
-class TransformableItem : IResourceInput, ITransformable
+partial class TransformableItem : IResourceInput, ITransformable
 {
     readonly IResPackageResources _resources;
-    readonly string _fullResourceName;
+    protected readonly string _fullResourceName;
     TransformableImpl _transformableImpl;
     internal TransformableItem? _nextInPackage;
     internal TransformableItem? _prevInPackage;
@@ -20,12 +21,13 @@ class TransformableItem : IResourceInput, ITransformable
     readonly NormalizedPath _targetPath;
     readonly int _languageIndex;
 
-    protected TransformableItem( IResPackageResources resources,
-                                 string fullResourceName,
-                                 int languageIndex,
-                                 string text,
-                                 NormalizedPath targetPath )
+    public TransformableItem( IResPackageResources resources,
+                              string fullResourceName,
+                              int languageIndex,
+                              string text,
+                              NormalizedPath targetPath )
     {
+        Throw.DebugAssert( languageIndex >= 0 );
         _resources = resources;
         _fullResourceName = fullResourceName;
         _languageIndex = languageIndex;
@@ -49,7 +51,7 @@ class TransformableItem : IResourceInput, ITransformable
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 
-    bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, TFunctionSource source, TransformerFunction f, out TFunction? before )
+    bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, FunctionSource source, TransformerFunction f, out TFunction? before )
         => _transformableImpl.TryFindInsertionPoint( monitor, source, f, out before );
 
     void ITransformable.Add( TFunction f, TFunction? before ) => _transformableImpl.Add( f, before );
@@ -66,5 +68,4 @@ class TransformableItem : IResourceInput, ITransformable
         }
         return Text;
     }
-
 }

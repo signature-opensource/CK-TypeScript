@@ -22,7 +22,7 @@ sealed partial class TFunction
         internal readonly TFunction? LastFunction => _lastFunction;
 
         internal bool TryFindInsertionPoint( IActivityMonitor monitor,
-                                             TFunctionSource source,
+                                             FunctionSource source,
                                              TransformerFunction f,
                                              out TFunction? before )
         {
