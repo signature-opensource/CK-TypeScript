@@ -26,8 +26,8 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _requires = d.ReadValue<ImmutableArray<ResPackage>>();
         _children = d.ReadValue<ImmutableArray<ResPackage>>();
         _spaceData = d.ReadObject<ResSpaceData>();
-        _resources = d.ReadObject<BeforeRes>();
-        _afterResources = d.ReadObject<AfterRes>();
+        _resources = d.ReadObject<ResBefore>();
+        _afterResources = d.ReadObject<ResAfter>();
 
         // Note: we cannot check any invariant that consider other packages because
         //       we are in the middle of the serialized graph.

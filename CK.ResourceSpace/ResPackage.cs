@@ -22,8 +22,8 @@ public sealed partial class ResPackage
     readonly IReadOnlySet<ResPackage> _reachables;
     readonly IReadOnlySet<ResPackage> _afterReachables;
 
-    readonly BeforeRes _resources;
-    readonly AfterRes _afterResources;
+    readonly ResBefore _resources;
+    readonly ResAfter _afterResources;
     readonly int _index;
     readonly bool _isGroup;
 
@@ -51,8 +51,8 @@ public sealed partial class ResPackage
         _type = type;
         _spaceData = dataCacheBuilder.SpaceData;
         // Initializes the resources.
-        _resources = new BeforeRes( this, beforeResources, idxBeforeResources );
-        _afterResources = new AfterRes( this, afterResources, idxAfterResources );
+        _resources = new ResBefore( this, beforeResources, idxBeforeResources );
+        _afterResources = new ResAfter( this, afterResources, idxAfterResources );
 
         if( _requires.Length == 0 )
         {
@@ -115,7 +115,8 @@ public sealed partial class ResPackage
     public IResPackageResources AfterResources => _afterResources;
 
     /// <summary>
-    /// Gets whether this is a locally available package.
+    /// Gets whether this is a locally available package: either <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// has a non null <see cref="IResPackageResources.LocalPath"/>.
     /// </summary>
     public bool IsLocalPackage => _resources.LocalPath != null || _afterResources.LocalPath != null;
 

@@ -19,6 +19,12 @@ public interface IResPackageResources
     int Index { get; }
 
     /// <summary>
+    /// Gets the index of this package resources in the <see cref="ResSpaceData.LocalPackageResources"/>
+    /// if this <see cref="LocalPath"/> is not null, -1 otherwise.
+    /// </summary>
+    int LocalIndex { get; }
+
+    /// <summary>
     /// Gets whether this is the "&lt;Code&gt;" resource (<see cref="IsAfter"/> is true).
     /// </summary>
     bool IsCodeResources { get; }

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using static CK.Core.ResPackage;
 
 namespace CK.Core;
 
@@ -165,6 +166,12 @@ public sealed class ResSpaceDataBuilder
         // The final size of the _resourceIndex (the IResourceContainer to IResPackageResources map
         // for BeforeResources and AfterResources plus the GeneratedCodeContainer or the wrapper).
         // This is by default. AppResourcesLocalPath can add 1 more key.
+        // Note:
+        //   The local IResPackageResources[] size could be computed as localCount * 2 (+ 1 if appLocalPath != null).
+        //   However, this would suppose that each package Before and After are both local or not (that is theoretically 
+        //   true for regular packages).
+        //   We don't assume this: the localResources array is built as a selection of the allPackageResources (that
+        //   also consider the topological order that must be handled).
         var resourceIndexSize = 1 + descriptorPackageCount * 2;
         // If the AppResourcesLocalPath is specified, then the tailPackage is a local package
         // and the resource index has one more entry for the app local FileSystemResourceContainer.
@@ -202,6 +209,9 @@ public sealed class ResSpaceDataBuilder
         Throw.DebugAssert( codePackage.AfterResources.Resources == _generatedCodeContainer
                             || codePackage.AfterResources.Resources is ResourceContainerWrapper );
         resourceIndex.Add( codePackage.AfterResources.Resources, codePackage.AfterResources );
+        // We track the number of local IResPackageResources.
+        Throw.DebugAssert( codePackage.Resources.LocalPath == null && codePackage.AfterResources.LocalPath == null );
+        int localPackageResourceCount = 0;
 
         // This is the common requirements of all ResPackage that have no requirement.
         ImmutableArray<ResPackage> requiresCode = [codePackage];
@@ -243,6 +253,8 @@ public sealed class ResSpaceDataBuilder
                 bAll.Add( p );
                 if( p.IsLocalPackage )
                 {
+                    if( p.Resources.LocalPath != null ) ++localPackageResourceCount;
+                    if( p.AfterResources.LocalPath != null ) ++localPackageResourceCount;
                     bLocal.Add( p );
                 }
                 // Index it.
@@ -304,10 +316,11 @@ public sealed class ResSpaceDataBuilder
             watchRoot ??= appLocalPath;
             resourceIndex.Add( appPackage.Resources.Resources, appPackage.Resources );
             bLocal.Add( appPackage );
+            ++localPackageResourceCount;
         }
         monitor.Debug( bAll.Skip( 1 )
                            .Select( x => $"""
-                           {x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string(' ', x.ToString().Length)} |{c}" ))}
+                           {(x.IsLocalPackage ? "(local) " : "        " )}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string(' ', x.ToString().Length)} |{c}" ))}
                            """ )
                            .Concatenate( Environment.NewLine ) );
 
@@ -318,6 +331,20 @@ public sealed class ResSpaceDataBuilder
         space._localPackages = bLocal.MoveToImmutable();
         Throw.DebugAssert( allPackageResources.All( r => r != null ) );
         space._allPackageResources = ImmutableCollectionsMarshal.AsImmutableArray( allPackageResources );
+
+        Throw.DebugAssert( allPackageResources.Count( r => r.LocalPath != null ) == localPackageResourceCount );
+        var bLocalPackageResources = ImmutableArray.CreateBuilder<IResPackageResources>( localPackageResourceCount );
+        foreach( var r in allPackageResources )
+        {
+            if( r.LocalPath != null )
+            {
+                ((IResPackageData)r).SetLocalIndex( bLocalPackageResources.Count );
+                bLocalPackageResources.Add( r );
+            }
+        }
+        Throw.DebugAssert( bLocalPackageResources.Count == localPackageResourceCount );
+        space._localPackageResources = bLocalPackageResources.MoveToImmutable();
+
         space._codePackage = codePackage;
         space._appPackage = appPackage;
         Throw.DebugAssert( _collector.LiveStatePath == ResSpaceCollector.NoLiveState

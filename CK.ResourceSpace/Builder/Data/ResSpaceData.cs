@@ -24,11 +24,12 @@ public sealed partial class ResSpaceData
     // assigned container or a definitly assigned empty one.
     IResourceContainer? _generatedCodeContainer;
 
-    // _packages, _localPackages, _allPackageResources, _exposedPackages, _reachablePackageSetCache,
+    // _packages, _localPackages, _allPackageResources, _localPackageResources, _exposedPackages, _reachablePackageSetCache,
     // _codePackage, _appPackage and _watchRoot are set by the ResourceSpaceDataBuilder.Build method.
     internal ImmutableArray<ResPackage> _packages;
     internal ImmutableArray<ResPackage> _localPackages;
     internal ImmutableArray<IResPackageResources> _allPackageResources;
+    internal ImmutableArray<IResPackageResources> _localPackageResources;
     [AllowNull]internal ISpaceDataCache _resPackageDataCache;
     [AllowNull]internal ResPackage _codePackage;
     [AllowNull]internal ResPackage _appPackage;
@@ -112,6 +113,12 @@ public sealed partial class ResSpaceData
     public ImmutableArray<IResPackageResources> AllPackageResources => _allPackageResources;
 
     /// <summary>
+    /// Gets the topologically ordered local <see cref="IResPackageResources"/> indexed
+    /// by their <see cref="IResPackageResources.LocalIndex"/>.
+    /// </summary>
+    public ImmutableArray<IResPackageResources> LocalPackageResources => _localPackageResources;
+
+    /// <summary>
     /// Tries to get the <see cref="IResPackageResources"/> from a <see cref="ResourceLocator"/>.
     /// </summary>
     /// <param name="locator">The resource.</param>
@@ -160,6 +167,13 @@ public sealed partial class ResSpaceData
         }
         return packageResources;
     }
+
+    /// <summary>
+    /// Gets the set of resources that are handled by codes: these resources don't appear in the
+    /// <see cref="IResPackageResources.Resources"/> <see cref="ResPackage.Resources"/> and
+    /// <see cref="ResPackage.AfterResources"/>.
+    /// </summary>
+    public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
 
     /// <summary>
     /// Gets the cache from wich <see cref="ResPackageDataCache{T}"/> can be built.
