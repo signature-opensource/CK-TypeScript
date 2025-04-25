@@ -108,11 +108,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             Throw.DebugAssert( changed.Resources.LocalPath != null );
             if( _environment.TransformerHost.FindFromFilename( changed.SubPath, out _ ) != null )
             {
-                if( !_environment.Tracker.OnChange( monitor, _environment, changed )
-                    && changed.FileExists )
-                {
-                    _newCandidates.Add( r );
-                }
+                _environment.Tracker.OnChange( monitor, _environment, changed );
                 return true;
             }
             return false;

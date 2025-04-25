@@ -1,3 +1,4 @@
+using CK.BinarySerialization;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,8 +23,9 @@ namespace CK.Core;
 /// Moreover, this is only used to locate transformer targets, not all items.
 /// </para>
 /// </summary>
-sealed class StableItemOrInputTracker
+sealed partial class StableItemOrInputTracker
 {
+    // This array contains an entry for each IResPackageResources (stable or local).
     readonly object?[] _o;
     readonly ResSpaceData _spaceData;
 
@@ -62,7 +64,7 @@ sealed class StableItemOrInputTracker
         }
     }
 
-    public bool OnChange( IActivityMonitor monitor,
+    public void OnChange( IActivityMonitor monitor,
                           TransformEnvironment environment,
                           PathChangedEvent changed )
     {
@@ -85,13 +87,15 @@ sealed class StableItemOrInputTracker
                 if( next == null ) break;
                 input = next;
             }
-            return foundMatch;
+            if( !foundMatch )
+            {
+                // TODO: inject the candidate in IResPackageResource slot... But how?
+            }
         }
         if( o != null )
         {
             monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, $"Unexpected '{o.GetType():N}'." );
         }
-        return false;
     }
 
     public void AddStableItem( TransformableItem stable )

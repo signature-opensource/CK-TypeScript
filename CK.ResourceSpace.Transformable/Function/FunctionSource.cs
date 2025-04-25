@@ -80,7 +80,7 @@ partial class FunctionSource : IResourceInput
         }
         return success;
 
-        static string HandleSourceName( TransformerHost transformerHost, in ResourceLocator origin, ref int languageHintIndex )
+        static string HandleSourceName( TransformerHost transformerHost, ResourceLocator origin, ref int languageHintIndex )
         {
             Throw.DebugAssert( origin.ResourceName.EndsWith( ".t" ) );
             var rName = origin.ResourceName;

@@ -16,6 +16,7 @@ sealed partial class TransformEnvironment
         _transformerHost = transformerHost;
         _items = d.ReadObject<Dictionary<NormalizedPath, TransformableItem>>();
         _transformFunctions = d.ReadObject<Dictionary<string, TFunction>>();
+        _tracker = new StableItemOrInputTracker( spaceData, d );
         _functionSourceCollector = d.ReadObject<List<FunctionSource>>();
     }
 
@@ -24,6 +25,7 @@ sealed partial class TransformEnvironment
         Throw.DebugAssert( _functionSourceCollector != null );
         s.WriteObject( _items );
         s.WriteObject( _transformFunctions );
+        _tracker.Serialize( s );
         s.WriteObject( _functionSourceCollector );
     }
 
