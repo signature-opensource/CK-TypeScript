@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Channels;
 
 namespace CK.Core;
 
@@ -90,17 +91,18 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     sealed class LiveState : ILiveUpdater
     {
         readonly TransformEnvironment _environment;
-        readonly HashSet<ResourceLocator> _newCandidates;
+        int _changeCount;
 
         public LiveState( TransformEnvironment environment )
         {
             _environment = environment;
-            _newCandidates = new HashSet<ResourceLocator>();
         }
 
-        public bool ApplyChanges( IActivityMonitor monitor )
+        public void ApplyChanges( IActivityMonitor monitor )
         {
-            throw new NotImplementedException();
+            var c = _changeCount;
+            _changeCount = 0;
+            if( c != 0 ) _environment.Tracker.ApplyChanges( monitor, _environment );
         }
 
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
@@ -108,7 +110,10 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             Throw.DebugAssert( changed.Resources.LocalPath != null );
             if( _environment.TransformerHost.FindFromFilename( changed.SubPath, out _ ) != null )
             {
-                _environment.Tracker.OnChange( monitor, _environment, changed );
+                if( _environment.Tracker.OnChange( monitor, changed ) )
+                {
+                    ++_changeCount;
+                }
                 return true;
             }
             return false;

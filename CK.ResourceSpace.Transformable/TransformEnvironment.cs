@@ -3,13 +3,13 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.Core;
 
 sealed partial class TransformEnvironment
 {
-    readonly ResSpaceData _spaceData;
     readonly TransformerHost _transformerHost;
     // Required to detect duplicate resources mapping to the same target path.
     // This is used during setup and live (when new files appear).
@@ -21,14 +21,17 @@ sealed partial class TransformEnvironment
     // not tracked by this tracker. 
     readonly StableItemOrInputTracker _tracker;
     // FunctionSource collector is only used in PostDeserialization to restore the TransformerFunctions
-    // by reparsing the text (PostDeserialization clears thsi field to free this memory).
+    // by reparsing the text (PostDeserialization clears this field to free this memory).
     // Stable FunctionSource are then only referenced by the TFunction they contain (local function sources
     // are also in the tracker).
+    // => This is null in Live.
     List<FunctionSource>? _functionSourceCollector;
+    // Functions that lost their targets.
+    // => This is not null only in Live.
+    readonly HashSet<TFunction>? _unboundFunctions;
 
-    public TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost )
+    internal TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost )
     {
-        _spaceData = spaceData;
         _transformerHost = transformerHost;
         _items = new Dictionary<NormalizedPath, TransformableItem>();
         _transformFunctions = new Dictionary<string, TFunction>();
@@ -36,53 +39,60 @@ sealed partial class TransformEnvironment
         _functionSourceCollector = new List<FunctionSource>();
     }
 
-    internal IEnumerable<TransformableItem> Items => _items.Values;
+    [MemberNotNullWhen( true, nameof( UnboundFunctions ) )]
+    internal bool IsLive => _unboundFunctions != null;
 
-    public TransformerHost TransformerHost => _transformerHost;
+    internal Dictionary<NormalizedPath,TransformableItem> Items => _items;
+
+    internal TransformerHost TransformerHost => _transformerHost;
 
     internal Dictionary<string, TFunction> TransformFunctions => _transformFunctions;
 
     internal StableItemOrInputTracker Tracker => _tracker;
 
-    internal bool Register( IActivityMonitor monitor, IResPackageResources resources, TransformerHost.Language language, ResourceLocator r )
+    internal HashSet<TFunction>? UnboundFunctions => _unboundFunctions;
+
+    internal IResourceInput? Register( IActivityMonitor monitor,
+                                       IResPackageResources resources,
+                                       TransformerHost.Language language,
+                                       ResourceLocator r,
+                                       string? loadedText = null )
     {
-        var text = r.ReadAsText();
+        // In Live, we use the ILocalInput to ensure that we can load the text before
+        // registering the resource.
+        Throw.DebugAssert( !IsLive || loadedText != null );
+        var text = loadedText ?? r.ReadAsText();
         if( language.TransformLanguage.IsTransformerLanguage )
         {
             if( resources.LocalPath != null )
             {
                 var fSource = new LocalFunctionSource( resources, r.FullResourceName, text );
-                if( !fSource.Initialize( monitor, this ) ) return false;
+                if( !fSource.Initialize( monitor, this ) ) return null;
                 _tracker.AddLocalInput( fSource );
                 _functionSourceCollector?.Add( fSource );
+                return fSource;
             }
-            else
-            {
-                FunctionSource fSource = new FunctionSource( resources, r.FullResourceName, text );
-                if( !fSource.Initialize( monitor, this ) ) return false;
-                _functionSourceCollector?.Add( fSource );
-            }
+            FunctionSource fLocalSource = new FunctionSource( resources, r.FullResourceName, text );
+            if( !fLocalSource.Initialize( monitor, this ) ) return null;
+            _functionSourceCollector?.Add( fLocalSource );
+            return fLocalSource;
         }
-        else
+
+        var target = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
+        if( _items.TryGetValue( target, out var exists ) )
         {
-            var target = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
-            if( _items.TryGetValue( target, out var exists ) )
-            {
-                monitor.Error( $"Both {r} and {exists.Origin} have the same targe final path '{target}'." );
-                return false;
-            }
-            if( resources.LocalPath != null )
-            {
-                var item = new LocalItem( resources, r.FullResourceName, language.Index, target, text );
-                _tracker.AddLocalInput( item );
-            }
-            else
-            {
-                var item = new TransformableItem( resources, r.FullResourceName, language.Index, target, text );
-                _tracker.AddStableItem( item );
-            }
+            monitor.Error( $"Both {r} and {exists.Origin} have the same target final path '{target}'." );
+            return null;
         }
-        return true;
+        if( resources.LocalPath != null )
+        {
+            var item = new LocalItem( resources, r.FullResourceName, language.Index, target, text );
+            _tracker.AddLocalInput( item );
+            return item;
+        }
+        var stableItem = new TransformableItem( resources, r.FullResourceName, language.Index, target, text );
+        _tracker.AddStableItem( stableItem );
+        return stableItem;
     }
 
     internal ITransformable? FindTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )

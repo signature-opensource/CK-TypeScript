@@ -3,6 +3,7 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
 
 namespace CK.Core;
 
@@ -24,6 +25,9 @@ partial class FunctionSource : IResourceInput
         _languageHintIndex = -1;
     }
 
+    [MemberNotNullWhen( true, nameof( _sourceName ) )]
+    public bool IsInitialized => _sourceName != null;
+
     public IResPackageResources Resources => _resources;
 
     public ResourceLocator Origin => new ResourceLocator( _resources.Resources, _fullResourceName );
@@ -31,9 +35,6 @@ partial class FunctionSource : IResourceInput
     public string Text => _text;
 
     protected void SetText( string text ) => _text = text;
-
-    [MemberNotNullWhen( true, nameof( _sourceName ) )]
-    public bool IsInitialized => _sourceName != null;
 
     /// <summary>
     /// Gets the name of this source without ".t" suffix and without the optional language hint
@@ -48,37 +49,22 @@ partial class FunctionSource : IResourceInput
         }
     }
 
+    protected List<TFunction> Functions => _functions;
+
     internal bool Initialize( IActivityMonitor monitor, TransformEnvironment environment )
     {
         Throw.DebugAssert( _functions.Count == 0 );
         _sourceName = HandleSourceName( environment.TransformerHost, Origin, ref _languageHintIndex );
-        var functions = Parse( monitor, environment );
+        var functions = Parse( monitor, environment, strict: true );
         if( functions == null ) return false;
-        bool success = true;
-        foreach( var (f, target, name) in functions )
+        foreach( var (f, target, name, fBefore) in functions )
         {
-            if( environment.TransformFunctions.TryGetValue( name, out var homonym ) )
-            {
-                monitor.Error( $"""
-                    Transformer '{name}' in {Origin}:
-                    {f.Text}
-                    Is already defined by {homonym.Source.Origin}:
-                    {homonym.Function.Text}
-                    """ );
-                success = false;
-            }
-            if( !target.TryFindInsertionPoint( monitor, this, f, out var fBefore ) )
-            {
-                success = false;
-            }
-            if( success )
-            {
-                var tF = new TFunction( this, f, target, name );
-                _functions.Add( tF );
-                environment.TransformFunctions.Add( name, tF );
-            }
+            var tF = new TFunction( this, f, target, name );
+            environment.TransformFunctions.Add( name, tF );
+            target.Add( tF, fBefore );
+            _functions.Add( tF );
         }
-        return success;
+        return true;
 
         static string HandleSourceName( TransformerHost transformerHost, ResourceLocator origin, ref int languageHintIndex )
         {
@@ -97,12 +83,16 @@ partial class FunctionSource : IResourceInput
 
     }
 
-    List<(TransformerFunction, ITransformable, string)>? Parse( IActivityMonitor monitor, TransformEnvironment environment )
+    protected readonly record struct PreFunction( TransformerFunction F, ITransformable Target, string Name, TFunction? Before );
+
+    protected List<PreFunction>? Parse( IActivityMonitor monitor,
+                                        TransformEnvironment environment,
+                                        bool strict )
     {
-        var functions = environment.TransformerHost.TryParseFunctions( monitor, Text );
+        var functions = environment.TransformerHost.TryParseFunctions( monitor, _text );
         if( functions == null ) return null;
         bool success = true;
-        var result = new List<(TransformerFunction, ITransformable, string)>( functions.Count );
+        var result = new List<PreFunction>( functions.Count );
         foreach( var f in functions )
         {
             if( _languageHintIndex != -1 && f.Language.Index != _languageHintIndex )
@@ -120,11 +110,32 @@ partial class FunctionSource : IResourceInput
                 else
                 {
                     var functionName = TFunction.ComputeName( this, f, target );
-                    result.Add( (f, target, functionName) );
+                    if( environment.TransformFunctions.TryGetValue( functionName, out var homonym ) )
+                    {
+                        monitor.Error( $"""
+                                    Transformer '{functionName}' in {Origin}:
+                                    {f.Text}
+                                    Is already defined by {homonym.Source.Origin}:
+                                    {homonym.Function.Text}
+                                    """ );
+                        success = false;
+                    }
+                    else if( !target.TryFindInsertionPoint( monitor, this, f, out var fBefore ) )
+                    {
+                        success = false;
+                    }
+                    else
+                    { 
+                        result.Add( new PreFunction( f, target, functionName, fBefore ) );
+                    }
                 }
             }
         }
-        return success ? result : null;
+        if( strict )
+        {
+            return success ? result : null;
+        }
+        return result.Count > 0 ? result : null;
     }
 
 }

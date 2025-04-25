@@ -63,12 +63,14 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
             return true;
         }
 
-        public bool ApplyChanges( IActivityMonitor monitor )
+        public void ApplyChanges( IActivityMonitor monitor )
         {
-            if( !_hasChanged ) return true;
-            _hasChanged = false;
-            var f = _handler.GetUnambiguousFinalAssets( monitor, _data );
-            return f != null && WriteFinal( monitor, f, _installer );
+            if( _hasChanged )
+            {
+                _hasChanged = false;
+                var f = _handler.GetUnambiguousFinalAssets( monitor, _data );
+                if( f != null ) WriteFinal( monitor, f, _installer );
+            }
         }
     }
 }

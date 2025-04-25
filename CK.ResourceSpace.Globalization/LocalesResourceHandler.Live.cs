@@ -167,9 +167,9 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
         }
 
 
-        bool ILiveUpdater.ApplyChanges( IActivityMonitor monitor )
+        void ILiveUpdater.ApplyChanges( IActivityMonitor monitor )
         {
-            if( !_hasChanged ) return true;
+            if( !_hasChanged ) return;
             if( _stableCount > 0 )
             {
                 var loadPath = "Folder" + Path.DirectorySeparatorChar + _handler.RootFolderName + ".dat";
@@ -181,7 +181,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
             }
             _hasChanged = false;
             var f = _handler.GetUnambiguousFinalTranslations( monitor, _data );
-            return f != null && _handler.WriteFinal( monitor, f, _installer );
+            if( f != null ) _handler.WriteFinal( monitor, f, _installer );
         }
 
         void LoadStableData( IActivityMonitor monitor, string loadPath )

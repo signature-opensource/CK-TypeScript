@@ -62,11 +62,6 @@ sealed partial class TFunction : ITransformable
 
     void ITransformable.Remove( TFunction f ) => _transformableImpl.Remove( f );
 
-    internal void Die( IActivityMonitor monitor )
-    {
-        _target?.Remove( this );
-    }
-
     internal TransformerFunction? GetTransformerFunction( IActivityMonitor monitor, TransformerHost transformerHost )
     {
         if( _transformableImpl.HasFunctions )
@@ -76,6 +71,35 @@ sealed partial class TFunction : ITransformable
             return transformerHost.TryParseFunction( monitor, text );
         }
         return _function;
+    }
+
+    /// <summary>
+    /// Removes this function from the <see cref="TransformEnvironment.TransformFunctions"/> name dictionary
+    /// and from its <see cref="ITransformable"/> target.
+    /// </summary>
+    /// <param name="environment">The environment.</param>
+    internal void Remove( TransformEnvironment environment )
+    {
+        Throw.DebugAssert( environment.TransformFunctions.TryGetValue( _functionName, out var found ) && found == this );
+        environment.TransformFunctions.Remove( _functionName );
+        _target.Remove( this );
+    }
+
+    /// <summary>
+    /// Removes this function from the <see cref="TransformEnvironment.UnboundFunctions"/>
+    /// (if it exists) and adds the transformers of this transformer to the UnboundFunctions if any.
+    /// </summary>
+    /// <param name="environment">The environment.</param>
+    internal void Destroy( TransformEnvironment environment )
+    {
+        Throw.DebugAssert( environment.IsLive );
+        environment.UnboundFunctions.Remove( this );
+        var f = _transformableImpl.FirstFunction;
+        while( f != null )
+        {
+            environment.UnboundFunctions.Add( f );
+            f = f.NextFunction;
+        }
     }
 
 }

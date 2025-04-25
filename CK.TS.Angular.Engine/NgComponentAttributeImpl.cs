@@ -106,7 +106,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         {
             return false;
         }
-        var file = context.Root.Root.FindOrCreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
+        var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
         Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
         return base.OnConfiguredDescriptor( monitor, context, spaceBuilder, d )

@@ -12,12 +12,12 @@ sealed partial class TransformEnvironment
 {
     public TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost, IBinaryDeserializer d )
     {
-        _spaceData = spaceData;
         _transformerHost = transformerHost;
         _items = d.ReadObject<Dictionary<NormalizedPath, TransformableItem>>();
         _transformFunctions = d.ReadObject<Dictionary<string, TFunction>>();
         _tracker = new StableItemOrInputTracker( spaceData, d );
         _functionSourceCollector = d.ReadObject<List<FunctionSource>>();
+        _unboundFunctions = new HashSet<TFunction>();
     }
 
     internal void Serialize( IBinarySerializer s )

@@ -45,9 +45,9 @@ partial class TransformableItem : IResourceInput, ITransformable
 
     public string Text => _text;
 
-    string ITransformable.TransfomableTargetName => _targetPath.Path;
+    public TFunction? FirstFunction => _transformableImpl.FirstFunction;
 
-    TFunction? ITransformable.FirstFunction => _transformableImpl.FirstFunction;
+    string ITransformable.TransfomableTargetName => _targetPath.Path;
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 

@@ -31,8 +31,9 @@ public interface ILiveUpdater
 
     /// <summary>
     /// Must apply all changes collected so far.
+    /// Error management is up to the updater. The goal is to minimize the useless changes in the target folder
+    /// and to clean up everything that should not exist anymore.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <returns>True on success, false otherwise. Errors must be logged.</returns>
-    bool ApplyChanges( IActivityMonitor monitor );
+    void ApplyChanges( IActivityMonitor monitor );
 }

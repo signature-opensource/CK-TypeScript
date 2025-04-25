@@ -74,17 +74,15 @@ sealed class LiveState
     /// <param name="monitor">The monitor to use.</param>
     public void ApplyChanges( IActivityMonitor monitor )
     {
-        var success = true;
         foreach( var u in _updaters )
         {
             try
             {
-                success &= u.ApplyChanges( monitor );
+                u.ApplyChanges( monitor );
             }
             catch( Exception ex )
             {
                 monitor.Error( ex );
-                success = false;
             }
         }
     }

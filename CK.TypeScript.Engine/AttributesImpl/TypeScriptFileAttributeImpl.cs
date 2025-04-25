@@ -41,7 +41,7 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         }
         NormalizedPath targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
         targetPath = targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
-        var file = context.Root.Root.FindOrCreateResourceFile( in resource, targetPath );
+        var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath );
         foreach( var tsType in Attribute.TypeNames )
         {
             if( string.IsNullOrWhiteSpace( tsType ) ) continue;

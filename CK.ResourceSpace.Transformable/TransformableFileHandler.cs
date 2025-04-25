@@ -45,7 +45,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
                 if( folderFilter.IsExcluded( r ) ) continue;
                 var language = _transformerHost.FindFromFilename( r.Name, out _ );
                 if( language == null ) continue;
-                success &= environment.Register( monitor, resources, language, r );
+                success &= environment.Register( monitor, resources, language, r ) != null ;
             }
         }
         if( success )
@@ -65,7 +65,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
         }
         Throw.CheckState( _environment != null );
         bool success = true;
-        foreach( var i in _environment.Items )
+        foreach( var i in _environment.Items.Values )
         {
             var text = i.GetFinalText( monitor, _environment.TransformerHost );
             if( text == null )
