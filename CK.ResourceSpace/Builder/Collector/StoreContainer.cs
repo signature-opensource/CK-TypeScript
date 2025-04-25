@@ -8,6 +8,17 @@ using System.Runtime.CompilerServices;
 
 namespace CK.Core;
 
+/// <summary>
+/// The StoreContainer is not a ResourceContainerWrapper: it doesn't subsitute its identity
+/// to the inner one, it just acts as a filter on resources that have been removed from the
+/// inner container by the code.
+/// <para>
+/// In order to provide a consistent experience, it adapts the ResourceLocator and ResourceFolder inputs
+/// of its API to the <see cref="InnerContainer"/> if the locator or folder container is this store
+/// container: this allows an externally created new ResourceLocator( storeContainer, path ) to be used
+/// transparently.
+/// </para>
+/// </summary>
 [SerializationVersion(0)]
 sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
 {
@@ -43,9 +54,6 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
     /// <summary>
     /// Gets the real container: resources can be looked up skipping the CodeHandledResources
     /// set of removed resources.
-    /// The StoreContainer is not a ResourceContainerWrapper: it doesn't subsitute its identity
-    /// to the inner one, it just acts as a filter on resources that have been removed from the
-    /// inner container by the code.
     /// </summary>
     public IResourceContainer InnerContainer => _container;
 
@@ -69,6 +77,7 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
 
     public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder )
     {
+        if( folder.Container == this ) folder = new ResourceFolder( _container, folder.FullFolderName );
         return _container.GetAllResources( folder ).Where( r => !_codeHandledResources.Contains( r ) );
     }
 
@@ -79,16 +88,19 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
 
     public ResourceFolder GetFolder( ResourceFolder folder, ReadOnlySpan<char> folderName )
     {
+        if( folder.Container == this ) folder = new ResourceFolder( _container, folder.FullFolderName );
         return _container.GetFolder( folder, folderName );
     }
 
     public IEnumerable<ResourceFolder> GetFolders( ResourceFolder folder )
     {
+        if( folder.Container == this ) folder = new ResourceFolder( _container, folder.FullFolderName );
         return _container.GetFolders( folder );
     }
 
-    public string? GetLocalFilePath( in ResourceLocator resource )
+    public string? GetLocalFilePath( ResourceLocator resource )
     {
+        if( resource.Container == this ) resource = new ResourceLocator( _container, resource.FullResourceName );
         return _codeHandledResources.Contains( resource )
                     ? null
                     : _container.GetLocalFilePath( resource );
@@ -104,34 +116,40 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
 
     public ResourceLocator GetResource( ResourceFolder folder, ReadOnlySpan<char> resourceName )
     {
+        if( folder.Container == this ) folder = new ResourceFolder( _container, folder.FullFolderName );
         var r = _container.GetResource( folder, resourceName );
         return r.IsValid && !_codeHandledResources.Contains( r )
                 ? r
                 : default;
     }
 
-    bool IsNotCodeHandled( ResourceLocator resource ) => !_codeHandledResources.Contains( resource );
+    bool IsNotCodeHandled( ref ResourceLocator resource )
+    {
+        if( resource.Container == this ) resource = new ResourceLocator( _container, resource.FullResourceName );
+        return !_codeHandledResources.Contains( resource );
+    }
 
     public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder )
     {
+        if( folder.Container == this ) folder = new ResourceFolder( _container, folder.FullFolderName );
         return _container.GetResources( folder ).Where( r => !_codeHandledResources.Contains( r ) );
     }
 
-    public Stream GetStream( in ResourceLocator resource )
+    public Stream GetStream( ResourceLocator resource )
     {
-        Throw.CheckArgument( IsNotCodeHandled( resource ) );
+        Throw.CheckArgument( IsNotCodeHandled( ref resource ) );
         return _container.GetStream( resource );
     }
 
-    public string ReadAsText( in ResourceLocator resource )
+    public string ReadAsText( ResourceLocator resource )
     {
-        Throw.CheckArgument( IsNotCodeHandled( resource ) );
+        Throw.CheckArgument( IsNotCodeHandled( ref resource ) );
         return _container.ReadAsText( resource );
     }
 
-    public void WriteStream( in ResourceLocator resource, Stream target )
+    public void WriteStream( ResourceLocator resource, Stream target )
     {
-        Throw.CheckArgument( IsNotCodeHandled( resource ) );
+        Throw.CheckArgument( IsNotCodeHandled( ref resource ) );
         _container.WriteStream( resource, target );
     }
 
