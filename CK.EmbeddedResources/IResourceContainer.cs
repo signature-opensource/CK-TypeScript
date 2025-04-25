@@ -56,21 +56,21 @@ public interface IResourceContainer
     /// </summary>
     /// <param name="resource">The resource locator.</param>
     /// <returns>The resource's content stream.</returns>
-    Stream GetStream( in ResourceLocator resource );
+    Stream GetStream( ResourceLocator resource );
 
     /// <summary>
     /// Writes the the resource (that must belong to this container) to a stream.
     /// </summary>
     /// <param name="resource">The resource to write.</param>
     /// <param name="target">The target stream.</param>
-    void WriteStream( in ResourceLocator resource, Stream target );
+    void WriteStream( ResourceLocator resource, Stream target );
 
     /// <summary>
     /// Gets the resource content as a text.
     /// </summary>
     /// <param name="resource">The resource locator.</param>
     /// <returns>The resource's content as a string.</returns>
-    string ReadAsText( in ResourceLocator resource );
+    string ReadAsText( ResourceLocator resource );
 
     /// <summary>
     /// Gets an existing resource or a locator with <see cref="ResourceLocator.IsValid"/> false
@@ -139,13 +139,13 @@ public interface IResourceContainer
     /// Gets whether this container can contain <see cref="ResourceLocator"/> that are
     /// bound to a local file on the file system.
     /// <para>
-    /// When this is false, <see cref="GetLocalFilePath(in ResourceLocator)"/> always
+    /// When this is false, <see cref="GetLocalFilePath(ResourceLocator)"/> always
     /// returns a null path, but true doesn't necessarily mean that all existing resources
     /// have a local file path: only some of them may have a local file path.
     /// </para>
     /// <para>
     /// When a resource has a non null <see cref="ResourceLocator.LocalFilePath"/>, the file
-    /// content may be the exact same content as the one returned by <see cref="GetStream(in ResourceLocator)"/>
+    /// content may be the exact same content as the one returned by <see cref="GetStream(ResourceLocator)"/>
     /// or may diverge from it either because it has been altered after its content has been captured by
     /// the container or because the resource stream is a projection (a transformation) of the file content.
     /// </para>
@@ -161,7 +161,7 @@ public interface IResourceContainer
     /// </summary>
     /// <param name="resource">The resource locator.</param>
     /// <returns>The resource's local file name or null.</returns>
-    string? GetLocalFilePath( in ResourceLocator resource );
+    string? GetLocalFilePath( ResourceLocator resource );
 
     /// <summary>
     /// Returns the <see cref="DisplayName"/>.

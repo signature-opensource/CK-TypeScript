@@ -111,7 +111,7 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     public bool HasLocalFilePathSupport => !_assemblyResources.LocalPath.IsEmptyPath;
 
     /// <inheritdoc />
-    public string? GetLocalFilePath( in ResourceLocator resource )
+    public string? GetLocalFilePath( ResourceLocator resource )
     {
         var p = _assemblyResources.LocalPath;
         if( p.IsEmptyPath ) return null;
@@ -126,14 +126,14 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     }
 
     /// <inheritdoc />
-    public Stream GetStream( in ResourceLocator resource )
+    public Stream GetStream( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return _assemblyResources.OpenResourceStream( resource.FullResourceName ); 
     }
 
     /// <inheritdoc />
-    public void WriteStream( in ResourceLocator resource, Stream target )
+    public void WriteStream( ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
         using var source = _assemblyResources.OpenResourceStream( resource.FullResourceName );
@@ -141,7 +141,7 @@ public sealed class AssemblyResourceContainer : IResourceContainer, ICKVersioned
     }
 
     /// <inheritdoc />
-    public string ReadAsText( in ResourceLocator resource )
+    public string ReadAsText( ResourceLocator resource )
     {
         using( var source = GetStream( resource ) )
         using( var r = new StreamReader( source ) )

@@ -101,16 +101,16 @@ public sealed class EmptyResourceContainer : IResourceContainer, ICKVersionedBin
     /// </summary>
     /// <param name="resource">The resource.</param>
     /// <returns>A null local file path.</returns>
-    public string? GetLocalFilePath( in ResourceLocator resource ) => null;
+    public string? GetLocalFilePath( ResourceLocator resource ) => null;
 
     /// <inheritdoc />
-    public Stream GetStream( in ResourceLocator resource ) => Throw.InvalidOperationException<Stream>();
+    public Stream GetStream( ResourceLocator resource ) => Throw.InvalidOperationException<Stream>();
 
     /// <inheritdoc />
-    public void WriteStream( in ResourceLocator resource, Stream target ) => Throw.InvalidOperationException();
+    public void WriteStream( ResourceLocator resource, Stream target ) => Throw.InvalidOperationException();
 
     /// <inheritdoc />
-    public string ReadAsText( in ResourceLocator resource ) => Throw.InvalidOperationException<string>();
+    public string ReadAsText( ResourceLocator resource ) => Throw.InvalidOperationException<string>();
 
     /// <inheritdoc />
     public ResourceLocator GetResource( ReadOnlySpan<char> resourceName ) => default;

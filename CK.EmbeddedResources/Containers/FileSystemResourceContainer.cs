@@ -37,7 +37,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     /// </para>
     /// </param>
     /// <param name="allowLocalFilePath">
-    /// Gets whether <see cref="GetLocalFilePath(in ResourceLocator)"/> returns the file path.
+    /// Gets whether <see cref="GetLocalFilePath(ResourceLocator)"/> returns the file path.
     /// <para>
     /// When set to false, this container hides the fact that it is bound to the file system: it behaves
     /// like a purely readonly resource container.
@@ -136,7 +136,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     public bool HasLocalFilePathSupport => _allowLocalFilePath;
 
     /// <inheritdoc />
-    public string? GetLocalFilePath( in ResourceLocator resource )
+    public string? GetLocalFilePath( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return _allowLocalFilePath
@@ -145,14 +145,14 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     }
 
     /// <inheritdoc />
-    public Stream GetStream( in ResourceLocator resource )
+    public Stream GetStream( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return File.OpenRead( resource.FullResourceName );
     }
 
     /// <inheritdoc />
-    public void WriteStream( in ResourceLocator resource, Stream target )
+    public void WriteStream( ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
         using var source = File.OpenRead( resource.FullResourceName );
@@ -160,7 +160,7 @@ public sealed class FileSystemResourceContainer : IResourceContainer, ICKVersion
     }
 
     /// <inheritdoc />
-    public string ReadAsText( in ResourceLocator resource )
+    public string ReadAsText( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return File.ReadAllText( resource.FullResourceName );

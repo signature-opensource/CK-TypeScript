@@ -96,7 +96,7 @@ public sealed class ResourceContainerWrapper : IResourceContainer
                          .Select( f => ResourceFolder.UnsafeCreate( this, f.FullFolderName ) );
     }
 
-    string? IResourceContainer.GetLocalFilePath( in ResourceLocator resource )
+    string? IResourceContainer.GetLocalFilePath( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return _container.GetLocalFilePath( ResourceLocator.UnsafeCreate( _container, resource.FullResourceName ) );
@@ -122,19 +122,19 @@ public sealed class ResourceContainerWrapper : IResourceContainer
                          .Select( r => ResourceLocator.UnsafeCreate( this, r.FullResourceName ) );
     }
 
-    Stream IResourceContainer.GetStream( in ResourceLocator resource )
+    Stream IResourceContainer.GetStream( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return _container.GetStream( ResourceLocator.UnsafeCreate( _container, resource.FullResourceName ) );
     }
 
-    string IResourceContainer.ReadAsText( in ResourceLocator resource )
+    string IResourceContainer.ReadAsText( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         return _container.ReadAsText( ResourceLocator.UnsafeCreate( _container, resource.FullResourceName ) );
     }
 
-    void IResourceContainer.WriteStream( in ResourceLocator resource, Stream target )
+    void IResourceContainer.WriteStream( ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
         _container.WriteStream( ResourceLocator.UnsafeCreate( _container, resource.FullResourceName ), target );

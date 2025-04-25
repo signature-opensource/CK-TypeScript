@@ -88,21 +88,21 @@ public readonly struct ResourceLocator : IEquatable<ResourceLocator>
     /// <summary>
     /// Gets the local file path bound to this resource. See <see cref="IResourceContainer.HasLocalFilePathSupport"/>.
     /// <para>
-    /// This is a simple relay to <see cref="IResourceContainer.GetLocalFilePath(in ResourceLocator)"/>.
+    /// This is a simple relay to <see cref="IResourceContainer.GetLocalFilePath(ResourceLocator)"/>.
     /// </para>
     /// </summary>
     public string? LocalFilePath => _container.GetLocalFilePath( this );
 
     /// <summary>
     /// Gets the resource content.
-    /// See <see cref="IResourceContainer.GetStream(in ResourceLocator)"/>.
+    /// See <see cref="IResourceContainer.GetStream(ResourceLocator)"/>.
     /// </summary>
     /// <returns>The resource's content stream.</returns>
     public Stream GetStream() => _container.GetStream( this );
 
     /// <summary>
     /// Writes the content of this resource to a stream.
-    /// See <see cref="IResourceContainer.WriteStream(in ResourceLocator, Stream)"/>.
+    /// See <see cref="IResourceContainer.WriteStream(ResourceLocator, Stream)"/>.
     /// </summary>
     /// <param name="target">The target stream.</param>
     public void WriteStream( Stream target ) => _container.WriteStream( this, target );

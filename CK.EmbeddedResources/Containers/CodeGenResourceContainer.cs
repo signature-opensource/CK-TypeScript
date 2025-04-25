@@ -16,8 +16,8 @@ namespace CK.EmbeddedResources;
 /// resource can be registered.
 /// <para>
 /// Whether a string, a reader or a writer is registered for a resource is irrelevant: this container
-/// adapts its behavior to always support <see cref="GetStream(in ResourceLocator)"/>,
-/// <see cref="WriteStream(in ResourceLocator, Stream)"/> and <see cref="ReadAsText(in ResourceLocator)"/>.
+/// adapts its behavior to always support <see cref="GetStream(ResourceLocator)"/>,
+/// <see cref="WriteStream(ResourceLocator, Stream)"/> and <see cref="ReadAsText(ResourceLocator)"/>.
 /// </para>
 /// <para>
 /// The path separator is '/', '\' are normalized to '/'. This kind of container
@@ -408,7 +408,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
 
     bool IResourceContainer.HasLocalFilePathSupport => false;
 
-    string? IResourceContainer.GetLocalFilePath( in ResourceLocator resource ) => null;
+    string? IResourceContainer.GetLocalFilePath( ResourceLocator resource ) => null;
 
     /// <inheritdoc />
     public IEnumerable<ResourceLocator> GetAllResources( ResourceFolder folder ) => DoGetAllResources( folder, this, _names );
@@ -440,7 +440,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     public IEnumerable<ResourceLocator> GetResources( ResourceFolder folder ) => DoGetResources( folder, this, _names );
 
     /// <inheritdoc />
-    public Stream GetStream( in ResourceLocator resource )
+    public Stream GetStream( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
@@ -466,7 +466,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     }
 
     /// <inheritdoc />
-    public void WriteStream( in ResourceLocator resource, Stream target )
+    public void WriteStream( ResourceLocator resource, Stream target )
     {
         resource.CheckContainer( this );
         int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );
@@ -496,7 +496,7 @@ public sealed class CodeGenResourceContainer : IResourceContainer, ICKVersionedB
     }
 
     /// <inheritdoc />
-    public string ReadAsText( in ResourceLocator resource )
+    public string ReadAsText( ResourceLocator resource )
     {
         resource.CheckContainer( this );
         int idx = ImmutableOrdinalSortedStrings.IndexOf( resource.FullResourceName, _names.Span );

@@ -89,7 +89,7 @@ public static class ResourceContainerAssetsExtension
     }
 
     static bool DoLoad( IActivityMonitor monitor,
-                        in ResourceFolder resources,
+                        ResourceFolder resources,
                         NormalizedPath defaultTargetPath,
                         out ResourceAssetDefinitionSet? assets )
     {
@@ -131,7 +131,7 @@ public static class ResourceContainerAssetsExtension
     }
 
     static bool ReadManifest( IActivityMonitor monitor,
-                              in ResourceFolder resources,
+                              ResourceFolder resources,
                               ResourceLocator manifestFile,
                               NormalizedPath defaultTargetPath,
                               Dictionary<NormalizedPath, ResourceAssetDefinition> final )
