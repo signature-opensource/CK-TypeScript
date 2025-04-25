@@ -17,6 +17,7 @@ public sealed partial class ResSpaceData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     readonly IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
+    readonly IReadOnlySet<ResourceLocator> _codeHandledResources;
     readonly string _liveStatePath;
     // Last mutable code container. Duplicating it is required, because even if we inspect
     // the ResourceContainerWrapper.InnerContainer, an empty container may be a non yet
@@ -36,12 +37,14 @@ public sealed partial class ResSpaceData
     internal ResSpaceData( IResourceContainer? generatedCodeContainer,
                            string cKWatchFolderPath,
                            IReadOnlyDictionary<object, ResPackage> packageIndex,
-                           IReadOnlyDictionary<IResourceContainer, IResPackageResources> resourceIndex )
+                           IReadOnlyDictionary<IResourceContainer, IResPackageResources> resourceIndex,
+                           IReadOnlySet<ResourceLocator> codeHandledResources )
     {
         _generatedCodeContainer = generatedCodeContainer;
         _liveStatePath = cKWatchFolderPath;
         _packageIndex = packageIndex;
         _resourceIndex = resourceIndex;
+        _codeHandledResources = codeHandledResources;
     }
 
     /// <summary>

@@ -47,7 +47,7 @@ sealed class SpaceDataCacheBuilder
                                     : 0];
         // We include the head "<Code>" package here.
         _stableBuffer = new int[1 + descriptorPackageCount - collectorLocalPackageCount];
-        // The space data is being built. We don't rely ont it.
+        // The space data is being built. We don't rely on it.
         // Consider "<App>" and "<Code>" packages. 
         _totalPackageCount = descriptorPackageCount + 2;
         _spaceData = spaceData;

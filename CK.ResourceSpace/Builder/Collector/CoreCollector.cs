@@ -117,9 +117,9 @@ sealed class CoreCollector
 
     public int TypedPackageCount => _typedPackageCount;
 
-    public bool Close( IActivityMonitor monitor )
+    public bool Close( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
     {
-        _packageDescriptorContext.Close();
+        codeHandledResources = _packageDescriptorContext.Close();
         bool success = true;
         foreach( var r in _packages )
         {

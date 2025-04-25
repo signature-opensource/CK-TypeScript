@@ -1,8 +1,11 @@
 using CK.BinarySerialization;
 using CK.Core;
+using CK.EmbeddedResources;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +18,7 @@ sealed class LiveState
     readonly ImmutableArray<ILiveUpdater> _updaters;
     readonly string _ckGenAppPath;
     readonly string _watchRoot;
+    HashSet<string>? _codeHandledFiles;
 
     internal LiveState( ResSpaceData spaceData, ImmutableArray<ILiveUpdater> updaters )
     {
@@ -41,11 +45,25 @@ sealed class LiveState
     /// <param name="changed">The changed event.</param>
     public void OnChange( IActivityMonitor monitor, PathChangedEvent changed )
     {
-        foreach( var u in _updaters )
+        if( _codeHandledFiles == null )
         {
-            if( u.OnChange( monitor, changed ) )
+            _codeHandledFiles = new HashSet<string>( _spaceData.CodeHandledResources
+                                                               .Select( r => r.LocalFilePath )
+                                                               .Where( p => p != null )! );
+            monitor.Info( $"Initialized {_codeHandledFiles.Count} code handled local files." );
+        }
+        if( _codeHandledFiles.Contains( changed.FullPath ) )
+        {
+            monitor.Debug( $"Ignoring code handled '{changed.FullPath}'." );
+        }
+        else
+        {
+            foreach( var u in _updaters )
             {
-                break;
+                if( u.OnChange( monitor, changed ) )
+                {
+                    break;
+                }
             }
         }
     }

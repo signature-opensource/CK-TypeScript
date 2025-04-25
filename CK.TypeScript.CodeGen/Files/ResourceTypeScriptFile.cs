@@ -9,7 +9,7 @@ public sealed class ResourceTypeScriptFile : TypeScriptFileBase
 {
     readonly ResourceLocator _locator;
 
-    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, in ResourceLocator locator, TypeScriptFileBase? previous )
+    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, ResourceLocator locator, TypeScriptFileBase? previous )
         : base( folder, name, previous )
     {
         _locator = locator;

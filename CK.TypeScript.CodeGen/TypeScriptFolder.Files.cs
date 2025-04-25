@@ -135,7 +135,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// <param name="locator">The resource locator of the file.</param>
     /// <param name="path">The file's path to create. Must not be empty.</param>
     /// <returns>The resource file.</returns>
-    public ResourceTypeScriptFile FindOrCreateResourceFile( in ResourceLocator locator, NormalizedPath path )
+    public ResourceTypeScriptFile FindOrCreateResourceFile( ResourceLocator locator, NormalizedPath path )
     {
         Throw.CheckArgument( !path.IsEmptyPath );
         var folder = FindOrCreateParentFolder( path );

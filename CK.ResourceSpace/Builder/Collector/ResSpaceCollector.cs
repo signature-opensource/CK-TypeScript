@@ -38,7 +38,10 @@ public sealed class ResSpaceCollector
         _liveStatePath = liveStatePath;
     }
 
-    internal bool CloseRegistrations( IActivityMonitor monitor ) => _coreCollector.Close( monitor );
+    internal bool CloseRegistrations( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
+    {
+        return _coreCollector.Close( monitor, out codeHandledResources );
+    }
 
     /// <summary>
     /// Gets the package index. <see cref="FindByFullName(string)"/> or <see cref="FindByType(Type)"/>

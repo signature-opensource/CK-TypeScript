@@ -54,7 +54,7 @@ public sealed class ResSpaceDataBuilder
     /// <returns>The space data on success, null otherwise.</returns>
     public ResSpaceData? Build( IActivityMonitor monitor )
     {
-        if( !_collector.CloseRegistrations( monitor ) )
+        if( !_collector.CloseRegistrations( monitor, out var codeHandledResources ) )
         {
             return null;
         }
@@ -179,7 +179,11 @@ public sealed class ResSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResSpaceData( _generatedCodeContainer, _collector.LiveStatePath, packageIndex, resourceIndex );
+        var space = new ResSpaceData( _generatedCodeContainer,
+                                      _collector.LiveStatePath,
+                                      packageIndex,
+                                      resourceIndex,
+                                      codeHandledResources );
 
         // Initialize the SpaceDataCacheBuilder. It carries the space data to the ResPackage constructors.
         var dataCacheBuilder = new SpaceDataCacheBuilder( space,
@@ -187,7 +191,7 @@ public sealed class ResSpaceDataBuilder
                                                           _collector.LocalPackageCount,
                                                           appLocalPath != null );
 
-       // Create the code package and adds it where it must be (at [1], after the null [0]).
+       // Create the code package and adds it where it must be.
         ResPackage codePackage = CreateCodePackage( dataCacheBuilder, _generatedCodeContainer );
         bAll.Add( codePackage );
         packageIndex.Add( codePackage.FullName, codePackage );

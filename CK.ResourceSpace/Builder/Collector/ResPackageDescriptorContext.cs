@@ -24,10 +24,11 @@ sealed class ResPackageDescriptorContext
     /// </summary>
     public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
 
-    public void Close()
+    public HashSet<ResourceLocator> Close()
     {
         Throw.DebugAssert( !Closed );
         _closed = true;
+        return _codeHandledResources;
     }
 
     public void RegisterCodeHandledResources( ResourceLocator resource )

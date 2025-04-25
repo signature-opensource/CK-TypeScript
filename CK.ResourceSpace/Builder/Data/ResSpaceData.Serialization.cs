@@ -23,6 +23,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         _packageIndex = d.ReadObject<IReadOnlyDictionary<object, ResPackage>>();
         _resourceIndex = d.ReadObject<IReadOnlyDictionary<IResourceContainer, IResPackageResources>>();
 
+        _codeHandledResources = d.ReadObject<IReadOnlySet<ResourceLocator>>();
         _codePackage = _packages[0];
         _appPackage = _packages[^1];
 
@@ -45,6 +46,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         s.WriteValue( o._allPackageResources );
         s.WriteObject( o._packageIndex );
         s.WriteObject( o._resourceIndex );
+        s.WriteObject( o._codeHandledResources );
 
         ICKBinaryWriter w = s.Writer;
         ((SpaceDataCache)o._resPackageDataCache).Write( w );
