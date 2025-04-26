@@ -62,7 +62,6 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
         return e;
     }
 
-
     /// <summary>
     /// Gets the analyzer that is used by <see cref="Reparse(IActivityMonitor)"/>.
     /// </summary>

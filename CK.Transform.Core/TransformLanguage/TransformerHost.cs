@@ -165,7 +165,7 @@ public sealed partial class TransformerHost
     /// <param name="monitor">Required monitor.</param>
     /// <param name="text">the text to parse.</param>
     /// <returns>The function or null on error.</returns>
-    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text ) => TryParseFunction( monitor, text, out var _ );
+    public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text ) => TryParseFunction( monitor, text, out _ );
 
     /// <summary>
     /// Tries to parse a <see cref="TransformerFunction"/>.

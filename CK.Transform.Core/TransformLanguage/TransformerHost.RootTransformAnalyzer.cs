@@ -59,7 +59,7 @@ public sealed partial class TransformerHost
         protected override TokenError? Tokenize( ref TokenizerHead head )
         {
             int begText = head.RemainingTextIndex;
-            if( !head.TryAcceptToken( "create", out var _ ) )
+            if( !head.TryAcceptToken( "create", out _ ) )
             {
                 return null;
             }
@@ -67,7 +67,7 @@ public sealed partial class TransformerHost
             var cLang = _host.Find( head.LowLevelTokenText );
             if( cLang == null )
             {
-                return head.AppendError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'." );
+                return head.AppendError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'.", 0 );
             }
             var language = head.AcceptLowLevelToken();
             head.MatchToken( "transformer" );

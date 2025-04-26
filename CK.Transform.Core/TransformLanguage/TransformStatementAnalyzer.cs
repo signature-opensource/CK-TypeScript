@@ -50,11 +50,11 @@ public abstract class TransformStatementAnalyzer
             }
             else
             {
-                head.AppendError( $"Failed to parse a transform '{_language.LanguageName}' language statement." );
+                head.AppendError( $"Failed to parse a transform '{_language.LanguageName}' language statement.", 0 );
                 break;
             }
         }
-        if( foundEnd == null ) head.AppendError( "Expected 'end'." );
+        if( foundEnd == null ) head.AppendError( "Expected 'end'.", 0 );
         return new TransformStatementBlock( begBlock, head.LastTokenIndex + 1, statements );
     }
 
@@ -75,7 +75,7 @@ public abstract class TransformStatementAnalyzer
         {
             return MatchInjectIntoStatement( ref head, inject );
         }
-        if( head.TryAcceptToken( "reparse", out var _ ) )
+        if( head.TryAcceptToken( "reparse", out _ ) )
         {
             int begStatement = head.LastTokenIndex;
             head.TryAcceptToken( ";", out _ );
@@ -112,7 +112,7 @@ public abstract class TransformStatementAnalyzer
                     return head.Accept( new InjectionPoint( text, leading, trailing ) );
                 }
             }
-            head.AppendError( "Expected <InjectionPoint>." );
+            head.AppendError( "Expected <InjectionPoint>.", 0 );
             return null;
         }
     }

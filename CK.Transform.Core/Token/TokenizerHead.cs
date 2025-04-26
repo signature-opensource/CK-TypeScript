@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
@@ -305,12 +306,19 @@ public ref struct TokenizerHead
 
     /// <summary>
     /// Creates and accepts a token error node at the current <see cref="Head"/> with an optional length of text.
-    /// <para>
-    /// When <paramref name="length"/> is positive, the returned error token has the leading and trailing trivias
-    /// and the head is forwarded.
-    /// When length is 0, the error has the current leading trivias (and no trailing trivias), the next token will
-    /// have no leading trivias.
-    /// </para>
+    /// <list type="bullet">
+    ///     <item>
+    ///     When <paramref name="length"/> is negative (-1), the error has no trivias, the next token will have the current leading trivias.
+    ///     </item>
+    ///     <item>
+    ///     When length is 0, the error has the current leading trivias (and no trailing trivias), the next token will
+    ///     have no leading trivias.
+    ///     </item>
+    ///     <item>
+    ///     When length is positive, the returned error token has the leading and trailing trivias
+    ///     and the head is forwarded.
+    ///     </item>
+    /// </list>
     /// <para>
     /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
@@ -320,28 +328,37 @@ public ref struct TokenizerHead
     /// <param name="errorType">The error token type.</param>
     /// <returns>An error token.</returns>
     [MemberNotNull( nameof( LastToken ) )]
-    public TokenError AppendError( string errorMessage, int length = 0, TokenType errorType = TokenType.GenericError )
+    public TokenError AppendError( string errorMessage, int length, TokenType errorType = TokenType.GenericError )
     {
         Throw.CheckArgument( errorType.IsError() );
         Throw.CheckState( EndOfInput is null );
 
-        ReadOnlyMemory<char> text;
-        ImmutableArray<Trivia> leading;
-        ImmutableArray<Trivia> trailing;
         SourcePosition p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
-        if( length > 0 )
+        TokenError t;
+        if( length < 0 )
         {
-            PreAcceptToken( length, out text, out leading, out trailing );
+            t = new TokenError( errorType, default, errorMessage, p, Trivia.Empty, Trivia.Empty );
         }
         else
         {
-            text = default;
-            leading = _leadingTrivias;
-            _leadingTrivias = Trivia.Empty;
-            trailing = Trivia.Empty;
+            ReadOnlyMemory<char> text;
+            ImmutableArray<Trivia> leading;
+            ImmutableArray<Trivia> trailing;
+            if( length > 0 )
+            {
+                PreAcceptToken( length, out text, out leading, out trailing );
+            }
+            else
+            {
+                text = default;
+                leading = _leadingTrivias;
+                _leadingTrivias = Trivia.Empty;
+                trailing = Trivia.Empty;
+            }
+            if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
+            t = new TokenError( errorType, text, errorMessage, p, leading, trailing );
+
         }
-        if( string.IsNullOrWhiteSpace( errorMessage ) ) errorMessage = text.ToString();
-        var t = new TokenError( errorType, text, errorMessage, p, leading, trailing );
         _tokens.Add( t );
         _lastToken = t;
         _firstError ??= t;

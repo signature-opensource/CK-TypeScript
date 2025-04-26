@@ -48,7 +48,7 @@ public static class YarnHelper
     /// <returns>True on success, false if yarn cannot be found or the process failed.</returns>
     public static bool RunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command, Dictionary<string, string>? environmentVariables )
     {
-        var yarnPath = TryFindYarn( workingDirectory, out var _ );
+        var yarnPath = TryFindYarn( workingDirectory, out _ );
         if( yarnPath.HasValue )
         {
             return DoRunYarn( monitor, workingDirectory, command, yarnPath.Value, environmentVariables );

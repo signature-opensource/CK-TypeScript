@@ -77,7 +77,7 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// </summary>
     /// <param name="path">The file's path to find or create. Must not be empty.</param>
     /// <returns>The file or null if not found.</returns>
-    public TypeScriptFileBase? FindFile( ReadOnlySpan<char> path ) => DoFindFile( path, out var _ );
+    public TypeScriptFileBase? FindFile( ReadOnlySpan<char> path ) => DoFindFile( path, out _ );
 
     /// <summary>
     /// Finds or creates a file in this folder or a subordinated folder.

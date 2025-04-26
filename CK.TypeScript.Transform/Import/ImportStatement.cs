@@ -80,7 +80,7 @@ public sealed class ImportStatement : SourceSpan, IImportLine
 
         // Type only import. There should be a default import or named imports but not both.
         // Here we accept both.
-        d.TypeOnly = head.TryAcceptToken( "type", out var _ );
+        d.TypeOnly = head.TryAcceptToken( "type", out _ );
 
         // If there is a default import, there can be a namespace definition after.
         // The following is valid but redundant:
@@ -95,11 +95,11 @@ public sealed class ImportStatement : SourceSpan, IImportLine
         if( head.TryAcceptToken( TokenType.GenericIdentifier, out var defaultImport ) )
         {
             // Eats the potential comma.
-            head.TryAcceptToken( TokenType.Comma, out var _ );
+            head.TryAcceptToken( TokenType.Comma, out _ );
             d.DefaultImport = defaultImport.ToString();
         }
 
-        if( head.TryAcceptToken( TokenType.Asterisk, out var _ ) )
+        if( head.TryAcceptToken( TokenType.Asterisk, out _ ) )
         {
             // "import * from ..." is invalid: we must have "as <identifier>".
             if( head.MatchToken( "as" ) is TokenError

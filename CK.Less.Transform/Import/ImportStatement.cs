@@ -84,7 +84,7 @@ public sealed class ImportStatement : SourceSpan
         int begImport = head.LastTokenIndex;
 
         // We ignore here any @import (!keyword) as this is for transform statement only.
-        ImportKeyword keyword = ParseKeywords( ref head, out var _ );
+        ImportKeyword keyword = ParseKeywords( ref head, out _ );
         var p = head.MatchToken( TokenType.GenericString, "import path" );
         if( p is TokenError ) return null;
         var importPath = p.Text.Slice( 1, p.Text.Length - 2 ).ToString();
@@ -98,13 +98,13 @@ public sealed class ImportStatement : SourceSpan
     {
         excludedKeyword = ImportKeyword.None;
         ImportKeyword keyword = ImportKeyword.None;
-        if( head.TryAcceptToken( TokenType.OpenParen, out var _ ) )
+        if( head.TryAcceptToken( TokenType.OpenParen, out _ ) )
         {
             // Allow "@import () 'file'" (even if this is not allowed).
-            while( !head.TryAcceptToken( TokenType.CloseParen, out var _ ) )
+            while( !head.TryAcceptToken( TokenType.CloseParen, out _ ) )
             {
                 // Transform extension.
-                if( head.TryAcceptToken( TokenType.Exclamation, out var _ ) )
+                if( head.TryAcceptToken( TokenType.Exclamation, out _ ) )
                 {
                     HandleKeyword( ref head, ref excludedKeyword );
                 }
@@ -113,7 +113,7 @@ public sealed class ImportStatement : SourceSpan
                     HandleKeyword( ref head, ref keyword );
                 }
                 // Allow traing comma (even if this is not allowed).
-                head.TryAcceptToken( TokenType.Comma, out var _ );
+                head.TryAcceptToken( TokenType.Comma, out _ );
             }
             excludedKeyword = Normalize( excludedKeyword );
             keyword = Normalize( keyword & ~excludedKeyword );
@@ -122,31 +122,31 @@ public sealed class ImportStatement : SourceSpan
 
         static void HandleKeyword( ref TokenizerHead head, ref ImportKeyword keyword )
         {
-            if( head.TryAcceptToken( "once", out var _ ) )
+            if( head.TryAcceptToken( "once", out _ ) )
             {
                 keyword |= ImportKeyword.Once;
             }
-            else if( head.TryAcceptToken( "multiple", out var _ ) )
+            else if( head.TryAcceptToken( "multiple", out _ ) )
             {
                 keyword |= ImportKeyword.Multiple;
             }
-            else if( head.TryAcceptToken( "reference", out var _ ) )
+            else if( head.TryAcceptToken( "reference", out _ ) )
             {
                 keyword |= ImportKeyword.Reference;
             }
-            else if( head.TryAcceptToken( "less", out var _ ) )
+            else if( head.TryAcceptToken( "less", out _ ) )
             {
                 keyword |= ImportKeyword.Less;
             }
-            else if( head.TryAcceptToken( "css", out var _ ) )
+            else if( head.TryAcceptToken( "css", out _ ) )
             {
                 keyword |= ImportKeyword.Css;
             }
-            else if( head.TryAcceptToken( "optional", out var _ ) )
+            else if( head.TryAcceptToken( "optional", out _ ) )
             {
                 keyword |= ImportKeyword.Optional;
             }
-            else if( head.TryAcceptToken( "inline", out var _ ) )
+            else if( head.TryAcceptToken( "inline", out _ ) )
             {
                 keyword |= ImportKeyword.Inline;
             }

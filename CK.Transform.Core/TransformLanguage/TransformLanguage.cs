@@ -82,10 +82,13 @@ public abstract class TransformLanguage
     /// Supports the minimal token set required by any transform language:
     /// <list type="bullet">
     ///     <item><see cref="TokenType.GenericIdentifier"/> that at least handles "Ascii letter[Ascii letter or digit]*".</item>
+    ///     <item><see cref="TokenType.GenericNumber"/> that at least handles "Ascii digit[Ascii digit]*".</item>
     ///     <item><see cref="TokenType.DoubleQuote"/>.</item>
     ///     <item><see cref="TokenType.LessThan"/>.</item>
     ///     <item><see cref="TokenType.Dot"/>.</item>
     ///     <item><see cref="TokenType.SemiColon"/>.</item>
+    ///     <item><see cref="TokenType.Plus"/>.</item>
+    ///     <item><see cref="TokenType.Minus"/>.</item>
     /// </list>
     /// <para>
     /// A <see cref="TransformStatementAnalyzer"/> can implement <see cref="ILowLevelTokenizer"/> to support other low level token type.
@@ -104,23 +107,22 @@ public abstract class TransformLanguage
             while( ++iS < head.Length && char.IsAsciiLetterOrDigit( head[iS] ) ) ;
             return new LowLevelToken( TokenType.GenericIdentifier, iS );
         }
-        if( c == '"' )
+        if( char.IsAsciiDigit( c ) )
         {
-            return new LowLevelToken( TokenType.DoubleQuote, 1 );
+            int iS = 0;
+            while( ++iS < head.Length && char.IsAsciiDigit( head[iS] ) ) ;
+            return new LowLevelToken( TokenType.GenericNumber, iS );
         }
-        if( c == '.' )
+        return c switch
         {
-            return new LowLevelToken( TokenType.Dot, 1 );
-        }
-        if( c == ';' )
-        {
-            return new LowLevelToken( TokenType.SemiColon, 1 );
-        }
-        if( c == '<' )
-        {
-            return new LowLevelToken( TokenType.LessThan, 1 );
-        }
-        return default;
+            '"' => new LowLevelToken( TokenType.DoubleQuote, 1 ),
+            '.' => new LowLevelToken( TokenType.Dot, 1 ),
+            ';' => new LowLevelToken( TokenType.SemiColon, 1 ),
+            '<' => new LowLevelToken( TokenType.LessThan, 1 ),
+            '+' => new LowLevelToken( TokenType.Plus, 1 ),
+            '-' => new LowLevelToken( TokenType.Minus, 1 ),
+            _ => default
+        };
     }
 
     /// <summary>

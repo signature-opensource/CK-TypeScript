@@ -22,7 +22,7 @@ sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
     protected override TransformStatement? ParseStatement( ref TokenizerHead head )
     {
         int begStatement = head.LastTokenIndex;
-        if( head.TryAcceptToken( "ensure", out var _ ) )
+        if( head.TryAcceptToken( "ensure", out _ ) )
         {
             var subHead = head.CreateSubHead( out var safetyToken, _lessAnalyzer );
             var importToken = subHead.MatchToken( "@import" );

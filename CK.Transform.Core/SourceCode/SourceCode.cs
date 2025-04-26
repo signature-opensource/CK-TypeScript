@@ -48,19 +48,6 @@ public sealed class SourceCode : IEnumerable<SourceToken>
 
     IEnumerator IEnumerable.GetEnumerator() => new SourceTokenEnumerator( this );
 
-    internal void SetTokens( ImmutableList<Token> tokens )
-    {
-        _tokens = tokens;
-        _toString = null;
-    }
-
-    internal void TransferTo( SourceCode code )
-    {
-        code.SetTokens( _tokens );
-        code._spans._children.Clear();
-        if( _spans._children.HasChildren ) _spans.TransferTo( code._spans );
-    }
-
     sealed class SourceTokenEnumerator : IEnumerator<SourceToken>
     {
         ImmutableList<Token>.Enumerator _tokenEnumerator;
@@ -120,6 +107,19 @@ public sealed class SourceCode : IEnumerable<SourceToken>
             _index = -1;
             _nextSpan = _code._spans._children._firstChild;
         }
+    }
+
+    internal void SetTokens( ImmutableList<Token> tokens )
+    {
+        _tokens = tokens;
+        _toString = null;
+    }
+
+    internal void TransferTo( SourceCode code )
+    {
+        code.SetTokens( _tokens );
+        code._spans._children.Clear();
+        if( _spans._children.HasChildren ) _spans.TransferTo( code._spans );
     }
 
     /// <summary>

@@ -22,7 +22,7 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
     protected override TransformStatement? ParseStatement( ref TokenizerHead head )
     {
         int begStatement = head.LastTokenIndex;
-        if( head.TryAcceptToken( "ensure", out var _ ) )
+        if( head.TryAcceptToken( "ensure", out _ ) )
         {
             var subHead = head.CreateSubHead( out var safetyToken, _tsAnalyzer );
             var importToken = subHead.MatchToken( "import" );

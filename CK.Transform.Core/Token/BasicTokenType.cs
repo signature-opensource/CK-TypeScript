@@ -4,8 +4,8 @@ namespace CK.Transform.Core;
 /// Basic token types are not classified: none of the 24 class bits are set: this lets
 /// 255 possible token types for them: this enum is backed by the byte <see cref="BasicTokenType"/>.
 /// <para>
-/// Parsers are free to reuse them but often, these generic types won't be used,
-/// they will be redefined in the TokenType Class defined for the language. 
+/// Parsers are free to reuse them even if these generic types can be redefined in the
+/// TokenType Class defined for the language. 
 /// </para>
 /// </summary>
 public enum BasicTokenType : byte
