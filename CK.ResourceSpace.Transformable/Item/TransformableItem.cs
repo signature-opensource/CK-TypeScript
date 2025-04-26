@@ -23,8 +23,8 @@ partial class TransformableItem : IResourceInput, ITransformable
 
     public TransformableItem( IResPackageResources resources,
                               string fullResourceName,
-                              int languageIndex,
                               string text,
+                              int languageIndex,
                               NormalizedPath targetPath )
     {
         Throw.DebugAssert( languageIndex >= 0 );

@@ -13,10 +13,10 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
 
     public LocalItem( IResPackageResources resources,
                       string fullResourceName,
-                      int languageIndex,
                       string text,
+                      int languageIndex,
                       NormalizedPath targetPath )
-        : base( resources, fullResourceName, languageIndex, text, targetPath )
+        : base( resources, fullResourceName, text, languageIndex, targetPath )
     {
     }
 

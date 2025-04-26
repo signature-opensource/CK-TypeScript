@@ -58,8 +58,31 @@ public sealed partial class ResSpace
         }
     }
 
+    sealed class NormalizedPathSerializer : StaticValueTypeSerializer<NormalizedPath>
+    {
+        public override string DriverName => "NormalizedPath";
+
+        public override int SerializationVersion => 0;
+
+        public static void Write( IBinarySerializer s, in NormalizedPath o )
+        {
+            s.Writer.Write( o.Path );
+        }
+    }
+
+    sealed class NormalizedPathDeserializer : ValueTypeDeserializer<NormalizedPath>
+    {
+        protected override NormalizedPath ReadInstance( IBinaryDeserializer d, ITypeReadInfo readInfo )
+        {
+            return d.Reader.ReadString();
+        }
+    }
+
     static ResSpace()
     {
+        BinarySerializer.DefaultSharedContext.AddSerializationDriver( typeof( NormalizedPath ), new NormalizedPathSerializer() );
+        BinaryDeserializer.DefaultSharedContext.AddDeserializerDriver( new NormalizedPathDeserializer() );
+
         BinarySerializer.DefaultSharedContext.AddSerializationDriver( typeof( ResourceLocator ), new ResourceLocatorSerializer() );
         BinaryDeserializer.DefaultSharedContext.AddDeserializerDriver( new ResourceLocatorDeserializer() );
 

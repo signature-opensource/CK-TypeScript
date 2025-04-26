@@ -78,24 +78,94 @@ sealed partial class TransformEnvironment
             return fLocalSource;
         }
 
-        var target = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
-        if( _items.TryGetValue( target, out var exists ) )
+        var targetPath = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
+        if( _items.TryGetValue( targetPath, out var exists ) )
         {
-            monitor.Error( $"Both {r} and {exists.Origin} have the same target final path '{target}'." );
+            monitor.Error( $"Both {r} and {exists.Origin} have the same target final path '{targetPath}'." );
             return null;
         }
-        if( resources.LocalPath != null )
+
+        var item = CreateItem( _tracker, resources, language, r, text, targetPath );
+        _items.Add( targetPath, item );
+        return item;
+
+        static TransformableItem CreateItem( StableItemOrInputTracker tracker,
+                                             IResPackageResources resources,
+                                             TransformerHost.Language language,
+                                             ResourceLocator r,
+                                             string text,
+                                             NormalizedPath target )
         {
-            var item = new LocalItem( resources, r.FullResourceName, language.Index, target, text );
-            _tracker.AddLocalInput( item );
-            return item;
+            if( resources.LocalPath != null )
+            {
+                var item = new LocalItem( resources, r.FullResourceName, text, language.Index, target );
+                tracker.AddLocalInput( item );
+                return item;
+            }
+            var stableItem = new TransformableItem( resources, r.FullResourceName, text, language.Index, target );
+            tracker.AddStableItem( stableItem );
+            return stableItem;
         }
-        var stableItem = new TransformableItem( resources, r.FullResourceName, language.Index, target, text );
-        _tracker.AddStableItem( stableItem );
-        return stableItem;
     }
 
     internal ITransformable? FindTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
+    {
+        return f.Language.TransformLanguage.IsTransformerLanguage
+                    ? FindFunctionTarget( monitor, source, f )
+                    : FindTransformableItemTarget( monitor, source, f );
+    }
+
+    TFunction? FindFunctionTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
+    {
+        if( string.IsNullOrEmpty( f.Target ) )
+        {
+            monitor.Error( $"""
+                    Transformer of transformer in {source.Origin} must specify a target name.
+                    Missing on "..." clause in:
+                    {f.Text}
+                    """ );
+            return null;
+        }
+        if( _transformFunctions.TryGetValue( f.Target, out var target ) )
+        {
+            if( source.Resources.Reachables.Contains( target.Source.Resources.Package ) )
+            {
+                return target;
+            }
+            monitor.Error( $"""
+                            Unreachable target '{f.Target}' in {source.Origin} for:
+                            {f.Text}
+
+                            {DumpReachables( source, _transformFunctions )}
+
+                            Target '{f.Target}' is in {target.Source.Origin}.
+                            """ );
+        }
+        else
+        {
+            monitor.Error( $"""
+                            Unable to find target '{f.Target}' in {source.Origin} for:
+                            {f.Text}
+
+                            {DumpReachables( source, _transformFunctions )}
+                            """ );
+        }
+        return null;
+
+        static string DumpReachables( FunctionSource source, Dictionary<string, TFunction> functions ) => $"""
+                            From {source.Origin}, the reachable transformers are:
+                            {functions.Values.Where( t => source.Resources.Reachables.Contains( t.Source.Resources.Package ) )
+                                         .GroupBy( t => t.Source.Resources )
+                                         .OrderBy( g => g.Key.Index )
+                                         .Select( g => $"""
+                                                               {g.Key}:
+                                                                   {g.Select( t => t.FunctionName ).Concatenate( "    " + Environment.NewLine )}
+                                                               
+                                                               """ )}
+                            """;
+    }
+
+    TransformableItem? FindTransformableItemTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
     {
         GetTargetNameToFind( source, f, out var expectedPath, out var exactName, out var namePrefix );
         bool useNamePrefix = exactName.Length == 0;
@@ -163,9 +233,9 @@ sealed partial class TransformEnvironment
                 {
                     monitor.Error( $"""
                                 Found {ambiguities.Count} ambiguous candidates:
-                                {ambiguities.Select( i => i.TargetPath.Path ).Concatenate(Environment.NewLine)}
+                                {ambiguities.Select( i => i.TargetPath.Path ).Concatenate( Environment.NewLine )}
                                 """ );
-                            
+
                 }
             }
             return null;
@@ -209,60 +279,61 @@ sealed partial class TransformEnvironment
             if( pathLen > expectedPath.Length )
             {
                 var cPath = candidatePath.AsSpan( 0, pathLen );
-                if( cPath[pathLen-expectedPath.Length-1] == '/'
-                    && cPath.EndsWith( expectedPath, StringComparison.Ordinal))
+                if( cPath[pathLen - expectedPath.Length - 1] == '/'
+                    && cPath.EndsWith( expectedPath, StringComparison.Ordinal ) )
                 {
                     return true;
                 }
             }
             return false;
         }
+
+        static void GetTargetNameToFind( FunctionSource source,
+                                         TransformerFunction f,
+                                         out ReadOnlySpan<char> expectedPath,
+                                         out ReadOnlySpan<char> exactName,
+                                         out ReadOnlySpan<char> namePrefix )
+        {
+            var nameTofind = f.Target;
+            if( string.IsNullOrWhiteSpace( nameTofind ) )
+            {
+                // No "on <target>" of the create transformer itself:
+                // we use the name of the source (the file name that contains
+                // the create transfomer without extensions) as a prefix of
+                // the target name.
+                // There is no expected path.
+                expectedPath = default;
+                exactName = default;
+                namePrefix = source.SourceName;
+                return;
+            }
+            // The function target may contain a sub path: it is an expected path.
+            var n = nameTofind.AsSpan();
+            int idx = n.LastIndexOf( '/' );
+            if( idx >= 0 )
+            {
+                // Removes starting any /.
+                expectedPath = n.Slice( 0, idx ).TrimStart( '/' );
+                n = n.Slice( idx + 1 );
+            }
+            else
+            {
+                expectedPath = default;
+            }
+            // If the function target ends with an extension, it is an exactName,
+            // otherwise we consider it as a namePrefix.
+            var ext = f.Language.TransformLanguage.CheckLangageFilename( n );
+            if( ext.Length > 0 )
+            {
+                exactName = n;
+                namePrefix = default;
+            }
+            else
+            {
+                exactName = default;
+                namePrefix = n;
+            }
+        }
     }
 
-    static void GetTargetNameToFind( FunctionSource source,
-                                     TransformerFunction f,
-                                     out ReadOnlySpan<char> expectedPath,
-                                     out ReadOnlySpan<char> exactName,
-                                     out ReadOnlySpan<char> namePrefix )
-    {
-        var nameTofind = f.Target;
-        if( string.IsNullOrWhiteSpace( nameTofind ) )
-        {
-            // No "on <target>" of the create transformer itself:
-            // we use the name of the source (the file name that contains
-            // the create transfomer without extensions) as a prefix of
-            // the target name.
-            // There is no expected path.
-            expectedPath = default;
-            exactName = default;
-            namePrefix = source.SourceName;
-            return;
-        }
-        // The function target may contain a sub path: it is an expected path.
-        var n = nameTofind.AsSpan();
-        int idx = n.LastIndexOf( '/' );
-        if( idx >= 0 )
-        {
-            // Removes starting any /.
-            expectedPath = n.Slice( 0, idx ).TrimStart( '/' );
-            n = n.Slice( idx + 1 );
-        }
-        else
-        {
-            expectedPath = default;
-        }
-        // If the function target ends with an extension, it is an exactName,
-        // otherwise we consider it as a namePrefix.
-        var ext = f.Language.TransformLanguage.CheckLangageFilename( n );
-        if( ext.Length > 0 )
-        {
-            exactName = n;
-            namePrefix = default;
-        }
-        else
-        {
-            exactName = default;
-            namePrefix = n;
-        }
-    }
 }

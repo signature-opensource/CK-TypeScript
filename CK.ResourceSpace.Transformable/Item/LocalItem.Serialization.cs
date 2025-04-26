@@ -3,6 +3,7 @@ using System.ComponentModel;
 
 namespace CK.Core;
 
+[SerializationVersion( 0 )]
 sealed partial class LocalItem
 {
     [EditorBrowsable( EditorBrowsableState.Never )]
