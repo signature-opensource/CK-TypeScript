@@ -6,11 +6,12 @@ namespace CK.Core;
 sealed partial class TFunction : ITransformable
 {
     readonly FunctionSource _source;
-    // The name of the function (see ComputeName) is the key to
-    // detect an update of an existing function vs. a destroy/insert
-    // of a new TFunction.
-    readonly string _functionName;
-    ITransformable _target;
+    // The target of the function is the key to detect an update of
+    // an existing function vs. a destroy/insert of a new TFunction.
+    readonly ITransformable _target;
+    // The function name is used as the transform target
+    // for transform of transform.
+    string _functionName;
     TFunction? _nextFunction;
     TFunction? _prevFunction;
     TransformableImpl _transformableImpl;
@@ -38,6 +39,8 @@ sealed partial class TFunction : ITransformable
         return n;
     }
 
+    public string FunctionName => _functionName;
+
     public TFunction? NextFunction => _nextFunction;
 
     string ITransformable.TransfomableTargetName => _functionName;
@@ -48,11 +51,28 @@ sealed partial class TFunction : ITransformable
 
     internal FunctionSource Source => _source;
 
-    public TransformerFunction Function => _function;
+    internal TransformerFunction Function => _function;
 
-    internal void SetFunction( TransformerFunction transformerFunction )
+    internal ITransformable Target => _target;
+
+    internal LocalItem PeeledTarget
+    {
+        get
+        {
+            var peeledTarget = _target;
+            while( peeledTarget is TFunction f2 )
+            {
+                peeledTarget = f2._target;
+            }
+            Throw.DebugAssert( peeledTarget is LocalItem );
+            return (LocalItem)peeledTarget;
+        }
+    }
+
+    internal void Update( TransformerFunction transformerFunction, string functionName )
     {
         _function = transformerFunction;
+        _functionName = functionName;
     }
 
     bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, FunctionSource source, TransformerFunction f, out TFunction? before )

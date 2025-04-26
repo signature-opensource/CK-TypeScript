@@ -54,26 +54,51 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
 
     public void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<LocalItem> toBeInstalled )
     {
-        var updated = new BitArray( Functions.Count );
-        var functions = Parse( monitor, environment, strict: false );
-        if( functions != null )
-        {
-            foreach( var p in functions )
-            {
+        var functions = Functions;
+        var updated = new BitArray( functions.Count );
 
+        var preFunctions = Parse( monitor, environment, strict: false );
+        if( preFunctions != null )
+        {
+            foreach( var p in preFunctions )
+            {
+                var idx = functions.IndexOf( f => f.Target == p.Target );
+                TFunction f;
+                if( idx < 0 )
+                {
+                    f = AddNewFunction( environment, p );
+                }
+                else
+                {
+                    f = functions[idx];
+                    updated[idx] = true;
+                    f.Update( p.F, p.Name );
+                    environment.TransformFunctions.Add( p.Name, f );
+                    p.Target.Add( f, p.Before );
+                }
+                toBeInstalled.Add( f.PeeledTarget );
             }
         }
-        int idx = 0;
-        for( int i = 0; i < updated.Count; ++i )
+        RemoveMissing( environment, functions, updated, toBeInstalled );
+
+        static void RemoveMissing( TransformEnvironment environment, List<TFunction> functions, BitArray updated, HashSet<LocalItem> toBeInstalled )
         {
-            if( !updated[i] )
+            int idx = 0;
+            for( int i = 0; i < updated.Count; ++i )
             {
-                Functions[idx].Destroy( environment );
-                Functions.RemoveAt( idx );
-            }
-            else
-            {
-                ++idx;
+                if( !updated[i] )
+                {
+                    var f = functions[idx];
+                    // This has already been called in InitializeApplyChanges.
+                    // f.Remove( environment );
+                    f.Destroy( environment );
+                    functions.RemoveAt( idx );
+                    toBeInstalled.Add( f.PeeledTarget );
+                }
+                else
+                {
+                    ++idx;
+                }
             }
         }
     }

@@ -57,7 +57,8 @@ partial class FunctionSource : ICKSlicedSerializable
         }
         for( int i = 0; i < functions.Count; i++ )
         {
-            _functions[i].SetFunction( functions[i] );
+            var f = _functions[i];
+            f.Update( functions[i], f.FunctionName );
         }
     }
 

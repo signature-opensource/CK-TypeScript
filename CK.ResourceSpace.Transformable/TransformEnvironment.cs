@@ -228,8 +228,11 @@ sealed partial class TransformEnvironment
         var nameTofind = f.Target;
         if( string.IsNullOrWhiteSpace( nameTofind ) )
         {
-            // No extension in this one. And no expected path.
-            // The source name is not an exact name, only a prefix.
+            // No "on <target>" of the create transformer itself:
+            // we use the name of the source (the file name that contains
+            // the create transfomer without extensions) as a prefix of
+            // the target name.
+            // There is no expected path.
             expectedPath = default;
             exactName = default;
             namePrefix = source.SourceName;

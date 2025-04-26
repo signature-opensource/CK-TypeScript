@@ -3,6 +3,7 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace CK.Core;
@@ -55,14 +56,11 @@ partial class FunctionSource : IResourceInput
     {
         Throw.DebugAssert( _functions.Count == 0 );
         _sourceName = HandleSourceName( environment.TransformerHost, Origin, ref _languageHintIndex );
-        var functions = Parse( monitor, environment, strict: true );
-        if( functions == null ) return false;
-        foreach( var (f, target, name, fBefore) in functions )
+        var preFunctions = Parse( monitor, environment, strict: true );
+        if( preFunctions == null ) return false;
+        foreach( var p in preFunctions )
         {
-            var tF = new TFunction( this, f, target, name );
-            environment.TransformFunctions.Add( name, tF );
-            target.Add( tF, fBefore );
-            _functions.Add( tF );
+            AddNewFunction( environment, p );
         }
         return true;
 
@@ -79,8 +77,15 @@ partial class FunctionSource : IResourceInput
             }
             return rName.Slice( 0, sourceNameLength ).ToString();
         }
+    }
 
-
+    protected TFunction AddNewFunction( TransformEnvironment environment, PreFunction p )
+    {
+        var f = new TFunction( this, p.F, p.Target, p.Name );
+        environment.TransformFunctions.Add( p.Name, f );
+        p.Target.Add( f, p.Before );
+        _functions.Add( f );
+        return f;
     }
 
     protected readonly record struct PreFunction( TransformerFunction F, ITransformable Target, string Name, TFunction? Before );
@@ -110,23 +115,51 @@ partial class FunctionSource : IResourceInput
                 else
                 {
                     var functionName = TFunction.ComputeName( this, f, target );
-                    if( environment.TransformFunctions.TryGetValue( functionName, out var homonym ) )
+                    var already = result.FirstOrDefault( f => f.Name == functionName );
+                    if( already.F != null )
                     {
                         monitor.Error( $"""
-                                    Transformer '{functionName}' in {Origin}:
+                                    Duplicate Transformer '{functionName}' definition in {Origin}:
                                     {f.Text}
-                                    Is already defined by {homonym.Source.Origin}:
-                                    {homonym.Function.Text}
+                                    Is already defined by:
+                                    {already.F.Text}
                                     """ );
                         success = false;
                     }
-                    else if( !target.TryFindInsertionPoint( monitor, this, f, out var fBefore ) )
-                    {
-                        success = false;
-                    }
                     else
-                    { 
-                        result.Add( new PreFunction( f, target, functionName, fBefore ) );
+                    {
+                        already = result.FirstOrDefault( f => f.Target == target );
+                        if( already.F != null )
+                        {
+                            monitor.Error( $"""
+                                        Duplicate Transformer definition in {Origin}:
+                                        {f.Text}
+
+                                        And: 
+                                        {already.F.Text}
+
+                                        Both target '{target.TransfomableTargetName}'.
+                                        """ );
+                            success = false;
+                        }
+                        else if( environment.TransformFunctions.TryGetValue( functionName, out var homonym ) )
+                        {
+                            monitor.Error( $"""
+                                    Transformer '{functionName}' in {Origin}:
+                                    {f.Text}
+                                    Is already defined in {homonym.Source.Origin}:
+                                    {homonym.Function.Text}
+                                    """ );
+                            success = false;
+                        }
+                        else if( !target.TryFindInsertionPoint( monitor, this, f, out var fBefore ) )
+                        {
+                            success = false;
+                        }
+                        else
+                        {
+                            result.Add( new PreFunction( f, target, functionName, fBefore ) );
+                        }
                     }
                 }
             }
