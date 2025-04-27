@@ -13,7 +13,7 @@ public sealed class TypeScriptLanguage : TransformLanguage
     /// Initializes a new TypeScriptLanguage instance.
     /// </summary>
     public TypeScriptLanguage()
-        : base( _languageName, ".ts" )
+        : base( _languageName, ".typescript", ".ts" )
     {
     }
 

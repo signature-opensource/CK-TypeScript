@@ -124,7 +124,7 @@ public sealed class LocationCardinality : SourceSpan
 
     internal static LocationCardinality? TryMatch( ref TokenizerHead head, bool monoLocationOnly = false )
     {
-        int begImport = head.LastTokenIndex;
+        int begSpan = head.LastTokenIndex + 1;
         LocationKind kind;
         int offset = 0;
         int expectedMatchCount = 0;
@@ -163,7 +163,7 @@ public sealed class LocationCardinality : SourceSpan
             head.AppendError( "Expected one-location specifier (single, first or last).", -1 );
             return null;
         }
-        return new LocationCardinality( begImport, head.LastTokenIndex + 1, kind, offset, expectedMatchCount );
+        return new LocationCardinality( begSpan, head.LastTokenIndex + 1, kind, offset, expectedMatchCount );
 
         static int TryMatchNumber( ref TokenizerHead head, int n )
         {

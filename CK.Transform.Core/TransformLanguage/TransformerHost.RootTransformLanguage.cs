@@ -33,7 +33,7 @@ public sealed partial class TransformerHost
         }
 
         internal RootTransformLanguage( TransformerHost host )
-            : base( _transformLanguageName, ".t" )
+            : base( _transformLanguageName, ".transform", ".t" )
         {
             _thisAnalyzer = new ThisStatementAnalyzer( this );
             _rootAnalyzer = new RootTransformAnalyzer( host );

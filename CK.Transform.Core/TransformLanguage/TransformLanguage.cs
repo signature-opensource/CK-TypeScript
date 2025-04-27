@@ -25,12 +25,22 @@ public abstract class TransformLanguage
     /// <summary>
     /// Initializes a language with its name.
     /// </summary>
-    /// <param name="languageName">The language name.</param>
-    /// <param name="fileExtensions">File extensions must not be empty andd all must start with a dot (like ".cs").</param>
+    /// <param name="languageName">
+    /// The language name in PascalCase.
+    /// Must not have a leading '.' and must appear in the <paramref name="fileExtensions"/> (file
+    /// extensions use <see cref="StringComparison.OrdinalIgnoreCase"/>).
+    /// </param>
+    /// <param name="fileExtensions">
+    /// File extensions must not be empty and all must start with a dot (like ".cs").
+    /// The ".<paramref name="languageName"/>" must appear explicitly.
+    /// </param>
     protected TransformLanguage( string languageName, params ImmutableArray<string> fileExtensions )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( languageName );
-        Throw.CheckArgument( fileExtensions.Length > 0 && fileExtensions.All( e => e.Length >= 2 && e[0] == '.' ) );
+        Throw.CheckArgument( languageName[0] != '.' );
+        Throw.CheckArgument( fileExtensions.Length > 0
+                             && fileExtensions.All( e => e.Length >= 2 && e[0] == '.' )
+                             && fileExtensions.Any( e => languageName.AsSpan().Equals( e.AsSpan(1), StringComparison.OrdinalIgnoreCase ) ) );
         _languageName = languageName;
         _fileExtensions = fileExtensions;
     }
@@ -41,7 +51,9 @@ public abstract class TransformLanguage
     public string LanguageName => _languageName;
 
     /// <summary>
-    /// Gets one or more file extensions for this language. They start with a dot (like ".cs").
+    /// Gets one or more file extensions for this language. They start with a dot (like ".cs"),
+    /// contains the ".<see cref="LanguageName"/>" (typically in ower case).
+    /// <see cref="StringComparison.OrdinalIgnoreCase"/> is used by <see cref="CheckLangageFilename(ReadOnlySpan{char})"/>.
     /// </summary>
     public ImmutableArray<string> FileExtensions => _fileExtensions;
 
@@ -54,7 +66,7 @@ public abstract class TransformLanguage
     {
         foreach( var e in _fileExtensions )
         {
-            if( fileName.EndsWith( e, StringComparison.Ordinal ) )
+            if( fileName.EndsWith( e, StringComparison.OrdinalIgnoreCase ) )
             {
                 return e;
             }
@@ -89,6 +101,8 @@ public abstract class TransformLanguage
     ///     <item><see cref="TokenType.SemiColon"/>.</item>
     ///     <item><see cref="TokenType.Plus"/>.</item>
     ///     <item><see cref="TokenType.Minus"/>.</item>
+    ///     <item><see cref="TokenType.OpenBrace"/>.</item>
+    ///     <item><see cref="TokenType.CloseBrace"/>.</item>
     /// </list>
     /// <para>
     /// A <see cref="TransformStatementAnalyzer"/> can implement <see cref="ILowLevelTokenizer"/> to support other low level token type.
@@ -121,6 +135,8 @@ public abstract class TransformLanguage
             '<' => new LowLevelToken( TokenType.LessThan, 1 ),
             '+' => new LowLevelToken( TokenType.Plus, 1 ),
             '-' => new LowLevelToken( TokenType.Minus, 1 ),
+            '{' => new LowLevelToken( TokenType.OpenBrace, 1 ),
+            '}' => new LowLevelToken( TokenType.CloseBrace, 1 ),
             _ => default
         };
     }
