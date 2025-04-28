@@ -103,6 +103,7 @@ public abstract class TransformLanguage
     ///     <item><see cref="TokenType.Minus"/>.</item>
     ///     <item><see cref="TokenType.OpenBrace"/>.</item>
     ///     <item><see cref="TokenType.CloseBrace"/>.</item>
+    ///     <item><see cref="TokenType.Asterisk"/>.</item>
     /// </list>
     /// <para>
     /// A <see cref="TransformStatementAnalyzer"/> can implement <see cref="ILowLevelTokenizer"/> to support other low level token type.
@@ -137,6 +138,7 @@ public abstract class TransformLanguage
             '-' => new LowLevelToken( TokenType.Minus, 1 ),
             '{' => new LowLevelToken( TokenType.OpenBrace, 1 ),
             '}' => new LowLevelToken( TokenType.CloseBrace, 1 ),
+            '*' => new LowLevelToken( TokenType.Asterisk, 1 ),
             _ => default
         };
     }

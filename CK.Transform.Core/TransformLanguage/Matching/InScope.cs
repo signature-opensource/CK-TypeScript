@@ -1,0 +1,51 @@
+using CK.Core;
+using System;
+
+namespace CK.Transform.Core;
+
+/// <summary>
+/// Captures "in ..." span where ... is <see cref="RangeLocation"/> (after/before/between ...) or
+/// a <see cref="LocationMatcher"/>. 
+/// </summary>
+public sealed class InScope : SourceSpan
+{
+    InScope( int beg, int end )
+        : base( beg, end )
+    {
+    }
+
+    /// <summary>
+    /// Checks that <see cref="RangeMatch"/> or <see cref="LocationMatch"/> is not null.
+    /// </summary>
+    public override void CheckValid()
+    {
+        base.CheckValid();
+        Throw.CheckState( Children.FirstChild is RangeLocation or LocationMatcher );
+    }
+
+    /// <summary>
+    /// Gets the after/before/between ... range if this is not a <see cref="LocationMatch"/>.
+    /// </summary>
+    public RangeLocation? RangeMatch => Children.FirstChild as RangeLocation;
+
+    /// <summary>
+    /// Gets the location matcher if this is not a <see cref="RangeMatch"/>.
+    /// </summary>
+    public LocationMatcher? LocationMatch => Children.FirstChild as LocationMatcher;
+
+    internal static InScope? Match( TransformerHost.Language language, ref TokenizerHead head )
+    {
+        if( !head.TryAcceptToken( "in", out _ ) )
+        {
+            return null;
+        }
+        int begSpan = head.LastTokenIndex;
+        RangeLocation? range = RangeLocation.Match( language, ref head );
+        if( range == null )
+        {
+            var matcher = LocationMatcher.Parse( ref head );
+            if( matcher == null ) return null;
+        }
+        return head.AddSpan( new InScope( begSpan, head.LastTokenIndex + 1 ) );
+    }
+}

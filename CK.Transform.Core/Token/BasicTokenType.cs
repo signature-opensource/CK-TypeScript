@@ -131,9 +131,18 @@ public enum BasicTokenType : byte
     /// </summary>
     AmpersandAmpersandEquals,
 
+    /// <summary>
+    /// <c>@</c> character.
+    /// </summary>
     AtSign,
 
+    /// <summary>
+    /// <c>*</c> character.
+    /// </summary>
     Asterisk,
+    /// <summary>
+    /// <c>*=</c> operator.
+    /// </summary>
     AsteriskEquals,
 
     Bar,

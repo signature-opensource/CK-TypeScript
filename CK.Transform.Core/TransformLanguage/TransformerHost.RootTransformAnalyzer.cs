@@ -113,7 +113,7 @@ public sealed partial class TransformerHost
             }
             // The begin...end is parsed in the context of the actual transform language.
             var headStatements = head.CreateSubHead( out var safetyToken, cLang.TransformStatementAnalyzer as ILowLevelTokenizer );
-            var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
+            var statements = TransformStatementBlock.Parse( cLang, ref headStatements );
             head.SkipTo( safetyToken, ref headStatements );
             var functionText = head.Text.Slice( begText, head.RemainingTextIndex );
             head.AddSpan( new TransformerFunction( functionText, startFunction, head.LastTokenIndex + 1, cLang, statements, functionName?.ToString(), target ) );

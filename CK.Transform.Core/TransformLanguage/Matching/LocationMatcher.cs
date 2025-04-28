@@ -22,7 +22,7 @@ public sealed class LocationMatcher : SourceSpan
 
     /// <summary>
     /// Gets the optional match cardinality.
-    /// When null, defaults to <see cref="LocationCardinality.LocationKind.Single"/>.
+    /// When null, the match must be considered "single".
     /// </summary>
     public LocationCardinality? Cardinality => Children.FirstChild as LocationCardinality;
 
@@ -39,7 +39,7 @@ public sealed class LocationMatcher : SourceSpan
         }
     }
 
-    internal static LocationMatcher? Match( ref TokenizerHead head, bool monoLocationOnly = false )
+    internal static LocationMatcher? Parse( ref TokenizerHead head, bool monoLocationOnly = false )
     {
         int begSpan = head.LastTokenIndex + 1;
         var cardinality = LocationCardinality.Match( ref head, monoLocationOnly );

@@ -19,9 +19,9 @@ sealed class HtmlTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
         return TransformLanguage.MinimalTransformerLowLevelTokenize( head );
     }
 
-    protected override TransformStatement? ParseStatement( ref TokenizerHead head )
+    protected override TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
     {
-        return base.ParseStatement( ref head );
+        return base.ParseStatement( language, ref head );
     }
 
 }

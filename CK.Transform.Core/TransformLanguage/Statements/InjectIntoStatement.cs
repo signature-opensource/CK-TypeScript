@@ -352,4 +352,34 @@ public sealed class InjectIntoStatement : TransformStatement
         while( ++iS < sHead.Length && char.IsAsciiLetterOrDigit( sHead[iS] ) ) ;
         return iS;
     }
+
+    internal static InjectIntoStatement? Parse( ref TokenizerHead head, Token inject )
+    {
+        Throw.DebugAssert( inject.Text.Span.Equals( "inject", StringComparison.Ordinal ) );
+        int startStatement = head.LastTokenIndex;
+        var content = RawString.TryMatch( ref head );
+        head.MatchToken( "into" );
+        var target = MatchInjectionPoint( ref head );
+        head.TryAcceptToken( TokenType.SemiColon, out _ );
+        return content != null && target != null
+                ? head.AddSpan( new InjectIntoStatement( startStatement, head.LastTokenIndex + 1, content, target ) )
+                : null;
+
+        static InjectionPoint? MatchInjectionPoint( ref TokenizerHead head )
+        {
+            if( head.LowLevelTokenType == TokenType.LessThan )
+            {
+                var sHead = head.Head;
+                int nameLen = GetInjectionPointLength( sHead );
+                if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
+                {
+                    head.PreAcceptToken( nameLen + 1, out var text, out var leading, out var trailing );
+                    return head.Accept( new InjectionPoint( text, leading, trailing ) );
+                }
+            }
+            head.AppendError( "Expected <InjectionPoint>.", 0 );
+            return null;
+        }
+    }
+
 }

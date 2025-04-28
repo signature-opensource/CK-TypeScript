@@ -31,35 +31,6 @@ public abstract class TransformStatementAnalyzer
     public TransformLanguage Language => _language;
 
     /// <summary>
-    /// Parses a "begin ... end" block.
-    /// Statements are parsed by <see cref="TransformStatementAnalyzer.ParseStatement(ref TokenizerHead)"/>.
-    /// </summary>
-    /// <param name="head">The head.</param>
-    /// <returns>The list of transform statements.</returns>
-    internal TransformStatementBlock ParseStatements( ref TokenizerHead head )
-    {
-        var statements = new List<TransformStatement>();
-        head.MatchToken( "begin" );
-        int begBlock = head.LastTokenIndex;
-        Token? foundEnd = null;
-        while( head.EndOfInput == null && !head.TryAcceptToken( "end", out foundEnd ) )
-        {
-            var s = ParseStatement( ref head );
-            if( s != null )
-            {
-                statements.Add( s );
-            }
-            else
-            {
-                head.AppendError( $"Failed to parse a transform '{_language.LanguageName}' language statement.", -1 );
-                break;
-            }
-        }
-        if( foundEnd == null ) head.AppendError( "Expected 'end'.", 0 );
-        return new TransformStatementBlock( begBlock, head.LastTokenIndex + 1, statements );
-    }
-
-    /// <summary>
     /// Must implement transform specific statement parsing.
     /// Parsing errors should be inlined <see cref="TokenError"/>. 
     /// <para>
@@ -68,53 +39,33 @@ public abstract class TransformStatementAnalyzer
     /// <see cref="TransformStatementBlock"/> (<c>begin</c>...<c>end</c> blocks).
     /// </para>
     /// </summary>
+    /// <param name="language">The host's language.</param>
     /// <param name="head">The head.</param>
     /// <returns>The parsed statement or null.</returns>
-    protected virtual TransformStatement? ParseStatement( ref TokenizerHead head )
+    internal protected virtual TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
     {
         if( head.TryAcceptToken( "inject", out var inject ) )
         {
-            return MatchInjectIntoStatement( ref head, inject );
+            return InjectIntoStatement.Parse( ref head, inject );
+        }
+        if( head.TryAcceptToken( "in", out var inT ) )
+        {
+            return InScopeStatement.Parse( language, ref head, inT );
+        }
+        if( head.TryAcceptToken( "replace", out var replaceT ) )
+        {
+            return ReplaceStatement.Parse( language, ref head, replaceT );
         }
         if( head.TryAcceptToken( "reparse", out _ ) )
         {
             int begStatement = head.LastTokenIndex;
-            head.TryAcceptToken( ";", out _ );
-            return new ReparseStatement( begStatement, head.LastTokenIndex + 1 );
+            head.TryAcceptToken( TokenType.SemiColon, out _ );
+            return head.AddSpan( new ReparseStatement( begStatement, head.LastTokenIndex + 1 ) );
         }
         if( head.LowLevelTokenText.Equals( "begin", StringComparison.Ordinal ) )
         {
-            return ParseStatements( ref head );
+            return TransformStatementBlock.Parse( language, ref head );
         }
         return null;
-    }
-
-    static InjectIntoStatement? MatchInjectIntoStatement( ref TokenizerHead head, Token inject )
-    {
-        Throw.DebugAssert( inject.Text.Span.Equals( "inject", StringComparison.Ordinal ) );
-        int startStatement = head.LastTokenIndex;
-        var content = RawString.TryMatch( ref head );
-        head.MatchToken( "into" );
-        var target = MatchInjectionPoint( ref head );
-        head.TryAcceptToken( ";", out _ );
-        return content != null && target != null
-                ? new InjectIntoStatement( startStatement, head.LastTokenIndex + 1, content, target )
-                : null;
-
-        static InjectionPoint? MatchInjectionPoint( ref TokenizerHead head )
-        {
-            if( head.LowLevelTokenType == TokenType.LessThan )
-            {
-                var sHead = head.Head;
-                int nameLen = InjectIntoStatement.GetInjectionPointLength( sHead );
-                if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
-                {
-                    head.PreAcceptToken( nameLen + 1, out var text, out var leading, out var trailing );
-                    return head.Accept( new InjectionPoint( text, leading, trailing ) );
-                }
-            }
-            head.AppendError( "Expected <InjectionPoint>.", 0 );
-            return null;
-        }
     }
 }

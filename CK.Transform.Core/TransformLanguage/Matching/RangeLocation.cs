@@ -5,7 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Captures "before ...", "after ...", "between ... and ..." where ... is a <see cref="LocationMatcher"/>.
+/// Captures "before ...", "after ...", "between ... and ..." where ... is a mono-location
+/// <see cref="LocationMatcher"/> (not "each" or "all").
 /// </summary>
 public sealed class RangeLocation : SourceSpan
 {
@@ -58,15 +59,15 @@ public sealed class RangeLocation : SourceSpan
     /// </summary>
     public LocationMatcher? Second => Children.FirstChild?.NextSibling as LocationMatcher;
 
-    internal static RangeLocation? Match( ref TokenizerHead head, bool monoLocationOnly = false )
+    internal static RangeLocation? Match( TransformerHost.Language language, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
         Token? kind;
         LocationMatcher? first;
         LocationMatcher? second = null;
-        if( head.TryAcceptToken("before", out kind ) || head.TryAcceptToken( "before", out kind ) )
+        if( head.TryAcceptToken( "before", out kind ) || head.TryAcceptToken( "after", out kind ) )
         {
-            first = LocationMatcher.Match( ref head, monoLocationOnly: true );
+            first = LocationMatcher.Parse( ref head, monoLocationOnly: true );
             if( first == null )
             {
                 return null;
@@ -74,10 +75,10 @@ public sealed class RangeLocation : SourceSpan
         }
         else if( head.TryAcceptToken( "between", out kind ) )
         {
-            first = LocationMatcher.Match( ref head, monoLocationOnly: true );
-            if( head.MatchToken("and") is not TokenError )
+            first = LocationMatcher.Parse( ref head, monoLocationOnly: true );
+            if( head.MatchToken( "and" ) is not TokenError )
             {
-                second = LocationMatcher.Match( ref head, monoLocationOnly: true );
+                second = LocationMatcher.Parse( ref head, monoLocationOnly: true );
             }
             if( first == null || second == null )
             {

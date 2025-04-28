@@ -27,6 +27,7 @@ public sealed partial class TransformerHost
     /// </summary>
     public sealed class Language
     {
+        readonly TransformerHost _host;
         readonly TransformLanguage _language;
         readonly TransformStatementAnalyzer _transformStatementAnalyzer;
         readonly IAnalyzer _targetAnalyzer;
@@ -57,8 +58,14 @@ public sealed partial class TransformerHost
         /// </summary>
         public int Index => _index;
 
+        /// <summary>
+        /// Gets the host to which this language is bound.
+        /// </summary>
+        public TransformerHost Host => _host;
+
         internal Language( TransformerHost host, TransformLanguage language, int index )
         {
+            _host = host;
             _language = language;
             _index = index;
             (_transformStatementAnalyzer,_targetAnalyzer) = language.CreateAnalyzers( host );

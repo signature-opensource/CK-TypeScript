@@ -19,7 +19,7 @@ sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
         return TransformLanguage.MinimalTransformerLowLevelTokenize( head );
     }
 
-    protected override TransformStatement? ParseStatement( ref TokenizerHead head )
+    protected override TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
     {
         int begStatement = head.LastTokenIndex;
         if( head.TryAcceptToken( "ensure", out _ ) )
@@ -33,7 +33,7 @@ sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
                 return importStatement;
             }
         }
-        return base.ParseStatement( ref head );
+        return base.ParseStatement( language, ref head );
     }
 
 }

@@ -173,9 +173,12 @@ public enum TokenType
     AmpersandAmpersand = BasicTokenType.AmpersandAmpersand,
     AmpersandAmpersandEquals = BasicTokenType.AmpersandAmpersandEquals,
 
+    /// <inheritdoc cref="BasicTokenType.Asterisk"/>
     Asterisk = BasicTokenType.Asterisk,
+    /// <inheritdoc cref="BasicTokenType.AsteriskEquals"/>
     AsteriskEquals = BasicTokenType.AsteriskEquals,
 
+    /// <inheritdoc cref="BasicTokenType.AtSign"/>
     AtSign = BasicTokenType.AtSign,
 
     BackSlash = BasicTokenType.BackSlash,
