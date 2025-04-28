@@ -1,6 +1,5 @@
-using CK.Core;
-
 namespace CK.Transform.Core;
+
 
 /// <summary>
 /// Captures a span matcher:
@@ -12,68 +11,45 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class SpanMatcher : SourceSpan
 {
-    string? _spanType;
-    string? _languageHint;
+    Token? _spanType;
+    Token? _languageName;
     RawString _pattern;
 
-    public SpanMatcher( int beg, int end, string? spanType, string? languageHint, RawString pattern )
+    SpanMatcher( int beg, int end, Token? spanType, Token? languageName, RawString pattern )
         : base( beg, end )
     {
         _spanType = spanType;
-        _languageHint = languageHint;
+        _languageName = languageName;
         _pattern = pattern;
     }
 
     /// <summary>
-    /// Gets or sets the type of the span.
+    /// Gets the type of the span. This is a <see cref="BasicTokenType.GenericIdentifier"/>.
     /// </summary>
-    public string? SpanType { get => _spanType; set => _spanType = value; }
+    public Token? SpanType => _spanType;
 
     /// <summary>
-    /// Gets or sets the optional language hint that must be one of <see cref="TransformLanguage.FileExtensions"/>.
-    /// When null, the target laguage is used.
+    /// Gets or sets the optional language name. This is a <see cref="BasicTokenType.GenericIdentifier"/>.
+    /// When null (the default), the target language is used.
     /// </summary>
-    public string? LanguageHint { get => _languageHint; set => _languageHint = value; }
+    public Token? LanguageHint => _languageName;
 
     /// <summary>
-    /// Gets or sets the pattern to match.
+    /// Gets the pattern to match.
     /// The <see cref="RawString.InnerText"/> must not be empty.
     /// </summary>
-    public RawString Pattern
-    {
-        get => _pattern;
-        set
-        {
-            Throw.CheckArgument( value.InnerText.Length > 0 );
-            _pattern = value;
-        }
-    }
+    public RawString Pattern => _pattern;
 
     internal static SpanMatcher? Match( ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
-        string? spanType = null;
+        Token? spanType = null;
         if( head.TryAcceptToken(TokenType.OpenBrace, out _ ) )
         {
-            if( head.TryAcceptToken( TokenType.GenericIdentifier, out var sType ) )
-            {
-                spanType = sType.Text.ToString();
-            }
+            head.TryAcceptToken( TokenType.GenericIdentifier, out spanType );
             if( !head.TryAcceptToken( TokenType.CloseBrace, out _ ) )
             {
                 head.AppendMissingToken( "closing '}'" );
-            }
-        }
-        string? languageHint = null;
-        if( head.TryAcceptToken(TokenType.Dot, out _))
-        {
-            if( head.TryAcceptToken( TokenType.GenericIdentifier, out var sType ) )
-            {
-                languageHint = sType.Text.ToString();
-            }
-            else
-            {
-                head.AppendMissingToken( "language name or file extension" );
             }
         }
         RawString? pattern = null;
@@ -90,9 +66,20 @@ public sealed class SpanMatcher : SourceSpan
                 pattern = null;
             }
         }
-        head.TryAcceptToken( TokenType.SemiColon, out _ );
+        Token? languageName = null;
+        if( head.TryAcceptToken( TokenType.Dot, out _ ) )
+        {
+            if( !head.TryAcceptToken( TokenType.GenericIdentifier, out languageName ) )
+            {
+                head.AppendMissingToken( "language name" );
+            }
+        }
         return pattern == null
                 ? null
-                : new SpanMatcher( begSpan, head.LastTokenIndex + 1, spanType, languageHint, pattern );
+                : head.AddSpan( new SpanMatcher( begSpan,
+                                                       head.LastTokenIndex + 1,
+                                                       spanType,
+                                                       languageName,
+                                                       pattern ) );
     }
 }

@@ -40,6 +40,24 @@ public abstract partial class SourceSpan
     public bool IsDetached => _root == null;
 
     /// <summary>
+    /// Checks whether this span is valid. At this level, it must not be <see cref="IsDetached"/>
+    /// and children's <see cref="SourceSpanChildren.CheckValid()"/> is called.
+    /// <para>
+    /// This is often specialized to implement checks on <see cref="Children"/>, <see cref="Parent"/>
+    /// or siblings. Specializations must call this base method.
+    /// </para>
+    /// <para>
+    /// Overrides typically specify [MemberNotNull] with required properties of the structure.
+    /// </para>
+    /// </summary>
+    [MemberNotNull( nameof( Root ), nameof( _root ) )]
+    public virtual void CheckValid()
+    {
+        Throw.CheckState( !IsDetached );
+        Children.CheckValid();
+    }
+
+    /// <summary>
     /// Detaches this span from the <see cref="Root"/>.
     /// </summary>
     /// <param name="withChildren">
@@ -83,6 +101,7 @@ public abstract partial class SourceSpan
             _root = null;
         }
     }
+
     /// <summary>
     /// Gets the token span.
     /// </summary>
@@ -97,6 +116,16 @@ public abstract partial class SourceSpan
     /// Gets the children.
     /// </summary>
     public SourceSpanChildren Children => _children;
+
+    /// <summary>
+    /// Gets the previous sibling.
+    /// </summary>
+    public SourceSpan? PreviousSibling => _prevSibling;
+
+    /// <summary>
+    /// Gets the next sibling.
+    /// </summary>
+    public SourceSpan? NextSibling => _nextSibling;
 
     /// <summary>
     /// Gets the type name of this span. This should be compared using <see cref="StringComparer.OrdinalIgnoreCase"/>.

@@ -116,7 +116,7 @@ public sealed partial class TransformerHost
             var statements = cLang.TransformStatementAnalyzer.ParseStatements( ref headStatements );
             head.SkipTo( safetyToken, ref headStatements );
             var functionText = head.Text.Slice( begText, head.RemainingTextIndex );
-            head.AddSourceSpan( new TransformerFunction( functionText, startFunction, head.LastTokenIndex + 1, cLang, statements, functionName?.ToString(), target ) );
+            head.AddSpan( new TransformerFunction( functionText, startFunction, head.LastTokenIndex + 1, cLang, statements, functionName?.ToString(), target ) );
             return null;
         }
 

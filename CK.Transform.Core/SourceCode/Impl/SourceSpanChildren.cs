@@ -33,6 +33,19 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
     /// </summary>
     public TokenSpan CoveringSpan => HasChildren ? new TokenSpan( _firstChild.Span.Beg, _lastChild.Span.End ) : default;
 
+    /// <summary>
+    /// Calls <see cref="SourceSpan.CheckValid()"/> on these children.
+    /// </summary>
+    public void CheckValid()
+    {
+        var f = _firstChild;
+        while( f != null )
+        {
+            f.CheckValid();
+            f = f._nextSibling;
+        }
+    }
+
     internal void Clear()
     {
         while( _firstChild != null ) _firstChild.Detach( withChildren: true );

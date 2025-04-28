@@ -242,9 +242,11 @@ public ref struct TokenizerHead
     /// if it intersects an already added existing span.
     /// </summary>
     /// <param name="newOne">The span to add.</param>
-    public void AddSourceSpan( SourceSpan newOne )
+    /// <returns>The <paramref name="newOne"/> span.</returns>
+    public readonly SourceSpan AddSourceSpan( SourceSpan newOne )
     {
         _spans.Add( newOne );
+        return newOne;
     }
 
     /// <summary>
@@ -595,4 +597,3 @@ public ref struct TokenizerHead
 
     #endregion
 }
-

@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
       <LangVersion>13</LangVersion>
       <Nullable>enable</Nullable>
+      <IsPackable>false</IsPackable>
   </PropertyGroup>
 
     <ItemGroup>

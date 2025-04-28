@@ -248,7 +248,7 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
                     Throw.DebugAssert( _startingTokens.Count > 0 );
                     int startIndex = _startingTokens[^1].Index;
                     _startingTokens.RemoveAt( _startingTokens.Count - 1 );
-                    head.AddSourceSpan( new HtmlElementSpan( startIndex, head.LastTokenIndex + 1 ) );
+                    head.AddSpan( new HtmlElementSpan( startIndex, head.LastTokenIndex + 1 ) );
                     break;
                 case (int)HtmlTokenType.EndingTag:
                     var name = token.GetHtmlTagName();
@@ -262,9 +262,9 @@ public sealed partial class HtmlAnalyzer : Tokenizer, IAnalyzer
                             for( int j = _startingTokens.Count - 1; j > i; j-- )
                             {
                                 var closingStart = _startingTokens[j].Index;
-                                head.AddSourceSpan( new HtmlElementSpan( closingStart, head.LastTokenIndex ) );
+                                head.AddSpan( new HtmlElementSpan( closingStart, head.LastTokenIndex ) );
                             }
-                            head.AddSourceSpan( new HtmlElementSpan( start.Index, head.LastTokenIndex + 1 ) );
+                            head.AddSpan( new HtmlElementSpan( start.Index, head.LastTokenIndex + 1 ) );
                             _startingTokens.RemoveRange( i, _startingTokens.Count - i );
                             break;
                         }
