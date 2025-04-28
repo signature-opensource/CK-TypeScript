@@ -31,7 +31,8 @@ public abstract class TransformStatementAnalyzer
     public TransformLanguage Language => _language;
 
     /// <summary>
-    /// Parses a "begin ... end" block. Statements are parsed by <see cref="ParseStatement(ref TokenizerHead)"/>.
+    /// Parses a "begin ... end" block.
+    /// Statements are parsed by <see cref="TransformStatementAnalyzer.ParseStatement(ref TokenizerHead)"/>.
     /// </summary>
     /// <param name="head">The head.</param>
     /// <returns>The list of transform statements.</returns>
@@ -50,7 +51,7 @@ public abstract class TransformStatementAnalyzer
             }
             else
             {
-                head.AppendError( $"Failed to parse a transform '{_language.LanguageName}' language statement.", 0 );
+                head.AppendError( $"Failed to parse a transform '{_language.LanguageName}' language statement.", -1 );
                 break;
             }
         }

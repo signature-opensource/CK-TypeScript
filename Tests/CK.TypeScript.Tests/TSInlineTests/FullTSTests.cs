@@ -219,7 +219,7 @@ public class FullTSTests
     }
 
     [Test]
-    public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_DefaultTypeScriptVersion_Async()
+    public async Task From_scratch_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
