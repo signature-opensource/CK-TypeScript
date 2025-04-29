@@ -11,25 +11,27 @@ namespace CK.Transform.Core;
 /// Editor for <see cref="SourceCode"/>.
 /// </summary>
 [DebuggerDisplay( "{ToString(),nq}" )]
-public sealed class SourceCodeEditor : IEnumerable<SourceToken>
+public sealed partial class SourceCodeEditor
 {
     internal readonly SourceCode _code;
     readonly ImmutableList<Token>.Builder _tokens;
-    IAnalyzer _analyzer;
+    readonly TokenScope _scopedTokens;
+    TransformerHost.Language _language;
     bool _needReparse;
 
     /// <summary>
     /// Initializes a new editor on a source code.
     /// </summary>
-    /// <param name="analyzer">Analyzer required for <see cref="Reparse(IActivityMonitor)"/>.</param>
+    /// <param name="language">Source code language.</param>
     /// <param name="code">The source code to edit.</param>
-    public SourceCodeEditor( IAnalyzer analyzer, SourceCode code )
+    public SourceCodeEditor( TransformerHost.Language language, SourceCode code )
     {
-        Throw.CheckNotNullArgument( analyzer );
+        Throw.CheckNotNullArgument( language );
         Throw.CheckNotNullArgument( code );
+        _language = language;
         _code = code;
-        _analyzer = analyzer;
         _tokens = code.Tokens.ToBuilder();
+        _scopedTokens = new TokenScope( this );
     }
 
     /// <summary>
@@ -41,31 +43,19 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// Gets the tokens.
     /// </summary>
     public ImmutableList<Token> Tokens => _code.Tokens;
-
     /// <summary>
-    /// Enumerates the scoped <see cref="SourceToken"/>.
+    /// Gets the filtered <see cref="SourceToken"/>.
     /// <para>
-    /// Note that the enumerator MUST be disposed once done with it because it contains a <see cref="ImmutableList{T}.Enumerator"/>
-    /// that must be disposed.
+    /// Note that the enumerator MUST be disposed once done with it because it
+    /// contains a <see cref="ImmutableList{T}.Enumerator"/> that must be disposed.
     /// </para>
     /// </summary>
-    public IEnumerable<SourceToken> SourceTokens => this;
-
-    IEnumerator<SourceToken> IEnumerable<SourceToken>.GetEnumerator() => CreateTokenSourceEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => CreateTokenSourceEnumerator();
-
-    IEnumerator<SourceToken> CreateTokenSourceEnumerator()
-    {
-        var e = _code.SourceTokens.GetEnumerator();
-        // Combine filters.
-        return e;
-    }
+    public TokenScope ScopedTokens => _scopedTokens;
 
     /// <summary>
-    /// Gets the analyzer that is used by <see cref="Reparse(IActivityMonitor)"/>.
+    /// Gets the language.
     /// </summary>
-    public IAnalyzer Analyzer => _analyzer;
+    public TransformerHost.Language Language => _language;
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.
@@ -79,21 +69,21 @@ public sealed class SourceCodeEditor : IEnumerable<SourceToken>
     /// and sets it as the current <see cref="Analyzer"/>.
     /// </summary>
     /// <param name="monitor">Required monitor.</param>
-    /// <param name="newAnalyzer">New analyzer that replaces <see cref="Analyzer"/>.</param>
+    /// <param name="newLanguage">New language that replaces <see cref="Language"/>.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool Reparse( IActivityMonitor monitor, IAnalyzer newAnalyzer ) => DoReparse( monitor, newAnalyzer );
+    public bool Reparse( IActivityMonitor monitor, TransformerHost.Language newLanguage ) => DoReparse( monitor, newLanguage );
 
-    bool DoReparse( IActivityMonitor monitor, IAnalyzer? newAnalyzer )
+    bool DoReparse( IActivityMonitor monitor, TransformerHost.Language? newLanguage )
     {
         using( monitor.OpenTrace( "Parsing transformation result." ) )
         {
-            if( newAnalyzer != null )
+            if( newLanguage != null )
             {
-                monitor.Trace( $"Changing language from '{_analyzer.LanguageName}' to '{newAnalyzer.LanguageName}'." );
-                _analyzer = newAnalyzer;
+                monitor.Trace( $"Changing language from '{_language.LanguageName}' to '{newLanguage.LanguageName}'." );
+                _language = newLanguage;
             }
             string text = _code.ToString();
-            var r = _analyzer.TryParse( monitor, text.AsMemory() );
+            var r = _language.TargetAnalyzer.TryParse( monitor, text.AsMemory() );
             if( r == null ) return false;
             r.SourceCode.TransferTo( _code );
             _needReparse = false;

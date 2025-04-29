@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace CK.TypeScript.Transform.Tests;
 
-public class HtmlParsingTests
+public class TypeScriptParsingTests
 {
     [Test]
     public void empty_parsing()

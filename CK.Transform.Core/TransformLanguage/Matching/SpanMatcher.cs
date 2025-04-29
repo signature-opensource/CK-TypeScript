@@ -9,7 +9,7 @@ namespace CK.Transform.Core;
 /// Where the span type is optional (defaults to the matched tokens) and the .<see cref="LanguageHint"/>
 /// prefix is also optional (defaults to the target language).
 /// </summary>
-public sealed class SpanMatcher : SourceSpan
+public sealed class SpanMatcher : SourceSpan, ITokenFilter
 {
     Token? _spanType;
     Token? _languageName;
@@ -44,7 +44,7 @@ public sealed class SpanMatcher : SourceSpan
     {
         int begSpan = head.LastTokenIndex + 1;
         Token? spanType = null;
-        if( head.TryAcceptToken(TokenType.OpenBrace, out _ ) )
+        if( head.TryAcceptToken( TokenType.OpenBrace, out _ ) )
         {
             head.TryAcceptToken( TokenType.GenericIdentifier, out spanType );
             if( !head.TryAcceptToken( TokenType.CloseBrace, out _ ) )
@@ -77,9 +77,9 @@ public sealed class SpanMatcher : SourceSpan
         return pattern == null
                 ? null
                 : head.AddSpan( new SpanMatcher( begSpan,
-                                                       head.LastTokenIndex + 1,
-                                                       spanType,
-                                                       languageName,
-                                                       pattern ) );
+                                                 head.LastTokenIndex + 1,
+                                                 spanType,
+                                                 languageName,
+                                                 pattern ) );
     }
 }

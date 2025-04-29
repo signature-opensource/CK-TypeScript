@@ -91,10 +91,6 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
             // - Equals: duplicate span error.
             if( c._span.ContainsOrEquals( newOne._span ) )
             {
-                if( c._span == newOne._span )
-                {
-                    return false;
-                }
                 return c._children.TryAdd( c, newOne );
             }
             // Entering the covering case.

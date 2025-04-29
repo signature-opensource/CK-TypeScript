@@ -1,18 +1,32 @@
 using CK.Core;
 using System;
+using System.Diagnostics;
 using static CK.Core.ActivityMonitor;
 
 namespace CK.Transform.Core;
 
 public sealed class ReplaceStatement : TransformStatement
 {
-    ReplaceStatement( int beg, int end ) : base( beg, end )
+    readonly RawString _replacement;
+
+    ReplaceStatement( int beg, int end, RawString replacement )
+        : base( beg, end )
     {
+        _replacement = replacement;
     }
+
+    public LocationMatcher? Matcher => Children.FirstChild as LocationMatcher;
 
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        throw new NotImplementedException();
+        // foreach( var each in editor.SourceTokens )
+        //    foreach( var range in each.Ranges )
+        //       foreach( var t in range.SourceTokens )
+        using var scope = editor.ScopedTokens.ApplyTokenFilter( Matcher );
+        foreach( var t in editor.SourceTokens )
+        {
+            _replacement.InnerText
+        }
     }
 
     internal static ReplaceStatement? Parse( TransformerHost.Language language, ref TokenizerHead head, Token replaceToken )
@@ -30,9 +44,15 @@ public sealed class ReplaceStatement : TransformStatement
         {
             replacement = RawString.TryMatch( ref head );
         }
-        return hasWith && replacement != null
-                ? head.AddSpan( new ReplaceStatement( begSpan, head.LastTokenIndex + 1 ) )
-                : null;
-
+        else
+        {
+            head.AppendError( "Expecting replacement string.", 0 );
+        }
+        if( hasWith && replacement != null )
+        {
+            head.TryAcceptToken( TokenType.SemiColon, out _ );
+            return head.AddSpan( new ReplaceStatement( begSpan, head.LastTokenIndex + 1, replacement ) );
+        }
+        return null;
     }
 }

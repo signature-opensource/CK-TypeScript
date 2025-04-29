@@ -1,9 +1,11 @@
 using CK.Core;
 using NUnit.Framework;
+using Shouldly;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests;
 
+[TestFixture]
 public class InjectIntoTests
 {
     [TestCase( "One",
@@ -530,10 +532,8 @@ public class InjectIntoTests
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost();
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
 

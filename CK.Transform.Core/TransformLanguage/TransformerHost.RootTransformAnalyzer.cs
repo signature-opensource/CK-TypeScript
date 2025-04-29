@@ -64,7 +64,7 @@ public sealed partial class TransformerHost
                 return null;
             }
             int startFunction = head.LastTokenIndex;
-            var cLang = _host.Find( head.LowLevelTokenText );
+            var cLang = _host.FindLanguage( head.LowLevelTokenText, withFileExtensions: false );
             if( cLang == null )
             {
                 return head.AppendError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'.", 0 );
@@ -116,7 +116,13 @@ public sealed partial class TransformerHost
             var statements = TransformStatementBlock.Parse( cLang, ref headStatements );
             head.SkipTo( safetyToken, ref headStatements );
             var functionText = head.Text.Slice( begText, head.RemainingTextIndex );
-            head.AddSpan( new TransformerFunction( functionText, startFunction, head.LastTokenIndex + 1, cLang, statements, functionName?.ToString(), target ) );
+            head.AddSpan( new TransformerFunction( functionText,
+                                                   startFunction,
+                                                   head.LastTokenIndex + 1,
+                                                   cLang,
+                                                   statements,
+                                                   functionName?.ToString(),
+                                                   target ) );
             return null;
         }
 

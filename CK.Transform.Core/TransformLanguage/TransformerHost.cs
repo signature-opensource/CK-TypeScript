@@ -135,9 +135,12 @@ public sealed partial class TransformerHost
     /// <summary>
     /// Finds a registered <see cref="Language"/>.
     /// </summary>
-    /// <param name="name">The language name.</param>
+    /// <param name="name">The language name. A leading '.' is silently handled.</param>
+    /// <param name="withFileExtensions">
+    /// False to use only <see cref="TransformLanguage.LanguageName"/> and ignore <see cref="TransformLanguage.FileExtensions"/>.
+    /// </param>
     /// <returns>The language or null if not found.</returns>
-    public Language? Find( ReadOnlySpan<char> name ) => Find( _languages, name );
+    public Language? FindLanguage( ReadOnlySpan<char> name, bool withFileExtensions = true ) => FindLanguage( _languages, name, withFileExtensions );
 
     /// <summary>
     /// Tries to find a <see cref="Language"/> from a file name.
@@ -230,23 +233,21 @@ public sealed partial class TransformerHost
                                   ReadOnlyMemory<char> text,
                                   params IEnumerable<TransformerFunction> transformers )
     {
+        Throw.CheckArgument( transformers.All( t => t.Language.Host == this ) );
         var transformer = transformers.FirstOrDefault();
         Throw.CheckArgument( transformer is not null );
 
-        Language? language = LocalFind( monitor, _languages, transformer, text.Span );
-        if( language == null ) return null;
-        AnalyzerResult? r = language.TargetAnalyzer.TryParse( monitor, text );
+        AnalyzerResult? r = transformer.Language.TargetAnalyzer.TryParse( monitor, text );
         if( r == null ) return null;
 
-        var codeEditor = new SourceCodeEditor( language.TargetAnalyzer, r.SourceCode );
+        var codeEditor = new SourceCodeEditor( transformer.Language, r.SourceCode );
         if( !transformer.Apply( monitor, codeEditor ) ) return null;
 
         foreach( var t in transformers.Skip( 1 ) )
         {
-            if( !t.Language.LanguageName.Equals( language.LanguageName, StringComparison.OrdinalIgnoreCase ) )
+            if( t.Language != codeEditor.Language )
             {
-                language = LocalFind( monitor, _languages, transformer, text.Span );
-                if( language == null || !codeEditor.Reparse( monitor, language.TargetAnalyzer ) )
+                if( !codeEditor.Reparse( monitor, t.Language ) )
                 {
                     return null;
                 }
@@ -257,31 +258,35 @@ public sealed partial class TransformerHost
             }
         }
         return codeEditor._code;
-
-        static Language? LocalFind( IActivityMonitor monitor, List<Language> languages, TransformerFunction transformer, ReadOnlySpan<char> text )
-        {
-            var l = Find( languages, transformer.Language.LanguageName );
-            if( l == null )
-            {
-                monitor.Error( $"""
-                            Unavailable language '{transformer.Language.LanguageName}'. Cannot apply:
-                            {transformer}
-                            On text:
-                            {text}
-                            """ );
-                return null;
-            }
-            return l;
-        }
-
     }
 
-    static Language? Find( List<Language> languages, ReadOnlySpan<char> name )
+    static Language? FindLanguage( List<Language> languages, ReadOnlySpan<char> name, bool withFileExtensions )
     {
-        foreach( var l in languages )
+        if( name.Length > 0 )
         {
-            if( name.Equals( l.LanguageName, StringComparison.OrdinalIgnoreCase ) )
-                return l;
+            if( name[0] == '.' ) name = name.Slice( 1 );
+            if( name.Length > 0 )
+            {
+                if( withFileExtensions )
+                {
+                    foreach( var l in languages )
+                    {
+                        foreach( var f in l.TransformLanguage.FileExtensions )
+                        {
+                            if( name.Equals( f.AsSpan( 1 ), StringComparison.OrdinalIgnoreCase ) )
+                                return l;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach( var l in languages )
+                    {
+                        if( name.Equals( l.LanguageName, StringComparison.OrdinalIgnoreCase ) )
+                            return l;
+                    }
+                }
+            }
         }
         return null;
     }
