@@ -48,13 +48,14 @@ public sealed partial class SourceCodeEditor
         /// <summary>
         /// Pushes a new <see cref="ITokenFilter"/> on <see cref="Tokens"/>.
         /// </summary>
-        /// <param name="monitor"></param>
+        /// <param name="monitor">The monitor that will detects errors.</param>
         /// <param name="filter">The filter to apply.</param>
         /// <returns>True on sucess, false on error.</returns>
         public bool PushTokenFilter( IActivityMonitor monitor, ITokenFilter filter )
         {
-            var f = filter.GetScopedTokens( monitor, _editor );
-            if( f != null )
+            var builder = new ScopedTokensBuilder( monitor, _editor );
+            var f = filter.GetScopedTokens( builder );
+            if( !builder.HasError )
             {
                 _tokenFilters.Push( f );
                 return true;

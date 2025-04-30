@@ -1,5 +1,6 @@
 using CK.Core;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
@@ -15,7 +16,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
 {
     Token? _spanType;
     Token? _languageName;
-    RawString _pattern;
+    RawString? _pattern;
 
     SpanMatcher( int beg, int end, Token? spanType, Token? languageName, RawString pattern )
         : base( beg, end )
@@ -23,6 +24,12 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
         _spanType = spanType;
         _languageName = languageName;
         _pattern = pattern;
+    }
+
+    [MemberNotNullWhen( true, nameof( Pattern ), nameof( _pattern ) )]
+    public override bool CheckValid()
+    {
+        return base.CheckValid() && _pattern != null;
     }
 
     /// <summary>
@@ -40,7 +47,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
     /// Gets the pattern to match.
     /// The <see cref="RawString.InnerText"/> must not be empty.
     /// </summary>
-    public RawString Pattern => _pattern;
+    public RawString? Pattern => _pattern;
 
     internal static SpanMatcher? Match( ref TokenizerHead head )
     {
@@ -85,21 +92,34 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
                                                  pattern ) );
     }
 
-    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>>? GetScopedTokens( IActivityMonitor monitor, SourceCodeEditor editor )
+    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetScopedTokens( ScopedTokensBuilder builder )
     {
-        var language = editor.Language;
+        Throw.DebugAssert( CheckValid() );
+        var language = builder.Language;
         // This should be in Bind() method.
         // => Currently we don't locate the error (we don't have the source code of the transformer here).
         if( _languageName != null )
         {
-            language = editor.Language.Host.FindLanguage( _languageName.Text.Span );
+            language = builder.Language.Host.FindLanguage( _languageName.Text.Span );
             if( language == null )
             {
-                monitor.Error( $"Unable to find language '{_languageName}'." );
-                return null;
+                builder.Monitor.Error( $"Unable to find language '{_languageName}'." );
+                return builder.EmptyResult;
             }
         }
-        var m = language.TargetAnalyzer.CreateSpanMatcher( monitor, _spanType != null ? _spanType.Text.Span : default, _pattern.InnerText );
-        return m?.GetScopedTokens( monitor, editor );
+        var m = language.TargetAnalyzer.CreateSpanMatcher( builder.Monitor,
+                                                           _spanType != null ? _spanType.Text.Span : default,
+                                                           _pattern.InnerText );
+        return m != null
+                ? m.GetScopedTokens( builder )
+                : builder.EmptyResult;
+    }
+
+    public override string ToString()
+    {
+        if( !CheckValid() ) return "<Invalid>";
+        return _spanType == null
+                ? _pattern.ToString()
+                : $$"""{{{_spanType.Text.Span}}} {{_pattern?.Text}}""";
     }
 }

@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
+using System.Threading;
 
 namespace CK.Transform.Core;
 
@@ -55,25 +57,163 @@ public sealed class LocationMatcher : SourceSpan, ITokenFilter
                 : head.AddSpan( new LocationMatcher( begSpan, head.LastTokenIndex + 1 ) );
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>? ITokenFilter.GetScopedTokens( IActivityMonitor monitor, SourceCodeEditor editor )
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> ITokenFilter.GetScopedTokens( ScopedTokensBuilder builder )
     {
         Throw.DebugAssert( CheckValid() );
-        var inner = Matcher.GetScopedTokens( monitor, editor );
-        if( inner == null ) return null;
-        if( Cardinality == null || Cardinality.Kind == LocationCardinality.LocationKind.Single )
+        var matcher = Matcher;
+        var inner = matcher.GetScopedTokens( builder );
+        if( builder.HasError ) return builder.EmptyResult;
+
+        var cardinality = Cardinality;
+        var kind = cardinality?.Kind ?? LocationCardinality.LocationKind.Single;
+        return kind switch
         {
-            var single = inner.SelectMany( Util.FuncIdentity ).SingleOrDefault();
-            if( single != null ) return [[single]];
-            int count = inner.SelectMany( Util.FuncIdentity ).Count();
-            monitor.Error( $"Expected single '{Matcher}' but got {count}." );
-            return null;
-        }
-        if( Cardinality.Kind == LocationCardinality.LocationKind.First )
+            LocationCardinality.LocationKind.Single => HandleSingle( builder, matcher, inner ),
+            LocationCardinality.LocationKind.First => HandleFirst( builder, matcher, inner, cardinality! ),
+            LocationCardinality.LocationKind.Last => HandleLast( builder, matcher, inner, cardinality! ),
+            LocationCardinality.LocationKind.All => HandleAll( builder, matcher, inner, cardinality! ),
+            _ => HandleEach( builder, matcher, inner, cardinality! )
+        };
+
+        static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleSingle( ScopedTokensBuilder builder,
+                                                                                SpanMatcher matcher,
+                                                                                IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
-            var first = inner.SelectMany( Util.FuncIdentity ).Skip( Cardinality.Offset - 1 ).FirstOrDefault();
-            if( first != null ) return [[first]];
-            int count = inner.SelectMany( Util.FuncIdentity ).Count();
-            monitor.Error( $"Expected {Cardinality} '{Matcher}' but got only {count} matches." );
+            foreach( var each in inner )
+            {
+                var single = each.SingleOrDefault();
+                if( single != null )
+                {
+                    yield return [single];
+                }
+                else
+                {
+                    builder.Monitor.Error( $"""
+                                        Expected single '{matcher}' but got {each.Count()} in:
+                                        {DumpRanges( each )}
+                                        """ );
+                    break;
+                }
+            }
         }
+
+        static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleFirst( ScopedTokensBuilder builder,
+                                                                               SpanMatcher matcher,
+                                                                               IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner,
+                                                                               LocationCardinality cardinality )
+        {
+            foreach( var each in inner )
+            {
+                int count = HandleExpectedMatchCount( builder, matcher, cardinality, each );
+                if( count == -2 ) break;
+
+                var first = each.Skip( cardinality.Offset - 1 ).FirstOrDefault();
+                if( first != null )
+                {
+                    yield return [first];
+                }
+                else
+                {
+                    builder.Monitor.Error( $"""
+                                        Expected '{cardinality} {matcher}' but got {count} matches in:
+                                        {DumpRanges( each )}
+                                        """ );
+                    break;
+                }
+            }
+        }
+
+        static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleLast( ScopedTokensBuilder builder,
+                                                                              SpanMatcher matcher,
+                                                                              IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner,
+                                                                              LocationCardinality cardinality )
+        {
+            foreach( var each in inner )
+            {
+                int count = HandleExpectedMatchCount( builder, matcher, cardinality, each );
+                if( count == -2 ) break;
+                if( count == -1 ) count = each.Count();
+                int at = count - cardinality.Offset + 1;
+                if( at >= 0 && at < count )
+                {
+                    yield return [each.ElementAt( at )];
+                }
+                else
+                {
+                    builder.Monitor.Error( $"""
+                                    Expected '{cardinality} {matcher}' but got {count} matches in:
+                                    {DumpRanges( each )}
+                                    """ );
+                    break;
+                }
+            }
+        }
+
+        static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAll( ScopedTokensBuilder builder,
+                                                                             SpanMatcher matcher,
+                                                                             IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner,
+                                                                             LocationCardinality cardinality )
+        {
+            if( cardinality.ExpectedMatchCount != 0 )
+            {
+                foreach( var each in inner )
+                {
+                    int count = HandleExpectedMatchCount( builder, matcher, cardinality, each );
+                    if( count == -2 ) return builder.EmptyResult;
+                }
+            }
+            return inner;
+        }
+
+        static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleEach( ScopedTokensBuilder builder,
+                                                                              SpanMatcher matcher,
+                                                                              IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner,
+                                                                              LocationCardinality cardinality )
+        {
+            if( cardinality.ExpectedMatchCount != 0 )
+            {
+                foreach( var each in inner )
+                {
+                    int count = HandleExpectedMatchCount( builder, matcher, cardinality, each );
+                    if( count == -2 ) break;
+                    foreach( var r in each ) yield return [r];
+                }
+            }
+        }
+
+        static int HandleExpectedMatchCount( ScopedTokensBuilder builder,
+                                             SpanMatcher matcher,
+                                             LocationCardinality cardinality,
+                                             IEnumerable<IEnumerable<SourceToken>> each )
+        {
+            int count = -1;
+            if( cardinality.ExpectedMatchCount != 0 )
+            {
+                count = each.Count();
+                if( count != cardinality.ExpectedMatchCount )
+                {
+                    builder.Monitor.Error( $"""
+                                    Expected {cardinality} '{matcher}' but got {count} matches in:
+                                    {DumpRanges( each )}
+                                    """ );
+                    count = -2;
+                }
+            }
+            return count;
+        }
+
+        static string DumpRanges( IEnumerable<IEnumerable<SourceToken>> each )
+        {
+            var b = new StringBuilder();
+            int iRange = 0;
+            foreach( var r in each )
+            {
+                b.Append( "--- (range n°" ).Append( ++iRange ).AppendLine( ") ---" );
+                r.Select( t => t.Token ).Write( b ).AppendLine();
+                b.AppendLine( "---" );
+            }
+            return b.ToString();
+        }
+
     }
 }

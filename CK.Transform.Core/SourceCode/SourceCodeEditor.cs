@@ -1,7 +1,5 @@
 using CK.Core;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -43,6 +41,7 @@ public sealed partial class SourceCodeEditor
     /// Gets the tokens.
     /// </summary>
     public ImmutableList<Token> Tokens => _code.Tokens;
+
     /// <summary>
     /// Gets the filtered <see cref="SourceToken"/>.
     /// <para>

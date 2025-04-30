@@ -8,7 +8,7 @@ namespace CK.Transform.Core;
 
 public sealed class ReplaceStatement : TransformStatement
 {
-    readonly RawString _replacement;
+    RawString? _replacement;
 
     ReplaceStatement( int beg, int end, RawString replacement )
         : base( beg, end )
@@ -16,17 +16,21 @@ public sealed class ReplaceStatement : TransformStatement
         _replacement = replacement;
     }
 
-    [MemberNotNullWhen( true, nameof( Matcher ) )]
+    [MemberNotNullWhen( true, nameof( _replacement ) )]
     public override bool CheckValid()
     {
-        return base.CheckValid() && Matcher != null;
+        return base.CheckValid() && _replacement != null;
     }
 
+    /// <summary>
+    /// Gets the optional matcher. When null it is a "replace * with ..." statement.
+    /// </summary>
     public LocationMatcher? Matcher => Children.FirstChild as LocationMatcher;
 
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        if( !editor.ScopedTokens.PushTokenFilter( monitor, Matcher ) )
+        Throw.DebugAssert( CheckValid() );
+        if( Matcher != null && !editor.ScopedTokens.PushTokenFilter( monitor, Matcher ) )
         {
             return false;
         }
@@ -48,7 +52,7 @@ public sealed class ReplaceStatement : TransformStatement
         }
         finally
         {
-            editor.ScopedTokens.PopTokenFilter();
+            if( Matcher != null ) editor.ScopedTokens.PopTokenFilter();
         }
         return true;
     }

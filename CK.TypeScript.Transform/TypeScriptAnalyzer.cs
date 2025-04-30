@@ -8,7 +8,7 @@ namespace CK.TypeScript.Transform;
 /// <summary>
 /// TypeScript language anlayzer.
 /// </summary>
-public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
+public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
 {
     /// <summary>
     /// Gets "TypeScript".
@@ -60,7 +60,7 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
             {
                 var importStatement = ImportStatement.TryMatch( t, ref head );
                 Throw.DebugAssert( "TryMatch doesn't add the span.", importStatement == null || importStatement.IsDetached );
-                if( importStatement != null ) head.AddSpan( importStatement );
+                if( importStatement != null ) head.AddSourceSpan( importStatement );
             }
         }
     }
@@ -70,5 +70,10 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, IAnalyzer
     {
         Reset( text );
         return Parse();
+    }
+
+    ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
+    {
+        throw new NotImplementedException();
     }
 }

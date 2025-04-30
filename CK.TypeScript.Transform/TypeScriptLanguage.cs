@@ -18,7 +18,7 @@ public sealed class TypeScriptLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
+    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
     {
         var a = new TypeScriptAnalyzer();
         var t = new TypeScriptTransformStatementAnalyzer( this, a );

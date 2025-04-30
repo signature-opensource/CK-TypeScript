@@ -18,7 +18,7 @@ public sealed class LessLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
+    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
     {
         var a = new LessAnalyzer();
         var t = new LessTransformStatementAnalyzer( this, a );

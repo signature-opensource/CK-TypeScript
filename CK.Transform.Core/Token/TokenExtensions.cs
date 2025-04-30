@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -27,12 +28,37 @@ public static class TokenExtensions
     }
 
     /// <summary>
-    /// Writes the text with one space trivia between tokens.
+    /// Writes the full text.
     /// </summary>
     /// <param name="tokens">These tokens.</param>
     /// <param name="b">The target builder.</param>
     /// <returns>The builder.</returns>
-    public static StringBuilder WriteCompact( this ImmutableList<Token> tokens, StringBuilder b )
+    public static StringBuilder Write( this IEnumerable<Token> tokens, StringBuilder b )
+    {
+        foreach( var t in tokens )
+        {
+            t.LeadingTrivias.Write( b );
+            b.Append( t.Text );
+            t.TrailingTrivias.Write( b );
+        }
+        return b;
+    }
+
+    /// <summary>
+    /// Gets the full text of these tokens (trivias and token text).
+    /// </summary>
+    /// <param name="tokens">These tokens.</param>
+    /// <returns>The full text.</returns>
+    public static string ToFullString( this IEnumerable<Token> tokens ) => Write( tokens, new StringBuilder() ).ToString();
+
+    /// <summary>
+    /// Writes the text with a single character that replaces trivias between tokens.
+    /// </summary>
+    /// <param name="tokens">These tokens.</param>
+    /// <param name="b">The target builder.</param>
+    /// <param name="trivia">The character that replaces trivias.</param>
+    /// <returns>The builder.</returns>
+    public static StringBuilder WriteCompact( this IEnumerable<Token> tokens, StringBuilder b, char trivia = ' ' )
     {
         bool hasWhitespace = true; 
         foreach( var t in tokens )
@@ -41,17 +67,26 @@ public static class TokenExtensions
             {
                 if( t.LeadingTrivias.Length > 0 )
                 {
-                    b.Append( ' ' );
+                    b.Append( trivia );
                 }
             }
             b.Append( t.Text );
             if( hasWhitespace = t.LeadingTrivias.Length > 0 )
             {
-                b.Append( ' ' );
+                b.Append( trivia );
             }
         }
         return b;
     }
+
+    /// <summary>
+    /// Gets the text of these tokens without trivias: trivias are replaced by <paramref name="trivia"/>.
+    /// </summary>
+    /// <param name="tokens">These tokens.</param>
+    /// <param name="trivia">The character that replaces trivias.</param>
+    /// <returns>The compact text.</returns>
+    public static string ToCompactString( this IEnumerable<Token> tokens, char trivia = ' ' ) => WriteCompact( tokens, new StringBuilder(), trivia ).ToString();
+
 
     /// <summary>
     /// Creates a clone of this token with the new trivias. When let to the <c>default</c>, the current trivias are preserved.

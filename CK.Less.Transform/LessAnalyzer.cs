@@ -7,7 +7,7 @@ namespace CK.Less.Transform;
 /// <summary>
 /// Analyzer for <see cref="LessLanguage"/>.
 /// </summary>
-public class LessAnalyzer : Tokenizer, IAnalyzer
+public class LessAnalyzer : Tokenizer, ITargetAnalyzer
 {
     /// <summary>
     /// Gets "Less".
@@ -194,5 +194,10 @@ public class LessAnalyzer : Tokenizer, IAnalyzer
     {
         Reset( text );
         return Parse();
+    }
+
+    ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
+    {
+        throw new NotImplementedException();
     }
 }

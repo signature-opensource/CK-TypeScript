@@ -18,7 +18,7 @@ public sealed class HtmlLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override (TransformStatementAnalyzer, IAnalyzer) CreateAnalyzers( TransformerHost host )
+    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
     {
         var a = new HtmlAnalyzer();
         var t = new HtmlTransformStatementAnalyzer( this, a );

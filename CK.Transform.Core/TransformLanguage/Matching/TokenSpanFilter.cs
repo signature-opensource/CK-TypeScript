@@ -39,10 +39,10 @@ sealed class TokenSpanFilter : ITokenFilter
         return prefixTable;
     }
 
-    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>>? GetScopedTokens( IActivityMonitor monitor, SourceCodeEditor editor )
+    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetScopedTokens( ScopedTokensBuilder builder )
     {
         var matcher = new TokenMatcher( _tokens, _prefixTable );
-        foreach( var each in editor.ScopedTokens.Tokens )
+        foreach( var each in builder.Tokens )
         {
             foreach( var range in each )
             {
