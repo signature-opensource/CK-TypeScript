@@ -1,23 +1,29 @@
 using CK.Core;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace CK.Transform.Core;
 
 /// <summary>
 /// Captures "<see cref="LocationCardinality"/> <see cref="Matcher"/>".
 /// </summary>
-public sealed class LocationMatcher : SourceSpan
+public sealed class LocationMatcher : SourceSpan, ITokenFilter
 {
     LocationMatcher( int beg, int end )
         : base( beg, end )
     {
     }
 
-    [MemberNotNull( nameof( Matcher ) )]
-    public override void CheckValid()
+    /// <summary>
+    /// Checks that <see cref="Matcher"/> is valid.
+    /// </summary>
+    /// <returns>True if this span is valid.</returns>
+    [MemberNotNullWhen( true, nameof( Matcher ) )]
+    public override bool CheckValid()
     {
-        base.CheckValid();
-        Throw.CheckState( Matcher != null );
+        return base.CheckValid() && Matcher != null;
     }
 
     /// <summary>
@@ -28,7 +34,7 @@ public sealed class LocationMatcher : SourceSpan
 
     /// <summary>
     /// Gets the span matcher.
-    /// Never null when <see cref="CheckValid()"/> doesn't throw.
+    /// Never null when <see cref="CheckValid()"/> is true.
     /// </summary>
     public SpanMatcher? Matcher
     {
@@ -47,5 +53,27 @@ public sealed class LocationMatcher : SourceSpan
         return matcher == null
                 ? null
                 : head.AddSpan( new LocationMatcher( begSpan, head.LastTokenIndex + 1 ) );
+    }
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>? ITokenFilter.GetScopedTokens( IActivityMonitor monitor, SourceCodeEditor editor )
+    {
+        Throw.DebugAssert( CheckValid() );
+        var inner = Matcher.GetScopedTokens( monitor, editor );
+        if( inner == null ) return null;
+        if( Cardinality == null || Cardinality.Kind == LocationCardinality.LocationKind.Single )
+        {
+            var single = inner.SelectMany( Util.FuncIdentity ).SingleOrDefault();
+            if( single != null ) return [[single]];
+            int count = inner.SelectMany( Util.FuncIdentity ).Count();
+            monitor.Error( $"Expected single '{Matcher}' but got {count}." );
+            return null;
+        }
+        if( Cardinality.Kind == LocationCardinality.LocationKind.First )
+        {
+            var first = inner.SelectMany( Util.FuncIdentity ).Skip( Cardinality.Offset - 1 ).FirstOrDefault();
+            if( first != null ) return [[first]];
+            int count = inner.SelectMany( Util.FuncIdentity ).Count();
+            monitor.Error( $"Expected {Cardinality} '{Matcher}' but got only {count} matches." );
+        }
     }
 }

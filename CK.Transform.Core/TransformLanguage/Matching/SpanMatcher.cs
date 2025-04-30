@@ -1,13 +1,15 @@
-namespace CK.Transform.Core;
+using CK.Core;
+using System.Collections.Generic;
 
+namespace CK.Transform.Core;
 
 /// <summary>
 /// Captures a span matcher:
 /// <para>
-/// {<see cref="SpanType"/>} .<see cref="LanguageHint"/><see cref="Pattern"/>
+/// {<see cref="SpanType"/>} .<see cref="LanguageName"/><see cref="Pattern"/>
 /// </para>
-/// Where the span type is optional (defaults to the matched tokens) and the .<see cref="LanguageHint"/>
-/// prefix is also optional (defaults to the target language).
+/// Where the span type is optional (defaults to the matched tokens) and the ".<see cref="LanguageName"/>"
+/// suffix is also optional (defaults to the target language).
 /// </summary>
 public sealed class SpanMatcher : SourceSpan, ITokenFilter
 {
@@ -32,7 +34,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
     /// Gets or sets the optional language name. This is a <see cref="BasicTokenType.GenericIdentifier"/>.
     /// When null (the default), the target language is used.
     /// </summary>
-    public Token? LanguageHint => _languageName;
+    public Token? LanguageName => _languageName;
 
     /// <summary>
     /// Gets the pattern to match.
@@ -59,7 +61,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
         }
         else
         {
-            pattern = RawString.TryMatch( ref head );
+            pattern = RawString.Match( ref head );
             if( pattern != null && pattern.InnerText.Length == 0 )
             {
                 head.AppendError( "Pattern string must not be empty.", -1 );
@@ -81,5 +83,23 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
                                                  spanType,
                                                  languageName,
                                                  pattern ) );
+    }
+
+    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>>? GetScopedTokens( IActivityMonitor monitor, SourceCodeEditor editor )
+    {
+        var language = editor.Language;
+        // This should be in Bind() method.
+        // => Currently we don't locate the error (we don't have the source code of the transformer here).
+        if( _languageName != null )
+        {
+            language = editor.Language.Host.FindLanguage( _languageName.Text.Span );
+            if( language == null )
+            {
+                monitor.Error( $"Unable to find language '{_languageName}'." );
+                return null;
+            }
+        }
+        var m = language.TargetAnalyzer.CreateSpanMatcher( monitor, _spanType != null ? _spanType.Text.Span : default, _pattern.InnerText );
+        return m?.GetScopedTokens( monitor, editor );
     }
 }

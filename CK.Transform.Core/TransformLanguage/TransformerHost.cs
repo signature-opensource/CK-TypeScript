@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace CK.Transform.Core;
 
-
 /// <summary>
 /// Hosts multiple <see cref="Language"/>.
 /// This is NOT thread safe and should never be used concurrently.
@@ -30,7 +29,7 @@ public sealed partial class TransformerHost
         readonly TransformerHost _host;
         readonly TransformLanguage _language;
         readonly TransformStatementAnalyzer _transformStatementAnalyzer;
-        readonly IAnalyzer _targetAnalyzer;
+        readonly ITargetAnalyzer _targetAnalyzer;
         readonly int _index;
 
         /// <summary>
@@ -49,9 +48,9 @@ public sealed partial class TransformerHost
         public TransformStatementAnalyzer TransformStatementAnalyzer => _transformStatementAnalyzer;
 
         /// <summary>
-        /// Gets the target language annalyzer.
+        /// Gets the target language analyzer.
         /// </summary>
-        public IAnalyzer TargetAnalyzer => _targetAnalyzer;
+        public ITargetAnalyzer TargetAnalyzer => _targetAnalyzer;
 
         /// <summary>
         /// Gets the index in the <see cref="TransformerHost.Languages"/> list.

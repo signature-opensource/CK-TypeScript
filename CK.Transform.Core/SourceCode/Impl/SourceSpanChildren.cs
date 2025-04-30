@@ -36,14 +36,16 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
     /// <summary>
     /// Calls <see cref="SourceSpan.CheckValid()"/> on these children.
     /// </summary>
-    public void CheckValid()
+    /// <returns>True if all children are valid.</returns>
+    public bool CheckValid()
     {
         var f = _firstChild;
         while( f != null )
         {
-            f.CheckValid();
+            if( !f.CheckValid() ) return false;
             f = f._nextSibling;
         }
+        return true;
     }
 
     internal void Clear()

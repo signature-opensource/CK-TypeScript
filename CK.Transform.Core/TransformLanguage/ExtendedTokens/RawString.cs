@@ -6,7 +6,8 @@ using System.Linq;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A raw string follows the same rules as the C# raw string: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/raw-string.
+/// A raw string is a <see cref="Token"/> that follows the same rules as the C# raw string:
+/// https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/raw-string.
 /// <list type="bullet">
 ///     <item>A single quote opens a <c>"single-line string"</c>: the closing quote must appear before the end-of-line.</item>
 ///     <item>Two consecutive quotes is the empty string <c>""</c>.</item>
@@ -20,6 +21,13 @@ namespace CK.Transform.Core;
 /// </para>
 /// <para>
 /// Note that in C#, <c>"""raw "string""""</c> is not valid but this is valid for us (the string is <c>raw "string"</c>).
+/// However, it may be more readable to use a multiple line raw string syntax (without a last blank line) when
+/// quotes occur at the end. This is the same string:
+/// <code>
+///     (note that it is the position of the closing quotes that drives the spaces before the lines) """
+///     raw "string"
+///     """
+/// </code>
 /// </para>
 /// </summary>
 public sealed class RawString : Token
@@ -29,10 +37,10 @@ public sealed class RawString : Token
     ImmutableArray<string> _sLines;
 
     // Single-line.
-    internal RawString( ReadOnlyMemory<char> text,
-                        ReadOnlyMemory<char> innerText,
-                        ImmutableArray<Trivia> leading,
-                        ImmutableArray<Trivia> trailing )
+    RawString( ReadOnlyMemory<char> text,
+               ReadOnlyMemory<char> innerText,
+               ImmutableArray<Trivia> leading,
+               ImmutableArray<Trivia> trailing )
         : base( TokenType.GenericString, leading, text, trailing )
     {
         Throw.DebugAssert( text.Length > innerText.Length && text.Span.Contains( innerText.Span, StringComparison.Ordinal ) );
@@ -41,11 +49,11 @@ public sealed class RawString : Token
         _lines = [innerText];
     }
 
-    internal RawString( ReadOnlyMemory<char> text,
-                        ReadOnlyMemory<char> innerText,
-                        ImmutableArray<ReadOnlyMemory<char>> memoryLines,
-                        ImmutableArray<Trivia> leading,
-                        ImmutableArray<Trivia> trailing )
+    RawString( ReadOnlyMemory<char> text,
+               ReadOnlyMemory<char> innerText,
+               ImmutableArray<ReadOnlyMemory<char>> memoryLines,
+               ImmutableArray<Trivia> leading,
+               ImmutableArray<Trivia> trailing )
         : base( TokenType.GenericString, leading, text, trailing )
     {
         Throw.DebugAssert( text.Length > innerText.Length && text.Span.Contains( innerText.Span, StringComparison.Ordinal ) );
@@ -79,13 +87,13 @@ public sealed class RawString : Token
     }
 
     /// <summary>
-    /// Tries to match a <see cref="RawString"/>. The current <see cref="TokenizerHead.LowLevelTokenType"/> must
+    /// Matches a <see cref="RawString"/>. The current <see cref="TokenizerHead.LowLevelTokenType"/> must
     /// be <see cref="TokenType.DoubleQuote"/> otherwise an <see cref="ArgumentException"/> is thrown.
     /// </summary>
     /// <param name="head">The tokenizer head.</param>
     /// <param name="maxLineCount">Optional maximal line count: using 1 allows only a single line string.</param>
     /// <returns>The RawString on success, null if an error has been emitted.</returns>
-    public static RawString? TryMatch( ref TokenizerHead head, int maxLineCount = 0 )
+    public static RawString? Match( ref TokenizerHead head, int maxLineCount = 0 )
     {
         Throw.CheckArgument( head.LowLevelTokenType is TokenType.DoubleQuote );
         var start = head.Head.TrimStart( '"' );

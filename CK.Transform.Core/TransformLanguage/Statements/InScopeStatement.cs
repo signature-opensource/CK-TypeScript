@@ -27,23 +27,24 @@ public sealed class InScopeStatement : TransformStatement
     /// <summary>
     /// Checks that there is at least one <see cref="Scopes"/> and a non null <see cref="Body"/>.
     /// </summary>
-    [MemberNotNull( nameof( Body ) )]
-    public override void CheckValid()
+    /// <returns>True if this span is valid.</returns>
+    [MemberNotNullWhen( true, nameof( Body ) )]
+    public override bool CheckValid()
     {
-        base.CheckValid();
-        Throw.CheckState( Children.FirstChild is InScope );
-        Throw.CheckState( Body is not null );
+        return base.CheckValid()
+               && Children.FirstChild is InScope
+               && Body is not null;
     }
 
     /// <summary>
     /// Gets the "in ..." clauses.
-    /// Non empty when <see cref="CheckValid()"/> doesn't throw.
+    /// Non empty when <see cref="CheckValid()"/> is true.
     /// </summary>
     public IEnumerable<InScope> Scopes => Children.OfType<InScope>();
 
     /// <summary>
     /// Gets the statements.
-    /// Never null when <see cref="CheckValid()"/> doesn't throw.
+    /// Never null when <see cref="CheckValid()"/> is true.
     /// </summary>
     public TransformStatementBlock? Body => Children.LastChild as TransformStatementBlock;
 

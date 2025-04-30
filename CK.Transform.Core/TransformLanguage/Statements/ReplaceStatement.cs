@@ -1,7 +1,8 @@
 using CK.Core;
 using System;
-using System.Diagnostics;
-using static CK.Core.ActivityMonitor;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace CK.Transform.Core;
 
@@ -15,17 +16,54 @@ public sealed class ReplaceStatement : TransformStatement
         _replacement = replacement;
     }
 
+    [MemberNotNullWhen( true, nameof( Matcher ) )]
+    public override bool CheckValid()
+    {
+        return base.CheckValid() && Matcher != null;
+    }
+
     public LocationMatcher? Matcher => Children.FirstChild as LocationMatcher;
 
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        // foreach( var each in editor.SourceTokens )
-        //    foreach( var range in each.Ranges )
-        //       foreach( var t in range.SourceTokens )
-        using var scope = editor.ScopedTokens.ApplyTokenFilter( Matcher );
-        foreach( var t in editor.SourceTokens )
+        if( !editor.ScopedTokens.PushTokenFilter( monitor, Matcher ) )
         {
-            _replacement.InnerText
+            return false;
+        }
+        try
+        {
+            bool applied = false;
+            foreach( var each in editor.ScopedTokens.Tokens )
+                foreach( var range in each )
+                {
+                    GetFirstLastAndCount( range, out var first, out var last, out var count );
+                    var replace = new Token( TokenType.GenericAny,
+                                             first.Token.LeadingTrivias,
+                                             _replacement.InnerText,
+                                             last.Token.TrailingTrivias );
+                    editor.Replace( first.Index, count, replace );
+                    applied = true;
+                }
+            if( applied ) editor.SetNeedReparse();
+        }
+        finally
+        {
+            editor.ScopedTokens.PopTokenFilter();
+        }
+        return true;
+    }
+
+    static void GetFirstLastAndCount( IEnumerable<SourceToken> tokens, out SourceToken first, out SourceToken last, out int count )
+    {
+        using var e = tokens.GetEnumerator();
+        Throw.CheckState( "IEnumerable<SourceToken> must never be empty.", e.MoveNext() );
+        first = e.Current;
+        last = first;
+        count = 1;
+        while( e.MoveNext() )
+        {
+            ++count;
+            last = e.Current;
         }
     }
 
@@ -42,7 +80,7 @@ public sealed class ReplaceStatement : TransformStatement
         RawString? replacement = null;
         if( head.LowLevelTokenType == TokenType.DoubleQuote )
         {
-            replacement = RawString.TryMatch( ref head );
+            replacement = RawString.Match( ref head );
         }
         else
         {

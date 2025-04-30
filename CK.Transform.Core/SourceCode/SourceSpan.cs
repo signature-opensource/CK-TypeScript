@@ -41,20 +41,20 @@ public abstract partial class SourceSpan
 
     /// <summary>
     /// Checks whether this span is valid. At this level, it must not be <see cref="IsDetached"/>
-    /// and children's <see cref="SourceSpanChildren.CheckValid()"/> is called.
+    /// and all children's <see cref="SourceSpanChildren.CheckValid()"/> must return true.
     /// <para>
     /// This is often specialized to implement checks on <see cref="Children"/>, <see cref="Parent"/>
     /// or siblings. Specializations must call this base method.
     /// </para>
     /// <para>
-    /// Overrides typically specify [MemberNotNull] with required properties of the structure.
+    /// Overrides typically specify [MemberNotNullWhen( true, ...)] with required properties of the structure.
     /// </para>
     /// </summary>
-    [MemberNotNull( nameof( Root ), nameof( _root ) )]
-    public virtual void CheckValid()
+    /// <returns>True if this span is valid.</returns>
+    [MemberNotNullWhen( true, nameof( Root ), nameof( _root ) )]
+    public virtual bool CheckValid()
     {
-        Throw.CheckState( !IsDetached );
-        Children.CheckValid();
+        return !IsDetached && Children.CheckValid();
     }
 
     /// <summary>

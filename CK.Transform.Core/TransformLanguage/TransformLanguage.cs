@@ -88,7 +88,7 @@ public abstract class TransformLanguage
     /// </summary>
     /// <param name="host">The transformer host.</param>
     /// <returns>The transform statement and target language analyzer.</returns>
-    internal protected abstract (TransformStatementAnalyzer,IAnalyzer) CreateAnalyzers( TransformerHost host );
+    internal protected abstract (TransformStatementAnalyzer,ITargetAnalyzer) CreateAnalyzers( TransformerHost host );
 
     /// <summary>
     /// Supports the minimal token set required by any transform language:

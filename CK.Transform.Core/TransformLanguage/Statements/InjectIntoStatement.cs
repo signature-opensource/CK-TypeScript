@@ -10,6 +10,9 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class InjectIntoStatement : TransformStatement
 {
+    RawString _content;
+    InjectionPoint _target;
+
     /// <summary>
     /// Initializes a new <see cref="InjectIntoStatement"/>.
     /// </summary>
@@ -20,19 +23,19 @@ public sealed class InjectIntoStatement : TransformStatement
     public InjectIntoStatement( int beg, int end, RawString content, InjectionPoint target )
         : base( beg, end )
     {
-        Content = content;
-        Target = target;
+        _content = content;
+        _target = target;
     }
 
     /// <summary>
     /// Gets the content to inject.
     /// </summary>
-    public RawString Content { get; }
+    public RawString Content => _content;
 
     /// <summary>
     /// Gets the target injection point.
     /// </summary>
-    public InjectionPoint Target { get; }
+    public InjectionPoint Target => _target;
 
     /// <inheritdoc />
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
@@ -325,7 +328,7 @@ public sealed class InjectIntoStatement : TransformStatement
                 injectDef = head;
             }
             // Name match the <InjectionPoint>.
-            int nameLen = GetInjectionPointLength( head );
+            int nameLen = InjectionPoint.GetInjectionPointLength( head );
             if( nameLen == 0 || !head.TryMatch( _injectionPoint.Name ) ) return false;
             head = head.TrimStart();
             // "revert"
@@ -346,40 +349,17 @@ public sealed class InjectIntoStatement : TransformStatement
 
     }
 
-    internal static int GetInjectionPointLength( ReadOnlySpan<char> sHead )
-    {
-        int iS = 0;
-        while( ++iS < sHead.Length && char.IsAsciiLetterOrDigit( sHead[iS] ) ) ;
-        return iS;
-    }
-
     internal static InjectIntoStatement? Parse( ref TokenizerHead head, Token inject )
     {
         Throw.DebugAssert( inject.Text.Span.Equals( "inject", StringComparison.Ordinal ) );
         int startStatement = head.LastTokenIndex;
-        var content = RawString.TryMatch( ref head );
+        var content = RawString.Match( ref head );
         head.MatchToken( "into" );
-        var target = MatchInjectionPoint( ref head );
+        var target = InjectionPoint.Match( ref head );
         head.TryAcceptToken( TokenType.SemiColon, out _ );
         return content != null && target != null
                 ? head.AddSpan( new InjectIntoStatement( startStatement, head.LastTokenIndex + 1, content, target ) )
                 : null;
-
-        static InjectionPoint? MatchInjectionPoint( ref TokenizerHead head )
-        {
-            if( head.LowLevelTokenType == TokenType.LessThan )
-            {
-                var sHead = head.Head;
-                int nameLen = GetInjectionPointLength( sHead );
-                if( nameLen > 0 && nameLen < sHead.Length && sHead[nameLen] == '>' )
-                {
-                    head.PreAcceptToken( nameLen + 1, out var text, out var leading, out var trailing );
-                    return head.Accept( new InjectionPoint( text, leading, trailing ) );
-                }
-            }
-            head.AppendError( "Expected <InjectionPoint>.", 0 );
-            return null;
-        }
     }
 
 }

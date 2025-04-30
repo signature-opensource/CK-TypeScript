@@ -60,7 +60,7 @@ sealed class TestAnalyzer : Tokenizer, IAnalyzer
         switch( head.LowLevelTokenType )
         {
             case TokenType.DoubleQuote:
-                RawString.TryMatch( ref head );
+                RawString.Match( ref head );
                 Throw.DebugAssert( head.LastToken is RawString or TokenError );
                 break;
             case TokenType.Slash or TokenType.SlashEquals:

@@ -31,19 +31,19 @@ public readonly struct SourcePosition : IEquatable<SourcePosition>, IComparable<
     }
 
     /// <summary>
-    /// Gets the 0 based line number.
+    /// Gets the 1 based line number.
     /// </summary>
     public int Line => _line;
 
     /// <summary>
-    /// Gets the 0 based column.
+    /// Gets the 1 based column.
     /// </summary>
     public int Column => _column;
 
     /// <summary>
     /// Gets whether this is the invalid <c>default</c> (0,0) position.
     /// </summary>
-    public bool IsDefault => _line != 0;
+    public bool IsDefault => _line == 0;
 
     /// <summary>
     /// Gets the index in the source text that corresponds to this position or null

@@ -17,10 +17,9 @@ public sealed class InScope : SourceSpan
     /// <summary>
     /// Checks that <see cref="RangeMatch"/> or <see cref="LocationMatch"/> is not null.
     /// </summary>
-    public override void CheckValid()
+    public override bool CheckValid()
     {
-        base.CheckValid();
-        Throw.CheckState( Children.FirstChild is RangeLocation or LocationMatcher );
+        return base.CheckValid() && Children.FirstChild is RangeLocation or LocationMatcher;
     }
 
     /// <summary>

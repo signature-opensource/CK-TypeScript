@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.TypeScript.Transform;
@@ -11,18 +12,33 @@ namespace CK.TypeScript.Transform;
 /// </summary>
 public sealed class EnsureImportStatement : TransformStatement
 {
-    readonly ImportStatement _importStatement;
-
-    internal EnsureImportStatement( int beg, int end, ImportStatement importStatement )
+    internal EnsureImportStatement( int beg, int end )
         : base( beg, end )
     {
-        Throw.DebugAssert( "The span of the import has not been added.", importStatement.IsDetached );
-        _importStatement = importStatement;
     }
+
+    /// <summary>
+    /// Checks that <see cref="ImportStatement"/> is valid.
+    /// </summary>
+    /// <returns>True if this span is valid.</returns>
+    [MemberNotNullWhen( true, nameof(ImportStatement) )]
+    public override bool CheckValid()
+    {
+        return base.CheckValid() && Children.FirstChild is ImportStatement;
+    }
+
+    /// <summary>
+    /// Gets the import statement.
+    /// Never null when <see cref="CheckValid()"/> doesn't throw.
+    /// </summary>
+    public ImportStatement? ImportStatement => Children.FirstChild as ImportStatement;
+
 
     /// <inheritdoc />
     public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
+        Throw.DebugAssert( CheckValid() );
+        var importStatement = ImportStatement;
         bool success = true;
         // No need to respect any scope here. Imports are top-level statements.
         // Even if an import can appear anywhere in a file, it is not a good practice
@@ -30,7 +46,7 @@ public sealed class EnsureImportStatement : TransformStatement
         // No need to look for subordinated spans.
 
         // We work on a clone.
-        var toMerge = new ImportLine( _importStatement );
+        var toMerge = new ImportLine( importStatement );
         bool toMergeInitialSideEffectOnly = toMerge.SideEffectOnly;
 
         // This may handle existing default, namespace and side-effect only import.
@@ -65,7 +81,7 @@ public sealed class EnsureImportStatement : TransformStatement
                 {
                     if( existingName.ExportedName != named.ExportedName )
                     {
-                        monitor.Error( $"Cannot 'ensure {_importStatement._line.ToString()}' because '{named}' conflicts with already imported '{existingName}'." );
+                        monitor.Error( $"Cannot 'ensure {importStatement._line.ToString()}' because '{named}' conflicts with already imported '{existingName}'." );
                         success = false;
                     }
                     else if( success )
@@ -122,7 +138,7 @@ public sealed class EnsureImportStatement : TransformStatement
                 }
                 else
                 {
-                    monitor.Error( $"Cannot 'ensure {_importStatement._line.ToString()}' because '{named.FinalName}' is already imported from '{exists.ImportPath}'." );
+                    monitor.Error( $"Cannot 'ensure {importStatement._line.ToString()}' because '{named.FinalName}' is already imported from '{exists.ImportPath}'." );
                     success = false;
                 }
             }
@@ -246,7 +262,7 @@ public sealed class EnsureImportStatement : TransformStatement
                             }
                             else
                             {
-                                monitor.Warn( $"Module '{import.ImportPath}' default export is already named '{import.DefaultImport}'. It will also be named '{_importStatement.DefaultImport}'." );
+                                monitor.Warn( $"Module '{import.ImportPath}' default export is already named '{import.DefaultImport}'. It will also be named '{importStatement.DefaultImport}'." );
                             }
                         }
                         else

@@ -31,7 +31,7 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
                 var importStatement = ImportStatement.TryMatch( importToken, ref subHead );
                 head.SkipTo( safetyToken, ref subHead );
                 return importStatement != null
-                        ? new EnsureImportStatement( begStatement, head.LastTokenIndex + 1, importStatement )
+                        ? new EnsureImportStatement( begStatement, head.LastTokenIndex + 1 )
                         : null;
             }
         }

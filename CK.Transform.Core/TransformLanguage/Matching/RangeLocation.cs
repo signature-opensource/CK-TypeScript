@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class RangeLocation : SourceSpan
 {
-    readonly Token _kind;
+    Token _kind;
 
     RangeLocation( int beg, int end, Token kind )
         : base( beg, end )
@@ -18,24 +18,29 @@ public sealed class RangeLocation : SourceSpan
         _kind = kind;
     }
 
-    [MemberNotNull( nameof( First ) )]
-    public override void CheckValid()
+    /// <summary>
+    /// Checks that <see cref="First"/> and <see cref="Second"/> (it is a "between ... and ...") are valid.
+    /// </summary>
+    /// <returns>True if this span is valid.</returns>
+    [MemberNotNullWhen( true, nameof( First ) )]
+    public override bool CheckValid()
     {
-        base.CheckValid();
-        Throw.CheckState( First != null );
-        Throw.CheckState( !_kind.Text.Span.Equals( "between", StringComparison.Ordinal ) || Second != null );
+        if( base.CheckValid() && First != null )
+        {
+            var k = _kind.Text.Span;
+            if( k.Equals( "after", StringComparison.Ordinal ) || k.Equals( "before", StringComparison.Ordinal ) )
+            {
+                return Second == null;
+            }
+            return k.Equals( "between", StringComparison.Ordinal ) && Second != null;
+        }
+        return false;
     }
 
     /// <summary>
     /// Gets "before", "after" or "between" <see cref="TokenType.GenericIdentifier"/>.
     /// </summary>
     public Token Kind => _kind;
-
-    /// <summary>
-    /// Gets whether this is a "between ... and ..." range.
-    /// </summary>
-    [MemberNotNullWhen( true, nameof( Second ) )]
-    public bool IsBetween => Second != null;
 
     /// <summary>
     /// Gets whether this is a "after ..." range.
@@ -48,8 +53,14 @@ public sealed class RangeLocation : SourceSpan
     public bool IsBefore => _kind.Text.Span.Equals( "before", StringComparison.Ordinal );
 
     /// <summary>
+    /// Gets whether this is a "between ... and ..." range.
+    /// </summary>
+    [MemberNotNullWhen( true, nameof( Second ) )]
+    public bool IsBetween => Second != null;
+
+    /// <summary>
     /// Gets the first location matcher.
-    /// Never null when <see cref="CheckValid()"/> dosn't throw.
+    /// Never null when <see cref="CheckValid()"/> is true.
     /// </summary>
     public LocationMatcher? First => Children.FirstChild as LocationMatcher;
 

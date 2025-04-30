@@ -1,6 +1,8 @@
 using CK.Core;
 using System;
+using System.Collections.Immutable;
 using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
@@ -11,7 +13,7 @@ public sealed partial class TransformerHost
     /// Transform language analyzer itself. This handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'.
     /// Statements analysis is delegated to the <see cref="Language.TransformStatementAnalyzer"/>.
     /// </summary>
-    sealed class RootTransformAnalyzer : Tokenizer, ITopLevelAnalyzer<TransformerFunction>
+    sealed class RootTransformAnalyzer : Tokenizer, ITopLevelAnalyzer<TransformerFunction>, ITargetAnalyzer
     {
         readonly TransformerHost _host;
 
@@ -93,7 +95,7 @@ public sealed partial class TransformerHost
                     }
                     else if( head.LowLevelTokenType == TokenType.DoubleQuote )
                     {
-                        target = RawString.TryMatch( ref head, maxLineCount: 1 )?.Lines[0];
+                        target = RawString.Match( ref head, maxLineCount: 1 )?.Lines[0];
                     }
                     else
                     {
@@ -130,6 +132,58 @@ public sealed partial class TransformerHost
         {
             Reset( text );
             return Parse();
+        }
+
+        ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
+        {
+            Reset( pattern );
+            TokenizerHead head = CreateHead();
+            while( head.EndOfInput == null )
+            {
+                if( head.LowLevelTokenType == TokenType.LessThan
+                    && InjectionPoint.Match( ref head ) == null )
+                {
+                    break;
+                }
+                else if( head.LowLevelTokenType == TokenType.DoubleQuote
+                         && RawString.Match( ref head ) == null )
+                {
+                    break;
+                }
+                else
+                {
+                    head.AcceptLowLevelToken();
+                }
+            }
+            head.ExtractResult( out var code, out var inlineErrorCount );
+            if( inlineErrorCount != 0 )
+            {
+                monitor.Error( $"""
+                    Error '{head.FirstError}' while parsing pattern:
+                    {pattern}
+                    """ );
+                return null;
+            }
+            Type? sType = null;
+            if( spanType.Length > 0 )
+            {
+                sType = spanType switch
+                {
+                    "statement" => typeof( TransformStatement ),
+                    "in" => typeof( InScope ),
+                    "replace" => typeof( ReplaceStatement ),
+                    _ => null
+                };
+                if( sType == null )
+                {
+                    monitor.Error( $"""
+                    Invalid span type '{spanType}'. Allowed are "statement", "in", "replace".
+                    """ );
+                    return null;
+                }
+                throw new NotImplementedException();
+            }
+            return new TokenSpanFilter( code.Tokens.ToImmutableArray() );
         }
     }
 

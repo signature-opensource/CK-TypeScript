@@ -48,10 +48,18 @@ public sealed partial class SourceCodeEditor
         /// <summary>
         /// Pushes a new <see cref="ITokenFilter"/> on <see cref="Tokens"/>.
         /// </summary>
+        /// <param name="monitor"></param>
         /// <param name="filter">The filter to apply.</param>
-        public void PushTokenFilter( ITokenFilter filter )
+        /// <returns>True on sucess, false on error.</returns>
+        public bool PushTokenFilter( IActivityMonitor monitor, ITokenFilter filter )
         {
-            _tokenFilters.Push( filter.GetScopedTokens( _editor ) );
+            var f = filter.GetScopedTokens( monitor, _editor );
+            if( f != null )
+            {
+                _tokenFilters.Push( f );
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -61,18 +69,6 @@ public sealed partial class SourceCodeEditor
         {
             Throw.DebugAssert( _tokenFilters.Count > 1 );
             _tokenFilters.Pop();
-        }
-
-        /// <summary>
-        /// Temporarily pushes a <see cref="ITokenFilter"/>.
-        /// </summary>
-        /// <param name="filter">The filter to apply.</param>
-        /// <returns>The disposable that will pop the filter.</returns>
-        public IDisposable? ApplyTokenFilter( ITokenFilter? filter )
-        {
-            if( filter == null ) return null;
-            PushTokenFilter( filter );
-            return Util.CreateDisposableAction( PopTokenFilter );
         }
     }
 
