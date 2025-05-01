@@ -6,16 +6,25 @@ namespace CK.Transform.Core;
 public sealed class ScopedTokensBuilder
 {
     readonly IActivityMonitor _monitor;
-    readonly SourceCodeEditor _editor;
+    readonly TransformerHost.Language _language;
+    readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> _input;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
     bool _hasError;
 
-    static readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> _emptyResult = [[[]]];
+    /// <summary>
+    /// Gets an empty scoped tokens result.
+    /// Typically used when an error is signaled.
+    /// </summary>
+    public static readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> EmptyResult = [[[]]];
 
-    internal ScopedTokensBuilder( IActivityMonitor monitor, SourceCodeEditor editor )
+    internal ScopedTokensBuilder( IActivityMonitor monitor,
+                                  IEnumerable<IEnumerable<IEnumerable<SourceToken>>> input,
+                                  TransformerHost.Language language )
     {
         _monitor = monitor;
-        _editor = editor;
+        _language = language;
+        _input = input;
+        _language = language;
         _errorTracker = monitor.OnError( OnError );
     }
 
@@ -34,18 +43,12 @@ public sealed class ScopedTokensBuilder
     /// <summary>
     /// Gets the current tokens to consider.
     /// </summary>
-    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens => _editor.ScopedTokens.Tokens;
-
-    /// <summary>
-    /// Gets an empty scoped tokens result.
-    /// Typiscally used when an error is signaled in the <see cref="Monitor"/>.
-    /// </summary>
-    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> EmptyResult => _emptyResult;
+    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens => _input;
 
     /// <summary>
     /// Gets the current language.
     /// </summary>
-    public TransformerHost.Language Language => _editor.Language;
+    public TransformerHost.Language Language => _language;
 
     internal void Dispose() => _errorTracker.Dispose();
 }

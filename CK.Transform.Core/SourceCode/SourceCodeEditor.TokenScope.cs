@@ -53,7 +53,7 @@ public sealed partial class SourceCodeEditor
         /// <returns>True on sucess, false on error.</returns>
         public bool PushTokenFilter( IActivityMonitor monitor, ITokenFilter filter )
         {
-            var builder = new ScopedTokensBuilder( monitor, _editor );
+            var builder = new ScopedTokensBuilder( monitor, _tokenFilters.Peek(), _editor.Language );
             var f = filter.GetScopedTokens( builder );
             if( !builder.HasError )
             {

@@ -195,7 +195,7 @@ public sealed partial class TransformerHost
         }
         hasError = false;
         var f = r.SourceCode.Spans.FirstOrDefault();
-        Throw.DebugAssert( f == null || f is TransformerFunction );
+        Throw.DebugAssert( f == null || f is TransformerFunction && f.CheckValid() );
         return Unsafe.As<TransformerFunction?>( f );
     }
 

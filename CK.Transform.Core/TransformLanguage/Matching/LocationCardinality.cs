@@ -69,7 +69,7 @@ public sealed class LocationCardinality : SourceSpan
                          int expectedMatchCount )
         : base( beg, end )
     {
-        Throw.DebugAssert( _kind is not LocationKind.Single || _expectedMatchCount == 1 );
+        Throw.DebugAssert( kind is not LocationKind.Single || _expectedMatchCount == 1 );
         _kind = kind;
         _offsetT = offsetT;
         _kindT = kindT;

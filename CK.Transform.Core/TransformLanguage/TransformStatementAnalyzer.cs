@@ -35,7 +35,8 @@ public abstract class TransformStatementAnalyzer
     /// Parsing errors should be inlined <see cref="TokenError"/>. 
     /// <para>
     /// At this level, this handles transform statements that apply to any language:
-    /// <see cref="ReparseStatement"/>, <see cref="InjectIntoStatement"/> and
+    /// <see cref="ReparseStatement"/>, <see cref="InjectIntoStatement"/>,
+    /// <see cref="InScopeStatement"/>, <see cref="ReplaceStatement"/> and
     /// <see cref="TransformStatementBlock"/> (<c>begin</c>...<c>end</c> blocks).
     /// </para>
     /// </summary>

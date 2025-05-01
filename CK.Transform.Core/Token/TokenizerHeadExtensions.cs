@@ -1,3 +1,4 @@
+using CK.Core;
 using System.Runtime.CompilerServices;
 
 namespace CK.Transform.Core;
@@ -15,7 +16,13 @@ public static class TokenizerHeadExtensions
     /// <returns>The <paramref name="newOne"/> span.</returns>
     public static T AddSpan<T>( this ref TokenizerHead head, T newOne ) where T : SourceSpan
     {
+#if DEBUG
+        var s = head.AddSourceSpan( newOne );
+        Throw.DebugAssert( s.CheckValid() );
+        return (T)s;
+#else
         return Unsafe.As<T>( head.AddSourceSpan( newOne ) );
+#endif
     }
 
 }

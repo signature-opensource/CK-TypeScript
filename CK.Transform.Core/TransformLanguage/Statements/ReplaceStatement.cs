@@ -43,7 +43,7 @@ public sealed class ReplaceStatement : TransformStatement
                     GetFirstLastAndCount( range, out var first, out var last, out var count );
                     var replace = new Token( TokenType.GenericAny,
                                              first.Token.LeadingTrivias,
-                                             _replacement.InnerText,
+                                             _replacement.TextLines,
                                              last.Token.TrailingTrivias );
                     editor.Replace( first.Index, count, replace );
                     applied = true;

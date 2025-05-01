@@ -58,6 +58,7 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         var c = _firstChild;
         if( c == null )
         {
+            Throw.DebugAssert( _lastChild == null );
             _firstChild = _lastChild = newOne;
             newOne._parent = parent;
             return true;
@@ -66,6 +67,7 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
 
         do
         {
+            Throw.DebugAssert( c._parent == parent );
             // newOne is after (or immediately after) the current span: skip to the next span.
             if( newOne._span.Beg >= c._span.End )
             {
@@ -88,16 +90,22 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
                 newOne._parent = parent;
                 return true;
             }
-            // newOne is contained in the span:
-            // - Strictly: it becomes one of its children.
-            // - Equals: duplicate span error.
-            if( c._span.ContainsOrEquals( newOne._span ) )
+            if( c._span.Contains( newOne._span ) )
             {
+                // newOne is strictly contained in the span: it becomes one of its children.
                 return c._children.TryAdd( c, newOne );
             }
             // Entering the covering case.
             if( newOne._span.Beg <= c._span.Beg )
             {
+                // Replace case: newOne ends at the current span,
+                // we found its place: it replaces the current span and
+                // the current span becomes its child.
+                if( newOne._span.End == c._span.End )
+                {
+                    Replace( parent, newOne, c );
+                    return true;
+                }
                 // Finding the last covered span.
                 var last = c;
                 while( (last = last._nextSibling) != null )
@@ -156,7 +164,7 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
             else
             {
                 // Error case: newOne and the existing span overlaps (in any manner but are
-                // not equal as this has been handled by the ContainsOrEquals case above).
+                // not equal as this has been handled by the Replace case above).
                 Throw.DebugAssert( newOne._span.GetRelationship( c._span ) is SpanRelationship.SameEnd
                                                                             or (SpanRelationship.SameEnd | SpanRelationship.Swapped)
                                                                             or SpanRelationship.SameStart
@@ -175,6 +183,38 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         newOne._parent = parent;
         return true;
 
+    }
+
+    void Replace( SourceSpan? parent, SourceSpan newOne, SourceSpan c )
+    {
+        newOne._nextSibling = c._nextSibling;
+        newOne._prevSibling = c._prevSibling;
+        if( _firstChild == c )
+        {
+            Throw.DebugAssert( c._prevSibling == null );
+            _firstChild = newOne;
+        }
+        else
+        {
+            Throw.DebugAssert( c._prevSibling != null );
+            c._prevSibling._nextSibling = newOne;
+            c._prevSibling = null;
+        }
+        if( _lastChild == c )
+        {
+            Throw.DebugAssert( c._nextSibling == null );
+            _lastChild = newOne;
+        }
+        else
+        {
+            Throw.DebugAssert( c._nextSibling != null );
+            c._nextSibling._prevSibling = newOne;
+            c._nextSibling = null;
+        }
+        newOne.Children._firstChild = c;
+        newOne.Children._lastChild = c;
+        newOne._parent = parent;
+        c._parent = newOne;
     }
 
     internal SourceSpan? GetSpanAt( int index )

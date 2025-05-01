@@ -104,7 +104,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
             if( language == null )
             {
                 builder.Monitor.Error( $"Unable to find language '{_languageName}'." );
-                return builder.EmptyResult;
+                return ScopedTokensBuilder.EmptyResult;
             }
         }
         var m = language.TargetAnalyzer.CreateSpanMatcher( builder.Monitor,
@@ -112,7 +112,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
                                                            _pattern.InnerText );
         return m != null
                 ? m.GetScopedTokens( builder )
-                : builder.EmptyResult;
+                : ScopedTokensBuilder.EmptyResult;
     }
 
     public override string ToString()

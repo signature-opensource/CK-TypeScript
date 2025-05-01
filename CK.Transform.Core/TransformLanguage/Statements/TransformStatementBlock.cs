@@ -1,5 +1,7 @@
 using CK.Core;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using static CK.Transform.Core.TransformerHost;
 
 namespace CK.Transform.Core;
@@ -15,17 +17,15 @@ public sealed class TransformStatementBlock : TransformStatement
     /// </summary>
     /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
     /// <param name="end">The end of the span. Must be greater than <paramref name="beg"/>.</param>
-    /// <param name="statements">Statements. Can be empty.</param>
-    TransformStatementBlock( int beg, int end, List<TransformStatement> statements )
+    TransformStatementBlock( int beg, int end )
         : base( beg, end )
     {
-        Statements = statements;
     }
 
     /// <summary>
     /// Gets the statements. Can be empty.
     /// </summary>
-    public IReadOnlyList<TransformStatement> Statements { get; }
+    public IEnumerable<TransformStatement> Statements => Children.OfType<TransformStatement>();
 
     /// <summary>
     /// Applies the inner <see cref="Statements"/>.
@@ -52,25 +52,21 @@ public sealed class TransformStatementBlock : TransformStatement
     /// <returns>The list of transform statements.</returns>
     internal static TransformStatementBlock Parse( Language cLang, ref TokenizerHead head )
     {
-        var statements = new List<TransformStatement>();
         head.MatchToken( "begin" );
         int begSpan = head.LastTokenIndex;
         Token? foundEnd = null;
         while( head.EndOfInput == null && !head.TryAcceptToken( "end", out foundEnd ) )
         {
             var s = cLang.TransformStatementAnalyzer.ParseStatement( cLang, ref head );
-            if( s != null )
-            {
-                statements.Add( s );
-            }
-            else
+            Throw.DebugAssert( s == null || s.CheckValid() );
+            if( s == null )
             {
                 head.AppendError( $"Failed to parse a transform '{cLang.LanguageName}' language statement.", -1 );
                 break;
             }
         }
         if( foundEnd == null ) head.AppendError( "Expected 'end'.", 0 );
-        return head.AddSpan( new TransformStatementBlock( begSpan, head.LastTokenIndex + 1, statements ) );
+        return head.AddSpan( new TransformStatementBlock( begSpan, head.LastTokenIndex + 1 ) );
     }
 
 

@@ -12,17 +12,17 @@ public class TransformerParsingTests
     public void Empty_minimal_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" );
-        Throw.DebugAssert( f != null );
-        f.Body.Statements.Count.ShouldBe( 0 );
+        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" )
+                 .ShouldNotBeNull();
+        f.Body.Statements.Count().ShouldBe( 0 );
     }
 
     [Test]
     public void named_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" );
-        Throw.DebugAssert( f != null );
+        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" )
+                 .ShouldNotBeNull();
         f.Name.ShouldBe( "MyTransformer" );
         f.Target.ShouldBeNull();
     }
@@ -31,8 +31,8 @@ public class TransformerParsingTests
     public void named_with_empty_target_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" );
-        Throw.DebugAssert( f != null );
+        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" )
+                     .ShouldNotBeNull();
         f.Name.ShouldBe( "MyTransformer" );
         f.Target.ShouldNotBeNull().Length.ShouldBe( 0 );
     }
@@ -41,10 +41,10 @@ public class TransformerParsingTests
     public void with_target_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer on "the target!" as begin end""" );
-        Throw.CheckState( f != null );
-        Throw.CheckState( f.Name == null );
-        Throw.CheckState( f.Target == "the target!" );
+        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer on "the target!" as begin end""" )
+                 .ShouldNotBeNull();
+        f.Name.ShouldBeNull();
+        f.Target.ShouldBe( "the target!" );
     }
 
     [Test]
@@ -57,10 +57,10 @@ public class TransformerParsingTests
                                          """
                     begin
                     end
-                    """"" );
-        Throw.CheckState( f != null );
-        Throw.CheckState( f.Name == null );
-        Throw.CheckState( f.Target == "Some one-line text." );
+                    """"" )
+                  .ShouldNotBeNull();
+        f.Name.ShouldBeNull();
+        f.Target.ShouldBe( "Some one-line text." );
     }
 
     [Test]

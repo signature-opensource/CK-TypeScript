@@ -21,17 +21,17 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
 
     protected override TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
     {
-        int begStatement = head.LastTokenIndex;
+        int begStatement = head.LastTokenIndex + 1;
         if( head.TryAcceptToken( "ensure", out _ ) )
         {
             var subHead = head.CreateSubHead( out var safetyToken, _tsAnalyzer );
             var importToken = subHead.MatchToken( "import" );
             if( importToken is not TokenError )
             {
-                var importStatement = ImportStatement.TryMatch( importToken, ref subHead );
+                var importStatement = ImportStatement.Match( ref subHead, importToken );
                 head.SkipTo( safetyToken, ref subHead );
                 return importStatement != null
-                        ? new EnsureImportStatement( begStatement, head.LastTokenIndex + 1 )
+                        ? head.AddSpan( new EnsureImportStatement( begStatement, head.LastTokenIndex + 1 ) )
                         : null;
             }
         }

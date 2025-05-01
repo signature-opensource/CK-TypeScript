@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 using NUnit.Framework;
+using Shouldly;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TypeScript.Transform.Tests;
@@ -235,10 +236,8 @@ public class EnsureImportTests
     public void merging_imports( string nTest, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
 

@@ -140,15 +140,21 @@ public sealed partial class TransformerHost
             TokenizerHead head = CreateHead();
             while( head.EndOfInput == null )
             {
-                if( head.LowLevelTokenType == TokenType.LessThan
-                    && InjectionPoint.Match( ref head ) == null )
+                if( head.LowLevelTokenType == TokenType.LessThan )
                 {
-                    break;
+                    if( InjectionPoint.Match( ref head ) == null )
+                    {
+                        Throw.DebugAssert( head.FirstError != null );
+                        break;
+                    }
                 }
-                else if( head.LowLevelTokenType == TokenType.DoubleQuote
-                         && RawString.Match( ref head ) == null )
+                else if( head.LowLevelTokenType == TokenType.DoubleQuote )
                 {
-                    break;
+                    if( RawString.Match( ref head ) == null )
+                    {
+                        Throw.DebugAssert( head.FirstError != null );
+                        break;
+                    }
                 }
                 else
                 {

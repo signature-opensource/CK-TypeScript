@@ -35,6 +35,7 @@ public sealed class RawString : Token
     readonly ReadOnlyMemory<char> _innerText;
     readonly ImmutableArray<ReadOnlyMemory<char>> _lines;
     ImmutableArray<string> _sLines;
+    string? _textLines;
 
     // Single-line.
     RawString( ReadOnlyMemory<char> text,
@@ -62,7 +63,9 @@ public sealed class RawString : Token
     }
 
     /// <summary>
-    /// Gets the actual text string without the enclosing quotes and no processing.
+    /// Gets the actual text string without the enclosing quotes and no processing:
+    /// all new lines and white spaces appear. Use <see cref="Lines"/> or <see cref="MemoryLines"/>
+    /// to obtain the final lines or <see cref="TextLines"/> for the lines as a string.
     /// </summary>
     public ReadOnlyMemory<char> InnerText => _innerText;
 
@@ -70,6 +73,22 @@ public sealed class RawString : Token
     /// Gets the lines.
     /// </summary>
     public ImmutableArray<ReadOnlyMemory<char>> MemoryLines => _lines;
+
+    /// <summary>
+    /// Gets the final lines as a string joined with <see cref="Environment.NewLine"/>.
+    /// </summary>
+    public string TextLines
+    {
+        get
+        {
+            if( _textLines == null )
+            {
+                if( _lines.Length == 1 ) _textLines = _lines[0].ToString();
+                else _textLines = string.Join( Environment.NewLine, Lines );
+            }
+            return _textLines;
+        }
+    }
 
     /// <summary>
     /// Gets the lines as strings.

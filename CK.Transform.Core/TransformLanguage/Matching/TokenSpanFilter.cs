@@ -58,38 +58,13 @@ sealed class TokenSpanFilter : ITokenFilter
     static IEnumerable<IEnumerable<SourceToken>> GetRangeTokens( TokenMatcher matcher, IEnumerable<SourceToken> range )
     {
         matcher.Reset();
-        SourceToken[]? lastMatch = null;
-        IEnumerable<SourceToken>? finalMatch = null;
         foreach( var t in range )
         {
             SourceToken[]? match = matcher.Found( t );
             if( match != null )
             {
-                if( lastMatch != null )
-                {
-                    if( finalMatch == null )
-                    {
-                        finalMatch = lastMatch;
-                    }
-                    else
-                    {
-                        if( lastMatch[^1].Index == match[0].Index )
-                        {
-                            finalMatch = finalMatch.Concat( lastMatch );
-                        }
-                        else
-                        {
-                            yield return finalMatch;
-                            finalMatch = null;
-                        }
-                    }
-                }
-                lastMatch = match;
+                yield return match;
             }
-        }
-        if( finalMatch != null )
-        {
-            yield return finalMatch;
         }
     }
 
@@ -109,7 +84,7 @@ sealed class TokenSpanFilter : ITokenFilter
 
         public void Reset() => _iMatch = 0;
 
-        public int Length => _prefixTable.Length;
+        public int Length => _pattern.Length;
 
         public SourceToken[]? Found( SourceToken t )
         {

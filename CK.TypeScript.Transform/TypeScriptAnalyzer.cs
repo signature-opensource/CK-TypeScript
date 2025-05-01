@@ -58,9 +58,7 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
             if( t.Text.Span.Equals( "import", StringComparison.Ordinal )
                 && head.LowLevelTokenType is not TokenType.OpenParen )
             {
-                var importStatement = ImportStatement.TryMatch( t, ref head );
-                Throw.DebugAssert( "TryMatch doesn't add the span.", importStatement == null || importStatement.IsDetached );
-                if( importStatement != null ) head.AddSourceSpan( importStatement );
+                ImportStatement.Match( ref head, t );
             }
         }
     }

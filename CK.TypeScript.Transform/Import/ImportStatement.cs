@@ -72,7 +72,7 @@ public sealed class ImportStatement : SourceSpan, IImportLine
 
     internal void AddNamedImport( SourceCodeEditor editor, ImportLine.NamedImport named ) => _line.AddNamedImport( editor, Span, named );
 
-    internal static ImportStatement? TryMatch( Token importToken, ref TokenizerHead head )
+    internal static ImportStatement? Match( ref TokenizerHead head, Token importToken )
     {
         Throw.DebugAssert( importToken.Text.Span.Equals( "import", StringComparison.Ordinal ) );
         int begImport = head.LastTokenIndex;
@@ -136,7 +136,7 @@ public sealed class ImportStatement : SourceSpan, IImportLine
         if( importPath is TokenError ) return null;
         d.ImportPath = importPath.Text.Slice( 1, importPath.Text.Length - 2 ).ToString();
         head.TryAcceptToken( ";", out _ );
-        return new ImportStatement( begImport, head.LastTokenIndex + 1, d );
+        return head.AddSpan( new ImportStatement( begImport, head.LastTokenIndex + 1, d ) );
     }
 
 }
