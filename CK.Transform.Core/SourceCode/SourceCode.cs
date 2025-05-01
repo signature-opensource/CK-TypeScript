@@ -12,7 +12,7 @@ namespace CK.Transform.Core;
 /// (only from a <see cref="TransformerHost.Transform(IActivityMonitor, string, IEnumerable{CK.Transform.Core.TransformerFunction})"/>).
 /// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
-public sealed class SourceCode : IEnumerable<SourceToken>
+public sealed class SourceCode
 {
     internal readonly SourceSpanRoot _spans;
     // This can be a ImmutableList<Token> or a ImmutableList<Token>.Builder (a RB tree)
@@ -38,75 +38,6 @@ public sealed class SourceCode : IEnumerable<SourceToken>
     /// Gets the tokens.
     /// </summary>
     public IReadOnlyList<Token> Tokens => _tokens;
-
-    /// <summary>
-    /// Enumerates all <see cref="Tokens"/> with their index and deepest span in an optimized way.
-    /// <para>
-    /// Note that the enumerator MUST be disposed once done with it because it contains a <see cref="ImmutableList{T}.Enumerator"/>
-    /// that must be disposed.
-    /// </para>
-    /// </summary>
-    public IEnumerable<SourceToken> SourceTokens => this;
-
-    IEnumerator<SourceToken> IEnumerable<SourceToken>.GetEnumerator() => new SourceTokenEnumerator( this );
-
-    IEnumerator IEnumerable.GetEnumerator() => new SourceTokenEnumerator( this );
-
-    sealed class SourceTokenEnumerator : IEnumerator<SourceToken>
-    {
-        List<Token>.Enumerator _tokenEnumerator;
-        Token? _token;
-        SourceSpan? _nextSpan;
-        SourceSpan? _span;
-        int _index;
-        readonly SourceCode _code;
-
-        public SourceTokenEnumerator( SourceCode code )
-        {
-            _code = code;
-            _index = -1;
-            _nextSpan = code._spans._children._firstChild;
-            _tokenEnumerator = code._tokens.GetEnumerator();
-        }
-
-        public SourceToken Current => new SourceToken( _token!, _span, _index );
-
-        object IEnumerator.Current => Current;
-
-        public bool MoveNext()
-        {
-            if( !_tokenEnumerator.MoveNext() ) return false;
-            _token = _tokenEnumerator.Current;
-            ++_index;
-            // If we have no span or we are leaving the current one...
-            if( _span == null || _index >= _span.Span.End )
-            {
-                // Leaving the current span.
-                _span = null;
-                // If there is a next span and we are in it, we have a new span
-                // and we must find a new next one.
-                if( _nextSpan != null && _nextSpan.Span.Contains( _index ) )
-                {
-                    _span = _nextSpan.GetSpanAt( _index );
-                    _nextSpan = _span._nextSibling ?? _span._parent;
-                }
-            }
-            else
-            {
-                // Still in the current span. We may enter a child.
-                if( _index < _span.Span.End )
-                {
-                    _span = _span.GetSpanAt( _index );
-                    _nextSpan = _span._nextSibling ?? _span._parent;
-                }
-            }
-            return true;
-        }
-
-        public void Dispose() => _tokenEnumerator.Dispose();
-
-        public void Reset() => Throw.NotSupportedException();
-    }
 
     internal List<Token> InternalTokens => _tokens;
 

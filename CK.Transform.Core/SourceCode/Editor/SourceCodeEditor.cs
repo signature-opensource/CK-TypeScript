@@ -15,6 +15,7 @@ public sealed partial class SourceCodeEditor
     readonly SourceCode _code;
     List<Token> _tokens;
     readonly TokenScope _scopedTokens;
+    readonly SourceTokenEnumerable _sourceTokens;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -33,8 +34,9 @@ public sealed partial class SourceCodeEditor
         _language = language;
         _code = code;
         _tokens = code.InternalTokens;
-        _scopedTokens = new TokenScope( this );
         _errorTracker = monitor.OnError( OnError );
+        _sourceTokens = new SourceTokenEnumerable( this );
+        _scopedTokens = new TokenScope( this );
     }
 
     void OnError() => _hasError = true;
@@ -55,6 +57,11 @@ public sealed partial class SourceCodeEditor
     /// Gets the edited code.
     /// </summary>
     public SourceCode Code => _code;
+
+    /// <summary>
+    /// Enumerates all <see cref="Tokens"/> with their index and deepest span in an optimized way.
+    /// </summary>
+    public IEnumerable<SourceToken> SourceTokens => _sourceTokens;
 
     /// <summary>
     /// Gets the filtered <see cref="SourceToken"/>.

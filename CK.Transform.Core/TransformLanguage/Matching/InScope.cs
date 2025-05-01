@@ -32,9 +32,9 @@ public sealed class InScope : SourceSpan
     /// </summary>
     public LocationMatcher? LocationMatch => Children.FirstChild as LocationMatcher;
 
-    internal static InScope? Match( TransformerHost.Language language, ref TokenizerHead head )
+    internal static InScope? Match( TransformerHost.Language language, ref TokenizerHead head, Token? inToken )
     {
-        if( !head.TryAcceptToken( "in", out _ ) )
+        if( inToken == null && !head.TryAcceptToken( "in", out _ ) )
         {
             return null;
         }

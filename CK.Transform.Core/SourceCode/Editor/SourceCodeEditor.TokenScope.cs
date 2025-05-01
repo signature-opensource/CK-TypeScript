@@ -18,7 +18,7 @@ public sealed partial class SourceCodeEditor
         internal TokenScope( SourceCodeEditor editor )
         {
             _tokenFilters = new Stack<IEnumerable<IEnumerable<IEnumerable<SourceToken>>>>();
-            _tokenFilters.Push( [[editor._code.SourceTokens]] );
+            _tokenFilters.Push( [[editor.SourceTokens]] );
             _editor = editor;
         }
 

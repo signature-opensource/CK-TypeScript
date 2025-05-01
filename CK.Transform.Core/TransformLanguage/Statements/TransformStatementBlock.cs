@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,25 +41,30 @@ public sealed class TransformStatementBlock : TransformStatement
         }
     }
 
+    internal static TransformStatement? ParseBlockOrStatement( Language language, ref TokenizerHead head )
+    {
+        return head.LowLevelTokenType == TokenType.GenericIdentifier
+               && head.LowLevelTokenText.Equals("begin", StringComparison.Ordinal)
+                    ? Parse( language, ref head )
+                    : ParseRequiredStatement( language, ref head );
+    }
+
     /// <summary>
     /// Parses a "begin ... end" block.
     /// Statements are parsed by <see cref="TransformStatementAnalyzer.ParseStatement(ref TokenizerHead)"/>.
     /// </summary>
-    /// <param name="cLang">The language.</param>
+    /// <param name="language">The language.</param>
     /// <param name="head">The head.</param>
     /// <returns>The list of transform statements.</returns>
-    internal static TransformStatementBlock Parse( Language cLang, ref TokenizerHead head )
+    internal static TransformStatementBlock Parse( Language language, ref TokenizerHead head )
     {
         head.MatchToken( "begin" );
         int begSpan = head.LastTokenIndex;
         Token? foundEnd = null;
         while( head.EndOfInput == null && !head.TryAcceptToken( "end", out foundEnd ) )
         {
-            var s = cLang.TransformStatementAnalyzer.ParseStatement( cLang, ref head );
-            Throw.DebugAssert( s == null || s.CheckValid() );
-            if( s == null )
+            if( ParseRequiredStatement( language, ref head ) == null )
             {
-                head.AppendError( $"Failed to parse a transform '{cLang.LanguageName}' language statement.", -1 );
                 break;
             }
         }
@@ -66,5 +72,14 @@ public sealed class TransformStatementBlock : TransformStatement
         return head.AddSpan( new TransformStatementBlock( begSpan, head.LastTokenIndex + 1 ) );
     }
 
-
+    static TransformStatement? ParseRequiredStatement( Language language, ref TokenizerHead head )
+    {
+        var s = language.TransformStatementAnalyzer.ParseStatement( language, ref head );
+        Throw.DebugAssert( s == null || s.CheckValid() );
+        if( s == null )
+        {
+            head.AppendError( $"Failed to parse a transform '{language.LanguageName}' language statement.", -1 );
+        }
+        return s;
+    }
 }

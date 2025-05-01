@@ -46,7 +46,7 @@ public sealed class InScopeStatement : TransformStatement
     /// Gets the statements.
     /// Never null when <see cref="CheckValid()"/> is true.
     /// </summary>
-    public TransformStatementBlock? Body => Children.LastChild as TransformStatementBlock;
+    public TransformStatement? Body => Children.LastChild as TransformStatement;
 
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
@@ -56,9 +56,12 @@ public sealed class InScopeStatement : TransformStatement
     internal static InScopeStatement? Parse( TransformerHost.Language language, ref TokenizerHead head, Token inToken )
     {
         Throw.DebugAssert( inToken.Text.Span.Equals( "in", StringComparison.Ordinal ) );
-        int begSpan = head.LastTokenIndex + 1;
-        while( InScope.Match( language, ref head ) != null ) ;
-        var body = TransformStatementBlock.Parse( language, ref head );
+        int begSpan = head.LastTokenIndex;
+        if( InScope.Match( language, ref head, inToken ) != null )
+        {
+            while( InScope.Match( language, ref head, null ) != null ) ;
+        }
+        var body = TransformStatementBlock.ParseBlockOrStatement( language, ref head );
         return body == null
                 ? null
                 : head.AddSpan( new InScopeStatement( begSpan, head.LastTokenIndex + 1 ) ); 

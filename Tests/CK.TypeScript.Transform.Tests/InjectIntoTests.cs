@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 using NUnit.Framework;
+using Shouldly;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TypeScript.Transform.Tests;
@@ -119,10 +120,51 @@ public class InjectIntoTests
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
+        sourceCode.ToString().ShouldBe( result );
+    }
+
+    [TestCase( "n°1",
+    """
+        export class C1 {
+          title = 'Demo';
+          //<Body/>
+        }
+        export class C2 {
+          title = 'Demo';
+          //<Body/>
+        }
+        """,
+    """"
+        create typescript transformer
+        begin
+            in each {class} "title = 'Demo'"
+                inject """
+                       otherTitle = 'Other Title';
+                       """ into <Body>;
+        end
+        """",
+    """
+        export class C1 {
+          title = 'Demo';
+          //<Body>
+          otherTitle = 'Other Title';
+          //</Body>
+        }
+        export class C2 {
+          title = 'Demo';
+          //<Body>
+          otherTitle = 'Other Title';
+          //</Body>
+        }
+        """
+    )]
+    public void injection_in_multiple_classses( string title, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new TypeScriptLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
 
