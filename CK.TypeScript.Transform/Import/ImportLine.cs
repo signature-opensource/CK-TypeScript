@@ -149,7 +149,7 @@ public sealed class ImportLine : IImportLine
             // We can add the name now.
             NamedImports.Add( named );
             // We replace the previous (to be able to handle the transfer of the trivias for the comma).
-            var b = new TokenListBuilder { editor.Tokens[tokenIndex] };
+            var b = new TokenListBuilder { editor.Code.Tokens[tokenIndex] };
             if( needBraces )
             {
                 if( needCommaPrefix )
@@ -208,7 +208,7 @@ public sealed class ImportLine : IImportLine
 
     void MonoTokenUpdate( SourceCodeEditor editor, TokenSpan span )
     {
-        var currentToken = editor.Tokens[span.Beg];
+        var currentToken = editor.Code.Tokens[span.Beg];
         Token newToken = new Token( currentToken.TokenType, currentToken.LeadingTrivias, ToString(), currentToken.TrailingTrivias );
         editor.Replace( span.Beg, newToken );
     }

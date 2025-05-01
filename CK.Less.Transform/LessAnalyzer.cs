@@ -182,9 +182,7 @@ public class LessAnalyzer : Tokenizer, ITargetAnalyzer
             // Handles @import.
             if( t.Text.Span.Equals( "@import", StringComparison.Ordinal ) )
             {
-                var importStatement = ImportStatement.TryMatch( t, ref head );
-                Throw.DebugAssert( "TryMatch doesn't add the span.", importStatement == null || importStatement.IsDetached );
-                if( importStatement != null ) head.AddSpan( importStatement );
+                ImportStatement.TryMatch( t, ref head );
             }
         }
     }

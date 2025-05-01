@@ -25,6 +25,9 @@ public sealed class ReparseStatement : TransformStatement
     /// </remarks>
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        if( editor.NeedReparse ) editor.Reparse();
+        if( editor.NeedReparse )
+        {
+            editor.Reparse();
+        }
     }
 }

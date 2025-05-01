@@ -4,7 +4,7 @@ using System;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Models location cardinality constraint:
+/// Models location cardinality constraints:
 /// <list type="bullet">
 ///     <item>single</item>
 ///     <item>first [+n] [out of n]</item>
@@ -26,7 +26,7 @@ public sealed class LocationCardinality : SourceSpan
         Single,
 
         /// <summary>
-        /// First location or the nth location ("first +2" is the second location).
+        /// First or nth location ("first +2" is the second location).
         /// <see cref="ExpectedMatchCount"/> applies when not 0: "first +2 out of 3".
         /// </summary>
         First,
@@ -52,12 +52,13 @@ public sealed class LocationCardinality : SourceSpan
         Each
     }
 
-    readonly Token? _kindT;
-    readonly Token? _offsetT;
-    readonly Token? _expectedMatchCountT;
-    readonly int _expectedMatchCount;
-    readonly int _offset;
-    readonly LocationKind _kind;
+    Token? _kindT;
+    Token? _offsetT;
+    Token? _expectedMatchCountT;
+
+    int _expectedMatchCount;
+    int _offset;
+    LocationKind _kind;
 
     LocationCardinality( int beg,
                          int end,
@@ -107,10 +108,11 @@ public sealed class LocationCardinality : SourceSpan
     {
         int begSpan = head.LastTokenIndex + 1;
         Token? kindT;
-        LocationKind kind;
         Token? offsetT = null;
-        int offset = 0;
         Token? expectedMatchCountT = null;
+
+        LocationKind kind;
+        int offset = 0;
         int expectedMatchCount = 0;
         if( head.TryAcceptToken( "single", out kindT ) )
         {
@@ -148,13 +150,13 @@ public sealed class LocationCardinality : SourceSpan
             return null;
         }
         return head.AddSpan( new LocationCardinality( begSpan,
-                                                            head.LastTokenIndex + 1,
-                                                            kindT,
-                                                            kind,
-                                                            offsetT,
-                                                            offset,
-                                                            expectedMatchCountT,
-                                                            expectedMatchCount ) );
+                                                      head.LastTokenIndex + 1,
+                                                      kindT,
+                                                      kind,
+                                                      offsetT,
+                                                      offset,
+                                                      expectedMatchCountT,
+                                                      expectedMatchCount ) );
 
         static int TryMatchNumber( ref TokenizerHead head, out Token? numberT, int n )
         {

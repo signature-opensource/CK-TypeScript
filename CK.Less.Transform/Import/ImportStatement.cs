@@ -71,8 +71,8 @@ public sealed class ImportStatement : SourceSpan
 
     void SetMonoToken( SourceCodeEditor editor )
     {
-        var startToken = editor.Tokens[Span.Beg];
-        var endToken = editor.Tokens[Span.End - 1];
+        var startToken = editor.Code.Tokens[Span.Beg];
+        var endToken = editor.Code.Tokens[Span.End - 1];
         Token newToken = new Token( startToken.TokenType, startToken.LeadingTrivias, ToString(), endToken.TrailingTrivias );
         editor.Replace( Span.Beg, Span.Length, newToken );
     }
@@ -89,7 +89,7 @@ public sealed class ImportStatement : SourceSpan
         if( p is TokenError ) return null;
         var importPath = p.Text.Slice( 1, p.Text.Length - 2 ).ToString();
         head.TryAcceptToken( ";", out _ );
-        return new ImportStatement( begImport, head.LastTokenIndex + 1, keyword, importPath );
+        return head.AddSpan( new ImportStatement( begImport, head.LastTokenIndex + 1, keyword, importPath ) );
     }
 
     // This can emit an unexpected error in the head.

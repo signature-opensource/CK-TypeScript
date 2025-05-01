@@ -298,11 +298,11 @@ public sealed class InjectIntoStatement : TransformStatement
         }
 
         readonly bool Parse( ReadOnlySpan<char> sTrivia,
-                    ReadOnlySpan<char> commentPrefix,
-                    out bool isClosing,
-                    out ReadOnlySpan<char> injectDef,
-                    out bool isRevert,
-                    out bool isAutoClosing )
+                             ReadOnlySpan<char> commentPrefix,
+                             out bool isClosing,
+                             out ReadOnlySpan<char> injectDef,
+                             out bool isRevert,
+                             out bool isAutoClosing )
         {
             isClosing = false;
             injectDef = default;
@@ -330,7 +330,7 @@ public sealed class InjectIntoStatement : TransformStatement
             isRevert = head.TryMatch( "revert", StringComparison.OrdinalIgnoreCase );
             if( injectDef.Length > 0 )
             {
-                // Capturing the opening tag this way suport any future "attribute". 
+                // Capturing the opening tag this way supports any future "attribute". 
                 injectDef.Overlaps( head, out int injectDefLength );
                 injectDef = injectDef.Slice( 0, injectDefLength );
             }

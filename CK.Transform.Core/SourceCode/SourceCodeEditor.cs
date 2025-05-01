@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -11,8 +12,8 @@ namespace CK.Transform.Core;
 [DebuggerDisplay( "{ToString(),nq}" )]
 public sealed partial class SourceCodeEditor
 {
-    internal readonly SourceCode _code;
-    readonly ImmutableList<Token>.Builder _tokens;
+    readonly SourceCode _code;
+    List<Token> _tokens;
     readonly TokenScope _scopedTokens;
 
     readonly IActivityMonitor _monitor;
@@ -22,14 +23,16 @@ public sealed partial class SourceCodeEditor
     TransformerHost.Language _language;
     bool _needReparse;
 
-    internal SourceCodeEditor( IActivityMonitor monitor, TransformerHost.Language language, SourceCode code )
+    internal SourceCodeEditor( IActivityMonitor monitor,
+                               TransformerHost.Language language,
+                               SourceCode code )
     {
         Throw.CheckNotNullArgument( language );
         Throw.CheckNotNullArgument( code );
         _monitor = monitor;
         _language = language;
         _code = code;
-        _tokens = code.Tokens.ToBuilder();
+        _tokens = code.InternalTokens;
         _scopedTokens = new TokenScope( this );
         _errorTracker = monitor.OnError( OnError );
     }
@@ -49,14 +52,9 @@ public sealed partial class SourceCodeEditor
     public bool HasError => _hasError;
 
     /// <summary>
-    /// Gets the spans.
+    /// Gets the edited code.
     /// </summary>
-    public ISourceSpanRoot Spans => _code._spans;
-
-    /// <summary>
-    /// Gets the tokens.
-    /// </summary>
-    public ImmutableList<Token> Tokens => _code.Tokens;
+    public SourceCode Code => _code;
 
     /// <summary>
     /// Gets the filtered <see cref="SourceToken"/>.
@@ -99,6 +97,7 @@ public sealed partial class SourceCodeEditor
             var r = _language.TargetAnalyzer.TryParse( _monitor, text.AsMemory() );
             if( r == null ) return false;
             r.SourceCode.TransferTo( _code );
+            _tokens = _code.InternalTokens;
             _needReparse = false;
             return true;
         }
@@ -207,7 +206,7 @@ public sealed partial class SourceCodeEditor
         {
             _code._spans.OnRemoveTokens( index, -delta );
         }
-        _code.SetTokens( _tokens.ToImmutableList() );
+        _code.OnTokensChanged();
     }
 
     /// <summary>

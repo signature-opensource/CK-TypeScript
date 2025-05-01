@@ -295,9 +295,9 @@ public class InjectIntoTests
         """
         create transform transformer
         begin
-        //<FirstInjectionPointEver revert>
-        // Already here...
-        //</FirstInjectionPointEver>
+            //<FirstInjectionPointEver revert>
+            // Already here...
+            //</FirstInjectionPointEver>
         end
         """,
         """"
@@ -311,10 +311,10 @@ public class InjectIntoTests
         """
         create transform transformer
         begin
-        //<FirstInjectionPointEver revert>
-        // ...and another one.
-        // Already here...
-        //</FirstInjectionPointEver>
+            //<FirstInjectionPointEver revert>
+            // ...and another one.
+            // Already here...
+            //</FirstInjectionPointEver>
         end
         """
         )]
@@ -412,6 +412,7 @@ public class InjectIntoTests
 
     // When combining 2 (or more) inject without reparse, the
     // game with the trivia fails.
+    // Handling the leading space here requires a reparse...
     [TestCase( "Two",
         """
         create transform transformer
@@ -430,7 +431,6 @@ public class InjectIntoTests
                    """ into <FirstInjectionPointEver>;
         end
         """",
-        // Handling the leading space here would require a reparse...
         """
         create transform transformer
         begin
@@ -441,6 +441,7 @@ public class InjectIntoTests
         end
         """
         )]
+    // Handling the leading space here would require a reparse...
     [TestCase( "RTwo",
         """
         create transform transformer
@@ -489,7 +490,6 @@ public class InjectIntoTests
                    """ into <FirstInjectionPointEver>;
         end
         """",
-        // Handling the leading space here would require a reparse...
         """
         create transform transformer
         begin

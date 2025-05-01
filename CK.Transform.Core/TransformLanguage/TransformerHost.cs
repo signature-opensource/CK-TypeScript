@@ -257,7 +257,7 @@ public sealed partial class TransformerHost
                 t.Apply( codeEditor );
                 if( codeEditor.HasError ) return null;
             }
-            return codeEditor._code;
+            return codeEditor.Code;
         }
         finally
         {

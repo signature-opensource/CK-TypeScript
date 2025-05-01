@@ -51,7 +51,7 @@ public sealed class EnsureImportStatement : TransformStatement
         // and we are done.
         // Otherwise, we have to create a new @import.
         ImportStatement? lastImport = null;
-        foreach( var import in editor.Spans.OfType<ImportStatement>() )
+        foreach( var import in editor.Code.Spans.OfType<ImportStatement>() )
         {
             if( import.ImportPath == _importPath )
             {
@@ -76,13 +76,13 @@ public sealed class EnsureImportStatement : TransformStatement
     {
         Throw.DebugAssert( head.LastToken != null && head.LastToken.Text.Span.Equals( "@import", StringComparison.Ordinal ) );
 
-        // We ignore here any @import (!keyword) as this is for transform statement only.
+        // We consider the @import (!keyword) exclude.
         ImportKeyword include = ImportStatement.ParseKeywords( ref head, out ImportKeyword exclude );
         var p = head.MatchToken( TokenType.GenericString, "import path" );
         if( p is TokenError ) return null;
         var importPath = p.Text.Slice( 1, p.Text.Length - 2 ).ToString();
         head.TryAcceptToken( ";", out _ );
-        return new EnsureImportStatement( begEnsure, head.LastTokenIndex + 1, include, exclude, importPath );
+        return head.AddSpan( new EnsureImportStatement( begEnsure, head.LastTokenIndex + 1, include, exclude, importPath ) );
     }
 
     /// <summary>

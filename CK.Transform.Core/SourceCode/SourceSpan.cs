@@ -48,6 +48,8 @@ public abstract partial class SourceSpan
     /// </para>
     /// <para>
     /// Overrides typically specify [MemberNotNullWhen( true, ...)] with required properties of the structure.
+    /// This has been designed to be used in <see cref="Throw.DebugAssert(bool, string?, string?, int)"/>:
+    /// spans must always be valid.
     /// </para>
     /// </summary>
     /// <returns>True if this span is valid.</returns>

@@ -151,7 +151,7 @@ public sealed class EnsureImportStatement : TransformStatement
         foreach( var named in toMerge.NamedImports )
         {
             ImportStatement? best = null;
-            foreach( var import in editor.Spans.OfType<ImportStatement>() )
+            foreach( var import in editor.Code.Spans.OfType<ImportStatement>() )
             {
                 // Namespace excludes named imports.
                 // Even if could merge a regular import in a TypeOnly statement without DefaultImport,
@@ -210,7 +210,7 @@ public sealed class EnsureImportStatement : TransformStatement
             // Indexed ImportStatement by named imports. 
             existingNamedImports = new Dictionary<string, ImportStatement>();
             lastImport = null;
-            foreach( var import in editor.Spans.OfType<ImportStatement>() )
+            foreach( var import in editor.Code.Spans.OfType<ImportStatement>() )
             {
                 // If we are ensuring a side-effect only "import '...';", we must just check that
                 // the import path doesn't exist.

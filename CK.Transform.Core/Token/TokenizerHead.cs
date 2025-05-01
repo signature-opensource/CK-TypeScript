@@ -21,7 +21,8 @@ public ref struct TokenizerHead
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     readonly ILowLevelTokenizer _lowLevelTokenizer;
     readonly SourceSpanRoot _spans;
-    readonly List<Token> _tokens;
+    // The collector list is set to null by ExtractResult.
+    List<Token>? _tokens;
     Token? _lastToken;
     TriviaParser _triviaParser;
     ReadOnlySpan<char> _headBeforeTrivia;
@@ -32,18 +33,16 @@ public ref struct TokenizerHead
     TokenType _lowLevelTokenType;
     int _remainingTextIndex;
     int _inlineErrorCount;
-    int _tokenCountOffset;
+    int _lastTokenIndex;
 
     /// <summary>
     /// Initializes a new head on a text.
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="behavior">Required <see cref="ITokenizerHeadBehavior"/>.</param>
-    /// <param name="tokenCollector">Optional preallocated token collector to use.</param>
     /// <param name="triviaBuilder">Optional preallocated trivia builder to use.</param>
     public TokenizerHead( ReadOnlyMemory<char> text,
                           ITokenizerHeadBehavior behavior,
-                          List<Token>? tokenCollector = null,
                           ImmutableArray<Trivia>.Builder? triviaBuilder = null )
     {
         Throw.CheckNotNullArgument( behavior );
@@ -53,10 +52,10 @@ public ref struct TokenizerHead
         _memText = text;
         _text = _memText.Span;
         _head = _text;
-        _tokens = tokenCollector ?? new List<Token>();
+        _tokens = new List<Token>();
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
         _spans = new SourceSpanRoot();
-        _tokenCountOffset = -1;
+        _lastTokenIndex = -1;
         InitializeLeadingTrivia();
     }
 
@@ -78,9 +77,16 @@ public ref struct TokenizerHead
         _triviaBuilder = triviaBuilder;
         _spans = new SourceSpanRoot();
         _tokens = new List<Token>();
-        _tokenCountOffset = tokenCountOffset;
+        _lastTokenIndex = tokenCountOffset;
         InitializeLeadingTrivia();
     }
+
+    /// <summary>
+    /// Gets whether this head must not be used anymore: either <see cref="ExtractResult(out SourceCode, out int)"/>
+    /// has been called or this is a sub head that has been accepted to its parent head with <see cref="SkipTo(int, ref TokenizerHead)"/>.
+    /// </summary>
+    [MemberNotNullWhen( false, nameof( _tokens ), nameof(Tokens) )]
+    public bool IsCondemned => _tokens == null;
 
     /// <summary>
     /// Creates an independent head on the <see cref="RemainingText"/> that uses an alternative <see cref="ITokenizerHeadBehavior"/>:
@@ -118,24 +124,28 @@ public ref struct TokenizerHead
 
     /// <summary>
     /// Skips this head up to the <paramref name="subHead"/>.
+    /// The subHead is condemned and shouldn't be used anymore.
     /// </summary>
     /// <param name="safetyToken">Token provided by CreateSubHead methods.</param>
     /// <param name="subHead">Subordinated head.</param>
     public void SkipTo( int safetyToken, ref TokenizerHead subHead )
     {
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
-        Throw.CheckState( _remainingTextIndex == safetyToken );
+        Throw.CheckState( _remainingTextIndex == safetyToken && !IsCondemned );
 
         _head = _headBeforeTrivia.Slice( subHead._remainingTextIndex );
         _remainingTextIndex += subHead._remainingTextIndex;
-        _tokens.AddRange( CollectionsMarshal.AsSpan( subHead._tokens ) );
+        var subTokens = CollectionsMarshal.AsSpan( subHead._tokens );
+        _tokens.AddRange( subTokens );
+        _lastTokenIndex += subTokens.Length;
         _lastToken = subHead._lastToken;
         _firstError ??= subHead._firstError;
         _inlineErrorCount += subHead._inlineErrorCount;
 
         subHead._remainingTextIndex = 0;
-        subHead._tokens.Clear();
+        subHead._tokens = null;
         subHead._lastToken = null;
+        subHead._lastTokenIndex = -1;
         if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
         subHead._firstError = null;
         subHead._inlineErrorCount = 0;
@@ -156,8 +166,11 @@ public ref struct TokenizerHead
     /// <summary>
     /// Gets the tokens accepted so far by this head: if this is a subordinated head, this doesn't contain
     /// the tokens from the parent head.
+    /// <para>
+    /// Never null when <see cref="IsCondemned"/> is false.
+    /// </para>
     /// </summary>
-    public readonly IReadOnlyList<Token> Tokens => _tokens;
+    public readonly IReadOnlyList<Token>? Tokens => _tokens;
 
     /// <summary>
     /// Gets the spans added so far.
@@ -173,10 +186,10 @@ public ref struct TokenizerHead
     /// <summary>
     /// Gets the last token index, accounting parent's tokens if this is a subordinated head.
     /// <para>
-    /// This is -1 when no token have been accepted so far.
+    /// This is -1 when no token have been accepted so far or when <see cref="IsCondemned"/> is true.
     /// </para>
     /// </summary>
-    public readonly int LastTokenIndex => _tokenCountOffset + _tokens.Count;
+    public readonly int LastTokenIndex => _lastTokenIndex;
 
     /// <summary>
     /// Incremented each time <see cref="AppendError(string, int, TokenType)"/> is called.
@@ -220,19 +233,22 @@ public ref struct TokenizerHead
 
     /// <summary>
     /// Extracts the tokens accepted so far, the spans created and the <see cref="InlineErrorCount"/>.
-    /// <see cref="Tokens"/> and <see cref="Spans"/> are emptied, InlineErrorCount is set to 0.
+    /// This head is condemned and must not be used anymore.
     /// </summary>
     /// <param name="code">The collected tokens and spans.</param>
     /// <param name="inlineErrorCount">Number of inlined errors.</param>
     public void ExtractResult( out SourceCode code, out int inlineErrorCount )
     {
+        Throw.CheckState( !IsCondemned );
         if( MemoryMarshal.TryGetString( _memText, out var sourceText, out var start, out var length ) )
         {
             // This will always be more efficient than rewriting the string.
             if( length < sourceText.Length ) sourceText = sourceText.Substring( start, length );
         }
         code = new SourceCode( _tokens, _spans, sourceText );
-        Throw.DebugAssert( _tokens.Count == 0 && !_spans._children.HasChildren );
+        Throw.DebugAssert( !_spans._children.HasChildren );
+        _tokens = null;
+        _lastTokenIndex = -1;
         inlineErrorCount = _inlineErrorCount;
         _inlineErrorCount = 0;
     }
@@ -333,7 +349,7 @@ public ref struct TokenizerHead
     public TokenError AppendError( string errorMessage, int length, TokenType errorType = TokenType.GenericError )
     {
         Throw.CheckArgument( errorType.IsError() );
-        Throw.CheckState( EndOfInput is null );
+        Throw.CheckState( EndOfInput is null && !IsCondemned );
 
         SourcePosition p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
         TokenError t;
@@ -362,6 +378,7 @@ public ref struct TokenizerHead
 
         }
         _tokens.Add( t );
+        ++_lastTokenIndex;
         _lastToken = t;
         _firstError ??= t;
         _inlineErrorCount++;
@@ -386,9 +403,11 @@ public ref struct TokenizerHead
     public Token AcceptToken( int tokenLength,
                               Func<ImmutableArray<Trivia>, ReadOnlyMemory<char>, ImmutableArray<Trivia>, Token> tokenFactory )
     {
+        Throw.CheckState( !IsCondemned );
         PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
         var t = tokenFactory( leading, text, trailing );
         _tokens.Add( t );
+        ++_lastTokenIndex;
         _lastToken = t;
         if( t is TokenError error )
         {
@@ -408,8 +427,9 @@ public ref struct TokenizerHead
     public T Accept<T>( T token ) where T : Token
     {
         Throw.CheckNotNullArgument( token );
-        Throw.CheckState( LastToken != token );
+        Throw.CheckState( LastToken != token && !IsCondemned );
         _tokens.Add( token );
+        ++_lastTokenIndex;
         _lastToken = token;
         Throw.DebugAssert( LastToken != null );
         if( token is TokenError error )
@@ -434,10 +454,12 @@ public ref struct TokenizerHead
     public Token AcceptToken( TokenType type, int tokenLength )
     {
         Throw.CheckArgument( !type.IsError() && !type.IsTrivia() );
+        Throw.CheckState( !IsCondemned );
         PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
         // Use the internal unchecked constructor as every parameters have been checked.
         var t = new Token( type, leading, text, trailing );
         _tokens.Add( t );
+        ++_lastTokenIndex;
         _lastToken = t;
         Throw.DebugAssert( LastToken != null );
         return t;

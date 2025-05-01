@@ -1,3 +1,4 @@
+using CK.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -7,21 +8,24 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Source code is created by a <see cref="TokenizerHead"/> and can be mutated by a <see cref="SourceCodeEditor"/>.
+/// Source code is created by a <see cref="TokenizerHead"/> and can be mutated by a <see cref="SourceCodeEditor"/>
+/// (only from a <see cref="TransformerHost.Transform(IActivityMonitor, string, IEnumerable{CK.Transform.Core.TransformerFunction})"/>).
 /// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
 public sealed class SourceCode : IEnumerable<SourceToken>
 {
     internal readonly SourceSpanRoot _spans;
-    ImmutableList<Token> _tokens;
+    // This can be a ImmutableList<Token> or a ImmutableList<Token>.Builder (a RB tree)
+    // but ImmutableList is not that good for iteration and indexed access.
+    // This should be benchmarked with real sized lists before considering this, but this is doable.
+    List<Token> _tokens;
     string? _toString;
 
     internal SourceCode( List<Token> tokens, SourceSpanRoot spans, string? sourceText )
     {
         _spans = new SourceSpanRoot();
         if( spans._children._firstChild != null ) spans.TransferTo( _spans );
-        _tokens = ImmutableList.CreateRange( tokens );
-        tokens.Clear();
+        _tokens = tokens;
         _toString = sourceText;
     }
 
@@ -33,7 +37,7 @@ public sealed class SourceCode : IEnumerable<SourceToken>
     /// <summary>
     /// Gets the tokens.
     /// </summary>
-    public ImmutableList<Token> Tokens => _tokens;
+    public IReadOnlyList<Token> Tokens => _tokens;
 
     /// <summary>
     /// Enumerates all <see cref="Tokens"/> with their index and deepest span in an optimized way.
@@ -50,7 +54,7 @@ public sealed class SourceCode : IEnumerable<SourceToken>
 
     sealed class SourceTokenEnumerator : IEnumerator<SourceToken>
     {
-        ImmutableList<Token>.Enumerator _tokenEnumerator;
+        List<Token>.Enumerator _tokenEnumerator;
         Token? _token;
         SourceSpan? _nextSpan;
         SourceSpan? _span;
@@ -101,23 +105,20 @@ public sealed class SourceCode : IEnumerable<SourceToken>
 
         public void Dispose() => _tokenEnumerator.Dispose();
 
-        public void Reset()
-        {
-            _tokenEnumerator.Reset();
-            _index = -1;
-            _nextSpan = _code._spans._children._firstChild;
-        }
+        public void Reset() => Throw.NotSupportedException();
     }
 
-    internal void SetTokens( ImmutableList<Token> tokens )
+    internal List<Token> InternalTokens => _tokens;
+
+    internal void OnTokensChanged()
     {
-        _tokens = tokens;
         _toString = null;
     }
 
     internal void TransferTo( SourceCode code )
     {
-        code.SetTokens( _tokens );
+        code._tokens = _tokens;
+        code._toString = _toString;
         code._spans._children.Clear();
         if( _spans._children.HasChildren ) _spans.TransferTo( code._spans );
     }

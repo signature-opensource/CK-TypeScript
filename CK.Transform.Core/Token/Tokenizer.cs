@@ -17,7 +17,6 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
 {
     ReadOnlyMemory<char> _text;
     internal readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
-    readonly List<Token> _tokenCollector;
     bool _handleWhiteSpaceTrivias;
 
     // This cannot be defined in Trivia (TypeLoadException). To be investigated.
@@ -30,7 +29,6 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     protected Tokenizer( bool handleWhiteSpaceTrivias = true )
     {
         _triviaBuilder = ImmutableArray.CreateBuilder<Trivia>();
-        _tokenCollector = new List<Token>();
         _handleWhiteSpaceTrivias = handleWhiteSpaceTrivias;
     }
 
@@ -58,7 +56,6 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     {
         _text = text;
         _triviaBuilder.Clear();
-        _tokenCollector.Clear();
     }
 
     /// <summary>
@@ -77,7 +74,7 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     /// Creates an initial head on <see cref="Text"/> with this tokenizer as the <see cref="ITokenizerHeadBehavior"/>.
     /// </summary>
     /// <returns>The tokenizer head.</returns>
-    protected TokenizerHead CreateHead() => new TokenizerHead( _text, this, _tokenCollector, _triviaBuilder );
+    protected TokenizerHead CreateHead() => new TokenizerHead( _text, this, _triviaBuilder );
 
     /// <summary>
     /// Implements the tokenization itself.
