@@ -239,24 +239,30 @@ public sealed partial class TransformerHost
         AnalyzerResult? r = transformer.Language.TargetAnalyzer.TryParse( monitor, text );
         if( r == null ) return null;
 
-        var codeEditor = new SourceCodeEditor( transformer.Language, r.SourceCode );
-        if( !transformer.Apply( monitor, codeEditor ) ) return null;
-
-        foreach( var t in transformers.Skip( 1 ) )
+        var codeEditor = new SourceCodeEditor( monitor, transformer.Language, r.SourceCode );
+        try
         {
-            if( t.Language != codeEditor.Language )
+            transformer.Apply( codeEditor );
+            if( codeEditor.HasError ) return null;
+
+            foreach( var t in transformers.Skip( 1 ) )
             {
-                if( !codeEditor.Reparse( monitor, t.Language ) )
+                if( t.Language != codeEditor.Language )
                 {
-                    return null;
+                    if( !codeEditor.Reparse( t.Language ) )
+                    {
+                        return null;
+                    }
                 }
+                t.Apply( codeEditor );
+                if( codeEditor.HasError ) return null;
             }
-            if( !t.Apply( monitor, codeEditor ) )
-            {
-                return null;
-            }
+            return codeEditor._code;
         }
-        return codeEditor._code;
+        finally
+        {
+            codeEditor.InternalDispose();
+        }
     }
 
     static Language? FindLanguage( List<Language> languages, ReadOnlySpan<char> name, bool withFileExtensions )

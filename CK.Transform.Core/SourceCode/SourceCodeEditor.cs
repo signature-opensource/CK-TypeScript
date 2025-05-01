@@ -14,23 +14,39 @@ public sealed partial class SourceCodeEditor
     internal readonly SourceCode _code;
     readonly ImmutableList<Token>.Builder _tokens;
     readonly TokenScope _scopedTokens;
+
+    readonly IActivityMonitor _monitor;
+    readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
+    bool _hasError;
+
     TransformerHost.Language _language;
     bool _needReparse;
 
-    /// <summary>
-    /// Initializes a new editor on a source code.
-    /// </summary>
-    /// <param name="language">Source code language.</param>
-    /// <param name="code">The source code to edit.</param>
-    public SourceCodeEditor( TransformerHost.Language language, SourceCode code )
+    internal SourceCodeEditor( IActivityMonitor monitor, TransformerHost.Language language, SourceCode code )
     {
         Throw.CheckNotNullArgument( language );
         Throw.CheckNotNullArgument( code );
+        _monitor = monitor;
         _language = language;
         _code = code;
         _tokens = code.Tokens.ToBuilder();
         _scopedTokens = new TokenScope( this );
+        _errorTracker = monitor.OnError( OnError );
     }
+
+    void OnError() => _hasError = true;
+
+    internal void InternalDispose() => _errorTracker.Dispose();
+
+    /// <summary>
+    /// Gets the monitor that must be used to signal errors.
+    /// </summary>
+    public IActivityMonitor Monitor => _monitor;
+
+    /// <summary>
+    /// Gets whether this editor is on error.
+    /// </summary>
+    public bool HasError => _hasError;
 
     /// <summary>
     /// Gets the spans.
@@ -59,30 +75,28 @@ public sealed partial class SourceCodeEditor
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.
     /// </summary>
-    /// <param name="monitor">Required monitor.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool Reparse( IActivityMonitor monitor ) => DoReparse( monitor, null );
+    public bool Reparse() => DoReparse( null );
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/> with a new <paramref name="newAnalyzer"/>
     /// and sets it as the current <see cref="Analyzer"/>.
     /// </summary>
-    /// <param name="monitor">Required monitor.</param>
     /// <param name="newLanguage">New language that replaces <see cref="Language"/>.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool Reparse( IActivityMonitor monitor, TransformerHost.Language newLanguage ) => DoReparse( monitor, newLanguage );
+    public bool Reparse( TransformerHost.Language newLanguage ) => DoReparse( newLanguage );
 
-    bool DoReparse( IActivityMonitor monitor, TransformerHost.Language? newLanguage )
+    bool DoReparse( TransformerHost.Language? newLanguage )
     {
-        using( monitor.OpenTrace( "Parsing transformation result." ) )
+        using( _monitor.OpenTrace( "Parsing transformation result." ) )
         {
             if( newLanguage != null )
             {
-                monitor.Trace( $"Changing language from '{_language.LanguageName}' to '{newLanguage.LanguageName}'." );
+                _monitor.Trace( $"Changing language from '{_language.LanguageName}' to '{newLanguage.LanguageName}'." );
                 _language = newLanguage;
             }
             string text = _code.ToString();
-            var r = _language.TargetAnalyzer.TryParse( monitor, text.AsMemory() );
+            var r = _language.TargetAnalyzer.TryParse( _monitor, text.AsMemory() );
             if( r == null ) return false;
             r.SourceCode.TransferTo( _code );
             _needReparse = false;

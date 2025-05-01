@@ -18,10 +18,11 @@ public abstract class TransformStatement : SourceSpan
     }
 
     /// <summary>
-    /// Must apply the transformation. 
+    /// Applies the transformation.
+    /// Errors are emitted to the <paramref name="monitor"/> (that is the <see cref="SourceCodeEditor.Monitor"/>)
+    /// to fail a transformation: <see cref="SourceCodeEditor.HasError"/> is the final result.
     /// </summary>
-    /// <param name="monitor">Required monitor.</param>
+    /// <param name="monitor">The <see cref="SourceCodeEditor.Monitor"/>.</param>
     /// <param name="editor">The code to transform.</param>
-    /// <returns>True on success, false on error. Any error must be logged.</returns>
-    public abstract bool Apply( IActivityMonitor monitor, SourceCodeEditor editor );
+    public abstract void Apply( IActivityMonitor monitor, SourceCodeEditor editor );
 }

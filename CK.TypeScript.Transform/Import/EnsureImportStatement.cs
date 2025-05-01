@@ -35,11 +35,10 @@ public sealed class EnsureImportStatement : TransformStatement
 
 
     /// <inheritdoc />
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         Throw.DebugAssert( CheckValid() );
         var importStatement = ImportStatement;
-        bool success = true;
         // No need to respect any scope here. Imports are top-level statements.
         // Even if an import can appear anywhere in a file, it is not a good practice
         // and semantically useless.
@@ -57,7 +56,7 @@ public sealed class EnsureImportStatement : TransformStatement
                         out Dictionary<string, ImportStatement> existingNamedImports,
                         out ImportStatement? lastImport ) )
         {
-            return success;
+            return;
         }
 
         // Now that the existingNamedImports index has been built, we can handle the named imports.
@@ -82,9 +81,8 @@ public sealed class EnsureImportStatement : TransformStatement
                     if( existingName.ExportedName != named.ExportedName )
                     {
                         monitor.Error( $"Cannot 'ensure {importStatement._line.ToString()}' because '{named}' conflicts with already imported '{existingName}'." );
-                        success = false;
                     }
-                    else if( success )
+                    else if( !editor.HasError )
                     {
                         // We must handle "type".
                         // - If both imports have the same "type". Nothing to do.
@@ -139,12 +137,11 @@ public sealed class EnsureImportStatement : TransformStatement
                 else
                 {
                     monitor.Error( $"Cannot 'ensure {importStatement._line.ToString()}' because '{named.FinalName}' is already imported from '{exists.ImportPath}'." );
-                    success = false;
                 }
             }
         }
         // If an imported name conflicts, it is useless to continue.
-        if( !success ) return false;
+        if( editor.HasError ) return;
         // Cleanup toMerge.
         if( handledNames != null )
         {
@@ -202,7 +199,6 @@ public sealed class EnsureImportStatement : TransformStatement
             var newStatement = new ImportStatement( insertionPoint, insertionPoint + 1, toMerge );
             editor.AddSourceSpan( newStatement );
         }
-        return success;
 
         bool PreProcess( IActivityMonitor monitor,
                          SourceCodeEditor editor,

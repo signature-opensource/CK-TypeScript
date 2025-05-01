@@ -27,12 +27,13 @@ public sealed class ReplaceStatement : TransformStatement
     /// </summary>
     public LocationMatcher? Matcher => Children.FirstChild as LocationMatcher;
 
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    /// <inheritdoc />
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         Throw.DebugAssert( CheckValid() );
         if( Matcher != null && !editor.ScopedTokens.PushTokenFilter( monitor, Matcher ) )
         {
-            return false;
+            return;
         }
         try
         {
@@ -54,7 +55,6 @@ public sealed class ReplaceStatement : TransformStatement
         {
             if( Matcher != null ) editor.ScopedTokens.PopTokenFilter();
         }
-        return true;
     }
 
     static void GetFirstLastAndCount( IEnumerable<SourceToken> tokens, out SourceToken first, out SourceToken last, out int count )

@@ -48,7 +48,7 @@ public sealed class InScopeStatement : TransformStatement
     /// </summary>
     public TransformStatementBlock? Body => Children.LastChild as TransformStatementBlock;
 
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         throw new NotImplementedException();
     }

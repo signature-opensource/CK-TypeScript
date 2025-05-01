@@ -8,7 +8,7 @@ namespace CK.Less.Transform;
 
 /// <summary>
 /// Models the <c>@import ([!]<see cref="ImportKeyword"/>) '<see cref="ImportPath"/>';</c>.
-/// This is an extended <see cref="ImportStatement"/> that 
+/// This is an extended <see cref="ImportStatement"/> that supports excluding a keyword.
 /// </summary>
 public sealed class EnsureImportStatement : TransformStatement
 {
@@ -42,7 +42,7 @@ public sealed class EnsureImportStatement : TransformStatement
     public string ImportPath => _importPath;
 
     /// <inheritdoc/>
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         // No need to respect any scope here. @imports can appear anywhere in a less
         // file (note that it's not the case for css).
@@ -56,7 +56,7 @@ public sealed class EnsureImportStatement : TransformStatement
             if( import.ImportPath == _importPath )
             {
                 import.SetImportKeyword( editor, _include, _exclude );
-                return true;
+                return;
             }
             lastImport = import;
         }
@@ -70,7 +70,6 @@ public sealed class EnsureImportStatement : TransformStatement
         // and we add it to the spans.
         var newStatement = new ImportStatement( insertionPoint, insertionPoint + 1, _include, _importPath );
         editor.AddSourceSpan( newStatement );
-        return true;
     }
 
     internal static EnsureImportStatement? TryMatch( int begEnsure, ref TokenizerHead head )

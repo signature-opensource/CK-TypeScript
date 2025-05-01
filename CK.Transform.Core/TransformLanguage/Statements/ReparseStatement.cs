@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 
 namespace CK.Transform.Core;
 
@@ -18,15 +18,13 @@ public sealed class ReparseStatement : TransformStatement
     {
     }
 
-    /// <summary>
+    /// <inheritdoc />
+    /// <remarks>
     /// Calls <see cref="SourceCodeEditor.Reparse(IActivityMonitor)"/> if and
     /// only if <see cref="SourceCodeEditor.NeedReparse"/> is true.
-    /// </summary>
-    /// <param name="monitor">Required monitor.</param>
-    /// <param name="editor">The code to transform.</param>
-    /// <returns>True on success, false if parsing the source failed.</returns>
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    /// </remarks>
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        return !editor.NeedReparse || editor.Reparse( monitor );
+        if( editor.NeedReparse ) editor.Reparse();
     }
 }

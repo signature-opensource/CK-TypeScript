@@ -27,20 +27,17 @@ public sealed class TransformStatementBlock : TransformStatement
     /// </summary>
     public IEnumerable<TransformStatement> Statements => Children.OfType<TransformStatement>();
 
-    /// <summary>
+    /// <inheritdoc />
+    /// <remarks>
     /// Applies the inner <see cref="Statements"/>.
-    /// </summary>
-    /// <param name="monitor">Required monitor.</param>
-    /// <param name="editor">The code to transform.</param>
-    /// <returns>True on success, false if any of the inner statement failed.</returns>
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    /// </remarks>
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        bool success = true;
         foreach( var statement in Statements )
         {
-            success &= statement.Apply( monitor, editor );
+            statement.Apply( monitor, editor );
+            if( editor.HasError ) break;
         }
-        return success;
     }
 
     /// <summary>

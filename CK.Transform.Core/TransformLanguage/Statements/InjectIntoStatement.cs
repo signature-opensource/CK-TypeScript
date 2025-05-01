@@ -38,119 +38,114 @@ public sealed class InjectIntoStatement : TransformStatement
     public InjectionPoint Target => _target;
 
     /// <inheritdoc />
-    public override bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        bool success = true;
-        using( var _ = monitor.OnError( () => success = false ) )
-        {
-            SourceToken modified = default;
+        SourceToken modified = default;
 
-            // The finder will find the first match (or none) and will error on duplicate
-            // or injection point. We need the same state machine for all the tokens and
-            // process all the tokens (to detect duplicate errors).
-            var finder = new InjectionPointFinder( Target, Content );
-            foreach( var sourceToken in editor.ScopedTokens.AllTokens )
+        // The finder will find the first match (or none) and will error on duplicate
+        // or injection point. We need the same state machine for all the tokens and
+        // process all the tokens (to detect duplicate errors).
+        var finder = new InjectionPointFinder( Target, Content );
+        foreach( var sourceToken in editor.ScopedTokens.AllTokens )
+        {
+            var token = sourceToken.Token;
+            var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );
+            if( !newTrivias.IsDefault )
             {
-                var token = sourceToken.Token;
-                var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );
-                if( !newTrivias.IsDefault )
-                {
-                    Throw.DebugAssert( modified.IsDefault );
-                    modified = new SourceToken( token.SetTrivias( newTrivias ), sourceToken.Span, sourceToken.Index );
-                }
-                newTrivias = ProcessTrivias( monitor, ref finder, token.TrailingTrivias );
-                if( !newTrivias.IsDefault )
-                {
-                    Throw.DebugAssert( modified.IsDefault );
-                    modified = new SourceToken( token.SetTrivias( token.LeadingTrivias, newTrivias ), sourceToken.Span, sourceToken.Index );
-                }
+                Throw.DebugAssert( modified.IsDefault );
+                modified = new SourceToken( token.SetTrivias( newTrivias ), sourceToken.Span, sourceToken.Index );
             }
-            if( modified.IsDefault )
+            newTrivias = ProcessTrivias( monitor, ref finder, token.TrailingTrivias );
+            if( !newTrivias.IsDefault )
             {
-                monitor.Error( $"Unable to find the injection point '{Target}'." );
-            }
-            else
-            {
-                editor.Replace( modified.Index, modified.Token );
-                editor.SetNeedReparse();
+                Throw.DebugAssert( modified.IsDefault );
+                modified = new SourceToken( token.SetTrivias( token.LeadingTrivias, newTrivias ), sourceToken.Span, sourceToken.Index );
             }
         }
-        return success;
-
-        static ImmutableArray<Trivia> ProcessTrivias( IActivityMonitor monitor, ref InjectionPointFinder finder, ImmutableArray<Trivia> trivias )
+        if( modified.IsDefault )
         {
-            ImmutableArray<Trivia> modified = default;
-            // Here again, we don't stop the loop until all trivias have been detected
-            // in order to detect duplicates.
-            int idx = 0;
-            foreach( var t in trivias )
+            monitor.Error( $"Unable to find the injection point '{Target}'." );
+        }
+        else
+        {
+            editor.Replace( modified.Index, modified.Token );
+            editor.SetNeedReparse();
+        }
+    }
+
+    static ImmutableArray<Trivia> ProcessTrivias( IActivityMonitor monitor, ref InjectionPointFinder finder, ImmutableArray<Trivia> trivias )
+    {
+        ImmutableArray<Trivia> modified = default;
+        // Here again, we don't stop the loop until all trivias have been detected
+        // in order to detect duplicates.
+        int idx = 0;
+        foreach( var t in trivias )
+        {
+            if( finder.Match( monitor, t ) )
             {
-                if( finder.Match( monitor, t ) )
+                Throw.DebugAssert( "Match only once.", modified.IsDefault );
+                var colOffset = t.IsLineComment && finder.OpeningColumnPrefix.Length > 0
+                                    ? new Trivia( TokenType.Whitespace, finder.OpeningColumnPrefix, checkContent: false )
+                                    : default;
+                if( !finder.InjectOpening.IsDefault )
                 {
-                    Throw.DebugAssert( "Match only once.", modified.IsDefault );
-                    var colOffset = t.IsLineComment && finder.OpeningColumnPrefix.Length > 0
-                                        ? new Trivia( TokenType.Whitespace, finder.OpeningColumnPrefix, checkContent: false )
-                                        : default;
-                    if( !finder.InjectOpening.IsDefault )
+                    int len = trivias.Length + 2;
+                    if( !colOffset.IsDefault )
                     {
-                        int len = trivias.Length + 2;
-                        if( !colOffset.IsDefault )
-                        {
-                            len += idx == 0 ? 3 : 2;
-                        }
-                        var builder = ImmutableArray.CreateBuilder<Trivia>( len );
-                        builder.AddRange( trivias, idx );
-                        if( !colOffset.IsDefault && idx == 0 ) builder.Add( colOffset );
-                        builder.Add( finder.InjectOpening );
+                        len += idx == 0 ? 3 : 2;
+                    }
+                    var builder = ImmutableArray.CreateBuilder<Trivia>( len );
+                    builder.AddRange( trivias, idx );
+                    if( !colOffset.IsDefault && idx == 0 ) builder.Add( colOffset );
+                    builder.Add( finder.InjectOpening );
+                    if( !colOffset.IsDefault ) builder.Add( colOffset );
+                    builder.Add( finder.InjectText );
+                    if( !colOffset.IsDefault ) builder.Add( colOffset );
+                    builder.Add( finder.InjectClosing );
+                    var remaining = trivias.Length - idx - 1;
+                    if( remaining > 0 )
+                    {
+                        builder.AddRange( trivias.AsSpan( idx + 1, remaining ) );
+                    }
+                    Throw.DebugAssert( builder.Capacity == builder.Count );
+                    modified = builder.DrainToImmutable();
+                }
+                else
+                {
+                    int len = trivias.Length + (colOffset.IsDefault ? 1 : 2);
+                    var builder = ImmutableArray.CreateBuilder<Trivia>( len );
+
+                    // When isRevert is true: insert after the opening trivia (for line comment, it ends with a newline).
+                    // When isRevert is false: insert before the closing trivia.
+                    int insertIdx = finder.IsRevert ? idx + 1 : idx;
+                    builder.AddRange( trivias, insertIdx );
+                    if( finder.IsRevert )
+                    {
+                        // Insert the colOffset before the text.
                         if( !colOffset.IsDefault ) builder.Add( colOffset );
                         builder.Add( finder.InjectText );
-                        if( !colOffset.IsDefault ) builder.Add( colOffset );
-                        builder.Add( finder.InjectClosing );
-                        var remaining = trivias.Length - idx - 1;
-                        if( remaining > 0 )
-                        {
-                            builder.AddRange( trivias.AsSpan( idx + 1, remaining ) );
-                        }
-                        Throw.DebugAssert( builder.Capacity == builder.Count );
-                        modified = builder.DrainToImmutable();
                     }
                     else
                     {
-                        int len = trivias.Length + (colOffset.IsDefault ? 1 : 2);
-                        var builder = ImmutableArray.CreateBuilder<Trivia>( len );
-
-                        // When isRevert is true: insert after the opening trivia (for line comment, it ends with a newline).
-                        // When isRevert is false: insert before the closing trivia.
-                        int insertIdx = finder.IsRevert ? idx + 1 : idx;
-                        builder.AddRange( trivias, insertIdx );
-                        if( finder.IsRevert )
-                        {
-                            // Insert the colOffset before the text.
-                            if( !colOffset.IsDefault ) builder.Add( colOffset );
-                            builder.Add( finder.InjectText );
-                        }
-                        else
-                        {
-                            // Inserting before the closing trivia: the text will "reuse" the existing
-                            // offset of the closing trivia (whatever it is but it should be the same
-                            // trivia as the initial opening tag unless the text has been deliberately tampered),
-                            // and the colOffset becomes the trivia before the closing trivia. 
-                            builder.Add( finder.InjectText );
-                            if( !colOffset.IsDefault ) builder.Add( colOffset );
-                        }
-                        var remaining = trivias.Length - insertIdx;
-                        if( remaining > 0 )
-                        {
-                            builder.AddRange( trivias.AsSpan( insertIdx, remaining ) );
-                        }
-                        Throw.DebugAssert( builder.Capacity == builder.Count );
-                        modified = builder.DrainToImmutable();
+                        // Inserting before the closing trivia: the text will "reuse" the existing
+                        // offset of the closing trivia (whatever it is but it should be the same
+                        // trivia as the initial opening tag unless the text has been deliberately tampered),
+                        // and the colOffset becomes the trivia before the closing trivia. 
+                        builder.Add( finder.InjectText );
+                        if( !colOffset.IsDefault ) builder.Add( colOffset );
                     }
+                    var remaining = trivias.Length - insertIdx;
+                    if( remaining > 0 )
+                    {
+                        builder.AddRange( trivias.AsSpan( insertIdx, remaining ) );
+                    }
+                    Throw.DebugAssert( builder.Capacity == builder.Count );
+                    modified = builder.DrainToImmutable();
                 }
-                ++idx;
             }
-            return modified;
+            ++idx;
         }
+        return modified;
     }
 
     // This is a ref struct only to emphasize the fact that this is

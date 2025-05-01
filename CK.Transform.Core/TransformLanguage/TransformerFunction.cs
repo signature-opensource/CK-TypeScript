@@ -59,14 +59,9 @@ public sealed class TransformerFunction : TopLevelSourceSpan
     /// </summary>
     public TransformStatementBlock Body { get; }
 
-    /// <summary>
-    /// Applies the <see cref="Body"/> to the <paramref name="editor"/>.
-    /// </summary>
-    /// <param name="monitor">Required monitor.</param>
-    /// <param name="editor">The code to transform.</param>
-    /// <returns>True on success, false on error.</returns>
-    public bool Apply( IActivityMonitor monitor, SourceCodeEditor editor )
+    internal void Apply( SourceCodeEditor editor )
     {
-        return Body.Apply( monitor, editor ) && (!editor.NeedReparse || editor.Reparse( monitor ));
+        Body.Apply( editor.Monitor, editor );
+        if( !editor.HasError && editor.NeedReparse ) editor.Reparse();
     }
 }
