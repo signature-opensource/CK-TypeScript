@@ -60,18 +60,6 @@ public abstract partial class SourceSpan
     }
 
     /// <summary>
-    /// Binds this span to the <see cref="BindingContext.SpanTokens"/> and to its
-    /// <see cref="Children"/>. Errors are signaled with <see cref="BindingContext.AddError(Token, string, bool)"/>.
-    /// <para>
-    /// Once any Bind fails, <see cref="CheckValid"/> should return false on this span (and its parents) but nothing
-    /// enforce this. The rule is that a binding failure that occurs during parsing prevents further bindings (but doesn't
-    /// stop the parsing) and a binding failure during transformation prevents subsequent transformations to be applied.
-    /// </para>
-    /// </summary>
-    /// <param name="c">The binding context.</param>
-    internal protected abstract void Bind( BindingContext c );
-
-    /// <summary>
     /// Detaches this span from the <see cref="Root"/>.
     /// </summary>
     /// <param name="withChildren">

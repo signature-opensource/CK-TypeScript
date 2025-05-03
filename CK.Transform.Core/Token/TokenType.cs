@@ -50,7 +50,6 @@ public enum TokenType
 
     /// <summary>
     /// A generic error type.
-    /// This is the type of <see cref="BindingError"/>.
     /// </summary>
     GenericError = GenericAny | ErrorClassBit,
 

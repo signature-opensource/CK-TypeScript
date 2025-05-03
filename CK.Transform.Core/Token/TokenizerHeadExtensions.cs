@@ -17,8 +17,8 @@ public static class TokenizerHeadExtensions
     public static T AddSpan<T>( this ref TokenizerHead head, T newOne ) where T : SourceSpan
     {
 #if DEBUG
-        var s = head.AddAndBindSourceSpan( newOne );
-        Throw.DebugAssert( head.HasBindingErrors || s.CheckValid() );
+        var s = head.AddSourceSpan( newOne );
+        Throw.DebugAssert( s.CheckValid() );
         return (T)s;
 #else
         return Unsafe.As<T>( head.AddSourceSpan( newOne ) );

@@ -161,8 +161,8 @@ public sealed partial class TransformerHost
                     head.AcceptLowLevelToken();
                 }
             }
-            head.ExtractResult( out var code, out var inlineErrorCount, out var bindingErrors );
-            Throw.DebugAssert( "No spans here.", !code.Spans.Any() && bindingErrors == null );
+            head.ExtractResult( out var code, out var inlineErrorCount );
+            Throw.DebugAssert( "No spans here.", !code.Spans.Any() );
             if( inlineErrorCount != 0 )
             {
                 monitor.Error( $"""

@@ -70,7 +70,7 @@ public static class AnalyzerExtensions
             var r = analyzer.Parse( text );
             if( !r.Success )
             {
-                var error = r.FirstAnyError;
+                var error = r.FirstError;
                 monitor.Error( $"""
                         {error.ErrorMessage} @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
                         {text}
@@ -100,7 +100,7 @@ public static class AnalyzerExtensions
         var r = analyzer.Parse( text );
         if( !r.Success )
         {
-            var error = r.FirstAnyError;
+            var error = r.FirstError;
             Throw.InvalidDataException( $"""
                     Error {error.ErrorMessage} - @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
                     {text}
