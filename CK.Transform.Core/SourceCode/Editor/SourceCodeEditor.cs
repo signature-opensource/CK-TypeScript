@@ -14,8 +14,7 @@ public sealed partial class SourceCodeEditor
 {
     readonly SourceCode _code;
     List<Token> _tokens;
-    readonly TokenScope _scopedTokens;
-    readonly SourceTokenEnumerable _sourceTokens;
+    readonly Editor _editor;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -35,8 +34,7 @@ public sealed partial class SourceCodeEditor
         _code = code;
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
-        _sourceTokens = new SourceTokenEnumerable( this );
-        _scopedTokens = new TokenScope( this );
+        _editor = new Editor( this );
     }
 
     void OnError() => _hasError = true;
@@ -59,23 +57,46 @@ public sealed partial class SourceCodeEditor
     public SourceCode Code => _code;
 
     /// <summary>
-    /// Enumerates all <see cref="Tokens"/> with their index and deepest span in an optimized way.
-    /// </summary>
-    public IEnumerable<SourceToken> SourceTokens => _sourceTokens;
-
-    /// <summary>
-    /// Gets the filtered <see cref="SourceToken"/>.
-    /// <para>
-    /// Note that the enumerator MUST be disposed once done with it because it
-    /// contains a <see cref="ImmutableList{T}.Enumerator"/> that must be disposed.
-    /// </para>
-    /// </summary>
-    public TokenScope ScopedTokens => _scopedTokens;
-
-    /// <summary>
     /// Gets the language.
     /// </summary>
     public TransformerHost.Language Language => _language;
+
+    /// <summary>
+    /// Pushes a new token filter.
+    /// </summary>
+    /// <param name="filter">The filter to apply.</param>
+    public void PushTokenFilter( Func<IActivityMonitor,
+                                      IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
+                                      IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> filter )
+    {
+        Throw.CheckState( _editor.OpenCount == 0 );
+        _editor._tokenFilters.Push( filter( _monitor, _editor._tokenFilters.Peek() ) );
+    }
+
+    /// <summary>
+    /// Pushes a new token filter.
+    /// </summary>
+    /// <param name="filterProvider">The filter provider to apply.</param>
+    public void PushTokenFilter( IFilteredTokenEnumerableProvider filterProvider )
+    {
+        PushTokenFilter( filterProvider.GetFilteredTokenProjection() );
+    }
+
+    /// <summary>
+    /// Pops the last pushed token filter.
+    /// </summary>
+    public void PopTokenFilter()
+    {
+        Throw.CheckState( _editor.OpenCount == 0 && _editor._tokenFilters.Count > 1 );
+        _editor._tokenFilters.Pop();
+    }
+
+    /// <summary>
+    /// Gets a disposable <see cref="Editor"/> that enables code modification.
+    /// </summary>
+    /// <returns>The editor that must be disposed.</returns>
+    public Editor OpenEditor() => _editor.Open();
+
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.
@@ -136,11 +157,6 @@ public sealed partial class SourceCodeEditor
 
     /// <summary>
     /// Replaces one or more tokens with any number of tokens.
-    /// <para>
-    /// The range (<paramref name="index"/> and <paramref name="count"/>) is relative to the current <see cref="SourceCode.Tokens"/>,
-    /// independent of any previous replace, insert, remove not yet applied.
-    /// The range must not intersect any previously modified ranges not yet applied.
-    /// </para>
     /// </summary>
     /// <param name="index">The index of the first token that must be replaced.</param>
     /// <param name="count">The number of tokens to replace. Must be positive.</param>

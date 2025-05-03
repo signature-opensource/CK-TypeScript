@@ -41,8 +41,6 @@ public sealed partial class TransformerHost
 
         public RootTransformAnalyzer RootAnalyzer => _rootAnalyzer;
 
-        public TransformStatementAnalyzer TransformStatementAnalyzer => _thisAnalyzer;
-
         protected internal override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
         {
             return (_thisAnalyzer, _rootAnalyzer);

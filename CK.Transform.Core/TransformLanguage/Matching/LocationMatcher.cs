@@ -7,10 +7,12 @@ using System.Text;
 
 namespace CK.Transform.Core;
 
+using TokenFilterFunc = Func<IActivityMonitor, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>>;
+
 /// <summary>
 /// Captures "<see cref="LocationCardinality"/> <see cref="Matcher"/>".
 /// </summary>
-public sealed class LocationMatcher : SourceSpan, ITokenFilter
+public sealed class LocationMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumerableProvider
 {
     LocationMatcher( int beg, int end )
         : base( beg, end )
@@ -46,11 +48,11 @@ public sealed class LocationMatcher : SourceSpan, ITokenFilter
         }
     }
 
-    internal static LocationMatcher? Parse( ref TokenizerHead head, bool monoLocationOnly = false )
+    internal static LocationMatcher? Parse( TransformerHost.Language language, ref TokenizerHead head, bool monoLocationOnly = false )
     {
         int begSpan = head.LastTokenIndex + 1;
         var cardinality = LocationCardinality.Match( ref head, monoLocationOnly );
-        var matcher = SpanMatcher.Match( ref head );
+        var matcher = SpanMatcher.Match( language, ref head );
         return matcher == null
                 ? null
                 : head.AddSpan( new LocationMatcher( begSpan, head.LastTokenIndex + 1 ) );
@@ -218,5 +220,164 @@ public sealed class LocationMatcher : SourceSpan, ITokenFilter
             return b.ToString();
         }
 
+    }
+
+    TokenFilterFunc IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
+    {
+        Throw.DebugAssert( CheckValid() );
+        var matcherFunc = Matcher.GetFilteredTokenProjection();
+
+        var cardinality = Cardinality;
+        var kind = cardinality?.Kind ?? LocationCardinality.LocationKind.Single;
+        return kind switch
+        {
+            LocationCardinality.LocationKind.Single => ( monitor, inner ) => HandleSingle( monitor, matcherFunc( monitor, inner ) ),
+            LocationCardinality.LocationKind.First => ( monitor, inner ) => HandleFirst( monitor, matcherFunc( monitor, inner ) ),
+            LocationCardinality.LocationKind.Last => ( monitor, inner ) => HandleLast(monitor, matcherFunc(monitor, inner)),
+            LocationCardinality.LocationKind.All => cardinality!.ExpectedMatchCount == 0 
+                                                        ? matcherFunc // All without ExpectedMatchCount is a no-op constraint.
+                                                        : ( monitor, inner ) => HandleAllCount( monitor, matcherFunc( monitor, inner ) ),
+            _ => ( monitor, inner ) => HandleEach( monitor, matcherFunc( monitor, inner ) )
+        };
+    }
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleSingle( IActivityMonitor monitor, IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    {
+        Throw.DebugAssert( CheckValid() );
+        foreach( var each in inner )
+        {
+            var single = each.SingleOrDefault();
+            if( single != null )
+            {
+                yield return [single];
+                yield break;
+            }
+            else
+            {
+                monitor.Error( $"""
+                                    Expected single '{Matcher}' but got {each.Count()} in:
+                                    {DumpRanges( each )}
+                                    """ );
+                break;
+            }
+        }
+        monitor.Error( $"""
+                            Expected single '{Matcher}' but got none.
+                            """ );
+    }
+
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleFirst( IActivityMonitor monitor,
+                                                                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    {
+        Throw.DebugAssert( CheckValid() && Cardinality != null && Cardinality.Kind == LocationCardinality.LocationKind.First );
+        foreach( var each in inner )
+        {
+            int count = HandleExpectedMatchCount( monitor, Matcher, Cardinality, each );
+            if( count == -2 ) break;
+
+            var first = each.Skip( Cardinality.Offset - 1 ).FirstOrDefault();
+            if( first != null )
+            {
+                yield return [first];
+            }
+            else
+            {
+                monitor.Error( $"""
+                                    Expected '{Cardinality} {Matcher}' but got {count} matches in:
+                                    {DumpRanges( each )}
+                                    """ );
+                break;
+            }
+        }
+    }
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleLast( IActivityMonitor monitor,
+                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    {
+        Throw.DebugAssert( CheckValid() && Cardinality != null && Cardinality.Kind == LocationCardinality.LocationKind.Last );
+        foreach( var each in inner )
+        {
+            int count = HandleExpectedMatchCount( monitor, Matcher, Cardinality, each );
+            if( count == -2 ) break;
+            if( count == -1 ) count = each.Count();
+            int at = count - Cardinality.Offset + 1;
+            if( at >= 0 && at < count )
+            {
+                yield return [each.ElementAt( at )];
+            }
+            else
+            {
+                monitor.Error( $"""
+                                    Expected '{Cardinality} {Matcher}' but got {count} matches in:
+                                    {DumpRanges( each )}
+                                    """ );
+                break;
+            }
+        }
+    }
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAllCount( IActivityMonitor monitor,
+                                                                       IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    {
+        Throw.DebugAssert( CheckValid()
+                           && Cardinality != null
+                           && Cardinality.Kind == LocationCardinality.LocationKind.All
+                           && Cardinality.ExpectedMatchCount > 0 );
+        foreach( var each in inner )
+        {
+            int count = HandleExpectedMatchCount( monitor, Matcher, Cardinality, each );
+            if( count == -2 ) return ScopedTokensBuilder.EmptyResult;
+        }
+        return inner;
+    }
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleEach( IActivityMonitor monitor,
+                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    {
+        Throw.DebugAssert( CheckValid() && Cardinality != null && Cardinality.Kind == LocationCardinality.LocationKind.Each );
+        if( Cardinality.ExpectedMatchCount != 0 )
+        {
+            foreach( var each in inner )
+            {
+                int count = HandleExpectedMatchCount( monitor, Matcher, Cardinality, each );
+                if( count == -2 ) break;
+                foreach( var r in each ) yield return [r];
+            }
+        }
+    }
+
+    static int HandleExpectedMatchCount( IActivityMonitor monitor,
+                                         SpanMatcher matcher,
+                                         LocationCardinality cardinality,
+                                         IEnumerable<IEnumerable<SourceToken>> each )
+    {
+        int count = -1;
+        if( cardinality.ExpectedMatchCount != 0 )
+        {
+            count = each.Count();
+            if( count != cardinality.ExpectedMatchCount )
+            {
+                monitor.Error( $"""
+                                    Expected {cardinality} '{matcher}' but got {count} matches in:
+                                    {DumpRanges( each )}
+                                    """ );
+                count = -2;
+            }
+        }
+        return count;
+    }
+
+    static string DumpRanges( IEnumerable<IEnumerable<SourceToken>> each )
+    {
+        var b = new StringBuilder();
+        int iRange = 0;
+        foreach( var r in each )
+        {
+            b.Append( "--- (range n°" ).Append( ++iRange ).AppendLine( ") ---" );
+            r.Select( t => t.Token ).Write( b ).AppendLine();
+            b.AppendLine( "---" );
+        }
+        return b.ToString();
     }
 }

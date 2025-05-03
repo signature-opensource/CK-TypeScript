@@ -31,9 +31,9 @@ public sealed class ReplaceStatement : TransformStatement
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         Throw.DebugAssert( CheckValid() );
-        if( Matcher != null && !editor.ScopedTokens.PushTokenFilter( monitor, Matcher ) )
+        if( Matcher != null )
         {
-            return;
+            editor.PushTokenFilter( Matcher );
         }
         try
         {

@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -12,7 +13,7 @@ namespace CK.Transform.Core;
 /// Where the span type is optional (defaults to the matched tokens) and the ".<see cref="LanguageName"/>"
 /// suffix is also optional (defaults to the target language).
 /// </summary>
-public sealed class SpanMatcher : SourceSpan, ITokenFilter
+public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumerableProvider
 {
     Token? _spanSpec;
     Token? _languageName;
@@ -49,7 +50,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
     /// </summary>
     public RawString? Pattern => _pattern;
 
-    internal static SpanMatcher? Match( ref TokenizerHead head )
+    internal static SpanMatcher? Match( TransformerHost.Language language, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
         Token? spanSpec = null;
@@ -70,27 +71,34 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
         if( head.LowLevelTokenType is not TokenType.DoubleQuote )
         {
             // This should not be done here but in Bind!
-            if( spanSpec == null ) head.AppendMissingToken( "Pattern string" );
+            if( spanSpec == null ) head.AppendMissingToken( "span {specification} and/or pattern \"string\"" );
         }
         else
         {
             pattern = RawString.Match( ref head );
-            if( pattern != null && pattern.InnerText.Length == 0 )
+            if( pattern != null && pattern.InnerText.Span.Trim().Length == 0 )
             {
-                // This should not be done here but in Bind!
                 head.AppendError( "Pattern string must not be empty.", -1 );
                 pattern = null;
             }
         }
-        Token? languageName = null;
+        TransformerHost.Language? patternLanguage = language;
         if( head.TryAcceptToken( TokenType.Dot, out _ ) )
         {
-            if( !head.TryAcceptToken( TokenType.GenericIdentifier, out languageName ) )
+            if( !head.TryAcceptToken( TokenType.GenericIdentifier, out var languageName ) )
             {
                 head.AppendMissingToken( "language name" );
             }
+            else
+            {
+                patternLanguage = language.Host.FindLanguage( languageName.Text.Span );
+                if( patternLanguage == null )
+                {
+                    head.AppendError( $"Unknwon language.", -1 );
+                }
+            }
         }
-        return spanSpec == null && pattern == null
+        return patternLanguage == null || (spanSpec == null && pattern == null)
                 ? null
                 : head.AddSpan( new SpanMatcher( begSpan,
                                                  head.LastTokenIndex + 1,
@@ -128,5 +136,10 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
         return _spanSpec == null
                 ? _pattern.ToString()
                 : $"""{_spanSpec.Text.Span} {_pattern?.Text}""";
+    }
+
+    public Func<IActivityMonitor, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+    {
+        throw new NotImplementedException();
     }
 }

@@ -46,7 +46,8 @@ public sealed class InjectIntoStatement : TransformStatement
         // or injection point. We need the same state machine for all the tokens and
         // process all the tokens (to detect duplicate errors).
         var finder = new InjectionPointFinder( Target, Content );
-        foreach( var sourceToken in editor.ScopedTokens.AllTokens )
+        using var e = editor.OpenEditor();
+        foreach( var sourceToken in e.AllTokens )
         {
             var token = sourceToken.Token;
             var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );

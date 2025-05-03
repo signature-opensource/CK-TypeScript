@@ -1,36 +1,65 @@
+using CK.Core;
+using System;
+using System.Collections.Generic;
+using static CK.Transform.Core.SourceCodeEditor;
+
 namespace CK.Transform.Core;
 
 public sealed partial class SourceCodeEditor
 {
-    int _editorCount;
-
-    /// <summary>
-    /// Gets a disposable <see cref="Editor"/> that enables code modification.
-    /// </summary>
-    /// <returns></returns>
-    public Editor OpenEditor()
-    {
-        _editorCount++;
-        return new Editor( this );
-    }
-
-    void CloseEditor()
-    {
-        if( --_editorCount == 0 )
-        {
-
-        }
-    }
-
-    public readonly struct Editor
+    public sealed class Editor : IDisposable
     {
         readonly SourceCodeEditor _e;
+        readonly SourceTokenEnumerable _sourceTokens;
+        // This stack is managed at the SourceCodeEditor level: filters can only be pushed/pop
+        // when this editor is not opened.
+        internal readonly Stack<IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> _tokenFilters;
+        int _openCount;
 
-        public Editor( SourceCodeEditor e )
+
+        internal Editor( SourceCodeEditor e )
         {
             _e = e;
+            _sourceTokens = new SourceTokenEnumerable( e );
+            _tokenFilters = new Stack<IEnumerable<IEnumerable<IEnumerable<SourceToken>>>>();
+            _tokenFilters.Push( [[_sourceTokens]] );
         }
 
-        public void Dispose() => _e.CloseEditor();
+        internal int OpenCount => _openCount;
+
+        internal Editor Open() { ++_openCount; return this; }
+
+        public void Dispose()
+        {
+            if( --_openCount == 0 )
+            {
+                // Reparse what must be reparsed.
+            }
+        }
+
+        /// <summary>
+        /// Enumerates all <see cref="SourceToken"/>.
+        /// </summary>
+        public IEnumerable<SourceToken> UnfilteredTokens => _sourceTokens;
+
+        /// <summary>
+        /// Enumerates the filtered <see cref="SourceToken"/> by each and all groups.
+        /// </summary>
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens => _tokenFilters.Peek();
+
+        /// <summary>
+        /// Enumerates the flattened tokens from the filtered <see cref="Tokens"/>.
+        /// </summary>
+        public IEnumerable<SourceToken> AllTokens
+        {
+            get
+            {
+                foreach( var each in Tokens )
+                    foreach( var range in each )
+                        foreach( var t in range )
+                            yield return t;
+            }
+        }
+
     }
 }
