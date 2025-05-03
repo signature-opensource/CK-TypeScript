@@ -144,7 +144,7 @@ public sealed partial class TransformerHost
                 {
                     if( InjectionPoint.Match( ref head ) == null )
                     {
-                        Throw.DebugAssert( head.FirstError != null );
+                        Throw.DebugAssert( head.FirstParseError != null );
                         break;
                     }
                 }
@@ -152,7 +152,7 @@ public sealed partial class TransformerHost
                 {
                     if( RawString.Match( ref head ) == null )
                     {
-                        Throw.DebugAssert( head.FirstError != null );
+                        Throw.DebugAssert( head.FirstParseError != null );
                         break;
                     }
                 }
@@ -161,11 +161,12 @@ public sealed partial class TransformerHost
                     head.AcceptLowLevelToken();
                 }
             }
-            head.ExtractResult( out var code, out var inlineErrorCount );
+            head.ExtractResult( out var code, out var inlineErrorCount, out var bindingErrors );
+            Throw.DebugAssert( "No spans here.", !code.Spans.Any() && bindingErrors == null );
             if( inlineErrorCount != 0 )
             {
                 monitor.Error( $"""
-                    Error '{head.FirstError}' while parsing pattern:
+                    Error '{head.FirstParseError}' while parsing pattern:
                     {pattern}
                     """ );
                 return null;

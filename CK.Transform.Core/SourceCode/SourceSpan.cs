@@ -49,7 +49,7 @@ public abstract partial class SourceSpan
     /// <para>
     /// Overrides typically specify [MemberNotNullWhen( true, ...)] with required properties of the structure.
     /// This has been designed to be used in <see cref="Throw.DebugAssert(bool, string?, string?, int)"/>:
-    /// spans must always be valid.
+    /// spans must always be valid, see <see cref="Bind"/>.
     /// </para>
     /// </summary>
     /// <returns>True if this span is valid.</returns>
@@ -58,6 +58,18 @@ public abstract partial class SourceSpan
     {
         return !IsDetached && Children.CheckValid();
     }
+
+    /// <summary>
+    /// Binds this span to the <see cref="BindingContext.SpanTokens"/> and to its
+    /// <see cref="Children"/>. Errors are signaled with <see cref="BindingContext.AddError(Token, string, bool)"/>.
+    /// <para>
+    /// Once any Bind fails, <see cref="CheckValid"/> should return false on this span (and its parents) but nothing
+    /// enforce this. The rule is that a binding failure that occurs during parsing prevents further bindings (but doesn't
+    /// stop the parsing) and a binding failure during transformation prevents subsequent transformations to be applied.
+    /// </para>
+    /// </summary>
+    /// <param name="c">The binding context.</param>
+    internal protected abstract void Bind( BindingContext c );
 
     /// <summary>
     /// Detaches this span from the <see cref="Root"/>.

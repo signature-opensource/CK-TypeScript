@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 
 namespace CK.Transform.Core;
@@ -9,11 +9,11 @@ namespace CK.Transform.Core;
 public interface ITargetAnalyzer : IAnalyzer
 {
     /// <summary>
-    /// Creates a <see cref="ITokenFilter"/> from an optional span type and a textual pattern. 
+    /// Creates a <see cref="ITokenFilter"/> from an optional span specication and textual pattern. 
     /// </summary>
     /// <param name="monitor">The monitor to use for errors.</param>
-    /// <param name="spanType">Span type (can be empty).</param>
-    /// <param name="pattern">The pattern to analyze. Never empty.</param>
+    /// <param name="spanSpec">Span specification. Can be empty, empty enclosed <c>{}</c> or contains any <c>{specification}</c>.</param>
+    /// <param name="pattern">The pattern to analyze. Can be empty.</param>
     /// <returns>A token filter on success, null on error.</returns>
-    ITokenFilter? CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern );
+    ITokenFilter? CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanSpec, ReadOnlyMemory<char> pattern );
 }

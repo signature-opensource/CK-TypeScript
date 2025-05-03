@@ -70,7 +70,7 @@ public static class AnalyzerExtensions
             var r = analyzer.Parse( text );
             if( !r.Success )
             {
-                var error = r.HardError ?? r.SourceCode.Tokens.OfType<TokenError>().First();
+                var error = r.FirstAnyError;
                 monitor.Error( $"""
                         {error.ErrorMessage} @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
                         {text}
@@ -100,9 +100,9 @@ public static class AnalyzerExtensions
         var r = analyzer.Parse( text );
         if( !r.Success )
         {
-            var error = r.HardError ?? r.SourceCode.Tokens.OfType<TokenError>().First();
+            var error = r.FirstAnyError;
             Throw.InvalidDataException( $"""
-                    Parsing error {error.ErrorMessage} - @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
+                    Error {error.ErrorMessage} - @{error.SourcePosition.Line},{error.SourcePosition.Column} while parsing:
                     {text}
                     """ );
         }

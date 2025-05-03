@@ -14,14 +14,14 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class SpanMatcher : SourceSpan, ITokenFilter
 {
-    Token? _spanType;
+    Token? _spanSpec;
     Token? _languageName;
     RawString? _pattern;
 
-    SpanMatcher( int beg, int end, Token? spanType, Token? languageName, RawString pattern )
+    SpanMatcher( int beg, int end, Token? spanType, Token? languageName, RawString? pattern )
         : base( beg, end )
     {
-        _spanType = spanType;
+        _spanSpec = spanType;
         _languageName = languageName;
         _pattern = pattern;
     }
@@ -35,7 +35,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
     /// <summary>
     /// Gets the type of the span. This is a <see cref="BasicTokenType.GenericIdentifier"/>.
     /// </summary>
-    public Token? SpanType => _spanType;
+    public Token? SpanType => _spanSpec;
 
     /// <summary>
     /// Gets or sets the optional language name. This is a <see cref="BasicTokenType.GenericIdentifier"/>.
@@ -52,25 +52,32 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
     internal static SpanMatcher? Match( ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
-        Token? spanType = null;
-        if( head.TryAcceptToken( TokenType.OpenBrace, out _ ) )
+        Token? spanSpec = null;
+        if( head.LowLevelTokenType == TokenType.OpenBrace )
         {
-            head.TryAcceptToken( TokenType.GenericIdentifier, out spanType );
-            if( !head.TryAcceptToken( TokenType.CloseBrace, out _ ) )
+            var basicString = LowLevelToken.BasicallyReadQuotedString( head.LowLevelTokenText );
+            Throw.DebugAssert( basicString.TokenType is TokenType.GenericString or TokenType.ErrorUnterminatedString );
+            if( basicString.TokenType == TokenType.ErrorUnterminatedString )
             {
-                head.AppendMissingToken( "closing '}'" );
+                head.AppendError( "Missing closing '}'.", 1, TokenType.GenericUnexpectedToken|TokenType.ErrorClassBit );
+            }
+            else
+            {
+                spanSpec = head.AcceptLowLevelToken();
             }
         }
         RawString? pattern = null;
         if( head.LowLevelTokenType is not TokenType.DoubleQuote )
         {
-            head.AppendMissingToken( "Pattern string" );
+            // This should not be done here but in Bind!
+            if( spanSpec == null ) head.AppendMissingToken( "Pattern string" );
         }
         else
         {
             pattern = RawString.Match( ref head );
             if( pattern != null && pattern.InnerText.Length == 0 )
             {
+                // This should not be done here but in Bind!
                 head.AppendError( "Pattern string must not be empty.", -1 );
                 pattern = null;
             }
@@ -83,11 +90,11 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
                 head.AppendMissingToken( "language name" );
             }
         }
-        return pattern == null
+        return spanSpec == null && pattern == null
                 ? null
                 : head.AddSpan( new SpanMatcher( begSpan,
                                                  head.LastTokenIndex + 1,
-                                                 spanType,
+                                                 spanSpec,
                                                  languageName,
                                                  pattern ) );
     }
@@ -108,7 +115,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
             }
         }
         var m = language.TargetAnalyzer.CreateSpanMatcher( builder.Monitor,
-                                                           _spanType != null ? _spanType.Text.Span : default,
+                                                           _spanSpec != null ? _spanSpec.Text.Span : default,
                                                            _pattern.InnerText );
         return m != null
                 ? m.GetScopedTokens( builder )
@@ -118,8 +125,8 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter
     public override string ToString()
     {
         if( !CheckValid() ) return "<Invalid>";
-        return _spanType == null
+        return _spanSpec == null
                 ? _pattern.ToString()
-                : $$"""{{{_spanType.Text.Span}}} {{_pattern?.Text}}""";
+                : $"""{_spanSpec.Text.Span} {_pattern?.Text}""";
     }
 }

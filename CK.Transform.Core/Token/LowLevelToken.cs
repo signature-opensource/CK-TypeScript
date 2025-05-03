@@ -152,7 +152,7 @@ public readonly record struct LowLevelToken( TokenType TokenType, int Length )
     /// character) that is used as the closing quote. Backslach \ escapes the following characters whatever it is.
     /// </summary>
     /// <param name="head">The head to parse.</param>
-    /// <returns>A token with type <see cref="TokenType.GenericString"/> or <see cref="TokenType.ErrorUnterminatedString"/>.</returns>
+    /// <returns>A low-level token with type <see cref="TokenType.GenericString"/> or <see cref="TokenType.ErrorUnterminatedString"/>.</returns>
     public static LowLevelToken BasicallyReadQuotedString( ReadOnlySpan<char> head )
     {
         var q = head[0];

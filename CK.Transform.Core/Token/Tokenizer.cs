@@ -66,8 +66,15 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     {
         TokenizerHead head = CreateHead();
         var hardError = Tokenize( ref head );
-        head.ExtractResult( out var code, out var inlineErrorCount );
-        return new AnalyzerResult( code, hardError, head.FirstError, inlineErrorCount, head.RemainingText, head.EndOfInput != null );
+        head.ExtractResult( out var code, out var inlineErrorCount, out var bindingErrors );
+        return new AnalyzerResult( code,
+                                   hardError,
+                                   head.FirstParseError,
+                                   head.FirstAnyError,
+                                   inlineErrorCount,
+                                   bindingErrors,
+                                   head.RemainingText,
+                                   head.EndOfInput != null );
     }
 
     /// <summary>

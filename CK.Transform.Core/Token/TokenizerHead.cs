@@ -24,11 +24,13 @@ public ref struct TokenizerHead
     // The collector list is set to null by ExtractResult.
     List<Token>? _tokens;
     Token? _lastToken;
+    List<BindingError>? _bindingErrors;
     TriviaParser _triviaParser;
     ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
     TokenError? _endOfInput;
-    TokenError? _firstError;
+    TokenError? _firstParseError;
+    TokenError? _firstAnyError;
     ReadOnlySpan<char> _lowLevelTokenText;
     TokenType _lowLevelTokenType;
     int _remainingTextIndex;
@@ -82,7 +84,7 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Gets whether this head must not be used anymore: either <see cref="ExtractResult(out SourceCode, out int)"/>
+    /// Gets whether this head must not be used anymore: either <see cref="ExtractResult"/>
     /// has been called or this is a sub head that has been accepted to its parent head with <see cref="SkipTo(int, ref TokenizerHead)"/>.
     /// </summary>
     [MemberNotNullWhen( false, nameof( _tokens ), nameof(Tokens) )]
@@ -139,15 +141,27 @@ public ref struct TokenizerHead
         _tokens.AddRange( subTokens );
         _lastTokenIndex += subTokens.Length;
         _lastToken = subHead._lastToken;
-        _firstError ??= subHead._firstError;
+        _firstParseError ??= subHead._firstParseError;
+        _firstAnyError ??= subHead._firstAnyError;
         _inlineErrorCount += subHead._inlineErrorCount;
-
-        subHead._remainingTextIndex = 0;
+        if( _bindingErrors == null )
+        {
+            _bindingErrors = subHead._bindingErrors;
+        }
+        else if( subHead._bindingErrors != null )
+        {
+            _bindingErrors.AddRange( subHead._bindingErrors );
+        }
+        if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
         subHead._tokens = null;
+
+        // Reseting these fileds is highly optional...
+        subHead._bindingErrors = null;
+        subHead._remainingTextIndex = 0;
         subHead._lastToken = null;
         subHead._lastTokenIndex = -1;
-        if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
-        subHead._firstError = null;
+        subHead._firstParseError = null;
+        subHead._firstAnyError = null;
         subHead._inlineErrorCount = 0;
 
         InitializeLeadingTrivia();
@@ -197,6 +211,11 @@ public ref struct TokenizerHead
     public readonly int InlineErrorCount => _inlineErrorCount;
 
     /// <summary>
+    /// Gets whether a binding error occurred. Once this is true, no new span binding is done.
+    /// </summary>
+    public readonly bool HasBindingErrors => _bindingErrors != null;
+
+    /// <summary>
     /// Gets the position of the <see cref="RemainingText"/> in the whole <see cref="Text"/>.
     /// </summary>
     public readonly int RemainingTextIndex => _remainingTextIndex;
@@ -216,9 +235,14 @@ public ref struct TokenizerHead
     public readonly TokenError? EndOfInput => _endOfInput;
 
     /// <summary>
-    /// Gets the first error that has been appended.
+    /// Gets the first error that has been added to the <see cref="Tokens"/>.
     /// </summary>
-    public readonly TokenError? FirstError => _firstError;
+    public readonly TokenError? FirstParseError => _firstParseError;
+
+    /// <summary>
+    /// Gets the first error that occurred: it is either the <see cref="FirstParseError"/> or the first <see cref="BindingError.Error"/>.
+    /// </summary>
+    public readonly TokenError? FirstAnyError => _firstAnyError;
 
     /// <summary>
     /// Gets the low-level token type.
@@ -232,12 +256,13 @@ public ref struct TokenizerHead
     public readonly ReadOnlySpan<char> LowLevelTokenText => _lowLevelTokenText;
 
     /// <summary>
-    /// Extracts the tokens accepted so far, the spans created and the <see cref="InlineErrorCount"/>.
+    /// Extracts the tokens accepted so far and the spans created to a new <see cref="SourceCode"/>,
+    /// the <see cref="InlineErrorCount"/> and <paramref name="bindingErrors"/>.
     /// This head is condemned and must not be used anymore.
     /// </summary>
     /// <param name="code">The collected tokens and spans.</param>
     /// <param name="inlineErrorCount">Number of inlined errors.</param>
-    public void ExtractResult( out SourceCode code, out int inlineErrorCount )
+    public void ExtractResult( out SourceCode code, out int inlineErrorCount, out IReadOnlyList<BindingError>? bindingErrors )
     {
         Throw.CheckState( !IsCondemned );
         if( MemoryMarshal.TryGetString( _memText, out var sourceText, out var start, out var length ) )
@@ -246,22 +271,35 @@ public ref struct TokenizerHead
             if( length < sourceText.Length ) sourceText = sourceText.Substring( start, length );
         }
         code = new SourceCode( _tokens, _spans, sourceText );
-        Throw.DebugAssert( !_spans._children.HasChildren );
+        bindingErrors = _bindingErrors;
+        inlineErrorCount = _inlineErrorCount;
+
+        Throw.DebugAssert( "SourceCode ctor transfered the spans.", !_spans._children.HasChildren );
         _tokens = null;
         _lastTokenIndex = -1;
-        inlineErrorCount = _inlineErrorCount;
         _inlineErrorCount = 0;
     }
 
     /// <summary>
-    /// Adds a span. This throws if the span is already attached to a root or
+    /// Adds and binds a span. This throws if the span is already attached to a root or
     /// if it intersects an already added existing span.
+    /// <para>
+    /// <see cref="SourceSpan.Bind(BindingContext)"/> is called only when <see cref="HasBindingErrors"/> is false:
+    /// the first span that fails to bind prevents any other binding.
+    /// </para>
     /// </summary>
     /// <param name="newOne">The span to add.</param>
     /// <returns>The <paramref name="newOne"/> span.</returns>
-    public readonly SourceSpan AddSourceSpan( SourceSpan newOne )
+    public SourceSpan AddAndBindSourceSpan( SourceSpan newOne )
     {
         _spans.Add( newOne );
+        if( _bindingErrors == null )
+        {
+            int begSpan = newOne.Span.Beg;
+            var sTokens = CollectionsMarshal.AsSpan( _tokens ).Slice( begSpan, newOne.Span.Length );
+            var c = new BindingContext( sTokens, ref _bindingErrors, begSpan );
+            newOne.Bind( c );
+        }
         return newOne;
     }
 
@@ -380,7 +418,8 @@ public ref struct TokenizerHead
         _tokens.Add( t );
         ++_lastTokenIndex;
         _lastToken = t;
-        _firstError ??= t;
+        _firstParseError ??= t;
+        _firstAnyError ??= t;
         _inlineErrorCount++;
         Throw.DebugAssert( LastToken != null );
         return t;
@@ -411,7 +450,8 @@ public ref struct TokenizerHead
         _lastToken = t;
         if( t is TokenError error )
         {
-            _firstError ??= error;
+            _firstParseError ??= error;
+            _firstAnyError ??= error;
             ++_inlineErrorCount;
         }
         Throw.DebugAssert( LastToken != null );
@@ -434,7 +474,8 @@ public ref struct TokenizerHead
         Throw.DebugAssert( LastToken != null );
         if( token is TokenError error )
         {
-            _firstError ??= error;
+            _firstParseError ??= error;
+            _firstAnyError ??= error;
             ++_inlineErrorCount;
         }
         return token;

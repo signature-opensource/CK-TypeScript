@@ -22,11 +22,19 @@ public enum BasicTokenType : byte
 
     /// <summary>
     /// Can be used by error tolerant parsers to denote an unrecognized (or skipped) token.
+    /// <para>
+    /// This value is not an error: it must be combined with <see cref="TokenType.ErrorClassBit"/>
+    /// to be a token error typ.
+    /// </para>
     /// </summary>
     GenericUnexpectedToken,
 
     /// <summary>
     /// Can be used by error tolerant parsers to denote a missing token.
+    /// <para>
+    /// This value is not an error: it must be combined with <see cref="TokenType.ErrorClassBit"/>
+    /// to be a token error typ.
+    /// </para>
     /// </summary>
     GenericMissingToken,
 
