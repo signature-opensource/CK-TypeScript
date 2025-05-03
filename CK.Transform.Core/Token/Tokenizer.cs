@@ -65,10 +65,9 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     protected virtual AnalyzerResult Parse()
     {
         TokenizerHead head = CreateHead();
-        var hardError = Tokenize( ref head );
+        Tokenize( ref head );
         head.ExtractResult( out var code, out var inlineErrorCount );
         return new AnalyzerResult( code,
-                                   hardError,
                                    head.FirstParseError,
                                    inlineErrorCount,
                                    head.RemainingText,
@@ -84,9 +83,8 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
     /// <summary>
     /// Implements the tokenization itself.
     /// </summary>
-    /// <param name="head">The head to forward until a "hard" error occurs or the end of the input is reached.</param>
-    /// <returns>An optional TokenError on "hard" failure. Errors can also be accepted and collected in <see cref="TokenizerHead.Tokens"/>.</returns>
-    protected abstract TokenError? Tokenize( ref TokenizerHead head );
+    /// <param name="head">The head to analyse.</param>
+    protected abstract void Tokenize( ref TokenizerHead head );
 
     /// <summary>
     /// Must implement <see cref="ITokenizerHeadBehavior.ParseTrivia(ref TriviaHead)"/>.

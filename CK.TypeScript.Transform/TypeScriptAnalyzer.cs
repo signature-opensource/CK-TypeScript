@@ -43,16 +43,15 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
     }
 
     /// <inheritdoc/>
-    protected override TokenError? Tokenize( ref TokenizerHead head )
+    protected override void Tokenize( ref TokenizerHead head )
     {
         for(; ; )
         {
             var t = Scan( ref head );
+            // Currently stops on the first error.
             if( t is TokenError e )
             {
-                return e.TokenType is TokenType.EndOfInput or TokenType.None
-                        ? null
-                        : e;
+                return;
             }
             // Handles import statement (but not import(...) functions).
             if( t.Text.Span.Equals( "import", StringComparison.Ordinal )

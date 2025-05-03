@@ -12,25 +12,18 @@ target languages, with at least a decent support for:
 - Transformer language itself.
 
 Exceptions should not be used for the control flow (they remain exceptional): errors should be emitted
-via `TokenErrorNode` that carries an error token type (negative integer), an error message
+via `TokenError` that carries an error token type (negative integer), an error message
 and the location of the error.
-
-However, nothing prevents exceptions to be (mis-)used and this is the spirit of this library: it tries
-to not impose a single way to parse stuff, it aims to be a lego that can be used to implement multiple
-kind of parsers.
 
 ## The basics: Tokens & Trivias
 
 ## The Analyzer abstraction
 
-## Error handling: the hard way
-The `TokenErrorNode` acts as an exception: when encountered, it should bubble up accross the parser
-functions and becomes the top-level result.
+## Error handling: inlined errors
+The collected tokens can contain `TokenError` that is a specialized `Token`.
+This behavior is simple to implement and understand. This enables any analyzer to be
+"fault tolearant" but analyze can also be stopped on the first error.
 
-This behavior is simple to implement and understand. This is eveything but "fault tolerant" because
-the source code to transform is necessarily (or must be) syntaxically valid. This library is not 
-a linter, interpreter or compiler, its sole purpose is to transform a valid fragment of code into
-another valid fragment of code.
 
 
 

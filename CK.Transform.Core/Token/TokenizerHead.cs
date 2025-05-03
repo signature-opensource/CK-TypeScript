@@ -269,21 +269,6 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
-    /// Creates an error token at the current <see cref="Head"/> position with an error message that is not added to the <see cref="Tokens"/>.
-    /// This independent error must be returned by tokenizer functions and stops the process. It eventually is <see cref="AnalyzerResult.HardError"/>.
-    /// </summary>
-    /// <param name="errorMessage">The error message. Must not be empty.</param>
-    /// <param name="errorType">The error token type.</param>
-    /// <returns>An error token.</returns>
-    public readonly TokenError CreateHardError( string errorMessage, TokenType errorType = TokenType.GenericError )
-    {
-        Throw.CheckArgument( errorType.IsError() );
-        Throw.CheckArgument( !string.IsNullOrWhiteSpace( errorMessage ) );
-        var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
-        return new TokenError( errorType, default, errorMessage, p, _leadingTrivias, Trivia.Empty );
-    }
-
-    /// <summary>
     /// Validates the <see cref="Head"/> first <paramref name="tokenLength"/> characters. A <see cref="Token"/> MUST be
     /// created with the final <paramref name="text"/>, <paramref name="leading"/> and <paramref name="trailing"/> data
     /// and <see cref="Accept{T}(T)"/> MUST be called.
@@ -617,7 +602,8 @@ public ref struct TokenizerHead
 
     void SetEndOfInput()
     {
-        _endOfInput = CreateHardError( "End of input.", TokenType.EndOfInput );
+        var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
+        _endOfInput = new TokenError( TokenType.EndOfInput, default, "End of input.", p, _leadingTrivias, Trivia.Empty );
     }
 
     #endregion

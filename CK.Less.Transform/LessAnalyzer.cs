@@ -169,14 +169,15 @@ public class LessAnalyzer : Tokenizer, ITargetAnalyzer
     }
 
     /// <inheritdoc/>
-    protected override TokenError? Tokenize( ref TokenizerHead head )
+    protected override void Tokenize( ref TokenizerHead head )
     {
         for(; ; )
         {
-            if( head.EndOfInput != null ) return null;
+            if( head.EndOfInput != null ) return;
             if( head.LowLevelTokenType is TokenType.None )
             {
-                return head.CreateHardError( "Unrecognized token." );
+                head.AppendError( "Unrecognized token.", 0 );
+                return;
             }
             var t = head.AcceptLowLevelToken();
             // Handles @import.

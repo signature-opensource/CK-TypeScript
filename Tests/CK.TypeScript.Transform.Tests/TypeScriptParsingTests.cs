@@ -21,7 +21,7 @@ public class TypeScriptParsingTests
     {
         var a = new TypeScriptAnalyzer();
         var result = a.Parse( "🙃" );
-        Throw.DebugAssert( result != null && result.HardError != null );
-        result.HardError.ErrorMessage.ShouldBe( "Unrecognized token." );
+        Throw.DebugAssert( result != null && result.FirstError != null );
+        result.FirstError.ErrorMessage.ShouldBe( "Unrecognized token." );
     }
 }

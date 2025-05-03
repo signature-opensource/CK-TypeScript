@@ -58,11 +58,11 @@ public class RawStringTests
     {
         var r = new TestAnalyzer().Parse( code );
         r.Success.ShouldBeFalse();
-        Throw.DebugAssert( r.FirstParseError != null );
+        Throw.DebugAssert( r.FirstError != null );
 
         r.SourceCode.Tokens.Count.ShouldBe( 2 );
-        r.FirstParseError.ShouldBeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstParseError.ErrorMessage.ShouldStartWith( errorMessage );
+        r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstError.ErrorMessage.ShouldStartWith( errorMessage );
 
         r.SourceCode.Tokens[1].ToString().ShouldBe( "ERROR_TOLERANT" );
     }
@@ -76,10 +76,10 @@ public class RawStringTests
     {
         var r = new TestAnalyzer().Parse( code );
         r.Success.ShouldBeFalse();
-        Throw.DebugAssert( r.FirstParseError != null );
+        Throw.DebugAssert( r.FirstError != null );
         r.SourceCode.Tokens.Count.ShouldBe( 2 );
-        r.FirstParseError.ShouldBeSameAs( r.SourceCode.Tokens[1] );
-        r.FirstParseError.ErrorMessage.ShouldStartWith( "Unterminated string." );
+        r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[1] );
+        r.FirstError.ErrorMessage.ShouldStartWith( "Unterminated string." );
 
         r.SourceCode.Tokens[0].ToString().ShouldBe( "Some" );
         r.SourceCode.Tokens[1].Text.Length.ShouldBe( code.Length - 4 - 1 );
@@ -193,11 +193,11 @@ public class RawStringTests
     {
         var r = new TestAnalyzer().Parse( code );
         r.Success.ShouldBeFalse();
-        Throw.DebugAssert( r.FirstParseError != null );
+        Throw.DebugAssert( r.FirstError != null );
 
         r.SourceCode.Tokens.Count.ShouldBe( 2 );
-        r.FirstParseError.ShouldBeSameAs( r.SourceCode.Tokens[0] );
-        r.FirstParseError.ErrorMessage.ShouldStartWith( errorMessage );
+        r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[0] );
+        r.FirstError.ErrorMessage.ShouldStartWith( errorMessage );
 
         r.SourceCode.Tokens[1].ToString().ShouldBe( "ERROR_TOLERANT" );
     }

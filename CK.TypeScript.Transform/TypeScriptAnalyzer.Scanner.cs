@@ -57,7 +57,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 {
                     if( --_braceDepth < 0 )
                     {
-                        return head.CreateHardError( "Unbalanced {{brace}." );
+                        head.AppendUnexpectedToken();
                     }
                     head.AcceptLowLevelToken();
                 }
@@ -86,11 +86,12 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 Throw.DebugAssert( head.EndOfInput is not null );
                 if( _braceDepth > 0 )
                 {
-                    return head.CreateHardError( "Missing closing '}'." );
+                    head.AppendError( "Missing closing '}'.", 0 );
                 }
                 return head.EndOfInput;
             case TokenType.None when (head.EndOfInput is null):
-                return head.CreateHardError( "Unrecognized token." );
+                head.AppendError( "Unrecognized token.", -1 );
+                break;
             default:
                 head.AcceptLowLevelToken();
                 break;

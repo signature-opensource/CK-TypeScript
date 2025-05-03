@@ -53,23 +53,23 @@ public sealed partial class TransformerHost
         /// Handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'
         /// and is used by the <see cref="TransformerHost"/>.
         /// <para>
-        /// This returns null and no errors are added if the text doesn't start with a <c>create</c> token.
+        /// This doesn't forward the head and doesn't add errors if the text doesn't start with a <c>create</c> token.
         /// </para>
         /// </summary>
         /// <param name="head">The head.</param>
-        /// <returns>Hard failure when the target language is not registered. Other errors are inlined.</returns>
-        protected override TokenError? Tokenize( ref TokenizerHead head )
+        protected override void Tokenize( ref TokenizerHead head )
         {
             int begText = head.RemainingTextIndex;
             if( !head.TryAcceptToken( "create", out _ ) )
             {
-                return null;
+                return;
             }
             int startFunction = head.LastTokenIndex;
             var cLang = _host.FindLanguage( head.LowLevelTokenText, withFileExtensions: false );
             if( cLang == null )
             {
-                return head.AppendError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'.", 0 );
+                head.AppendError( $"Expected language name. Available languages are: '{_host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'.", 0 );
+                return;
             }
             var language = head.AcceptLowLevelToken();
             head.MatchToken( "transformer" );
@@ -125,7 +125,6 @@ public sealed partial class TransformerHost
                                                    statements,
                                                    functionName?.ToString(),
                                                    target ) );
-            return null;
         }
 
         public AnalyzerResult Parse( ReadOnlyMemory<char> text )

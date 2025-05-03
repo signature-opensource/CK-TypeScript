@@ -10,29 +10,24 @@ namespace CK.Transform.Core;
 public sealed class AnalyzerResult
 {
     internal AnalyzerResult( SourceCode result,
-                             TokenError? hardError,
                              TokenError? firstParseError,
                              int errorCount,
                              ReadOnlyMemory<char> remainingText,
                              bool endOfInput )
     {
         SourceCode = result;
-        HardError = hardError;
-        FirstParseError = firstParseError;
-        FirstError = hardError ?? firstParseError;
+        FirstError = firstParseError;
         RemainingText = remainingText;
         EndOfInput = endOfInput;
-        TotalErrorCount = hardError == null
-                              ? errorCount
-                              : errorCount + 1;
-        Throw.DebugAssert( (TotalErrorCount == 0) == (FirstError == null) );
+        ErrorCount = errorCount;
+        Throw.DebugAssert( (ErrorCount == 0) == (FirstError == null) );
     }
 
     /// <summary>
-    /// Gets whether <see cref="HardError"/> is null and no <see cref="TokenError"/> exist in the <see cref="SourceCode.Tokens"/>.
+    /// Gets whether no error occurred.
     /// </summary>
     [MemberNotNullWhen( false, nameof( FirstError ) )]
-    public bool Success => TotalErrorCount == 0;
+    public bool Success => ErrorCount == 0;
 
     /// <summary>
     /// Gets the result with the tokens and source spans.
@@ -52,26 +47,12 @@ public sealed class AnalyzerResult
     public bool EndOfInput { get; }
 
     /// <summary>
-    /// Gets a "hard failure" error that stopped the analysis.
-    /// </summary>
-    public TokenError? HardError { get; }
-
-    /// <summary>
     /// Gets the first <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/>.
-    /// <para>
-    /// This is always null if <see cref="Success"/> is true and may still be null if <see cref="HardError"/>
-    /// has been returned by the tokenizer (and no error has been appended).
-    /// </para>
-    /// </summary>
-    public TokenError? FirstParseError { get; }
-
-    /// <summary>
-    /// Gets the first error.
     /// </summary>
     public TokenError? FirstError { get; }
 
     /// <summary>
-    /// Gets the number of <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/> plus one if <see cref="HardError"/> is not null.
+    /// Gets the number of <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/>.
     /// </summary>
-    public int TotalErrorCount { get; }
+    public int ErrorCount { get; }
 }

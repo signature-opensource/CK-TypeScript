@@ -222,18 +222,18 @@ public sealed partial class HtmlAnalyzer : Tokenizer, ITargetAnalyzer
     }
 
     /// <inheritdoc/>
-    protected override TokenError? Tokenize( ref TokenizerHead head )
+    protected override void Tokenize( ref TokenizerHead head )
     {
         for( ; ; )
         {
             var type = head.LowLevelTokenType;
-            // Consider low level token errors as hard errors.
-            // No need to be error tolerant here.
             if( type.IsError() )
             {
-                return type is TokenType.EndOfInput or TokenType.None
-                        ? null
-                        : head.CreateHardError( "Invalid markup.", type );
+                if( type is not TokenType.EndOfInput and not TokenType.None )
+                {
+                    head.AppendError( "Invalid markup.", 0, type );
+                }
+                return;
             }
             var token = head.AcceptLowLevelToken();
             switch( (int)type )

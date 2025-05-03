@@ -46,12 +46,15 @@ sealed class TestAnalyzer : Tokenizer, IAnalyzer
         c.AcceptCLikeLineComment();
     }
 
-    protected override TokenError? Tokenize( ref TokenizerHead head )
+    protected override void Tokenize( ref TokenizerHead head )
     {
         for(; ; )
         {
             var t = Scan( ref head );
-            if( t.TokenType == TokenType.EndOfInput ) return null;
+            if( t.TokenType == TokenType.EndOfInput )
+            {
+                break;
+            }
         }
     }
 

@@ -6,8 +6,7 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Specialized error <see cref="Token"/>. This can only be created by
-/// <see cref="TokenizerHead.AppendError(string, int, TokenType)"/> or
-/// <see cref="TokenizerHead.CreateHardError(string, TokenType)"/>.
+/// <see cref="TokenizerHead.AppendError(string, int, TokenType)"/>.
 /// </summary>
 public sealed class TokenError : Token
 {
