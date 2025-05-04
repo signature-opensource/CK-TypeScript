@@ -42,7 +42,7 @@ public sealed class InScope : SourceSpan
         RangeLocation? range = RangeLocation.Match( language, ref head );
         if( range == null )
         {
-            var matcher = LocationMatcher.Parse( ref head );
+            var matcher = LocationMatcher.Parse( language, ref head );
             if( matcher == null ) return null;
         }
         return head.AddSpan( new InScope( begSpan, head.LastTokenIndex + 1 ) );

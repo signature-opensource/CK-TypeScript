@@ -75,7 +75,7 @@ public sealed class ReplaceStatement : TransformStatement
     {
         Throw.DebugAssert( replaceToken.Text.Span.Equals( "replace", StringComparison.Ordinal ) );
         int begSpan = head.LastTokenIndex + 1;
-        LocationMatcher? matcher = LocationMatcher.Parse( ref head );
+        LocationMatcher? matcher = LocationMatcher.Parse( language, ref head );
         if( matcher == null && head.MatchToken( TokenType.Asterisk, "pattern or * (all)" ) is TokenError )
         {
             return null;

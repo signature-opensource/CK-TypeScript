@@ -99,11 +99,11 @@ public ref struct TokenizerHead
     /// <see cref="SkipTo(int, ref TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
-    /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
+    /// <param name="safetyKey">Opaque key that secures the position of this head: SkipTo requires it.</param>
     /// <param name="behavior">Alternative behavior for this new head.</param>
-    public readonly TokenizerHead CreateFullSubHead( out int safetyToken, ITokenizerHeadBehavior behavior )
+    public readonly TokenizerHead CreateFullSubHead( out int safetyKey, ITokenizerHeadBehavior behavior )
     {
-        safetyToken = _remainingTextIndex;
+        safetyKey = _remainingTextIndex;
         return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, _triviaBuilder, LastTokenIndex );
     }
 
@@ -114,11 +114,11 @@ public ref struct TokenizerHead
     /// <see cref="SkipTo(int, ref TokenizerHead)"/> can be used to resynchronize this head with the subordinated one.
     /// </para>
     /// </summary>
-    /// <param name="safetyToken">Opaque token that secures the position of this head: SkipTo requires it.</param>
+    /// <param name="safetyKey">Opaque key that secures the position of this head: SkipTo requires it.</param>
     /// <param name="lowLevelTokenizer">Alternative low level tokenizer for this new head. When null, the same low level tokenizer as this one is used.</param>
-    public readonly TokenizerHead CreateSubHead( out int safetyToken, ILowLevelTokenizer? lowLevelTokenizer = null )
+    public readonly TokenizerHead CreateSubHead( out int safetyKey, ILowLevelTokenizer? lowLevelTokenizer = null )
     {
-        safetyToken = _remainingTextIndex;
+        safetyKey = _remainingTextIndex;
         return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, _triviaBuilder, LastTokenIndex );
     }
 
@@ -126,12 +126,12 @@ public ref struct TokenizerHead
     /// Skips this head up to the <paramref name="subHead"/>.
     /// The subHead is condemned and shouldn't be used anymore.
     /// </summary>
-    /// <param name="safetyToken">Token provided by CreateSubHead methods.</param>
+    /// <param name="safetyKey">Key provided by CreateSubHead methods.</param>
     /// <param name="subHead">Subordinated head.</param>
-    public void SkipTo( int safetyToken, ref TokenizerHead subHead )
+    public void SkipTo( int safetyKey, ref TokenizerHead subHead )
     {
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
-        Throw.CheckState( _remainingTextIndex == safetyToken && !IsCondemned );
+        Throw.CheckState( _remainingTextIndex == safetyKey && !IsCondemned );
 
         _head = _headBeforeTrivia.Slice( subHead._remainingTextIndex );
         _remainingTextIndex += subHead._remainingTextIndex;

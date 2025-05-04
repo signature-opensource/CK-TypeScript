@@ -75,6 +75,11 @@ public sealed class RawString : Token
     public ImmutableArray<ReadOnlyMemory<char>> MemoryLines => _lines;
 
     /// <summary>
+    /// Gets the length of the surrounding quotes.
+    /// </summary>
+    public int QuoteLength => (Text.Length - _innerText.Length) / 2;
+
+    /// <summary>
     /// Gets the final lines as a string joined with <see cref="Environment.NewLine"/>.
     /// </summary>
     public string TextLines
@@ -115,7 +120,20 @@ public sealed class RawString : Token
     public static RawString? Match( ref TokenizerHead head, int maxLineCount = 0 )
     {
         Throw.CheckArgument( head.LowLevelTokenType is TokenType.DoubleQuote );
-        var start = head.Head.TrimStart( '"' );
+        return MatchAnyQuote( ref head, maxLineCount );
+    }
+
+    /// <summary>
+    /// Matches a <see cref="RawString"/> that can use any quote character: the current <see cref="TokenizerHead.Head"/>
+    /// character defines the quote.
+    /// </summary>
+    /// <param name="head">The tokenizer head.</param>
+    /// <param name="maxLineCount">Optional maximal line count: using 1 allows only a single line string.</param>
+    /// <returns>The RawString on success, null if an error has been emitted.</returns>
+    public static RawString? MatchAnyQuote( ref TokenizerHead head, int maxLineCount = 0 )
+    {
+        char quote = head.Head[0];
+        var start = head.Head.TrimStart( quote );
         var quoteCount = head.Head.Length - start.Length;
         Throw.DebugAssert( quoteCount > 0 );
         // Empty string.
@@ -126,16 +144,16 @@ public sealed class RawString : Token
         }
         if( quoteCount == 1 )
         {
-            return SingleLine( ref head, start );
+            return SingleLine( ref head, start, quote );
         }
-        return PossiblyMultiLine( ref head, start, quoteCount, maxLineCount );
+        return PossiblyMultiLine( ref head, start, quoteCount, maxLineCount, quote );
 
-        static RawString? SingleLine( ref TokenizerHead head, ReadOnlySpan<char> start )
+        static RawString? SingleLine( ref TokenizerHead head, ReadOnlySpan<char> start, char quote )
         {
-            int idxE = start.IndexOf( '"' );
+            int idxE = start.IndexOf( quote );
             if( idxE < 0 )
             {
-                head.AppendError( "Unterminated string.", head.Head.Length );
+                head.AppendError( $"Unterminated {quote} string.", head.Head.Length );
                 return null;
             }
             start = start.Slice( 0, idxE );
@@ -148,12 +166,12 @@ public sealed class RawString : Token
             return head.Accept( new RawString( text, text.Slice( 1, start.Length ), leading, trailing ) );
         }
 
-        static RawString? PossiblyMultiLine( ref TokenizerHead head, ReadOnlySpan<char> start, int quoteCount, int maxLineCount )
+        static RawString? PossiblyMultiLine( ref TokenizerHead head, ReadOnlySpan<char> start, int quoteCount, int maxLineCount, char quote )
         {
             int idxE = start.IndexOf( head.Head.Slice( 0, quoteCount ) );
             if( idxE < 0 )
             {
-                head.AppendError( "Unterminated string.", head.Head.Length );
+                head.AppendError( $"Unterminated {quote} string.", head.Head.Length );
                 return null;
             }
             var lineOrMultiLine = start.Slice( 0, idxE );
@@ -166,12 +184,14 @@ public sealed class RawString : Token
             int idxEndQuotes = idxE + quoteCount;
             // Kindly offset the end to handle """raw ""string""""" as |raw ""string""|.
             int offset = 0;
-            while( idxEndQuotes < start.Length && start[idxEndQuotes] == '"' )
+            while( idxEndQuotes < start.Length && start[idxEndQuotes] == quote )
             {
                 idxEndQuotes++;
                 if( ++offset >= quoteCount )
                 {
-                    head.AppendError( "Invalid raw string terminator: too many closing \".", idxE + 2*quoteCount );
+                    head.AppendError( $"Invalid raw string terminator: too many closing {quote}.", idxE + 2 * quoteCount );
+                    var tooMuch = offset - quoteCount + 1;
+                    head.AppendError( $"{tooMuch} exceeding {quote}.", tooMuch );
                     return null;
                 }
             }

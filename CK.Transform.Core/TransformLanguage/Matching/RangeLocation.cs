@@ -78,7 +78,7 @@ public sealed class RangeLocation : SourceSpan
         LocationMatcher? second = null;
         if( head.TryAcceptToken( "before", out kind ) || head.TryAcceptToken( "after", out kind ) )
         {
-            first = LocationMatcher.Parse( ref head, monoLocationOnly: true );
+            first = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
             if( first == null )
             {
                 return null;
@@ -86,10 +86,10 @@ public sealed class RangeLocation : SourceSpan
         }
         else if( head.TryAcceptToken( "between", out kind ) )
         {
-            first = LocationMatcher.Parse( ref head, monoLocationOnly: true );
+            first = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
             if( head.MatchToken( "and" ) is not TokenError )
             {
-                second = LocationMatcher.Parse( ref head, monoLocationOnly: true );
+                second = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
             }
             if( first == null || second == null )
             {
