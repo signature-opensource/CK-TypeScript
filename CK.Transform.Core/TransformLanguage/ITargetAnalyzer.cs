@@ -6,7 +6,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Extends <see cref="IAnalyzer"/> to handle <see cref="SpanMatcher"/> parsing.
 /// </summary>
-public interface ITargetAnalyzer : IAnalyzer
+public interface ITargetAnalyzer : IAnalyzer, ITokenizerHeadBehavior
 {
     /// <summary>
     /// Creates a <see cref="ITokenFilter"/> from an optional span specication and textual pattern. 

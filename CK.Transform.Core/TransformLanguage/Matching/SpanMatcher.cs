@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace CK.Transform.Core;
 
@@ -15,24 +16,26 @@ namespace CK.Transform.Core;
 ///     <item>At least the span specification or the pattern string is required.</item>
 ///     <item>When the span specification not specified, it defaults to the matched tokens.</item>
 /// </list>
-/// This span is a wrapper around the optional language and a <see cref="SpanMatcherProvider"/> that
-/// is parsed by <see cref="TransformStatementAnalyzer.CreateSpanMatcherProvider"/> of the .language.
 /// </summary>
 public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumerableProvider
 {
-    readonly TransformerHost.Language _language;
-    readonly SpanMatcherProvider _provider;
+    readonly Token? _languageName;
+    readonly RawString? _spanSpec;
+    readonly RawString? _pattern;
+    readonly IFilteredTokenEnumerableProvider _provider;
 
-    SpanMatcher( int beg, int end, TransformerHost.Language language, SpanMatcherProvider provider )
+    SpanMatcher( int beg, int end,
+                 Token? languageName,
+                 RawString? spanSpec,
+                 RawString? pattern,
+                 IFilteredTokenEnumerableProvider provider )
         : base( beg, end )
     {
-        _language = language;
+        _languageName = languageName;
+        _spanSpec = spanSpec;
+        _pattern = pattern;
         _provider = provider;
     }
-
-    public TransformerHost.Language Language => _language;
-
-    public SpanMatcherProvider Provider => _provider;
 
     /// <summary>
     /// Relays to <see cref="Provider"/>.
@@ -48,10 +51,11 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
     internal static SpanMatcher? Match( TransformerHost.Language language, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
+        Token? languageName = null;
         TransformerHost.Language? matcherLanguage = language;
         if( head.TryAcceptToken( TokenType.Dot, out _ ) )
         {
-            if( !head.TryAcceptToken( TokenType.GenericIdentifier, out var languageName ) )
+            if( !head.TryAcceptToken( TokenType.GenericIdentifier, out languageName ) )
             {
                 head.AppendMissingToken( "language name" );
                 matcherLanguage = null;
@@ -65,35 +69,15 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
                 }
             }
         }
-        // Whether the language is correct or not, we create a subHead to
-        // capture the {spanSpec} and the "pattern" raw strings:
-        // on error, we append these tokens. On success, we append the quotes
-        // of the RawString as independent generic tokens and the successfully
-        // parsed tokens from the target language.
-        var coverHead = head.CreateSubHead( out var safeCoverKey );
-        int preTokenSpecLen = 0;
         RawString? tokenSpec = null;
-        int postTokenSpecLen = 0;
-        int preTokenPatternLen = 0;
         RawString? tokenPattern = null;
-        int postTokenPatternLen = 0;
         if( head.LowLevelTokenType is TokenType.OpenBrace )
         {
-            tokenSpec = RawString.MatchAnyQuote( ref coverHead );
-            if( tokenSpec != null )
-            {
-                preTokenSpecLen = head.RemainingTextIndex - tokenSpec.Text.Length + tokenSpec.QuoteLength;
-                postTokenSpecLen = head.Head.Length - head.RemainingTextIndex;
-            }
+            tokenSpec = RawString.MatchAnyQuote( ref head );
         }
         if( head.LowLevelTokenType is TokenType.DoubleQuote )
         {
-            tokenPattern = RawString.MatchAnyQuote( ref coverHead );
-            if( tokenPattern != null )
-            {
-                preTokenPatternLen = head.RemainingTextIndex - tokenPattern.Text.Length + tokenPattern.QuoteLength;
-                postTokenPatternLen = head.Head.Length - head.RemainingTextIndex;
-            }
+            tokenPattern = RawString.MatchAnyQuote( ref head );
         }
         if( tokenSpec == null && tokenPattern == null )
         {
@@ -102,35 +86,20 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
         // Error: invalid language or missing spec and pattern.
         if( matcherLanguage == null || (tokenSpec == null && tokenPattern == null) )
         {
-            Throw.DebugAssert( head.FirstParseError != null );
-            head.SkipTo( safeCoverKey, ref coverHead );
             return null;
         }
-        // We create another subHead to honor the ILowLevelTokenizer that the TransformStatementAnalyzer may implement.
-        // We don't want to use the coverHead to skip the faulty strings here because we want the errors to
-        // be lifted in the primary token stream: we always skip to the matcher head.
-        // It is up to the CreateSpanMatcherProvider method to correctly forwards its head.
-        var matcherHead = head.CreateSubHead( out var safeMatcherKey, matcherLanguage.TransformStatementAnalyzer as ILowLevelTokenizer );
-        SpanMatcherProvider? matcher = matcherLanguage.TransformStatementAnalyzer.CreateSpanMatcherProvider( ref matcherHead,
-                                                                                                             preTokenSpecLen,
-                                                                                                             tokenSpec,
-                                                                                                             postTokenSpecLen,
-                                                                                                             preTokenPatternLen,
-                                                                                                             tokenPattern,
-                                                                                                             postTokenPatternLen );
-        if( matcher == null && matcherHead.FirstParseError == null )
+        object m = matcherLanguage.TransformStatementAnalyzer.CreateFilteredTokenProvider( language, tokenSpec, tokenPattern );
+        if( m is string error )
         {
-            Throw.CheckState( $"{matcherLanguage.LanguageName} language CreateSpanMatcherProvider must emit an error when failing to parse the {{span specification}} \"pattern\"", matcherHead.FirstParseError != null );
-        }
-        head.SkipTo( safeMatcherKey, ref matcherHead );
-        if( matcher == null )
-        {
+            head.AppendError( error, -1 );
             return null;
         }
         return head.AddSpan( new SpanMatcher( begSpan,
                                               head.LastTokenIndex + 1,
-                                              matcherLanguage,
-                                              matcher ) );
+                                              languageName,
+                                              tokenSpec,
+                                              tokenPattern,
+                                              (IFilteredTokenEnumerableProvider)m ) );
     }
 
     public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetScopedTokens( ScopedTokensBuilder builder )
@@ -158,10 +127,31 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
 
     public override string ToString()
     {
-        if( !CheckValid() ) return "<Invalid>";
-        return _spanSpec == null
-                ? _pattern.ToString()
-                : $"""{_spanSpec.Text.Span} {_pattern?.Text}""";
+        if( _languageName == null )
+        {
+            if( _pattern == null ) return _spanSpec!.ToString();
+            if( _spanSpec == null ) return _pattern!.ToString();
+        }
+        return WholeString();
     }
 
+    string WholeString()
+    {
+        var b = new StringBuilder();
+        if( _languageName != null )
+        {
+            b.Append( '.' ).Append( _languageName.Text );
+        }
+        if( _spanSpec != null )
+        {
+            if( b.Length > 0 ) b.Append( ' ' );
+            b.Append( _spanSpec.Text );
+        }
+        if( _pattern != null )
+        {
+            if( b.Length > 0 ) b.Append( ' ' );
+            b.Append( _pattern.Text );
+        }
+        return b.ToString();
+    }
 }

@@ -1,6 +1,8 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 
 namespace CK.Transform.Core;
 
@@ -40,5 +42,32 @@ public interface IFilteredTokenEnumerableProvider
     /// <returns>The projection.</returns>
     Func<IActivityMonitor,
          IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection(); 
+         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection();
+
+
+    /// <summary>
+    /// Combines two provivers into one, first applying the <paramref name="inner"/> and then <paramref name="outer"/>.
+    /// </summary>
+    /// <param name="outer">The last provider to consider.</param>
+    /// <param name="inner">The first provider to consider.</param>
+    /// <returns>A combined provider.</returns>
+    public static IFilteredTokenEnumerableProvider Combine( IFilteredTokenEnumerableProvider outer, IFilteredTokenEnumerableProvider inner )
+    {
+        Throw.CheckArgument( outer != null && inner != null );
+        return new Combined( outer, inner );
+    }
+
+    sealed record class Combined( IFilteredTokenEnumerableProvider outer, IFilteredTokenEnumerableProvider inner ) : IFilteredTokenEnumerableProvider
+    {
+        public Func<IActivityMonitor,
+                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
+                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection() => Combine;
+
+        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Combine( IActivityMonitor monitor, IEnumerable<IEnumerable<IEnumerable<SourceToken>>> input )
+        {
+            return outer.GetFilteredTokenProjection()( monitor, inner.GetFilteredTokenProjection()( monitor, input ) );
+        }
+    }
+
+
 }

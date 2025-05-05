@@ -9,7 +9,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-sealed class TokenSpanFilter : ITokenFilter
+sealed class TokenSpanFilter : ITokenFilter, IFilteredTokenEnumerableProvider
 {
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
@@ -37,6 +37,13 @@ sealed class TokenSpanFilter : ITokenFilter
         }
 
         return prefixTable;
+    }
+
+    public Func<IActivityMonitor,
+                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
+                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+    {
+        return new TokenMatcher( _tokens, _prefixTable ).GetTokens;
     }
 
     public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetScopedTokens( ScopedTokensBuilder builder )
@@ -105,6 +112,23 @@ sealed class TokenSpanFilter : ITokenFilter
                 return _candidate.ToArray();
             }
             return null;
+        }
+
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( IActivityMonitor monitor,
+                                                                             IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+        {
+            foreach( var each in inner )
+            {
+                foreach( var range in each )
+                {
+                    var byEach = GetRangeTokens( this, range );
+                    if( byEach.Any() )
+                    {
+                        yield return byEach;
+                    }
+                }
+            }
+
         }
     }
 }

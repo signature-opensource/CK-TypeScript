@@ -1,6 +1,8 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Threading;
 
 namespace CK.Transform.Core;
 
@@ -73,31 +75,94 @@ public abstract class TransformStatementAnalyzer
 
     /// <summary>
     /// Must parse the <paramref name="tokenSpec"/> and/or <paramref name="tokenPattern"/> (at least one is not null).
-    /// and build a <see cref="SpanMatcherProvider"/>.
+    /// and build a <see cref="IFilteredTokenEnumerableProvider"/> or an error string.
     /// </summary>
-    /// <param name="head">The head.</param>
-    /// <param name="preTokenSpecLen">Total length of leading trivias and <paramref name="tokenSpec"/> opening quotes.</param>
     /// <param name="tokenSpec">The pre-parsed token specification if any.</param>
-    /// <param name="postTokenSpecLen">Total length of trailing trivias and <paramref name="tokenSpec"/> closing quotes.</param>
-    /// <param name="preTokenPatternLen">Total length of leading trivias and <paramref name="tokenPattern"/> opening quotes.</param>
     /// <param name="tokenPattern">The pre-parsed token pattern if any.</param>
-    /// <param name="postTokenSpecLen">Total length of trailing trivias and <paramref name="tokenPattern"/> closing quotes.</param>
-    /// <returns>The provider or null on error (errors must be added to the <paramref name="head"/>).</returns>
-    internal protected virtual SpanMatcherProvider? CreateSpanMatcherProvider( ref TokenizerHead head,
-                                                                               int preTokenSpecLen,
-                                                                               RawString? tokenSpec,
-                                                                               int postTokenSpecLen,
-                                                                               int preTokenPatternLen,
-                                                                               RawString? tokenPattern,
-                                                                               int postTokenPatternLen )
+    /// <returns>The provider or an error string.</returns>
+    internal protected virtual object CreateFilteredTokenProvider( TransformerHost.Language language,
+                                                                   RawString? tokenSpec,
+                                                                   RawString? tokenPattern )
     {
         Throw.DebugAssert( tokenSpec != null || tokenPattern != null );
-        int begSpan = head.LastTokenIndex + 1;
+        Type? sType = null;
         if( tokenSpec != null )
         {
-            Throw.DebugAssert( head.LowLevelTokenType == TokenType.OpenBrace );
-            head.AcceptToken( TokenType.GenericMarkerToken, tokenSpec.QuoteLength );
+            var singleSpanType = tokenSpec.InnerText.Span.Trim();
+            if( singleSpanType.Length > 0 )
+            {
+                sType = singleSpanType switch
+                {
+                    "statement" => typeof( TransformStatement ),
+                    "in" => typeof( InScope ),
+                    "replace" => typeof( ReplaceStatement ),
+                    _ => null
+                };
+                if( sType == null )
+                {
+                    return $"""
+                    Invalid span type '{singleSpanType}'. Allowed are "statement", "in", "replace".
+                    """;
+                }
+            }
         }
-        throw new NotImplementedException();
+        var s = tokenSpec != null ? ParseSpanSpec( language, tokenSpec ) : null;
+        if( s is string spanError ) return spanError;
+        Throw.CheckState( "ParseSpanSpec must return a IFilteredTokenEnumerableProvider or an error string",
+                           s is null or IFilteredTokenEnumerableProvider );
+        var spanSpec = s as IFilteredTokenEnumerableProvider;
+
+        var p = tokenPattern != null ? ParsePattern( language, tokenPattern, spanSpec ) : null;
+        if( p is string tokenError ) return tokenError;
+        Throw.CheckState( "ParsePattern must return a IFilteredTokenEnumerableProvider or an error string",
+                           p is null or IFilteredTokenEnumerableProvider );
+        var pattern = p as IFilteredTokenEnumerableProvider;
+
+        if( s == null && p == null )
+        {
+            return "No span specification nor pattern can be parsed.";
+        }
+        if( s == null ) return pattern!;
+        if( p == null ) return spanSpec!;
+        return IFilteredTokenEnumerableProvider.Combine( spanSpec, pattern! );
     }
+
+    protected virtual object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
+    {
+        var singleSpanType = tokenSpec.InnerText.Span.Trim();
+        if( singleSpanType.Length > 0 )
+        {
+            var sType = singleSpanType switch
+            {
+                "statement" => typeof( TransformStatement ),
+                "in" => typeof( InScope ),
+                "replace" => typeof( ReplaceStatement ),
+                _ => null
+            };
+            if( sType == null )
+            {
+                return $"""
+                    Invalid span type '{singleSpanType}'. Allowed are "statement", "in", "replace".
+                    """;
+            }
+        }
+    }
+
+    protected virtual object ParsePattern( TransformerHost.Language language, RawString tokenPattern, IFilteredTokenEnumerableProvider spanSpec )
+    {
+        var head = new TokenizerHead( tokenPattern.InnerText, language.TargetAnalyzer );
+        ParseStandardMatchPattern( ref head );
+        if( head.FirstParseError != null )
+        {
+            return head.FirstParseError.ErrorMessage;
+        }
+        Throw.DebugAssert( !head.IsCondemned );
+        if( head.Tokens.Count == 0 )
+        {
+            return "No token found in match pattern.";
+        }
+        return new TokenSpanFilter( head.Tokens.ToImmutableArray() );
+    }
+
+    protected abstract void ParseStandardMatchPattern( ref TokenizerHead head );
 }
