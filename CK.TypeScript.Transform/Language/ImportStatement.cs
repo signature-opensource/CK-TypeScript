@@ -74,7 +74,7 @@ public sealed class ImportStatement : SourceSpan, IImportLine
 
     internal static ImportStatement? Match( ref TokenizerHead head, Token importToken )
     {
-        Throw.DebugAssert( importToken.Text.Span.Equals( "import", StringComparison.Ordinal ) );
+        Throw.DebugAssert( head.LastToken == importToken && importToken.TextEquals( "import" ) );
         int begImport = head.LastTokenIndex;
         var d = new ImportLine();
 

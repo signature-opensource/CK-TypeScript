@@ -38,4 +38,26 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
         return base.ParseStatement( language, ref head );
     }
 
+    protected override object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
+    {
+        var singleSpanType = tokenSpec.InnerText.Span.Trim();
+        if( singleSpanType.Length > 0 )
+        {
+            var sType = singleSpanType switch
+            {
+                "import" => typeof( ImportStatement ),
+                "class" => typeof( ClassDefinition ),
+                "braces" => typeof( BraceSpan ),
+                _ => null
+            };
+            if( sType == null )
+            {
+                return $"""
+                            Invalid span type '{singleSpanType}'. Allowed are "braces", "class", , "import".
+                            """;
+            }
+            return new SingleSpanTypeFilter( sType );
+        }
+        return IFilteredTokenEnumerableProvider.Empty;
+    }
 }

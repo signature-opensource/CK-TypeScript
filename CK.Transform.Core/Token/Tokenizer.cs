@@ -71,7 +71,7 @@ public abstract partial class Tokenizer : ITokenizerHeadBehavior
                                    head.FirstParseError,
                                    inlineErrorCount,
                                    head.RemainingText,
-                                   head.EndOfInput != null );
+                                   head.EndOfInput );
     }
 
     /// <summary>

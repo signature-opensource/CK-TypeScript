@@ -160,7 +160,7 @@ public class InjectIntoTests
         }
         """
     )]
-    public void injection_in_multiple_classses( string title, string source, string transformer, string result )
+    public void injection_in_multiple_classes( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();

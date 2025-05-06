@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
@@ -8,7 +9,7 @@ namespace CK.Transform.Core;
 /// Captures "before ...", "after ...", "between ... and ..." where ... is a mono-location
 /// <see cref="LocationMatcher"/> (not "each" or "all").
 /// </summary>
-public sealed class RangeLocation : SourceSpan
+public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
 {
     Token _kind;
 
@@ -101,5 +102,10 @@ public sealed class RangeLocation : SourceSpan
             return null;
         }
         return head.AddSpan( new RangeLocation( begSpan, head.LastTokenIndex + 1, kind ) );
+    }
+
+    public Func<TokenFilterBuilderContext, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+    {
+        throw new NotImplementedException();
     }
 }

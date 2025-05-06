@@ -251,12 +251,12 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         }
     }
 
-    internal void OnRemoveTokens( TokenSpan removed, ref List<SourceSpan>? toRemove )
+    internal void OnRemoveTokens( TokenSpan removedHead, ref List<SourceSpan>? toRemove )
     {
         var c = _firstChild;
         while( c != null )
         {
-            var s = Remove( c.Span, removed );
+            var s = Remove( c.Span, removedHead );
             if( s.IsEmpty )
             {
                 toRemove ??= new List<SourceSpan>();
@@ -265,7 +265,7 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
             else if( s != c.Span )
             {
                 c._span = s;
-                c._children.OnRemoveTokens( removed, ref toRemove );
+                c._children.OnRemoveTokens( removedHead, ref toRemove );
             }
             c = c._nextSibling;
         }

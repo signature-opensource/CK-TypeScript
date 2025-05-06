@@ -17,7 +17,7 @@ namespace CK.Transform.Core;
 ///     <item>When the span specification not specified, it defaults to the matched tokens.</item>
 /// </list>
 /// </summary>
-public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumerableProvider
+public sealed class SpanMatcher : SourceSpan, IFilteredTokenEnumerableProvider
 {
     readonly Token? _languageName;
     readonly RawString? _spanSpec;
@@ -41,7 +41,7 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
     /// Relays to <see cref="Provider"/>.
     /// </summary>
     /// <returns>The fitered token projection.</returns>
-    public Func<IActivityMonitor,
+    public Func<TokenFilterBuilderContext,
                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
     {
@@ -73,11 +73,11 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
         RawString? tokenPattern = null;
         if( head.LowLevelTokenType is TokenType.OpenBrace )
         {
-            tokenSpec = RawString.MatchAnyQuote( ref head );
+            tokenSpec = RawString.MatchAnyQuote( ref head, '{', '}' );
         }
         if( head.LowLevelTokenType is TokenType.DoubleQuote )
         {
-            tokenPattern = RawString.MatchAnyQuote( ref head );
+            tokenPattern = RawString.Match( ref head );
         }
         if( tokenSpec == null && tokenPattern == null )
         {
@@ -100,29 +100,6 @@ public sealed class SpanMatcher : SourceSpan, ITokenFilter, IFilteredTokenEnumer
                                               tokenSpec,
                                               tokenPattern,
                                               (IFilteredTokenEnumerableProvider)m ) );
-    }
-
-    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetScopedTokens( ScopedTokensBuilder builder )
-    {
-        Throw.DebugAssert( CheckValid() );
-        var language = builder.Language;
-        // This should be in Bind() method.
-        // => Currently we don't locate the error (we don't have the source code of the transformer here).
-        if( _languageName != null )
-        {
-            language = builder.Language.Host.FindLanguage( _languageName.Text.Span );
-            if( language == null )
-            {
-                builder.Monitor.Error( $"Unable to find language '{_languageName}'." );
-                return ScopedTokensBuilder.EmptyResult;
-            }
-        }
-        var m = language.TargetAnalyzer.CreateSpanMatcher( builder.Monitor,
-                                                           _spanSpec != null ? _spanSpec.Text.Span : default,
-                                                           _pattern.InnerText );
-        return m != null
-                ? m.GetScopedTokens( builder )
-                : ScopedTokensBuilder.EmptyResult;
     }
 
     public override string ToString()

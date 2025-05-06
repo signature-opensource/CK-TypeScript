@@ -50,20 +50,39 @@ public sealed class InScopeStatement : TransformStatement
 
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        throw new NotImplementedException();
+        Throw.DebugAssert( CheckValid() );
+        int scopeCount = 0;
+        try
+        {
+            foreach( var s in Scopes )
+            {
+                ++scopeCount;
+                editor.PushTokenFilter( s.Scope! );
+            }
+            Body.Apply( monitor, editor );
+        }
+        finally
+        {
+            while( --scopeCount >= 0 )
+            {
+                editor.PopTokenFilter();
+            }
+        }
     }
 
     internal static InScopeStatement? Parse( TransformerHost.Language language, ref TokenizerHead head, Token inToken )
     {
         Throw.DebugAssert( inToken.Text.Span.Equals( "in", StringComparison.Ordinal ) );
         int begSpan = head.LastTokenIndex;
+        bool atLeastOne = false;
         if( InScope.Match( language, ref head, inToken ) != null )
         {
+            atLeastOne = true;
             while( InScope.Match( language, ref head, null ) != null ) ;
         }
         var body = TransformStatementBlock.ParseBlockOrStatement( language, ref head );
-        return body == null
-                ? null
-                : head.AddSpan( new InScopeStatement( begSpan, head.LastTokenIndex + 1 ) ); 
+        return atLeastOne && body != null
+                ? head.AddSpan( new InScopeStatement( begSpan, head.LastTokenIndex + 1 ) )
+                : null; 
     }
 }

@@ -40,37 +40,50 @@ public sealed class InjectIntoStatement : TransformStatement
     /// <inheritdoc />
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        SourceToken modified = default;
-
         // The finder will find the first match (or none) and will error on duplicate
         // or injection point. We need the same state machine for all the tokens and
         // process all the tokens (to detect duplicate errors).
         var finder = new InjectionPointFinder( Target, Content );
         using var e = editor.OpenEditor();
-        foreach( var sourceToken in e.AllTokens )
+        bool noTokenAtAll = true;
+        foreach( var each in e.Tokens )
         {
-            var token = sourceToken.Token;
-            var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );
-            if( !newTrivias.IsDefault )
+            foreach( var range in each )
             {
-                Throw.DebugAssert( modified.IsDefault );
-                modified = new SourceToken( token.SetTrivias( newTrivias ), sourceToken.Span, sourceToken.Index );
-            }
-            newTrivias = ProcessTrivias( monitor, ref finder, token.TrailingTrivias );
-            if( !newTrivias.IsDefault )
-            {
-                Throw.DebugAssert( modified.IsDefault );
-                modified = new SourceToken( token.SetTrivias( token.LeadingTrivias, newTrivias ), sourceToken.Span, sourceToken.Index );
+                SourceToken modified = default;
+                int tokenCount = 0;
+                foreach( var sourceToken in range )
+                {
+                    noTokenAtAll = false;
+                    ++tokenCount;
+                    var token = sourceToken.Token;
+                    var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );
+                    if( !newTrivias.IsDefault )
+                    {
+                        Throw.DebugAssert( modified.IsDefault );
+                        modified = new SourceToken( token.SetTrivias( newTrivias ), sourceToken.Index );
+                    }
+                    newTrivias = ProcessTrivias( monitor, ref finder, token.TrailingTrivias );
+                    if( !newTrivias.IsDefault )
+                    {
+                        Throw.DebugAssert( modified.IsDefault );
+                        modified = new SourceToken( token.SetTrivias( token.LeadingTrivias, newTrivias ), sourceToken.Index );
+                    }
+                }
+                if( modified.IsDefault )
+                {
+                    monitor.Error( $"Unable to find the injection point '{Target}' in {tokenCount} tokens." );
+                }
+                else
+                {
+                    editor.Replace( modified.Index, modified.Token );
+                    editor.SetNeedReparse();
+                }
             }
         }
-        if( modified.IsDefault )
+        if( noTokenAtAll )
         {
-            monitor.Error( $"Unable to find the injection point '{Target}'." );
-        }
-        else
-        {
-            editor.Replace( modified.Index, modified.Token );
-            editor.SetNeedReparse();
+            monitor.Error( $"Empty scope token. Unable to find the injection point '{Target}'." );
         }
     }
 

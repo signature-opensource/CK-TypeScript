@@ -2,10 +2,10 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace CK.Transform.Core;
-
 
 /// <summary>
 /// Base class for transform language analyzer: this parses <see cref="TransformStatement"/>.
@@ -35,7 +35,7 @@ public abstract class TransformStatementAnalyzer
 
     /// <summary>
     /// Must implement transform specific statement parsing.
-    /// Parsing errors should be inlined <see cref="TokenError"/>. 
+    /// Parsing errors are inlined <see cref="TokenError"/>. 
     /// <para>
     /// At this level, this handles transform statements that apply to any language:
     /// <see cref="ReparseStatement"/>, <see cref="InjectIntoStatement"/>,
@@ -85,67 +85,31 @@ public abstract class TransformStatementAnalyzer
                                                                    RawString? tokenPattern )
     {
         Throw.DebugAssert( tokenSpec != null || tokenPattern != null );
-        Type? sType = null;
-        if( tokenSpec != null )
-        {
-            var singleSpanType = tokenSpec.InnerText.Span.Trim();
-            if( singleSpanType.Length > 0 )
-            {
-                sType = singleSpanType switch
-                {
-                    "statement" => typeof( TransformStatement ),
-                    "in" => typeof( InScope ),
-                    "replace" => typeof( ReplaceStatement ),
-                    _ => null
-                };
-                if( sType == null )
-                {
-                    return $"""
-                    Invalid span type '{singleSpanType}'. Allowed are "statement", "in", "replace".
-                    """;
-                }
-            }
-        }
-        var s = tokenSpec != null ? ParseSpanSpec( language, tokenSpec ) : null;
+        var s = tokenSpec != null ? ParseSpanSpec( language, tokenSpec ) : IFilteredTokenEnumerableProvider.Empty;
         if( s is string spanError ) return spanError;
         Throw.CheckState( "ParseSpanSpec must return a IFilteredTokenEnumerableProvider or an error string",
-                           s is null or IFilteredTokenEnumerableProvider );
-        var spanSpec = s as IFilteredTokenEnumerableProvider;
+                           s is IFilteredTokenEnumerableProvider );
+        var spanSpec = Unsafe.As<IFilteredTokenEnumerableProvider>( s );
 
-        var p = tokenPattern != null ? ParsePattern( language, tokenPattern, spanSpec ) : null;
+        var p = tokenPattern != null ? ParsePattern( language, tokenPattern, spanSpec ) : IFilteredTokenEnumerableProvider.Empty;
         if( p is string tokenError ) return tokenError;
         Throw.CheckState( "ParsePattern must return a IFilteredTokenEnumerableProvider or an error string",
-                           p is null or IFilteredTokenEnumerableProvider );
-        var pattern = p as IFilteredTokenEnumerableProvider;
+                           p is IFilteredTokenEnumerableProvider );
+        var pattern = Unsafe.As<IFilteredTokenEnumerableProvider>( p );
 
-        if( s == null && p == null )
-        {
-            return "No span specification nor pattern can be parsed.";
-        }
-        if( s == null ) return pattern!;
-        if( p == null ) return spanSpec!;
         return IFilteredTokenEnumerableProvider.Combine( spanSpec, pattern! );
     }
 
     protected virtual object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
     {
-        var singleSpanType = tokenSpec.InnerText.Span.Trim();
-        if( singleSpanType.Length > 0 )
+        var content = tokenSpec.InnerText.Span.Trim();
+        if( content.Length > 0 )
         {
-            var sType = singleSpanType switch
-            {
-                "statement" => typeof( TransformStatement ),
-                "in" => typeof( InScope ),
-                "replace" => typeof( ReplaceStatement ),
-                _ => null
-            };
-            if( sType == null )
-            {
-                return $"""
-                    Invalid span type '{singleSpanType}'. Allowed are "statement", "in", "replace".
-                    """;
-            }
+            return $"""
+                Invalid span spectification '{content}'. Language {language.LanguageName} does't handle any span specification.
+                """;
         }
+        return IFilteredTokenEnumerableProvider.EmptyProjection;
     }
 
     protected virtual object ParsePattern( TransformerHost.Language language, RawString tokenPattern, IFilteredTokenEnumerableProvider spanSpec )
@@ -164,5 +128,19 @@ public abstract class TransformStatementAnalyzer
         return new TokenSpanFilter( head.Tokens.ToImmutableArray() );
     }
 
-    protected abstract void ParseStandardMatchPattern( ref TokenizerHead head );
+    protected virtual void ParseStandardMatchPattern( ref TokenizerHead head )
+    {
+        while( head.EndOfInput == null )
+        {
+            if( head.LowLevelTokenType == TokenType.None )
+            {
+                head.AppendError( $"Unknown token '{head.Head[0]}'.", 1 );
+                break;
+            }
+            else
+            {
+                head.AcceptLowLevelToken();
+            }
+        }
+    }
 }

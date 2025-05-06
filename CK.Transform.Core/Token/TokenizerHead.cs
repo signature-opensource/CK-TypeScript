@@ -5,7 +5,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
@@ -16,8 +15,7 @@ namespace CK.Transform.Core;
 public ref struct TokenizerHead
 {
     ReadOnlySpan<char> _head;
-    readonly ReadOnlySpan<char> _text;
-    readonly ReadOnlyMemory<char> _memText;
+    readonly ReadOnlyMemory<char> _wholeText;
     readonly ImmutableArray<Trivia>.Builder _triviaBuilder;
     readonly ILowLevelTokenizer _lowLevelTokenizer;
     readonly SourceSpanRoot _spans;
@@ -49,9 +47,8 @@ public ref struct TokenizerHead
         _lowLevelTokenizer = behavior;
         _triviaParser = behavior.ParseTrivia;
 
-        _memText = text;
-        _text = _memText.Span;
-        _head = _text;
+        _wholeText = text;
+        _head = _wholeText.Span;
         _tokens = new List<Token>();
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
         _spans = new SourceSpanRoot();
@@ -60,7 +57,8 @@ public ref struct TokenizerHead
     }
 
     // Private constructor for CreateSubHead.
-    TokenizerHead( ReadOnlyMemory<char> text,
+    TokenizerHead( ReadOnlyMemory<char> wholeText,
+                   int remainingTextIndex,
                    TriviaParser triviaParser,
                    ILowLevelTokenizer lowLevelTokenizer,
                    ImmutableArray<Trivia>.Builder triviaBuilder,
@@ -71,9 +69,9 @@ public ref struct TokenizerHead
         _lowLevelTokenizer = lowLevelTokenizer;
         _triviaParser = triviaParser;
 
-        _memText = text;
-        _text = _memText.Span;
-        _head = _text;
+        _wholeText = wholeText;
+        _remainingTextIndex = remainingTextIndex;
+        _head = _wholeText.Span.Slice( remainingTextIndex );
         _triviaBuilder = triviaBuilder;
         _spans = new SourceSpanRoot();
         _tokens = new List<Token>();
@@ -104,7 +102,12 @@ public ref struct TokenizerHead
     public readonly TokenizerHead CreateFullSubHead( out int safetyKey, ITokenizerHeadBehavior behavior )
     {
         safetyKey = _remainingTextIndex;
-        return new TokenizerHead( RemainingText, behavior.ParseTrivia, behavior, _triviaBuilder, LastTokenIndex );
+        return new TokenizerHead( _wholeText,
+                                  _remainingTextIndex,
+                                  behavior.ParseTrivia,
+                                  behavior,
+                                  _triviaBuilder,
+                                  LastTokenIndex );
     }
 
     /// <summary>
@@ -119,7 +122,12 @@ public ref struct TokenizerHead
     public readonly TokenizerHead CreateSubHead( out int safetyKey, ILowLevelTokenizer? lowLevelTokenizer = null )
     {
         safetyKey = _remainingTextIndex;
-        return new TokenizerHead( RemainingText, _triviaParser, lowLevelTokenizer ?? _lowLevelTokenizer, _triviaBuilder, LastTokenIndex );
+        return new TokenizerHead( _wholeText,
+                                  _remainingTextIndex,
+                                  _triviaParser,
+                                  lowLevelTokenizer ?? _lowLevelTokenizer,
+                                  _triviaBuilder,
+                                  _lastTokenIndex );
     }
 
     /// <summary>
@@ -133,8 +141,8 @@ public ref struct TokenizerHead
         Throw.CheckArgument( "The SubHead has not been created from this head.", _headBeforeTrivia.Overlaps( subHead.Text.Span ) );
         Throw.CheckState( _remainingTextIndex == safetyKey && !IsCondemned );
 
-        _head = _headBeforeTrivia.Slice( subHead._remainingTextIndex );
-        _remainingTextIndex += subHead._remainingTextIndex;
+        _head = _headBeforeTrivia.Slice( subHead._remainingTextIndex - _remainingTextIndex );
+        _remainingTextIndex = subHead._remainingTextIndex;
         var subTokens = CollectionsMarshal.AsSpan( subHead._tokens );
         _tokens.AddRange( subTokens );
         _lastTokenIndex += subTokens.Length;
@@ -161,8 +169,9 @@ public ref struct TokenizerHead
 
     /// <summary>
     /// Gets the whole text (the origin of the head).
+    /// A sub head is bound to the same text as its parent head.
     /// </summary>
-    public readonly ReadOnlyMemory<char> Text => _memText;
+    public readonly ReadOnlyMemory<char> Text => _wholeText;
 
     /// <summary>
     /// Gets the tokens accepted so far by this head: if this is a subordinated head, this doesn't contain
@@ -209,7 +218,7 @@ public ref struct TokenizerHead
     /// </para>
     /// </summary>
     /// <returns></returns>
-    public readonly ReadOnlyMemory<char> RemainingText => _memText.Slice( _remainingTextIndex );
+    public readonly ReadOnlyMemory<char> RemainingText => _wholeText.Slice( _remainingTextIndex );
 
     /// <summary>
     /// Gets the end of input if it has been reached.
@@ -242,7 +251,7 @@ public ref struct TokenizerHead
     public void ExtractResult( out SourceCode code, out int inlineErrorCount )
     {
         Throw.CheckState( !IsCondemned );
-        if( MemoryMarshal.TryGetString( _memText, out var sourceText, out var start, out var length ) )
+        if( MemoryMarshal.TryGetString( _wholeText, out var sourceText, out var start, out var length ) )
         {
             // This will always be more efficient than rewriting the string.
             if( length < sourceText.Length ) sourceText = sourceText.Substring( start, length );
@@ -289,17 +298,17 @@ public ref struct TokenizerHead
         Throw.CheckState( EndOfInput is null );
         Throw.DebugAssert( !_leadingTrivias.IsDefault );
 
-        text = _memText.Slice( _text.Length - _head.Length, tokenLength );
+        text = _wholeText.Slice( _wholeText.Length - _head.Length, tokenLength );
         _head = _head.Slice( tokenLength );
         // Trivia handling.
         leading = _leadingTrivias;
-        var c = new TriviaHead( _head, _memText, _triviaBuilder, _lowLevelTokenizer.HandleWhiteSpaceTrivias );
+        var c = new TriviaHead( _head, _wholeText, _triviaBuilder, _lowLevelTokenizer.HandleWhiteSpaceTrivias );
         c.ParseTrailingTrivias( _triviaParser );
         trailing = _triviaBuilder.DrainToImmutable();
         // Before preloading the leading trivia for the next token, save the
         // current head position. RemainingText is based on this index.
         _headBeforeTrivia = c.Head;
-        _remainingTextIndex = _memText.Length - _head.Length + c.Length;
+        _remainingTextIndex = _wholeText.Length - _head.Length + c.Length;
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );
@@ -314,7 +323,8 @@ public ref struct TokenizerHead
     /// Creates and accepts a token error node at the current <see cref="Head"/> with an optional length of text.
     /// <list type="bullet">
     ///     <item>
-    ///     When <paramref name="length"/> is negative (-1), the error has no trivias, the next token will have the current leading trivias.
+    ///     When <paramref name="length"/> is negative (-1) or <see cref="EndOfInput"/> is reached the error has no trivias,
+    ///     the next token will have the current leading trivias (or the <see cref="EndOfInput"/> already carries them).
     ///     </item>
     ///     <item>
     ///     When length is 0, the error has the current leading trivias (and no trailing trivias), the next token will
@@ -325,9 +335,6 @@ public ref struct TokenizerHead
     ///     and the head is forwarded.
     ///     </item>
     /// </list>
-    /// <para>
-    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
-    /// </para>
     /// </summary>
     /// <param name="errorMessage">The error message. When not specified, the message is the text content.</param>
     /// <param name="length">The length of the token that is "covered" with the error.</param>
@@ -337,11 +344,11 @@ public ref struct TokenizerHead
     public TokenError AppendError( string errorMessage, int length, TokenType errorType = TokenType.GenericError )
     {
         Throw.CheckArgument( errorType.IsError() );
-        Throw.CheckState( EndOfInput is null && !IsCondemned );
+        Throw.CheckState( !IsCondemned );
 
-        SourcePosition p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
+        SourcePosition p = SourcePosition.GetSourcePosition( _wholeText.Span, _wholeText.Length - _head.Length );
         TokenError t;
-        if( length < 0 )
+        if( length < 0 || _endOfInput != null )
         {
             t = new TokenError( errorType, default, errorMessage, p, Trivia.Empty, Trivia.Empty );
         }
@@ -352,6 +359,7 @@ public ref struct TokenizerHead
             ImmutableArray<Trivia> trailing;
             if( length > 0 )
             {
+                Throw.CheckArgument( "When EndInput, error length cannot be positive.", EndOfInput == null );
                 PreAcceptToken( length, out text, out leading, out trailing );
             }
             else
@@ -580,7 +588,7 @@ public ref struct TokenizerHead
         // Creates the Trivia head and collects every possible trivias thanks to the
         // current trivia parser.
         _headBeforeTrivia = _head;
-        var c = new TriviaHead( _head, _memText, _triviaBuilder, _lowLevelTokenizer.HandleWhiteSpaceTrivias );
+        var c = new TriviaHead( _head, _wholeText, _triviaBuilder, _lowLevelTokenizer.HandleWhiteSpaceTrivias );
         c.ParseAll( _triviaParser );
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );
@@ -602,7 +610,7 @@ public ref struct TokenizerHead
 
     void SetEndOfInput()
     {
-        var p = SourcePosition.GetSourcePosition( _text, _text.Length - _head.Length );
+        var p = SourcePosition.GetSourcePosition( _wholeText.Span, _wholeText.Length - _head.Length );
         _endOfInput = new TokenError( TokenType.EndOfInput, default, "End of input.", p, _leadingTrivias, Trivia.Empty );
     }
 

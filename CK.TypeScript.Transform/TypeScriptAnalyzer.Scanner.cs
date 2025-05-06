@@ -24,13 +24,18 @@ sealed partial class TypeScriptAnalyzer // Scanner
     int _braceDepth;
 
     /// <summary>
+    /// Gets the current brace depth.
+    /// </summary>
+    public int BraceDepth => _braceDepth;
+
+    /// <summary>
     /// Handles interpolated strings and /regular expressions/.
     /// <see cref="LowLevelTokenize(ReadOnlySpan{char})"/> handles numbers, "string", 'string', identifiers (including @identifier and #identifier)
     /// and `start of interpolated string` (GenericInterpolatedStringStart).
     /// </summary>
     /// <param name="head">The head.</param>
     /// <returns>Next token.</returns>
-    Token Scan( ref TokenizerHead head )
+    internal Token GetNextToken( ref TokenizerHead head )
     {
         switch( head.LowLevelTokenType )
         {
@@ -90,7 +95,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 }
                 return head.EndOfInput;
             case TokenType.None when (head.EndOfInput is null):
-                head.AppendError( "Unrecognized token.", -1 );
+                head.AppendError( "Unrecognized token.", 1 );
                 break;
             default:
                 head.AcceptLowLevelToken();

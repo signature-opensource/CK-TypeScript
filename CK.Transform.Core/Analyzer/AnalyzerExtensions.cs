@@ -37,7 +37,7 @@ public static class AnalyzerExtensions
             if( f == null || f is not T topLevel )
             {
                 // No Transform function: if the EndOfInput has been reached, we are good (text is whitespace or comments).
-                if( r.EndOfInput ) break;
+                if( r.EndOfInput != null ) break;
                 // But if the EndOfInput has not been reached, it means that there are tokens but they don't start with a 'create'.
                 return null;
             }

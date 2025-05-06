@@ -10,6 +10,9 @@ namespace CK.TypeScript.Transform;
 /// </summary>
 public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
 {
+    // Keeps the brace depth of interpolated starts.
+    readonly Stack<int> _classes;
+
     /// <summary>
     /// Gets "TypeScript".
     /// </summary>
@@ -21,6 +24,7 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
     public TypeScriptAnalyzer()
     {
         _interpolated = new Stack<int>();
+        _classes = new Stack<int>();
     }
 
     /// <inheritdoc/>
@@ -28,6 +32,7 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
     {
         _braceDepth = 0;
         _interpolated.Clear();
+        _classes.Clear();
         base.Reset( text );
     }
 
@@ -43,34 +48,63 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
     }
 
     /// <inheritdoc/>
-    protected override void Tokenize( ref TokenizerHead head )
-    {
-        for(; ; )
-        {
-            var t = Scan( ref head );
-            // Currently stops on the first error.
-            if( t is TokenError e )
-            {
-                return;
-            }
-            // Handles import statement (but not import(...) functions).
-            if( t.Text.Span.Equals( "import", StringComparison.Ordinal )
-                && head.LowLevelTokenType is not TokenType.OpenParen )
-            {
-                ImportStatement.Match( ref head, t );
-            }
-        }
-    }
-
-    /// <inheritdoc/>
     public AnalyzerResult Parse( ReadOnlyMemory<char> text )
     {
         Reset( text );
         return Parse();
     }
 
-    ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
+    /// <inheritdoc/>
+    protected override void Tokenize( ref TokenizerHead head )
     {
-        throw new NotImplementedException();
+        for(; ; )
+        {
+            var t = GetNextToken( ref head );
+            if( t.TokenType is TokenType.EndOfInput )
+            {
+                return;
+            }
+            // Handles import statement (but not import(...) functions) only here (top-level constructs).
+            if( t.TextEquals( "import" ) && head.LowLevelTokenType is not TokenType.OpenParen )
+            {
+                ImportStatement.Match( ref head, t );
+            }
+            if( t is not TokenError )
+            {
+                HandleKnownSpan( ref head, t );
+            }
+        }
     }
+
+    internal SourceSpan? HandleKnownSpan( ref TokenizerHead head, Token t )
+    {
+        Throw.DebugAssert( t is not TokenError );
+        if( t.TextEquals( "class" ) )
+        {
+            return ClassDefinition.Match( this, ref head, t );
+        }
+        if( t.TokenType is TokenType.OpenBrace )
+        {
+            return BraceSpan.Match( this, ref head, t );
+        }
+        return null;
+    }
+
+    internal bool SkipTo( ref TokenizerHead head, TokenType type )
+    {
+        for( ; ; )
+        {
+            var t = GetNextToken( ref head );
+            if( t.TokenType is TokenType.EndOfInput )
+            {
+                head.AppendError( $"Missing '{type}' token.", 0 );
+                return false;
+            }
+            if( t.TokenType == type )
+            {
+                return true;
+            }
+        }
+    }
+
 }

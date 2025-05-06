@@ -15,23 +15,6 @@ public sealed partial class TransformerHost
         readonly RootTransformAnalyzer _rootAnalyzer;
         readonly TransformStatementAnalyzer _thisAnalyzer;
 
-        sealed class ThisStatementAnalyzer : TransformStatementAnalyzer
-        {
-            public ThisStatementAnalyzer( TransformLanguage language )
-                : base( language )
-            {
-            }
-
-            // /// <summary>
-            // /// There is currently no specific statements to transform transformers: the base
-            // /// ParseStatement is fine.
-            // /// </summary>
-            // protected override TransformStatement? ParseStatement( ref TokenizerHead head )
-            // {
-            //     return base.ParseStatement( ref head );
-            // }
-        }
-
         internal RootTransformLanguage( TransformerHost host )
             : base( _transformLanguageName, ".transform", ".t" )
         {

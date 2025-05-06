@@ -38,22 +38,25 @@ public sealed class ReplaceStatement : TransformStatement
         try
         {
             bool applied = false;
-            foreach( var each in editor.ScopedTokens.Tokens )
-                foreach( var range in each )
-                {
-                    GetFirstLastAndCount( range, out var first, out var last, out var count );
-                    var replace = new Token( TokenType.GenericAny,
-                                             first.Token.LeadingTrivias,
-                                             _replacement.TextLines,
-                                             last.Token.TrailingTrivias );
-                    editor.Replace( first.Index, count, replace );
-                    applied = true;
-                }
+            using( var e = editor.OpenEditor() )
+            {
+                foreach( var each in e.Tokens )
+                    foreach( var range in each )
+                    {
+                        GetFirstLastAndCount( range, out var first, out var last, out var count );
+                        var replace = new Token( TokenType.GenericAny,
+                                                 first.Token.LeadingTrivias,
+                                                 _replacement.TextLines,
+                                                 last.Token.TrailingTrivias );
+                        editor.Replace( first.Index, count, replace );
+                        applied = true;
+                    }
+            }
             if( applied ) editor.SetNeedReparse();
         }
         finally
         {
-            if( Matcher != null ) editor.ScopedTokens.PopTokenFilter();
+            if( Matcher != null ) editor.PopTokenFilter();
         }
     }
 

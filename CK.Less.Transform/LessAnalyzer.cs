@@ -194,9 +194,4 @@ public class LessAnalyzer : Tokenizer, ITargetAnalyzer
         Reset( text );
         return Parse();
     }
-
-    ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
-    {
-        throw new NotImplementedException();
-    }
 }

@@ -133,64 +133,6 @@ public sealed partial class TransformerHost
             return Parse();
         }
 
-        ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
-        {
-            Reset( pattern );
-            TokenizerHead head = CreateHead();
-            while( head.EndOfInput == null )
-            {
-                if( head.LowLevelTokenType == TokenType.LessThan )
-                {
-                    if( InjectionPoint.Match( ref head ) == null )
-                    {
-                        Throw.DebugAssert( head.FirstParseError != null );
-                        break;
-                    }
-                }
-                else if( head.LowLevelTokenType == TokenType.DoubleQuote )
-                {
-                    if( RawString.Match( ref head ) == null )
-                    {
-                        Throw.DebugAssert( head.FirstParseError != null );
-                        break;
-                    }
-                }
-                else
-                {
-                    head.AcceptLowLevelToken();
-                }
-            }
-            head.ExtractResult( out var code, out var inlineErrorCount );
-            Throw.DebugAssert( "No spans here.", !code.Spans.Any() );
-            if( inlineErrorCount != 0 )
-            {
-                monitor.Error( $"""
-                    Error '{head.FirstParseError}' while parsing pattern:
-                    {pattern}
-                    """ );
-                return null;
-            }
-            Type? sType = null;
-            if( spanType.Length > 0 )
-            {
-                sType = spanType switch
-                {
-                    "statement" => typeof( TransformStatement ),
-                    "in" => typeof( InScope ),
-                    "replace" => typeof( ReplaceStatement ),
-                    _ => null
-                };
-                if( sType == null )
-                {
-                    monitor.Error( $"""
-                    Invalid span type '{spanType}'. Allowed are "statement", "in", "replace".
-                    """ );
-                    return null;
-                }
-                throw new NotImplementedException();
-            }
-            return new TokenSpanFilter( code.Tokens.ToImmutableArray() );
-        }
     }
 
 }

@@ -32,6 +32,15 @@ public sealed class InScope : SourceSpan
     /// </summary>
     public LocationMatcher? LocationMatch => Children.FirstChild as LocationMatcher;
 
+    /// <summary>
+    /// Gets the filtered token provider.
+    /// <para>
+    /// This is never null when <see cref="CheckValid"/> is true.
+    /// </para>
+    /// </summary>
+    public IFilteredTokenEnumerableProvider? Scope => Children.FirstChild as IFilteredTokenEnumerableProvider;
+
+
     internal static InScope? Match( TransformerHost.Language language, ref TokenizerHead head, Token? inToken )
     {
         if( inToken == null && !head.TryAcceptToken( "in", out _ ) )

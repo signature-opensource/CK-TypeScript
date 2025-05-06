@@ -9,8 +9,8 @@ public interface ILowLevelTokenizer
 {
     /// <summary>
     /// Gets whether the <see cref="TriviaHead"/> must handle <see cref="TokenType.Whitespace"/>.
-    /// As is true for almost all languages except specific languages like Html (where whitespaces
-    /// are considered part of textual spans), this is a Default Implementation Methods that returns true.
+    /// Because this is true for almost all languages except specific languages like Html (where whitespaces
+    /// are considered part of textual spans), this is a Default Implementation Methods (DIM) that returns true.
     /// </summary>
     bool HandleWhiteSpaceTrivias => true;
 

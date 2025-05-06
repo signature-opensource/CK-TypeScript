@@ -13,7 +13,7 @@ public sealed class AnalyzerResult
                              TokenError? firstParseError,
                              int errorCount,
                              ReadOnlyMemory<char> remainingText,
-                             bool endOfInput )
+                             Token? endOfInput )
     {
         SourceCode = result;
         FirstError = firstParseError;
@@ -44,7 +44,7 @@ public sealed class AnalyzerResult
     /// This is true even if <see cref="RemainingText"/> is not empty when only whitespaces and comments
     /// exist.
     /// </summary>
-    public bool EndOfInput { get; }
+    public Token? EndOfInput { get; }
 
     /// <summary>
     /// Gets the first <see cref="TokenError"/> in <see cref="SourceCode.Tokens"/>.

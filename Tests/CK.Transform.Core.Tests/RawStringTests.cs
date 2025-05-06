@@ -79,7 +79,7 @@ public class RawStringTests
         Throw.DebugAssert( r.FirstError != null );
         r.SourceCode.Tokens.Count.ShouldBe( 2 );
         r.FirstError.ShouldBeSameAs( r.SourceCode.Tokens[1] );
-        r.FirstError.ErrorMessage.ShouldStartWith( "Unterminated string." );
+        r.FirstError.ErrorMessage.ShouldStartWith( "Unterminated string (quote is \")." );
 
         r.SourceCode.Tokens[0].ToString().ShouldBe( "Some" );
         r.SourceCode.Tokens[1].Text.Length.ShouldBe( code.Length - 4 - 1 );

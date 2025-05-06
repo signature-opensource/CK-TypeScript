@@ -80,7 +80,7 @@ public abstract class TransformLanguage
     public bool IsTransformerLanguage => ReferenceEquals( _languageName, TransformerHost._transformLanguageName );
 
     /// <summary>
-    /// Must create the transforme statement analyzer and the target language analyzer.
+    /// Must create the transform statement analyzer and the target language analyzer.
     /// <para>
     /// The <see cref="TransformStatementAnalyzer"/> can reference the <see cref="IAnalyzer"/>
     /// to delegate some pattern matches to the target language analyzer.

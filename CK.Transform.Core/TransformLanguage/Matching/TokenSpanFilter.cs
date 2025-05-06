@@ -9,7 +9,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-sealed class TokenSpanFilter : ITokenFilter, IFilteredTokenEnumerableProvider
+sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
 {
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
@@ -39,40 +39,11 @@ sealed class TokenSpanFilter : ITokenFilter, IFilteredTokenEnumerableProvider
         return prefixTable;
     }
 
-    public Func<IActivityMonitor,
+    public Func<TokenFilterBuilderContext,
                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
     {
         return new TokenMatcher( _tokens, _prefixTable ).GetTokens;
-    }
-
-    public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetScopedTokens( ScopedTokensBuilder builder )
-    {
-        var matcher = new TokenMatcher( _tokens, _prefixTable );
-        foreach( var each in builder.Tokens )
-        {
-            foreach( var range in each )
-            {
-                var byEach = GetRangeTokens( matcher, range );
-                if( byEach.Any() )
-                {
-                    yield return byEach;
-                }
-            }
-        }
-    }
-
-    static IEnumerable<IEnumerable<SourceToken>> GetRangeTokens( TokenMatcher matcher, IEnumerable<SourceToken> range )
-    {
-        matcher.Reset();
-        foreach( var t in range )
-        {
-            SourceToken[]? match = matcher.Found( t );
-            if( match != null )
-            {
-                yield return match;
-            }
-        }
     }
 
     sealed class TokenMatcher
@@ -114,7 +85,7 @@ sealed class TokenSpanFilter : ITokenFilter, IFilteredTokenEnumerableProvider
             return null;
         }
 
-        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( IActivityMonitor monitor,
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( TokenFilterBuilderContext c,
                                                                              IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
             foreach( var each in inner )
@@ -125,6 +96,19 @@ sealed class TokenSpanFilter : ITokenFilter, IFilteredTokenEnumerableProvider
                     if( byEach.Any() )
                     {
                         yield return byEach;
+                    }
+                }
+            }
+
+            static IEnumerable<IEnumerable<SourceToken>> GetRangeTokens( TokenMatcher matcher, IEnumerable<SourceToken> range )
+            {
+                matcher.Reset();
+                foreach( var t in range )
+                {
+                    SourceToken[]? match = matcher.Found( t );
+                    if( match != null )
+                    {
+                        yield return match;
                     }
                 }
             }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 
 namespace CK.Transform.Core;
 
@@ -15,6 +16,9 @@ public sealed partial class SourceCodeEditor
     readonly SourceCode _code;
     List<Token> _tokens;
     readonly Editor _editor;
+
+    readonly SourceTokenEnumerable _sourceTokens;
+    readonly List<SourceSpanTokenEnumerable.Enumerator> _enumerators;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -34,6 +38,8 @@ public sealed partial class SourceCodeEditor
         _code = code;
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
+        _sourceTokens = new SourceTokenEnumerable( this );
+        _enumerators = new List<SourceSpanTokenEnumerable.Enumerator>();
         _editor = new Editor( this );
     }
 
@@ -65,12 +71,12 @@ public sealed partial class SourceCodeEditor
     /// Pushes a new token filter.
     /// </summary>
     /// <param name="filter">The filter to apply.</param>
-    public void PushTokenFilter( Func<IActivityMonitor,
+    public void PushTokenFilter( Func<TokenFilterBuilderContext,
                                       IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
                                       IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> filter )
     {
         Throw.CheckState( _editor.OpenCount == 0 );
-        _editor._tokenFilters.Push( filter( _monitor, _editor._tokenFilters.Peek() ) );
+        _editor._tokenFilters.Push( filter( new TokenFilterBuilderContext( this ), _editor._tokenFilters.Peek() ) );
     }
 
     /// <summary>
@@ -213,23 +219,60 @@ public sealed partial class SourceCodeEditor
         DoReplace( index, count, Array.Empty<Token>() );
     }
 
-    void DoReplace( int index, int count, Token[] tokens, bool insertBefore = false )
+    bool DoReplace( int index, int count, Token[] tokens, bool insertBefore = false )
     {
-        if( count > 0 ) _tokens.RemoveRange( index, count );
-        if( tokens.Length > 0 )
-        {
-            _tokens.InsertRange( index, tokens );
-        }
         int delta = tokens.Length - count;
         if( delta > 0 )
         {
+            int eLimit = insertBefore ? index : index + tokens.Length;
+            if( !_sourceTokens.OnInsertTokens( eLimit, delta ) )
+            {
+                return false;
+            }
+            foreach( var e in _enumerators )
+            {
+                if( !e.OnInsertTokens( eLimit, delta ) )
+                {
+                    return false;
+                }
+            }
+            for( int i = 0; i < count; ++i )
+            {
+                _tokens[index + i] = tokens[i];
+            }
+            _tokens.InsertRange( index + count, tokens.Skip( count ) );
             _code._spans.OnInsertTokens( index, delta, insertBefore );
         }
         else if( delta < 0 )
         {
-            _code._spans.OnRemoveTokens( index, -delta );
+            delta = -delta;
+            if( !_sourceTokens.OnRemoveTokens( index + tokens.Length, delta ) )
+            {
+                return false;
+            }
+            foreach( var e in _enumerators )
+            {
+                if( !e.OnRemoveTokens( index + tokens.Length, delta ) )
+                {
+                    return false;
+                }
+            }
+            for( int i = 0; i < tokens.Length; ++i )
+            {
+                _tokens[index + i] = tokens[i];
+            }
+            _tokens.RemoveRange( index + tokens.Length, delta );
+            _code._spans.OnRemoveTokens( index, delta );
+        }
+        else
+        {
+            for( int i = 0; i < count; ++i )
+            {
+                _tokens[index + i] = tokens[i];
+            }
         }
         _code.OnTokensChanged();
+        return true;
     }
 
     /// <summary>

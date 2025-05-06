@@ -87,6 +87,17 @@ public class Token
     public ReadOnlyMemory<char> Text => _text;
 
     /// <summary>
+    /// Compares the <see cref="Text"/>.
+    /// </summary>
+    /// <param name="text">The text to compare.</param>
+    /// <param name="comparison">Comparison mode.</param>
+    /// <returns>True if texts are equal, false otherwise.</returns>
+    public bool TextEquals( ReadOnlySpan<char> text, StringComparison comparison = StringComparison.Ordinal )
+    {
+        return _text.Span.Equals( text, comparison );
+    }
+
+    /// <summary>
     /// Gets the leading <see cref="Trivia"/>.
     /// </summary>
     public ImmutableArray<Trivia> LeadingTrivias => _leadingTrivias;

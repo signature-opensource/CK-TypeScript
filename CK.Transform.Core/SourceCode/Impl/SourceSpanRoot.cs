@@ -97,11 +97,11 @@ sealed class SourceSpanRoot : ISourceSpanRoot
 
     internal void OnInsertTokens( int index, int count, bool insertBefore ) => _children.OnInsertTokens( index, count, insertBefore );
 
-    internal void OnRemoveTokens( int index, int count )
+    internal void OnRemoveTokens( int index, int delta )
     {
-        Throw.DebugAssert( index >= 0 && count > 0 );
+        Throw.DebugAssert( index >= 0 && delta > 0 );
         List<SourceSpan>? toRemove = null;
-        _children.OnRemoveTokens( new TokenSpan( index, index + count ), ref toRemove );
+        _children.OnRemoveTokens( new TokenSpan( index, index + delta ), ref toRemove );
         if( toRemove != null )
         {
             foreach( var s in toRemove )

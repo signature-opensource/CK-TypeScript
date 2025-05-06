@@ -292,8 +292,4 @@ public sealed partial class HtmlAnalyzer : Tokenizer, ITargetAnalyzer
     [GeneratedRegex( "^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture )]
     private static partial Regex VoidElements();
 
-    ITokenFilter? ITargetAnalyzer.CreateSpanMatcher( IActivityMonitor monitor, ReadOnlySpan<char> spanType, ReadOnlyMemory<char> pattern )
-    {
-        throw new NotImplementedException();
-    }
 }
