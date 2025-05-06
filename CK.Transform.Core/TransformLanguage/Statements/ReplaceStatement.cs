@@ -31,10 +31,7 @@ public sealed class ReplaceStatement : TransformStatement
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         Throw.DebugAssert( CheckValid() );
-        if( Matcher != null )
-        {
-            editor.PushTokenFilter( Matcher );
-        }
+        int filterCount = editor.PushTokenFilter( Matcher );
         try
         {
             bool applied = false;
@@ -56,7 +53,7 @@ public sealed class ReplaceStatement : TransformStatement
         }
         finally
         {
-            if( Matcher != null ) editor.PopTokenFilter();
+            editor.PopTokenFilter( filterCount );
         }
     }
 

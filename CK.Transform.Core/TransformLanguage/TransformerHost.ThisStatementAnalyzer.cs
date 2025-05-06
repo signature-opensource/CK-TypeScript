@@ -24,25 +24,20 @@ public sealed partial class TransformerHost
         //     return base.ParseStatement( ref head );
         // }
 
-        protected override object ParseSpanSpec( Language language, RawString tokenSpec )
+        internal protected override object ParseSpanSpec( Language language, RawString tokenSpec )
         {
             var singleSpanType = tokenSpec.InnerText.Span.Trim();
             if( singleSpanType.Length > 0 )
             {
-                var sType = singleSpanType switch
+                return singleSpanType switch
                 {
-                    "statement" => typeof( TransformStatement ),
-                    "in" => typeof( InScope ),
-                    "replace" => typeof( ReplaceStatement ),
-                    _ => null
+                    "statement" => new SingleSpanTypeFilter( typeof( TransformStatement ), "{statement}" ),
+                    "in" => new SingleSpanTypeFilter( typeof( InScope ), "{in}" ),
+                    "replace" => new SingleSpanTypeFilter( typeof( ReplaceStatement ), "{replace}" ),
+                    _ => $"""
+                         Invalid span type '{singleSpanType}'. Allowed are "statement", "in", "replace".
+                         """
                 };
-                if( sType == null )
-                {
-                    return $"""
-                            Invalid span type '{singleSpanType}'. Allowed are "statement", "in", "replace".
-                            """;
-                }
-                return new SingleSpanTypeFilter( sType );
             }
             return IFilteredTokenEnumerableProvider.Empty;
         }

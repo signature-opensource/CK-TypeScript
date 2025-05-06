@@ -69,32 +69,35 @@ public sealed partial class SourceCodeEditor
 
     /// <summary>
     /// Pushes a new token filter.
-    /// </summary>
-    /// <param name="filter">The filter to apply.</param>
-    public void PushTokenFilter( Func<TokenFilterBuilderContext,
-                                      IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-                                      IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> filter )
-    {
-        Throw.CheckState( _editor.OpenCount == 0 );
-        _editor._tokenFilters.Push( filter( new TokenFilterBuilderContext( this ), _editor._tokenFilters.Peek() ) );
-    }
-
-    /// <summary>
-    /// Pushes a new token filter.
+    /// Returns the number of actual filters that have been pushed. This count must be provided to <see cref="PopTokenFilter"/>.
     /// </summary>
     /// <param name="filterProvider">The filter provider to apply.</param>
-    public void PushTokenFilter( IFilteredTokenEnumerableProvider filterProvider )
+    /// <returns>The number of actual filters that have been pushed.</returns>
+    public int PushTokenFilter( IFilteredTokenEnumerableProvider? filterProvider )
     {
-        PushTokenFilter( filterProvider.GetFilteredTokenProjection() );
+        Throw.CheckState( _editor.OpenCount == 0 );
+        int count = _editor.CurrentFilter.Index;
+        filterProvider?.Activate( _editor.PushTokenFilter );
+        count = _editor.CurrentFilter.Index - count;
+        if( count > 0 )
+        {
+            _editor.CurrentFilter.SetSyntaxBorder();
+        }
+        return count;
     }
 
     /// <summary>
-    /// Pops the last pushed token filter.
+    /// Pops the last pushed token filters.
     /// </summary>
-    public void PopTokenFilter()
+    /// <param name="count">
+    /// Number of filters returned by <see cref="PushTokenFilter(IFilteredTokenEnumerableProvider)"/>.
+    /// This can be 0.
+    /// </param>
+    public void PopTokenFilter( int count )
     {
-        Throw.CheckState( _editor.OpenCount == 0 && _editor._tokenFilters.Count > 1 );
-        _editor._tokenFilters.Pop();
+        Throw.CheckArgument( count >= 0 );
+        Throw.CheckState( _editor.OpenCount == 0 && _editor.CurrentFilter.Index >= count );
+        _editor.PopTokenFilter( count );
     }
 
     /// <summary>
@@ -102,7 +105,6 @@ public sealed partial class SourceCodeEditor
     /// </summary>
     /// <returns>The editor that must be disposed.</returns>
     public Editor OpenEditor() => _editor.Open();
-
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.

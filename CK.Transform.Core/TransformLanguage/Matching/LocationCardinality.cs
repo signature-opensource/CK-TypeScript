@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
@@ -12,8 +13,10 @@ namespace CK.Transform.Core;
 ///     <item>all [n]</item>
 ///     <item>each [n]</item>
 /// </list>
+/// This is a <see cref="IFilteredTokenEnumerableProvider"/>. The <see cref="SingleCardinality"/> singleton
+/// is the default cardinality provider.
 /// </summary>
-public sealed class LocationCardinality : SourceSpan
+public sealed partial class LocationCardinality : SourceSpan
 {
     /// <summary>
     /// The possible <see cref="LocationKind"/>.
@@ -52,41 +55,27 @@ public sealed class LocationCardinality : SourceSpan
         Each
     }
 
-    Token? _kindT;
-    Token? _offsetT;
-    Token? _expectedMatchCountT;
-
     int _expectedMatchCount;
     int _offset;
     LocationKind _kind;
 
     LocationCardinality( int beg,
                          int end,
-                         Token? kindT,
                          LocationKind kind,
-                         Token? offsetT,
                          int offset,
-                         Token? expectedMatchCountT,
                          int expectedMatchCount )
         : base( beg, end )
     {
         Throw.DebugAssert( kind is not LocationKind.Single || _expectedMatchCount == 1 );
         _kind = kind;
-        _offsetT = offsetT;
-        _kindT = kindT;
         _expectedMatchCount = expectedMatchCount;
         _offset = offset;
-        _expectedMatchCountT = expectedMatchCountT;
     }
-
-    public Token? KindT => _kindT;
 
     /// <summary>
     /// Gets this location kind.
     /// </summary>
     public LocationKind Kind => _kind;
-
-    public Token? OffsetT => _offsetT;
 
     /// <summary>
     /// Gets the match number to consider among the multiple matches.
@@ -94,8 +83,6 @@ public sealed class LocationCardinality : SourceSpan
     /// For other <see cref="LocationKind"/>, this defaults to 0.
     /// </summary>
     public int Offset => _offset;
-
-    public Token? ExpectedMatchCountT => _expectedMatchCountT;
 
     /// <summary>
     /// Gets the total number of matches expected.
@@ -151,11 +138,8 @@ public sealed class LocationCardinality : SourceSpan
         }
         return head.AddSpan( new LocationCardinality( begSpan,
                                                       head.LastTokenIndex + 1,
-                                                      kindT,
                                                       kind,
-                                                      offsetT,
                                                       offset,
-                                                      expectedMatchCountT,
                                                       expectedMatchCount ) );
 
         static int TryMatchNumber( ref TokenizerHead head, out Token? numberT, int n )
@@ -184,30 +168,6 @@ public sealed class LocationCardinality : SourceSpan
                 head.MatchToken( "of" );
                 expectedMatchCount = TryMatchNumber( ref head, out expectedMatchCountT, 0 );
             }
-        }
-    }
-
-    /// <summary>
-    /// Gets the formatted string (as it can be parsed).
-    /// </summary>
-    /// <returns>The readable (and parsable) string.</returns>
-    public override string ToString()
-    {
-        return _kind switch
-        {
-            LocationKind.Each => _expectedMatchCount == 0 ? "each" : "each " + _expectedMatchCount,
-            LocationKind.All => _expectedMatchCount == 0 ? "all" : "all " + _expectedMatchCount,
-            LocationKind.Single => "single",
-            _ => FirstOrLast( _kind is LocationKind.First, _offset, _expectedMatchCount )
-        };
-
-        static string FirstOrLast( bool first, int offset, int expectedMatchCount )
-        {
-            string s = first
-                        ? (offset == 0 ? "first" : "first +" + offset)
-                        : (offset == 0 ? "last" : "last -" + offset);
-            if( expectedMatchCount > 0 ) s += " out of " + expectedMatchCount;
-            return s;
         }
     }
 

@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CK.Transform.Core;
@@ -17,35 +18,21 @@ namespace CK.Transform.Core;
 ///     <item>When the span specification not specified, it defaults to the matched tokens.</item>
 /// </list>
 /// </summary>
-public sealed class SpanMatcher : SourceSpan, IFilteredTokenEnumerableProvider
+public sealed partial class SpanMatcher : SourceSpan
 {
     readonly Token? _languageName;
-    readonly RawString? _spanSpec;
-    readonly RawString? _pattern;
-    readonly IFilteredTokenEnumerableProvider _provider;
-
+    readonly IFilteredTokenEnumerableProvider? _spanSpec;
+    readonly IFilteredTokenEnumerableProvider? _pattern;
+    
     SpanMatcher( int beg, int end,
                  Token? languageName,
-                 RawString? spanSpec,
-                 RawString? pattern,
-                 IFilteredTokenEnumerableProvider provider )
+                 IFilteredTokenEnumerableProvider? spanSpec,
+                 IFilteredTokenEnumerableProvider? pattern )
         : base( beg, end )
     {
         _languageName = languageName;
         _spanSpec = spanSpec;
         _pattern = pattern;
-        _provider = provider;
-    }
-
-    /// <summary>
-    /// Relays to <see cref="Provider"/>.
-    /// </summary>
-    /// <returns>The fitered token projection.</returns>
-    public Func<TokenFilterBuilderContext,
-                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
-    {
-        return _provider.GetFilteredTokenProjection();
     }
 
     internal static SpanMatcher? Match( TransformerHost.Language language, ref TokenizerHead head )
@@ -88,33 +75,47 @@ public sealed class SpanMatcher : SourceSpan, IFilteredTokenEnumerableProvider
         {
             return null;
         }
-        object m = matcherLanguage.TransformStatementAnalyzer.CreateFilteredTokenProvider( language, tokenSpec, tokenPattern );
-        if( m is string error )
+        IFilteredTokenEnumerableProvider? specProvider = null;
+        if( tokenSpec != null )
         {
-            head.AppendError( error, -1 );
-            return null;
+            object m = matcherLanguage.TransformStatementAnalyzer.ParseSpanSpec( language, tokenSpec );
+            if( m is not string and not IFilteredTokenEnumerableProvider )
+            {
+                Throw.InvalidOperationException( $"{matcherLanguage.TransformStatementAnalyzer.GetType().FullName}.ParseSpanSpec() must return a string or a IFilteredTokenEnumerableProvider." );
+            }
+            if( m is string error )
+            {
+                head.AppendError( error, -1 );
+                return null;
+            }
+            specProvider = Unsafe.As<IFilteredTokenEnumerableProvider>( m );
+        }
+        IFilteredTokenEnumerableProvider? patternProvider = null;
+        if( tokenPattern != null )
+        {
+            object m = matcherLanguage.TransformStatementAnalyzer.ParsePattern( language, tokenPattern, specProvider );
+            if( m is not string and not IFilteredTokenEnumerableProvider )
+            {
+                Throw.InvalidOperationException( $"{matcherLanguage.TransformStatementAnalyzer.GetType().FullName}.ParsePattern() must return a string or a IFilteredTokenEnumerableProvider." );
+            }
+            if( m is string error )
+            {
+                head.AppendError( error, -1 );
+                return null;
+            }
+            patternProvider = Unsafe.As < IFilteredTokenEnumerableProvider>( m );
         }
         return head.AddSpan( new SpanMatcher( begSpan,
                                               head.LastTokenIndex + 1,
                                               languageName,
-                                              tokenSpec,
-                                              tokenPattern,
-                                              (IFilteredTokenEnumerableProvider)m ) );
+                                              specProvider,
+                                              patternProvider ) );
     }
 
-    public override string ToString()
-    {
-        if( _languageName == null )
-        {
-            if( _pattern == null ) return _spanSpec!.ToString();
-            if( _spanSpec == null ) return _pattern!.ToString();
-        }
-        return WholeString();
-    }
 
-    string WholeString()
+    public StringBuilder Describe( StringBuilder b, bool parsable )
     {
-        var b = new StringBuilder();
+        if( !parsable ) b.Append( "SpanMatcher[ " );
         if( _languageName != null )
         {
             b.Append( '.' ).Append( _languageName.Text );
@@ -122,13 +123,17 @@ public sealed class SpanMatcher : SourceSpan, IFilteredTokenEnumerableProvider
         if( _spanSpec != null )
         {
             if( b.Length > 0 ) b.Append( ' ' );
-            b.Append( _spanSpec.Text );
+            _spanSpec.Describe( b, parsable );
         }
         if( _pattern != null )
         {
             if( b.Length > 0 ) b.Append( ' ' );
-            b.Append( _pattern.Text );
+            _pattern.Describe( b, parsable );
         }
-        return b.ToString();
+        if( !parsable ) b.Append( " ]" );
+        return b;
     }
+
+    public override string ToString() => Describe( new StringBuilder(), parsable: true ).ToString();
+
 }

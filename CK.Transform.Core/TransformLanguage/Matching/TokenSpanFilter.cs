@@ -3,19 +3,25 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 
 namespace CK.Transform.Core;
 
 /// <summary>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
+public sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
 {
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
 
+    /// <summary>
+    /// Initializes a new token span filter.
+    /// </summary>
+    /// <param name="tokens">The tokens. Must not be empty or default.</param>
     public TokenSpanFilter( ImmutableArray<Token> tokens )
     {
+        Throw.CheckArgument( !tokens.IsDefaultOrEmpty );
         _tokens = tokens;
         _prefixTable = BuildPrefixTable( tokens );
     }
@@ -39,9 +45,15 @@ sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
         return prefixTable;
     }
 
-    public Func<TokenFilterBuilderContext,
-                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+    /// <summary>
+    /// Collects this provider.
+    /// </summary>
+    /// <param name="collector">The provider collector.</param>
+    public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+
+    Func<ITokenFilterBuilderContext,
+         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
+         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
     {
         return new TokenMatcher( _tokens, _prefixTable ).GetTokens;
     }
@@ -85,7 +97,7 @@ sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
             return null;
         }
 
-        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( TokenFilterBuilderContext c,
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( ITokenFilterBuilderContext c,
                                                                              IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
             foreach( var each in inner )
@@ -115,4 +127,12 @@ sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
 
         }
     }
+
+    public StringBuilder Describe( StringBuilder b, bool parsable )
+    {
+        if( !parsable ) b.Append( "[Pattern] " );
+        return _tokens.WriteCompact( b );
+    }
+
+    public override string ToString() => Describe( new StringBuilder(), parsable: true ).ToString();
 }

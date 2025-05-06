@@ -9,7 +9,7 @@ namespace CK.Transform.Core;
 /// Captures "before ...", "after ...", "between ... and ..." where ... is a mono-location
 /// <see cref="LocationMatcher"/> (not "each" or "all").
 /// </summary>
-public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
+public sealed partial class RangeLocation : SourceSpan
 {
     Token _kind;
 
@@ -20,7 +20,7 @@ public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
     }
 
     /// <summary>
-    /// Checks that <see cref="First"/> and <see cref="Second"/> (it is a "between ... and ...") are valid.
+    /// Checks that <see cref="First"/> and <see cref="Second"/> (if it is a "between ... and ...") are valid.
     /// </summary>
     /// <returns>True if this span is valid.</returns>
     [MemberNotNullWhen( true, nameof( First ) )]
@@ -46,12 +46,12 @@ public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
     /// <summary>
     /// Gets whether this is a "after ..." range.
     /// </summary>
-    public bool IsAfter => _kind.Text.Span.Equals( "after", StringComparison.Ordinal );
+    public bool IsAfter => _kind.TextEquals( "after" );
 
     /// <summary>
     /// Gets whether this is a "before ..." range.
     /// </summary>
-    public bool IsBefore => _kind.Text.Span.Equals( "before", StringComparison.Ordinal );
+    public bool IsBefore => _kind.TextEquals( "before" );
 
     /// <summary>
     /// Gets whether this is a "between ... and ..." range.
@@ -82,6 +82,7 @@ public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
             first = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
             if( first == null )
             {
+                Throw.DebugAssert( head.FirstParseError != null );
                 return null;
             }
         }
@@ -94,6 +95,7 @@ public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
             }
             if( first == null || second == null )
             {
+                Throw.DebugAssert( head.FirstParseError != null );
                 return null;
             }
         }
@@ -104,8 +106,4 @@ public sealed class RangeLocation : SourceSpan, IFilteredTokenEnumerableProvider
         return head.AddSpan( new RangeLocation( begSpan, head.LastTokenIndex + 1, kind ) );
     }
 
-    public Func<TokenFilterBuilderContext, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>, IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
-    {
-        throw new NotImplementedException();
-    }
 }

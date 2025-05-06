@@ -56,17 +56,13 @@ public sealed class InScopeStatement : TransformStatement
         {
             foreach( var s in Scopes )
             {
-                ++scopeCount;
-                editor.PushTokenFilter( s.Scope! );
+                scopeCount += editor.PushTokenFilter( s.Scope! );
             }
             Body.Apply( monitor, editor );
         }
         finally
         {
-            while( --scopeCount >= 0 )
-            {
-                editor.PopTokenFilter();
-            }
+            editor.PopTokenFilter( scopeCount );
         }
     }
 

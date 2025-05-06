@@ -43,20 +43,15 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
         var singleSpanType = tokenSpec.InnerText.Span.Trim();
         if( singleSpanType.Length > 0 )
         {
-            var sType = singleSpanType switch
+            return singleSpanType switch
             {
-                "import" => typeof( ImportStatement ),
-                "class" => typeof( ClassDefinition ),
-                "braces" => typeof( BraceSpan ),
-                _ => null
+                "braces" => new SingleSpanTypeFilter( typeof( BraceSpan ), "{braces}" ),
+                "class" => new SingleSpanTypeFilter( typeof( ClassDefinition ), "{class}" ),
+                "import" => new SingleSpanTypeFilter( typeof( ImportStatement ), "{import}" ),
+                _ => $"""
+                     Invalid span type '{singleSpanType}'. Allowed are "braces", "class", "import".
+                     """
             };
-            if( sType == null )
-            {
-                return $"""
-                            Invalid span type '{singleSpanType}'. Allowed are "braces", "class", , "import".
-                            """;
-            }
-            return new SingleSpanTypeFilter( sType );
         }
         return IFilteredTokenEnumerableProvider.Empty;
     }

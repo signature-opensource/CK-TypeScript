@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 
 namespace CK.Transform.Core;
@@ -18,6 +19,53 @@ namespace CK.Transform.Core;
 public interface IFilteredTokenEnumerableProvider
 {
     /// <summary>
+    /// Provides a function that projects a <c>IEnumerable&lt;IEnumerable&lt;IEnumerable&lt;SourceToken&gt;&gt;&gt;</c>.
+    /// <para>
+    /// The function is free to use lazy evaluation (and should do so whenever possible): the monitor provided to the
+    /// function can be captured by closure and used to signal errors.
+    /// </para>
+    /// <para>
+    /// Implementations may use <see cref="EmptyFilteredTokens"/> when no projection must be returned but
+    /// note that this method is called only on providers that have been collected by <see cref="Activate"/>.
+    /// It should typically be implemented explicitely.
+    /// </para>
+    /// </summary>
+    /// <returns>The projection.</returns>
+    Func<ITokenFilterBuilderContext,
+         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
+         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection();
+
+    /// <summary>
+    /// Activates this provider by collecting itself or collecting subordinate providers if this provider
+    /// is a combined provider. Not collecting any provider is not an error, and there is no reason for
+    /// this method to fail.
+    /// <para>
+    /// <see cref="Empty"/> is ignored and can be safely collected. 
+    /// </para>
+    /// </summary>
+    /// <param name="collector">The collector.</param>
+    void Activate( Action<IFilteredTokenEnumerableProvider> collector );
+
+    /// <summary>
+    /// Writes a description of the provider: usually the source code
+    /// that defines this provider.
+    /// </summary>
+    /// <param name="b">The builder.</param>
+    /// <param name="parsable">
+    /// True to obtain a parsable string if possible.
+    /// False contains type decorations. 
+    /// </param>
+    /// <returns></returns>
+    StringBuilder Describe( StringBuilder b, bool parsable );
+
+    /// <summary>
+    /// Typically implemented by calling <see cref="Describe(StringBuilder, bool)"/> with parsable
+    /// set to true.
+    /// </summary>
+    /// <returns>A readable string.</returns>
+    string ToString();
+
+    /// <summary>
     /// Empty singleton for <c>IEnumerable&lt;IEnumerable&lt;IEnumerable&lt;SourceToken&gt;&gt;&gt;</c>.
     /// </summary>
     public static readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> EmptyFilteredTokens = [[[]]];
@@ -25,67 +73,42 @@ public interface IFilteredTokenEnumerableProvider
     /// <summary>
     /// No-op projection that <see cref="GetFilteredTokenProjection"/> can use.
     /// </summary>
-    public static readonly Func<TokenFilterBuilderContext,
+    public static readonly Func<ITokenFilterBuilderContext,
                                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
                                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> EmptyProjection = ( m, e ) => e;
 
-    sealed class EmptyProvider : IFilteredTokenEnumerableProvider
+    /// <summary>
+    /// Singleton empty provider. It activates no provider and returns a <see cref="EmptyProjection"/>
+    /// </summary>
+    public static readonly IFilteredTokenEnumerableProvider Empty = new EmptyProvider();
+
+    private sealed class EmptyProvider : IFilteredTokenEnumerableProvider
     {
-        public Func<TokenFilterBuilderContext,
+        public void Activate( Action<IFilteredTokenEnumerableProvider> collector )
+        {
+        }
+
+        public Func<ITokenFilterBuilderContext,
                     IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
                     IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
         {
             return EmptyProjection;
         }
+
+        public StringBuilder Describe( StringBuilder b, bool parsable ) => b.Append( "(empty)" );
+
+        public override string ToString() => "(empty)";
     }
 
     /// <summary>
-    /// Singleton empty provider that returns a <see cref="EmptyProjection"/>
+    /// Centralized helper for <see cref="GetFilteredTokenProjection"/> implementations of combined providers.
     /// </summary>
-    public static readonly IFilteredTokenEnumerableProvider Empty = new EmptyProvider();
-
-
-    /// <summary>
-    /// Provides a function that projects a <c>IEnumerable&lt;IEnumerable&lt;IEnumerable&lt;SourceToken&gt;&gt;&gt;</c>.
-    /// <para>
-    /// The function is free to use lazy evaluation (and should do so whenever possible): the monitor provided to the
-    /// function can be captured by closure and used to signal errors.
-    /// </para>
-    /// <para>
-    /// Implementations should use <see cref="EmptyFilteredTokens"/> when no projection must be returned.
-    /// </para>
-    /// </summary>
-    /// <returns>The projection.</returns>
-    Func<TokenFilterBuilderContext,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection();
-
-
-    /// <summary>
-    /// Combines two provivers into one, first applying the <paramref name="inner"/> and then <paramref name="outer"/>.
-    /// </summary>
-    /// <param name="outer">The last provider to consider (can be null or <see cref="Empty"/>).</param>
-    /// <param name="inner">The first provider to consider (can be null or <see cref="Empty"/>).</param>
-    /// <returns>A combined provider or <paramref name="outer"/>, <paramref name="inner"/> or <see cref="Empty"/>.</returns>
-    public static IFilteredTokenEnumerableProvider Combine( IFilteredTokenEnumerableProvider? outer, IFilteredTokenEnumerableProvider? inner )
+    /// <exception cref="NotSupportedException">Always throws a NotSupportedException.</exception>
+    /// <returns>Never returns. Here to enable a simple use with return.</returns>
+    public static Func<ITokenFilterBuilderContext,
+                       IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
+                       IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> ThrowOnCombinedProvider()
     {
-        if( outer == null || outer == Empty ) return inner ?? Empty;
-        if( inner == null || inner == Empty ) return outer;
-        return new Combined( outer, inner );
+        throw new NotSupportedException( "Never called as this is a combined provider." );
     }
-
-    sealed record class Combined( IFilteredTokenEnumerableProvider outer, IFilteredTokenEnumerableProvider inner ) : IFilteredTokenEnumerableProvider
-    {
-        public Func<TokenFilterBuilderContext,
-                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection() => Combine;
-
-        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Combine( TokenFilterBuilderContext c,
-                                                                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> input )
-        {
-            return outer.GetFilteredTokenProjection()( c, inner.GetFilteredTokenProjection()( c, input ) );
-        }
-    }
-
-
 }

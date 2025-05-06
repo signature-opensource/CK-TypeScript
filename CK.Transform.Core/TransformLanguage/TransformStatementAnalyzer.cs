@@ -74,33 +74,13 @@ public abstract class TransformStatementAnalyzer
     }
 
     /// <summary>
-    /// Must parse the <paramref name="tokenSpec"/> and/or <paramref name="tokenPattern"/> (at least one is not null).
-    /// and build a <see cref="IFilteredTokenEnumerableProvider"/> or an error string.
+    /// Must parse the <paramref name="tokenSpec"/> build a <see cref="IFilteredTokenEnumerableProvider"/>
+    /// or an error string.
     /// </summary>
+    /// <param name="language">The current language.</param>
     /// <param name="tokenSpec">The pre-parsed token specification if any.</param>
-    /// <param name="tokenPattern">The pre-parsed token pattern if any.</param>
     /// <returns>The provider or an error string.</returns>
-    internal protected virtual object CreateFilteredTokenProvider( TransformerHost.Language language,
-                                                                   RawString? tokenSpec,
-                                                                   RawString? tokenPattern )
-    {
-        Throw.DebugAssert( tokenSpec != null || tokenPattern != null );
-        var s = tokenSpec != null ? ParseSpanSpec( language, tokenSpec ) : IFilteredTokenEnumerableProvider.Empty;
-        if( s is string spanError ) return spanError;
-        Throw.CheckState( "ParseSpanSpec must return a IFilteredTokenEnumerableProvider or an error string",
-                           s is IFilteredTokenEnumerableProvider );
-        var spanSpec = Unsafe.As<IFilteredTokenEnumerableProvider>( s );
-
-        var p = tokenPattern != null ? ParsePattern( language, tokenPattern, spanSpec ) : IFilteredTokenEnumerableProvider.Empty;
-        if( p is string tokenError ) return tokenError;
-        Throw.CheckState( "ParsePattern must return a IFilteredTokenEnumerableProvider or an error string",
-                           p is IFilteredTokenEnumerableProvider );
-        var pattern = Unsafe.As<IFilteredTokenEnumerableProvider>( p );
-
-        return IFilteredTokenEnumerableProvider.Combine( spanSpec, pattern! );
-    }
-
-    protected virtual object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
+    internal protected virtual object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
     {
         var content = tokenSpec.InnerText.Span.Trim();
         if( content.Length > 0 )
@@ -112,7 +92,19 @@ public abstract class TransformStatementAnalyzer
         return IFilteredTokenEnumerableProvider.EmptyProjection;
     }
 
-    protected virtual object ParsePattern( TransformerHost.Language language, RawString tokenPattern, IFilteredTokenEnumerableProvider spanSpec )
+
+    /// <summary>
+    /// Must parse the <paramref name="tokenPattern"/> build a <see cref="IFilteredTokenEnumerableProvider"/>
+    /// or an error string.
+    /// </summary>
+    /// <param name="language">The current language.</param>
+    /// <param name="tokenPattern">The pre-parsed token pattern if any.</param>
+    /// <param name="spanSpec">
+    /// Optional associated {span specification} that appears before in a <see cref="SpanMatcher"/>.
+    /// For some languages the span specification can contain hint for the pattern parsing and/or matching.
+    /// </param>
+    /// <returns>The provider or an error string.</returns>
+    internal protected virtual object ParsePattern( TransformerHost.Language language, RawString tokenPattern, IFilteredTokenEnumerableProvider? spanSpec )
     {
         var head = new TokenizerHead( tokenPattern.InnerText, language.TargetAnalyzer );
         ParseStandardMatchPattern( ref head );
@@ -128,6 +120,17 @@ public abstract class TransformStatementAnalyzer
         return new TokenSpanFilter( head.Tokens.ToImmutableArray() );
     }
 
+    /// <summary>
+    /// Extension point: the default implementation of <see cref="ParsePattern"/>
+    /// calls calls this on a <paramref name="head"/> that uses the <see cref="TransformerHost.Language.TargetAnalyzer"/>
+    /// as the <see cref="ITokenizerHeadBehavior"/>.
+    /// <para>
+    /// At this level, this simply <see cref="TokenizerHead.AcceptLowLevelToken(TokenType)"/> on all tokens
+    /// until <see cref="TokenizerHead.EndOfInput"/> is reached and emits an error on unknown token (when
+    /// <see cref="TokenizerHead.LowLevelTokenType"/> is <see cref="TokenType.None"/>).
+    /// </para>
+    /// </summary>
+    /// <param name="head">The head bound to the <see cref="ITargetAnalyzer"/>.</param>
     protected virtual void ParseStandardMatchPattern( ref TokenizerHead head )
     {
         while( head.EndOfInput == null )
