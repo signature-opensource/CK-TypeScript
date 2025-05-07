@@ -43,13 +43,13 @@ public sealed class InjectIntoStatement : TransformStatement
         // The finder will find the first match (or none) and will error on duplicate
         // or injection point. We need the same state machine for all the tokens and
         // process all the tokens (to detect duplicate errors).
-        var finder = new InjectionPointFinder( Target, Content );
         using var e = editor.OpenEditor();
         bool noTokenAtAll = true;
         foreach( var each in e.Tokens )
         {
             foreach( var range in each )
             {
+                var finder = new InjectionPointFinder( Target, Content );
                 SourceToken modified = default;
                 int tokenCount = 0;
                 foreach( var sourceToken in range )

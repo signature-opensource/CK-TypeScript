@@ -96,6 +96,11 @@ public abstract class TransformStatementAnalyzer
     /// <summary>
     /// Must parse the <paramref name="tokenPattern"/> build a <see cref="IFilteredTokenEnumerableProvider"/>
     /// or an error string.
+    /// <para>
+    /// At this level, the target language analyzer is used to create a head on the <see cref="RawString.InnerText"/>,
+    /// <see cref="ParseStandardMatchPattern"/> is called and a <see cref="TokenSpanFilter"/> is created on the
+    /// parsed tokens (or an error string if no tokens have been parsed).
+    /// </para>
     /// </summary>
     /// <param name="language">The current language.</param>
     /// <param name="tokenPattern">The pre-parsed token pattern if any.</param>
@@ -107,10 +112,10 @@ public abstract class TransformStatementAnalyzer
     internal protected virtual object ParsePattern( TransformerHost.Language language, RawString tokenPattern, IFilteredTokenEnumerableProvider? spanSpec )
     {
         var head = new TokenizerHead( tokenPattern.InnerText, language.TargetAnalyzer );
-        ParseStandardMatchPattern( ref head );
-        if( head.FirstParseError != null )
+        ParseStandardMatchPattern( language, ref head );
+        if( head.FirstError != null )
         {
-            return head.FirstParseError.ErrorMessage;
+            return head.FirstError.ErrorMessage;
         }
         Throw.DebugAssert( !head.IsCondemned );
         if( head.Tokens.Count == 0 )
@@ -122,16 +127,21 @@ public abstract class TransformStatementAnalyzer
 
     /// <summary>
     /// Extension point: the default implementation of <see cref="ParsePattern"/>
-    /// calls calls this on a <paramref name="head"/> that uses the <see cref="TransformerHost.Language.TargetAnalyzer"/>
+    /// calls this on a <paramref name="head"/> that uses the <see cref="TransformerHost.Language.TargetAnalyzer"/>
     /// as the <see cref="ITokenizerHeadBehavior"/>.
     /// <para>
     /// At this level, this simply <see cref="TokenizerHead.AcceptLowLevelToken(TokenType)"/> on all tokens
     /// until <see cref="TokenizerHead.EndOfInput"/> is reached and emits an error on unknown token (when
     /// <see cref="TokenizerHead.LowLevelTokenType"/> is <see cref="TokenType.None"/>).
     /// </para>
+    /// <para>
+    /// If the target language uses a <see cref="ITokenScanner"/>, parsing must be defferred to it: complex tokens
+    /// will be parsed instead of only the ones obtained from the low-level tokens.
+    /// </para>
     /// </summary>
-    /// <param name="head">The head bound to the <see cref="ITargetAnalyzer"/>.</param>
-    protected virtual void ParseStandardMatchPattern( ref TokenizerHead head )
+    /// <param name="language">The current language.</param>
+    /// <param name="head">The head on the pattern to analyze, bound to the <see cref="ITargetAnalyzer"/>.</param>
+    protected virtual void ParseStandardMatchPattern( TransformerHost.Language language, ref TokenizerHead head )
     {
         while( head.EndOfInput == null )
         {

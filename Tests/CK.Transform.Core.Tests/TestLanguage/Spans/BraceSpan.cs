@@ -1,16 +1,15 @@
 using CK.Core;
-using CK.Transform.Core;
 
-namespace CK.TypeScript.Transform;
+namespace CK.Transform.Core.Tests.Helpers;
 
-public sealed class BraceSpan : SourceSpan
+sealed class BraceSpan : SourceSpan
 {
-    BraceSpan( int beg, int end )
+    public BraceSpan( int beg, int end )
         : base( beg, end )
     {
     }
 
-    internal static BraceSpan? Match( TypeScriptAnalyzer.Scanner scanner, ref TokenizerHead head, Token openBraceToken )
+    internal static BraceSpan? Match( TestAnalyzer.Scanner scanner, ref TokenizerHead head, Token openBraceToken )
     {
         Throw.DebugAssert( !head.IsCondemned
                            && head.LastToken == openBraceToken
@@ -18,7 +17,7 @@ public sealed class BraceSpan : SourceSpan
                            && scanner.BraceDepth > 0 );
         int begSpan = head.LastTokenIndex;
         int expectedDepth = scanner.BraceDepth - 1;
-        for( ; ; )
+        for(; ; )
         {
             var t = scanner.GetNextToken( ref head );
             if( scanner.BraceDepth == expectedDepth )
@@ -37,5 +36,4 @@ public sealed class BraceSpan : SourceSpan
             }
         }
     }
-
 }

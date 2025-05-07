@@ -8,11 +8,6 @@ namespace CK.Transform.Core;
 public interface IAnalyzer
 {
     /// <summary>
-    /// Gets the language name handled by this analyzer.
-    /// </summary>
-    string LanguageName { get; }
-
-    /// <summary>
     /// Parses a text.
     /// </summary>
     /// <param name="text">The text to parse.</param>

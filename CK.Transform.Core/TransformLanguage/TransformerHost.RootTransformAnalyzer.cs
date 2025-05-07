@@ -1,8 +1,6 @@
 using CK.Core;
 using System;
-using System.Collections.Immutable;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Transform.Core;
 
@@ -13,7 +11,7 @@ public sealed partial class TransformerHost
     /// Transform language analyzer itself. This handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'.
     /// Statements analysis is delegated to the <see cref="Language.TransformStatementAnalyzer"/>.
     /// </summary>
-    sealed class RootTransformAnalyzer : Tokenizer, ITopLevelAnalyzer<TransformerFunction>, ITargetAnalyzer
+    sealed class RootTransformAnalyzer : Analyzer, ITopLevelAnalyzer<TransformerFunction>, ITargetAnalyzer
     {
         readonly TransformerHost _host;
 
@@ -21,11 +19,6 @@ public sealed partial class TransformerHost
         {
             _host = host;
         }
-
-        /// <summary>
-        /// Gets the "Transform" language name.
-        /// </summary>
-        public string LanguageName => _transformLanguageName;
 
         /// <summary>
         /// Transform languages accept <see cref="TriviaHeadExtensions.AcceptCLikeRecursiveStarComment(ref TriviaHead)"/>
@@ -47,7 +40,10 @@ public sealed partial class TransformerHost
         /// </summary>
         /// <param name="head">The head.</param>
         /// <returns>The low level token.</returns>
-        protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head ) => TransformLanguage.MinimalTransformerLowLevelTokenize( head );
+        protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
+        {
+            return TransformLanguage.MinimalTransformerLowLevelTokenize( head );
+        }
 
         /// <summary>
         /// Handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'
@@ -57,7 +53,7 @@ public sealed partial class TransformerHost
         /// </para>
         /// </summary>
         /// <param name="head">The head.</param>
-        protected override void Tokenize( ref TokenizerHead head )
+        protected override void DoParse( ref TokenizerHead head )
         {
             int begText = head.RemainingTextIndex;
             if( !head.TryAcceptToken( "create", out _ ) )
@@ -126,13 +122,6 @@ public sealed partial class TransformerHost
                                                    functionName?.ToString(),
                                                    target ) );
         }
-
-        public AnalyzerResult Parse( ReadOnlyMemory<char> text )
-        {
-            Reset( text );
-            return Parse();
-        }
-
     }
 
 }

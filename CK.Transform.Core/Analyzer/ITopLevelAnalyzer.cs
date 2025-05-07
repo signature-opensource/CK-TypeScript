@@ -3,7 +3,7 @@ using System;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A top-level analyzer must be able to recognize top-level : a call
+/// A top-level analyzer must be able to recognize top-level constructs: a call
 /// to <see cref="IAnalyzer.Parse(ReadOnlyMemory{char})"/> can return
 /// a result with at most one span that is a <see cref="TopLevelSourceSpan"/>
 /// and stops the parsing after it: <see cref="AnalyzerResult.RemainingText"/>

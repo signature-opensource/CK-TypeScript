@@ -30,14 +30,9 @@ namespace CK.Html.Transform;
 ///     </item>
 /// </list>
 /// </summary>
-public sealed partial class HtmlAnalyzer : Tokenizer, ITargetAnalyzer
+public sealed partial class HtmlAnalyzer : Analyzer, ITargetAnalyzer
 {
     readonly List<(Token Start, int Index)> _startingTokens;
-
-    /// <summary>
-    /// Get the "Html" language.
-    /// </summary>
-    public string LanguageName => HtmlLanguage._languageName;
 
     /// <summary>
     /// Initialize a new HtmlAnalyzer.
@@ -48,16 +43,8 @@ public sealed partial class HtmlAnalyzer : Tokenizer, ITargetAnalyzer
         _startingTokens = new List<(Token,int)>();
     }
 
-    /// <inheritdoc/>
-    protected override void Reset( ReadOnlyMemory<char> text )
-    {
-        HandleWhiteSpaceTrivias = false;
-        _startingTokens.Clear();
-        base.Reset( text );
-    }
-
     /// <summary>
-    /// When <see cref="Tokenizer.HandleWhiteSpaceTrivias"/> is false, this
+    /// When <see cref="Analyzer.HandleWhiteSpaceTrivias"/> is false, this
     /// calls <see cref="TriviaHeadExtensions.AcceptXmlComment(ref TriviaHead, bool)"/>
     /// and <see cref="TriviaHeadExtensions.AcceptXmlCDATA(ref TriviaHead)"/>.
     /// </summary>
@@ -215,14 +202,14 @@ public sealed partial class HtmlAnalyzer : Tokenizer, ITargetAnalyzer
     }
 
     /// <inheritdoc/>
-    public AnalyzerResult Parse( ReadOnlyMemory<char> text )
+    public override AnalyzerResult Parse( ReadOnlyMemory<char> text )
     {
-        Reset( text );
-        return Parse();
+        _startingTokens.Clear();
+        return base.Parse( text );
     }
 
     /// <inheritdoc/>
-    protected override void Tokenize( ref TokenizerHead head )
+    protected override void DoParse( ref TokenizerHead head )
     {
         for( ; ; )
         {

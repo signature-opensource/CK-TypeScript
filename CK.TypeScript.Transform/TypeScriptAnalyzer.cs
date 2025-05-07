@@ -8,32 +8,16 @@ namespace CK.TypeScript.Transform;
 /// <summary>
 /// TypeScript language anlayzer.
 /// </summary>
-public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
+public sealed partial class TypeScriptAnalyzer : Analyzer, ITargetAnalyzer
 {
-    // Keeps the brace depth of interpolated starts.
-    readonly Stack<int> _classes;
-
-    /// <summary>
-    /// Gets "TypeScript".
-    /// </summary>
-    public string LanguageName => TypeScriptLanguage._languageName;
+    readonly Scanner _scanner;
 
     /// <summary>
     /// Initialize a new TypeScriptAnalyzer.
     /// </summary>
     public TypeScriptAnalyzer()
     {
-        _interpolated = new Stack<int>();
-        _classes = new Stack<int>();
-    }
-
-    /// <inheritdoc/>
-    protected override void Reset( ReadOnlyMemory<char> text )
-    {
-        _braceDepth = 0;
-        _interpolated.Clear();
-        _classes.Clear();
-        base.Reset( text );
+        _scanner = new Scanner();
     }
 
     /// <summary>
@@ -48,18 +32,18 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
     }
 
     /// <inheritdoc/>
-    public AnalyzerResult Parse( ReadOnlyMemory<char> text )
+    public override AnalyzerResult Parse( ReadOnlyMemory<char> text )
     {
-        Reset( text );
-        return Parse();
+        _scanner.Reset();
+        return base.Parse( text );
     }
 
     /// <inheritdoc/>
-    protected override void Tokenize( ref TokenizerHead head )
+    protected override void DoParse( ref TokenizerHead head )
     {
         for(; ; )
         {
-            var t = GetNextToken( ref head );
+            var t = _scanner.GetNextToken( ref head );
             if( t.TokenType is TokenType.EndOfInput )
             {
                 return;
@@ -71,38 +55,7 @@ public sealed partial class TypeScriptAnalyzer : Tokenizer, ITargetAnalyzer
             }
             if( t is not TokenError )
             {
-                HandleKnownSpan( ref head, t );
-            }
-        }
-    }
-
-    internal SourceSpan? HandleKnownSpan( ref TokenizerHead head, Token t )
-    {
-        Throw.DebugAssert( t is not TokenError );
-        if( t.TextEquals( "class" ) )
-        {
-            return ClassDefinition.Match( this, ref head, t );
-        }
-        if( t.TokenType is TokenType.OpenBrace )
-        {
-            return BraceSpan.Match( this, ref head, t );
-        }
-        return null;
-    }
-
-    internal bool SkipTo( ref TokenizerHead head, TokenType type )
-    {
-        for( ; ; )
-        {
-            var t = GetNextToken( ref head );
-            if( t.TokenType is TokenType.EndOfInput )
-            {
-                head.AppendError( $"Missing '{type}' token.", 0 );
-                return false;
-            }
-            if( t.TokenType == type )
-            {
-                return true;
+                _scanner.HandleKnownSpan( ref head, t );
             }
         }
     }

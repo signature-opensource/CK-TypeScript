@@ -112,12 +112,6 @@ public enum TokenType
     EndOfInput = ErrorClassBit | GenericMissingToken,
 
     /// <summary>
-    /// Beginning of the input has only the most significant bit set.
-    /// The fact that this is clasified as an error is meaningless.
-    /// </summary>
-    BegOfInput = ErrorClassBit | GenericAny,
-
-    /// <summary>
     /// An unterminated string: the end-of-input has been reached before the closing "quote" (whatever it is).
     /// </summary>
     ErrorUnterminatedString = ErrorClassBit | GenericString,
@@ -258,5 +252,8 @@ public enum TokenType
     SlashEquals = BasicTokenType.SlashEquals,
 
     Tilde = BasicTokenType.Tilde,
+
+    Underscore = BasicTokenType.Underscore,
+
 }
 

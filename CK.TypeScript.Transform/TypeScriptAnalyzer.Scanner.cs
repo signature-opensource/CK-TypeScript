@@ -6,104 +6,8 @@ using System.Collections.Generic;
 
 namespace CK.TypeScript.Transform;
 
-sealed partial class TypeScriptAnalyzer // Scanner
+sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
 {
-    static ReadOnlySpan<char> _regexFlags => "dgimsuvy";
-    static ReadOnlySpan<char> _binaryDigits => "01_";
-    static ReadOnlySpan<char> _octalDigits => "01234567_";
-    static ReadOnlySpan<char> _decimalDigits => "0123456789_";
-    static ReadOnlySpan<char> _hexadecimalDigits => "0123456789ABSDEFabcdef_";
-
-    static SearchValues<char> _binary = SearchValues.Create( _binaryDigits );
-    static SearchValues<char> _octal = SearchValues.Create( _octalDigits );
-    static SearchValues<char> _decimal = SearchValues.Create( _decimalDigits );
-    static SearchValues<char> _hexadecimal = SearchValues.Create( _hexadecimalDigits );
-
-    // Keeps the brace depth of interpolated starts.
-    readonly Stack<int> _interpolated;
-    int _braceDepth;
-
-    /// <summary>
-    /// Gets the current brace depth.
-    /// </summary>
-    public int BraceDepth => _braceDepth;
-
-    /// <summary>
-    /// Handles interpolated strings and /regular expressions/.
-    /// <see cref="LowLevelTokenize(ReadOnlySpan{char})"/> handles numbers, "string", 'string', identifiers (including @identifier and #identifier)
-    /// and `start of interpolated string` (GenericInterpolatedStringStart).
-    /// </summary>
-    /// <param name="head">The head.</param>
-    /// <returns>Next token.</returns>
-    internal Token GetNextToken( ref TokenizerHead head )
-    {
-        switch( head.LowLevelTokenType )
-        {
-            case TokenType.GenericInterpolatedStringStart:
-                head.AcceptLowLevelToken();
-                _interpolated.Push( ++_braceDepth );
-                break;
-            case TokenType.OpenBrace:
-                head.AcceptLowLevelToken();
-                ++_braceDepth;
-                break;
-            case TokenType.CloseBrace:
-                if( _interpolated.TryPeek( out var depth ) && depth == _braceDepth )
-                {
-                    var t = ReadInterpolatedSegment( head.Head, false );
-                    if( t.TokenType == TokenType.GenericInterpolatedStringEnd )
-                    {
-                        --_braceDepth;
-                    }
-                    _interpolated.Pop();
-                    head.AcceptToken( t.TokenType, t.Length );
-                }
-                else
-                {
-                    if( --_braceDepth < 0 )
-                    {
-                        head.AppendUnexpectedToken();
-                    }
-                    head.AcceptLowLevelToken();
-                }
-                break;
-            case TokenType.Slash or TokenType.SlashEquals:
-                if( head.LastToken != null && head.LastToken.TokenType is not TokenType.GenericIdentifier
-                                                                      and not TokenType.GenericNumber
-                                                                      and not TokenType.GenericString
-                                                                      and not TokenType.GenericRegularExpression
-                                                                      and not TokenType.PlusPlus
-                                                                      and not TokenType.MinusMinus
-                                                                      and not TokenType.CloseParen
-                                                                      and not TokenType.CloseBrace
-                                                                      and not TokenType.CloseBracket )
-                {
-                    var t = TryParseRegex( new LowLevelToken( head.LowLevelTokenType, head.LowLevelTokenText.Length ), head.Head );
-                    head.AcceptToken( t.TokenType, t.Length );
-                }
-                else
-                {
-                    head.AcceptLowLevelToken();
-                }
-                break;
-            case TokenType.None when (head.EndOfInput is not null):
-            case TokenType.EndOfInput:
-                Throw.DebugAssert( head.EndOfInput is not null );
-                if( _braceDepth > 0 )
-                {
-                    head.AppendError( "Missing closing '}'.", 0 );
-                }
-                return head.EndOfInput;
-            case TokenType.None when (head.EndOfInput is null):
-                head.AppendError( "Unrecognized token.", 1 );
-                break;
-            default:
-                head.AcceptLowLevelToken();
-                break;
-        }
-        return head.LastToken;
-    }
-
     /// <inheritdoc/>
     protected override LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
     {
@@ -116,9 +20,15 @@ sealed partial class TypeScriptAnalyzer // Scanner
         t = LowLevelToken.GetBasicTokenType( head );
         if( t.TokenType != TokenType.None )
         {
+            // $ and _ are valid identifiers characters.
+            if( t.TokenType is TokenType.Dollar or TokenType.Underscore )
+            {
+                return ReadIdentifier( head, 0 );
+            }
             if( head.Length > 1 )
             {
-                // Handle private #field and @decorator as identifiers.
+                // Handle private #field and @decorator as identifiers but
+                // allow # and @ to only start an identifier.
                 if( t.TokenType is TokenType.Hash or TokenType.AtSign )
                 {
                     return ReadIdentifier( head, 1 );
@@ -150,6 +60,7 @@ sealed partial class TypeScriptAnalyzer // Scanner
         {
             static void EatDigits( ref int iS, ReadOnlySpan<char> head, SearchValues<char> set )
             {
+                Throw.DebugAssert( iS < head.Length );
                 while( ++iS < head.Length && set.Contains( head[iS] ) ) ;
             }
 
@@ -160,33 +71,35 @@ sealed partial class TypeScriptAnalyzer // Scanner
             if( c == '0' )
             {
                 iS = 1;
-                if( head.Length > 1 )
+                if( head.Length == 1 )
                 {
-                    c = head[1];
-                    if( c == 'x' || c == 'X' )
-                    {
-                        // We don't care if there is no digit.
-                        EatDigits( ref iS, head, _hexadecimal );
-                        // BigInt notation.
-                        if( iS < head.Length && head[iS] == 'n' ) ++iS;
-                        return new LowLevelToken( TokenType.GenericNumber, iS );
-                    }
-                    if( c == 'b' || c == 'B' )
-                    {
-                        // We don't care if there is no digit.
-                        EatDigits( ref iS, head, _binary );
-                        // BigInt notation.
-                        if( iS < head.Length && head[iS] == 'n' ) ++iS;
-                        return new LowLevelToken( TokenType.GenericNumber, iS );
-                    }
-                    if( c == 'o' || c == 'O' )
-                    {
-                        // We don't care if there is no digit.
-                        EatDigits( ref iS, head, _octal );
-                        // BigInt notation.
-                        if( iS < head.Length && head[iS] == 'n' ) ++iS;
-                        return new LowLevelToken( TokenType.GenericNumber, iS );
-                    }
+                    return new LowLevelToken( TokenType.GenericNumber, iS );
+                }
+                Throw.DebugAssert( head.Length > 1 );
+                c = head[1];
+                if( c == 'x' || c == 'X' )
+                {
+                    // We don't care if there is no digit.
+                    EatDigits( ref iS, head, _hexadecimal );
+                    // BigInt notation.
+                    if( iS < head.Length && head[iS] == 'n' ) ++iS;
+                    return new LowLevelToken( TokenType.GenericNumber, iS );
+                }
+                if( c == 'b' || c == 'B' )
+                {
+                    // We don't care if there is no digit.
+                    EatDigits( ref iS, head, _binary );
+                    // BigInt notation.
+                    if( iS < head.Length && head[iS] == 'n' ) ++iS;
+                    return new LowLevelToken( TokenType.GenericNumber, iS );
+                }
+                if( c == 'o' || c == 'O' )
+                {
+                    // We don't care if there is no digit.
+                    EatDigits( ref iS, head, _octal );
+                    // BigInt notation.
+                    if( iS < head.Length && head[iS] == 'n' ) ++iS;
+                    return new LowLevelToken( TokenType.GenericNumber, iS );
                 }
                 EatDigits( ref iS, head, _decimal );
             }
@@ -203,35 +116,157 @@ sealed partial class TypeScriptAnalyzer // Scanner
                 if( !char.IsAsciiDigit( c ) ) return default;
                 EatDigits( ref iS, head, _decimal );
             }
-            if( iS < head.Length )
+            if( iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
+            Throw.DebugAssert( iS < head.Length );
+
+            c = head[iS];
+            if( !isFloat && c == '.' )
             {
+                EatDigits( ref iS, head, _decimal );
+                if( iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
                 c = head[iS];
-                if( !isFloat && c == '.' )
-                {
-                    EatDigits( ref iS, head, _decimal );
-                    if( iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
-                    c = head[iS];
-                    isFloat = true;
-                }
-                if( c == 'e' || c == 'E' )
-                {
-                    if( ++iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
-                    c = head[iS];
-                    if( c != '+' && c != '-' && !char.IsAsciiDigit( c ) ) return new LowLevelToken( TokenType.GenericNumber, iS );
-                    EatDigits( ref iS, head, _decimal );
-                    isFloat = true;
-                }
+                isFloat = true;
             }
-            if( !isFloat )
+            if( c == 'e' || c == 'E' )
             {
                 if( ++iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
-                // BigInt notation.
-                if( head[iS] == 'n' ) ++iS;
+                c = head[iS];
+                if( c != '+' && c != '-' && !char.IsAsciiDigit( c ) ) return new LowLevelToken( TokenType.GenericNumber, iS );
+                EatDigits( ref iS, head, _decimal );
+                if( iS == head.Length ) return new LowLevelToken( TokenType.GenericNumber, iS );
+                c = head[iS];
+                isFloat = true;
             }
+            // BigInt notation.
+            if( !isFloat && c == 'n' ) ++iS;
             return new LowLevelToken( TokenType.GenericNumber, iS );
         }
 
     }
+
+    internal sealed class Scanner : ITokenScanner
+    {
+        // Keeps the brace depth of interpolated starts.
+        readonly Stack<int> _interpolated;
+        int _braceDepth;
+
+        public Scanner()
+        {
+            _interpolated = new Stack<int>();
+        }
+
+        public void Reset()
+        {
+            _braceDepth = 0;
+            _interpolated.Clear();
+        }
+
+        /// <summary>
+        /// Gets the current brace depth.
+        /// </summary>
+        public int BraceDepth => _braceDepth;
+
+        internal SourceSpan? HandleKnownSpan( ref TokenizerHead head, Token t )
+        {
+            Throw.DebugAssert( t is not TokenError );
+            if( t.TextEquals( "class" ) )
+            {
+                return ClassDefinition.Match( this, ref head, t );
+            }
+            if( t.TokenType is TokenType.OpenBrace )
+            {
+                return BraceSpan.Match( this, ref head, t );
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Handles interpolated strings and /regular expressions/.
+        /// <see cref="LowLevelTokenize(ReadOnlySpan{char})"/> handles numbers, "string", 'string', identifiers (including @identifier and #identifier)
+        /// and `start of interpolated string` (GenericInterpolatedStringStart).
+        /// </summary>
+        /// <param name="head">The head.</param>
+        /// <returns>Next token.</returns>
+        public Token GetNextToken( ref TokenizerHead head )
+        {
+            switch( head.LowLevelTokenType )
+            {
+                case TokenType.GenericInterpolatedStringStart:
+                    head.AcceptLowLevelToken();
+                    _interpolated.Push( ++_braceDepth );
+                    break;
+                case TokenType.OpenBrace:
+                    head.AcceptLowLevelToken();
+                    ++_braceDepth;
+                    break;
+                case TokenType.CloseBrace:
+                    if( _interpolated.TryPeek( out var depth ) && depth == _braceDepth )
+                    {
+                        var t = ReadInterpolatedSegment( head.Head, false );
+                        if( t.TokenType == TokenType.GenericInterpolatedStringEnd )
+                        {
+                            --_braceDepth;
+                        }
+                        _interpolated.Pop();
+                        head.AcceptToken( t.TokenType, t.Length );
+                    }
+                    else
+                    {
+                        if( --_braceDepth < 0 )
+                        {
+                            head.AppendUnexpectedToken();
+                        }
+                        head.AcceptLowLevelToken();
+                    }
+                    break;
+                case TokenType.Slash or TokenType.SlashEquals:
+                    if( head.LastToken != null && head.LastToken.TokenType is not TokenType.GenericIdentifier
+                                                                          and not TokenType.GenericNumber
+                                                                          and not TokenType.GenericString
+                                                                          and not TokenType.GenericRegularExpression
+                                                                          and not TokenType.PlusPlus
+                                                                          and not TokenType.MinusMinus
+                                                                          and not TokenType.CloseParen
+                                                                          and not TokenType.CloseBrace
+                                                                          and not TokenType.CloseBracket )
+                    {
+                        var t = TryParseRegex( new LowLevelToken( head.LowLevelTokenType, head.LowLevelTokenText.Length ), head.Head );
+                        head.AcceptToken( t.TokenType, t.Length );
+                    }
+                    else
+                    {
+                        head.AcceptLowLevelToken();
+                    }
+                    break;
+                case TokenType.None when(head.EndOfInput is not null):
+                case TokenType.EndOfInput:
+                    Throw.DebugAssert( head.EndOfInput is not null );
+                    if( _braceDepth > 0 )
+                    {
+                        head.AppendError( "Missing closing '}'.", 0 );
+                    }
+                    return head.EndOfInput;
+                case TokenType.None when(head.EndOfInput is null):
+                    head.AppendError( "Unrecognized token.", 1 );
+                    break;
+                default:
+                    head.AcceptLowLevelToken();
+                    break;
+            }
+            return head.LastToken;
+        }
+    }
+
+    static ReadOnlySpan<char> _regexFlags => "dgimsuvy";
+    static ReadOnlySpan<char> _binaryDigits => "01_";
+    static ReadOnlySpan<char> _octalDigits => "01234567_";
+    static ReadOnlySpan<char> _decimalDigits => "0123456789_";
+    static ReadOnlySpan<char> _hexadecimalDigits => "0123456789ABSDEFabcdef_";
+
+    static SearchValues<char> _binary = SearchValues.Create( _binaryDigits );
+    static SearchValues<char> _octal = SearchValues.Create( _octalDigits );
+    static SearchValues<char> _decimal = SearchValues.Create( _decimalDigits );
+    static SearchValues<char> _hexadecimal = SearchValues.Create( _hexadecimalDigits );
 
     static LowLevelToken ReadInterpolatedSegment( ReadOnlySpan<char> head, bool start )
     {

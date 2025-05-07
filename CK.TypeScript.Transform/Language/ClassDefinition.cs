@@ -15,20 +15,20 @@ public sealed class ClassDefinition : SourceSpan
     }
 
 
-    internal static ClassDefinition? Match( TypeScriptAnalyzer analyzer, ref TokenizerHead head, Token classToken )
+    internal static ClassDefinition? Match( TypeScriptAnalyzer.Scanner scanner, ref TokenizerHead head, Token classToken )
     {
         Throw.DebugAssert( !head.IsCondemned && head.LastToken == classToken && classToken.TextEquals( "class" ) );
         int begSpan = FindBegSpan( ref head );
-        if( !analyzer.SkipTo( ref head, TokenType.OpenBrace ) )
+        if( !scanner.SkipTo( ref head, TokenType.OpenBrace ) )
         {
             return null;
         }
         Throw.DebugAssert( head.LastToken?.TokenType is TokenType.OpenBrace );
-        if( BraceSpan.Match( analyzer, ref head, head.LastToken ) == null )
+        if( BraceSpan.Match( scanner, ref head, head.LastToken ) == null )
         {
             return null;
         }
-        return new ClassDefinition( begSpan, head.LastTokenIndex + 1 );
+        return head.AddSpan( new ClassDefinition( begSpan, head.LastTokenIndex + 1 ) );
 
         static int FindBegSpan( ref TokenizerHead head )
         {

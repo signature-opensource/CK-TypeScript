@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Transform.Core;
 
@@ -26,12 +27,14 @@ public ref struct TokenizerHead
     ReadOnlySpan<char> _headBeforeTrivia;
     ImmutableArray<Trivia> _leadingTrivias;
     TokenError? _endOfInput;
-    TokenError? _firstParseError;
+    TokenError? _firstError;
     ReadOnlySpan<char> _lowLevelTokenText;
     TokenType _lowLevelTokenType;
     int _remainingTextIndex;
     int _inlineErrorCount;
     int _lastTokenIndex;
+    // Only used to detect missing head forward error.
+    int _lastErrorTextIndex;
 
     /// <summary>
     /// Initializes a new head on a text.
@@ -53,6 +56,7 @@ public ref struct TokenizerHead
         _triviaBuilder = triviaBuilder ?? ImmutableArray.CreateBuilder<Trivia>();
         _spans = new SourceSpanRoot();
         _lastTokenIndex = -1;
+        _lastErrorTextIndex = -1;
         InitializeLeadingTrivia();
     }
 
@@ -76,6 +80,9 @@ public ref struct TokenizerHead
         _spans = new SourceSpanRoot();
         _tokens = new List<Token>();
         _lastTokenIndex = tokenCountOffset;
+        // The subHead LastToken is out of reach by design.
+        // Any last error index is ignored.
+        _lastErrorTextIndex = -1;
         InitializeLeadingTrivia();
     }
 
@@ -147,7 +154,7 @@ public ref struct TokenizerHead
         _tokens.AddRange( subTokens );
         _lastTokenIndex += subTokens.Length;
         _lastToken = subHead._lastToken;
-        _firstParseError ??= subHead._firstParseError;
+        _firstError ??= subHead._firstError;
         _inlineErrorCount += subHead._inlineErrorCount;
         if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
         subHead._tokens = null;
@@ -156,7 +163,7 @@ public ref struct TokenizerHead
         subHead._remainingTextIndex = 0;
         subHead._lastToken = null;
         subHead._lastTokenIndex = -1;
-        subHead._firstParseError = null;
+        subHead._firstError = null;
         subHead._inlineErrorCount = 0;
 
         InitializeLeadingTrivia();
@@ -228,7 +235,7 @@ public ref struct TokenizerHead
     /// <summary>
     /// Gets the first error that has been added to the <see cref="Tokens"/>.
     /// </summary>
-    public readonly TokenError? FirstParseError => _firstParseError;
+    public readonly TokenError? FirstError => _firstError;
 
     /// <summary>
     /// Gets the low-level token type.
@@ -376,8 +383,23 @@ public ref struct TokenizerHead
         _tokens.Add( t );
         ++_lastTokenIndex;
         _lastToken = t;
-        _firstParseError ??= t;
+        _firstError ??= t;
         _inlineErrorCount++;
+        if( _lastErrorTextIndex == _remainingTextIndex )
+        {
+            Throw.DebugAssert( _tokens.Count > 0 && _tokens[^1] is TokenError );
+            var lastError = (TokenError)_tokens[^1];
+            if( lastError.TokenType == t.TokenType && lastError.ErrorMessage == t.ErrorMessage )
+            {
+                Throw.CKException( $"""
+                                    Unforwarded head on error at:
+                                    {_head}
+                                    Recurring error is:
+                                    {t.ErrorMessage} (TokenTypeError: {t.TokenType})
+                                    """ );
+            }
+        }
+        _lastErrorTextIndex = _remainingTextIndex;
         Throw.DebugAssert( LastToken != null );
         return t;
     }
@@ -407,7 +429,11 @@ public ref struct TokenizerHead
         _lastToken = t;
         if( t is TokenError error )
         {
-            _firstParseError ??= error;
+            // _lastErrorTextIndex is set to -1 here:
+            // the token length is positive (PreAcceptToken checks this):
+            // tokens have been forwarded.
+            _lastErrorTextIndex = -1;
+            _firstError ??= error;
             ++_inlineErrorCount;
         }
         Throw.DebugAssert( LastToken != null );
@@ -423,6 +449,7 @@ public ref struct TokenizerHead
     public T Accept<T>( T token ) where T : Token
     {
         Throw.CheckNotNullArgument( token );
+        Throw.CheckArgument( token.Text.Length > 0 );
         Throw.CheckState( LastToken != token && !IsCondemned );
         _tokens.Add( token );
         ++_lastTokenIndex;
@@ -430,7 +457,12 @@ public ref struct TokenizerHead
         Throw.DebugAssert( LastToken != null );
         if( token is TokenError error )
         {
-            _firstParseError ??= error;
+            // _lastErrorTextIndex is set to -1 here:
+            // PreAcceptToken that MUST have been called has checked this.
+            // Here we have at least Throw.CheckArgument( token.Text.Length > 0 ):
+            // tokens have been forwarded.
+            _lastErrorTextIndex = -1;
+            _firstError ??= error;
             ++_inlineErrorCount;
         }
         return token;

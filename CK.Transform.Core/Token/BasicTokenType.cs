@@ -258,5 +258,6 @@ public enum BasicTokenType : byte
     SlashEquals,
 
     Tilde,
+    Underscore,
 }
 

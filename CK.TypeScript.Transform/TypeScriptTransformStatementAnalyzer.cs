@@ -55,4 +55,5 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
         }
         return IFilteredTokenEnumerableProvider.Empty;
     }
+
 }

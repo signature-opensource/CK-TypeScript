@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// An injection point is a <see cref="Token"/>.
+/// An injection point is a <see cref="Token"/> (its type is <see cref="TokenType.GenericIdentifier"/>).
 /// Its <see cref="Name"/> is defined between angle brackets: &lt;Name&gt;.
 /// <para>
 /// This token is not handled as a low-level token (by the <see cref="ILowLevelTokenizer"/>).

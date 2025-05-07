@@ -43,7 +43,7 @@ public sealed partial class TransformerHost
         }
 
 
-        protected override void ParseStandardMatchPattern( ref TokenizerHead head )
+        protected override void ParseStandardMatchPattern( Language language, ref TokenizerHead head )
         {
             while( head.EndOfInput == null )
             {
@@ -51,15 +51,23 @@ public sealed partial class TransformerHost
                 {
                     if( InjectionPoint.Match( ref head ) == null )
                     {
-                        Throw.DebugAssert( head.FirstParseError != null );
+                        Throw.DebugAssert( head.FirstError != null );
                         break;
                     }
                 }
-                else if( head.LowLevelTokenType is TokenType.DoubleQuote or TokenType.OpenBrace )
+                else if( head.LowLevelTokenType is TokenType.DoubleQuote )
                 {
                     if( RawString.Match( ref head ) == null )
                     {
-                        Throw.DebugAssert( head.FirstParseError != null );
+                        Throw.DebugAssert( head.FirstError != null );
+                        break;
+                    }
+                }
+                else if( head.LowLevelTokenType is TokenType.OpenBrace )
+                {
+                    if( RawString.MatchAnyQuote( ref head, '{', '}' ) == null )
+                    {
+                        Throw.DebugAssert( head.FirstError != null );
                         break;
                     }
                 }

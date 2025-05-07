@@ -82,7 +82,7 @@ public sealed partial class RangeLocation : SourceSpan
             first = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
             if( first == null )
             {
-                Throw.DebugAssert( head.FirstParseError != null );
+                Throw.DebugAssert( head.FirstError != null );
                 return null;
             }
         }
@@ -95,7 +95,7 @@ public sealed partial class RangeLocation : SourceSpan
             }
             if( first == null || second == null )
             {
-                Throw.DebugAssert( head.FirstParseError != null );
+                Throw.DebugAssert( head.FirstError != null );
                 return null;
             }
         }

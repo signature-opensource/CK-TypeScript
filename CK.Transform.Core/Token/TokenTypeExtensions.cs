@@ -22,7 +22,7 @@ public static class TokenTypeExtensions
         /* 8*/ (byte)TokenType.AtSign,0,0,0,0,0,0,0,
         /* 9*/ 0,0,0,0,0,0,0,0,
         /*10*/ 0,0,0,0,0,0,0,0,
-        /*11*/ 0,0,0,(byte)TokenType.OpenBracket,(byte)TokenType.BackSlash,(byte)TokenType.CloseBracket,(byte)TokenType.Caret,0,
+        /*11*/ 0,0,0,(byte)TokenType.OpenBracket,(byte)TokenType.BackSlash,(byte)TokenType.CloseBracket,(byte)TokenType.Caret,(byte)TokenType.Underscore,
         /*12*/ (byte)TokenType.BackTick,0,0,0,0,0,0,0,
         /*13*/ 0,0,0,0,0,0,0,0,
         /*14*/ 0,0,0,0,0,0,0,0,
@@ -67,6 +67,7 @@ public static class TokenTypeExtensions
         Throw.DebugAssert( _basicTokenType['\''] == (byte)TokenType.SingleQuote );
         Throw.DebugAssert( _basicTokenType['/'] == (byte)TokenType.Slash );
         Throw.DebugAssert( _basicTokenType['~'] == (byte)TokenType.Tilde );
+        Throw.DebugAssert( _basicTokenType['_'] == (byte)TokenType.Underscore );
     }
 
     /// <summary>
