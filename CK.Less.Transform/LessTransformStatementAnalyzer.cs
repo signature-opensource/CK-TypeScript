@@ -7,7 +7,7 @@ sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
 {
     readonly LessAnalyzer _lessAnalyzer;
 
-    internal LessTransformStatementAnalyzer( TransformLanguage language, LessAnalyzer lessAnalyzer )
+    internal LessTransformStatementAnalyzer( TransformerHost.Language language, LessAnalyzer lessAnalyzer )
         : base( language )
     {
         _lessAnalyzer = lessAnalyzer;

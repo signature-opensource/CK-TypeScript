@@ -11,8 +11,8 @@ public sealed class TestLanguage : TransformLanguage
     {
     }
 
-    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
+    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost.Language language )
     {
-        throw new NotImplementedException();
+        return (new TestTransformAnalyzer( language ), new TestAnalyzer());
     }
 }

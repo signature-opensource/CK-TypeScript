@@ -18,10 +18,10 @@ public sealed class LessLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
+    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost.Language language )
     {
         var a = new LessAnalyzer();
-        var t = new LessTransformStatementAnalyzer( this, a );
+        var t = new LessTransformStatementAnalyzer( language, a );
         return (t, a);
     }
 }

@@ -7,7 +7,7 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
 {
     readonly TypeScriptAnalyzer _tsAnalyzer;
 
-    internal TypeScriptTransformStatementAnalyzer( TransformLanguage language, TypeScriptAnalyzer tsAnalyzer )
+    internal TypeScriptTransformStatementAnalyzer( TransformerHost.Language language, TypeScriptAnalyzer tsAnalyzer )
         : base( language )
     {
         _tsAnalyzer = tsAnalyzer;

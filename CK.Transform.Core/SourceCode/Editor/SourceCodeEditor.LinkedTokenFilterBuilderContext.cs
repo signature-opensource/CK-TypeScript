@@ -76,7 +76,6 @@ public sealed partial class SourceCodeEditor
             return null;
         }
 
-
         void FillSyntaxPath( Span<LinkedTokenFilterBuilderContext> path )
         {
             Throw.DebugAssert( path.Length == _index );

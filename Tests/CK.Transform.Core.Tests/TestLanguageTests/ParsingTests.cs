@@ -23,5 +23,4 @@ public class ParsingTests
                 Expected BUG! (TokenTypeError: GenericError)
                 """ );
     }
-
 }

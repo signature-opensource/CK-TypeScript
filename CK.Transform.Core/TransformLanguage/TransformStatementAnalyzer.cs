@@ -11,27 +11,27 @@ namespace CK.Transform.Core;
 /// Base class for transform language analyzer: this parses <see cref="TransformStatement"/>.
 /// <para>
 /// Specializations can implement <see cref="ILowLevelTokenizer"/> if the transform language
-/// requires more than the default low level tokens handled by <see cref="TransformerHost.RootTransformAnalyzer.LowLevelTokenize(ReadOnlySpan{char})"/>
+/// requires more than the default low level tokens handled by <see cref="TransformerHost.ThisLanguageAnalyzer.LowLevelTokenize(ReadOnlySpan{char})"/>
 /// (that are <see cref="TransformLanguage.MinimalTransformerLowLevelTokenize(ReadOnlySpan{char})"/>).
 /// </para>
 /// </summary>
 public abstract class TransformStatementAnalyzer
 {
-    readonly TransformLanguage _language;
+    readonly TransformerHost.Language _language;
 
     /// <summary>
     /// Initializes a new analyzer.
     /// </summary>
     /// <param name="language">The transform language.</param>
-    protected TransformStatementAnalyzer( TransformLanguage language )
+    protected TransformStatementAnalyzer( TransformerHost.Language language )
     {
         _language = language;
     }
 
     /// <summary>
-    /// Gets the <see cref="TransformLanguage"/>.
+    /// Gets the <see cref="TransformerHost.Language"/>.
     /// </summary>
-    public TransformLanguage Language => _language;
+    public TransformerHost.Language Language => _language;
 
     /// <summary>
     /// Must implement transform specific statement parsing.
@@ -76,9 +76,13 @@ public abstract class TransformStatementAnalyzer
     /// <summary>
     /// Must parse the <paramref name="tokenSpec"/> build a <see cref="IFilteredTokenEnumerableProvider"/>
     /// or an error string.
+    /// <para>
+    /// At this level, this returns the "Invalid span specification '...'. Language {...} does't handle any span specification."
+    /// error. 
+    /// </para>
     /// </summary>
     /// <param name="language">The current language.</param>
-    /// <param name="tokenSpec">The pre-parsed token specification if any.</param>
+    /// <param name="tokenSpec">The pre-parsed token specification.</param>
     /// <returns>The provider or an error string.</returns>
     internal protected virtual object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
     {
@@ -86,7 +90,7 @@ public abstract class TransformStatementAnalyzer
         if( content.Length > 0 )
         {
             return $"""
-                Invalid span spectification '{content}'. Language {language.LanguageName} does't handle any span specification.
+                Invalid span specification '{content}'. Language {language.LanguageName} does't handle any span specification.
                 """;
         }
         return IFilteredTokenEnumerableProvider.EmptyProjection;
@@ -103,14 +107,15 @@ public abstract class TransformStatementAnalyzer
     /// </para>
     /// </summary>
     /// <param name="language">The current language.</param>
-    /// <param name="tokenPattern">The pre-parsed token pattern if any.</param>
+    /// <param name="tokenPattern">The pre-parsed token pattern.</param>
     /// <param name="spanSpec">
-    /// Optional associated {span specification} that appears before in a <see cref="SpanMatcher"/>.
-    /// For some languages the span specification can contain hint for the pattern parsing and/or matching.
+    /// Optional associated {span specification} that appears before the pattern in a <see cref="SpanMatcher"/>.
+    /// For some languages the span specification can contain hints for the pattern parsing and/or matching.
     /// </param>
     /// <returns>The provider or an error string.</returns>
     internal protected virtual object ParsePattern( TransformerHost.Language language, RawString tokenPattern, IFilteredTokenEnumerableProvider? spanSpec )
     {
+        Throw.DebugAssert( language == _language );
         var head = new TokenizerHead( tokenPattern.InnerText, language.TargetAnalyzer );
         ParseStandardMatchPattern( language, ref head );
         if( head.FirstError != null )

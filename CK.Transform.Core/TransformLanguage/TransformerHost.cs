@@ -18,7 +18,7 @@ namespace CK.Transform.Core;
 public sealed partial class TransformerHost
 {
     readonly List<Language> _languages;
-    readonly RootTransformLanguage _transformLanguage;
+    readonly ThisTransformLanguage _transformLanguage;
     bool _isLockedLanguages;
 
     /// <summary>
@@ -67,17 +67,17 @@ public sealed partial class TransformerHost
             _host = host;
             _language = language;
             _index = index;
-            (_transformStatementAnalyzer,_targetAnalyzer) = language.CreateAnalyzers( host );
+            (_transformStatementAnalyzer,_targetAnalyzer) = language.CreateAnalyzers( this );
         }
     }
 
     /// <summary>
-    /// Initializes a host with at least the <see cref="RootTransformLanguage"/>.
+    /// Initializes a host with at least the <see cref="ThisTransformLanguage"/>.
     /// </summary>
     /// <param name="languages">Languages to register.</param>
     public TransformerHost( params IEnumerable<TransformLanguage> languages )
     {
-        _transformLanguage = new RootTransformLanguage( this );
+        _transformLanguage = new ThisTransformLanguage( this );
         _languages = new List<Language>();
         bool hasTransfomer = false;
         foreach( var language in languages )

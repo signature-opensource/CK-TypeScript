@@ -86,9 +86,9 @@ public abstract class TransformLanguage
     /// to delegate some pattern matches to the target language analyzer.
     /// </para>
     /// </summary>
-    /// <param name="host">The transformer host.</param>
+    /// <param name="language">The language for which the analyzers are created.</param>
     /// <returns>The transform statement and target language analyzer.</returns>
-    internal protected abstract (TransformStatementAnalyzer,ITargetAnalyzer) CreateAnalyzers( TransformerHost host );
+    internal protected abstract (TransformStatementAnalyzer,ITargetAnalyzer) CreateAnalyzers( TransformerHost.Language language );
 
     /// <summary>
     /// Supports the minimal token set required by any transform language:

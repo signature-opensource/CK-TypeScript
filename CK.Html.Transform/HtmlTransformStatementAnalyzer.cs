@@ -7,7 +7,7 @@ sealed class HtmlTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
 {
     readonly HtmlAnalyzer _htmlAnalyzer;
 
-    internal HtmlTransformStatementAnalyzer( TransformLanguage language, HtmlAnalyzer tsAnalyzer )
+    internal HtmlTransformStatementAnalyzer( TransformerHost.Language language, HtmlAnalyzer tsAnalyzer )
         : base( language )
     {
         _htmlAnalyzer = tsAnalyzer;

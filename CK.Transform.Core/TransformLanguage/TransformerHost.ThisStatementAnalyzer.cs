@@ -10,7 +10,7 @@ public sealed partial class TransformerHost
 {
     sealed class ThisStatementAnalyzer : TransformStatementAnalyzer
     {
-        public ThisStatementAnalyzer( TransformLanguage language )
+        public ThisStatementAnalyzer( Language language )
             : base( language )
         {
         }

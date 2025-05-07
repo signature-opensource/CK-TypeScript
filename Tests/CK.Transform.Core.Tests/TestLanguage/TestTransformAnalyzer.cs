@@ -4,7 +4,7 @@ namespace CK.Transform.Core.Tests.Helpers;
 
 sealed class TestTransformAnalyzer : TransformStatementAnalyzer
 {
-    public TestTransformAnalyzer( TransformLanguage language )
+    public TestTransformAnalyzer( TransformerHost.Language language )
         : base( language )
     {
     }

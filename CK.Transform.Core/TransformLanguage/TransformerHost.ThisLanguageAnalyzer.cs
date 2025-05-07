@@ -11,11 +11,11 @@ public sealed partial class TransformerHost
     /// Transform language analyzer itself. This handles the top-level 'create &lt;language&gt; transformer [name] [on &lt;target&gt;] [as] begin ... end'.
     /// Statements analysis is delegated to the <see cref="Language.TransformStatementAnalyzer"/>.
     /// </summary>
-    sealed class RootTransformAnalyzer : Analyzer, ITopLevelAnalyzer<TransformerFunction>, ITargetAnalyzer
+    sealed class ThisLanguageAnalyzer : Analyzer, ITopLevelAnalyzer<TransformerFunction>, ITargetAnalyzer
     {
         readonly TransformerHost _host;
 
-        public RootTransformAnalyzer( TransformerHost host )
+        public ThisLanguageAnalyzer( TransformerHost host )
         {
             _host = host;
         }

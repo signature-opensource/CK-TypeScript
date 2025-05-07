@@ -18,10 +18,10 @@ public sealed class HtmlLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost host )
+    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost.Language language )
     {
         var a = new HtmlAnalyzer();
-        var t = new HtmlTransformStatementAnalyzer( this, a );
+        var t = new HtmlTransformStatementAnalyzer( language, a );
         return (t, a);
     }
 }
