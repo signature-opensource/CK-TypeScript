@@ -3,28 +3,19 @@ using System;
 
 namespace CK.TypeScript.Transform;
 
-sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLevelTokenizer
+sealed class TypeScriptTransformStatementAnalyzer : LanguageTransformAnalyzer, ILowLevelTokenizer
 {
-    readonly TypeScriptAnalyzer _tsAnalyzer;
-
     internal TypeScriptTransformStatementAnalyzer( TransformerHost.Language language, TypeScriptAnalyzer tsAnalyzer )
-        : base( language )
+        : base( language, tsAnalyzer )
     {
-        _tsAnalyzer = tsAnalyzer;
     }
 
-    public LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
-    {
-        // No specific tokens needed currently.
-        return TransformLanguage.MinimalTransformerLowLevelTokenize( head );
-    }
-
-    protected override TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
+    protected override TransformStatement? ParseStatement( ref TokenizerHead head )
     {
         int begStatement = head.LastTokenIndex + 1;
         if( head.TryAcceptToken( "ensure", out _ ) )
         {
-            var subHead = head.CreateSubHead( out var safetyToken, _tsAnalyzer );
+            var subHead = head.CreateSubHead( out var safetyToken, TargetAnalyzer );
             var importToken = subHead.MatchToken( "import" );
             if( importToken is not TokenError )
             {
@@ -35,25 +26,7 @@ sealed class TypeScriptTransformStatementAnalyzer : TransformStatementAnalyzer, 
                         : null;
             }
         }
-        return base.ParseStatement( language, ref head );
-    }
-
-    protected override object ParseSpanSpec( TransformerHost.Language language, RawString tokenSpec )
-    {
-        var singleSpanType = tokenSpec.InnerText.Span.Trim();
-        if( singleSpanType.Length > 0 )
-        {
-            return singleSpanType switch
-            {
-                "braces" => new SingleSpanTypeFilter( typeof( BraceSpan ), "{braces}" ),
-                "class" => new SingleSpanTypeFilter( typeof( ClassDefinition ), "{class}" ),
-                "import" => new SingleSpanTypeFilter( typeof( ImportStatement ), "{import}" ),
-                _ => $"""
-                     Invalid span type '{singleSpanType}'. Allowed are "braces", "class", "import".
-                     """
-            };
-        }
-        return IFilteredTokenEnumerableProvider.Empty;
+        return base.ParseStatement( ref head );
     }
 
 }

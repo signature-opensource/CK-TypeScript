@@ -30,7 +30,7 @@ namespace CK.Html.Transform;
 ///     </item>
 /// </list>
 /// </summary>
-public sealed partial class HtmlAnalyzer : Analyzer, ITargetAnalyzer
+public sealed partial class HtmlAnalyzer : TargetLanguageAnalyzer
 {
     readonly List<(Token Start, int Index)> _startingTokens;
 
@@ -38,7 +38,7 @@ public sealed partial class HtmlAnalyzer : Analyzer, ITargetAnalyzer
     /// Initialize a new HtmlAnalyzer.
     /// </summary>
     public HtmlAnalyzer()
-        : base( handleWhiteSpaceTrivias: false  )
+        : base( HtmlLanguage._languageName, handleWhiteSpaceTrivias: false  )
     {
         _startingTokens = new List<(Token,int)>();
     }
@@ -211,19 +211,10 @@ public sealed partial class HtmlAnalyzer : Analyzer, ITargetAnalyzer
     /// <inheritdoc/>
     protected override void DoParse( ref TokenizerHead head )
     {
-        for( ; ; )
+        while( head.EndOfInput != null )
         {
-            var type = head.LowLevelTokenType;
-            if( type.IsError() )
-            {
-                if( type is not TokenType.EndOfInput and not TokenType.None )
-                {
-                    head.AppendError( "Invalid markup.", 0, type );
-                }
-                return;
-            }
-            var token = head.AcceptLowLevelToken();
-            switch( (int)type )
+            var token = head.AcceptLowLevelTokenOrNone();
+            switch( (int)token.TokenType )
             {
                 case (int)HtmlTokenType.StartingEmptyElement:
                 case (int)HtmlTokenType.StartingVoidElement:
@@ -266,10 +257,13 @@ public sealed partial class HtmlAnalyzer : Analyzer, ITargetAnalyzer
                 //    head.AddSourceSpan( new HtmlElementSpan( head.LastTokenIndex, head.LastTokenIndex + 1 ) );
                 //    break;
                 default:
-                    Throw.DebugAssert( type is TokenType.GenericIdentifier or TokenType.Equals or TokenType.GenericString or TokenType.GreaterThan
-                                            or (TokenType)HtmlTokenType.Text
-                                            or (TokenType)HtmlTokenType.EmptyElement
-                                            or (TokenType)HtmlTokenType.EmptyVoidElement );
+                    Throw.DebugAssert( token.TokenType is TokenType.GenericIdentifier
+                                                       or TokenType.Equals
+                                                       or TokenType.GenericString
+                                                       or TokenType.GreaterThan
+                                                       or (TokenType)HtmlTokenType.Text
+                                                       or (TokenType)HtmlTokenType.EmptyElement
+                                                       or (TokenType)HtmlTokenType.EmptyVoidElement );
                     break;
             }
         }

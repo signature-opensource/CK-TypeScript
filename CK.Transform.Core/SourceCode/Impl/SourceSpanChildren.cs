@@ -1,5 +1,6 @@
 using CK.Core;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
@@ -115,10 +116,6 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
                         last = last._prevSibling;
                         break;
                     }
-                    if( newOne._span.End < newOne._span.End )
-                    {
-                        return false;
-                    }
                 }
                 // newOne covers from c to last.
                 if( last == null )
@@ -139,10 +136,11 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
                     Throw.DebugAssert( _firstChild != c && c._prevSibling != null );
                     newOne._children._firstChild = c;
                     newOne._children._lastChild = _lastChild;
+                    newOne._prevSibling = c._prevSibling;
                     _lastChild = newOne;
                     c._prevSibling._nextSibling = newOne;
                     c._prevSibling = null;
-                    SetParentFrom( c, parent );
+                    SetParentFrom( c, newOne );
                     return true;
                 }
                 Throw.DebugAssert( last._nextSibling != null );
@@ -215,6 +213,28 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         newOne.Children._lastChild = c;
         newOne._parent = parent;
         c._parent = newOne;
+    }
+
+    [Conditional("DEBUG")]
+    internal void CheckInvariants( SourceSpan? parent )
+    {
+        Throw.CheckState( (_firstChild == null) == (_lastChild == null) );
+        if( _firstChild != null )
+        {
+            Throw.DebugAssert( _lastChild != null );
+            Throw.CheckState( _firstChild._prevSibling == null );
+            Throw.CheckState( _lastChild._nextSibling == null );
+            var c = _firstChild;
+            while( c != null )
+            {
+                Throw.CheckState( c._parent == parent );
+                c._children.CheckInvariants( c );
+                var n = c._nextSibling;
+                Throw.CheckState( (n == null) == (c == _lastChild) );
+                Throw.CheckState( n == null || n._prevSibling == c );
+                c = n;
+            }
+        }
     }
 
     internal SourceSpan? GetSpanAt( int index )

@@ -130,7 +130,7 @@ public sealed partial class SourceCodeEditor
                 _language = newLanguage;
             }
             string text = _code.ToString();
-            var r = _language.TargetAnalyzer.TryParse( _monitor, text.AsMemory() );
+            var r = _language.TargetLanguageAnalyzer.TryParse( _monitor, text.AsMemory() );
             if( r == null ) return false;
             r.SourceCode.TransferTo( _code );
             _tokens = _code.InternalTokens;

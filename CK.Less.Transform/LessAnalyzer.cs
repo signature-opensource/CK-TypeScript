@@ -7,8 +7,13 @@ namespace CK.Less.Transform;
 /// <summary>
 /// Analyzer for <see cref="LessLanguage"/>.
 /// </summary>
-public class LessAnalyzer : Analyzer, ITargetAnalyzer
+public class LessAnalyzer : TargetLanguageAnalyzer
 {
+    public LessAnalyzer()
+        : base( LessLanguage._languageName )
+    {
+    }
+
     /// <summary>
     /// Calls <see cref="TriviaHeadExtensions.AcceptCLikeLineComment(ref TriviaHead)"/>
     /// and <see cref="TriviaHeadExtensions.AcceptCLikeStarComment(ref TriviaHead)"/>.
@@ -168,14 +173,10 @@ public class LessAnalyzer : Analyzer, ITargetAnalyzer
     {
         while( head.EndOfInput == null )
         {
-            if( head.LowLevelTokenType is TokenType.None )
-            {
-                head.AppendError( "Unrecognized token.", 1 );
-                return;
-            }
-            var t = head.AcceptLowLevelToken();
+            var t = head.AcceptLowLevelTokenOrNone();
             // Handles @import.
-            if( t.Text.Span.Equals( "@import", StringComparison.Ordinal ) )
+            if( t.TokenType is TokenType.GenericIdentifier
+                && t.Text.Span.Equals( "@import", StringComparison.Ordinal ) )
             {
                 ImportStatement.TryMatch( t, ref head );
             }

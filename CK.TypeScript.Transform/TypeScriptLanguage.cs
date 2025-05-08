@@ -1,4 +1,5 @@
 using CK.Transform.Core;
+using System;
 
 namespace CK.TypeScript.Transform;
 
@@ -18,10 +19,10 @@ public sealed class TypeScriptLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override (TransformStatementAnalyzer, ITargetAnalyzer) CreateAnalyzers( TransformerHost.Language language )
+    protected override LanguageTransformAnalyzer CreateAnalyzer( TransformerHost.Language language )
     {
-        var a = new TypeScriptAnalyzer();
-        var t = new TypeScriptTransformStatementAnalyzer( language, a );
-        return (t, a);
+        return new TypeScriptTransformStatementAnalyzer( language, new TypeScriptAnalyzer() );
     }
+
+
 }

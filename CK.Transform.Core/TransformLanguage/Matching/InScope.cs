@@ -41,17 +41,17 @@ public sealed class InScope : SourceSpan
     public IFilteredTokenEnumerableProvider? Scope => Children.FirstChild as IFilteredTokenEnumerableProvider;
 
 
-    internal static InScope? Match( TransformerHost.Language language, ref TokenizerHead head, Token? inToken )
+    internal static InScope? Match( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token? inToken )
     {
         if( inToken == null && !head.TryAcceptToken( "in", out _ ) )
         {
             return null;
         }
         int begSpan = head.LastTokenIndex;
-        RangeLocation? range = RangeLocation.Match( language, ref head );
+        RangeLocation? range = RangeLocation.Match( analyzer, ref head );
         if( range == null )
         {
-            var matcher = LocationMatcher.Parse( language, ref head );
+            var matcher = LocationMatcher.Parse( analyzer, ref head );
             if( matcher == null ) return null;
         }
         return head.AddSpan( new InScope( begSpan, head.LastTokenIndex + 1 ) );

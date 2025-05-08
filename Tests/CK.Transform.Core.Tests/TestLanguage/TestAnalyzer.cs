@@ -1,20 +1,7 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace CK.Transform.Core.Tests.Helpers;
-
-sealed class TestScanner
-{
-    int _braceDepth;
-    int _bracketDepth;
-
-    internal void Reset()
-    {
-        _braceDepth = 0;
-    }
-}
 
 /// <summary>
 /// Basic analyser for Test language.
@@ -30,11 +17,12 @@ sealed class TestScanner
 /// on it. This is detected and eventually an exception is thrown by the TokenizerHead.
 /// </para>
 /// </summary>
-sealed partial class TestAnalyzer : Analyzer, ITargetAnalyzer
+sealed partial class TestAnalyzer : TargetLanguageAnalyzer
 {
     readonly Scanner _reusableScanner;
 
     public TestAnalyzer()
+        : base( TestLanguage._langageName )
     {
         _reusableScanner = new Scanner();
     }
@@ -131,6 +119,28 @@ sealed partial class TestAnalyzer : Analyzer, ITargetAnalyzer
         c.AcceptCLikeLineComment();
     }
 
-    protected override void DoParse( ref TokenizerHead head ) => _reusableScanner.StandardParse( ref head );
+    protected override void DoParse( ref TokenizerHead head ) => _reusableScanner.Parse( ref head );
 
+    protected override object ParseSpanSpec( RawString tokenSpec )
+    {
+        var singleSpanType = tokenSpec.InnerText.Span.Trim();
+        if( singleSpanType.Length > 0 )
+        {
+            return singleSpanType switch
+            {
+                "braces" => new SingleSpanTypeFilter( typeof( BraceSpan ), "{braces}" ),
+                "brackets" => new SingleSpanTypeFilter( typeof( BracketSpan ), "{brackets}" ),
+                _ => $"""
+                         Invalid span type '{singleSpanType}'. Allowed are "braces", "brackets".
+                         """
+            };
+        }
+        return IFilteredTokenEnumerableProvider.Empty;
+    }
+
+    protected override void ParseStandardMatchPattern( ref TokenizerHead head )
+    {
+        _reusableScanner.Reset();
+        _reusableScanner.TokenOnlyParse( ref head );
+    }
 }

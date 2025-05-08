@@ -46,11 +46,11 @@ public sealed partial class LocationMatcher : SourceSpan
         }
     }
 
-    internal static LocationMatcher? Parse( TransformerHost.Language language, ref TokenizerHead head, bool monoLocationOnly = false )
+    internal static LocationMatcher? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, bool monoLocationOnly = false )
     {
         int begSpan = head.LastTokenIndex + 1;
         var cardinality = LocationCardinality.Match( ref head, monoLocationOnly );
-        var matcher = SpanMatcher.Match( language, ref head );
+        var matcher = SpanMatcher.Match( analyzer, ref head );
         return matcher == null
                 ? null
                 : head.AddSpan( new LocationMatcher( begSpan, head.LastTokenIndex + 1 ) );

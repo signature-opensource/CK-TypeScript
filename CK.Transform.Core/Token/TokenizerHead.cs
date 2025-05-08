@@ -320,7 +320,7 @@ public ref struct TokenizerHead
         _leadingTrivias = _triviaBuilder.DrainToImmutable();
         _head = _head.Slice( c.Length );
         // Resets the current low-level token.
-        _lowLevelTokenType = TokenType.EndOfInput;
+        _lowLevelTokenType = TokenType.None;
         _lowLevelTokenText = default;
         if( c.IsEndOfInput ) SetEndOfInput();
         else InitializeLowLevelToken();
@@ -357,6 +357,10 @@ public ref struct TokenizerHead
         TokenError t;
         if( length < 0 || _endOfInput != null )
         {
+            if( _endOfInput != null )
+            {
+                Throw.CheckArgument( "EndOfInput reached. Parameter 'length' cannot be positive.", length <= 0 );
+            }
             t = new TokenError( errorType, default, errorMessage, p, Trivia.Empty, Trivia.Empty );
         }
         else
@@ -481,7 +485,7 @@ public ref struct TokenizerHead
     [MemberNotNull( nameof( LastToken ), nameof( _lastToken ) )]
     public Token AcceptToken( TokenType type, int tokenLength )
     {
-        Throw.CheckArgument( !type.IsError() && !type.IsTrivia() );
+        Throw.CheckArgument( !type.IsErrorOrNone() && !type.IsTrivia() );
         Throw.CheckState( !IsCondemned );
         PreAcceptToken( tokenLength, out var text, out var leading, out var trailing );
         // Use the internal unchecked constructor as every parameters have been checked.
@@ -494,9 +498,30 @@ public ref struct TokenizerHead
     }
 
     /// <summary>
+    /// Accepts the <see cref="LowLevelTokenText"/> and appends a <see cref="Token"/> with it or
+    /// adds a "Unrecognized character." <see cref="TokenError"/> of 1 char length if <see cref="LowLevelTokenType"/>
+    /// is <see cref="TokenType.None"/>.
+    /// <para>
+    /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
+    /// </summary>
+    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
+    /// <returns>The token.</returns>
+    [MemberNotNull( nameof( LastToken ) )]
+    public Token AcceptLowLevelTokenOrNone()
+    {
+        return _lowLevelTokenType is TokenType.None
+                ? AppendError( "Unrecognized character.", 1 )
+                : AcceptLowLevelToken();
+    }
+
+    /// <summary>
     /// Accepts the <see cref="LowLevelTokenText"/> and appends a <see cref="Token"/> with it.
     /// <para>
     /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
+    /// <para>
+    /// If the <see cref="LowLevelTokenText"/>
     /// </para>
     /// </summary>
     /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
@@ -544,7 +569,7 @@ public ref struct TokenizerHead
     /// <returns>True on success, false otherwise.</returns>
     public bool TryAcceptToken( TokenType type, [NotNullWhen( true )] out Token? result )
     {
-        Throw.DebugAssert( type != TokenType.None && type.IsError() is false );
+        Throw.CheckArgument( type.IsErrorOrNone() is false );
         if( _lowLevelTokenType == type )
         {
             result = AcceptToken( type, _lowLevelTokenText.Length );
@@ -608,7 +633,7 @@ public ref struct TokenizerHead
     /// <param name="errorType">Specific missing error type if required.</param>
     /// <returns>The inlined error.</returns>
     [MemberNotNull( nameof( LastToken ) )]
-    public TokenError AppendUnexpectedToken( TokenType errorType = TokenType.GenericUnexpectedToken )
+    public TokenError AppendUnexpectedToken( TokenType errorType = TokenType.GenericUnexpectedToken|TokenType.ErrorClassBit )
     {
         return AppendError( $"Unexpected token.", _lowLevelTokenText.Length, errorType );
     }
@@ -631,12 +656,13 @@ public ref struct TokenizerHead
     void InitializeLowLevelToken()
     {
         // Initializes the low-level token.
-        var t = _lowLevelTokenizer.LowLevelTokenize( _head );
-        _lowLevelTokenType = t.TokenType;
-        if( t.Length != 0 )
+        var lowLevelToken = _lowLevelTokenizer.LowLevelTokenize( _head );
+        Throw.CheckState( (lowLevelToken.TokenType == TokenType.None && lowLevelToken.Length == 0)
+                           || (lowLevelToken.TokenType != TokenType.None && lowLevelToken.Length > 0) );
+        _lowLevelTokenType = lowLevelToken.TokenType;
+        if( lowLevelToken.Length != 0 )
         {
-            Throw.CheckState( t.Length >= 0 );
-            _lowLevelTokenText = _head.Slice( 0, t.Length );
+            _lowLevelTokenText = _head.Slice( 0, lowLevelToken.Length );
         }
     }
 

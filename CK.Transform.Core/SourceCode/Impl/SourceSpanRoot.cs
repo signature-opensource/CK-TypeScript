@@ -12,6 +12,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
     public SourceSpanRoot()
     {
         _children = new SourceSpanChildren();
+        _children.CheckInvariants( null );
     }
 
     /// <summary>
@@ -24,6 +25,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
         {
             Throw.ArgumentException( nameof( newOne ), $"Invalid new '{newOne}'." );
         }
+        _children.CheckInvariants( null );
     }
 
     /// <summary>
@@ -40,6 +42,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
         {
             Throw.ArgumentException( nameof( newOne ), $"Invalid new '{newOne}'." );
         }
+        _children.CheckInvariants( null );
     }
 
     /// <summary>
@@ -53,8 +56,10 @@ sealed class SourceSpanRoot : ISourceSpanRoot
         if( _children.TryAdd( null, newOne ) )
         {
             newOne._root = this;
+            _children.CheckInvariants( null );
             return true;
         }
+        _children.CheckInvariants( null );
         return false;
     }
 
@@ -79,6 +84,9 @@ sealed class SourceSpanRoot : ISourceSpanRoot
     {
         Throw.DebugAssert( "Not called if useless.", _children.HasChildren );
         Throw.DebugAssert( "Supported Transfer is only an Append.", target._children.CoveringSpan.End <= _children.CoveringSpan.Beg );
+
+        _children.CheckInvariants( null );
+
         _children.SetRoot( target );
         if( target._children.HasChildren )
         {
@@ -93,13 +101,21 @@ sealed class SourceSpanRoot : ISourceSpanRoot
         }
         _children._firstChild = null;
         _children._lastChild = null;
+
+        _children.CheckInvariants( null );
     }
 
-    internal void OnInsertTokens( int index, int count, bool insertBefore ) => _children.OnInsertTokens( index, count, insertBefore );
+    internal void OnInsertTokens( int index, int count, bool insertBefore )
+    {
+        _children.CheckInvariants( null );
+        _children.OnInsertTokens( index, count, insertBefore );
+        _children.CheckInvariants( null );
+    }
 
     internal void OnRemoveTokens( int index, int delta )
     {
         Throw.DebugAssert( index >= 0 && delta > 0 );
+        _children.CheckInvariants( null );
         List<SourceSpan>? toRemove = null;
         _children.OnRemoveTokens( new TokenSpan( index, index + delta ), ref toRemove );
         if( toRemove != null )
@@ -109,5 +125,6 @@ sealed class SourceSpanRoot : ISourceSpanRoot
                 s.Detach( withChildren: true );
             }
         }
+        _children.CheckInvariants( null );
     }
 }

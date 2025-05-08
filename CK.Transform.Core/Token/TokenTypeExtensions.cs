@@ -97,7 +97,14 @@ public static class TokenTypeExtensions
     /// </summary>
     /// <param name="type">This token type.</param>
     /// <returns>True if this token is None or an error.</returns>
-    public static bool IsError( this TokenType type ) => type <= 0;
+    public static bool IsErrorOrNone( this TokenType type ) => type <= 0;
+
+    /// <summary>
+    /// Gets whether <see cref="TokenType.ErrorClassBit"/> is set.
+    /// </summary>
+    /// <param name="type">This token type.</param>
+    /// <returns>True if this token an error.</returns>
+    public static bool IsError( this TokenType type ) => type < 0;
 
     /// <summary>
     /// Gets whether this token type is a <see cref="Trivia"/>, including

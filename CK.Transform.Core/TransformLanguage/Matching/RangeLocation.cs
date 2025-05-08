@@ -71,7 +71,7 @@ public sealed partial class RangeLocation : SourceSpan
     /// </summary>
     public LocationMatcher? Second => Children.FirstChild?.NextSibling as LocationMatcher;
 
-    internal static RangeLocation? Match( TransformerHost.Language language, ref TokenizerHead head )
+    internal static RangeLocation? Match( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
         Token? kind;
@@ -79,7 +79,7 @@ public sealed partial class RangeLocation : SourceSpan
         LocationMatcher? second = null;
         if( head.TryAcceptToken( "before", out kind ) || head.TryAcceptToken( "after", out kind ) )
         {
-            first = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
+            first = LocationMatcher.Parse( analyzer, ref head, monoLocationOnly: true );
             if( first == null )
             {
                 Throw.DebugAssert( head.FirstError != null );
@@ -88,10 +88,10 @@ public sealed partial class RangeLocation : SourceSpan
         }
         else if( head.TryAcceptToken( "between", out kind ) )
         {
-            first = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
+            first = LocationMatcher.Parse( analyzer, ref head, monoLocationOnly: true );
             if( head.MatchToken( "and" ) is not TokenError )
             {
-                second = LocationMatcher.Parse( language, ref head, monoLocationOnly: true );
+                second = LocationMatcher.Parse( analyzer, ref head, monoLocationOnly: true );
             }
             if( first == null || second == null )
             {

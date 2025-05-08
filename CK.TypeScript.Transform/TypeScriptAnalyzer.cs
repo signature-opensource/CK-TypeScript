@@ -8,7 +8,7 @@ namespace CK.TypeScript.Transform;
 /// <summary>
 /// TypeScript language anlayzer.
 /// </summary>
-public sealed partial class TypeScriptAnalyzer : Analyzer, ITargetAnalyzer
+public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
 {
     readonly Scanner _scanner;
 
@@ -16,6 +16,7 @@ public sealed partial class TypeScriptAnalyzer : Analyzer, ITargetAnalyzer
     /// Initialize a new TypeScriptAnalyzer.
     /// </summary>
     public TypeScriptAnalyzer()
+        : base( TypeScriptLanguage._languageName )
     {
         _scanner = new Scanner();
     }
@@ -60,4 +61,33 @@ public sealed partial class TypeScriptAnalyzer : Analyzer, ITargetAnalyzer
         }
     }
 
+
+    /// <summary>
+    /// Overridden to handle "{braces}", "{class}", "{import}".
+    /// </summary>
+    /// <param name="tokenSpec">The span specification to analyze.</param>
+    /// <returns>The provider or an error string.</returns>
+    protected override object ParseSpanSpec( RawString tokenSpec )
+    {
+        var singleSpanType = tokenSpec.InnerText.Span.Trim();
+        if( singleSpanType.Length > 0 )
+        {
+            return singleSpanType switch
+            {
+                "braces" => new SingleSpanTypeFilter( typeof( BraceSpan ), "{braces}" ),
+                "class" => new SingleSpanTypeFilter( typeof( ClassDefinition ), "{class}" ),
+                "import" => new SingleSpanTypeFilter( typeof( ImportStatement ), "{import}" ),
+                _ => $"""
+                     Invalid span type '{singleSpanType}'. Allowed are "braces", "class", "import".
+                     """
+            };
+        }
+        return IFilteredTokenEnumerableProvider.Empty;
+    }
+
+    protected override void ParseStandardMatchPattern( ref TokenizerHead head )
+    {
+        _scanner.Reset();
+        _scanner.TokenOnlyParse( ref head );
+    }
 }

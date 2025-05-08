@@ -66,17 +66,17 @@ public sealed class InScopeStatement : TransformStatement
         }
     }
 
-    internal static InScopeStatement? Parse( TransformerHost.Language language, ref TokenizerHead head, Token inToken )
+    internal static InScopeStatement? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token inToken )
     {
         Throw.DebugAssert( inToken.Text.Span.Equals( "in", StringComparison.Ordinal ) );
         int begSpan = head.LastTokenIndex;
         bool atLeastOne = false;
-        if( InScope.Match( language, ref head, inToken ) != null )
+        if( InScope.Match( analyzer, ref head, inToken ) != null )
         {
             atLeastOne = true;
-            while( InScope.Match( language, ref head, null ) != null ) ;
+            while( InScope.Match( analyzer, ref head, null ) != null ) ;
         }
-        var body = TransformStatementBlock.ParseBlockOrStatement( language, ref head );
+        var body = TransformStatementBlock.ParseBlockOrStatement( analyzer, ref head );
         return atLeastOne && body != null
                 ? head.AddSpan( new InScopeStatement( begSpan, head.LastTokenIndex + 1 ) )
                 : null; 

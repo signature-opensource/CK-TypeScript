@@ -71,14 +71,25 @@ public sealed class ReplaceStatement : TransformStatement
         }
     }
 
-    internal static ReplaceStatement? Parse( TransformerHost.Language language, ref TokenizerHead head, Token replaceToken )
+    internal static ReplaceStatement? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token replaceToken )
     {
         Throw.DebugAssert( replaceToken.Text.Span.Equals( "replace", StringComparison.Ordinal ) );
         int begSpan = head.LastTokenIndex + 1;
-        LocationMatcher? matcher = LocationMatcher.Parse( language, ref head );
-        if( matcher == null && head.MatchToken( TokenType.Asterisk, "pattern or * (all)" ) is TokenError )
+        LocationMatcher? matcher = null;
+        bool hasMatcher = false;
+        if( head.LowLevelTokenType is TokenType.Asterisk )
         {
-            return null;
+            head.AcceptLowLevelToken();
+            hasMatcher = true;
+        }
+        else
+        {
+            matcher = LocationMatcher.Parse( analyzer, ref head );
+            hasMatcher = matcher != null;
+        }
+        if( !hasMatcher )
+        {
+            head.AppendError( "Expected pattern or * (all)", 0 );
         }
         bool hasWith = head.MatchToken( "with" ) is Token;
         RawString? replacement = null;
@@ -90,7 +101,7 @@ public sealed class ReplaceStatement : TransformStatement
         {
             head.AppendError( "Expecting replacement string.", 0 );
         }
-        if( hasWith && replacement != null )
+        if( hasMatcher && hasWith && replacement != null )
         {
             head.TryAcceptToken( TokenType.SemiColon, out _ );
             return head.AddSpan( new ReplaceStatement( begSpan, head.LastTokenIndex + 1, replacement ) );

@@ -14,7 +14,7 @@ public sealed class TransformStatementBlock : TransformStatement
 {
     /// <summary>
     /// Initializes a new statements block.
-    /// Parsed by <see cref="TransformStatementAnalyzer.ParseStatements(ref TokenizerHead)"/>.
+    /// Parsed by <see cref="LanguageTransformAnalyzer.ParseStatements(ref TokenizerHead)"/>.
     /// </summary>
     /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
     /// <param name="end">The end of the span. Must be greater than <paramref name="beg"/>.</param>
@@ -41,44 +41,47 @@ public sealed class TransformStatementBlock : TransformStatement
         }
     }
 
-    internal static TransformStatement? ParseBlockOrStatement( Language language, ref TokenizerHead head )
+    internal static TransformStatement? ParseBlockOrStatement( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
     {
         return head.LowLevelTokenType == TokenType.GenericIdentifier
                && head.LowLevelTokenText.Equals("begin", StringComparison.Ordinal)
-                    ? Parse( language, ref head )
-                    : ParseRequiredStatement( language, ref head );
+                    ? Parse( analyzer, ref head )
+                    : ParseRequiredStatement( analyzer, ref head );
     }
 
     /// <summary>
     /// Parses a "begin ... end" block.
-    /// Statements are parsed by <see cref="TransformStatementAnalyzer.ParseStatement(ref TokenizerHead)"/>.
+    /// Statements are parsed by <see cref="LanguageTransformAnalyzer.ParseStatement(ref TokenizerHead)"/>.
     /// </summary>
-    /// <param name="language">The language.</param>
+    /// <param name="analyzer">Calling analyzer.</param>
     /// <param name="head">The head.</param>
     /// <returns>The list of transform statements.</returns>
-    internal static TransformStatementBlock Parse( Language language, ref TokenizerHead head )
+    internal static TransformStatementBlock Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
     {
         head.MatchToken( "begin" );
         int begSpan = head.LastTokenIndex;
         Token? foundEnd = null;
         while( head.EndOfInput == null && !head.TryAcceptToken( "end", out foundEnd ) )
         {
-            if( ParseRequiredStatement( language, ref head ) == null )
+            if( ParseRequiredStatement( analyzer, ref head ) == null )
             {
                 break;
             }
         }
-        if( foundEnd == null ) head.AppendError( "Expected 'end'.", 0 );
+        if( foundEnd == null && !head.TryAcceptToken( "end", out foundEnd ) )
+        {
+            head.AppendError( "Expected 'end'.", 0 );
+        }
         return head.AddSpan( new TransformStatementBlock( begSpan, head.LastTokenIndex + 1 ) );
     }
 
-    static TransformStatement? ParseRequiredStatement( Language language, ref TokenizerHead head )
+    static TransformStatement? ParseRequiredStatement( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
     {
-        var s = language.TransformStatementAnalyzer.ParseStatement( language, ref head );
+        var s = analyzer.ParseStatement( ref head );
         Throw.DebugAssert( s == null || s.CheckValid() );
         if( s == null )
         {
-            head.AppendError( $"Failed to parse a transform '{language.LanguageName}' language statement.", -1 );
+            head.AppendError( $"Failed to parse a '{analyzer.LanguageName}' language statement.", -1 );
         }
         return s;
     }

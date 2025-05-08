@@ -17,19 +17,19 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed partial class TransformerHost
 {
+    readonly Language _rootLanguage;
     readonly List<Language> _languages;
-    readonly ThisTransformLanguage _transformLanguage;
+    readonly List<Language> _autoLanguages;
     bool _isLockedLanguages;
 
     /// <summary>
-    /// Cached instance of a <see cref="TransformLanguage"/> for this host.
+    /// Cached instance of a language for this host.
     /// </summary>
     public sealed class Language
     {
         readonly TransformerHost _host;
         readonly TransformLanguage _language;
-        readonly TransformStatementAnalyzer _transformStatementAnalyzer;
-        readonly ITargetAnalyzer _targetAnalyzer;
+        readonly LanguageTransformAnalyzer _transformLanguageAnalyzer;
         readonly int _index;
 
         /// <summary>
@@ -45,12 +45,12 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Gets the analyzer for the transform language.
         /// </summary>
-        public TransformStatementAnalyzer TransformStatementAnalyzer => _transformStatementAnalyzer;
+        public LanguageTransformAnalyzer TransformLanguageAnalyzer => _transformLanguageAnalyzer;
 
         /// <summary>
         /// Gets the target language analyzer.
         /// </summary>
-        public ITargetAnalyzer TargetAnalyzer => _targetAnalyzer;
+        public ITargetAnalyzer TargetLanguageAnalyzer => _transformLanguageAnalyzer.TargetAnalyzer;
 
         /// <summary>
         /// Gets the index in the <see cref="TransformerHost.Languages"/> list.
@@ -62,12 +62,13 @@ public sealed partial class TransformerHost
         /// </summary>
         public TransformerHost Host => _host;
 
+        // Registered language constructor.
         internal Language( TransformerHost host, TransformLanguage language, int index )
         {
             _host = host;
             _language = language;
             _index = index;
-            (_transformStatementAnalyzer,_targetAnalyzer) = language.CreateAnalyzers( this );
+            _transformLanguageAnalyzer = language.CreateAnalyzer( this );
         }
     }
 
@@ -77,18 +78,17 @@ public sealed partial class TransformerHost
     /// <param name="languages">Languages to register.</param>
     public TransformerHost( params IEnumerable<TransformLanguage> languages )
     {
-        _transformLanguage = new ThisTransformLanguage( this );
         _languages = new List<Language>();
-        bool hasTransfomer = false;
+        _autoLanguages = new List<Language>();
         foreach( var language in languages )
         {
-            EnsureLanguage( language );
-            hasTransfomer |= language.IsTransformerLanguage;
+            if( !language.IsTransformerLanguage )
+            {
+                EnsureLanguage( language );
+            }
         }
-        if( !hasTransfomer )
-        {
-            _languages.Add( new Language( this, _transformLanguage, _languages.Count ) );
-        }
+        _rootLanguage = new Language( this, RootTransformLanguage, _languages.Count );
+        _languages.Add( _rootLanguage );
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public sealed partial class TransformerHost
     public Language EnsureLanguage( TransformLanguage language )
     {
         Throw.CheckState( IsLockedLanguages is false );
-        var l = _languages.FirstOrDefault( l => l.LanguageName == language.LanguageName );
+        var l = FindLanguage( _languages, language.LanguageName, withFileExtensions: false );
         if( l == null )
         {
             l = new Language( this, language, _languages.Count );
@@ -187,7 +187,7 @@ public sealed partial class TransformerHost
     /// <returns>The function or null on error.</returns>
     public TransformerFunction? TryParseFunction( IActivityMonitor monitor, ReadOnlyMemory<char> text, out bool hasError )
     {
-        var r = _transformLanguage.RootAnalyzer.TryParse( monitor, text );
+        var r = _rootLanguage.TransformLanguageAnalyzer.TryParse( monitor, text );
         if( r == null )
         {
             hasError = true;
@@ -210,7 +210,7 @@ public sealed partial class TransformerHost
     /// <returns>The functions or null on error.</returns>
     public List<TransformerFunction>? TryParseFunctions( IActivityMonitor monitor, ReadOnlyMemory<char> text )
     {
-        return _transformLanguage.RootAnalyzer.TryParseMultiple( monitor, text );
+        return _rootLanguage.TransformLanguageAnalyzer.TryParseMultiple( monitor, text );
     }
 
     /// <summary>
@@ -236,7 +236,7 @@ public sealed partial class TransformerHost
         var transformer = transformers.FirstOrDefault();
         Throw.CheckArgument( transformer is not null );
 
-        AnalyzerResult? r = transformer.Language.TargetAnalyzer.TryParse( monitor, text );
+        AnalyzerResult? r = transformer.Language.TargetLanguageAnalyzer.TryParse( monitor, text );
         if( r == null ) return null;
 
         var codeEditor = new SourceCodeEditor( monitor, transformer.Language, r.SourceCode );
@@ -294,6 +294,54 @@ public sealed partial class TransformerHost
             }
         }
         return null;
+    }
+
+    ITargetAnalyzer? FindTargetAnalyzer( ReadOnlySpan<char> name,
+                                         bool withFileExtensions )
+    {
+        if( name.Length > 0 )
+        {
+            if( name[0] == '.' ) name = name.Slice( 1 );
+            if( name.Length > 0 )
+            {
+                // First find the name as-is.
+                Language? language = FindLanguage( _languages, name, withFileExtensions )
+                                     ?? FindLanguage( _autoLanguages, name, withFileExtensions );
+                if( language != null ) return language.TargetLanguageAnalyzer;
+
+                int transformerLevel = 0;
+                while( RemoveTransformerExtension( ref name ) )
+                {
+                    var l = FindLanguage( _languages, name, withFileExtensions );
+                    if( l != null )
+                    {
+                        return l.TargetLanguageAnalyzer;
+                    }
+                    ++transformerLevel;
+                }
+                if( transformerLevel >= 3 )
+                {
+                    name = "transformer";
+                    transformerLevel = 0;
+                }
+            }
+        }
+        return null;
+
+        static bool RemoveTransformerExtension( ref ReadOnlySpan<char> name )
+        {
+            if( name.EndsWith( ".t" ) )
+            {
+                name = name[..^2];
+                return true;
+            }
+            if( name.EndsWith( ".transformer" ) )
+            {
+                name = name[..^12];
+                return true;
+            }
+            return false;
+        }
     }
 
 }

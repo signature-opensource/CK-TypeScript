@@ -24,7 +24,7 @@ public sealed class TokenError : Token
                 error,
                 text )
     {
-        Throw.DebugAssert( error.IsError() );
+        Throw.DebugAssert( error.IsErrorOrNone() );
         Throw.DebugAssert( !leading.IsDefault );
         Throw.DebugAssert( !trailing.IsDefault );
         Throw.DebugAssert( !string.IsNullOrWhiteSpace( errorMessage ) );

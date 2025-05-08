@@ -8,8 +8,7 @@ namespace CK.Transform.Core;
 public static class TokenScannerExtensions
 {
     /// <summary>
-    /// Provides a reusable and standard <see cref="Analyzer.DoParse(ref TokenizerHead)"/>
-    /// implementation for analyzers that rely only on a <see cref="ITokenScanner"/>.
+    /// Collects the tokens, skipping any <see cref="SourceSpan"/> handling.
     /// <para>
     /// <see cref="ITokenScanner.GetNextToken(ref TokenizerHead)"/> is called until
     /// it returns a <see cref="TokenType.EndOfInput"/>.
@@ -17,7 +16,7 @@ public static class TokenScannerExtensions
     /// </summary>
     /// <param name="scanner">This scanner.</param>
     /// <param name="head">The tokenizer head to analyze.</param>
-    public static void StandardParse( this ITokenScanner scanner, ref TokenizerHead head )
+    public static void TokenOnlyParse( this ITokenScanner scanner, ref TokenizerHead head )
     {
         while( scanner.GetNextToken( ref head ).TokenType != TokenType.EndOfInput ) ;
     }

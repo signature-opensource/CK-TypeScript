@@ -3,25 +3,11 @@ using System;
 
 namespace CK.Html.Transform;
 
-sealed class HtmlTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLevelTokenizer
+sealed class HtmlTransformStatementAnalyzer : LanguageTransformAnalyzer
 {
-    readonly HtmlAnalyzer _htmlAnalyzer;
-
-    internal HtmlTransformStatementAnalyzer( TransformerHost.Language language, HtmlAnalyzer tsAnalyzer )
-        : base( language )
+    internal HtmlTransformStatementAnalyzer( TransformerHost.Language language, HtmlAnalyzer analyzer )
+        : base( language, analyzer )
     {
-        _htmlAnalyzer = tsAnalyzer;
-    }
-
-    public LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
-    {
-        // No specific tokens needed currently.
-        return TransformLanguage.MinimalTransformerLowLevelTokenize( head );
-    }
-
-    protected override TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
-    {
-        return base.ParseStatement( language, ref head );
     }
 
 }

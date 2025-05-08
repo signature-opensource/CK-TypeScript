@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -47,25 +48,21 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenEnumerableProvider
     IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( ITokenFilterBuilderContext c,
                                                             IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
+        DeepestSpanCollector collector = new DeepestSpanCollector( c );
         foreach( var each in inner )
         {
+            collector.StartEach();
             foreach( var range in each )
             {
-                using var e = range.GetEnumerator();
-                if( e.MoveNext() )
+                foreach( var t in range )
                 {
-                    var s = c.GetDeepestSpanAt( e.Current.Index, _spanType );
-                    if( s != null )
-                    {
-                        while( e.MoveNext() )
-                        {
-                            if( e.Current.Index >= s.Span.End ) continue;
-                        }
-                        yield return [c.GetSourceTokens( s )];
-                    }
+                    var s = c.GetDeepestSpanAt( t.Index, _spanType );
+                    if( s != null ) collector.Add( s );
                 }
             }
         }
+        collector.Close();
+        return collector;
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
@@ -75,5 +72,68 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenEnumerableProvider
     }
 
     public override string ToString() => _displayName;
+
+    sealed class DeepestSpanCollector : IEnumerable<IEnumerable<IEnumerable<SourceToken>>>
+    {
+        readonly List<List<SourceSpan>> _each;
+        readonly ITokenFilterBuilderContext _filterContext;
+        List<SourceSpan>? _current;
+
+        public DeepestSpanCollector( ITokenFilterBuilderContext filterContext )
+        {
+            _each = new List<List<SourceSpan>>();
+            _filterContext = filterContext;
+        }
+
+        public void StartEach()
+        {
+            Close();
+            _current = new List<SourceSpan>();
+        }
+
+        public void Close()
+        {
+            if( _current != null )
+            {
+                _each.Add( _current );
+            }
+        }
+
+        public void Add( SourceSpan span )
+        {
+            Throw.DebugAssert( _current != null );
+
+            for( int i = 0; i < _current.Count; i++ )
+            {
+                SourceSpan? s = _current[i];
+                if( s.Span.Contains( span.Span ) )
+                {
+                    _current[i] = span;
+                    return;
+                }
+                if( span.Span.ContainsOrEquals( s.Span ) )
+                {
+                    return;
+                }
+            }
+            _current.Add( span );
+        }
+
+        public IEnumerator<IEnumerable<IEnumerable<SourceToken>>> GetEnumerator()
+        {
+            foreach( var each in _each )
+            {
+                foreach( var span in each )
+                {
+                    if( !span.IsDetached )
+                    {
+                        yield return [_filterContext.GetSourceTokens( span )];
+                    }
+                }
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 
 }

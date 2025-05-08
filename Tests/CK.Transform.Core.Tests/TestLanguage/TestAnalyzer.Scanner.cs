@@ -20,6 +20,18 @@ sealed partial class TestAnalyzer
             _bracketDepth = 0;
         }
 
+        internal void Parse( ref TokenizerHead head  )
+        {
+            while( head.EndOfInput == null )
+            {
+                var t = GetNextToken( ref head );
+                if( !t.TokenType.IsError() )
+                {
+                    HandleKnownSpan( ref head, t );
+                }
+            }
+        }
+
         internal SourceSpan? HandleKnownSpan( ref TokenizerHead head, Token t )
         {
             Throw.DebugAssert( t is not TokenError );
@@ -27,11 +39,19 @@ sealed partial class TestAnalyzer
             {
                 return BraceSpan.Match( this, ref head, t );
             }
+            if( t.TokenType is TokenType.OpenBracket )
+            {
+                return BracketSpan.Match( this, ref head, t );
+            }
             return null;
         }
 
         public Token GetNextToken( ref TokenizerHead head )
         {
+            if( head.EndOfInput != null )
+            {
+                return head.EndOfInput;
+            }
             switch( head.LowLevelTokenType )
             {
                 case TokenType.OpenBrace:
@@ -39,22 +59,30 @@ sealed partial class TestAnalyzer
                     ++_braceDepth;
                     break;
                 case TokenType.CloseBrace:
-                    if( --_bracketDepth < 0 )
+                    if( _braceDepth == 0 )
                     {
                         head.AppendUnexpectedToken();
                     }
-                    head.AcceptLowLevelToken();
+                    else
+                    {
+                        --_braceDepth;
+                        head.AcceptLowLevelToken();
+                    }
                     break;
                 case TokenType.OpenBracket:
                     head.AcceptLowLevelToken();
                     ++_bracketDepth;
                     break;
                 case TokenType.CloseBracket:
-                    if( --_bracketDepth < 0 )
+                    if( _bracketDepth == 0 )
                     {
                         head.AppendUnexpectedToken();
                     }
-                    head.AcceptLowLevelToken();
+                    else
+                    {
+                        --_bracketDepth;
+                        head.AcceptLowLevelToken();
+                    }
                     break;
                 case TokenType.DoubleQuote:
                     RawString.Match( ref head );
@@ -79,12 +107,6 @@ sealed partial class TestAnalyzer
                         head.AcceptLowLevelToken();
                     }
                     break;
-                case TokenType.None:
-                    head.AppendUnexpectedToken();
-                    break;
-                case TokenType.EndOfInput:
-                    Throw.DebugAssert( head.EndOfInput is not null );
-                    return head.EndOfInput;
                 default:
                     // Handle BUG identifier by adding an error with a 0 text length and NOT accepting
                     // the low level token.
@@ -94,7 +116,7 @@ sealed partial class TestAnalyzer
                     }
                     else
                     {
-                        head.AcceptLowLevelToken();
+                        head.AcceptLowLevelTokenOrNone();
                     }
                     break;
             }

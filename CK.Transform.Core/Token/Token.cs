@@ -31,7 +31,7 @@ public class Token
     public Token( TokenType tokenType, ImmutableArray<Trivia> leading, ReadOnlyMemory<char> text, ImmutableArray<Trivia> trailing )
     {
         Throw.CheckArgument( !leading.IsDefault && !trailing.IsDefault );
-        Throw.CheckArgument( !tokenType.IsError() && !tokenType.IsTrivia() );
+        Throw.CheckArgument( !tokenType.IsErrorOrNone() && !tokenType.IsTrivia() );
         _tokenType = tokenType;
         _text = text;
         _leadingTrivias = leading;

@@ -3,23 +3,17 @@ using System;
 
 namespace CK.Less.Transform;
 
-sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLevelTokenizer
+sealed class LessTransformStatementAnalyzer : LanguageTransformAnalyzer
 {
     readonly LessAnalyzer _lessAnalyzer;
 
     internal LessTransformStatementAnalyzer( TransformerHost.Language language, LessAnalyzer lessAnalyzer )
-        : base( language )
+        : base( language, lessAnalyzer )
     {
         _lessAnalyzer = lessAnalyzer;
     }
 
-    public LowLevelToken LowLevelTokenize( ReadOnlySpan<char> head )
-    {
-        // No specific tokens needed currently.
-        return TransformLanguage.MinimalTransformerLowLevelTokenize( head );
-    }
-
-    protected override TransformStatement? ParseStatement( TransformerHost.Language language, ref TokenizerHead head )
+    protected override TransformStatement? ParseStatement( ref TokenizerHead head )
     {
         int begStatement = head.LastTokenIndex;
         if( head.TryAcceptToken( "ensure", out _ ) )
@@ -33,7 +27,7 @@ sealed class LessTransformStatementAnalyzer : TransformStatementAnalyzer, ILowLe
                 return importStatement;
             }
         }
-        return base.ParseStatement( language, ref head );
+        return base.ParseStatement( ref head );
     }
 
 }

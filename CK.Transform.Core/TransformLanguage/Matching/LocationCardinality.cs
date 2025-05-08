@@ -66,7 +66,7 @@ public sealed partial class LocationCardinality : SourceSpan
                          int expectedMatchCount )
         : base( beg, end )
     {
-        Throw.DebugAssert( kind is not LocationKind.Single || _expectedMatchCount == 1 );
+        Throw.DebugAssert( kind is not LocationKind.Single || expectedMatchCount == 1 );
         _kind = kind;
         _expectedMatchCount = expectedMatchCount;
         _offset = offset;
@@ -103,6 +103,7 @@ public sealed partial class LocationCardinality : SourceSpan
         int expectedMatchCount = 0;
         if( head.TryAcceptToken( "single", out kindT ) )
         {
+            expectedMatchCount = 1;
             kind = LocationKind.Single;
         }
         else if( head.TryAcceptToken( "first", out kindT ) )
