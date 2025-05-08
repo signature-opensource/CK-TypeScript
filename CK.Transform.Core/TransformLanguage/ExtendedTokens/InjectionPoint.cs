@@ -5,15 +5,10 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// An injection point is a <see cref="Token"/> (its type is <see cref="TokenType.GenericIdentifier"/>).
-/// Its <see cref="Name"/> is defined between angle brackets: &lt;Name&gt;.
+/// Its <see cref="Name"/> is defined between angle brackets: &lt;Name&gt; (syntax: "&lt;[letter or digit or .]+&gt;").
 /// <para>
-/// This token is not handled as a low-level token (by the <see cref="ILowLevelTokenizer"/>).
-/// It could have been because transform language currently doesn't use the &lt; character
-/// for anything else than the injection point.
-/// Handling it at the analyzer level has the merit to challenge it (testing the
-/// pattern "&lt;[letter or digit]+&gt;" only when needed (in <see cref="InjectIntoStatement"/> parsing)
-/// but has the drawback to be explicitly handled by the <see cref="ITargetAnalyzer.CreateSpanMatcher(CK.Core.IActivityMonitor, ReadOnlySpan{char}, ReadOnlyMemory{char})"/>
-/// pattern parser.
+/// This is also used to capture target langage name (like in <c>create &lt;typescript&gt; transformer ...</c> or
+/// <c>create &lt;sql.t&gt; transformer ...</c>).  
 /// </para>
 /// </summary>
 public sealed class InjectionPoint : Token
@@ -30,14 +25,14 @@ public sealed class InjectionPoint : Token
     public ReadOnlySpan<char> Name => Text.Span.Slice( 1, Text.Length - 2 );
 
     /// <summary>
-    /// Helper that forwards on <see cref="char.IsAsciiLetterOrDigit"/>.
+    /// Helper that forwards on <see cref="char.IsAsciiLetterOrDigit"/> or '.'.
     /// </summary>
     /// <param name="sHead">The head.</param>
     /// <returns>The number of consecutive letter or digits found.</returns>
     public static int GetInjectionPointLength( ReadOnlySpan<char> sHead )
     {
         int iS = 0;
-        while( ++iS < sHead.Length && char.IsAsciiLetterOrDigit( sHead[iS] ) ) ;
+        while( ++iS < sHead.Length && (sHead[iS] == '.' || char.IsAsciiLetterOrDigit( sHead[iS] )) ) ;
         return iS;
     }
 

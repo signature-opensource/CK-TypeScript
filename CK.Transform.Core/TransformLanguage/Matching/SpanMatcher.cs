@@ -10,27 +10,23 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Captures a span matcher:
 /// <para>
-/// .language {span specification} "pattern"
+/// {span specification} "pattern"
 /// </para>
 /// <list type="bullet">
-///     <item>The .language is optional (defaults to the target language).</item>
 ///     <item>At least the span specification or the pattern string is required.</item>
 ///     <item>When the span specification not specified, it defaults to the matched tokens.</item>
 /// </list>
 /// </summary>
 public sealed partial class SpanMatcher : SourceSpan
 {
-    readonly Token? _languageName;
     readonly IFilteredTokenEnumerableProvider? _spanSpec;
     readonly IFilteredTokenEnumerableProvider? _pattern;
     
     SpanMatcher( int beg, int end,
-                 Token? languageName,
                  IFilteredTokenEnumerableProvider? spanSpec,
                  IFilteredTokenEnumerableProvider? pattern )
         : base( beg, end )
     {
-        _languageName = languageName;
         _spanSpec = spanSpec;
         _pattern = pattern;
     }
@@ -38,24 +34,7 @@ public sealed partial class SpanMatcher : SourceSpan
     internal static SpanMatcher? Match( TransformerHost.Language language, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
-        Token? languageName = null;
-        TransformerHost.Language? matcherLanguage = language;
-        if( head.TryAcceptToken( TokenType.Dot, out _ ) )
-        {
-            if( !head.TryAcceptToken( TokenType.GenericIdentifier, out languageName ) )
-            {
-                head.AppendMissingToken( "language name" );
-                matcherLanguage = null;
-            }
-            else
-            {
-                matcherLanguage = language.Host.FindLanguage( languageName.Text.Span );
-                if( matcherLanguage == null )
-                {
-                    head.AppendError( $"Unknwon language.", -1 );
-                }
-            }
-        }
+
         RawString? tokenSpec = null;
         RawString? tokenPattern = null;
         if( head.LowLevelTokenType is TokenType.OpenBrace )
@@ -70,18 +49,13 @@ public sealed partial class SpanMatcher : SourceSpan
         {
             head.AppendError( "Missing {span specification} and/or \"pattern\".", 0 );
         }
-        // Error: invalid language or missing spec and pattern.
-        if( matcherLanguage == null || (tokenSpec == null && tokenPattern == null) )
-        {
-            return null;
-        }
         IFilteredTokenEnumerableProvider? specProvider = null;
         if( tokenSpec != null )
         {
-            object m = matcherLanguage.TransformStatementAnalyzer.ParseSpanSpec( language, tokenSpec );
+            object m = language.TransformStatementAnalyzer.ParseSpanSpec( language, tokenSpec );
             if( m is not string and not IFilteredTokenEnumerableProvider )
             {
-                Throw.InvalidOperationException( $"{matcherLanguage.TransformStatementAnalyzer.GetType().FullName}.ParseSpanSpec() must return a string or a IFilteredTokenEnumerableProvider." );
+                Throw.InvalidOperationException( $"{language.TransformStatementAnalyzer.GetType().FullName}.ParseSpanSpec() must return a string or a IFilteredTokenEnumerableProvider." );
             }
             if( m is string error )
             {
@@ -93,10 +67,10 @@ public sealed partial class SpanMatcher : SourceSpan
         IFilteredTokenEnumerableProvider? patternProvider = null;
         if( tokenPattern != null )
         {
-            object m = matcherLanguage.TransformStatementAnalyzer.ParsePattern( language, tokenPattern, specProvider );
+            object m = language.TransformStatementAnalyzer.ParsePattern( language, tokenPattern, specProvider );
             if( m is not string and not IFilteredTokenEnumerableProvider )
             {
-                Throw.InvalidOperationException( $"{matcherLanguage.TransformStatementAnalyzer.GetType().FullName}.ParsePattern() must return a string or a IFilteredTokenEnumerableProvider." );
+                Throw.InvalidOperationException( $"{language.TransformStatementAnalyzer.GetType().FullName}.ParsePattern() must return a string or a IFilteredTokenEnumerableProvider." );
             }
             if( m is string error )
             {
@@ -107,7 +81,6 @@ public sealed partial class SpanMatcher : SourceSpan
         }
         return head.AddSpan( new SpanMatcher( begSpan,
                                               head.LastTokenIndex + 1,
-                                              languageName,
                                               specProvider,
                                               patternProvider ) );
     }
@@ -116,10 +89,6 @@ public sealed partial class SpanMatcher : SourceSpan
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
         if( !parsable ) b.Append( "SpanMatcher[ " );
-        if( _languageName != null )
-        {
-            b.Append( '.' ).Append( _languageName.Text );
-        }
         if( _spanSpec != null )
         {
             if( b.Length > 0 ) b.Append( ' ' );
