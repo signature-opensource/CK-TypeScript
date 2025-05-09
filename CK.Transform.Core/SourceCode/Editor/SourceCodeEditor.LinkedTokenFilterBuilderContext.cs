@@ -18,7 +18,7 @@ public sealed partial class SourceCodeEditor
         readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> _tokens;
         readonly int _index;
         bool _syntaxBorder;
-        bool _isAllTransparent;
+        bool _isTransparent;
 
         internal LinkedTokenFilterBuilderContext( SourceCodeEditor editor,
                                                   IFilteredTokenEnumerableProvider provider,
@@ -31,7 +31,7 @@ public sealed partial class SourceCodeEditor
             var p = provider.GetFilteredTokenProjection();
             if( p == IFilteredTokenEnumerableProvider.EmptyProjection )
             {
-                _isAllTransparent = true;
+                _isTransparent = true;
                 _tokens = previous._tokens;
             }
             else
@@ -67,7 +67,7 @@ public sealed partial class SourceCodeEditor
 
         public bool HasError => _editor.HasError;
 
-        public bool IsAllTransparent => _isAllTransparent;
+        public bool IsTransparent => _isTransparent;
 
         public void Error( string errorMessage )
         {
@@ -85,9 +85,9 @@ public sealed partial class SourceCodeEditor
             {
                 if( c.IsRoot ) return;
                 DumpFilterResults( monitor, c.Previous, b );
-                if( c.IsAllTransparent )
+                if( c.IsTransparent )
                 {
-                    monitor.Trace( $"Filter n°{c.Index}: all (transparent)." );
+                    monitor.Trace( $"Filter n°{c.Index}: (transparent)." );
                 }
                 else
                 {

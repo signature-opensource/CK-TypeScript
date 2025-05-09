@@ -71,7 +71,9 @@ public abstract partial class SourceSpan
     {
         if( _root != null )
         {
+            
             var pC = _parent != null ? _parent._children : _root._children;
+            pC.CheckInvariants( _parent );
             if( withChildren )
             {
                 _children.Clear();
@@ -98,6 +100,7 @@ public abstract partial class SourceSpan
             {
                 _nextSibling._prevSibling = _prevSibling;
             }
+            pC.CheckInvariants( _parent );
             _nextSibling = null;
             _prevSibling = null;
             _parent = null;

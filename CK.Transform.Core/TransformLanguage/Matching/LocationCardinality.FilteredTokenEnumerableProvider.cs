@@ -45,8 +45,8 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             LocationKind.Last => HandleLast,
             // All without ExpectedMatchCount is a no-op constraint.
             LocationKind.All => _expectedMatchCount == 0
-                                    ? IFilteredTokenEnumerableProvider.EmptyProjection
-                                    : HandleAllCount,
+                                    ? HandleAll
+                                    : HandleAllWithExpectedCount,
             _ => HandleEach
         };
     }
@@ -54,10 +54,8 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
     static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleSingle( ITokenFilterBuilderContext c,
                                                                             IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
-        int eachCount = 0;
         foreach( var each in inner )
         {
-            ++eachCount;
             var single = each.SingleOrDefault();
             if( single != null )
             {
@@ -66,17 +64,11 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             }
             else
             {
-                c.Error( $"""
-                         Expected single match but got {each.Count()} in each group n°{eachCount}:
-                         {DumpRanges( each )}
-                         """ );
-                break;
+                c.Error( $"Expected single match but got {each.Count()}" );
+                yield break;
             }
         }
-        Throw.DebugAssert( "There must be NO empty ranges of tokens.", eachCount == 0 );
-        c.Error( $"""
-                    Expected single match but got none: Tokens are empty.
-                    """ );
+        c.Error( $"Expected single match but got none: Tokens are empty." );
     }
 
 
@@ -96,10 +88,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             }
             else
             {
-                c.Error( $"""
-                          Expected '{ToString()}' but got {count} matches in:
-                          {DumpRanges( each )}
-                          """ );
+                c.Error( $"Expected '{ToString()}' but got {count} matches" );
                 break;
             }
         }
@@ -121,23 +110,33 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             }
             else
             {
-                c.Error( $"""
-                         Expected '{ToString()}' but got {count} matches in:
-                         {DumpRanges( each )}
-                         """ );
+                c.Error( $"Expected '{ToString()}' but got {count} matches" );
                 break;
             }
         }
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAllCount( ITokenFilterBuilderContext c,
-                                                                       IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAllWithExpectedCount( ITokenFilterBuilderContext c,
+                                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
         Throw.DebugAssert( _kind == LocationKind.All && _expectedMatchCount > 0 );
         foreach( var each in inner )
         {
-            int count = HandleExpectedMatchCount( c, this, each );
-            if( count == -2 ) return IFilteredTokenEnumerableProvider.EmptyFilteredTokens;
+            HandleExpectedMatchCount( c, this, each );
+        }
+        return inner;
+    }
+
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAll( ITokenFilterBuilderContext c,
+                                                                  IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    {
+        Throw.DebugAssert( _kind == LocationKind.All && _expectedMatchCount == 0 );
+        foreach( var each in inner )
+        {
+            if( !each.Any() )
+            {
+                c.Error( $"'all' expects at least one match." );
+            }
         }
         return inner;
     }
@@ -174,27 +173,11 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             count = each.Count();
             if( count != cardinality.ExpectedMatchCount )
             {
-                c.Error( $"""
-                         Expected '{cardinality}' but got {count} matches in:
-                         {DumpRanges( each )}
-                         """ );
+                c.Error( $"Expected '{cardinality}' but got {count} matches." );
                 count = -2;
             }
         }
         return count;
-    }
-
-    static string DumpRanges( IEnumerable<IEnumerable<SourceToken>> each )
-    {
-        var b = new StringBuilder();
-        int iRange = 0;
-        foreach( var r in each )
-        {
-            b.Append( "--- (range n°" ).Append( ++iRange ).AppendLine( ") ---" );
-            r.Select( t => t.Token ).Write( b ).AppendLine();
-            b.AppendLine( "---" );
-        }
-        return b.ToString();
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )

@@ -15,7 +15,7 @@ public sealed partial class SourceCodeEditor
     sealed class SourceTokenEnumerable : IEnumerable<SourceToken>, IEnumerator<SourceToken>
     {
         readonly SourceCodeEditor _editor;
-        List<Token>? _tokens;
+        List<Token>? _enumTokens;
         Token? _token;
         int _index;
 
@@ -25,14 +25,14 @@ public sealed partial class SourceCodeEditor
             _index = -1;
         }
 
-        [MemberNotNullWhen( false, nameof( _tokens ) )]
-        bool IsDisposed => _tokens == null;
+        [MemberNotNullWhen( false, nameof( _enumTokens ) )]
+        bool IsDisposed => _enumTokens == null;
 
         public IEnumerator<SourceToken> GetEnumerator()
         {
             Throw.CheckState( "Multiple use of the UnfilteredSourceTokens.", IsDisposed );
             _index = -1;
-            _tokens = _editor._tokens;
+            _enumTokens = _editor._tokens;
             return this;
         }
 
@@ -40,7 +40,7 @@ public sealed partial class SourceCodeEditor
 
         public void Dispose()
         {
-            _tokens = null;
+            _enumTokens = null;
         }
 
         public SourceToken Current => new SourceToken( _token!, _index );
@@ -48,8 +48,8 @@ public sealed partial class SourceCodeEditor
         public bool MoveNext()
         {
             Throw.CheckState( !IsDisposed );
-            if( ++_index >= _tokens.Count ) return false;
-            _token = _tokens[_index];
+            if( ++_index >= _enumTokens.Count ) return false;
+            _token = _enumTokens[_index];
             return true;
         }
 

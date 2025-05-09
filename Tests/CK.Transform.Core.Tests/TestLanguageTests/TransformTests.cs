@@ -87,7 +87,7 @@ public class TransformTests
         """"
         create Test transformer
         begin
-            in last {braces} "{" replace all "B" with "this works";
+            in last {braces} "{" replace all "A" with "this works";
         end
         """",
         """
@@ -101,4 +101,73 @@ public class TransformTests
         var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
+
+    [TestCase( "n°1",
+        """
+        A
+        """,
+        """"
+        create Test transformer
+        begin
+            replace "A" with "A A";
+        end
+        """",
+        """
+        A A
+        """
+    )]
+    [TestCase( "n°2",
+        """
+        A
+        """,
+        """"
+        create Test transformer
+        begin
+            replace all "A" with "A A";
+        end
+        """",
+        """
+        A A
+        """
+    )]
+    public void replace_expand( string title, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new TestLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
+        sourceCode.ToString().ShouldBe( result );
+    }
+
+    [TestCase( "n°1",
+        """
+        A
+        """,
+        """"
+        create Test transformer
+        begin
+            replace "A" with "";
+        end
+        """",
+        ""
+    )]
+    [TestCase( "n°2",
+        """
+        A A A
+        """,
+        """"
+        create Test transformer
+        begin
+            replace all "A" with "";
+        end
+        """",
+        "  "
+    )]
+    public void replace_remove( string title, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new TestLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
+        sourceCode.ToString().ShouldBe( result );
+    }
+
 }

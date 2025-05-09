@@ -112,7 +112,7 @@ sealed class SourceSpanRoot : ISourceSpanRoot
         _children.CheckInvariants( null );
     }
 
-    internal void OnRemoveTokens( int index, int delta )
+    internal List<SourceSpan>? OnRemoveTokens( int index, int delta )
     {
         Throw.DebugAssert( index >= 0 && delta > 0 );
         _children.CheckInvariants( null );
@@ -126,5 +126,6 @@ sealed class SourceSpanRoot : ISourceSpanRoot
             }
         }
         _children.CheckInvariants( null );
+        return toRemove;
     }
 }

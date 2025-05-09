@@ -18,7 +18,7 @@ public sealed partial class SourceCodeEditor
     readonly Editor _editor;
 
     readonly SourceTokenEnumerable _sourceTokens;
-    readonly List<SourceSpanTokenEnumerable.Enumerator> _enumerators;
+    readonly List<SourceSpanTokenEnumerable> _enumerators;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -39,7 +39,7 @@ public sealed partial class SourceCodeEditor
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
         _sourceTokens = new SourceTokenEnumerable( this );
-        _enumerators = new List<SourceSpanTokenEnumerable.Enumerator>();
+        _enumerators = new List<SourceSpanTokenEnumerable>();
         _editor = new Editor( this );
     }
 
