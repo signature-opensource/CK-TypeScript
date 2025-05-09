@@ -211,7 +211,7 @@ public sealed partial class HtmlAnalyzer : TargetLanguageAnalyzer
     /// <inheritdoc/>
     protected override void DoParse( ref TokenizerHead head )
     {
-        while( head.EndOfInput != null )
+        while( head.EndOfInput == null )
         {
             var token = head.AcceptLowLevelTokenOrNone();
             switch( (int)token.TokenType )
