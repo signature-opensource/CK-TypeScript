@@ -114,7 +114,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             int count = HandleExpectedMatchCount( c, this, each );
             if( count == -2 ) break;
             if( count == -1 ) count = each.Count();
-            int at = count - _offset + 1;
+            int at = count - _offset;
             if( at >= 0 && at < count )
             {
                 yield return [each.ElementAt( at )];
@@ -122,7 +122,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             else
             {
                 c.Error( $"""
-                         Expected '{ToString()} but got {count} matches in:
+                         Expected '{ToString()}' but got {count} matches in:
                          {DumpRanges( each )}
                          """ );
                 break;
@@ -223,9 +223,9 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
                 b.Append( "last" );
                 goto default;
             default:
-                if( _offset != 0 )
+                if( _offset > 1 )
                 {
-                    b.Append( _offset );
+                    b.Append( ' ' ).Append( _offset );
                 }
                 return _expectedMatchCount == 0
                             ? b

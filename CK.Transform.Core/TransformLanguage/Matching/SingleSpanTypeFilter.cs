@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CK.Transform.Core;
@@ -123,13 +124,7 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenEnumerableProvider
         {
             foreach( var each in _each )
             {
-                foreach( var span in each )
-                {
-                    if( !span.IsDetached )
-                    {
-                        yield return [_filterContext.GetSourceTokens( span )];
-                    }
-                }
+                yield return each.Select( _filterContext.GetSourceTokens );
             }
         }
 

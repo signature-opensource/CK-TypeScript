@@ -40,12 +40,14 @@ public sealed class ReplaceStatement : TransformStatement
                 foreach( var each in e.Tokens )
                     foreach( var range in each )
                     {
-                        GetFirstLastAndCount( range, out var first, out var last, out var count );
-                        var replace = new Token( TokenType.GenericAny,
+                        if( GetFirstLastAndCount( range, out var first, out var last, out var count ) )
+                        {
+                            var replace = new Token( TokenType.GenericAny,
                                                  first.Token.LeadingTrivias,
                                                  _replacement.TextLines,
                                                  last.Token.TrailingTrivias );
-                        editor.Replace( first.Index, count, replace );
+                            editor.Replace( first.Index, count, replace );
+                        }
                         applied = true;
                     }
             }
@@ -57,10 +59,20 @@ public sealed class ReplaceStatement : TransformStatement
         }
     }
 
-    static void GetFirstLastAndCount( IEnumerable<SourceToken> tokens, out SourceToken first, out SourceToken last, out int count )
+    static bool GetFirstLastAndCount( IEnumerable<SourceToken> tokens,
+                                      out SourceToken first,
+                                      out SourceToken last,
+                                      out int count )
     {
         using var e = tokens.GetEnumerator();
-        Throw.CheckState( "IEnumerable<SourceToken> must never be empty.", e.MoveNext() );
+        if( !e.MoveNext() )
+        {
+            count = 0;
+            first = default;
+            last = default;
+            return false;
+        }
+
         first = e.Current;
         last = first;
         count = 1;
@@ -69,6 +81,7 @@ public sealed class ReplaceStatement : TransformStatement
             ++count;
             last = e.Current;
         }
+        return true;
     }
 
     internal static ReplaceStatement? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token replaceToken )

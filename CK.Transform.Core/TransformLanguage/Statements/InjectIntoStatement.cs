@@ -60,17 +60,17 @@ public sealed class InjectIntoStatement : TransformStatement
                     var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );
                     if( !newTrivias.IsDefault )
                     {
-                        Throw.DebugAssert( modified.IsDefault );
+                        Throw.DebugAssert( !modified.IsValid );
                         modified = new SourceToken( token.SetTrivias( newTrivias ), sourceToken.Index );
                     }
                     newTrivias = ProcessTrivias( monitor, ref finder, token.TrailingTrivias );
                     if( !newTrivias.IsDefault )
                     {
-                        Throw.DebugAssert( modified.IsDefault );
+                        Throw.DebugAssert( !modified.IsValid );
                         modified = new SourceToken( token.SetTrivias( token.LeadingTrivias, newTrivias ), sourceToken.Index );
                     }
                 }
-                if( modified.IsDefault )
+                if( !modified.IsValid )
                 {
                     monitor.Error( $"Unable to find the injection point '{Target}' in {tokenCount} tokens." );
                 }

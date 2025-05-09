@@ -8,7 +8,7 @@ namespace CK.Transform.Core.Tests.TestLanguageTests;
 [TestFixture]
 public class TransformTests
 {
-    [TestCase( "n°1",
+    [TestCase( "n°1 - {span} only.",
         """
         Quote 1 { They who can give up essential liberty to obtain a little temporary safety deserve neither liberty nor safety. }
         Quote 2 { People demand freedom of speech as a compensation for the freedom of thought which they seldom use. }
@@ -24,21 +24,21 @@ public class TransformTests
         Quote 2 { erased }
         """
         )]
-    [TestCase( "n°2",
+    [TestCase( "n°2 - all {span} Pattern",
         """
         One A { A HERE { A } A } A { HERE A }
         """,
         """"
         create Test transformer
         begin
-            in all {braces} "HERE" replace all "A" with "B";
+            in all {braces} "HERE" replace all "A" with "YES";
         end
         """",
         """
-        One A { B HERE { B } B } A { HERE B }
+        One A { YES HERE { YES } YES } A { HERE YES }
         """
         )]
-    [TestCase( "n°3",
+    [TestCase( "n°3 - first {span} Pattern",
         """
         One A { A HERE { A } A } A { HERE A }
         """,
@@ -50,6 +50,48 @@ public class TransformTests
         """",
         """
         One A { B HERE { B } B } A { HERE A }
+        """
+        )]
+    [TestCase( "n°4",
+        """
+        One A { A { A } A } A { A }
+        """,
+        """"
+        create Test transformer
+        begin
+            in first {braces} "{" replace all "A" with "this works";
+        end
+        """",
+        """
+        One A { A { this works } A } A { A }
+        """
+        )]
+    [TestCase( "n°5",
+        """
+        One A { A { A } A } A { A }
+        """,
+        """"
+        create Test transformer
+        begin
+            in all {braces} "{" replace all "A" with "this works";
+        end
+        """",
+        """
+        One A { A { this works } A } A { this works }
+        """
+        )]
+    [TestCase( "n°6",
+        """
+        One A { A { A } A } A { A }
+        """,
+        """"
+        create Test transformer
+        begin
+            in last {braces} "{" replace all "B" with "this works";
+        end
+        """",
+        """
+        One A { A { A } A } A { this works }
         """
         )]
     public void scoped_replace( string title, string source, string transformer, string result )

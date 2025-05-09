@@ -73,39 +73,5 @@ public sealed partial class SourceCodeEditor
                             yield return t;
             }
         }
-
-        //public void ExplainTokens( IActivityMonitor monitor, LogLevel groupLevel = LogLevel.Info )
-        //{
-        //    Throw.DebugAssert( _tokenFilters.Count >= 1 );
-        //    using var g = monitor.OpenInfo( $"Explaining current token filering Scope:" );
-        //    if( !g.IsRejectedGroup )
-        //    {
-        //        monitor.MinimalFilter = LogFilter.Diagnostic;
-        //        if( _tokenFilterProviders.Count == 1 )
-        //        {
-        //            monitor.Trace( $"No active filter: all {_e.Code.Tokens.Count} source code tokens are available." );
-        //        }
-        //        else
-        //        {
-        //            int eachCount = 0;
-        //            int rangeCount = 0;
-        //            int tokenCount = 0;
-        //            foreach( var each in Tokens )
-        //            {
-        //                eachCount++;
-        //                foreach( var range in each )
-        //                {
-        //                    rangeCount++;
-        //                    foreach( var token in range )
-        //                    {
-        //                        tokenCount++;
-        //                    }
-        //                }
-        //            }
-        //            monitor.Trace( $"{_tokenFilterProviders.Count} active filters results in {eachCount} each group of {rangeCount} token ranges and {tokenCount} tokens." );
-
-        //        }
-        //    }
-        //}
     }
 }
