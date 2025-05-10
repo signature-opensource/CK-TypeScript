@@ -19,6 +19,7 @@ public sealed partial class SourceCodeEditor
 
     readonly SourceTokenEnumerable _sourceTokens;
     readonly List<SourceSpanTokenEnumerable> _enumerators;
+    readonly List<DynamicSpans> _dynamicSpans;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -40,12 +41,16 @@ public sealed partial class SourceCodeEditor
         _errorTracker = monitor.OnError( OnError );
         _sourceTokens = new SourceTokenEnumerable( this );
         _enumerators = new List<SourceSpanTokenEnumerable>();
+        _dynamicSpans = new List<DynamicSpans>();
         _editor = new Editor( this );
     }
 
     void OnError() => _hasError = true;
 
-    internal void InternalDispose() => _errorTracker.Dispose();
+    internal void Dispose()
+    {
+        _errorTracker.Dispose();
+    }
 
     /// <summary>
     /// Gets the monitor that must be used to signal errors.
@@ -151,7 +156,7 @@ public sealed partial class SourceCodeEditor
 
     /// <summary>
     /// Adds a span. This throws if the span is attached to a root or
-    /// if it intersects an existing existing span.
+    /// if it intersects an existing span.
     /// </summary>
     /// <param name="newOne">The span to add.</param>
     public void AddSourceSpan( SourceSpan newOne ) => _code._spans.Add( newOne );
@@ -226,17 +231,17 @@ public sealed partial class SourceCodeEditor
         int delta = tokens.Length - count;
         if( delta > 0 )
         {
-            int eLimit = insertBefore ? index : index + tokens.Length;
-            if( !_sourceTokens.OnInsertTokens( eLimit, delta ) )
-            {
-                return false;
-            }
+            int eLimit = insertBefore
+                            ? index
+                            : index + tokens.Length;
+            _sourceTokens.OnInsertTokens( eLimit, delta );
             foreach( var e in _enumerators )
             {
-                if( !e.OnInsertTokens( eLimit, delta ) )
-                {
-                    return false;
-                }
+                e.OnInsertTokens( eLimit, delta );
+            }
+            foreach( var s in _dynamicSpans )
+            {
+                s.OnInsertTokens( index, delta, insertBefore, eLimit );
             }
             for( int i = 0; i < count; ++i )
             {
@@ -248,23 +253,23 @@ public sealed partial class SourceCodeEditor
         else if( delta < 0 )
         {
             delta = -delta;
-            if( !_sourceTokens.OnRemoveTokens( index + tokens.Length, delta ) )
-            {
-                return false;
-            }
+            int endIndex = index + tokens.Length;
+            TokenSpan removedHead = new( index, index + delta );
+            _sourceTokens.OnRemoveTokens( endIndex, delta );
             foreach( var e in _enumerators )
             {
-                if( !e.OnRemoveTokens( index + tokens.Length, delta ) )
-                {
-                    return false;
-                }
+                e.OnRemoveTokens( endIndex, delta );
+            }
+            foreach( var s in _dynamicSpans )
+            {
+                s.OnRemoveTokens( removedHead, endIndex );
             }
             for( int i = 0; i < tokens.Length; ++i )
             {
                 _tokens[index + i] = tokens[i];
             }
-            _tokens.RemoveRange( index + tokens.Length, delta );
-            _code._spans.OnRemoveTokens( index, delta );
+            _tokens.RemoveRange( endIndex, delta );
+            _code._spans.OnRemoveTokens( removedHead );
         }
         else
         {
@@ -276,6 +281,8 @@ public sealed partial class SourceCodeEditor
         _code.OnTokensChanged();
         return true;
     }
+
+    internal void Track( DynamicSpans s ) => _dynamicSpans.Add( s );
 
     /// <summary>
     /// Returns the source code.

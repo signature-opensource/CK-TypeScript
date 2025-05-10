@@ -261,7 +261,7 @@ public sealed partial class TransformerHost
         }
         finally
         {
-            codeEditor.InternalDispose();
+            codeEditor.Dispose();
         }
     }
 

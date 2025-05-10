@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using static CK.Transform.Core.SourceCodeEditor;
 
 namespace CK.Transform.Core;
 
@@ -56,6 +55,8 @@ public sealed partial class SourceCodeEditor
             return this;
         }
 
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
         public bool MoveNext()
         {
             Throw.CheckState( !IsDisposed );
@@ -64,28 +65,28 @@ public sealed partial class SourceCodeEditor
             return true;
         }
 
-        internal bool OnInsertTokens( int eLimit, int delta )
+        internal void OnInsertTokens( int eLimit, int delta )
         {
-            if( eLimit > _index ) Throw.CKException( $"Enumerable on '{_span}' at {eLimit} has not been observed (current is {_index})." );
+            if( eLimit > _index ) ThrowUnobserved( eLimit );
             _index += delta;
-            return true;
         }
 
-        internal bool OnRemoveTokens( int eLimit, int delta )
+        internal void OnRemoveTokens( int eLimit, int count )
         {
-            if( eLimit > _index ) Throw.CKException( $"Dynamic enumerable at {eLimit} has not been observed (current is {_index})." );
-            _index -= delta;
-            return true;
+            if( eLimit > _index ) ThrowUnobserved( eLimit );
+            _index -= count;
+        }
+
+        void ThrowUnobserved( int eLimit )
+        {
+            Throw.CKException( $"Enumerable on '{_span}' at {eLimit} has not been observed (current is {_index})." );
         }
 
         void IEnumerator.Reset() => Throw.NotSupportedException();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
         object IEnumerator.Current => Current;
 
     }
-
 
 
 }

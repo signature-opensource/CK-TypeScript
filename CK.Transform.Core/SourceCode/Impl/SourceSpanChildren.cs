@@ -276,7 +276,7 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
         var c = _firstChild;
         while( c != null )
         {
-            var s = Remove( c.Span, removedHead );
+            var s = c.Span.Remove( removedHead );
             if( s.IsEmpty )
             {
                 toRemove ??= new List<SourceSpan>();
@@ -289,35 +289,6 @@ public partial class SourceSpanChildren : IEnumerable<SourceSpan>
             }
             c = c._nextSibling;
         }
-    }
-
-    static TokenSpan Remove( TokenSpan span, TokenSpan removed )
-    {
-        return span.GetRelationship( removed ) switch
-        {
-            // The span must be removed.
-            SpanRelationship.Equal
-                or SpanRelationship.Contained|SpanRelationship.Swapped
-                or SpanRelationship.SameStart
-                or SpanRelationship.SameEnd|SpanRelationship.Swapped => TokenSpan.Empty,
-            // [...][XXX]No change (span is before removed).
-            SpanRelationship.Independent
-                or SpanRelationship.Contiguous => span,
-            // [XXX][...] Offset (removed is before span).
-            SpanRelationship.Independent|SpanRelationship.Swapped
-                or SpanRelationship.Contiguous|SpanRelationship.Swapped => new TokenSpan( span.Beg - removed.Length, span.End - removed.Length ),
-            // [...[XXX]]
-            SpanRelationship.SameEnd => new TokenSpan( span.Beg, removed.Beg ),
-            // [[XXX]...]
-            SpanRelationship.SameStart|SpanRelationship.Swapped => new TokenSpan( removed.End, span.End ),
-            // [...[XXX]...]
-            SpanRelationship.Contained => new TokenSpan( span.Beg, span.End - removed.Length ),
-            // [...[X.X.X]X]
-            SpanRelationship.Overlapped => new TokenSpan( span.Beg, removed.Beg ),
-            // [X[X.X.X]...]
-            SpanRelationship.Overlapped|SpanRelationship.Swapped => new TokenSpan( removed.End, span.End ),
-            _ => Throw.NotSupportedException<TokenSpan>()
-        };
     }
 
     internal void SetRoot( SourceSpanRoot root )

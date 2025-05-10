@@ -118,7 +118,7 @@ public class TransformTests
     )]
     [TestCase( "n°2",
         """
-        A
+        A A A
         """,
         """"
         create Test transformer
@@ -127,7 +127,7 @@ public class TransformTests
         end
         """",
         """
-        A A
+        A A A A A A
         """
     )]
     public void replace_expand( string title, string source, string transformer, string result )

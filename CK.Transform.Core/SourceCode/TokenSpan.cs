@@ -153,6 +153,42 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
     }
 
     /// <summary>
+    /// Returns an updated TokenSpan considering the <paramref name="removed"/> span.
+    /// Returns <see cref="Empty"/> when this span is covered by the removed one.
+    /// </summary>
+    /// <param name="removed">The removed span.</param>
+    /// <returns>Updated span.</returns>
+    public TokenSpan Remove( TokenSpan removed )
+    {
+        return GetRelationship( removed ) switch
+        {
+            // The span must be removed.
+            SpanRelationship.Equal
+                or SpanRelationship.Contained | SpanRelationship.Swapped
+                or SpanRelationship.SameStart
+                or SpanRelationship.SameEnd | SpanRelationship.Swapped => Empty,
+            // [span][XXX]No change (span is before removed).
+            SpanRelationship.Independent
+                or SpanRelationship.Contiguous => this,
+            // [XXX][span] Offset (removed is before span).
+            SpanRelationship.Independent | SpanRelationship.Swapped
+                or SpanRelationship.Contiguous | SpanRelationship.Swapped => new TokenSpan( Beg - removed.Length, End - removed.Length ),
+            // [span[XXX]]
+            SpanRelationship.SameEnd => new TokenSpan( Beg, removed.Beg ),
+            // [[XXX]span]
+            SpanRelationship.SameStart | SpanRelationship.Swapped => new TokenSpan( removed.End, End ),
+            // [sp[XXX]an]
+            SpanRelationship.Contained => new TokenSpan( Beg, End - removed.Length ),
+            // [sp[XaXnX]X]
+            SpanRelationship.Overlapped => new TokenSpan( Beg, removed.Beg ),
+            // [X[XsXpX]an]
+            SpanRelationship.Overlapped | SpanRelationship.Swapped => new TokenSpan( removed.End, End ),
+            _ => Throw.NotSupportedException<TokenSpan>()
+        };
+    }
+
+
+    /// <summary>
     /// Gets "∅" for an empty span, "[<see cref="Beg"/>,<see cref="End"/>[" otherwise.
     /// </summary>
     /// <returns>A readable string.</returns>

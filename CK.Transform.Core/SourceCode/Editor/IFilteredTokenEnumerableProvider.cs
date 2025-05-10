@@ -66,9 +66,14 @@ public interface IFilteredTokenEnumerableProvider
     string ToString();
 
     /// <summary>
+    /// Empty singleton for <c>IEnumerable&lt;IEnumerable&lt;SourceToken&gt;&gt;</c>.
+    /// </summary>
+    public static readonly IEnumerable<IEnumerable<SourceToken>> EmptyRange = [[]];
+
+    /// <summary>
     /// Empty singleton for <c>IEnumerable&lt;IEnumerable&lt;IEnumerable&lt;SourceToken&gt;&gt;&gt;</c>.
     /// </summary>
-    public static readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> EmptyFilteredTokens = [[[]]];
+    public static readonly IEnumerable<IEnumerable<IEnumerable<SourceToken>>> EmptyFilteredTokens = [EmptyRange];
 
     /// <summary>
     /// No-op projection that <see cref="GetFilteredTokenProjection"/> can use.

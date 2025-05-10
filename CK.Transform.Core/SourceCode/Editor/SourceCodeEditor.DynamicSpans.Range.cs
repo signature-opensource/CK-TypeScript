@@ -1,0 +1,87 @@
+using CK.Core;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
+namespace CK.Transform.Core;
+
+public sealed partial class SourceCodeEditor
+{
+    public sealed partial class DynamicSpans
+    {
+        sealed class Range : IEnumerable<SourceToken>, IEnumerator<SourceToken>
+        {
+            readonly SourceCodeEditor _editor;
+            List<Token>? _enumTokens;
+            Token? _token;
+            int _index;
+
+            public TokenSpan Span { get; set; }
+
+            public Range( SourceCodeEditor editor, TokenSpan span )
+            {
+                _editor = editor;
+                Span = span;
+            }
+
+            [MemberNotNullWhen( false, nameof( _enumTokens ) )]
+            bool IsDisposed => _enumTokens == null;
+
+            public SourceToken Current => new SourceToken( _token!, _index );
+
+            public IEnumerator<SourceToken> GetEnumerator()
+            {
+                Throw.CheckState( "Multiple use of the UnfilteredSourceTokens.", IsDisposed );
+                _index = -1;
+                _enumTokens = _editor._tokens;
+                return this;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public void Dispose()
+            {
+                _enumTokens = null;
+            }
+
+            public bool MoveNext()
+            {
+                Throw.CheckState( !IsDisposed );
+                if( ++_index >= _enumTokens.Count ) return false;
+                _token = _enumTokens[_index];
+                return true;
+            }
+
+            internal bool OnInsertTokens( int eLimit, int count )
+            {
+                if( _index >= 0 )
+                {
+                    if( eLimit > _index ) ThrowUnobserved( eLimit );
+                    _index += count;
+                }
+                return true;
+            }
+
+            internal bool OnRemoveTokens( int eLimit, int count )
+            {
+                if( _index >= 0 )
+                {
+                    if( eLimit > _index ) ThrowUnobserved( eLimit );
+                    _index -= count;
+                }
+                return true;
+            }
+
+            void ThrowUnobserved( int eLimit )
+            {
+                Throw.CKException( $"Dynamic span {Span} has not been observed  at {eLimit} (current is {_index})." );
+            }
+
+            object IEnumerator.Current => Current;
+
+            void IEnumerator.Reset() => Throw.NotSupportedException();
+        }
+    }
+
+
+}

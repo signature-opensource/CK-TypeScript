@@ -48,26 +48,29 @@ public sealed partial class SourceCodeEditor
             _syntaxBorder = true;
         }
 
-        internal LinkedTokenFilterBuilderContext? Previous => _previous;
-
-        internal IFilteredTokenEnumerableProvider? Provider => _provider;
 
         internal int Index => _index;
 
-        [MemberNotNullWhen(false, nameof( Previous ), nameof( Provider ) )]
-        internal bool IsRoot => _index == 0;
-
         internal SourceCodeEditor Editor => _editor;
 
-        internal IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens => _tokens;
+        public LinkedTokenFilterBuilderContext? Previous => _previous;
 
         internal void SetSyntaxBorder() => _syntaxBorder = true;
 
-        IReadOnlyList<Token> ITokenFilterBuilderContext.Tokens => _editor.Code.Tokens;
+        internal bool IsTransparent => _isTransparent;
+
+        [MemberNotNullWhen(false, nameof( Previous ), nameof( Provider ) )]
+        public bool IsRoot => _index == 0;
+
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens => _tokens;
+
+        public IFilteredTokenEnumerableProvider? Provider => _provider;
+
+        IReadOnlyList<Token> ITokenFilterBuilderContext.UnfilteredTokens => _editor.Code.Tokens;
+
+        ITokenFilterBuilderContext? ITokenFilterBuilderContext.Previous => _previous;
 
         public bool HasError => _editor.HasError;
-
-        public bool IsTransparent => _isTransparent;
 
         public void Error( string errorMessage )
         {
@@ -159,6 +162,8 @@ public sealed partial class SourceCodeEditor
             Throw.CheckState( !span.IsDetached );
             return new SourceSpanTokenEnumerable( _editor, span );
         }
+
+        public DynamicSpans CreateDynamicSpan() => new DynamicSpans( _editor );
 
         public SourceSpan? GetDeepestSpanAt( int index )
         {

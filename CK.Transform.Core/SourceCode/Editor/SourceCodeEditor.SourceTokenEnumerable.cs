@@ -36,7 +36,7 @@ public sealed partial class SourceCodeEditor
             return this;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => this;
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public void Dispose()
         {
@@ -53,29 +53,32 @@ public sealed partial class SourceCodeEditor
             return true;
         }
 
-        void IEnumerator.Reset() => Throw.NotSupportedException();
-
-        internal bool OnInsertTokens( int eLimit, int delta )
+        internal void OnInsertTokens( int eLimit, int delta )
         {
             if( _index >= 0 )
             {
-                if( eLimit > _index ) Throw.CKException( $"Source tokens enumerable at {eLimit} has not been observed (current is {_index})." );
+                if( eLimit > _index ) ThrowUnobserved( eLimit );
                 _index += delta;
             }
-            return true;
         }
 
-        internal bool OnRemoveTokens( int eLimit, int delta )
+        internal void OnRemoveTokens( int eLimit, int count )
         {
             if( _index >= 0 )
             {
-                if( eLimit > _index ) Throw.CKException( $"Source tokens enumerable at {eLimit} has not been observed (current is {_index})." );
-                _index -= delta;
+                if( eLimit > _index ) ThrowUnobserved( eLimit );
+                _index -= count;
             }
-            return true;
+        }
+
+        void ThrowUnobserved( int eLimit )
+        {
+            Throw.CKException( $"Source tokens enumerable at {eLimit} has not been observed (current is {_index})." );
         }
 
         object IEnumerator.Current => Current;
+
+        void IEnumerator.Reset() => Throw.NotSupportedException();
     }
 
 }

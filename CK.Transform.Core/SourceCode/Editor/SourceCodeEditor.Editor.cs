@@ -47,6 +47,9 @@ public sealed partial class SourceCodeEditor
             if( --_openCount == 0 )
             {
                 // Reparse what must be reparsed.
+
+                // Clears the tracked dynamic spans.
+                _e._dynamicSpans.Clear();
             }
         }
 
@@ -73,5 +76,6 @@ public sealed partial class SourceCodeEditor
                             yield return t;
             }
         }
+
     }
 }
