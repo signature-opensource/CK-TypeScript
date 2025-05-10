@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using static CK.Transform.Core.SourceCodeEditor;
 
 namespace CK.Transform.Core;
 
@@ -14,9 +17,32 @@ public interface ITokenFilterBuilderContext
     bool HasError { get; }
 
     /// <summary>
-    /// Gets the current tokens.
+    /// Gets the current <see cref="SourceCode.Tokens"/>.
     /// </summary>
-    IReadOnlyList<Token> Tokens { get; }
+    IReadOnlyList<Token> UnfilteredTokens { get; }
+
+    /// <summary>
+    /// Gets the filtered tokens for this context.
+    /// </summary>
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens { get; }
+
+    /// <summary>
+    /// Gets whether this context is the root: it covers all the source code tokens.
+    /// </summary>
+    [MemberNotNullWhen( false, nameof( Previous ) )]
+    bool IsRoot { get; }
+
+    /// <summary>
+    /// Gets the previous filtering context.
+    /// Null only when <see cref="IsRoot"/> is true.
+    /// </summary>
+    ITokenFilterBuilderContext? Previous { get; }
+
+    /// <summary>
+    /// Gets this context's provider.
+    /// Null only when <see cref="IsRoot"/> is true.
+    /// </summary>
+    IFilteredTokenEnumerableProvider? Provider { get; }
 
     /// <summary>
     /// Signals an error.
@@ -46,4 +72,12 @@ public interface ITokenFilterBuilderContext
     /// <param name="span">The span. <see cref="SourceSpan.IsDetached"/> must be false.</param>
     /// <returns>The source tokens.</returns>
     IEnumerable<SourceToken> GetSourceTokens( SourceSpan span );
+
+    /// <summary>
+    /// Creates a new <see cref="DynamicSpans"/>.
+    /// </summary>
+    /// <returns>A new <see cref="DynamicSpans"/>.</returns>
+    DynamicSpans CreateDynamicSpan();
+
+
 }
