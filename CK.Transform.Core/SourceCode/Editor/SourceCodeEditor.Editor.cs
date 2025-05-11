@@ -41,15 +41,24 @@ public sealed partial class SourceCodeEditor
             }
         }
 
-
         public void Dispose()
         {
             if( --_openCount == 0 )
             {
-                // Reparse what must be reparsed.
-
+                // Dump the first filtering error if any.
+                TokenFilteringError? filteringError = _e._filteringError;
+                if( filteringError != null )
+                {
+                    _e._filteringError = null;
+                    filteringError.Dump( _e._monitor );
+                    Throw.DebugAssert( _e._hasError );
+                }
                 // Clears the tracked dynamic spans.
                 _e._dynamicSpans.Clear();
+                if( !_e._hasError )
+                {
+                    // Reparse what must be reparsed.
+                }
             }
         }
 

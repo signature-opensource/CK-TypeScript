@@ -64,11 +64,11 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             }
             else
             {
-                c.Error( $"Expected single match but got {each.Count()}" );
+                c.Fail( $"Expected single match but got {each.Count()}" );
                 yield break;
             }
         }
-        c.Error( $"Expected single match but got none: Tokens are empty." );
+        c.Fail( $"Expected single match but got none: Tokens are empty." );
     }
 
 
@@ -88,7 +88,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             }
             else
             {
-                c.Error( $"Expected '{ToString()}' but got {count} matches" );
+                c.Fail( $"Expected '{ToString()}' but got {count} matches" );
                 break;
             }
         }
@@ -110,7 +110,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             }
             else
             {
-                c.Error( $"Expected '{ToString()}' but got {count} matches" );
+                c.Fail( $"Expected '{ToString()}' but got {count} matches" );
                 break;
             }
         }
@@ -135,7 +135,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
         {
             if( !each.Any() )
             {
-                c.Error( $"'all' expects at least one match." );
+                c.Fail( $"'all' expects at least one match." );
             }
         }
         return inner;
@@ -173,7 +173,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
             count = each.Count();
             if( count != cardinality.ExpectedMatchCount )
             {
-                c.Error( $"Expected '{cardinality}' but got {count} matches." );
+                c.Fail( $"Expected '{cardinality}' but got {count} matches." );
                 count = -2;
             }
         }

@@ -50,11 +50,10 @@ public interface ITokenFilterBuilderContext
     IFilteredTokenEnumerableProvider? Provider { get; }
 
     /// <summary>
-    /// Signals an error.
-    /// <see cref="HasEditorError"/> is set to true for all contexts, including the <see cref="SourceCodeEditor.HasError"/>.
+    /// Signals a filtering error.
     /// </summary>
-    /// <param name="errorMessage">The error message.</param>
-    void Error( string errorMessage );
+    /// <param name="failureMessage">The error message.</param>
+    void Fail( string failureMessage );
 
     /// <summary>
     /// Gets the deepest <see cref="SourceSpan"/> at a token position.

@@ -1,4 +1,5 @@
-﻿using CK.Transform.Core.Tests.Helpers;
+using CK.Core;
+using CK.Transform.Core.Tests.Helpers;
 using NUnit.Framework;
 using Shouldly;
 using static CK.Testing.MonitorTestHelper;
@@ -106,4 +107,30 @@ public class LocationAndCardinalityTests
         var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
+
+    [TestCase( "n°1ter - in after L1 in before L2 also works.",
+        """
+        A B C D E
+        """,
+        """"
+        create Test transformer
+        begin
+            replace single "Z" with "";
+        end
+        """",
+        """
+        Pouf
+        """
+    )]
+    public void single_failure( string title, string source, string transformer, string error )
+    {
+        var h = new TransformerHost( new TestLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            h.Transform( TestHelper.Monitor, source, function ).ShouldBeNull();
+            logs.ShouldContain( error );
+        }
+    }
+
 }

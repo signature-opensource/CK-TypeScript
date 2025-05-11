@@ -30,14 +30,18 @@ public sealed class TransformStatementBlock : TransformStatement
 
     /// <inheritdoc />
     /// <remarks>
-    /// Applies the inner <see cref="Statements"/>.
+    /// Applies the inner <see cref="Statements"/> until <see cref="SourceCodeEditor.HasError"/>
+    /// becomes true.
     /// </remarks>
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
-        foreach( var statement in Statements )
+        if( !editor.HasError )
         {
-            statement.Apply( monitor, editor );
-            if( editor.HasError ) break;
+            foreach( var statement in Statements )
+            {
+                statement.Apply( monitor, editor );
+                if( editor.HasError ) break;
+            }
         }
     }
 

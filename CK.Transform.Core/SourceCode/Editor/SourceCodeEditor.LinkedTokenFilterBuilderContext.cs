@@ -5,11 +5,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace CK.Transform.Core;
 
 public sealed partial class SourceCodeEditor
 {
+
     internal sealed class LinkedTokenFilterBuilderContext : ITokenFilterBuilderContext
     {
         readonly SourceCodeEditor _editor;
@@ -74,89 +76,13 @@ public sealed partial class SourceCodeEditor
 
         public bool HasEditorError => _editor.HasError;
 
-        public void Error( string errorMessage )
+        public void Fail( string failureMessage )
         {
-            var monitor = _editor.Monitor;
-            using( monitor.OpenError( errorMessage ) )
-            {
-                var b = new StringBuilder();
-                monitor.Trace( $"Current filter: {WriteFullPath( b ).ToString()}" );
-                DumpFilterResults( monitor, this, b );
-            }
-
-            static void DumpFilterResults( IActivityMonitor monitor,
-                                           LinkedTokenFilterBuilderContext c,
-                                           StringBuilder b )
-            {
-                if( c.IsRoot ) return;
-                DumpFilterResults( monitor, c.Previous, b );
-                if( c.IsTransparent )
-                {
-                    monitor.Trace( $"Filter n°{c.Index}: (transparent)." );
-                }
-                else
-                {
-                    b.Clear();
-                    int eachCount = c.Tokens.Count();
-                    var eachSummary = eachCount == 0
-                                        ? "Empty"
-                                        : eachCount == 1
-                                            ? "No each group"
-                                            : $"{eachCount} each groups";
-                    string summary = $"Filter n°{c.Index}: {c.Provider.Describe( b, false )} - {eachSummary}";
-                    if( eachCount == 0 )
-                    {
-                        monitor.Trace( summary );
-                    }
-                    else
-                    {
-                        using( monitor.OpenTrace( $"Filter n°{c.Index}: {c.Provider.Describe( b, false ).ToString()} - {eachSummary}." ) )
-                        {
-                            if( eachCount > 1 )
-                            {
-                                int eachNumber = 0;
-                                foreach( var each in c.Tokens )
-                                {
-                                    DumpRanges( monitor, $"Each group n°{eachNumber}: ", each, b );
-                                    ++eachNumber;
-                                }
-                            }
-                            else
-                            {
-                                DumpRanges( monitor, $"Ranges: ", c.Tokens.First(), b );
-                            }
-                        }
-                    }
-                }
-
-                static void DumpRanges( IActivityMonitor monitor,
-                                        string prefix,
-                                        IEnumerable<IEnumerable<SourceToken>> each,
-                                        StringBuilder b )
-                {
-                    var rangeCount = each.Count();
-                    if( rangeCount == 0 )
-                    {
-                        monitor.Trace( $"{prefix}Empty." );
-                    }
-                    else
-                    {
-                        using( monitor.OpenTrace( $"{prefix}{rangeCount} ranges." ) )
-                        {
-                            b.Clear();
-                            int iRange = 0;
-                            foreach( var r in each )
-                            {
-                                b.Append( "--- (range n°" ).Append( ++iRange ).AppendLine( ") ---" );
-                                r.Select( t => t.Token ).Write( b ).AppendLine();
-                                b.AppendLine( "---" );
-                            }
-                            monitor.Trace( b.ToString() );
-                        }
-                    }
-                }
-
-            }
+            failureMessage ??= "<no failure message>";
+            var b = new StringBuilder( failureMessage );
+            b.AppendLine().Append( "Current filter: " );
+            WriteFullPath( b );
+            _editor.SetTokenFilteringError( new TokenFilteringError( this, b.ToString() ) );
         }
 
         public IEnumerable<SourceToken> GetSourceTokens( SourceSpan span )
@@ -197,7 +123,6 @@ public sealed partial class SourceCodeEditor
             }
             return b;
         }
-
 
         public override string ToString() => WriteFullPath( new StringBuilder() ).ToString();
     }

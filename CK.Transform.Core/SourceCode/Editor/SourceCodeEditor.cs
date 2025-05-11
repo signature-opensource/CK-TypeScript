@@ -20,6 +20,7 @@ public sealed partial class SourceCodeEditor
     readonly SourceTokenEnumerable _sourceTokens;
     readonly List<SourceSpanTokenEnumerable> _enumerators;
     readonly List<DynamicSpans> _dynamicSpans;
+    TokenFilteringError? _filteringError;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -234,6 +235,22 @@ public sealed partial class SourceCodeEditor
     }
 
     internal void Track( DynamicSpans s ) => _dynamicSpans.Add( s );
+
+    internal void SetTokenFilteringError( TokenFilteringError error )
+    {
+        if( _filteringError == null )
+        {
+            _filteringError = error;
+            _monitor.Error( "" );
+        }
+        else
+        {
+            using( _monitor.OpenError( ActivityMonitor.Tags.ToBeInvestigated, "New filtering error emitted while a previous one exists. Ignored." ) )
+            {
+                _monitor.Warn( error.Message );
+            }
+        }
+    }
 
     /// <summary>
     /// Returns the source code.
