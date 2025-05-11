@@ -81,13 +81,11 @@ public sealed partial class SourceCodeEditor
     public int PushTokenFilter( IFilteredTokenEnumerableProvider? filterProvider )
     {
         Throw.CheckState( _editor.OpenCount == 0 );
+        Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
         int count = _editor.CurrentFilter.Index;
         filterProvider?.Activate( _editor.PushTokenFilter );
         count = _editor.CurrentFilter.Index - count;
-        if( count > 0 )
-        {
-            _editor.CurrentFilter.SetSyntaxBorder();
-        }
+        _editor.CurrentFilter.SetSyntaxBorder();
         return count;
     }
 
@@ -102,7 +100,9 @@ public sealed partial class SourceCodeEditor
     {
         Throw.CheckArgument( count >= 0 );
         Throw.CheckState( _editor.OpenCount == 0 && _editor.CurrentFilter.Index >= count );
+        Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
         _editor.PopTokenFilter( count );
+        Throw.CheckState( _editor.CurrentFilter.IsSyntaxBorder );
     }
 
     /// <summary>
@@ -228,12 +228,11 @@ public sealed partial class SourceCodeEditor
 
     bool DoReplace( int index, int count, Token[] tokens, bool insertBefore = false )
     {
+        Throw.DebugAssert( count > 0 );
+        int eLimit = index + count - 1;
         int delta = tokens.Length - count;
         if( delta > 0 )
         {
-            int eLimit = insertBefore
-                            ? index
-                            : index + tokens.Length;
             _sourceTokens.OnInsertTokens( eLimit, delta );
             foreach( var e in _enumerators )
             {
@@ -253,22 +252,21 @@ public sealed partial class SourceCodeEditor
         else if( delta < 0 )
         {
             delta = -delta;
-            int endIndex = index + tokens.Length;
             TokenSpan removedHead = new( index, index + delta );
-            _sourceTokens.OnRemoveTokens( endIndex, delta );
+            _sourceTokens.OnRemoveTokens( eLimit, delta );
             foreach( var e in _enumerators )
             {
-                e.OnRemoveTokens( endIndex, delta );
+                e.OnRemoveTokens( eLimit, delta );
             }
             foreach( var s in _dynamicSpans )
             {
-                s.OnRemoveTokens( removedHead, endIndex );
+                s.OnRemoveTokens( removedHead, eLimit );
             }
             for( int i = 0; i < tokens.Length; ++i )
             {
                 _tokens[index + i] = tokens[i];
             }
-            _tokens.RemoveRange( endIndex, delta );
+            _tokens.RemoveRange( index + tokens.Length, delta );
             _code._spans.OnRemoveTokens( removedHead );
         }
         else

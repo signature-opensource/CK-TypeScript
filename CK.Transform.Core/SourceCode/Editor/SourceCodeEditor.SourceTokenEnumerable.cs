@@ -41,6 +41,7 @@ public sealed partial class SourceCodeEditor
         public void Dispose()
         {
             _enumTokens = null;
+            _index = -1;
         }
 
         public SourceToken Current => new SourceToken( _token!, _index );

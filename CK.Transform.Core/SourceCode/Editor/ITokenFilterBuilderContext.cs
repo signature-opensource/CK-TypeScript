@@ -33,6 +33,11 @@ public interface ITokenFilterBuilderContext
     bool IsRoot { get; }
 
     /// <summary>
+    /// Gets whether this context is the root or is the last one of a location filter.
+    /// </summary>
+    bool IsSyntaxBorder { get; }
+
+    /// <summary>
     /// Gets the previous filtering context.
     /// Null only when <see cref="IsRoot"/> is true.
     /// </summary>

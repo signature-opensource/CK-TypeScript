@@ -22,6 +22,4 @@ public sealed partial class SpanMatcher : IFilteredTokenEnumerableProvider
         _spanSpec?.Activate( collector );
     }
 
-
-
 }

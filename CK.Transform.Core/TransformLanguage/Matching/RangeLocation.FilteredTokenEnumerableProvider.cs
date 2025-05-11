@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System;
 using CK.Core;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CK.Transform.Core;
 
@@ -56,9 +54,20 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             Throw.DebugAssert( "We are a 'Before' context.", !context.IsRoot );
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // that is our previous.
-            Throw.DebugAssert( "We are working on the result of the mono-location LocationMatcher.",
-                               context.Previous.Tokens == inner && context.Previous.Provider is LocationMatcher );
-            Throw.DebugAssert( "A LocationMatcher is not the root.", !context.Previous.IsRoot );
+            Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality.",
+                               context.Previous.Tokens == inner
+                               && (context.Previous.Provider == LocationCardinality.SingleCardinality
+                                   || (context.Previous.Provider is LocationCardinality card
+                                       && card.Kind is LocationCardinality.LocationKind.Single
+                                                       or LocationCardinality.LocationKind.First
+                                                       or LocationCardinality.LocationKind.Last) ) );
+            var previousInput = context.Previous.Previous;
+            do
+            {
+                Throw.DebugAssert( "A LocationCardinality is followed by a matcher and the root is a SyntaxBorder.", !previousInput.IsRoot );
+                previousInput = previousInput.Previous;
+            }
+            while( !previousInput.IsSyntaxBorder );
 
             var spans = context.CreateDynamicSpan();
 
@@ -72,7 +81,7 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             // Then detect the start of the LocationMatcher input and if the resulting
             // range is not empty, keep the span as a "dynamic span".
             int idx = 0;
-            var previousInner = context.Previous.Previous.Tokens;
+            var previousInner = previousInput.Tokens;
             foreach( var each in previousInner )
             {
                 int beg = each.First().First().Index;
@@ -112,8 +121,29 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             Throw.DebugAssert( "We are an 'After' context.", !context.IsRoot );
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // or the Before (when we are in a between) that is our previous.
-            Throw.DebugAssert( "We are working on the result of the mono-location LocationMatcher.",
-                               context.Previous.Tokens == inner && context.Previous.Provider is LocationMatcher or Before );
+            Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality or a Before.",
+                               context.Previous.Tokens == inner
+                               && (context.Previous.Provider is Before
+                                   || context.Previous.Provider == LocationCardinality.SingleCardinality
+                                   || (context.Previous.Provider is LocationCardinality card
+                                       && card.Kind is LocationCardinality.LocationKind.Single
+                                                    or LocationCardinality.LocationKind.First
+                                                    or LocationCardinality.LocationKind.Last)) );
+            // If we are after a Before, the Before is our previous inner (not the inner of the between that activated
+            // the Before and this After).
+            var previousInput = context.Previous.Previous;
+            Throw.DebugAssert( previousInput != null );
+            if( context.Previous.Provider is not Before )
+            {
+                do
+                {
+                    Throw.DebugAssert( "A LocationCardinality is followed by a matcher and the root is a SyntaxBorder.",
+                                       !previousInput.IsRoot );
+                    previousInput = previousInput.Previous;
+                }
+                while( !previousInput.IsSyntaxBorder );
+            }
+
             Throw.DebugAssert( "A LocationMatcher or a Before is not the root.", !context.Previous.IsRoot );
 
             var spans = context.CreateDynamicSpan();
@@ -128,7 +158,7 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             // Then detect the end of the LocationMatcher input and if the resulting
             // range is not empty, keep the span as a "dynamic span".
             int idx = 0;
-            var previousInner = context.Previous.Previous.Tokens;
+            var previousInner = previousInput.Tokens;
             foreach( var each in previousInner )
             {
                 int beg = spans.SpanAt(idx).Beg;

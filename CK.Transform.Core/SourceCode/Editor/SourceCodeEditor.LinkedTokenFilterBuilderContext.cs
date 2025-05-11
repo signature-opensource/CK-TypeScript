@@ -62,6 +62,8 @@ public sealed partial class SourceCodeEditor
         [MemberNotNullWhen(false, nameof( Previous ), nameof( Provider ) )]
         public bool IsRoot => _index == 0;
 
+        public bool IsSyntaxBorder => _syntaxBorder;
+
         public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Tokens => _tokens;
 
         public IFilteredTokenEnumerableProvider? Provider => _provider;

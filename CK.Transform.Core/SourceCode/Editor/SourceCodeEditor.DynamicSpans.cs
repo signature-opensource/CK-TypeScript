@@ -201,12 +201,12 @@ public sealed partial class SourceCodeEditor
             _spans.Add( new Range( _editor, span ) );
         }
 
-        internal void OnRemoveTokens( TokenSpan removedHead, int endIndex )
+        internal void OnRemoveTokens( TokenSpan removedHead, int eLimit )
         {
             for( int i = 0; i < _spans.Count; ++i )
             {
                 var r = _spans[i];
-                r.OnRemoveTokens( endIndex, removedHead.Length );
+                r.OnRemoveTokens( eLimit, removedHead.Length );
                 var newSpan = r.Span.Remove( removedHead );
                 if( newSpan.IsEmpty )
                 {

@@ -170,4 +170,47 @@ public class TransformTests
         sourceCode.ToString().ShouldBe( result );
     }
 
+
+    [TestCase( "n°1",
+        """
+        A B
+        """,
+        """"
+        create Test transformer
+        begin
+            replace first "A" with "";
+            replace first "B" with "";
+        end
+        """",
+        """
+         
+        """
+    )]
+    [TestCase( "n°2",
+        """
+        A B C
+        A B C
+        """,
+        """"
+        create Test transformer
+        begin
+            replace first "A" with "";
+            replace all 2 "B C" with "X";
+        end
+        """",
+        """
+         X
+        A X
+        """
+    )]
+    public void replace_multiple( string title, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new TestLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
+        sourceCode.ToString().ShouldBe( result );
+    }
+
+
+
 }

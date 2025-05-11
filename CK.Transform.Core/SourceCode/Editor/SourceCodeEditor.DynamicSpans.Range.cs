@@ -42,6 +42,7 @@ public sealed partial class SourceCodeEditor
             public void Dispose()
             {
                 _enumTokens = null;
+                _index = -1;
             }
 
             public bool MoveNext()
@@ -74,7 +75,7 @@ public sealed partial class SourceCodeEditor
 
             void ThrowUnobserved( int eLimit )
             {
-                Throw.CKException( $"Dynamic span {Span} has not been observed  at {eLimit} (current is {_index})." );
+                Throw.CKException( $"Dynamic span {Span} has not been observed at {eLimit} (current is {_index})." );
             }
 
             object IEnumerator.Current => Current;

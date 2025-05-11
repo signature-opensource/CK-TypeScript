@@ -43,9 +43,9 @@ public sealed class ReplaceStatement : TransformStatement
                         if( GetFirstLastAndCount( range, out var first, out var last, out var count ) )
                         {
                             var replace = new Token( TokenType.GenericAny,
-                                                 first.Token.LeadingTrivias,
-                                                 _replacement.TextLines,
-                                                 last.Token.TrailingTrivias );
+                                                     first.Token.LeadingTrivias,
+                                                     _replacement.TextLines,
+                                                     last.Token.TrailingTrivias );
                             editor.Replace( first.Index, count, replace );
                         }
                         applied = true;
