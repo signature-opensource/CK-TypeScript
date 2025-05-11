@@ -97,7 +97,8 @@ public sealed class ImportLine : IImportLine
         }
         else
         {
-            editor.RemoveAt( span.Beg + 1 );
+            using var e = editor.OpenEditor();
+            e.RemoveAt( span.Beg + 1 );
         }
     }
 
@@ -116,14 +117,15 @@ public sealed class ImportLine : IImportLine
         else
         {
             int tokenIndex = GetTokenIndexOfNamedIndex( span, index );
+            using var e = editor.OpenEditor();
             if( set )
             {
                 Token newToken = new Token( TokenType.GenericIdentifier, "type", Trivia.OneSpace );
-                editor.InsertAt( tokenIndex, newToken );
+                e.InsertAt( tokenIndex, newToken );
             }
             else
             {
-                editor.RemoveAt( tokenIndex );
+                e.RemoveAt( tokenIndex );
             }
         }
     }
@@ -179,7 +181,8 @@ public sealed class ImportLine : IImportLine
                     b.Add( new Token( TokenType.GenericIdentifier, "from", Trivia.OneSpace ) );
                 }
             }
-            editor.Replace( tokenIndex, 1, b.ToArray() );
+            using var e = editor.OpenEditor();
+            e.Replace( tokenIndex, 1, b.ToArray() );
         }
     }
 
@@ -210,7 +213,8 @@ public sealed class ImportLine : IImportLine
     {
         var currentToken = editor.Code.Tokens[span.Beg];
         Token newToken = new Token( currentToken.TokenType, currentToken.LeadingTrivias, ToString(), currentToken.TrailingTrivias );
-        editor.Replace( span.Beg, newToken );
+        using var e = editor.OpenEditor();
+        e.Replace( span.Beg, newToken );
     }
 
     /// <summary>

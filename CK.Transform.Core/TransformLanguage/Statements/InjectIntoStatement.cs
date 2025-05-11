@@ -76,7 +76,7 @@ public sealed class InjectIntoStatement : TransformStatement
                 }
                 else
                 {
-                    editor.Replace( modified.Index, modified.Token );
+                    e.Replace( modified.Index, modified.Token );
                     editor.SetNeedReparse();
                 }
             }

@@ -216,6 +216,14 @@ public sealed partial class SourceCodeEditor
             }
         }
 
+        internal void OnUpdateTokens( int eLimit )
+        {
+            for( int i = 0; i < _spans.Count; ++i )
+            {
+                _spans[i].OnUpdateTokens( eLimit );
+            }
+        }
+
         internal void OnInsertTokens( int index, int count, bool insertBefore, int eLimit )
         {
             foreach( var r in _spans )

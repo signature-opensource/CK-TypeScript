@@ -46,7 +46,7 @@ public sealed class ReplaceStatement : TransformStatement
                                                      first.Token.LeadingTrivias,
                                                      _replacement.TextLines,
                                                      last.Token.TrailingTrivias );
-                            editor.Replace( first.Index, count, replace );
+                            e.Replace( first.Index, count, replace );
                         }
                         applied = true;
                     }

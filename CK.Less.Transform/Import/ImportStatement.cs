@@ -74,7 +74,8 @@ public sealed class ImportStatement : SourceSpan
         var startToken = editor.Code.Tokens[Span.Beg];
         var endToken = editor.Code.Tokens[Span.End - 1];
         Token newToken = new Token( startToken.TokenType, startToken.LeadingTrivias, ToString(), endToken.TrailingTrivias );
-        editor.Replace( Span.Beg, Span.Length, newToken );
+        using var e = editor.OpenEditor();
+        e.Replace( Span.Beg, Span.Length, newToken );
     }
     #endregion // Mutators
 

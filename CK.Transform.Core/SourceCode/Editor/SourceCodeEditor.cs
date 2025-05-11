@@ -161,75 +161,15 @@ public sealed partial class SourceCodeEditor
     /// <param name="newOne">The span to add.</param>
     public void AddSourceSpan( SourceSpan newOne ) => _code._spans.Add( newOne );
 
-    /// <summary>
-    /// Replaces the tokens starting at <paramref name="index"/>.
-    /// </summary>
-    /// <param name="index">The index of the first token that must be replaced.</param>
-    /// <param name="tokens">Updated tokens. Must not be empty.</param>
-    public void Replace( int index, params Token[] tokens ) => Replace( index, tokens.Length, tokens );
-
-    /// <summary>
-    /// Replaces one or more tokens with any number of tokens.
-    /// </summary>
-    /// <param name="index">The index of the first token that must be replaced.</param>
-    /// <param name="count">The number of tokens to replace. Must be positive.</param>
-    /// <param name="tokens">New tokens to insert. Must not be empty.</param>
-    public void Replace( int index, int count, params Token[] tokens )
+    bool DoReplace( int index, int count, ReadOnlySpan<Token> tokens, bool insertBefore = false )
     {
-        Throw.CheckArgument( index >= 0 && index + count <= _tokens.Count );
-        Throw.CheckArgument( tokens.Length > 0 );
-        DoReplace( index, count, tokens );
-    }
-
-    /// <summary>
-    /// Inserts new tokens. Spans that start at <paramref name="index"/> will contain the inserted tokens.
-    /// </summary>
-    /// <param name="index">The index of the inserted tokens.</param>
-    /// <param name="tokens">New tokens to insert. Must not be empty.</param>
-    public void InsertAt( int index, params Token[] tokens )
-    {
-        Throw.CheckArgument( index >= 0 && index <= _tokens.Count );
-        Throw.CheckArgument( tokens.Length > 0 );
-        DoReplace( index, 0, tokens );
-    }
-
-    /// <summary>
-    /// Inserts new tokens. Spans that start at <paramref name="index"/> will not contain the inserted tokens.
-    /// </summary>
-    /// <param name="index">The index of the inserted tokens.</param>
-    /// <param name="tokens">New tokens to insert. Must not be empty.</param>
-    public void InsertBefore( int index, params Token[] tokens )
-    {
-        Throw.CheckArgument( index >= 0 && index <= _tokens.Count );
-        Throw.CheckArgument( tokens.Length > 0 );
-        DoReplace( index, 0, tokens, insertBefore: true );
-    }
-
-    /// <summary>
-    /// Removes a token at a specified index.
-    /// </summary>
-    /// <param name="index">The token index to remove.</param>
-    public void RemoveAt( int index )
-    {
-        Throw.CheckArgument( index >= 0 && index < _tokens.Count );
-        DoReplace( index, 1, Array.Empty<Token>() );
-    }
-
-    /// <summary>
-    /// Removes a range of tokens.
-    /// </summary>
-    /// <param name="index">The index of the first token to remove.</param>
-    /// <param name="count">The number of tokens to remove.</param>
-    public void RemoveRange( int index, int count )
-    {
-        Throw.CheckArgument( index >= 0 && index + count <= _tokens.Count );
-        DoReplace( index, count, Array.Empty<Token>() );
-    }
-
-    bool DoReplace( int index, int count, Token[] tokens, bool insertBefore = false )
-    {
-        Throw.DebugAssert( count > 0 );
+        Throw.DebugAssert( count >= 0 );
+        // All existing Enumerators must have observed the
+        // last replaced token.
         int eLimit = index + count - 1;
+        Throw.CheckArgument( "Invalid token range to replace.", index >= 0 && eLimit < _tokens.Count );
+        // To limit memory moves, tokens are replaced in the list:
+        // RemoveRange or AddRange is only called when required.
         int delta = tokens.Length - count;
         if( delta > 0 )
         {
@@ -246,7 +186,7 @@ public sealed partial class SourceCodeEditor
             {
                 _tokens[index + i] = tokens[i];
             }
-            _tokens.InsertRange( index + count, tokens.Skip( count ) );
+            _tokens.InsertRange( index + count, tokens.Slice( count ) );
             _code._spans.OnInsertTokens( index, delta, insertBefore );
         }
         else if( delta < 0 )
@@ -271,6 +211,19 @@ public sealed partial class SourceCodeEditor
         }
         else
         {
+            _sourceTokens.OnUpdateTokens( eLimit );
+            foreach( var e in _enumerators )
+            {
+                e.OnUpdateTokens( eLimit );
+            }
+            foreach( var s in _dynamicSpans )
+            {
+                s.OnUpdateTokens( eLimit );
+            }
+            for( int i = 0; i < tokens.Length; ++i )
+            {
+                _tokens[index + i] = tokens[i];
+            }
             for( int i = 0; i < count; ++i )
             {
                 _tokens[index + i] = tokens[i];

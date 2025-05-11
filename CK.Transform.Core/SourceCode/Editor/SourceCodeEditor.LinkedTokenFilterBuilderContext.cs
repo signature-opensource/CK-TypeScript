@@ -72,7 +72,7 @@ public sealed partial class SourceCodeEditor
 
         ITokenFilterBuilderContext? ITokenFilterBuilderContext.Previous => _previous;
 
-        public bool HasError => _editor.HasError;
+        public bool HasEditorError => _editor.HasError;
 
         public void Error( string errorMessage )
         {

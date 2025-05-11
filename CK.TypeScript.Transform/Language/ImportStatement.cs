@@ -64,7 +64,7 @@ public sealed class ImportStatement : SourceSpan, IImportLine
     public IReadOnlyList<ImportLine.NamedImport> NamedImports => ((IImportLine)_line).NamedImports;
 
     /// <inheritdoc />
-    public string ImportPath { get => _line.ImportPath; set => _line.ImportPath = value; }
+    public string ImportPath => _line.ImportPath;
 
     internal void RemoveTypeOnly( SourceCodeEditor editor ) => _line.RemoveTypeOnly( editor, Span );
 

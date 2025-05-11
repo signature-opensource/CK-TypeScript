@@ -72,6 +72,11 @@ public sealed partial class SourceCodeEditor
             }
         }
 
+        internal void OnUpdateTokens( int eLimit )
+        {
+            if( _index >= 0 && eLimit > _index ) ThrowUnobserved( eLimit );
+        }
+
         void ThrowUnobserved( int eLimit )
         {
             Throw.CKException( $"Source tokens enumerable at {eLimit} has not been observed (current is {_index})." );

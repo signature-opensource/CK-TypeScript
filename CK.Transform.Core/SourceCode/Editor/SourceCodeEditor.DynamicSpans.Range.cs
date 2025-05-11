@@ -53,24 +53,27 @@ public sealed partial class SourceCodeEditor
                 return true;
             }
 
-            internal bool OnInsertTokens( int eLimit, int count )
+            internal void OnInsertTokens( int eLimit, int count )
             {
                 if( _index >= 0 )
                 {
                     if( eLimit > _index ) ThrowUnobserved( eLimit );
                     _index += count;
                 }
-                return true;
             }
 
-            internal bool OnRemoveTokens( int eLimit, int count )
+            internal void OnRemoveTokens( int eLimit, int count )
             {
                 if( _index >= 0 )
                 {
                     if( eLimit > _index ) ThrowUnobserved( eLimit );
                     _index -= count;
                 }
-                return true;
+            }
+
+            internal void OnUpdateTokens( int eLimit )
+            {
+                if( _index >= 0 && eLimit > _index ) ThrowUnobserved( eLimit );
             }
 
             void ThrowUnobserved( int eLimit )

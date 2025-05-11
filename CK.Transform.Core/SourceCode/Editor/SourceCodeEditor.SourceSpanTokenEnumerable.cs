@@ -77,6 +77,11 @@ public sealed partial class SourceCodeEditor
             _index -= count;
         }
 
+        internal void OnUpdateTokens( int eLimit )
+        {
+            if( eLimit > _index ) ThrowUnobserved( eLimit );
+        }
+
         void ThrowUnobserved( int eLimit )
         {
             Throw.CKException( $"Enumerable on '{_span}' at {eLimit} has not been observed (current is {_index})." );

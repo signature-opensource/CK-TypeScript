@@ -194,11 +194,14 @@ public sealed class EnsureImportStatement : TransformStatement
             var importLine = toMerge.ToString();
             Token newText = new Token( TokenType.GenericAny, importLine, Trivia.NewLine );
             int insertionPoint = lastImport?.Span.End ?? 0;
-            editor.InsertBefore( insertionPoint, newText );
-            // We then create a brand new (1 token length) ImportStatement with the toMerge line
-            // and we add it to the spans.
-            var newStatement = new ImportStatement( insertionPoint, insertionPoint + 1, toMerge );
-            editor.AddSourceSpan( newStatement );
+            using( var e = editor.OpenEditor() )
+            {
+                e.InsertBefore( insertionPoint, newText );
+                // We then create a brand new (1 token length) ImportStatement with the toMerge line
+                // and we add it to the spans.
+                var newStatement = new ImportStatement( insertionPoint, insertionPoint + 1, toMerge );
+                editor.AddSourceSpan( newStatement );
+            }
         }
 
         bool PreProcess( IActivityMonitor monitor,

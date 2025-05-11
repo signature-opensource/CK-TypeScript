@@ -14,7 +14,7 @@ public interface ITokenFilterBuilderContext
     /// <summary>
     /// Gets whether the <see cref="SourceCodeEditor"/> is on error.
     /// </summary>
-    bool HasError { get; }
+    bool HasEditorError { get; }
 
     /// <summary>
     /// Gets the current <see cref="SourceCode.Tokens"/>.
@@ -51,7 +51,7 @@ public interface ITokenFilterBuilderContext
 
     /// <summary>
     /// Signals an error.
-    /// <see cref="HasError"/> is set to true for all contexts, including the <see cref="SourceCodeEditor.HasError"/>.
+    /// <see cref="HasEditorError"/> is set to true for all contexts, including the <see cref="SourceCodeEditor.HasError"/>.
     /// </summary>
     /// <param name="errorMessage">The error message.</param>
     void Error( string errorMessage );

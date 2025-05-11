@@ -62,6 +62,7 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
                                                        or LocationCardinality.LocationKind.First
                                                        or LocationCardinality.LocationKind.Last) ) );
             var previousInput = context.Previous.Previous;
+            Throw.DebugAssert( previousInput != null );
             do
             {
                 Throw.DebugAssert( "A LocationCardinality is followed by a matcher and the root is a SyntaxBorder.", !previousInput.IsRoot );

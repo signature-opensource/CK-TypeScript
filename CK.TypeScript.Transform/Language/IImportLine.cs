@@ -43,5 +43,5 @@ public interface IImportLine
     /// <summary>
     /// Gets the import path (without the quotes).
     /// </summary>
-    string ImportPath { get; set; }
+    string ImportPath { get; }
 }
