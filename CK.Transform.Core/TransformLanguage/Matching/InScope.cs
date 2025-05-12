@@ -38,7 +38,7 @@ public sealed class InScope : SourceSpan
     /// This is never null when <see cref="CheckValid"/> is true.
     /// </para>
     /// </summary>
-    public IFilteredTokenEnumerableProvider? Scope => Children.FirstChild as IFilteredTokenEnumerableProvider;
+    public IFilteredTokenOperator? Scope => Children.FirstChild as IFilteredTokenOperator;
 
 
     internal static InScope? Match( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token? inToken )

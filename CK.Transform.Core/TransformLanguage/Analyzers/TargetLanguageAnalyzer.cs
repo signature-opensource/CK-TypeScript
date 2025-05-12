@@ -29,11 +29,11 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     public string LanguageName => _languageName;
 
     /// <summary>
-    /// Must analyze the <paramref name="tokenSpec"/> and return a <see cref="IFilteredTokenEnumerableProvider"/>
+    /// Must analyze the <paramref name="tokenSpec"/> and return a <see cref="IFilteredTokenOperator"/>
     /// or an error string.
     /// <para>
     /// At this level, this returns the "Invalid span specification '...'. Language '...' doesn't handle any span specification."
-    /// error or the <see cref="IFilteredTokenEnumerableProvider.Empty"/> if the span specification is empty (to allow <c>in {} "..."</c>
+    /// error or the <see cref="IFilteredTokenOperator.Empty"/> if the span specification is empty (to allow <c>in {} "..."</c>
     /// syntax).
     /// </para>
     /// </summary>
@@ -48,11 +48,11 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
                 Invalid span specification '{content}'. Language '{_languageName}' doesn't handle any span specification.
                 """;
         }
-        return IFilteredTokenEnumerableProvider.Empty;
+        return IFilteredTokenOperator.Empty;
     }
 
     /// <summary>
-    /// Must parse the <paramref name="tokenPattern"/> and return a <see cref="IFilteredTokenEnumerableProvider"/>
+    /// Must parse the <paramref name="tokenPattern"/> and return a <see cref="IFilteredTokenOperator"/>
     /// or an error string.
     /// <para>
     /// By default, at this level, a head is created on the <see cref="RawString.InnerText"/>,
@@ -68,7 +68,7 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     /// </param>
     /// <returns>The provider or an error string.</returns>
     internal protected virtual object ParsePattern( RawString tokenPattern,
-                                                    IFilteredTokenEnumerableProvider? spanSpec )
+                                                    IFilteredTokenOperator? spanSpec )
     {
         var head = new TokenizerHead( tokenPattern.InnerText, this );
         ParseStandardMatchPattern( ref head );

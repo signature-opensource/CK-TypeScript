@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-public sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
+public sealed class TokenSpanFilter : IFilteredTokenOperator, IFilteredTokenOperator
 {
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
@@ -46,16 +46,14 @@ public sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
     }
 
     /// <summary>
-    /// Collects this provider.
+    /// Collects this operator.
     /// </summary>
-    /// <param name="collector">The provider collector.</param>
-    public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+    /// <param name="collector">The operator collector.</param>
+    public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-    Func<ITokenFilterBuilderContext,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
+    FilteredTokenSpan[] IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, FilteredTokenSpan[] input )
     {
-        return new TokenMatcher( _tokens, _prefixTable ).GetTokens;
+        return new TokenMatcher( _tokens, _prefixTable ).CreateMatches( context, input );
     }
 
     sealed class TokenMatcher
@@ -75,6 +73,60 @@ public sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
         public void Reset() => _iMatch = 0;
 
         public int Length => _pattern.Length;
+
+        TokenSpan Match( SourceToken t )
+        {
+            bool match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
+            while( _iMatch > 0 && !match )
+            {
+                _iMatch = _prefixTable[_iMatch];
+                match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
+            }
+            if( match )
+            {
+                _iMatch++;
+            }
+            if( _iMatch == Length )
+            {
+                var result = new TokenSpan( _iMatch - Length, _iMatch );
+                _iMatch = 0;
+                return result;
+            }
+            return default;
+        }
+
+
+        internal FilteredTokenSpan[] CreateMatches( IFilteredTokenOperatorContext context, FilteredTokenSpan[] input )
+        {
+            FilteredTokenSpanListBuilder builder = new FilteredTokenSpanListBuilder();
+            var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            while( e.NextEach() )
+            {
+                builder.StartNewEach();
+                while( e.NextMatch() )
+                {
+                    Reset();
+                    while( e.NextToken() )
+                    {
+                        var s = Match( e.Token );
+                        if( !s.IsEmpty ) builder.AddMatch( s );
+                    }
+                    if( builder.CurrentMatchCount == 0 ) return MatchError( context, e );
+                }
+                if( builder.CurrentMatchCount == 0 ) return MatchError( context, e );
+            }
+            return builder.CurrentMatchCount == 0
+                    ? MatchError( context, e )
+                    : builder.ExtractResult();
+        }
+
+        FilteredTokenSpan[] MatchError( IFilteredTokenOperatorContext context, FilteredTokenSpanEnumerator e )
+        {
+            return context.Fail( $"""
+                            Failed to match pattern:
+                            {_pattern.ToFullString()}
+                            """ );
+        }
 
         public SourceToken[]? Found( SourceToken t )
         {
@@ -97,51 +149,14 @@ public sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
             return null;
         }
 
-        public TokenSpan Match( SourceToken t )
-        {
-            bool match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
-            while( _iMatch > 0 && !match )
-            {
-                _iMatch = _prefixTable[_iMatch];
-                match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
-            }
-            if( match )
-            {
-                _candidate.Push( t );
-                _iMatch++;
-            }
-            if( _iMatch == Length )
-            {
-                var result = new TokenSpan( _iMatch - Length, _iMatch );
-                _iMatch = 0;
-                return result;
-            }
-            return default;
-        }
-
-        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( ITokenFilterBuilderContext c,
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( IFilteredTokenOperatorContext c,
                                                                              IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
-            List<>
             foreach( var each in inner )
             {
                 foreach( var range in each )
                 {
-                    Reset();
-                    var spans = c.CreateDynamicSpan();
-                    foreach( var t in range )
-                    {
-                        var s = Match( t );
-                        if( !s.IsEmpty ) spans.AppendSpan( s );
-                    }
-                    if( spans.Count == 0 )
-                    {
-                        c.Fail( $"""
-                            Unable to find pattern:
-                            {_pattern.ToFullString()}
-                            """ );
-                    }
-                        var byEach = GetRangeTokens( this, range );
+                    var byEach = GetRangeTokens( this, range );
                     if( byEach.Any() )
                     {
                         yield return byEach;
@@ -172,24 +187,5 @@ public sealed class TokenSpanFilter : IFilteredTokenEnumerableProvider
     }
 
     public override string ToString() => Describe( new StringBuilder(), parsable: true ).ToString();
-}
 
-public readonly record struct FilteredTokenSpan( int EachNumber, int RangeNumber, TokenSpan Span );
-
-public sealed class FilteredTokenCursor
-{
-    ImmutableArray<FilteredTokenSpan> _spans;
-    int _index;
-
-    public bool IsValid => _index >= 0;
-
-    public int EachNumber => _spans[_index].EachNumber;
-
-    public int RangeNumber => _spans[_index].RangeNumber;
-
-    public TokenSpan Span => _spans[_index].Span;
-
-    public int Index => _index;
-
-    public Token Token =>
 }

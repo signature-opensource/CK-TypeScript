@@ -13,7 +13,7 @@ namespace CK.Transform.Core;
 ///     <item>all [n]</item>
 ///     <item>each [n]</item>
 /// </list>
-/// This is a <see cref="IFilteredTokenEnumerableProvider"/>. The <see cref="SingleCardinality"/> singleton
+/// This is a <see cref="IFilteredTokenOperator"/>. The <see cref="SingleCardinality"/> singleton
 /// is the default cardinality provider.
 /// </summary>
 public sealed partial class LocationCardinality : SourceSpan
@@ -29,26 +29,26 @@ public sealed partial class LocationCardinality : SourceSpan
         Single,
 
         /// <summary>
-        /// First or nth location ("first +2" is the second location).
-        /// <see cref="ExpectedMatchCount"/> applies when not 0: "first +2 out of 3".
+        /// First or nth location ("first 2" is the second location, "first 1" is the same as "first").
+        /// <see cref="ExpectedMatchCount"/> applies when not 0: "first 2 out of 3".
         /// </summary>
         First,
 
         /// <summary>
-        /// First location or the nth location from the last one ("last -2" is the penultimate).
-        /// <see cref="ExpectedMatchCount"/> applies when not 0: "last -2 out of 3".
+        /// First location or the nth location from the last one ("last 2" is the penultimate, "last 1" is the same as "last").
+        /// <see cref="ExpectedMatchCount"/> applies when not 0: "last 2 out of 3".
         /// </summary>
         Last,
 
         /// <summary>
-        /// All possible locations: the different ranges are considered as a unique
+        /// All possible locations: the different matches are considered as a unique
         /// range (with holes in it).
         /// <see cref="ExpectedMatchCount"/> applies when not 0: "all 3".
         /// </summary>
         All,
 
         /// <summary>
-        /// Each possible locations: the different ranges are independent
+        /// Each possible locations: the different matches are independent
         /// from each other.
         /// <see cref="ExpectedMatchCount"/> applies when not 0: "each 3".
         /// </summary>

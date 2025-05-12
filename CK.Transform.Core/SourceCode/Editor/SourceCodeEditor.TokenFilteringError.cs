@@ -10,10 +10,10 @@ public sealed partial class SourceCodeEditor
 {
     internal sealed class TokenFilteringError
     {
-        readonly LinkedTokenFilterBuilderContext _culprit;
+        readonly LinkedTokenOperatorContext _culprit;
         readonly string _message;
 
-        public TokenFilteringError( LinkedTokenFilterBuilderContext culprit, string message )
+        public TokenFilteringError( LinkedTokenOperatorContext culprit, string message )
         {
             _culprit = culprit;
             _message = message;
@@ -31,14 +31,14 @@ public sealed partial class SourceCodeEditor
         }
 
         static void DumpFilterResults( IActivityMonitor monitor,
-                                       LinkedTokenFilterBuilderContext c,
+                                       LinkedTokenOperatorContext c,
                                        StringBuilder b )
         {
             if( c.IsRoot ) return;
             DumpFilterResults( monitor, c.Previous, b );
             b.Clear();
             b.Append( "Filter n°" ).Append( c.Index );
-            c.Provider.Describe( b, false );
+            c.Operator.Describe( b, false );
             b.Append( ": " );
             if( c.IsTransparent )
             {
@@ -47,7 +47,7 @@ public sealed partial class SourceCodeEditor
             }
             else
             {
-                int eachCount = c.Tokens.Count();
+                int eachCount = c.FilteredTokens.Count();
                 if( eachCount == 0 ) b.Append( "[Empty]" );
                 else if( eachCount == 1 ) b.Append( "[sinle each group]" );
                 else b.Append( '[' ).Append( eachCount ).Append( "each groups]" );
@@ -63,7 +63,7 @@ public sealed partial class SourceCodeEditor
                         if( eachCount > 1 )
                         {
                             int eachNumber = 0;
-                            foreach( var each in c.Tokens )
+                            foreach( var each in c.FilteredTokens )
                             {
                                 DumpRanges( monitor, $"Each group n°{eachNumber}: ", each, b );
                                 ++eachNumber;
@@ -71,7 +71,7 @@ public sealed partial class SourceCodeEditor
                         }
                         else
                         {
-                            DumpRanges( monitor, $"Ranges: ", c.Tokens.First(), b );
+                            DumpRanges( monitor, $"Ranges: ", c.FilteredTokens.First(), b );
                         }
                     }
                 }

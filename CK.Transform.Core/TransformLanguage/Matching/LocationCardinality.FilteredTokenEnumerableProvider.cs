@@ -7,17 +7,31 @@ using System.Text;
 
 namespace CK.Transform.Core;
 
-public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvider
+public sealed partial class LocationCardinality : IFilteredTokenOperator
 {
-    sealed class Single : IFilteredTokenEnumerableProvider
+    sealed class Single : IFilteredTokenOperator
     {
-        public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+        public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-        Func<ITokenFilterBuilderContext,
-             IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-             IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
+        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
         {
-            return HandleSingle;
+            // We must check this edge-case: the source code is empty. 
+            if( input.Count == 0 )
+            {
+                context.SetFailedResult( $"Expected a single match but got none.", null );
+                return;
+            }
+            var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            while( e.NextEach() )
+            {
+                int count = 0;
+                while( e.NextMatch() ) ++count;
+                if( count != 1 )
+                {
+                    context.SetFailedResult( $"Expected a single match but got {count}.", e );
+                }
+            }
+            context.SetUnchangedResult();
         }
 
         public StringBuilder Describe( StringBuilder b, bool parsable ) => b.Append( "single" );
@@ -29,20 +43,24 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
     /// <summary>
     /// Singleton "single" provider that is the default cardinality.
     /// </summary>
-    public static readonly IFilteredTokenEnumerableProvider SingleCardinality = new Single();
+    public static readonly IFilteredTokenOperator SingleCardinality = new Single();
 
-    public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+    public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-    Func<ITokenFilterBuilderContext,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
+    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
         Throw.DebugAssert( CheckValid() );
-        return _kind switch
+        switch( _kind )
         {
-            LocationKind.Single => HandleSingle,
-            LocationKind.First => HandleFirst,
-            LocationKind.Last => HandleLast,
+            case LocationKind.Single:
+                HandleSingle( context, input );
+                break;
+            case LocationKind.First:
+                HandleFirst( context, input );
+                break;
+            LocationKind.Last:
+                HandleLast( context, input );
+                break;
             // All without ExpectedMatchCount is a no-op constraint.
             LocationKind.All => _expectedMatchCount == 0
                                     ? HandleAll
@@ -51,72 +69,93 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
         };
     }
 
-    static IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleSingle( ITokenFilterBuilderContext c,
-                                                                            IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+
+    static void HandleSingle( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-        foreach( var each in inner )
+        // We must check this edge-case: the source code is empty. 
+        if( input.Count == 0 )
         {
-            var single = each.SingleOrDefault();
-            if( single != null )
+            context.SetFailedResult( $"Expected a single match but got none.", null );
+            return;
+        }
+        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        while( e.NextEach() )
+        {
+            int count = 0;
+            while( e.NextMatch() ) ++count;
+            if( count != 1 )
             {
-                yield return [single];
-                yield break;
-            }
-            else
-            {
-                c.Fail( $"Expected single match but got {each.Count()}" );
-                yield break;
+                context.SetFailedResult( $"Expected a single match but got {count}.", e );
             }
         }
-        c.Fail( $"Expected single match but got none: Tokens are empty." );
+        context.SetUnchangedResult();
     }
 
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleFirst( ITokenFilterBuilderContext c,
-                                                                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    void HandleFirst( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
         Throw.DebugAssert( CheckValid() && _kind == LocationKind.First );
-        foreach( var each in inner )
+        // We must check this edge-case: the source code is empty. 
+        if( input.Count == 0 )
         {
-            int count = HandleExpectedMatchCount( c, this, each );
-            if( count == -2 ) break;
-
-            var first = each.Skip( _offset - 1 ).FirstOrDefault();
-            if( first != null )
+            context.SetFailedResult( $"Expected a first match but got none.", null );
+            return;
+        }
+        var builder = context.SharedBuilder;
+        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        while( e.NextEach() )
+        {
+            builder.StartNewEach();
+            int matchCount = 0;
+            while( e.NextMatch() )
             {
-                yield return [first];
+                if( ++matchCount == _offset )
+                {
+                    builder.AddMatch( e.CurrentMatch.Span );
+                    break;
+                }
             }
-            else
+            if( builder.CurrentEachCount == 0 )
             {
-                c.Fail( $"Expected '{ToString()}' but got {count} matches" );
-                break;
+                context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
+                return;
+            }
+            if( _expectedMatchCount > 0 )
+            {
+                while( e.NextMatch() ) ++matchCount;
+                if( _expectedMatchCount != matchCount )
+                {
+                    context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
+                    return;
+                }
             }
         }
+        context.SetResult( builder );
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleLast( ITokenFilterBuilderContext c,
-                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    void HandleLast( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
         Throw.DebugAssert( _kind == LocationKind.Last );
-        foreach( var each in inner )
+        // We must check this edge-case: the source code is empty. 
+        if( input.Count == 0 )
         {
-            int count = HandleExpectedMatchCount( c, this, each );
-            if( count == -2 ) break;
-            if( count == -1 ) count = each.Count();
-            int at = count - _offset;
-            if( at >= 0 && at < count )
-            {
-                yield return [each.ElementAt( at )];
-            }
-            else
-            {
-                c.Fail( $"Expected '{ToString()}' but got {count} matches" );
-                break;
-            }
+            context.SetFailedResult( $"Expected a first match but got none.", null );
+            return;
+        }
+        var builder = context.SharedBuilder;
+        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        int inputIndex = 0;
+        while( e.NextEach() )
+        {
+            builder.StartNewEach();
+            int matchCount = 0;
+            while( e.NextMatch() ) ++matchCount;
+            inputIndex += matchCount;
+            if( )
         }
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAllWithExpectedCount( ITokenFilterBuilderContext c,
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAllWithExpectedCount( IFilteredTokenOperatorContext c,
                                                                                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
         Throw.DebugAssert( _kind == LocationKind.All && _expectedMatchCount > 0 );
@@ -127,7 +166,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
         return inner;
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAll( ITokenFilterBuilderContext c,
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAll( IFilteredTokenOperatorContext c,
                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
         Throw.DebugAssert( _kind == LocationKind.All && _expectedMatchCount == 0 );
@@ -141,7 +180,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
         return inner;
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleEach( ITokenFilterBuilderContext c,
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleEach( IFilteredTokenOperatorContext c,
                                                                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
         Throw.DebugAssert( _kind == LocationKind.Each );
@@ -163,7 +202,7 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
         }
     }
 
-    static int HandleExpectedMatchCount( ITokenFilterBuilderContext c,
+    static int HandleExpectedMatchCount( IFilteredTokenOperatorContext c,
                                          LocationCardinality cardinality,
                                          IEnumerable<IEnumerable<SourceToken>> each )
     {
@@ -221,4 +260,5 @@ public sealed partial class LocationCardinality : IFilteredTokenEnumerableProvid
     /// </summary>
     /// <returns>The readable (and parsable) string.</returns>
     public override string ToString() => Write( new StringBuilder() ).ToString();
+
 }

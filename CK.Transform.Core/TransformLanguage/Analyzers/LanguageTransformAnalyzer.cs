@@ -253,7 +253,7 @@ public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
                          """
             };
         }
-        return IFilteredTokenEnumerableProvider.Empty;
+        return IFilteredTokenOperator.Empty;
     }
 
     protected override void ParseStandardMatchPattern( ref TokenizerHead head )

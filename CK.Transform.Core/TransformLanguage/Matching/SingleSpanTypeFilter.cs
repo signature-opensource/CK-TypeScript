@@ -8,10 +8,10 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="IFilteredTokenEnumerableProvider"/> that extends a matched range to
+/// A <see cref="IFilteredTokenOperator"/> that extends a matched range to
 /// the deepest span that can be assigned to a type.
 /// </summary>
-public sealed class SingleSpanTypeFilter : IFilteredTokenEnumerableProvider
+public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
@@ -33,20 +33,19 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenEnumerableProvider
     public string DisplayName => _displayName;
 
     /// <summary>
-    /// Collects this provider.
+    /// Collects this operator.
     /// </summary>
-    /// <param name="collector">The provider collector.</param>
-    public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+    /// <param name="collector">The operator collector.</param>
+    public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-    Func<ITokenFilterBuilderContext,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
+    public FilteredTokenSpan[] Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-        return Run;
+
+        throw new NotImplementedException();
     }
 
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( ITokenFilterBuilderContext c,
+    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( IFilteredTokenOperatorContext c,
                                                             IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
     {
         DeepestSpanCollector collector = new DeepestSpanCollector( c );
@@ -77,10 +76,10 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenEnumerableProvider
     sealed class DeepestSpanCollector : IEnumerable<IEnumerable<IEnumerable<SourceToken>>>
     {
         readonly List<List<SourceSpan>> _each;
-        readonly ITokenFilterBuilderContext _filterContext;
+        readonly IFilteredTokenOperatorContext _filterContext;
         List<SourceSpan>? _current;
 
-        public DeepestSpanCollector( ITokenFilterBuilderContext filterContext )
+        public DeepestSpanCollector( IFilteredTokenOperatorContext filterContext )
         {
             _each = new List<List<SourceSpan>>();
             _filterContext = filterContext;

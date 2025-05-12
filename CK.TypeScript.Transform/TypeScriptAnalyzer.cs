@@ -82,7 +82,7 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
                      """
             };
         }
-        return IFilteredTokenEnumerableProvider.Empty;
+        return IFilteredTokenOperator.Empty;
     }
 
     protected override void ParseStandardMatchPattern( ref TokenizerHead head )

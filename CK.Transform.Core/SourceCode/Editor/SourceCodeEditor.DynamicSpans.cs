@@ -18,7 +18,7 @@ public sealed partial class SourceCodeEditor
     /// This acts as builder until either <see cref="LockEachGroups"/> or <see cref="LockRanges"/> is called.
     /// </para>
     /// <para>
-    /// This can be created only by <see cref="IFilteredTokenEnumerableProvider.CreateDynamicSpan"/> method.
+    /// This can be created only by <see cref="IFilteredTokenOperator.CreateDynamicSpan"/> method.
     /// </para>
     /// </summary>
     public sealed partial class DynamicSpans
@@ -65,7 +65,7 @@ public sealed partial class SourceCodeEditor
             PreLock();
             return _ranges = _spans.Count > 0
                                 ? _spans
-                                : IFilteredTokenEnumerableProvider.EmptyRange;
+                                : IFilteredTokenOperator.EmptyRange;
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ public sealed partial class SourceCodeEditor
             PreLock();
             return _eachGroups = _spans.Count > 0
                                     ? _spans.Select( r => new IEnumerable<SourceToken>[] { r } )
-                                    : IFilteredTokenEnumerableProvider.EmptyFilteredTokens;
+                                    : IFilteredTokenOperator.EmptyFilteredTokens;
         }
 
         void PreLock()
@@ -109,7 +109,7 @@ public sealed partial class SourceCodeEditor
         }
 
         /// <summary>
-        /// Gets these <see cref="Spans"/> as a each/range/token enumeration (see <see cref="IFilteredTokenEnumerableProvider"/>):
+        /// Gets these <see cref="Spans"/> as a each/range/token enumeration (see <see cref="IFilteredTokenOperator"/>):
         /// each groups contains a unique list of <see cref="SourceToken"/>.
         /// <para>
         /// <see cref="LockEachGroups"/> must have been called or an <see cref="InvalidOperationException"/> is thrown.

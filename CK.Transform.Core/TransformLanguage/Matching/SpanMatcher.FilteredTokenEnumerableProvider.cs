@@ -3,23 +3,20 @@ using System;
 
 namespace CK.Transform.Core;
 
-public sealed partial class SpanMatcher : IFilteredTokenEnumerableProvider
+public sealed partial class SpanMatcher : IFilteredTokenOperator
 {
-    Func<ITokenFilterBuilderContext,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
-    {
-        return IFilteredTokenEnumerableProvider.ThrowOnCombinedProvider();
-    }
-
     /// <summary>
     /// Activates the "pattern" and then the {span specification} if they are not null.
     /// </summary>
     /// <param name="collector">The provider collector.</param>
-    public void Activate( Action<IFilteredTokenEnumerableProvider> collector )
+    public void Activate( Action<IFilteredTokenOperator> collector )
     {
         _pattern?.Activate( collector );
         _spanSpec?.Activate( collector );
     }
 
+    FilteredTokenSpan[] IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    {
+        return IFilteredTokenOperator.ThrowOnCombinedOperator();
+    }
 }

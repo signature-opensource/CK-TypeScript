@@ -17,6 +17,8 @@ public sealed partial class SourceCodeEditor
     List<Token> _tokens;
     readonly Editor _editor;
 
+    readonly FilteredTokenSpanListBuilder _sharedBuilder;
+
     readonly SourceTokenEnumerable _sourceTokens;
     readonly List<SourceSpanTokenEnumerable> _enumerators;
     readonly List<DynamicSpans> _dynamicSpans;
@@ -40,6 +42,7 @@ public sealed partial class SourceCodeEditor
         _code = code;
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
+        _sharedBuilder = new FilteredTokenSpanListBuilder();
         _sourceTokens = new SourceTokenEnumerable( this );
         _enumerators = new List<SourceSpanTokenEnumerable>();
         _dynamicSpans = new List<DynamicSpans>();
@@ -79,12 +82,12 @@ public sealed partial class SourceCodeEditor
     /// </summary>
     /// <param name="filterProvider">The filter provider to apply.</param>
     /// <returns>The number of actual filters that have been pushed.</returns>
-    public int PushTokenFilter( IFilteredTokenEnumerableProvider? filterProvider )
+    public int PushTokenFilter( IFilteredTokenOperator? filterProvider )
     {
-        Throw.CheckState( _editor.OpenCount == 0 );
+        Throw.CheckState( _editor.OpenState is OpenEditorState.None );
         Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
         int count = _editor.CurrentFilter.Index;
-        filterProvider?.Activate( _editor.PushTokenFilter );
+        filterProvider?.Activate( _editor.PushTokenOperator );
         count = _editor.CurrentFilter.Index - count;
         _editor.CurrentFilter.SetSyntaxBorder();
         return count;
@@ -94,23 +97,23 @@ public sealed partial class SourceCodeEditor
     /// Pops the last pushed token filters.
     /// </summary>
     /// <param name="count">
-    /// Number of filters returned by <see cref="PushTokenFilter(IFilteredTokenEnumerableProvider)"/>.
+    /// Number of filters returned by <see cref="PushTokenFilter(IFilteredTokenOperator)"/>.
     /// This can be 0.
     /// </param>
     public void PopTokenFilter( int count )
     {
         Throw.CheckArgument( count >= 0 );
-        Throw.CheckState( _editor.OpenCount == 0 && _editor.CurrentFilter.Index >= count );
+        Throw.CheckState( _editor.OpenState is OpenEditorState.None && _editor.CurrentFilter.Index >= count );
         Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
-        _editor.PopTokenFilter( count );
+        _editor.PopTokenOperator( count );
         Throw.CheckState( _editor.CurrentFilter.IsSyntaxBorder );
     }
 
     /// <summary>
-    /// Gets a disposable <see cref="Editor"/> that enables code modification.
+    /// Gets a disposable <see cref="Editor"/> that enables global code modification.
     /// </summary>
     /// <returns>The editor that must be disposed.</returns>
-    public Editor OpenEditor() => _editor.Open();
+    public ICodeEditor OpenGlobalEditor() => _editor.OpenGlobal();
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.

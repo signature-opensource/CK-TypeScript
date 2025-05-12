@@ -135,7 +135,7 @@ sealed partial class TestAnalyzer : TargetLanguageAnalyzer
                          """
             };
         }
-        return IFilteredTokenEnumerableProvider.Empty;
+        return IFilteredTokenOperator.Empty;
     }
 
     protected override void ParseStandardMatchPattern( ref TokenizerHead head )

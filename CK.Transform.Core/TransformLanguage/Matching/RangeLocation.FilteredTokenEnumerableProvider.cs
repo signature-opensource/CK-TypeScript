@@ -6,9 +6,9 @@ using System.Linq;
 
 namespace CK.Transform.Core;
 
-public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
+public sealed partial class RangeLocation : IFilteredTokenOperator
 {
-    public void Activate( Action<IFilteredTokenEnumerableProvider> collector )
+    public void Activate( Action<IFilteredTokenOperator> collector )
     {
         Throw.DebugAssert( CheckValid() );
         if( IsBetween )
@@ -30,34 +30,34 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
         }
     }
 
-    Func<ITokenFilterBuilderContext,
+    Func<IFilteredTokenOperatorContext,
          IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenEnumerableProvider.GetFilteredTokenProjection()
+         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenOperator.GetFilteredTokenProjection()
     {
-        return IFilteredTokenEnumerableProvider.ThrowOnCombinedProvider();
+        return IFilteredTokenOperator.ThrowOnCombinedProvider();
     }
 
-    sealed class Before : IFilteredTokenEnumerableProvider
+    sealed class Before : IFilteredTokenOperator
     {
-        public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+        public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-        public Func<ITokenFilterBuilderContext,
+        public Func<IFilteredTokenOperatorContext,
             IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
             IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
         {
             return Run;
         }
 
-        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( ITokenFilterBuilderContext context,
+        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( IFilteredTokenOperatorContext context,
                                                                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
             Throw.DebugAssert( "We are a 'Before' context.", !context.IsRoot );
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // that is our previous.
             Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality.",
-                               context.Previous.Tokens == inner
-                               && (context.Previous.Provider == LocationCardinality.SingleCardinality
-                                   || (context.Previous.Provider is LocationCardinality card
+                               context.Previous.FilteredTokens == inner
+                               && (context.Previous.Operator == LocationCardinality.SingleCardinality
+                                   || (context.Previous.Operator is LocationCardinality card
                                        && card.Kind is LocationCardinality.LocationKind.Single
                                                        or LocationCardinality.LocationKind.First
                                                        or LocationCardinality.LocationKind.Last) ) );
@@ -82,7 +82,7 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             // Then detect the start of the LocationMatcher input and if the resulting
             // range is not empty, keep the span as a "dynamic span".
             int idx = 0;
-            var previousInner = previousInput.Tokens;
+            var previousInner = previousInput.FilteredTokens;
             foreach( var each in previousInner )
             {
                 int beg = each.First().First().Index;
@@ -105,28 +105,28 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
         public override string ToString() => "before";
     }
 
-    sealed class After : IFilteredTokenEnumerableProvider
+    sealed class After : IFilteredTokenOperator
     {
-        public void Activate( Action<IFilteredTokenEnumerableProvider> collector ) => collector( this );
+        public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-        public Func<ITokenFilterBuilderContext,
+        public Func<IFilteredTokenOperatorContext,
                     IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
                     IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
         {
             return Run;
         }
 
-        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( ITokenFilterBuilderContext context,
+        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( IFilteredTokenOperatorContext context,
                                                                 IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
             Throw.DebugAssert( "We are an 'After' context.", !context.IsRoot );
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // or the Before (when we are in a between) that is our previous.
             Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality or a Before.",
-                               context.Previous.Tokens == inner
-                               && (context.Previous.Provider is Before
-                                   || context.Previous.Provider == LocationCardinality.SingleCardinality
-                                   || (context.Previous.Provider is LocationCardinality card
+                               context.Previous.FilteredTokens == inner
+                               && (context.Previous.Operator is Before
+                                   || context.Previous.Operator == LocationCardinality.SingleCardinality
+                                   || (context.Previous.Operator is LocationCardinality card
                                        && card.Kind is LocationCardinality.LocationKind.Single
                                                     or LocationCardinality.LocationKind.First
                                                     or LocationCardinality.LocationKind.Last)) );
@@ -134,7 +134,7 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             // the Before and this After).
             var previousInput = context.Previous.Previous;
             Throw.DebugAssert( previousInput != null );
-            if( context.Previous.Provider is not Before )
+            if( context.Previous.Operator is not Before )
             {
                 do
                 {
@@ -159,7 +159,7 @@ public sealed partial class RangeLocation : IFilteredTokenEnumerableProvider
             // Then detect the end of the LocationMatcher input and if the resulting
             // range is not empty, keep the span as a "dynamic span".
             int idx = 0;
-            var previousInner = previousInput.Tokens;
+            var previousInner = previousInput.FilteredTokens;
             foreach( var each in previousInner )
             {
                 int beg = spans.SpanAt(idx).Beg;
