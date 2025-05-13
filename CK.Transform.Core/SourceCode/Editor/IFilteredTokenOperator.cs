@@ -47,6 +47,28 @@ public interface IFilteredTokenOperator
     string ToString();
 
     /// <summary>
+    /// Singleton empty provider. It activates no operator and doesn't change the matches.
+    /// </summary>
+    public static readonly IFilteredTokenOperator Empty = new EmptyOperator();
+
+    private sealed class EmptyOperator : IFilteredTokenOperator
+    {
+        public void Activate( Action<IFilteredTokenOperator> collector )
+        {
+        }
+
+        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+        {
+            context.SetUnchangedResult();
+        }
+
+        public StringBuilder Describe( StringBuilder b, bool parsable ) => b.Append( "(empty)" );
+
+        public override string ToString() => "(empty)";
+
+    }
+
+    /// <summary>
     /// Centralized helper for <see cref="Apply"/> implementations of combined operators.
     /// </summary>
     /// <exception cref="NotSupportedException">Always throws a NotSupportedException.</exception>

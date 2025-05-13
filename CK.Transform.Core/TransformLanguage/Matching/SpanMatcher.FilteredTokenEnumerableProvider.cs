@@ -15,8 +15,8 @@ public sealed partial class SpanMatcher : IFilteredTokenOperator
         _spanSpec?.Activate( collector );
     }
 
-    FilteredTokenSpan[] IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-        return IFilteredTokenOperator.ThrowOnCombinedOperator();
+        IFilteredTokenOperator.ThrowOnCombinedOperator();
     }
 }

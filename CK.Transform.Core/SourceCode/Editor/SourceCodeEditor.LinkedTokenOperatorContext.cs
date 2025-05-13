@@ -112,7 +112,10 @@ public sealed partial class SourceCodeEditor
         void IFilteredTokenOperatorContext.SetResult( FilteredTokenSpan[] result )
         {
             Throw.CheckArgument( result != null );
-            result.CheckInvariants( _editor._tokens );
+            if( !result.CheckValid( _editor._tokens, out var error ) )
+            {
+                Throw.ArgumentException( nameof( result ), error );
+            }
             _filteredTokens = result;
         }
 
@@ -142,14 +145,6 @@ public sealed partial class SourceCodeEditor
         IFilteredTokenOperatorSourceContext? IFilteredTokenOperatorSourceContext.Previous => _previous;
 
         public bool HasEditorError => _editor.HasError;
-
-        public IEnumerable<SourceToken> GetSourceTokens( SourceSpan span )
-        {
-            Throw.CheckState( !span.IsDetached );
-            return new SourceSpanTokenEnumerable( _editor, span );
-        }
-
-        public DynamicSpans CreateDynamicSpan() => new DynamicSpans( _editor );
 
         public SourceSpan? GetDeepestSpanAt( int index )
         {

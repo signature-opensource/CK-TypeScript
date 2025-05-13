@@ -31,31 +31,29 @@ public sealed class ReplaceStatement : TransformStatement
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         Throw.DebugAssert( CheckValid() );
-        int filterCount = editor.PushTokenFilter( Matcher );
+        int filterCount = editor.PushTokenOperator( Matcher );
         try
         {
             bool applied = false;
-            using( var e = editor.OpenEditor() )
+            using( var e = editor.OpenScopedEditor() )
             {
-                foreach( var each in e.Tokens )
-                    foreach( var range in each )
+                while( e.Tokens.NextEach() )
+                {
+                    while( e.Tokens.NextMatch( out var first, out var last, out var count ) )
                     {
-                        if( GetFirstLastAndCount( range, out var first, out var last, out var count ) )
-                        {
-                            var replace = new Token( TokenType.GenericAny,
-                                                     first.Token.LeadingTrivias,
-                                                     _replacement.TextLines,
-                                                     last.Token.TrailingTrivias );
-                            e.Replace( first.Index, count, replace );
-                        }
-                        applied = true;
+                        var replace = new Token( TokenType.GenericAny,
+                                                 first.Token.LeadingTrivias,
+                                                 _replacement.TextLines,
+                                                 last.Token.TrailingTrivias );
+                        e.Replace( first.Index, count, replace );
                     }
+                }
             }
             if( applied ) editor.SetNeedReparse();
         }
         finally
         {
-            editor.PopTokenFilter( filterCount );
+            editor.PopTokenOperator( filterCount );
         }
     }
 

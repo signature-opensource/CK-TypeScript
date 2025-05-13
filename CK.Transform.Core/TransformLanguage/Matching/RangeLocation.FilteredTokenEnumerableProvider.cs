@@ -3,6 +3,7 @@ using System;
 using CK.Core;
 using System.Text;
 using System.Linq;
+using System.Reflection;
 
 namespace CK.Transform.Core;
 
@@ -30,37 +31,26 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
         }
     }
 
-    Func<IFilteredTokenOperatorContext,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-         IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> IFilteredTokenOperator.GetFilteredTokenProjection()
+    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-        return IFilteredTokenOperator.ThrowOnCombinedProvider();
+        IFilteredTokenOperator.ThrowOnCombinedOperator();
     }
 
     sealed class Before : IFilteredTokenOperator
     {
         public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-        public Func<IFilteredTokenOperatorContext,
-            IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-            IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
         {
-            return Run;
-        }
-
-        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( IFilteredTokenOperatorContext context,
-                                                                IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
-        {
-            Throw.DebugAssert( "We are a 'Before' context.", !context.IsRoot );
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // that is our previous.
             Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality.",
-                               context.Previous.FilteredTokens == inner
+                               context.Previous.FilteredTokens == input
                                && (context.Previous.Operator == LocationCardinality.SingleCardinality
                                    || (context.Previous.Operator is LocationCardinality card
                                        && card.Kind is LocationCardinality.LocationKind.Single
                                                        or LocationCardinality.LocationKind.First
-                                                       or LocationCardinality.LocationKind.Last) ) );
+                                                       or LocationCardinality.LocationKind.Last)) );
             var previousInput = context.Previous.Previous;
             Throw.DebugAssert( previousInput != null );
             do
@@ -70,67 +60,56 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
             }
             while( !previousInput.IsSyntaxBorder );
 
-            var spans = context.CreateDynamicSpan();
+            var builder = context.SharedBuilder;
+            var eInput = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            var ePrevious = new FilteredTokenSpanEnumerator( previousInput.FilteredTokens, context.UnfilteredTokens );
+            while( eInput.NextEach() )
+            {
+                eInput.NextMatch(); 
+                Throw.DebugAssert( "Working on the result of a mono-location LocationCardinality.", !eInput.NextMatch() );
 
-            // Captures (for each group), the start of the location.
-            foreach( var each in inner )
-            {
-                Throw.DebugAssert( "Previous filter is a mono-location LocationMatcher.", each.Count() == 1 );
-                int futureEnd = each.First().First().Index;
-                spans.AppendSpan( new TokenSpan( futureEnd, futureEnd + 1 ) );
-            }
-            // Then detect the start of the LocationMatcher input and if the resulting
-            // range is not empty, keep the span as a "dynamic span".
-            int idx = 0;
-            var previousInner = previousInput.FilteredTokens;
-            foreach( var each in previousInner )
-            {
-                int beg = each.First().First().Index;
-                int end = spans.SpanAt( idx ).Beg;
-                Throw.DebugAssert( beg <= end );
+                // Previous corresponding 'each' necessarily exists.
+                ePrevious.NextEach();
+                Throw.DebugAssert( eInput.CurrentEachIndex == ePrevious.CurrentEachIndex );
+                ePrevious.NextMatch(); 
+
+                builder.StartNewEach();
+                int beg = ePrevious.CurrentMatch.Span.Beg;
+                int end = eInput.CurrentMatch.Span.Beg;
+                Throw.DebugAssert( "The input mono match is inside one of the previous matches.", beg <= end );
                 if( beg == end )
                 {
-                    spans.RemoveAt( idx );
+                    context.SetFailedResult( $"No token exist 'before'.", eInput );
+                    return;
                 }
-                else
-                {
-                    spans.SetSpanAt( idx++, new TokenSpan( beg, end ) );
-                }
+                builder.AddMatch( new TokenSpan( beg, end ) );
             }
-            return spans.LockEachGroups();
+            context.SetResult( builder );
         }
 
         public StringBuilder Describe( StringBuilder b, bool parsable ) => b.Append( "before" );
 
         public override string ToString() => "before";
+
     }
 
     sealed class After : IFilteredTokenOperator
     {
         public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-        public Func<IFilteredTokenOperatorContext,
-                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-                    IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
         {
-            return Run;
-        }
-
-        IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( IFilteredTokenOperatorContext context,
-                                                                IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
-        {
-            Throw.DebugAssert( "We are an 'After' context.", !context.IsRoot );
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // or the Before (when we are in a between) that is our previous.
             Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality or a Before.",
-                               context.Previous.FilteredTokens == inner
+                               context.Previous.FilteredTokens == input
                                && (context.Previous.Operator is Before
                                    || context.Previous.Operator == LocationCardinality.SingleCardinality
                                    || (context.Previous.Operator is LocationCardinality card
                                        && card.Kind is LocationCardinality.LocationKind.Single
                                                     or LocationCardinality.LocationKind.First
                                                     or LocationCardinality.LocationKind.Last)) );
-            // If we are after a Before, the Before is our previous inner (not the inner of the between that activated
+            // If we are after a Before, the Before is our previous input (not the input of the 'between' that activated
             // the Before and this After).
             var previousInput = context.Previous.Previous;
             Throw.DebugAssert( previousInput != null );
@@ -145,36 +124,36 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
                 while( !previousInput.IsSyntaxBorder );
             }
 
-            Throw.DebugAssert( "A LocationMatcher or a Before is not the root.", !context.Previous.IsRoot );
+            var builder = context.SharedBuilder;
+            var eInput = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            var ePrevious = new FilteredTokenSpanEnumerator( previousInput.FilteredTokens, context.UnfilteredTokens );
+            while( eInput.NextEach() )
+            {
+                eInput.NextMatch();
+                Throw.DebugAssert( "Working on the result of a mono-location LocationCardinality.", !eInput.NextMatch() );
 
-            var spans = context.CreateDynamicSpan();
-            foreach( var each in inner )
-            {
-                Throw.DebugAssert( "Previous filter is a mono-location LocationMatcher or a Before.", each.Count() == 1 );
-                // Declares the [end,end+1[ range so that when setting the final span below
-                // to not fail because of a 1-token overlap.
-                int end = each.First().Last().Index + 1;
-                spans.AppendSpan( new TokenSpan( end, end + 1 ) );
-            }
-            // Then detect the end of the LocationMatcher input and if the resulting
-            // range is not empty, keep the span as a "dynamic span".
-            int idx = 0;
-            var previousInner = previousInput.FilteredTokens;
-            foreach( var each in previousInner )
-            {
-                int beg = spans.SpanAt(idx).Beg;
-                int end = each.Last().Last().Index;
-                Throw.DebugAssert( beg <= end );
+                // Previous corresponding 'each' necessarily exists.
+                ePrevious.NextEach();
+                Throw.DebugAssert( eInput.CurrentEachIndex == ePrevious.CurrentEachIndex );
+
+                int beg = eInput.CurrentMatch.Span.End;
+                // Find the end of the last match of the previous.
+                ePrevious.NextMatch();
+                int end = ePrevious.CurrentMatch.Span.End;
+                while( ePrevious.NextMatch() )
+                {
+                    end = ePrevious.CurrentMatch.Span.End;
+                }
+                builder.StartNewEach();
+                Throw.DebugAssert( "The input mono match is inside one of the previous matches.", beg <= end );
                 if( beg == end )
                 {
-                    spans.RemoveAt( idx );
+                    context.SetFailedResult( $"No token exist 'after'.", eInput );
+                    return;
                 }
-                else
-                {
-                    spans.SetSpanAt( idx++, new TokenSpan( beg, end ) );
-                }
+                builder.AddMatch( new TokenSpan( beg, end ) );
             }
-            return spans.LockEachGroups();
+            context.SetResult( builder );
         }
 
         public StringBuilder Describe( StringBuilder b, bool parsable ) => b.Append( "after" );

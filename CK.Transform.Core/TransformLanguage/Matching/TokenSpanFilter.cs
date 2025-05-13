@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-public sealed class TokenSpanFilter : IFilteredTokenOperator, IFilteredTokenOperator
+public sealed class TokenSpanFilter : IFilteredTokenOperator
 {
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
@@ -51,9 +51,9 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator, IFilteredTokenOper
     /// <param name="collector">The operator collector.</param>
     public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-    FilteredTokenSpan[] IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, FilteredTokenSpan[] input )
+    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-        return new TokenMatcher( _tokens, _prefixTable ).CreateMatches( context, input );
+        new TokenMatcher( _tokens, _prefixTable ).CreateMatches( context, input );
     }
 
     sealed class TokenMatcher
@@ -96,9 +96,9 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator, IFilteredTokenOper
         }
 
 
-        internal FilteredTokenSpan[] CreateMatches( IFilteredTokenOperatorContext context, FilteredTokenSpan[] input )
+        internal void CreateMatches( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
         {
-            FilteredTokenSpanListBuilder builder = new FilteredTokenSpanListBuilder();
+            var builder = context.SharedBuilder;
             var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
             while( e.NextEach() )
             {
@@ -111,21 +111,34 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator, IFilteredTokenOper
                         var s = Match( e.Token );
                         if( !s.IsEmpty ) builder.AddMatch( s );
                     }
-                    if( builder.CurrentMatchCount == 0 ) return MatchError( context, e );
+                    if( builder.CurrentMatchNumber == 0 )
+                    {
+                        MatchError( context, e );
+                        return;
+                    }
                 }
-                if( builder.CurrentMatchCount == 0 ) return MatchError( context, e );
+                if( builder.CurrentMatchNumber == 0 )
+                {
+                    MatchError( context, e );
+                    return;
+                }
             }
-            return builder.CurrentMatchCount == 0
-                    ? MatchError( context, e )
-                    : builder.ExtractResult();
+            if( builder.CurrentMatchNumber == 0 )
+            {
+                MatchError( context, e );
+            }
+            else
+            {
+                context.SetResult( builder );
+            }
         }
 
-        FilteredTokenSpan[] MatchError( IFilteredTokenOperatorContext context, FilteredTokenSpanEnumerator e )
+        void MatchError( IFilteredTokenOperatorContext context, FilteredTokenSpanEnumerator e )
         {
-            return context.Fail( $"""
-                            Failed to match pattern:
-                            {_pattern.ToFullString()}
-                            """ );
+            context.SetFailedResult( $"""
+                                    Failed to match pattern:
+                                    {_pattern.ToFullString()}
+                                    """, e );
         }
 
         public SourceToken[]? Found( SourceToken t )

@@ -19,11 +19,9 @@ public sealed partial class LocationMatcher : IFilteredTokenOperator
         (Cardinality ?? LocationCardinality.SingleCardinality).Activate( collector );
     }
 
-    public Func<IFilteredTokenOperatorContext,
-                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>,
-                IEnumerable<IEnumerable<IEnumerable<SourceToken>>>> GetFilteredTokenProjection()
+    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-        return IFilteredTokenOperator.ThrowOnCombinedProvider();
+        IFilteredTokenOperator.ThrowOnCombinedOperator();
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
@@ -41,4 +39,5 @@ public sealed partial class LocationMatcher : IFilteredTokenOperator
     }
 
     public override string ToString() => Describe( new StringBuilder(), parsable: true ).ToString();
+
 }

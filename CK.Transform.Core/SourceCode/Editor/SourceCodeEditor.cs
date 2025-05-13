@@ -19,11 +19,6 @@ public sealed partial class SourceCodeEditor
 
     readonly FilteredTokenSpanListBuilder _sharedBuilder;
 
-    readonly SourceTokenEnumerable _sourceTokens;
-    readonly List<SourceSpanTokenEnumerable> _enumerators;
-    readonly List<DynamicSpans> _dynamicSpans;
-    TokenFilteringError? _filteringError;
-
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
     bool _hasError;
@@ -43,9 +38,6 @@ public sealed partial class SourceCodeEditor
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
         _sharedBuilder = new FilteredTokenSpanListBuilder();
-        _sourceTokens = new SourceTokenEnumerable( this );
-        _enumerators = new List<SourceSpanTokenEnumerable>();
-        _dynamicSpans = new List<DynamicSpans>();
         _editor = new Editor( this );
     }
 
@@ -77,36 +69,43 @@ public sealed partial class SourceCodeEditor
     public TransformerHost.Language Language => _language;
 
     /// <summary>
-    /// Pushes a new token filter.
-    /// Returns the number of actual filters that have been pushed. This count must be provided to <see cref="PopTokenFilter"/>.
+    /// Pushes a new token operator.
+    /// Returns the number of actual operators that have been pushed. This count must be provided to <see cref="PopTokenOperator"/>.
     /// </summary>
-    /// <param name="filterProvider">The filter provider to apply.</param>
-    /// <returns>The number of actual filters that have been pushed.</returns>
-    public int PushTokenFilter( IFilteredTokenOperator? filterProvider )
+    /// <param name="tokenOperator">The operator to apply.</param>
+    /// <returns>The number of actual operators that have been pushed.</returns>
+    public int PushTokenOperator( IFilteredTokenOperator? tokenOperator )
     {
         Throw.CheckState( _editor.OpenState is OpenEditorState.None );
         Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
+        if( tokenOperator == null || tokenOperator == IFilteredTokenOperator.Empty )
+        {
+            return 0;
+        }
         int count = _editor.CurrentFilter.Index;
-        filterProvider?.Activate( _editor.PushTokenOperator );
+        tokenOperator?.Activate( _editor.PushTokenOperator );
         count = _editor.CurrentFilter.Index - count;
         _editor.CurrentFilter.SetSyntaxBorder();
         return count;
     }
 
     /// <summary>
-    /// Pops the last pushed token filters.
+    /// Pops the last pushed token operators.
     /// </summary>
     /// <param name="count">
-    /// Number of filters returned by <see cref="PushTokenFilter(IFilteredTokenOperator)"/>.
+    /// Number of operators returned by <see cref="PushTokenOperator(IFilteredTokenOperator)"/>.
     /// This can be 0.
     /// </param>
-    public void PopTokenFilter( int count )
+    public void PopTokenOperator( int count )
     {
         Throw.CheckArgument( count >= 0 );
         Throw.CheckState( _editor.OpenState is OpenEditorState.None && _editor.CurrentFilter.Index >= count );
         Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
-        _editor.PopTokenOperator( count );
-        Throw.CheckState( _editor.CurrentFilter.IsSyntaxBorder );
+        if( count > 0 )
+        {
+            _editor.PopTokenOperator( count );
+            Throw.CheckState( _editor.CurrentFilter.IsSyntaxBorder );
+        }
     }
 
     /// <summary>
@@ -114,6 +113,12 @@ public sealed partial class SourceCodeEditor
     /// </summary>
     /// <returns>The editor that must be disposed.</returns>
     public ICodeEditor OpenGlobalEditor() => _editor.OpenGlobal();
+
+    /// <summary>
+    /// Gets a disposable <see cref="Editor"/> that enables global code modification.
+    /// </summary>
+    /// <returns>The editor that must be disposed.</returns>
+    public IScopedCodeEditor OpenScopedEditor() => _editor.OpenScoped();
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.
@@ -170,89 +175,43 @@ public sealed partial class SourceCodeEditor
         Throw.DebugAssert( count >= 0 );
         // All existing Enumerators must have observed the
         // last replaced token.
-        int eLimit = index + count - 1;
-        Throw.CheckArgument( "Invalid token range to replace.", index >= 0 && eLimit < _tokens.Count );
+        int eLimit = index + count;
+        Throw.CheckArgument( "Invalid token range to replace.", index >= 0 && eLimit <= _tokens.Count );
         // To limit memory moves, tokens are replaced in the list:
         // RemoveRange or AddRange is only called when required.
         int delta = tokens.Length - count;
         if( delta > 0 )
         {
-            _sourceTokens.OnInsertTokens( eLimit, delta );
-            foreach( var e in _enumerators )
-            {
-                e.OnInsertTokens( eLimit, delta );
-            }
-            foreach( var s in _dynamicSpans )
-            {
-                s.OnInsertTokens( index, delta, insertBefore, eLimit );
-            }
             for( int i = 0; i < count; ++i )
             {
                 _tokens[index + i] = tokens[i];
             }
             _tokens.InsertRange( index + count, tokens.Slice( count ) );
+            _editor.OnInsertTokens( index, delta, insertBefore, eLimit );
             _code._spans.OnInsertTokens( index, delta, insertBefore );
         }
         else if( delta < 0 )
         {
             delta = -delta;
             TokenSpan removedHead = new( index, index + delta );
-            _sourceTokens.OnRemoveTokens( eLimit, delta );
-            foreach( var e in _enumerators )
-            {
-                e.OnRemoveTokens( eLimit, delta );
-            }
-            foreach( var s in _dynamicSpans )
-            {
-                s.OnRemoveTokens( removedHead, eLimit );
-            }
             for( int i = 0; i < tokens.Length; ++i )
             {
                 _tokens[index + i] = tokens[i];
             }
             _tokens.RemoveRange( index + tokens.Length, delta );
+            _editor.OnRemoveTokens( removedHead, eLimit );
             _code._spans.OnRemoveTokens( removedHead );
         }
         else
         {
-            _sourceTokens.OnUpdateTokens( eLimit );
-            foreach( var e in _enumerators )
-            {
-                e.OnUpdateTokens( eLimit );
-            }
-            foreach( var s in _dynamicSpans )
-            {
-                s.OnUpdateTokens( eLimit );
-            }
             for( int i = 0; i < tokens.Length; ++i )
             {
                 _tokens[index + i] = tokens[i];
             }
-            for( int i = 0; i < count; ++i )
-            {
-                _tokens[index + i] = tokens[i];
-            }
+            _editor.OnUpdateTokens( eLimit );
         }
         _code.OnTokensChanged();
         return true;
-    }
-
-    internal void Track( DynamicSpans s ) => _dynamicSpans.Add( s );
-
-    internal void SetTokenFilteringError( TokenFilteringError error )
-    {
-        if( _filteringError == null )
-        {
-            _filteringError = error;
-            _monitor.Error( "" );
-        }
-        else
-        {
-            using( _monitor.OpenError( ActivityMonitor.Tags.ToBeInvestigated, "New filtering error emitted while a previous one exists. Ignored." ) )
-            {
-                _monitor.Warn( error.Message );
-            }
-        }
     }
 
     /// <summary>

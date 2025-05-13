@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
@@ -25,6 +26,26 @@ public interface IFilteredTokenSpanEnumerator
     /// Gets whether there's at least one token in a single "each" bucket.
     /// </summary>
     bool IsSingleEach { get; }
+
+    /// <summary>
+    /// Gets the input of this enumerator.
+    /// </summary>
+    IReadOnlyList<FilteredTokenSpan> Input { get; }
+
+    /// <summary>
+    /// Gets the current input index, regardless of the State.
+    /// This starts at 0 and ends at Input's length.
+    /// </summary>
+    int CurrentInputIndex { get; }
+
+    /// <summary>
+    /// Gets the current "each" bucket number.
+    /// <para>
+    /// State must not be <see cref="FilteredTokenSpanEnumeratorState.Finished"/> oherwise
+    /// an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
+    /// </summary>
+    int CurrentEachIndex { get; }
 
     /// <summary>
     /// Gets this enumerator state.
@@ -55,6 +76,7 @@ public interface IFilteredTokenSpanEnumerator
     /// <para>
     /// <c>NextEach()</c> must have been called before oherwise
     /// an <see cref="InvalidOperationException"/> is thrown.
+    /// This is necessarily true after a successful call to <c>NextEach()</c>.
     /// </para>
     /// </summary>
     /// <returns>
@@ -64,10 +86,29 @@ public interface IFilteredTokenSpanEnumerator
     bool NextMatch();
 
     /// <summary>
+    /// Gets the first, last and count of tokens of the current match and
+    /// moves to the next match in the current each bucket.
+    /// <para>
+    /// <c>NextEach()</c> must have been called before oherwise
+    /// an <see cref="InvalidOperationException"/> is thrown.
+    /// This is necessarily true after a successful call to <c>NextEach()</c>.
+    /// </para>
+    /// </summary>
+    /// <param name="currentFirst">The first token in the current match.</param>
+    /// <param name="currentLast">The last token in the current match.</param>
+    /// <param name="currentCount">The number of tokens in the current match.</param>
+    /// <returns>
+    /// True if move succeeded, false if the <see cref="FilteredTokenSpanEnumeratorState.Finished"/> state
+    /// has been reached or there's no more match in the current "each" bucket and <c>NextEach()</c> must be called.
+    /// </returns>
+    bool NextMatch( out SourceToken currentFirst, out SourceToken currentLast, out int currentCount );
+
+    /// <summary>
     /// Moves to the next token in the current match.
     /// <para>
     /// <c>NextMatch()</c> must have been called before oherwise
     /// an <see cref="InvalidOperationException"/> is thrown.
+    /// This is necessarily true after a successful call to <c>NextMatch()</c>.
     /// </para>
     /// </summary>
     /// <returns>

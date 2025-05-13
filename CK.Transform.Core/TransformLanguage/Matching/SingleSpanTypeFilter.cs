@@ -38,32 +38,30 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
     /// <param name="collector">The operator collector.</param>
     public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
 
-    public FilteredTokenSpan[] Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
-
-        throw new NotImplementedException();
-    }
-
-
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> Run( IFilteredTokenOperatorContext c,
-                                                            IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
-    {
-        DeepestSpanCollector collector = new DeepestSpanCollector( c );
-        foreach( var each in inner )
+        var builder = context.SharedBuilder;
+        var spanCollector = new DeepestSpanCollector();
+        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        while( e.NextEach() )
         {
-            collector.StartEach();
-            foreach( var range in each )
+            while( e.NextMatch() )
             {
-                foreach( var t in range )
+                while( e.NextToken() )
                 {
-                    var s = c.GetDeepestSpanAt( t.Index, _spanType );
-                    if( s != null ) collector.Add( s );
+                    var s = context.GetDeepestSpanAt( e.Token.Index, _spanType );
+                    if( s != null ) spanCollector.Add( s.Span );
                 }
             }
+            if( !spanCollector.AddSpans( builder ) )
+            {
+                context.SetFailedResult( "Missing span.", e );
+                return;
+            }
         }
-        collector.Close();
-        return collector;
+        context.SetResult( builder );
     }
+
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
@@ -73,61 +71,45 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
 
     public override string ToString() => _displayName;
 
-    sealed class DeepestSpanCollector : IEnumerable<IEnumerable<IEnumerable<SourceToken>>>
+
+    readonly struct DeepestSpanCollector
     {
-        readonly List<List<SourceSpan>> _each;
-        readonly IFilteredTokenOperatorContext _filterContext;
-        List<SourceSpan>? _current;
+        readonly List<TokenSpan> _spans;
 
-        public DeepestSpanCollector( IFilteredTokenOperatorContext filterContext )
+        public DeepestSpanCollector()
         {
-            _each = new List<List<SourceSpan>>();
-            _filterContext = filterContext;
+            _spans = new List<TokenSpan>();
         }
 
-        public void StartEach()
+        public bool AddSpans( FilteredTokenSpanListBuilder builder )
         {
-            Close();
-            _current = new List<SourceSpan>();
-        }
-
-        public void Close()
-        {
-            if( _current != null )
+            if( _spans.Count == 0 ) return false;
+            builder.StartNewEach();
+            foreach( var s in _spans )
             {
-                _each.Add( _current );
+                builder.AddMatch( s );
             }
+            return true;
         }
 
-        public void Add( SourceSpan span )
+        public void Add( TokenSpan span )
         {
-            Throw.DebugAssert( _current != null );
-
-            for( int i = 0; i < _current.Count; i++ )
+            for( int i = 0; i < _spans.Count; i++ )
             {
-                SourceSpan? s = _current[i];
-                if( s.Span.Contains( span.Span ) )
+                var s = _spans[i];
+                if( s.Contains( span ) )
                 {
-                    _current[i] = span;
+                    _spans[i] = span;
                     return;
                 }
-                if( span.Span.ContainsOrEquals( s.Span ) )
+                if( span.ContainsOrEquals( s ) )
                 {
                     return;
                 }
             }
-            _current.Add( span );
+            _spans.Add( span );
         }
 
-        public IEnumerator<IEnumerable<IEnumerable<SourceToken>>> GetEnumerator()
-        {
-            foreach( var each in _each )
-            {
-                yield return each.Select( _filterContext.GetSourceTokens );
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
 }

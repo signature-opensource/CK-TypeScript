@@ -6,9 +6,9 @@ namespace CK.Transform.Core;
 public interface ICodeEditor : IDisposable
 {
     /// <summary>
-    /// Enumerates all <see cref="SourceToken"/>.
+    /// Gets the source code tokens.
     /// </summary>
-    IEnumerable<SourceToken> UnfilteredTokens { get; }
+    IReadOnlyList<Token> UnfilteredTokens { get; }
 
     /// <summary>
     /// Replaces the tokens starting at <paramref name="index"/>.

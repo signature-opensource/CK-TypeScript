@@ -43,20 +43,20 @@ public sealed class InjectIntoStatement : TransformStatement
         // The finder will find the first match (or none) and will error on duplicate
         // or injection point. We need the same state machine for all the tokens and
         // process all the tokens (to detect duplicate errors).
-        using var e = editor.OpenEditor( out var filteredTokens );
+        using var e = editor.OpenScopedEditor();
         bool noTokenAtAll = true;
-        while( filteredTokens.NextEach() )
+        while( e.Tokens.NextEach() )
         {
-            while( filteredTokens.NextMatch() )
+            while( e.Tokens.NextMatch() )
             {
                 var finder = new InjectionPointFinder( Target, Content );
                 SourceToken modified = default;
                 int tokenCount = 0;
-                while( filteredTokens.NextToken() )
+                while( e.Tokens.NextToken() )
                 {
                     noTokenAtAll = false;
                     ++tokenCount;
-                    var sourceToken = filteredTokens.Token;
+                    var sourceToken = e.Tokens.Token;
                     var token = sourceToken.Token;
                     var newTrivias = ProcessTrivias( monitor, ref finder, token.LeadingTrivias );
                     if( !newTrivias.IsDefault )

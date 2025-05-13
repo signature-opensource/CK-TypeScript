@@ -58,17 +58,17 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
             case LocationKind.First:
                 HandleFirst( context, input );
                 break;
-            LocationKind.Last:
+            case LocationKind.Last:
                 HandleLast( context, input );
                 break;
-            // All without ExpectedMatchCount is a no-op constraint.
-            LocationKind.All => _expectedMatchCount == 0
-                                    ? HandleAll
-                                    : HandleAllWithExpectedCount,
-            _ => HandleEach
-        };
+            case LocationKind.All:
+                HandleAll( context, input );
+                break;
+            default:
+                HandleEach( context, input );
+                break;
+        }
     }
-
 
     static void HandleSingle( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
@@ -115,7 +115,7 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
                     break;
                 }
             }
-            if( builder.CurrentEachCount == 0 )
+            if( builder.CurrentEachNumber == 0 )
             {
                 context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
                 return;
@@ -139,84 +139,79 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
         // We must check this edge-case: the source code is empty. 
         if( input.Count == 0 )
         {
-            context.SetFailedResult( $"Expected a first match but got none.", null );
+            context.SetFailedResult( $"Expected a last match but got none.", null );
             return;
         }
         var builder = context.SharedBuilder;
         var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
-        int inputIndex = 0;
         while( e.NextEach() )
         {
             builder.StartNewEach();
             int matchCount = 0;
             while( e.NextMatch() ) ++matchCount;
-            inputIndex += matchCount;
-            if( )
-        }
-    }
-
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAllWithExpectedCount( IFilteredTokenOperatorContext c,
-                                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
-    {
-        Throw.DebugAssert( _kind == LocationKind.All && _expectedMatchCount > 0 );
-        foreach( var each in inner )
-        {
-            HandleExpectedMatchCount( c, this, each );
-        }
-        return inner;
-    }
-
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleAll( IFilteredTokenOperatorContext c,
-                                                                  IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
-    {
-        Throw.DebugAssert( _kind == LocationKind.All && _expectedMatchCount == 0 );
-        foreach( var each in inner )
-        {
-            if( !each.Any() )
+            if( _expectedMatchCount > 0 && _expectedMatchCount != matchCount )
             {
-                c.Fail( $"'all' expects at least one match." );
+                context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
+                return;
+            }
+            if( _offset < matchCount )
+            {
+                context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
+                return;
+            }
+            builder.AddMatch( input[e.CurrentInputIndex - _offset].Span );
+        }
+    }
+
+
+    void HandleAll( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    {
+        // We must check this edge-case: the source code is empty. 
+        if( input.Count == 0 )
+        {
+            context.SetFailedResult( $"Expected some match but got none.", null );
+            return;
+        }
+        // "all" without expected match count is a no-op.
+        if( _expectedMatchCount > 0 )
+        {
+            var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            while( e.NextEach() )
+            {
+                int matchCount = 0;
+                while( e.NextMatch() ) ++matchCount;
+                if( _expectedMatchCount != matchCount )
+                {
+                    context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
+                    return;
+                }
             }
         }
-        return inner;
+        context.SetUnchangedResult();
     }
 
-    IEnumerable<IEnumerable<IEnumerable<SourceToken>>> HandleEach( IFilteredTokenOperatorContext c,
-                                                                   IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
+    void HandleEach( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
     {
         Throw.DebugAssert( _kind == LocationKind.Each );
-        if( _expectedMatchCount != 0 )
+        // We must check this edge-case: the source code is empty. 
+        if( input.Count == 0 )
         {
-            foreach( var each in inner )
-            {
-                int count = HandleExpectedMatchCount( c, this, each );
-                if( count == -2 ) break;
-                foreach( var r in each ) yield return [r];
-            }
+            context.SetFailedResult( $"Expected some match but got none.", null );
+            return;
+        }
+        if( _expectedMatchCount != 0 && _expectedMatchCount != input.Count )
+        {
+            context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {input.Count}.", null );
+            return;
+        }
+        if( input[^1].EachIndex == input.Count - 1 )
+        {
+            context.SetUnchangedResult();
         }
         else
         {
-            foreach( var each in inner )
-            {
-                foreach( var r in each ) yield return [r];
-            }
+            context.SetResult( input.Select( ( m, index ) => new FilteredTokenSpan( index, 0, m.Span ) ).ToArray() );
         }
-    }
-
-    static int HandleExpectedMatchCount( IFilteredTokenOperatorContext c,
-                                         LocationCardinality cardinality,
-                                         IEnumerable<IEnumerable<SourceToken>> each )
-    {
-        int count = -1;
-        if( cardinality.ExpectedMatchCount != 0 )
-        {
-            count = each.Count();
-            if( count != cardinality.ExpectedMatchCount )
-            {
-                c.Fail( $"Expected '{cardinality}' but got {count} matches." );
-                count = -2;
-            }
-        }
-        return count;
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )

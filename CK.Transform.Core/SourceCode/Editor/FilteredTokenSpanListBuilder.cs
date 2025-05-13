@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
 
 namespace CK.Transform.Core;
@@ -9,11 +10,19 @@ public sealed class FilteredTokenSpanListBuilder
     int _each;
     int _match;
 
+    /// <summary>
+    /// Initializes a new empty builder.
+    /// </summary>
     public FilteredTokenSpanListBuilder()
     {
         _list = new List<FilteredTokenSpan>();
     }
 
+    /// <summary>
+    /// Adds a matched span to the current "each".
+    /// The span must not overlap the last added one otherwise a <see cref="ArgumentException"/> is thrown.
+    /// </summary>
+    /// <param name="span">The span to add.</param>
     public void AddMatch( TokenSpan span )
     {
         if( _list.Count > 0 )
@@ -24,10 +33,20 @@ public sealed class FilteredTokenSpanListBuilder
         _list.Add( new FilteredTokenSpan( _each, _match++, span ) );
     }
 
-    public int CurrentEachCount => _each;
+    /// <summary>
+    /// Gets the number of "each" bucket.
+    /// </summary>
+    public int CurrentEachNumber => _each;
 
-    public int CurrentMatchCount => _match;
+    /// <summary>
+    /// Gets the number of added matches in the current "each" bucket.
+    /// </summary>
+    public int CurrentMatchNumber => _match;
 
+    /// <summary>
+    /// Starts a new "each" bucket. If no match has been added to the current "each"
+    /// (<see cref="CurrentMatchNumber"/> is 0) nothing is done.
+    /// </summary>
     public void StartNewEach()
     {
         if( _match != 0 )
@@ -37,6 +56,9 @@ public sealed class FilteredTokenSpanListBuilder
         }
     }
 
+    /// <summary>
+    /// Clears this builder. It can be reused.
+    /// </summary>
     public void Clear()
     {
         _list.Clear();
@@ -44,6 +66,10 @@ public sealed class FilteredTokenSpanListBuilder
         _match = 0;
     }
 
+    /// <summary>
+    /// Extracts the current result and <see cref="Clear"/> this builder.
+    /// </summary>
+    /// <returns>The matches.</returns>
     public FilteredTokenSpan[] ExtractResult()
     {
         var m = _list.ToArray();
@@ -51,5 +77,4 @@ public sealed class FilteredTokenSpanListBuilder
         return m;
     }
 }
-
 

@@ -1,5 +1,7 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
@@ -14,7 +16,39 @@ public readonly record struct FilteredTokenSpan( int EachIndex, int MatchIndex, 
 
 public static class FilteredTokenSpanExtensions
 {
-    public static void CheckInvariants( this IReadOnlyList<FilteredTokenSpan> matches, IReadOnlyList<Token>? tokens )
+    /// <summary>
+    /// Validates these filtered tokens.
+    /// </summary>
+    /// <param name="matches">These filtered tokens.</param>
+    /// <param name="tokens">
+    /// Optional tokens to which these filtered tokens refer.
+    /// When provided, this is used to check that the last span ends on or before the last token.
+    /// </param>
+    /// <returns>True if these filtered tokens are valid, false otherwise.</returns>
+    public static bool CheckValid( this IReadOnlyList<FilteredTokenSpan> matches, IReadOnlyList<Token>? tokens )
+    {
+        return GetError( matches, tokens ) != null;
+    }
+
+    /// <summary>
+    /// Validates these filtered tokens.
+    /// </summary>
+    /// <param name="matches">These filtered tokens.</param>
+    /// <param name="tokens">
+    /// Optional tokens to which these filtered tokens refer.
+    /// When provided, this is used to check that the last span ends on or before the last token.
+    /// </param>
+    /// <param name="error">On error, contains a description of the error.</param>
+    /// <returns>True if these filtered tokens are valid, false otherwise.</returns>
+    public static bool CheckValid( this IReadOnlyList<FilteredTokenSpan> matches,
+                                   IReadOnlyList<Token>? tokens,
+                                   [NotNullWhen(true)]out string? error )
+    {
+        error = GetError( matches, tokens );
+        return error != null;
+    }
+
+    static string? GetError( IReadOnlyList<FilteredTokenSpan> matches, IReadOnlyList<Token>? tokens )
     {
         if( matches.Count > 0 )
         {
@@ -33,16 +67,35 @@ public static class FilteredTokenSpanExtensions
                 {
                     ++expectedMatch;
                 }
-                Throw.CheckState( each == expectedEach && match == expectedMatch );
+                if( each != expectedEach )
+                {
+                    return $"Invalid EachNumber at {i}. Expected {expectedEach}, got {each}.";
+                }
+
+                if( match != expectedMatch )
+                {
+                    return $"Invalid MatchNumber at {i}. Expected {expectedMatch}, got {match}.";
+                }
+
                 var span = matches[i].Span;
                 var nextSpan = matches[i + 1].Span;
-                Throw.CheckState( !span.IsEmpty );
-                Throw.CheckState( span.GetRelationship( nextSpan ) is SpanRelationship.Independent or SpanRelationship.Contiguous );
+                if( span.IsEmpty )
+                {
+                    return $"Empty span found at {i}.";
+                }
+                if( span.GetRelationship( nextSpan ) is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
+                {
+                    return $"Span at {i} ({span}) overlaps the next one {nextSpan}.";
+                }
             }
             if( tokens != null )
             {
-                Throw.CheckState( matches[^1].Span.End <= tokens.Count );
+                if( matches[^1].Span.End > tokens.Count )
+                {
+                    return $"Last span {matches[^1].Span} ends after the last token: token count is {tokens.Count}.";
+                }
             }
         }
+        return null; 
     }
 }
