@@ -4,18 +4,18 @@ using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
-public sealed class FilteredTokenSpanListBuilder
+public sealed class TokenFilterBuilder
 {
-    readonly List<FilteredTokenSpan> _list;
+    readonly List<TokenMatch> _list;
     int _each;
     int _match;
 
     /// <summary>
     /// Initializes a new empty builder.
     /// </summary>
-    public FilteredTokenSpanListBuilder()
+    public TokenFilterBuilder()
     {
-        _list = new List<FilteredTokenSpan>();
+        _list = new List<TokenMatch>();
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public sealed class FilteredTokenSpanListBuilder
             var last = _list[^1].Span;
             Throw.CheckArgument( last.GetRelationship( span ) is SpanRelationship.Independent or SpanRelationship.Contiguous );
         }
-        _list.Add( new FilteredTokenSpan( _each, _match++, span ) );
+        _list.Add( new TokenMatch( _each, _match++, span ) );
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public sealed class FilteredTokenSpanListBuilder
     /// Extracts the current result and <see cref="Clear"/> this builder.
     /// </summary>
     /// <returns>The matches.</returns>
-    public FilteredTokenSpan[] ExtractResult()
+    public TokenMatch[] ExtractResult()
     {
         var m = _list.ToArray();
         Clear();

@@ -19,12 +19,12 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed partial class SpanMatcher : SourceSpan
 {
-    readonly IFilteredTokenOperator? _spanSpec;
-    readonly IFilteredTokenOperator? _pattern;
+    readonly ITokenFilterOperator? _spanSpec;
+    readonly ITokenFilterOperator? _pattern;
     
     SpanMatcher( int beg, int end,
-                 IFilteredTokenOperator? spanSpec,
-                 IFilteredTokenOperator? pattern )
+                 ITokenFilterOperator? spanSpec,
+                 ITokenFilterOperator? pattern )
         : base( beg, end )
     {
         _spanSpec = spanSpec;
@@ -52,7 +52,7 @@ public sealed partial class SpanMatcher : SourceSpan
 
         static bool TryMatchSpec( LanguageTransformAnalyzer analyzer,
                                   ref TokenizerHead head,
-                                  out IFilteredTokenOperator? specProvider )
+                                  out ITokenFilterOperator? specProvider )
         {
             specProvider = null;
             if( head.LowLevelTokenType is TokenType.OpenBrace )
@@ -63,7 +63,7 @@ public sealed partial class SpanMatcher : SourceSpan
                     return false;
                 }
                 object m = analyzer.TargetAnalyzer.ParseSpanSpec( tokenSpec );
-                if( m is not string and not IFilteredTokenOperator )
+                if( m is not string and not ITokenFilterOperator )
                 {
                     Throw.InvalidOperationException( $"{analyzer.TargetAnalyzer.GetType().FullName}.ParseSpanSpec() must return a string or a IFilteredTokenEnumerableProvider." );
                 }
@@ -72,15 +72,15 @@ public sealed partial class SpanMatcher : SourceSpan
                     head.AppendError( error, -1 );
                     return false;
                 }
-                specProvider = Unsafe.As<IFilteredTokenOperator>( m );
+                specProvider = Unsafe.As<ITokenFilterOperator>( m );
             }
             return true;
         }
 
         static bool TryMatchPattern( LanguageTransformAnalyzer analyzer,
                                      ref TokenizerHead head,
-                                     IFilteredTokenOperator? specProvider,
-                                     out IFilteredTokenOperator? patternProvider )
+                                     ITokenFilterOperator? specProvider,
+                                     out ITokenFilterOperator? patternProvider )
         {
             patternProvider = null;
             if( head.LowLevelTokenType is TokenType.DoubleQuote )
@@ -91,7 +91,7 @@ public sealed partial class SpanMatcher : SourceSpan
                     return false;
                 }
                 object m = analyzer.TargetAnalyzer.ParsePattern( tokenPattern, specProvider );
-                if( m is not string and not IFilteredTokenOperator )
+                if( m is not string and not ITokenFilterOperator )
                 {
                     Throw.InvalidOperationException( $"{analyzer.TargetAnalyzer.GetType().FullName}.ParsePattern() must return a string or a IFilteredTokenEnumerableProvider." );
                 }
@@ -100,7 +100,7 @@ public sealed partial class SpanMatcher : SourceSpan
                     head.AppendError( error, -1 );
                     return false;
                 }
-                patternProvider = Unsafe.As<IFilteredTokenOperator>( m );
+                patternProvider = Unsafe.As<ITokenFilterOperator>( m );
             }
             return true;
         }

@@ -47,6 +47,7 @@ public sealed class InjectIntoStatement : TransformStatement
         bool noTokenAtAll = true;
         while( e.Tokens.NextEach() )
         {
+            noTokenAtAll = false;
             while( e.Tokens.NextMatch() )
             {
                 var finder = new InjectionPointFinder( Target, Content );
@@ -54,7 +55,6 @@ public sealed class InjectIntoStatement : TransformStatement
                 int tokenCount = 0;
                 while( e.Tokens.NextToken() )
                 {
-                    noTokenAtAll = false;
                     ++tokenCount;
                     var sourceToken = e.Tokens.Token;
                     var token = sourceToken.Token;

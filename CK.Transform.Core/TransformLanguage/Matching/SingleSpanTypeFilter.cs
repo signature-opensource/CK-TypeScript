@@ -8,10 +8,10 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="IFilteredTokenOperator"/> that extends a matched range to
+/// A <see cref="ITokenFilterOperator"/> that extends a matched range to
 /// the deepest span that can be assigned to a type.
 /// </summary>
-public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
+public sealed class SingleSpanTypeFilter : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
@@ -36,13 +36,13 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
     /// Collects this operator.
     /// </summary>
     /// <param name="collector">The operator collector.</param>
-    public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
+    public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-    public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         var builder = context.SharedBuilder;
         var spanCollector = new DeepestSpanCollector();
-        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
             while( e.NextMatch() )
@@ -53,7 +53,7 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
                     if( s != null ) spanCollector.Add( s.Span );
                 }
             }
-            if( !spanCollector.AddSpans( builder ) )
+            if( !spanCollector.ExtractResultTo( builder ) )
             {
                 context.SetFailedResult( "Missing span.", e );
                 return;
@@ -81,7 +81,7 @@ public sealed class SingleSpanTypeFilter : IFilteredTokenOperator
             _spans = new List<TokenSpan>();
         }
 
-        public bool AddSpans( FilteredTokenSpanListBuilder builder )
+        public bool ExtractResultTo( TokenFilterBuilder builder )
         {
             if( _spans.Count == 0 ) return false;
             builder.StartNewEach();

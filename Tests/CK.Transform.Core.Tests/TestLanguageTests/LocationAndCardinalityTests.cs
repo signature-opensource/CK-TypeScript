@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Transform.Core.Tests.Helpers;
 using NUnit.Framework;
 using Shouldly;
+using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests.TestLanguageTests;
@@ -108,7 +109,7 @@ public class LocationAndCardinalityTests
         sourceCode.ToString().ShouldBe( result );
     }
 
-    [TestCase( "n°1ter - in after L1 in before L2 also works.",
+    [TestCase( "n°1",
         """
         A B C D E
         """,
@@ -119,7 +120,7 @@ public class LocationAndCardinalityTests
         end
         """",
         """
-        Pouf
+        Failed to match pattern:
         """
     )]
     public void single_failure( string title, string source, string transformer, string error )
@@ -129,7 +130,7 @@ public class LocationAndCardinalityTests
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
             h.Transform( TestHelper.Monitor, source, function ).ShouldBeNull();
-            logs.ShouldContain( error );
+            logs.ShouldContain( l => l.StartsWith( error ) );
         }
     }
 

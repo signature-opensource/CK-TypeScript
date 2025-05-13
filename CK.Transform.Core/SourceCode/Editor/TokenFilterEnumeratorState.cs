@@ -1,6 +1,6 @@
 namespace CK.Transform.Core;
 
-public enum FilteredTokenSpanEnumeratorState
+public enum TokenFilterEnumeratorState
 {
     Unitialized,
     Each,

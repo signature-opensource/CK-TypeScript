@@ -5,23 +5,23 @@ using System.Text;
 
 namespace CK.Transform.Core;
 
-public sealed partial class LocationMatcher : IFilteredTokenOperator
+public sealed partial class LocationMatcher : ITokenFilterOperator
 {
     /// <summary>
     /// Activates the <see cref="Matcher"/> and then the non null <see cref="LocationCardinality"/> or
     /// the <see cref="LocationCardinality.SingleCardinality"/>.
     /// </summary>
     /// <param name="collector">The provider collector.</param>
-    public void Activate( Action<IFilteredTokenOperator> collector )
+    public void Activate( Action<ITokenFilterOperator> collector )
     {
         Throw.DebugAssert( CheckValid() );
         Matcher.Activate( collector );
         (Cardinality ?? LocationCardinality.SingleCardinality).Activate( collector );
     }
 
-    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void ITokenFilterOperator.Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
-        IFilteredTokenOperator.ThrowOnCombinedOperator();
+        ITokenFilterOperator.ThrowOnCombinedOperator();
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )

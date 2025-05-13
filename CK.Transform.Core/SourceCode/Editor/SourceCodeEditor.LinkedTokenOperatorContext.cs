@@ -2,28 +2,25 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Threading;
 
 namespace CK.Transform.Core;
 
 public sealed partial class SourceCodeEditor
 {
 
-    internal sealed class LinkedTokenOperatorContext : IFilteredTokenOperatorSourceContext, IFilteredTokenOperatorContext
+    internal sealed class LinkedTokenOperatorContext : ITokenFilterOperatorSource, ITokenFilterOperatorContext
     {
         readonly SourceCodeEditor _editor;
-        readonly IFilteredTokenOperator? _operator;
+        readonly ITokenFilterOperator? _operator;
         readonly LinkedTokenOperatorContext? _previous;
         readonly int _index;
-        FilteredTokenSpan[]? _filteredTokens;
+        TokenMatch[]? _matches;
         bool _syntaxBorder;
         bool _hasFailed;
 
         internal LinkedTokenOperatorContext( SourceCodeEditor editor,
-                                             IFilteredTokenOperator op,
+                                             ITokenFilterOperator op,
                                              LinkedTokenOperatorContext previous )
         {
             _editor = editor;
@@ -55,41 +52,51 @@ public sealed partial class SourceCodeEditor
 
         public bool HasFailed => _hasFailed;
 
-        public IReadOnlyList<FilteredTokenSpan> FilteredTokens => EnsureFilteredTokens();
-        
-        FilteredTokenSpan[] EnsureFilteredTokens()
+        public TokenFilter Tokens
         {
-            if( _filteredTokens == null )
+            get
             {
-                if( IsRoot )
+                Throw.DebugAssert( "Otherwise this property is not accessible.", _matches != null );
+                return new TokenFilter( _matches );
+            }
+        }
+
+        // Implements the ITokenFilterOperatorSourceContext.CreateTokenEnumerator(): the matches
+        // have necessarily been succefully computed.
+        public TokenFilterEnumerator CreateTokenEnumerator()
+        {
+            Throw.DebugAssert( "Otherwise this property is not accessible.", _matches != null );
+            return new TokenFilterEnumerator( _matches, _editor._tokens );
+        }
+
+
+        internal TokenMatch[]? Setup()
+        {
+            _hasFailed = false;
+            _matches = null;
+            if( IsRoot )
+            {
+                int count = _editor.Code.Tokens.Count;
+                _matches = count == 0
+                            ? []
+                            : [new TokenMatch( 0, 0, new TokenSpan( 0, count ) )];
+            }
+            else
+            {
+                var prevMatches = _previous.Setup();
+                if( prevMatches != null )
                 {
-                    int count = _editor.Code.Tokens.Count;
-                    _filteredTokens = count == 0
-                                ? []
-                                : [new FilteredTokenSpan( 0, 0, new TokenSpan( 0, count ) )];
-                }
-                else
-                {
-                    var prevMatches = _previous.EnsureFilteredTokens();
-                    if( _previous.HasFailed )
-                    {
-                        _hasFailed = true;
-                        _filteredTokens = prevMatches;
-                    }
-                    else
-                    {
-                        _operator.Apply( this, prevMatches );
-                        if( _filteredTokens == null )
-                        {
-                            Throw.InvalidOperationException( $"'{_operator.GetType().ToCSharpName()}.Apply method must call {nameof(IFilteredTokenOperatorContext.SetResult)}, {nameof( IFilteredTokenOperatorContext.SetFailedResult )} or {nameof( IFilteredTokenOperatorContext.SetUnchangedResult )}." );
-                        }
+                    _operator.Apply( this, _previous );
+                    if( _matches == null && !_hasFailed )
+                    { 
+                        Throw.InvalidOperationException( $"'{_operator.GetType().ToCSharpName()}.Apply method must call {nameof( ITokenFilterOperatorContext.SetResult )}, {nameof( ITokenFilterOperatorContext.SetFailedResult )} or {nameof( ITokenFilterOperatorContext.SetUnchangedResult )}." );
                     }
                 }
             }
-            return _filteredTokens;
+            return _matches;
         }
 
-        void IFilteredTokenOperatorContext.SetFailedResult( string failureMessage, IFilteredTokenSpanEnumerator? current )
+        void ITokenFilterOperatorContext.SetFailedResult( string failureMessage, ITokenFilterEnumerator? current )
         {
             _hasFailed = true;
             failureMessage ??= "<no failure message>";
@@ -109,42 +116,38 @@ public sealed partial class SourceCodeEditor
             }
         }
 
-        void IFilteredTokenOperatorContext.SetResult( FilteredTokenSpan[] result )
+        void ITokenFilterOperatorContext.SetResult( TokenMatch[] result )
         {
             Throw.CheckArgument( result != null );
             if( !result.CheckValid( _editor._tokens, out var error ) )
             {
                 Throw.ArgumentException( nameof( result ), error );
             }
-            _filteredTokens = result;
+            _matches = result;
         }
 
-        void IFilteredTokenOperatorContext.SetResult( FilteredTokenSpanListBuilder builder )
+        void ITokenFilterOperatorContext.SetResult( TokenFilterBuilder builder )
         {
             Throw.CheckArgument( builder != null );
             var builderResult = builder.ExtractResult();
             Throw.CheckState( builderResult.Length == 0 || builderResult[^1].Span.End <= _editor._tokens.Count );
-            _filteredTokens = builderResult;
+            _matches = builderResult;
         }
 
-        void IFilteredTokenOperatorContext.SetUnchangedResult()
+        void ITokenFilterOperatorContext.SetUnchangedResult()
         {
             Throw.CheckState( _previous != null );
-            _filteredTokens = _previous._filteredTokens;
+            _matches = _previous._matches;
         }
 
 
-        public IFilteredTokenOperator? Operator => _operator;
+        public ITokenFilterOperator? Operator => _operator;
 
-        public FilteredTokenSpanListBuilder SharedBuilder => _editor._sharedBuilder;
+        public TokenFilterBuilder SharedBuilder => _editor._sharedBuilder;
 
-        IReadOnlyList<Token> IFilteredTokenOperatorContext.UnfilteredTokens => _editor.Code.Tokens;
+        IReadOnlyList<Token> ITokenFilterOperatorContext.UnfilteredTokens => _editor.Code.Tokens;
 
-        IFilteredTokenOperatorSourceContext IFilteredTokenOperatorContext.Previous => _previous!;
-
-        IFilteredTokenOperatorSourceContext? IFilteredTokenOperatorSourceContext.Previous => _previous;
-
-        public bool HasEditorError => _editor.HasError;
+        ITokenFilterOperatorSource? ITokenFilterOperatorSource.Previous => _previous;
 
         public SourceSpan? GetDeepestSpanAt( int index )
         {
@@ -180,4 +183,5 @@ public sealed partial class SourceCodeEditor
         public override string ToString() => WriteFullPath( new StringBuilder() ).ToString();
 
     }
+
 }

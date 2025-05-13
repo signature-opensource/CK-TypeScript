@@ -5,19 +5,19 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="FilteredTokenSpan"/> operator applies a transformation to an list of <see cref="FilteredTokenSpan"/>.
+/// Operator that transforms a <see cref="TokenFilter"/>.
 /// </summary>
-public interface IFilteredTokenOperator
+public interface ITokenFilterOperator
 {
     /// <summary>
     /// Applies the operation.
     /// This is never called if this operator is a combined one. See <see cref="Activate"/>:
     /// implementations should use the <see cref="ThrowOnCombinedOperator"/> helper.
     /// </summary>
-    /// <param name="context">The filter context.</param>
-    /// <param name="input">The input to transform.</param>
+    /// <param name="context">The operator context.</param>
+    /// <param name="source">The source to consider.</param>
     /// <returns>The transfomed matches.</returns>
-    void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input );
+    void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource source );
 
     /// <summary>
     /// Activates this operator by collecting itself or collecting subordinate operators if this operator
@@ -25,7 +25,7 @@ public interface IFilteredTokenOperator
     /// this method to fail.
     /// </summary>
     /// <param name="collector">The collector.</param>
-    void Activate( Action<IFilteredTokenOperator> collector );
+    void Activate( Action<ITokenFilterOperator> collector );
 
     /// <summary>
     /// Writes a description of the operator: usually the source code
@@ -47,17 +47,17 @@ public interface IFilteredTokenOperator
     string ToString();
 
     /// <summary>
-    /// Singleton empty provider. It activates no operator and doesn't change the matches.
+    /// Singleton empty provider. It activates no operator and doesn't change the filter.
     /// </summary>
-    public static readonly IFilteredTokenOperator Empty = new EmptyOperator();
+    public static readonly ITokenFilterOperator Empty = new EmptyOperator();
 
-    private sealed class EmptyOperator : IFilteredTokenOperator
+    private sealed class EmptyOperator : ITokenFilterOperator
     {
-        public void Activate( Action<IFilteredTokenOperator> collector )
+        public void Activate( Action<ITokenFilterOperator> collector )
         {
         }
 
-        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+        public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
         {
             context.SetUnchangedResult();
         }
@@ -73,7 +73,7 @@ public interface IFilteredTokenOperator
     /// </summary>
     /// <exception cref="NotSupportedException">Always throws a NotSupportedException.</exception>
     /// <returns>Never returns. Here to enable a simple use with return.</returns>
-    public static FilteredTokenSpan[] ThrowOnCombinedOperator()
+    public static TokenMatch[] ThrowOnCombinedOperator()
     {
         throw new NotSupportedException( "Never called as this is a combined operator." );
     }

@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-public sealed class TokenSpanFilter : IFilteredTokenOperator
+public sealed class TokenSpanFilter : ITokenFilterOperator
 {
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
@@ -49,9 +49,9 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator
     /// Collects this operator.
     /// </summary>
     /// <param name="collector">The operator collector.</param>
-    public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
+    public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void ITokenFilterOperator.Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         new TokenMatcher( _tokens, _prefixTable ).CreateMatches( context, input );
     }
@@ -88,7 +88,8 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator
             }
             if( _iMatch == Length )
             {
-                var result = new TokenSpan( _iMatch - Length, _iMatch );
+                int endMatch = t.Index + 1;
+                var result = new TokenSpan( endMatch - Length, endMatch );
                 _iMatch = 0;
                 return result;
             }
@@ -96,10 +97,10 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator
         }
 
 
-        internal void CreateMatches( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+        internal void CreateMatches( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
         {
             var builder = context.SharedBuilder;
-            var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            var e = input.CreateTokenEnumerator();
             while( e.NextEach() )
             {
                 builder.StartNewEach();
@@ -133,7 +134,7 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator
             }
         }
 
-        void MatchError( IFilteredTokenOperatorContext context, FilteredTokenSpanEnumerator e )
+        void MatchError( ITokenFilterOperatorContext context, TokenFilterEnumerator e )
         {
             context.SetFailedResult( $"""
                                     Failed to match pattern:
@@ -162,7 +163,7 @@ public sealed class TokenSpanFilter : IFilteredTokenOperator
             return null;
         }
 
-        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( IFilteredTokenOperatorContext c,
+        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( ITokenFilterOperatorContext c,
                                                                              IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
         {
             foreach( var each in inner )

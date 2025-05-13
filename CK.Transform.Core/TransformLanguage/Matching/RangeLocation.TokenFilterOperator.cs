@@ -7,9 +7,9 @@ using System.Reflection;
 
 namespace CK.Transform.Core;
 
-public sealed partial class RangeLocation : IFilteredTokenOperator
+public sealed partial class RangeLocation : ITokenFilterOperator
 {
-    public void Activate( Action<IFilteredTokenOperator> collector )
+    public void Activate( Action<ITokenFilterOperator> collector )
     {
         Throw.DebugAssert( CheckValid() );
         if( IsBetween )
@@ -31,27 +31,26 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
         }
     }
 
-    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void ITokenFilterOperator.Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
-        IFilteredTokenOperator.ThrowOnCombinedOperator();
+        ITokenFilterOperator.ThrowOnCombinedOperator();
     }
 
-    sealed class Before : IFilteredTokenOperator
+    sealed class Before : ITokenFilterOperator
     {
-        public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
+        public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+        public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
         {
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // that is our previous.
             Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality.",
-                               context.Previous.FilteredTokens == input
-                               && (context.Previous.Operator == LocationCardinality.SingleCardinality
-                                   || (context.Previous.Operator is LocationCardinality card
-                                       && card.Kind is LocationCardinality.LocationKind.Single
-                                                       or LocationCardinality.LocationKind.First
-                                                       or LocationCardinality.LocationKind.Last)) );
-            var previousInput = context.Previous.Previous;
+                               input.Operator == LocationCardinality.SingleCardinality
+                               || (input.Operator is LocationCardinality card
+                                        && card.Kind is LocationCardinality.LocationKind.Single
+                                                     or LocationCardinality.LocationKind.First
+                                                     or LocationCardinality.LocationKind.Last) );
+            var previousInput = input.Previous;
             Throw.DebugAssert( previousInput != null );
             do
             {
@@ -61,21 +60,22 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
             while( !previousInput.IsSyntaxBorder );
 
             var builder = context.SharedBuilder;
-            var eInput = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
-            var ePrevious = new FilteredTokenSpanEnumerator( previousInput.FilteredTokens, context.UnfilteredTokens );
+            var eInput = input.CreateTokenEnumerator();
+            var ePrevious = previousInput.CreateTokenEnumerator();
             while( eInput.NextEach() )
             {
-                eInput.NextMatch(); 
+                eInput.NextMatch();
+                // Our end is the start of the mono-location matcher.
+                int end = eInput.CurrentMatch.Span.Beg;
                 Throw.DebugAssert( "Working on the result of a mono-location LocationCardinality.", !eInput.NextMatch() );
 
                 // Previous corresponding 'each' necessarily exists.
                 ePrevious.NextEach();
-                Throw.DebugAssert( eInput.CurrentEachIndex == ePrevious.CurrentEachIndex );
-                ePrevious.NextMatch(); 
+                ePrevious.NextMatch();
+                // Our start is the start of the first match in previous.
+                int beg = ePrevious.CurrentMatch.Span.Beg;
 
                 builder.StartNewEach();
-                int beg = ePrevious.CurrentMatch.Span.Beg;
-                int end = eInput.CurrentMatch.Span.Beg;
                 Throw.DebugAssert( "The input mono match is inside one of the previous matches.", beg <= end );
                 if( beg == end )
                 {
@@ -93,27 +93,26 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
 
     }
 
-    sealed class After : IFilteredTokenOperator
+    sealed class After : ITokenFilterOperator
     {
-        public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
+        public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+        public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
         {
             // We need to retrieve the tokens from the PREVIOUS inner, the source inner of the mono-location LocationMatcher
             // or the Before (when we are in a between) that is our previous.
             Throw.DebugAssert( "We are working on the result of a mono-location LocationCardinality or a Before.",
-                               context.Previous.FilteredTokens == input
-                               && (context.Previous.Operator is Before
-                                   || context.Previous.Operator == LocationCardinality.SingleCardinality
-                                   || (context.Previous.Operator is LocationCardinality card
+                               input.Operator is Before
+                               || input.Operator == LocationCardinality.SingleCardinality
+                               || (input.Operator is LocationCardinality card
                                        && card.Kind is LocationCardinality.LocationKind.Single
                                                     or LocationCardinality.LocationKind.First
-                                                    or LocationCardinality.LocationKind.Last)) );
+                                                    or LocationCardinality.LocationKind.Last) );
             // If we are after a Before, the Before is our previous input (not the input of the 'between' that activated
             // the Before and this After).
-            var previousInput = context.Previous.Previous;
+            var previousInput = input.Previous;
             Throw.DebugAssert( previousInput != null );
-            if( context.Previous.Operator is not Before )
+            if( input.Operator is not Before )
             {
                 do
                 {
@@ -125,18 +124,19 @@ public sealed partial class RangeLocation : IFilteredTokenOperator
             }
 
             var builder = context.SharedBuilder;
-            var eInput = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
-            var ePrevious = new FilteredTokenSpanEnumerator( previousInput.FilteredTokens, context.UnfilteredTokens );
+            var eInput = input.CreateTokenEnumerator();
+            var ePrevious = previousInput.CreateTokenEnumerator();
             while( eInput.NextEach() )
             {
                 eInput.NextMatch();
+                // Our start is the end of the mono-location matcher.
+                int beg = eInput.CurrentMatch.Span.End;
+
                 Throw.DebugAssert( "Working on the result of a mono-location LocationCardinality.", !eInput.NextMatch() );
 
                 // Previous corresponding 'each' necessarily exists.
                 ePrevious.NextEach();
-                Throw.DebugAssert( eInput.CurrentEachIndex == ePrevious.CurrentEachIndex );
 
-                int beg = eInput.CurrentMatch.Span.End;
                 // Find the end of the last match of the previous.
                 ePrevious.NextMatch();
                 int end = ePrevious.CurrentMatch.Span.End;

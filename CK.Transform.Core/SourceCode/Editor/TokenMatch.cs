@@ -6,15 +6,15 @@ using System.Diagnostics.CodeAnalysis;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// An array of <c>TokenMatch</c> captures each/match/token structure: tokens are grouped by matches
+/// A <c>TokenMatch</c> captures each/match/token structure: tokens are grouped by matches
 /// and matches are grouped by each buckets. See <see cref="LocationCardinality.LocationKind.Each"/>.
 /// </summary>
 /// <param name="EachIndex">The "each" bucket number.</param>
 /// <param name="MatchIndex">The match number in the "each" bucket.</param>
 /// <param name="Span">The covered token span.</param>
-public readonly record struct FilteredTokenSpan( int EachIndex, int MatchIndex, TokenSpan Span );
+public readonly record struct TokenMatch( int EachIndex, int MatchIndex, TokenSpan Span );
 
-public static class FilteredTokenSpanExtensions
+public static class TokenMatchExtensions
 {
     /// <summary>
     /// Validates these filtered tokens.
@@ -25,9 +25,9 @@ public static class FilteredTokenSpanExtensions
     /// When provided, this is used to check that the last span ends on or before the last token.
     /// </param>
     /// <returns>True if these filtered tokens are valid, false otherwise.</returns>
-    public static bool CheckValid( this IReadOnlyList<FilteredTokenSpan> matches, IReadOnlyList<Token>? tokens )
+    public static bool CheckValid( this IReadOnlyList<TokenMatch> matches, IReadOnlyList<Token>? tokens )
     {
-        return GetError( matches, tokens ) != null;
+        return GetError( matches, tokens ) == null;
     }
 
     /// <summary>
@@ -40,20 +40,20 @@ public static class FilteredTokenSpanExtensions
     /// </param>
     /// <param name="error">On error, contains a description of the error.</param>
     /// <returns>True if these filtered tokens are valid, false otherwise.</returns>
-    public static bool CheckValid( this IReadOnlyList<FilteredTokenSpan> matches,
+    public static bool CheckValid( this IReadOnlyList<TokenMatch> matches,
                                    IReadOnlyList<Token>? tokens,
-                                   [NotNullWhen(true)]out string? error )
+                                   [NotNullWhen(false)]out string? error )
     {
         error = GetError( matches, tokens );
-        return error != null;
+        return error == null;
     }
 
-    static string? GetError( IReadOnlyList<FilteredTokenSpan> matches, IReadOnlyList<Token>? tokens )
+    static string? GetError( IReadOnlyList<TokenMatch> matches, IReadOnlyList<Token>? tokens )
     {
         if( matches.Count > 0 )
         {
             int expectedEach = 0;
-            int expectedMatch = 0;
+            int expectedMatch = -1;
             for( int i = 0; i < matches.Count - 1; ++i )
             {
                 int each = matches[i].EachIndex;

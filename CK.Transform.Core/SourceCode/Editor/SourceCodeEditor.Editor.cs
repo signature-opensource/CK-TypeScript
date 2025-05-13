@@ -13,7 +13,7 @@ public sealed partial class SourceCodeEditor
     {
         readonly SourceCodeEditor _e;
         LinkedTokenOperatorContext _currentFilter;
-        FilteredTokenSpanDynamicEnumerator _filteredTokens;
+        DynamicTokenFilterEnumerator _filteredTokens;
 
         OpenEditorState _openState;
 
@@ -23,7 +23,7 @@ public sealed partial class SourceCodeEditor
             // Root operator.
             _currentFilter = new LinkedTokenOperatorContext( e );
             // Unitialized.
-            _filteredTokens = new FilteredTokenSpanDynamicEnumerator();
+            _filteredTokens = new DynamicTokenFilterEnumerator();
         }
 
         internal OpenEditorState OpenState => _openState;
@@ -38,12 +38,13 @@ public sealed partial class SourceCodeEditor
         internal IScopedCodeEditor OpenScoped()
         {
             Throw.CheckState( OpenState is OpenEditorState.None );
+            var matches = _currentFilter.Setup();
+            _filteredTokens.Reset( matches ?? [], _e._tokens );
             _openState = OpenEditorState.Scoped;
-            _filteredTokens.Reset( _currentFilter.FilteredTokens, _e._tokens );
             return this;
         }
 
-        internal void PushTokenOperator( IFilteredTokenOperator filterProvider )
+        internal void PushTokenOperator( ITokenFilterOperator filterProvider )
         {
             _currentFilter = new LinkedTokenOperatorContext( _e, filterProvider, _currentFilter );
         }
@@ -65,11 +66,12 @@ public sealed partial class SourceCodeEditor
             {
                 // Reparse what must be reparsed.
             }
+            _openState = OpenEditorState.None;
         }
 
         public IReadOnlyList<Token> UnfilteredTokens => _e._tokens;
 
-        public IFilteredTokenSpanEnumerator Tokens
+        public ITokenFilterEnumerator Tokens
         {
             get
             {
@@ -112,7 +114,10 @@ public sealed partial class SourceCodeEditor
 
         internal void OnUpdateTokens( int eLimit, int delta )
         {
-            _filteredTokens.OnUpdateTokens( eLimit, delta );
+            if( _openState == OpenEditorState.Scoped )
+            {
+                _filteredTokens.OnUpdateTokens( eLimit, delta );
+            }
         }
 
     }

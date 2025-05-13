@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Allows edit of the <see cref="SourceCode.Tokens"/>.
+/// </summary>
 public interface ICodeEditor : IDisposable
 {
     /// <summary>

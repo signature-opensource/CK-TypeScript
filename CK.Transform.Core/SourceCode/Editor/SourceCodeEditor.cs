@@ -17,7 +17,7 @@ public sealed partial class SourceCodeEditor
     List<Token> _tokens;
     readonly Editor _editor;
 
-    readonly FilteredTokenSpanListBuilder _sharedBuilder;
+    readonly TokenFilterBuilder _sharedBuilder;
 
     readonly IActivityMonitor _monitor;
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
@@ -37,7 +37,7 @@ public sealed partial class SourceCodeEditor
         _code = code;
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
-        _sharedBuilder = new FilteredTokenSpanListBuilder();
+        _sharedBuilder = new TokenFilterBuilder();
         _editor = new Editor( this );
     }
 
@@ -74,11 +74,11 @@ public sealed partial class SourceCodeEditor
     /// </summary>
     /// <param name="tokenOperator">The operator to apply.</param>
     /// <returns>The number of actual operators that have been pushed.</returns>
-    public int PushTokenOperator( IFilteredTokenOperator? tokenOperator )
+    public int PushTokenOperator( ITokenFilterOperator? tokenOperator )
     {
         Throw.CheckState( _editor.OpenState is OpenEditorState.None );
         Throw.DebugAssert( _editor.CurrentFilter.IsSyntaxBorder );
-        if( tokenOperator == null || tokenOperator == IFilteredTokenOperator.Empty )
+        if( tokenOperator == null || tokenOperator == ITokenFilterOperator.Empty )
         {
             return 0;
         }
@@ -93,7 +93,7 @@ public sealed partial class SourceCodeEditor
     /// Pops the last pushed token operators.
     /// </summary>
     /// <param name="count">
-    /// Number of operators returned by <see cref="PushTokenOperator(IFilteredTokenOperator)"/>.
+    /// Number of operators returned by <see cref="PushTokenOperator(ITokenFilterOperator)"/>.
     /// This can be 0.
     /// </param>
     public void PopTokenOperator( int count )
@@ -109,13 +109,14 @@ public sealed partial class SourceCodeEditor
     }
 
     /// <summary>
-    /// Gets a disposable <see cref="Editor"/> that enables global code modification.
+    /// Gets a disposable <see cref="ICodeEditor"/> that enables global code modification.
     /// </summary>
     /// <returns>The editor that must be disposed.</returns>
     public ICodeEditor OpenGlobalEditor() => _editor.OpenGlobal();
 
     /// <summary>
-    /// Gets a disposable <see cref="Editor"/> that enables global code modification.
+    /// Gets a disposable <see cref="IScopedCodeEditor"/> that supports code
+    /// modification on the filtered tokens.
     /// </summary>
     /// <returns>The editor that must be disposed.</returns>
     public IScopedCodeEditor OpenScopedEditor() => _editor.OpenScoped();
@@ -175,8 +176,8 @@ public sealed partial class SourceCodeEditor
         Throw.DebugAssert( count >= 0 );
         // All existing Enumerators must have observed the
         // last replaced token.
-        int eLimit = index + count;
-        Throw.CheckArgument( "Invalid token range to replace.", index >= 0 && eLimit <= _tokens.Count );
+        int eLimit = index + count - 1;
+        Throw.CheckArgument( "Invalid token range to replace.", index >= 0 && eLimit < _tokens.Count );
         // To limit memory moves, tokens are replaced in the list:
         // RemoveRange or AddRange is only called when required.
         int delta = tokens.Length - count;
@@ -187,19 +188,17 @@ public sealed partial class SourceCodeEditor
                 _tokens[index + i] = tokens[i];
             }
             _tokens.InsertRange( index + count, tokens.Slice( count ) );
-            _editor.OnInsertTokens( index, delta, insertBefore, eLimit );
             _code._spans.OnInsertTokens( index, delta, insertBefore );
         }
         else if( delta < 0 )
         {
-            delta = -delta;
-            TokenSpan removedHead = new( index, index + delta );
+            var positiveDelta = -delta;
+            TokenSpan removedHead = new( index, index + positiveDelta );
             for( int i = 0; i < tokens.Length; ++i )
             {
                 _tokens[index + i] = tokens[i];
             }
-            _tokens.RemoveRange( index + tokens.Length, delta );
-            _editor.OnRemoveTokens( removedHead, eLimit );
+            _tokens.RemoveRange( index + tokens.Length, positiveDelta );
             _code._spans.OnRemoveTokens( removedHead );
         }
         else
@@ -208,8 +207,8 @@ public sealed partial class SourceCodeEditor
             {
                 _tokens[index + i] = tokens[i];
             }
-            _editor.OnUpdateTokens( eLimit );
         }
+        _editor.OnUpdateTokens( eLimit, delta );
         _code.OnTokensChanged();
         return true;
     }

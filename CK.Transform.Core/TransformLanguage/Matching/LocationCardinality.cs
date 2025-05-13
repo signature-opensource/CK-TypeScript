@@ -13,7 +13,7 @@ namespace CK.Transform.Core;
 ///     <item>all [n]</item>
 ///     <item>each [n]</item>
 /// </list>
-/// This is a <see cref="IFilteredTokenOperator"/>. The <see cref="SingleCardinality"/> singleton
+/// This is a <see cref="ITokenFilterOperator"/>. The <see cref="SingleCardinality"/> singleton
 /// is the default cardinality provider.
 /// </summary>
 public sealed partial class LocationCardinality : SourceSpan

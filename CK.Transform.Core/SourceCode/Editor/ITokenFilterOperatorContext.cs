@@ -6,41 +6,31 @@ namespace CK.Transform.Core;
 /// <summary>
 /// Context for filtering tokens.
 /// </summary>
-public interface IFilteredTokenOperatorContext
+public interface ITokenFilterOperatorContext
 {
-    /// <summary>
-    /// Gets whether the <see cref="SourceCodeEditor"/> is on error.
-    /// </summary>
-    bool HasEditorError { get; }
-
     /// <summary>
     /// Gets the current <see cref="SourceCode.Tokens"/>.
     /// </summary>
     IReadOnlyList<Token> UnfilteredTokens { get; }
 
     /// <summary>
-    /// Gets the previous filtering context.
-    /// </summary>
-    IFilteredTokenOperatorSourceContext Previous { get; }
-
-    /// <summary>
     /// Signals an operator error.
     /// </summary>
     /// <param name="failureMessage">The error message.</param>
     /// <param name="current">Optional enumerator to dump the error detailed position.</param>
-    void SetFailedResult( string failureMessage, IFilteredTokenSpanEnumerator? current );
+    void SetFailedResult( string failureMessage, ITokenFilterEnumerator? current );
 
     /// <summary>
     /// Sets the result of the operator.
     /// </summary>
     /// <param name="result">The result.</param>
-    void SetResult( FilteredTokenSpan[] result );
+    void SetResult( TokenMatch[] result );
 
     /// <summary>
     /// Sets the result of the operator.
     /// </summary>
     /// <param name="builder">The result builder.</param>
-    void SetResult( FilteredTokenSpanListBuilder builder );
+    void SetResult( TokenFilterBuilder builder );
 
     /// <summary>
     /// Sets a no-op result for the operator.
@@ -63,7 +53,7 @@ public interface IFilteredTokenOperatorContext
     SourceSpan? GetDeepestSpanAt( int index, Type spanType );
 
     /// <summary>
-    /// Gets a shared builder that <see cref="IFilteredTokenOperator.Apply"/> can use.
+    /// Gets a shared builder that <see cref="ITokenFilterOperator.Apply"/> can use.
     /// </summary>
-    FilteredTokenSpanListBuilder SharedBuilder { get; }
+    TokenFilterBuilder SharedBuilder { get; }
 }

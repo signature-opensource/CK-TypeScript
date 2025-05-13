@@ -7,32 +7,13 @@ using System.Text;
 
 namespace CK.Transform.Core;
 
-public sealed partial class LocationCardinality : IFilteredTokenOperator
+public sealed partial class LocationCardinality : ITokenFilterOperator
 {
-    sealed class Single : IFilteredTokenOperator
+    sealed class Single : ITokenFilterOperator
     {
-        public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
+        public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-        public void Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
-        {
-            // We must check this edge-case: the source code is empty. 
-            if( input.Count == 0 )
-            {
-                context.SetFailedResult( $"Expected a single match but got none.", null );
-                return;
-            }
-            var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
-            while( e.NextEach() )
-            {
-                int count = 0;
-                while( e.NextMatch() ) ++count;
-                if( count != 1 )
-                {
-                    context.SetFailedResult( $"Expected a single match but got {count}.", e );
-                }
-            }
-            context.SetUnchangedResult();
-        }
+        public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input ) => HandleSingle( context, input );
 
         public StringBuilder Describe( StringBuilder b, bool parsable ) => b.Append( "single" );
 
@@ -43,11 +24,11 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
     /// <summary>
     /// Singleton "single" provider that is the default cardinality.
     /// </summary>
-    public static readonly IFilteredTokenOperator SingleCardinality = new Single();
+    public static readonly ITokenFilterOperator SingleCardinality = new Single();
 
-    public void Activate( Action<IFilteredTokenOperator> collector ) => collector( this );
+    public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-    void IFilteredTokenOperator.Apply( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void ITokenFilterOperator.Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         Throw.DebugAssert( CheckValid() );
         switch( _kind )
@@ -70,15 +51,9 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
         }
     }
 
-    static void HandleSingle( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    static void HandleSingle( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
-        // We must check this edge-case: the source code is empty. 
-        if( input.Count == 0 )
-        {
-            context.SetFailedResult( $"Expected a single match but got none.", null );
-            return;
-        }
-        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
             int count = 0;
@@ -91,18 +66,11 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
         context.SetUnchangedResult();
     }
 
-
-    void HandleFirst( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void HandleFirst( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         Throw.DebugAssert( CheckValid() && _kind == LocationKind.First );
-        // We must check this edge-case: the source code is empty. 
-        if( input.Count == 0 )
-        {
-            context.SetFailedResult( $"Expected a first match but got none.", null );
-            return;
-        }
         var builder = context.SharedBuilder;
-        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
             builder.StartNewEach();
@@ -115,7 +83,7 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
                     break;
                 }
             }
-            if( builder.CurrentEachNumber == 0 )
+            if( builder.CurrentMatchNumber == 0 )
             {
                 context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
                 return;
@@ -133,17 +101,11 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
         context.SetResult( builder );
     }
 
-    void HandleLast( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void HandleLast( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         Throw.DebugAssert( _kind == LocationKind.Last );
-        // We must check this edge-case: the source code is empty. 
-        if( input.Count == 0 )
-        {
-            context.SetFailedResult( $"Expected a last match but got none.", null );
-            return;
-        }
         var builder = context.SharedBuilder;
-        var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+        var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
             builder.StartNewEach();
@@ -154,28 +116,23 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
                 context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
                 return;
             }
-            if( _offset < matchCount )
+            if( _offset > matchCount )
             {
                 context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
                 return;
             }
-            builder.AddMatch( input[e.CurrentInputIndex - _offset].Span );
+            builder.AddMatch( e.Input[e.CurrentInputIndex - _offset].Span );
         }
+        context.SetResult( builder );
     }
 
 
-    void HandleAll( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void HandleAll( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
-        // We must check this edge-case: the source code is empty. 
-        if( input.Count == 0 )
-        {
-            context.SetFailedResult( $"Expected some match but got none.", null );
-            return;
-        }
         // "all" without expected match count is a no-op.
         if( _expectedMatchCount > 0 )
         {
-            var e = new FilteredTokenSpanEnumerator( input, context.UnfilteredTokens );
+            var e = input.CreateTokenEnumerator();
             while( e.NextEach() )
             {
                 int matchCount = 0;
@@ -190,27 +147,24 @@ public sealed partial class LocationCardinality : IFilteredTokenOperator
         context.SetUnchangedResult();
     }
 
-    void HandleEach( IFilteredTokenOperatorContext context, IReadOnlyList<FilteredTokenSpan> input )
+    void HandleEach( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
-        Throw.DebugAssert( _kind == LocationKind.Each );
-        // We must check this edge-case: the source code is empty. 
-        if( input.Count == 0 )
+        Throw.DebugAssert( _kind == LocationKind.Each && input.Tokens.IsValid );
+        // Each is a very special operator: it is implemented internally.
+        var internalInputMatches = input.Tokens.ArrayMatches;
+        int inputMatchCount = internalInputMatches.Length;
+        if( _expectedMatchCount != 0 && _expectedMatchCount != inputMatchCount )
         {
-            context.SetFailedResult( $"Expected some match but got none.", null );
+            context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {inputMatchCount}.", null );
             return;
         }
-        if( _expectedMatchCount != 0 && _expectedMatchCount != input.Count )
-        {
-            context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {input.Count}.", null );
-            return;
-        }
-        if( input[^1].EachIndex == input.Count - 1 )
+        if( internalInputMatches[^1].EachIndex == inputMatchCount - 1 )
         {
             context.SetUnchangedResult();
         }
         else
         {
-            context.SetResult( input.Select( ( m, index ) => new FilteredTokenSpan( index, 0, m.Span ) ).ToArray() );
+            context.SetResult( internalInputMatches.Select( ( m, index ) => new TokenMatch( index, 0, m.Span ) ).ToArray() );
         }
     }
 

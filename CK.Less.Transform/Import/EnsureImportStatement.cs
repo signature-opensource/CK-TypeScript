@@ -65,7 +65,7 @@ public sealed class EnsureImportStatement : TransformStatement
         var importLine = ImportStatement.Write( new StringBuilder(), _include, ImportKeyword.None, _importPath ).ToString();
         Token newText = new Token( TokenType.GenericAny, importLine, Trivia.NewLine );
         int insertionPoint = lastImport?.Span.End ?? 0;
-        using( var e = editor.OpenEditor() )
+        using( var e = editor.OpenGlobalEditor() )
         {
             e.InsertBefore( insertionPoint, newText );
             // We then create a brand new (1 token length) ImportStatement with the toMerge line
