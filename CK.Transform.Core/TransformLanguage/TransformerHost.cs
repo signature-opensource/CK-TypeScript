@@ -19,72 +19,22 @@ public sealed partial class TransformerHost
 {
     readonly Language _rootLanguage;
     readonly List<Language> _languages;
-    readonly List<Language> _autoLanguages;
+    readonly List<Language> _autoTLanguages;
     bool _isLockedLanguages;
 
     /// <summary>
-    /// Cached instance of a language for this host.
-    /// </summary>
-    public sealed class Language
-    {
-        readonly TransformerHost _host;
-        readonly TransformLanguage _language;
-        readonly LanguageTransformAnalyzer _transformLanguageAnalyzer;
-        readonly int _index;
-
-        /// <summary>
-        /// Gets the <see cref="TransformLanguage.LanguageName"/>.
-        /// </summary>
-        public string LanguageName => _language.LanguageName;
-
-        /// <summary>
-        /// Gets the transform language.
-        /// </summary>
-        public TransformLanguage TransformLanguage => _language;
-
-        /// <summary>
-        /// Gets the analyzer for the transform language.
-        /// </summary>
-        public LanguageTransformAnalyzer TransformLanguageAnalyzer => _transformLanguageAnalyzer;
-
-        /// <summary>
-        /// Gets the target language analyzer.
-        /// </summary>
-        public ITargetAnalyzer TargetLanguageAnalyzer => _transformLanguageAnalyzer.TargetAnalyzer;
-
-        /// <summary>
-        /// Gets the index in the <see cref="TransformerHost.Languages"/> list.
-        /// </summary>
-        public int Index => _index;
-
-        /// <summary>
-        /// Gets the host to which this language is bound.
-        /// </summary>
-        public TransformerHost Host => _host;
-
-        // Registered language constructor.
-        internal Language( TransformerHost host, TransformLanguage language, int index )
-        {
-            _host = host;
-            _language = language;
-            _index = index;
-            _transformLanguageAnalyzer = language.CreateAnalyzer( this );
-        }
-    }
-
-    /// <summary>
-    /// Initializes a host with at least the <see cref="ThisTransformLanguage"/>.
+    /// Initializes a host with an initial set of supported languages.
     /// </summary>
     /// <param name="languages">Languages to register.</param>
     public TransformerHost( params IEnumerable<TransformLanguage> languages )
     {
         _languages = new List<Language>();
-        _autoLanguages = new List<Language>();
+        _autoTLanguages = new List<Language>();
         foreach( var language in languages )
         {
-            if( !language.IsTransformerLanguage )
+            if( !language.IsAutoLanguage )
             {
-                EnsureLanguage( language );
+                RegisterLanguage( language );
             }
         }
         _rootLanguage = new Language( this, RootTransformLanguage, _languages.Count );
@@ -92,7 +42,7 @@ public sealed partial class TransformerHost
     }
 
     /// <summary>
-    /// Gets the languages that this transfomer handles.
+    /// Gets the registered languages that this transfomer handles.
     /// </summary>
     public IReadOnlyList<Language> Languages => _languages;
 
@@ -102,7 +52,7 @@ public sealed partial class TransformerHost
     public bool IsLockedLanguages => _isLockedLanguages;
 
     /// <summary>
-    /// Locks the languages: <see cref="EnsureLanguage(TransformLanguage)"/> must not be called anymore.
+    /// Locks the languages: <see cref="RegisterLanguage(TransformLanguage)"/> must not be called anymore.
     /// </summary>
     /// <returns>The locked list of supported languages.</returns>
     public IReadOnlyList<Language> LockLanguages()
@@ -114,14 +64,16 @@ public sealed partial class TransformerHost
     /// <summary>
     /// Adds a language if it is not already registered or finds its cached instance.
     /// <para>
-    /// <see cref="IsLockedLanguages"/> must be false otherwise a <see cref="InvalidOperationException"/> is thrown.
+    /// <see cref="IsLockedLanguages"/> must be false otherwise a <see cref="InvalidOperationException"/> is thrown
+    /// and <see cref="TransformLanguage.IsAutoLanguage"/> must be false otherwise an <see cref="ArgumentException"/> is thrown.
     /// </para>
     /// </summary>
     /// <param name="language">The language to add.</param>
     /// <returns>The cached language.</returns>
-    public Language EnsureLanguage( TransformLanguage language )
+    public Language RegisterLanguage( TransformLanguage language )
     {
         Throw.CheckState( IsLockedLanguages is false );
+        Throw.CheckArgument( language.IsAutoLanguage is false );
         var l = FindLanguage( _languages, language.LanguageName, withFileExtensions: false );
         if( l == null )
         {
@@ -139,14 +91,94 @@ public sealed partial class TransformerHost
     /// False to use only <see cref="TransformLanguage.LanguageName"/> and ignore <see cref="TransformLanguage.FileExtensions"/>.
     /// </param>
     /// <returns>The language or null if not found.</returns>
-    public Language? FindLanguage( ReadOnlySpan<char> name, bool withFileExtensions = true ) => FindLanguage( _languages, name, withFileExtensions );
+    public Language? FindRegisteredLanguage( ReadOnlySpan<char> name, bool withFileExtensions = true ) => FindLanguage( _languages, name, withFileExtensions );
 
     /// <summary>
-    /// Tries to find a <see cref="Language"/> from a file name.
+    /// Finds a <see cref="Language"/> either a registered one or a <see cref="TransformLanguage.IsAutoLanguage"/> one.
+    /// </summary>
+    /// <param name="name">The language name. A leading '.' is silently handled.</param>
+    /// <param name="withFileExtensions">
+    /// False to use only <see cref="TransformLanguage.LanguageName"/> and ignore <see cref="TransformLanguage.FileExtensions"/>.
+    /// </param>
+    /// <returns>The language or null if not found.</returns>
+    public Language? FindLanguage( ReadOnlySpan<char> name, bool withFileExtensions )
+    {
+        if( name.Length > 0 )
+        {
+            if( name[0] == '.' ) name = name.Slice( 1 );
+            if( name.Length > 0 )
+            {
+                // First find the name as-is.
+                // It can be a final one <sql>: we found its (<sql.t>,<sql>) language.
+                // It may be a transfomer language <sql.t>:
+                // - If a (<sql.t.t>,<sql.t>) language has been registered, then there is
+                //   a specific implementation of the <sql.t.t> transform analyzer.
+                // - If no specific implementation exists, we create and register an auto language
+                //   (<sql.t.t>,<sql.t>) where the TransformAnalyzer will use the <sql.t> as its
+                //   target language analyzer (tokens will be specifically handled).
+                // - But we do this only for one level of transformer: above the generic transformer
+                //   language is used (that is only able to handle the generic transfomr language).
+                Language? language = FindLanguage( _languages, name, withFileExtensions )
+                                     ?? FindLanguage( _autoTLanguages, name, withFileExtensions );
+                if( language != null ) return language;
+
+                int transformerLevel = 0;
+                var subName = name;
+                while( RemoveTransformerExtension( ref subName ) )
+                {
+                    // Don't lookup in the _autoTLanguages here: we don't (currently) want to
+                    // create useless instances of AutoTransformLanguage with a target
+                    // analyzer that is a standard LangageTransformAnalyzer.
+                    //
+                    // If the final target transformed language needs one day to be accessible
+                    // (a "PeeledTargetLanguageAnalyzer"), then we'll need to build the full linked
+                    // list. And the RootTransformLanguage may no more exist.
+                    //
+                    language = FindLanguage( _languages, subName, withFileExtensions );
+                    if( language != null )
+                    {
+                        break;
+                    }
+                    ++transformerLevel;
+                }
+                if( language == null || transformerLevel == 0 )
+                {
+                    // No luck: this is not a ".t" name or we cannot find a target language.
+                    return null;
+                }
+                // This is a transformer of a known language.
+                if( transformerLevel == 1 )
+                {
+                    // We are on a "X.t" where "X" is known.
+                    var auto = new AutoTransformLanguage( language );
+                    language = new Language( this, auto );
+                    _autoTLanguages.Add( language );
+                    return language;
+                }
+                // Uses the root transform language.
+                return _rootLanguage;
+            }
+        }
+        return null;
+
+        static bool RemoveTransformerExtension( ref ReadOnlySpan<char> name )
+        {
+            if( name.EndsWith( ".t" ) || name.EndsWith( ".T" ) )
+            {
+                name = name[..^2];
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Tries to find a registered <see cref="Language"/> from a file name.
     /// </summary>
     /// <param name="fileName">The file name or path.</param>
     /// <param name="extension">The extension that matched.</param>
     /// <returns>The language or null.</returns>
+    [Obsolete( "Shoud not be used... or used differently." )]
     public Language? FindFromFilename( ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension )
     {
         foreach( var l in _languages )
@@ -295,53 +327,4 @@ public sealed partial class TransformerHost
         }
         return null;
     }
-
-    ITargetAnalyzer? FindTargetAnalyzer( ReadOnlySpan<char> name,
-                                         bool withFileExtensions )
-    {
-        if( name.Length > 0 )
-        {
-            if( name[0] == '.' ) name = name.Slice( 1 );
-            if( name.Length > 0 )
-            {
-                // First find the name as-is.
-                Language? language = FindLanguage( _languages, name, withFileExtensions )
-                                     ?? FindLanguage( _autoLanguages, name, withFileExtensions );
-                if( language != null ) return language.TargetLanguageAnalyzer;
-
-                int transformerLevel = 0;
-                while( RemoveTransformerExtension( ref name ) )
-                {
-                    var l = FindLanguage( _languages, name, withFileExtensions );
-                    if( l != null )
-                    {
-                        return l.TargetLanguageAnalyzer;
-                    }
-                    ++transformerLevel;
-                }
-                if( transformerLevel >= 3 )
-                {
-                    name = "transformer";
-                    transformerLevel = 0;
-                }
-            }
-        }
-        return null;
-
-        static bool RemoveTransformerExtension( ref ReadOnlySpan<char> name )
-        {
-            if( name.EndsWith( ".t" ) )
-            {
-                name = name[..^2];
-                return true;
-            }
-            if( name.EndsWith( ".transformer" ) )
-            {
-                name = name[..^12];
-                return true;
-            }
-            return false;
-        }
-    }
-
 }

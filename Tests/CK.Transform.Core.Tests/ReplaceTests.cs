@@ -10,13 +10,13 @@ public class ReplaceTests
 {
     [TestCase( "n°1",
         """
-        create transform transformer
+        create <transform> transformer
         begin
             replace "a" with "b";
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             replace """
                     "a" with "b"
@@ -27,7 +27,7 @@ public class ReplaceTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
             replace "b" with "a";
         end
@@ -35,7 +35,7 @@ public class ReplaceTests
         )]
     [TestCase( "n°2",
         """
-        create transform transformer
+        create <transform> transformer
         begin
             replace /* C1 */ "a" with "b" /* C2 */;
             replace // C3
@@ -43,7 +43,7 @@ public class ReplaceTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             replace all """
                     "a" with "b"
@@ -54,7 +54,7 @@ public class ReplaceTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
             replace /* C1 */ "b" with "a" /* C2 */;
             replace // C3

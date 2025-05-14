@@ -38,7 +38,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         // Writes the types of the TransformLanguage except the TransformerLanguage itself.
         s.Writer.WriteNonNegativeSmallInt32( _transformerHost.Languages.Count - 1 );
         foreach( var l in _transformerHost.Languages.Select( l => l.TransformLanguage )
-                                                    .Where( l => !l.IsTransformerLanguage ) )
+                                                    .Where( l => !l.IsAutoLanguage ) )
         {
             var t = l.GetType();
             if( t.GetConstructor( System.Type.EmptyTypes ) == null )
@@ -108,6 +108,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
             Throw.DebugAssert( changed.Resources.LocalPath != null );
+            // This is NOT right!
             if( _environment.TransformerHost.FindFromFilename( changed.SubPath, out _ ) != null )
             {
                 if( _environment.Tracker.OnChange( monitor, changed ) )

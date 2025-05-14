@@ -14,7 +14,7 @@ public class TransformTests
         Quote 2 { People demand freedom of speech as a compensation for the freedom of thought which they seldom use. }
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in all {braces} replace * with "{ erased }";
         end
@@ -29,7 +29,7 @@ public class TransformTests
         One A { A HERE { A } A } A { HERE A }
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in all {braces} "HERE" replace all "A" with "YES";
         end
@@ -43,7 +43,7 @@ public class TransformTests
         One A { A HERE { A } A } A { HERE A }
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in first {braces} "HERE" replace all "A" with "B";
         end
@@ -57,7 +57,7 @@ public class TransformTests
         One A { A { A } A } A { A }
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in first {braces} "{" replace all "A" with "this works";
         end
@@ -71,7 +71,7 @@ public class TransformTests
         One A { A { A } A } A { A }
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in all {braces} "{" replace all "A" with "this works";
         end
@@ -85,7 +85,7 @@ public class TransformTests
         One A { A { A } A } A { A }
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in last {braces} "{" replace all "A" with "this works";
         end
@@ -107,7 +107,7 @@ public class TransformTests
         A
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace "A" with "A A";
         end
@@ -121,7 +121,7 @@ public class TransformTests
         A A A
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace all "A" with "A A";
         end
@@ -143,7 +143,7 @@ public class TransformTests
         A
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace "A" with "";
         end
@@ -155,7 +155,7 @@ public class TransformTests
         A A A
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace all "A" with "";
         end
@@ -176,7 +176,7 @@ public class TransformTests
         A B
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace first "A" with "";
             replace first "B" with "";
@@ -192,7 +192,7 @@ public class TransformTests
         A B C
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace first "A" with "";
             replace all 2 "B C" with "X";

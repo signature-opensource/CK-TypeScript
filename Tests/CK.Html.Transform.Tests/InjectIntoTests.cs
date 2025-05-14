@@ -18,7 +18,7 @@ public class InjectIntoTests
         ...text.
         """,
         """"
-        create html transformer
+        create <html> transformer
         begin
             inject """
 
@@ -45,7 +45,7 @@ public class InjectIntoTests
         TEXT
         """,
         """"
-        create html transformer
+        create <html> transformer
         begin
             inject """
                    Injection n°1...
@@ -71,7 +71,7 @@ public class InjectIntoTests
         <!--<FirstInjectionPointEver revert />-->
         """,
         """"
-        create html transformer
+        create <html> transformer
         begin
             inject """
                    Injection n°1...

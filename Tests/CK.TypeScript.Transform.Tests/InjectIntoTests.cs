@@ -27,7 +27,7 @@ public class InjectIntoTests
         }
         """,
         """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             inject """
                    title += ' (modified)';
@@ -78,7 +78,7 @@ public class InjectIntoTests
         }
         """,
         """"
-        create typescript transformer
+        create <ts> transformer
         begin
             inject """
 
@@ -137,7 +137,7 @@ public class InjectIntoTests
         }
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             in each {class} "title = 'Demo'"
                 inject """

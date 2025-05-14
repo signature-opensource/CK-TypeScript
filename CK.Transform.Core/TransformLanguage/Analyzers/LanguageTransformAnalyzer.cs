@@ -22,8 +22,8 @@ public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     /// </summary>
     /// <param name="language">The transform language.</param>
     /// <param name="targetAnalyzer">The target analyzer.</param>
-    protected LanguageTransformAnalyzer( TransformerHost.Language language, TargetLanguageAnalyzer targetAnalyzer )
-        : base( language.LanguageName + ".Transform" )
+    internal protected LanguageTransformAnalyzer( TransformerHost.Language language, TargetLanguageAnalyzer targetAnalyzer )
+        : base( language.LanguageName + ".T" )
     { 
         _language = language;
         _targetAnalyzer = targetAnalyzer;
@@ -36,7 +36,7 @@ public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     internal LanguageTransformAnalyzer( TransformerHost.Language rootLanguage )
         : base( TransformerHost._transformLanguageName )
     {
-        Throw.DebugAssert( rootLanguage.TransformLanguage.IsTransformerLanguage );
+        Throw.DebugAssert( rootLanguage.TransformLanguage.IsAutoLanguage );
         _language = rootLanguage;
         _targetAnalyzer = this;
     }
@@ -133,13 +133,19 @@ public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
         }
         int startFunction = head.LastTokenIndex;
 
-        var cLang = _language.Host.FindLanguage( head.LowLevelTokenText, withFileExtensions: false );
-        if( cLang == null )
+        var targetLanguage = InjectionPoint.TryMatch( ref head );
+        if( targetLanguage == null )
         {
-            head.AppendError( $"Expected language name. Available languages are: '{_language.Host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'.", 0 );
+            head.AppendError( $"Expected target <language>.", 0 );
             return;
         }
-        var language = head.AcceptLowLevelToken();
+        var cLang = _language.Host.FindLanguage( targetLanguage.Name, withFileExtensions: true );
+        if( cLang == null )
+        {
+            head.AppendError( $"Target language '{targetLanguage.Name}' not found. Available languages are: '{_language.Host.Languages.Select( l => l.LanguageName ).Concatenate( "', '" )}'.", 0 );
+            return;
+        }
+
         head.MatchToken( "transformer" );
 
         Token? functionName = null;

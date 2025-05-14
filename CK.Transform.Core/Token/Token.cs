@@ -114,7 +114,7 @@ public class Token
     /// Gets whether this is a detached trivia that has not been parsed: its <see cref="Text"/> is not a part
     /// of a wider string.
     /// </summary>
-    public bool IsDetachedToken => GetContainingSpan(_text, out var start ).Length == _text.Length;
+    public bool IsDetachedToken => GetContainingSpan( _text, out var start ).Length == _text.Length;
 
     /// <summary>
     /// Gets the 1-based column of this token in its containing text.

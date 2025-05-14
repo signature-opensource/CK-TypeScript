@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
 using NUnit.Framework;
+using Shouldly;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Less.Transform.Tests;
@@ -13,7 +14,7 @@ public class EnsureImportTests
 
     """,
     """"
-        create less transformer
+        create <less> transformer
         begin
             ensure @import 's.less';
         end
@@ -26,7 +27,7 @@ public class EnsureImportTests
     [TestCase( "n°1",
         "@import (reference) 's.less';",
     """"
-        create less transformer
+        create <less> transformer
         begin
             ensure @import (!reference, less) 's.less';
         end
@@ -36,7 +37,7 @@ public class EnsureImportTests
     [TestCase( "n°2",
         "@import (once) 's.less';",
     """"
-        create less transformer
+        create <less> transformer
         begin
             ensure @import (multiple) 's.less';
         end
@@ -46,7 +47,7 @@ public class EnsureImportTests
     [TestCase( "n°3",
         "@import (less) 's.less';",
     """"
-        create less transformer
+        create <less> transformer
         begin
             ensure @import (css) 's.less';
         end
@@ -56,7 +57,7 @@ public class EnsureImportTests
     [TestCase( "n°4",
         "@import (multiple) 's.less';",
     """"
-        create less transformer
+        create <less> transformer
         begin
             ensure @import (once) 's.less';
         end
@@ -66,10 +67,8 @@ public class EnsureImportTests
     public void merging_imports( string nTest, string source, string transformer, string result )
     {
         var h = new TransformerHost( new LessLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
 }

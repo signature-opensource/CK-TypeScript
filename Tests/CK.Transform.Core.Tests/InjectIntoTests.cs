@@ -10,13 +10,13 @@ public class InjectIntoTests
 {
     [TestCase( "One",
         """
-        create transform transformer
+        create <transform> transformer
         begin
         //<FirstInjectionPointEver/>
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -25,7 +25,7 @@ public class InjectIntoTests
         """",
         // Handling the leading space here would require a reparse...
         """
-        create transform transformer
+        create <transform> transformer
         begin
         //<FirstInjectionPointEver>
         // First injection ever...
@@ -35,14 +35,14 @@ public class InjectIntoTests
         )]
     [TestCase( "One+Comment",
         """
-        create transform transformer
+        create <transform> transformer
         begin
         //<FirstInjectionPointEver/>
         // Some comment!
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -51,7 +51,7 @@ public class InjectIntoTests
         """",
         // Handling the leading space here would require a reparse...
         """
-        create transform transformer
+        create <transform> transformer
         begin
         //<FirstInjectionPointEver>
         // First injection ever...
@@ -62,7 +62,7 @@ public class InjectIntoTests
         )]
     [TestCase( "One+2Comment",
         """
-        create transform transformer
+        create <transform> transformer
         begin
         // Above comment!
         //<FirstInjectionPointEver/>
@@ -70,7 +70,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -79,7 +79,7 @@ public class InjectIntoTests
         """",
         // Handling the leading space here would require a reparse...
         """
-        create transform transformer
+        create <transform> transformer
         begin
         // Above comment!
         //<FirstInjectionPointEver>
@@ -91,13 +91,13 @@ public class InjectIntoTests
         )]
     [TestCase( "Pad",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver/>
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -106,7 +106,7 @@ public class InjectIntoTests
         """",
         // Handling the leading space here would require a reparse...
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver>
           // First injection ever...
@@ -116,14 +116,14 @@ public class InjectIntoTests
         )]
     [TestCase( "Pad+Comment",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver/>
           // Some comment!
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -132,7 +132,7 @@ public class InjectIntoTests
         """",
         // Handling the leading space here would require a reparse...
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver>
           // First injection ever...
@@ -143,7 +143,7 @@ public class InjectIntoTests
         )]
     [TestCase( "Pad+2Comment",
         """
-        create transform transformer
+        create <transform> transformer
         begin
               // Above comment!
            //<FirstInjectionPointEver/>
@@ -151,7 +151,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -159,7 +159,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
               // Above comment!
            //<FirstInjectionPointEver>
@@ -173,7 +173,7 @@ public class InjectIntoTests
     #region Already Opened
     [TestCase( "Open",
         """
-        create transform transformer
+        create <T> transformer
         begin
         //<FirstInjectionPointEver>
         // Already here...
@@ -181,7 +181,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <T> transformer
         begin
             inject """
                    // ...and another one.
@@ -189,7 +189,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <T> transformer
         begin
         //<FirstInjectionPointEver>
         // Already here...
@@ -201,7 +201,7 @@ public class InjectIntoTests
 
     [TestCase( "Open+2Comment",
         """
-        create transform transformer
+        create <transform> transformer
         begin
         // Above
         //<FirstInjectionPointEver>
@@ -211,7 +211,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // ...and another one.
@@ -219,7 +219,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
         // Above
         //<FirstInjectionPointEver>
@@ -232,7 +232,7 @@ public class InjectIntoTests
         )]
     [TestCase( "Open+Pad",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver>
           // Already here...
@@ -240,7 +240,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // ...and another one.
@@ -248,7 +248,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver>
           // Already here...
@@ -259,7 +259,7 @@ public class InjectIntoTests
         )]
     [TestCase( "Open+Pad+2Comment",
         """
-        create transform transformer
+        create <transform> transformer
         begin
                 // Above
           //<FirstInjectionPointEver>
@@ -269,7 +269,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // ...and another one.
@@ -277,7 +277,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
                 // Above
           //<FirstInjectionPointEver>
@@ -293,7 +293,7 @@ public class InjectIntoTests
     #region Revert Already Opened
     [TestCase( "ROpen",
         """
-        create transform transformer
+        create <transform> transformer
         begin
             //<FirstInjectionPointEver revert>
             // Already here...
@@ -301,7 +301,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // ...and another one.
@@ -309,7 +309,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
             //<FirstInjectionPointEver revert>
             // ...and another one.
@@ -321,7 +321,7 @@ public class InjectIntoTests
 
     [TestCase( "ROpen+2Comment",
         """
-        create transform transformer
+        create <T> transformer
         begin
         // Above
         //<FirstInjectionPointEver revert>
@@ -331,7 +331,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // ...and another one.
@@ -339,7 +339,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <T> transformer
         begin
         // Above
         //<FirstInjectionPointEver revert>
@@ -352,7 +352,7 @@ public class InjectIntoTests
         )]
     [TestCase( "ROpen+Pad",
         """
-        create transform transformer
+        create <T> transformer
         begin
           //<FirstInjectionPointEver revert>
           // Already here...
@@ -360,7 +360,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <T> transformer
         begin
             inject """
                    // ...and another one.
@@ -368,7 +368,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <T> transformer
         begin
           //<FirstInjectionPointEver revert>
           // ...and another one.
@@ -379,7 +379,7 @@ public class InjectIntoTests
         )]
     [TestCase( "ROpen+Pad+2Comment",
         """
-        create transform transformer
+        create <t> transformer
         begin
                 // Above
           //<FirstInjectionPointEver revert>
@@ -389,7 +389,7 @@ public class InjectIntoTests
         end
         """,
         """"
-        create transform transformer
+        create <T> transformer
         begin
             inject """
                    // ...and another one.
@@ -397,7 +397,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <t> transformer
         begin
                 // Above
           //<FirstInjectionPointEver revert>
@@ -415,13 +415,13 @@ public class InjectIntoTests
     // Handling the leading space here requires a reparse...
     [TestCase( "Two",
         """
-        create transform transformer
+        create <t> transformer
         begin
           //<FirstInjectionPointEver/>
         end
         """,
         """"
-        create transform transformer
+        create <t> transformer
         begin
             inject """
                    // First injection ever...
@@ -432,7 +432,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <t> transformer
         begin
           //<FirstInjectionPointEver>
           // First injection ever...
@@ -444,13 +444,13 @@ public class InjectIntoTests
     // Handling the leading space here would require a reparse...
     [TestCase( "RTwo",
         """
-        create transform transformer
+        create <t> transformer
         begin
           //<FirstInjectionPointEver revert/>
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                    // First injection ever...
@@ -461,7 +461,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <t> transformer
         begin
           //<FirstInjectionPointEver revert>
         // ...and another one.
@@ -473,13 +473,13 @@ public class InjectIntoTests
 
     [TestCase( "TwoReparse",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver/>
         end
         """,
         """"
-        create transform transformer
+        create <t> transformer
         begin
             inject """
                     // First injection ever...
@@ -491,7 +491,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           //<FirstInjectionPointEver>
           // First injection ever...
@@ -502,13 +502,13 @@ public class InjectIntoTests
         )]
     [TestCase( "RTwoReparse",
         """
-        create transform transformer
+        create <t> transformer
         begin
           //<FirstInjectionPointEver revert/>
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                     // First injection ever...
@@ -520,7 +520,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <t> transformer
         begin
           //<FirstInjectionPointEver revert>
           // ...and another one.
@@ -539,13 +539,13 @@ public class InjectIntoTests
 
     [TestCase( "PadOne",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           /*<FirstInjectionPointEver/>*/
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject """
                     // Block comment injection is "inline". We need a newline (because this is a line comment!).
@@ -554,7 +554,7 @@ public class InjectIntoTests
         end
         """",
         """
-        create transform transformer
+        create <transform> transformer
         begin
           /*<FirstInjectionPointEver>*/// Block comment injection is "inline". We need a newline (because this is a line comment!).
           /*</FirstInjectionPointEver>*/
@@ -563,19 +563,19 @@ public class InjectIntoTests
         )]
     [TestCase( "PadOpened",
         """
-        create transform transformer
+        create <t> transformer
         begin
           /*<FirstInjectionPointEver>*/ /*exist*/ /*</FirstInjectionPointEver>*/
         end
         """,
         """"
-        create transform transformer
+        create <transform> transformer
         begin
             inject "/*NEW*/   " into <FirstInjectionPointEver>;
         end
         """",
         """
-        create transform transformer
+        create <t> transformer
         begin
           /*<FirstInjectionPointEver>*/ /*exist*/ /*NEW*/   /*</FirstInjectionPointEver>*/
         end
@@ -584,10 +584,8 @@ public class InjectIntoTests
     public void injection_with_block_comment( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost();
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
 }

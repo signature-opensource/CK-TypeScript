@@ -16,7 +16,7 @@ public class InjectIntoTests
         
         """,
         """"
-        create less transformer
+        create <less> transformer
         begin
             inject """
 

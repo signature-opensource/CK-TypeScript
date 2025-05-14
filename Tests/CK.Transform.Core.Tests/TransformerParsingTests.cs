@@ -12,7 +12,7 @@ public class TransformerParsingTests
     public void Empty_minimal_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer begin end" )
+        var f = h.TryParseFunction( TestHelper.Monitor, "create <transform> transformer begin end" )
                  .ShouldNotBeNull();
         f.Body.Statements.Count().ShouldBe( 0 );
     }
@@ -21,7 +21,7 @@ public class TransformerParsingTests
     public void named_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, "create transform transformer MyTransformer as begin end" )
+        var f = h.TryParseFunction( TestHelper.Monitor, "create <transform> transformer MyTransformer as begin end" )
                  .ShouldNotBeNull();
         f.Name.ShouldBe( "MyTransformer" );
         f.Target.ShouldBeNull();
@@ -31,7 +31,7 @@ public class TransformerParsingTests
     public void named_with_empty_target_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer MyTransformer on "" as begin end""" )
+        var f = h.TryParseFunction( TestHelper.Monitor, """create <transform> transformer MyTransformer on "" as begin end""" )
                      .ShouldNotBeNull();
         f.Name.ShouldBe( "MyTransformer" );
         f.Target.ShouldNotBeNull().Length.ShouldBe( 0 );
@@ -41,7 +41,7 @@ public class TransformerParsingTests
     public void with_target_function()
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunction( TestHelper.Monitor, """create transform transformer on "the target!" as begin end""" )
+        var f = h.TryParseFunction( TestHelper.Monitor, """create <transform> transformer on "the target!" as begin end""" )
                  .ShouldNotBeNull();
         f.Name.ShouldBeNull();
         f.Target.ShouldBe( "the target!" );
@@ -52,7 +52,7 @@ public class TransformerParsingTests
     {
         var h = new TransformerHost();
         var f = h.TryParseFunction( TestHelper.Monitor, """""
-                    create transform transformer on """
+                    create <transform> transformer on """
                                          Some one-line text.
                                          """
                     begin
@@ -70,7 +70,7 @@ public class TransformerParsingTests
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
             Throw.CheckState( h.TryParseFunction( TestHelper.Monitor, """""
-                    create transform transformer on """
+                    create <t> transformer on """
                                          More than
                                          one-line
                                          text.
@@ -78,7 +78,7 @@ public class TransformerParsingTests
                     begin
                     end
                     """"" ) == null );
-            Throw.CheckState( logs.Any( l => l.StartsWith( "Expected single line (found 3 lines). @1,33 while parsing:" ) ) );
+            logs.ShouldContain( l => l.StartsWith( "Expected single line (found 3 lines). @1,27 while parsing:" ) );
         }
     }
 
@@ -95,14 +95,14 @@ public class TransformerParsingTests
 
 
     [TestCase( "", 0 )]
-    [TestCase( "create transform transformer begin end", 1 )]
-    [TestCase( "create transform transformer begin end create transform transformer begin end", 2 )]
+    [TestCase( "create <transform> transformer begin end", 1 )]
+    [TestCase( "create <transform> transformer begin end create <transform> transformer begin end", 2 )]
     [TestCase( """
-               create transform transformer begin end /**/ create transform transformer begin end
-               create transform transformer begin end create transform transformer begin end //
+               create <transform> transformer begin end /**/ create <transform> transformer begin end
+               create <transform> transformer begin end create <transform> transformer begin end //
                """, 4 )]
     [TestCase( """
-               create transform transformer begin end /**/ not a transformer.
+               create <transform> transformer begin end /**/ not a transformer.
                """, -1 )]
     public void TryParseFunctions_test( string text, int count )
     {

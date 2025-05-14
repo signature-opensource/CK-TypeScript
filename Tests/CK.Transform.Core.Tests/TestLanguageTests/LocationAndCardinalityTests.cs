@@ -15,7 +15,7 @@ public class LocationAndCardinalityTests
         A B C D E
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in before "B" replace "A" with "X";
         end
@@ -37,7 +37,7 @@ public class LocationAndCardinalityTests
         A B C D E
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in after "B" replace "E" with "X";
         end
@@ -60,7 +60,7 @@ public class LocationAndCardinalityTests
         A B C D E
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in between "B" and "E" replace "C D" with "replaced between two matches";
         end
@@ -74,7 +74,7 @@ public class LocationAndCardinalityTests
         A B C D E
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in before "E"
                 in after "B"
@@ -90,7 +90,7 @@ public class LocationAndCardinalityTests
         A B C D E
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             in after "B"
                 in before "E"
@@ -114,7 +114,7 @@ public class LocationAndCardinalityTests
         A B C D E
         """,
         """"
-        create Test transformer
+        create <Test> transformer
         begin
             replace single "Z" with "";
         end

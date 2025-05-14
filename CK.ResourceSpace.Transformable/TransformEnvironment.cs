@@ -62,7 +62,7 @@ sealed partial class TransformEnvironment
         // registering the resource.
         Throw.DebugAssert( !IsLive || loadedText != null );
         var text = loadedText ?? r.ReadAsText();
-        if( language.TransformLanguage.IsTransformerLanguage )
+        if( language.TransformLanguage.IsAutoLanguage )
         {
             if( resources.LocalPath != null )
             {
@@ -110,7 +110,7 @@ sealed partial class TransformEnvironment
 
     internal ITransformable? FindTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
     {
-        return f.Language.TransformLanguage.IsTransformerLanguage
+        return f.Language.TransformLanguage.IsAutoLanguage
                     ? FindFunctionTarget( monitor, source, f )
                     : FindTransformableItemTarget( monitor, source, f );
     }

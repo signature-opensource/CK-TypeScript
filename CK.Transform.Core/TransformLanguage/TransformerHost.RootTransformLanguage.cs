@@ -6,7 +6,7 @@ public sealed partial class TransformerHost
     internal static readonly string _transformLanguageName = "Transform";
 
     /// <summary>
-    /// "Transform" language itself: its transform and target analyzers are the same.
+    /// Singleton "Transform" language itself: its transform and target analyzers are the same.
     /// Its file extensions are ".transform" and ".t".
     /// </summary>
     public static TransformLanguage RootTransformLanguage = new ThisTransformLanguage();
@@ -18,5 +18,4 @@ public sealed partial class TransformerHost
             return new LanguageTransformAnalyzer( language );
         }
     }
-
 }

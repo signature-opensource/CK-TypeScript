@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using static CK.Transform.Core.TransformerHost;
 
 namespace CK.Transform.Core;
 
@@ -21,6 +22,7 @@ public abstract class TransformLanguage
 {
     readonly string _languageName;
     readonly ImmutableArray<string> _fileExtensions;
+    readonly bool _isAutoLanguage;
 
     /// <summary>
     /// Initializes a language with its name.
@@ -46,10 +48,19 @@ public abstract class TransformLanguage
         _fileExtensions = fileExtensions;
     }
 
+    // Root language constructor.
     private protected TransformLanguage()
     {
         _languageName = TransformerHost._transformLanguageName;
         _fileExtensions = [".transform", ".t"];
+        _isAutoLanguage = true;
+    }
+
+    private protected TransformLanguage( Language target )
+    {
+        _languageName = target.TransformLanguageAnalyzer.LanguageName;
+        _fileExtensions = target.TransformLanguage.FileExtensions.Select( e => e + ".t" ).ToImmutableArray();
+        _isAutoLanguage = true;
     }
 
     /// <summary>
@@ -82,9 +93,13 @@ public abstract class TransformLanguage
     }
 
     /// <summary>
-    /// Gets whether this is the "Transform" language.
+    /// Gets whether this is an automatic language.
+    /// Automatic languages are only languages that transforms another transformer language,
+    /// they are not registered but created when needed.
+    /// The <see cref="TransformerHost.RootTransformLanguage"/> is the "ultimate" automatic language:
+    /// the root "Transform" language of any other transform language.
     /// </summary>
-    public bool IsTransformerLanguage => ReferenceEquals( _languageName, TransformerHost._transformLanguageName );
+    public bool IsAutoLanguage => _isAutoLanguage;
 
     /// <summary>
     /// Must create the transform statement analyzer (and its <see cref="LanguageTransformAnalyzer.TargetAnalyzer"/>).

@@ -151,7 +151,7 @@ sealed partial class StableItemOrInputTracker
             //              This is done following the topological order and this is the key to
             //              handle this in a simple manner: resources of a IResPackageResource
             //              can safely handle the resources of the previous IResPackageResource
-            //              as all their Reachables are setlled.
+            //              as all their Reachables are settled.
             for( int iLocalResource = 0; iLocalResource < _localChanges.Length; iLocalResource++ )
             {
                 HashSet<object>? set = _localChanges[iLocalResource];

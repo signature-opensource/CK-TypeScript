@@ -11,7 +11,7 @@ public class EnsureImportTests
 {
     [TestCase( "n°0", "",
     """"
-        create typescript transformer
+        create <ts> transformer
         begin
             ensure import { A } from './someFile';
         end
@@ -26,7 +26,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import DefaultImport from './someFile';
             ensure import { A as B } from './someOtherFile';
@@ -44,7 +44,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import DefaultImport from './someFile';
             ensure import { A as B } from './someOtherFile';
@@ -62,7 +62,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import DefaultImport from './someFile';
             ensure import { A as B } from './someFile';
@@ -78,7 +78,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import * as NS from './someFile';
             ensure import { A as B } from './someFile';
@@ -95,7 +95,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import type { A } from './someFile';
             ensure import { A } from './someFile';
@@ -115,7 +115,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import { B } from './someFile';
             ensure import { C as D } from './someFile';
@@ -138,7 +138,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import { A } from './someFile';
             ensure import { B } from './someFile';
@@ -160,7 +160,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import DefaultImport from './someFile';
             ensure import { A } from './someFile';
@@ -184,7 +184,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import { B } from './someFile';
             ensure import { X } from './X';
@@ -203,7 +203,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <typescript> transformer
         begin
             ensure import { B } from './someFile';
             ensure import { X } from './X';
@@ -221,7 +221,7 @@ public class EnsureImportTests
         const data = 'data';
         """,
     """"
-        create typescript transformer
+        create <ts> transformer
         begin
             ensure import { A } from './someFile';
             ensure import { X } from './X';
