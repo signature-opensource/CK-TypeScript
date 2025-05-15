@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using System;
 using System.IO;
 
 namespace CK.Core;
@@ -16,6 +17,13 @@ public interface IResourceSpaceItemInstaller
     /// <param name="resSpace">The resource space.</param>
     /// <returns>True on success, false if anything prevents the install to succeed (errors should be logged).</returns>
     bool Open( IActivityMonitor monitor, ResSpace resSpace );
+
+    /// <summary>
+    /// Pushes a temporary sub path that will prefix any target path.
+    /// </summary>
+    /// <param name="subPath">Sub path must not be empty nor <see cref="NormalizedPath.IsRooted"/>.</param>
+    /// <returns>A disposable that restores the initial path.</returns>
+    IDisposable PushSubPath( NormalizedPath subPath );
 
     /// <summary>
     /// Writes a resource content.

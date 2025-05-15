@@ -104,13 +104,18 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
     /// <returns>The live updater on success, null on error. Errors are logged.</returns>
     public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
     {
-        var installer = new FileSystemInstaller( d.Reader.ReadString() );
+        var targetInstallPath = d.Reader.ReadString();
         var cultures = d.Reader.ReadString().Split( ',' ).Select( NormalizedCultureInfo.EnsureNormalizedCultureInfo );
         var activeCultures = new ActiveCultureSet( cultures );
         var rootFolderName = d.Reader.ReadString();
         var options = (InstallOption)d.Reader.ReadNonNegativeSmallInt32();
         var stableCount = d.Reader.ReadNonNegativeSmallInt32();
+        // No installer on the handler.
+        // We reuse its logic only, not its Install capability.
         var handler = new LocalesResourceHandler( null, spaceData.SpaceDataCache, rootFolderName, activeCultures, options );
+
+        // Our live installer knowns the "/locales/" sub folder.
+        var installer = new FileSystemInstaller( targetInstallPath + rootFolderName+ Path.DirectorySeparatorChar );
         return new LiveUpdater( handler, installer, spaceData, stableCount );
     }
 

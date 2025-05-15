@@ -1,6 +1,7 @@
 using CK.BinarySerialization;
 using System.Reflection.Metadata;
 using System;
+using System.IO;
 
 namespace CK.Core;
 
@@ -31,9 +32,13 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
     /// <returns>The live updater on success, null on error. Errors are logged.</returns>
     public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
     {
-        var installer = new FileSystemInstaller( d.Reader.ReadString() );
+        var targetInstallPath = d.Reader.ReadString();
         var rootFolderName = d.Reader.ReadString();
-        var handler = new AssetsResourceHandler( installer, spaceData.SpaceDataCache, rootFolderName );
+        // No installer on the handler.
+        // We reuse its logic only, not its Install capability.
+        var handler = new AssetsResourceHandler( null, spaceData.SpaceDataCache, rootFolderName );
+        // Our live installer knowns the "/assets/" sub folder.
+        var installer = new FileSystemInstaller( targetInstallPath + rootFolderName + Path.DirectorySeparatorChar );
         return new LiveUpdater( handler, installer, spaceData );
     }
 

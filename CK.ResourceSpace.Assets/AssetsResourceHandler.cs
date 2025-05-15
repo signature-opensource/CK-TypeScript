@@ -81,10 +81,15 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
             return true;
         }
         Throw.CheckState( FinalAssets != null );
-        return WriteFinal( monitor, FinalAssets, Installer );
+        using( Installer.PushSubPath( RootFolderName ) )
+        {
+            return WriteFinal( monitor, FinalAssets, Installer );
+        }
     }
 
-    static bool WriteFinal( IActivityMonitor monitor, FinalResourceAssetSet f, IResourceSpaceItemInstaller installer )
+    static bool WriteFinal( IActivityMonitor monitor,
+                            FinalResourceAssetSet f,
+                            IResourceSpaceItemInstaller installer )
     {
         try
         {

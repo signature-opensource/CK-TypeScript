@@ -141,7 +141,10 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
             return true;
         }
         Throw.CheckState( _finalTranslations != null );
-        return WriteFinal( monitor, _finalTranslations, Installer );
+        using( Installer.PushSubPath( RootFolderName ) )
+        {
+            return WriteFinal( monitor, _finalTranslations, Installer );
+        }
     }
 
     bool WriteFinal( IActivityMonitor monitor,
@@ -150,20 +153,19 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     {
         try
         {
-            NormalizedPath folder = RootFolderName;
             switch( _installOption )
             {
                 case InstallOption.Full:
-                    WriteAllCultures( final, folder, installer, rootPropagated: true );
+                    WriteAllCultures( final, installer, rootPropagated: true );
                     break;
                 case InstallOption.FullNoEmptySet:
-                    WriteExistingSets( final, folder, installer, rootPropagated: true );
+                    WriteExistingSets( final, installer, rootPropagated: true );
                     break;
                 case InstallOption.Minimal:
-                    WriteAllCultures( final, folder, installer, rootPropagated: false );
+                    WriteAllCultures( final, installer, rootPropagated: false );
                     break;
                 case InstallOption.MinimalNoEmptySet:
-                    WriteExistingSets( final, folder, installer, rootPropagated: false );
+                    WriteExistingSets( final, installer, rootPropagated: false );
                     break;
             }
             return true;
@@ -175,30 +177,28 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
 
 
-        static void WriteExistingSets( FinalTranslationSet final, NormalizedPath folder, IResourceSpaceItemInstaller target, bool rootPropagated )
+        static void WriteExistingSets( FinalTranslationSet final, IResourceSpaceItemInstaller target, bool rootPropagated )
         {
             foreach( var set in final.AllTranslationSets.Where( set => set.Translations.Count > 0 ) )
             {
-                var fPath = folder.AppendPart( $"{set.Culture.Culture.Name}.json" );
                 var translations = rootPropagated
                                     ? set.RootPropagatedTranslations
                                     : set.Translations;
-                WriteJson( target, fPath, translations );
+                WriteJson( target, $"{set.Culture.Culture.Name}.json", translations );
             }
         }
 
-        static void WriteAllCultures( FinalTranslationSet final, NormalizedPath folder, IResourceSpaceItemInstaller target, bool rootPropagated )
+        static void WriteAllCultures( FinalTranslationSet final, IResourceSpaceItemInstaller target, bool rootPropagated )
         {
             foreach( var c in final.Culture.ActiveCultures.AllActiveCultures )
             {
-                var fPath = folder.AppendPart( $"{c.Culture.Name}.json" );
-
                 var set = final.FindTranslationSet( c );
                 var translations = set == null
                                     ? null
                                     : rootPropagated
                                         ? set.RootPropagatedTranslations
                                         : set.Translations;
+                var fPath = $"{c.Culture.Name}.json";
                 if( translations == null )
                 {
                     target.Write( fPath, "{}" );

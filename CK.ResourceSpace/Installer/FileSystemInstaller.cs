@@ -9,8 +9,8 @@ namespace CK.Core;
 /// </summary>
 public class FileSystemInstaller : IResourceSpaceItemInstaller
 {
-    readonly string _targetPath;
     readonly char[] _pathBuffer;
+    string _targetPath;
 
     /// <summary>
     /// Initialize a new installer on a target path.
@@ -196,6 +196,25 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
             Directory.CreateDirectory( sDir.ToString() );
         }
         return sPath.ToString();
+    }
+
+    /// <summary>
+    /// Pushes a temporary sub path after the current <see cref="TargetPath"/>.
+    /// </summary>
+    /// <param name="subPath">Sub path must not be empty nor <see cref="NormalizedPath.IsRooted"/>.</param>
+    /// <returns>A disposable that restores the initial target path.</returns>
+    public IDisposable PushSubPath( NormalizedPath subPath )
+    {
+        Throw.CheckArgument( !subPath.IsEmptyPath && !subPath.IsRooted );
+        var previous = _targetPath;
+
+        int targetLen = _targetPath.Length;
+        subPath.Path.CopyTo( _pathBuffer.AsSpan( targetLen ) );
+        targetLen += subPath.Path.Length;
+        _pathBuffer[targetLen++] = Path.DirectorySeparatorChar;
+
+        _targetPath = new string( _pathBuffer, 0, targetLen );
+        return Util.CreateDisposableAction( () => _targetPath = previous );
     }
 
     /// <summary>
