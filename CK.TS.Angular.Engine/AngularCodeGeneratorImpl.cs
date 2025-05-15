@@ -709,6 +709,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
             }
 
+            [Obsolete("Styles should be handled directly.")]
             static void TransformStyles( IActivityMonitor monitor, NormalizedPath stylesFilePath, NormalizedPath ckGenFolder )
             {
                 EnsureGlobalStylesAndVariables( monitor, ckGenFolder );
@@ -716,11 +717,11 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 var styles = File.Exists( stylesFilePath )
                                 ? File.ReadAllText( stylesFilePath )
                                 : "";
-                bool hasVariables = styles.Contains( "@import '@local/ck-gen/styles/GlobalVariables.less';" );
-                bool hasStyles = styles.Contains( "@import '@local/ck-gen/styles/GlobalStyles.less';" );
+                bool hasVariables = styles.Contains( "@import '@local/ck-gen/styles/global.variables.less';" );
+                bool hasStyles = styles.Contains( "@import '@local/ck-gen/styles/global.styles.less';" );
                 if( hasVariables && hasStyles )
                 {
-                    monitor.Trace( "File 'src/styles.less' imports the '@local/ck-gen/styles/' GlobalStyles and GlobalVariables.less'. Skipping transformation." );
+                    monitor.Trace( "File 'src/styles.less' imports the '@local/ck-gen/styles/' global.styles.less and global.variables.less'. Skipping transformation." );
                 }
                 else
                 {
@@ -729,14 +730,14 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         if( !hasVariables )
                         {
                             styles = """
-                                @import '@local/ck-gen/styles/GlobalVariables.less';
+                                @import '@local/ck-gen/styles/global.variables.less';
 
                                 """ + styles;
                         }
                         if( !hasStyles )
                         {
                             styles = """
-                                @import '@local/ck-gen/styles/GlobalStyles.less';
+                                @import '@local/ck-gen/styles/global.styles.less';
 
                                 """ + styles;
                         }
@@ -752,19 +753,19 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         monitor.Info( "Creating 'ck-gen/styles' folder." );
                         Directory.CreateDirectory( stylesPath );
                     }
-                    var gVarFilePath = stylesPath.AppendPart( "GlobalVariables.less" );
+                    var gVarFilePath = stylesPath.AppendPart( "global.variables.less" );
                     if( !File.Exists( gVarFilePath ) )
                     {
                         File.WriteAllText( gVarFilePath, """
-                            /* This file can be altered by 'GlobalVariables.less.t' components' resources. */
+                            /* This file can be altered by 'global.variables.less.t' components' resources. */
 
                             """ );
                     }
-                    var gStyleFilePath = stylesPath.Combine( "GlobalStyles.less" );
+                    var gStyleFilePath = stylesPath.Combine( "global.styles.less" );
                     if( !File.Exists( gStyleFilePath ) )
                     {
                         File.WriteAllText( gStyleFilePath, """
-                            /* This file can be altered by 'GlobalStyles.less.t' components' resources. */
+                            /* This file can be altered by 'global.styles.less.t' components' resources. */
 
                             """ );
                     }
