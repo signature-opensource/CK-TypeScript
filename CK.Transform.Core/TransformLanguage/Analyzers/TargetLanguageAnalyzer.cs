@@ -81,7 +81,7 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
         {
             return "No token found in match pattern.";
         }
-        return new TokenSpanFilter( head.Tokens.ToImmutableArray() );
+        return new TokenSpanFilter( tokenPattern, head.Tokens.ToImmutableArray() );
     }
 
     /// <summary>

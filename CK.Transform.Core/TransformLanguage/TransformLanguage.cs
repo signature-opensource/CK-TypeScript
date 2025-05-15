@@ -8,7 +8,7 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Abstract factory for a <see cref="TargetLanguageAnalyzer"/> and its associated
-/// transfom <see cref="LanguageTransformAnalyzer"/>.
+/// transfom <see cref="TransformLanguageAnalyzer"/>.
 /// <para>
 /// A language is identified by its <see cref="LanguageName"/> and its <see cref="FileExtensions"/>
 /// in a <see cref="TransformerHost"/>.
@@ -102,11 +102,11 @@ public abstract class TransformLanguage
     public bool IsAutoLanguage => _isAutoLanguage;
 
     /// <summary>
-    /// Must create the transform statement analyzer (and its <see cref="LanguageTransformAnalyzer.TargetAnalyzer"/>).
+    /// Must create the transform statement analyzer (and its <see cref="TransformLanguageAnalyzer.TargetAnalyzer"/>).
     /// </summary>
     /// <param name="language">The language for which the analyzers are created.</param>
     /// <returns>The transform langage analyzer.</returns>
-    internal protected abstract LanguageTransformAnalyzer CreateAnalyzer( TransformerHost.Language language );
+    internal protected abstract TransformLanguageAnalyzer CreateAnalyzer( TransformerHost.Language language );
 
     /// <summary>
     /// Overridden to return the <see cref="LanguageName"/>.

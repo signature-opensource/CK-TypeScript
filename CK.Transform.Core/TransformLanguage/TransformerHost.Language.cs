@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 
 namespace CK.Transform.Core;
 
@@ -11,7 +11,7 @@ public sealed partial class TransformerHost
     {
         readonly TransformerHost _host;
         readonly TransformLanguage _language;
-        readonly LanguageTransformAnalyzer _transformLanguageAnalyzer;
+        readonly TransformLanguageAnalyzer _transformLanguageAnalyzer;
         readonly int _index;
 
         /// <summary>
@@ -27,7 +27,7 @@ public sealed partial class TransformerHost
         /// <summary>
         /// Gets the analyzer for the transform language.
         /// </summary>
-        public LanguageTransformAnalyzer TransformLanguageAnalyzer => _transformLanguageAnalyzer;
+        public TransformLanguageAnalyzer TransformLanguageAnalyzer => _transformLanguageAnalyzer;
 
         /// <summary>
         /// Gets the target language analyzer.

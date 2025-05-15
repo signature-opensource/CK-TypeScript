@@ -12,6 +12,7 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class TokenSpanFilter : ITokenFilterOperator
 {
+    readonly RawString _tokenPattern;
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
 
@@ -19,9 +20,10 @@ public sealed class TokenSpanFilter : ITokenFilterOperator
     /// Initializes a new token span filter.
     /// </summary>
     /// <param name="tokens">The tokens. Must not be empty or default.</param>
-    public TokenSpanFilter( ImmutableArray<Token> tokens )
+    public TokenSpanFilter( RawString tokenPattern, ImmutableArray<Token> tokens )
     {
         Throw.CheckArgument( !tokens.IsDefaultOrEmpty );
+        _tokenPattern = tokenPattern;
         _tokens = tokens;
         _prefixTable = BuildPrefixTable( tokens );
     }
@@ -56,18 +58,16 @@ public sealed class TokenSpanFilter : ITokenFilterOperator
         new TokenMatcher( _tokens, _prefixTable ).CreateMatches( context, input );
     }
 
-    sealed class TokenMatcher
+    struct TokenMatcher
     {
         readonly ImmutableArray<Token> _pattern;
         readonly int[] _prefixTable;
-        readonly FIFOBuffer<SourceToken> _candidate;
         int _iMatch;
 
         public TokenMatcher( ImmutableArray<Token> tokens, int[] prefixTable )
         {
             _pattern = tokens;
             _prefixTable = prefixTable;
-            _candidate = new FIFOBuffer<SourceToken>( _pattern.Length );
         }
 
         public void Reset() => _iMatch = 0;
@@ -141,63 +141,20 @@ public sealed class TokenSpanFilter : ITokenFilterOperator
                                     {_pattern.ToFullString()}
                                     """, e );
         }
-
-        public SourceToken[]? Found( SourceToken t )
-        {
-            bool match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
-            while( _iMatch > 0 && !match )
-            {
-                _iMatch = _prefixTable[_iMatch];
-                match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
-            }
-            if( match )
-            {
-                _candidate.Push( t );
-                _iMatch++;
-            }
-            if( _iMatch == Length )
-            {
-                _iMatch = 0;
-                return _candidate.ToArray();
-            }
-            return null;
-        }
-
-        public IEnumerable<IEnumerable<IEnumerable<SourceToken>>> GetTokens( ITokenFilterOperatorContext c,
-                                                                             IEnumerable<IEnumerable<IEnumerable<SourceToken>>> inner )
-        {
-            foreach( var each in inner )
-            {
-                foreach( var range in each )
-                {
-                    var byEach = GetRangeTokens( this, range );
-                    if( byEach.Any() )
-                    {
-                        yield return byEach;
-                    }
-                }
-            }
-
-            static IEnumerable<IEnumerable<SourceToken>> GetRangeTokens( TokenMatcher matcher, IEnumerable<SourceToken> range )
-            {
-                matcher.Reset();
-                foreach( var t in range )
-                {
-                    SourceToken[]? match = matcher.Found( t );
-                    if( match != null )
-                    {
-                        yield return match;
-                    }
-                }
-            }
-
-        }
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
-        if( !parsable ) b.Append( "[Pattern] " );
-        return _tokens.WriteCompact( b );
+        if( !parsable )
+        {
+            b.Append( "[Pattern] \"" );
+            return _tokens.WriteCompact( b ).Append( '"' );
+        }
+        return _tokenPattern.Lines.Length > 1
+                ? b.Append( _tokenPattern.OpeningQuotes ).AppendLine()
+                   .Append( _tokenPattern.TextLines ).AppendLine()
+                   .Append( _tokenPattern.ClosingQuotes )
+                : b.Append( _tokenPattern.Text );
     }
 
     public override string ToString() => Describe( new StringBuilder(), parsable: true ).ToString();

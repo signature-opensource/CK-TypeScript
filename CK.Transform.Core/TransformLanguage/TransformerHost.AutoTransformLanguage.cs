@@ -21,9 +21,9 @@ public sealed partial class TransformerHost
             _target = target;
         }
 
-        protected internal override LanguageTransformAnalyzer CreateAnalyzer( Language language )
+        protected internal override TransformLanguageAnalyzer CreateAnalyzer( Language language )
         {
-            return new LanguageTransformAnalyzer( language, _target.TransformLanguageAnalyzer );
+            return new TransformLanguageAnalyzer( language, _target.TransformLanguageAnalyzer );
         }
     }
 }

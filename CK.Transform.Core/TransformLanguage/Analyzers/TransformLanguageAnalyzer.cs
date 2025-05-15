@@ -12,7 +12,7 @@ namespace CK.Transform.Core;
 /// transform language analyzer: any transform language analyzer can actually handle any available language.
 /// </para>
 /// </summary>
-public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyzer<TransformerFunction>
+public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyzer<TransformerFunction>
 {
     readonly TransformerHost.Language _language;
     readonly TargetLanguageAnalyzer _targetAnalyzer;
@@ -22,7 +22,7 @@ public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     /// </summary>
     /// <param name="language">The transform language.</param>
     /// <param name="targetAnalyzer">The target analyzer.</param>
-    internal protected LanguageTransformAnalyzer( TransformerHost.Language language, TargetLanguageAnalyzer targetAnalyzer )
+    internal protected TransformLanguageAnalyzer( TransformerHost.Language language, TargetLanguageAnalyzer targetAnalyzer )
         : base( language.LanguageName + ".T" )
     { 
         _language = language;
@@ -33,7 +33,7 @@ public class LanguageTransformAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     /// Internal constructor for the root transformer of transformer.
     /// </summary>
     /// <param name="rootLanguage"></param>
-    internal LanguageTransformAnalyzer( TransformerHost.Language rootLanguage )
+    internal TransformLanguageAnalyzer( TransformerHost.Language rootLanguage )
         : base( TransformerHost._transformLanguageName )
     {
         Throw.DebugAssert( rootLanguage.TransformLanguage.IsAutoLanguage );

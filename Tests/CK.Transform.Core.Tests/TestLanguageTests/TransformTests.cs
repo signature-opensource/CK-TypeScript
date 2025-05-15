@@ -24,28 +24,28 @@ public class TransformTests
         Quote 2 { erased }
         """
         )]
-    [TestCase( "n°2 - all {span} Pattern",
+    [TestCase( "n°2 - all {span} where Pattern",
         """
         One A { A HERE { A } A } A { HERE A }
         """,
         """"
         create <Test> transformer
         begin
-            in all {braces} "HERE" replace all "A" with "YES";
+            in all {braces} where "HERE" replace all "A" with "YES";
         end
         """",
         """
         One A { YES HERE { YES } YES } A { HERE YES }
         """
         )]
-    [TestCase( "n°3 - first {span} Pattern",
+    [TestCase( "n°3 - first {span} where Pattern",
         """
         One A { A HERE { A } A } A { HERE A }
         """,
         """"
         create <Test> transformer
         begin
-            in first {braces} "HERE" replace all "A" with "B";
+            in first {braces} where "HERE" replace all "A" with "B";
         end
         """",
         """
@@ -59,7 +59,37 @@ public class TransformTests
         """"
         create <Test> transformer
         begin
-            in first {braces} "{" replace all "A" with "this works";
+            in first {braces} where "{" replace all "A" with "this works";
+        end
+        """",
+        """
+        One A { A { this works } A } A { A }
+        """
+        )]
+    //TODO: ^ for top span.
+    //[TestCase( "n°4bis",
+    //    """
+    //    One A { A { A } A } A { A }
+    //    """,
+    //    """"
+    //    create <Test> transformer
+    //    begin
+    //        in first {^braces} replace all "A" with "this works";
+    //    end
+    //    """",
+    //    """
+    //    One A { this works { this works } this works } A { A }
+    //    """
+    //    )]
+    [TestCase( "n°4ter",
+        """
+        One A { A { A } A } A { A }
+        """,
+        """"
+        create <Test> transformer
+        begin
+            in first {braces} 
+                in first {braces} replace all "A" with "this works";
         end
         """",
         """
@@ -73,7 +103,7 @@ public class TransformTests
         """"
         create <Test> transformer
         begin
-            in all {braces} "{" replace all "A" with "this works";
+            in all {braces} where "{" replace all "A" with "this works";
         end
         """",
         """
@@ -87,7 +117,7 @@ public class TransformTests
         """"
         create <Test> transformer
         begin
-            in last {braces} "{" replace all "A" with "this works";
+            in last {braces} where "{" replace all "A" with "this works";
         end
         """",
         """

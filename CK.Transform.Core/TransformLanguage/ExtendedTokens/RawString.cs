@@ -80,6 +80,16 @@ public sealed class RawString : Token
     public int QuoteLength => (Text.Length - _innerText.Length) / 2;
 
     /// <summary>
+    /// Gets the opening quotes.
+    /// </summary>
+    public ReadOnlySpan<char> OpeningQuotes => Text.Span.Slice( QuoteLength );
+
+    /// <summary>
+    /// Gets the closing quotes.
+    /// </summary>
+    public ReadOnlySpan<char> ClosingQuotes => Text.Span[..^QuoteLength];
+
+    /// <summary>
     /// Gets the final lines as a string joined with <see cref="Environment.NewLine"/>.
     /// </summary>
     public string TextLines

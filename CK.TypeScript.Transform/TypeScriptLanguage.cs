@@ -19,7 +19,7 @@ public sealed class TypeScriptLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override LanguageTransformAnalyzer CreateAnalyzer( TransformerHost.Language language )
+    protected override TransformLanguageAnalyzer CreateAnalyzer( TransformerHost.Language language )
     {
         return new TypeScriptTransformStatementAnalyzer( language, new TypeScriptAnalyzer() );
     }

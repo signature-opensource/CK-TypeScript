@@ -14,7 +14,7 @@ public sealed class TransformStatementBlock : TransformStatement
 {
     /// <summary>
     /// Initializes a new statements block.
-    /// Parsed by <see cref="LanguageTransformAnalyzer.ParseStatements(ref TokenizerHead)"/>.
+    /// Parsed by <see cref="TransformLanguageAnalyzer.ParseStatements(ref TokenizerHead)"/>.
     /// </summary>
     /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
     /// <param name="end">The end of the span. Must be greater than <paramref name="beg"/>.</param>
@@ -45,7 +45,7 @@ public sealed class TransformStatementBlock : TransformStatement
         }
     }
 
-    internal static TransformStatement? ParseBlockOrStatement( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
+    internal static TransformStatement? ParseBlockOrStatement( TransformLanguageAnalyzer analyzer, ref TokenizerHead head )
     {
         return head.LowLevelTokenType == TokenType.GenericIdentifier
                && head.LowLevelTokenText.Equals("begin", StringComparison.Ordinal)
@@ -55,12 +55,12 @@ public sealed class TransformStatementBlock : TransformStatement
 
     /// <summary>
     /// Parses a "begin ... end" block.
-    /// Statements are parsed by <see cref="LanguageTransformAnalyzer.ParseStatement(ref TokenizerHead)"/>.
+    /// Statements are parsed by <see cref="TransformLanguageAnalyzer.ParseStatement(ref TokenizerHead)"/>.
     /// </summary>
     /// <param name="analyzer">Calling analyzer.</param>
     /// <param name="head">The head.</param>
     /// <returns>The list of transform statements.</returns>
-    internal static TransformStatementBlock Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
+    internal static TransformStatementBlock Parse( TransformLanguageAnalyzer analyzer, ref TokenizerHead head )
     {
         head.MatchToken( "begin" );
         int begSpan = head.LastTokenIndex;
@@ -79,7 +79,7 @@ public sealed class TransformStatementBlock : TransformStatement
         return head.AddSpan( new TransformStatementBlock( begSpan, head.LastTokenIndex + 1 ) );
     }
 
-    static TransformStatement? ParseRequiredStatement( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
+    static TransformStatement? ParseRequiredStatement( TransformLanguageAnalyzer analyzer, ref TokenizerHead head )
     {
         var s = analyzer.ParseStatement( ref head );
         Throw.DebugAssert( s == null || s.CheckValid() );

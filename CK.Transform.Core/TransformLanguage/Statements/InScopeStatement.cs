@@ -66,7 +66,7 @@ public sealed class InScopeStatement : TransformStatement
         }
     }
 
-    internal static InScopeStatement? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token inToken )
+    internal static InScopeStatement? Parse( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, Token inToken )
     {
         Throw.DebugAssert( inToken.Text.Span.Equals( "in", StringComparison.Ordinal ) );
         int begSpan = head.LastTokenIndex;

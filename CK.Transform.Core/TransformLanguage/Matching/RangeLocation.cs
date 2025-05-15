@@ -71,7 +71,7 @@ public sealed partial class RangeLocation : SourceSpan
     /// </summary>
     public LocationMatcher? Second => Children.FirstChild?.NextSibling as LocationMatcher;
 
-    internal static RangeLocation? Match( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
+    internal static RangeLocation? Match( TransformLanguageAnalyzer analyzer, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
         Token? kind;

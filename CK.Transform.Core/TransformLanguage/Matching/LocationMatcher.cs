@@ -8,7 +8,7 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Captures "<see cref="LocationCardinality"/> <see cref="Matcher"/>".
+/// Captures "<see cref="LocationCardinality"/> <see cref="SpanMatcher"/>".
 /// </summary>
 public sealed partial class LocationMatcher : SourceSpan
 {
@@ -29,7 +29,7 @@ public sealed partial class LocationMatcher : SourceSpan
 
     /// <summary>
     /// Gets the optional match cardinality.
-    /// When null, the match is "single" (the <see cref="LocationCardinality.SingleCardinality"/> provider is used).
+    /// When null, the match is "single" (the <see cref="LocationCardinality.SingleCardinality"/> operator is used).
     /// </summary>
     public LocationCardinality? Cardinality => Children.FirstChild as LocationCardinality;
 
@@ -46,7 +46,7 @@ public sealed partial class LocationMatcher : SourceSpan
         }
     }
 
-    internal static LocationMatcher? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, bool monoLocationOnly = false )
+    internal static LocationMatcher? Parse( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, bool monoLocationOnly = false )
     {
         int begSpan = head.LastTokenIndex + 1;
         var cardinality = LocationCardinality.Match( ref head, monoLocationOnly );

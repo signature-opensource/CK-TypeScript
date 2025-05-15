@@ -9,12 +9,10 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// Captures a span matcher:
-/// <para>
-/// {span specification} "pattern"
-/// </para>
 /// <list type="bullet">
-///     <item>At least the span specification or the pattern string is required.</item>
-///     <item>When the span specification not specified, it defaults to the matched tokens.</item>
+///     <item>{span specification} alone.</item>
+///     <item>"pattern" alone.</item>
+///     <item>{span specification} where "pattern".</item>
 /// </list>
 /// </summary>
 public sealed partial class SpanMatcher : SourceSpan
@@ -31,26 +29,45 @@ public sealed partial class SpanMatcher : SourceSpan
         _pattern = pattern;
     }
 
-    internal static SpanMatcher? Match( LanguageTransformAnalyzer analyzer, ref TokenizerHead head )
+    internal static SpanMatcher? Match( TransformLanguageAnalyzer analyzer, ref TokenizerHead head )
     {
         int begSpan = head.LastTokenIndex + 1;
 
         // Try to match both, even if an error occurred on the specification.
-        bool success = TryMatchSpec( analyzer, ref head, out var specProvider );
-        success &= TryMatchPattern( analyzer, ref head, specProvider, out var patternProvider );
+        bool success = TryMatchSpec( analyzer, ref head, out var specOperator );
+        bool hasWhere = head.TryAcceptToken( "where", out _ );
+        success &= TryMatchPattern( analyzer, ref head, specOperator, out var patternOperator );
         if( !success ) return null;
 
-        if( specProvider == null && patternProvider == null )
+        if( specOperator != null )
         {
-            head.AppendError( "Missing {span specification} and/or \"pattern\".", 0 );
+            if( hasWhere && patternOperator == null )
+            {
+                head.AppendError( "Expected pattern in: {span specification} where \"pattern\".", 0 );
+                return null;
+            }
+            if( !hasWhere && patternOperator != null )
+            {
+                head.AppendError( "Missing 'where' before \"pattern\" in: {span specification} where \"pattern\".", 0 );
+                return null;
+            }
+        }
+        else if( hasWhere )
+        {
+            head.AppendError( "Missing {span specification} before 'where'.", 0 );
+            return null;
+        }
+        if( specOperator == null && patternOperator == null )
+        {
+            head.AppendError( "Expected {span specification}, \"pattern\" or {span specification} where \"pattern\".", 0 );
             return null;
         }
         return head.AddSpan( new SpanMatcher( begSpan,
                                               head.LastTokenIndex + 1,
-                                              specProvider,
-                                              patternProvider ) );
+                                              specOperator,
+                                              patternOperator ) );
 
-        static bool TryMatchSpec( LanguageTransformAnalyzer analyzer,
+        static bool TryMatchSpec( TransformLanguageAnalyzer analyzer,
                                   ref TokenizerHead head,
                                   out ITokenFilterOperator? specProvider )
         {
@@ -65,7 +82,7 @@ public sealed partial class SpanMatcher : SourceSpan
                 object m = analyzer.TargetAnalyzer.ParseSpanSpec( tokenSpec );
                 if( m is not string and not ITokenFilterOperator )
                 {
-                    Throw.InvalidOperationException( $"{analyzer.TargetAnalyzer.GetType().FullName}.ParseSpanSpec() must return a string or a IFilteredTokenEnumerableProvider." );
+                    Throw.InvalidOperationException( $"{analyzer.TargetAnalyzer.GetType().FullName}.{nameof( TargetLanguageAnalyzer.ParseSpanSpec )}() must return a string or a IFilteredTokenEnumerableProvider." );
                 }
                 if( m is string error )
                 {
@@ -77,7 +94,7 @@ public sealed partial class SpanMatcher : SourceSpan
             return true;
         }
 
-        static bool TryMatchPattern( LanguageTransformAnalyzer analyzer,
+        static bool TryMatchPattern( TransformLanguageAnalyzer analyzer,
                                      ref TokenizerHead head,
                                      ITokenFilterOperator? specProvider,
                                      out ITokenFilterOperator? patternProvider )
@@ -93,7 +110,7 @@ public sealed partial class SpanMatcher : SourceSpan
                 object m = analyzer.TargetAnalyzer.ParsePattern( tokenPattern, specProvider );
                 if( m is not string and not ITokenFilterOperator )
                 {
-                    Throw.InvalidOperationException( $"{analyzer.TargetAnalyzer.GetType().FullName}.ParsePattern() must return a string or a IFilteredTokenEnumerableProvider." );
+                    Throw.InvalidOperationException( $"{analyzer.TargetAnalyzer.GetType().FullName}.{nameof( TargetLanguageAnalyzer.ParsePattern )}() must return a string or a IFilteredTokenEnumerableProvider." );
                 }
                 if( m is string error )
                 {
@@ -118,6 +135,7 @@ public sealed partial class SpanMatcher : SourceSpan
         if( _pattern != null )
         {
             if( b.Length > 0 ) b.Append( ' ' );
+            if( _spanSpec != null ) b.Append( "where " );
             _pattern.Describe( b, parsable );
         }
         if( !parsable ) b.Append( " ]" );

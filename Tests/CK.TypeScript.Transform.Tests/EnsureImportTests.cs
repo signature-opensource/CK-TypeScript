@@ -9,24 +9,25 @@ namespace CK.TypeScript.Transform.Tests;
 [TestFixture]
 public class EnsureImportTests
 {
-    [TestCase( "n°0", "",
-    """"
+    [TestCase( "n°0",
+        "",
+        """"
         create <ts> transformer
         begin
             ensure import { A } from './someFile';
         end
         """",
-    """
+        """
         import { A } from './someFile';
 
         """
     )]
     [TestCase( "n°1",
-    """
+        """
         const data = 'data';
         """,
-    """"
-        create <typescript> transformer
+        """"
+        create <ts> transformer
         begin
             ensure import DefaultImport from './someFile';
             ensure import { A as B } from './someOtherFile';
@@ -231,6 +232,20 @@ public class EnsureImportTests
         import { A } from './someFile';
         import { X } from './X';
         const data = 'data';
+        """
+    )]
+    [TestCase( "n°12",
+        """
+        import { MyCommand, TestCommand, FirstCommand } from '@local/ck-gen';
+        """,
+    """"
+        create <ts> transformer
+        begin
+            ensure import { TestCommand } from '@local/ck-gen';
+        end
+        """",
+    """
+        import { MyCommand, TestCommand, FirstCommand } from '@local/ck-gen';
         """
     )]
     public void merging_imports( string nTest, string source, string transformer, string result )

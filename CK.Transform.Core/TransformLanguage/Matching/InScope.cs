@@ -41,7 +41,7 @@ public sealed class InScope : SourceSpan
     public ITokenFilterOperator? Scope => Children.FirstChild as ITokenFilterOperator;
 
 
-    internal static InScope? Match( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token? inToken )
+    internal static InScope? Match( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, Token? inToken )
     {
         if( inToken == null && !head.TryAcceptToken( "in", out _ ) )
         {

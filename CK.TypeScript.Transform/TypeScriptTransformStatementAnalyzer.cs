@@ -3,7 +3,7 @@ using System;
 
 namespace CK.TypeScript.Transform;
 
-sealed class TypeScriptTransformStatementAnalyzer : LanguageTransformAnalyzer, ILowLevelTokenizer
+sealed class TypeScriptTransformStatementAnalyzer : TransformLanguageAnalyzer, ILowLevelTokenizer
 {
     internal TypeScriptTransformStatementAnalyzer( TransformerHost.Language language, TypeScriptAnalyzer tsAnalyzer )
         : base( language, tsAnalyzer )

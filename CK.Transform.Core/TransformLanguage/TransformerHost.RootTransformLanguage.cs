@@ -13,9 +13,9 @@ public sealed partial class TransformerHost
 
     sealed class ThisTransformLanguage : TransformLanguage
     {
-        protected internal override LanguageTransformAnalyzer CreateAnalyzer( Language language )
+        protected internal override TransformLanguageAnalyzer CreateAnalyzer( Language language )
         {
-            return new LanguageTransformAnalyzer( language );
+            return new TransformLanguageAnalyzer( language );
         }
     }
 }

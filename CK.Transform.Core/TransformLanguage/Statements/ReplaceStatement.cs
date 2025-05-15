@@ -58,32 +58,7 @@ public sealed class ReplaceStatement : TransformStatement
         }
     }
 
-    static bool GetFirstLastAndCount( IEnumerable<SourceToken> tokens,
-                                      out SourceToken first,
-                                      out SourceToken last,
-                                      out int count )
-    {
-        using var e = tokens.GetEnumerator();
-        if( !e.MoveNext() )
-        {
-            count = 0;
-            first = default;
-            last = default;
-            return false;
-        }
-
-        first = e.Current;
-        last = first;
-        count = 1;
-        while( e.MoveNext() )
-        {
-            ++count;
-            last = e.Current;
-        }
-        return true;
-    }
-
-    internal static ReplaceStatement? Parse( LanguageTransformAnalyzer analyzer, ref TokenizerHead head, Token replaceToken )
+    internal static ReplaceStatement? Parse( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, Token replaceToken )
     {
         Throw.DebugAssert( replaceToken.Text.Span.Equals( "replace", StringComparison.Ordinal ) );
         int begSpan = head.LastTokenIndex + 1;

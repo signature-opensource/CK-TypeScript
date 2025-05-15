@@ -27,7 +27,7 @@ public class InjectIntoTests
         }
         """,
         """"
-        create <typescript> transformer
+        create <ts> transformer
         begin
             inject """
                    title += ' (modified)';

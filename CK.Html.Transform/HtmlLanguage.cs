@@ -18,7 +18,7 @@ public sealed class HtmlLanguage : TransformLanguage
     }
 
     /// <inheritdoc/>
-    protected override LanguageTransformAnalyzer CreateAnalyzer( TransformerHost.Language language )
+    protected override TransformLanguageAnalyzer CreateAnalyzer( TransformerHost.Language language )
     {
         return new HtmlTransformStatementAnalyzer( language, new HtmlAnalyzer() );
     }

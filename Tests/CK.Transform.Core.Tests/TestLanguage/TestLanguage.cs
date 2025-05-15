@@ -11,7 +11,7 @@ public sealed class TestLanguage : TransformLanguage
     {
     }
 
-    protected override LanguageTransformAnalyzer CreateAnalyzer( TransformerHost.Language language )
+    protected override TransformLanguageAnalyzer CreateAnalyzer( TransformerHost.Language language )
     {
         return new TestTransformAnalyzer( language, new TestAnalyzer() );
     }

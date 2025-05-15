@@ -3,7 +3,7 @@ using System;
 
 namespace CK.Less.Transform;
 
-sealed class LessTransformStatementAnalyzer : LanguageTransformAnalyzer
+sealed class LessTransformStatementAnalyzer : TransformLanguageAnalyzer
 {
     readonly LessAnalyzer _lessAnalyzer;
 
