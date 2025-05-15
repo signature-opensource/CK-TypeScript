@@ -1,6 +1,10 @@
 using CK.Core;
 using CK.Transform.Core;
+using Microsoft.Extensions.Primitives;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -50,28 +54,50 @@ public sealed class EnsureImportStatement : TransformStatement
         // If we find an existing import, simply updates its keywords
         // and we are done.
         // Otherwise, we have to create a new @import.
-        ImportStatement? lastImport = null;
+        var updated = FindAndUpdate( editor, _include, _exclude, _importPath, out var lastImport );
+        if( updated == null )
+        {
+            Create( editor, _include, _importPath, lastImport );
+        }
+    }
+
+    static ImportStatement? FindAndUpdate( SourceCodeEditor editor,
+                                           ImportKeyword include,
+                                           ImportKeyword exclude,
+                                           string importPath,
+                                           out ImportStatement? lastImport )
+    {
+        lastImport = null;
         foreach( var import in editor.Code.Spans.OfType<ImportStatement>() )
         {
-            if( import.ImportPath == _importPath )
-            {
-                import.SetImportKeyword( editor, _include, _exclude );
-                return;
-            }
             lastImport = import;
+            if( import.ImportPath == importPath )
+            {
+                import.SetImportKeyword( editor, include, exclude );
+                return import;
+            }
         }
+        return null;
+    }
+
+    static ImportStatement Create( SourceCodeEditor editor,
+                                   ImportKeyword include,
+                                   string importPath,
+                                   ImportStatement? previousStatement )
+    {
+        int insertionPoint = previousStatement?.Span.End ?? 0;
         // We create a token with the whole text (without the comments as they belong to the transform langage)
         // and inserts in the the source code (after the last import or at the beginning of the source).
-        var importLine = ImportStatement.Write( new StringBuilder(), _include, ImportKeyword.None, _importPath ).ToString();
+        var importLine = ImportStatement.Write( new StringBuilder(), include, ImportKeyword.None, importPath ).ToString();
         Token newText = new Token( TokenType.GenericAny, importLine, Trivia.NewLine );
-        int insertionPoint = lastImport?.Span.End ?? 0;
         using( var e = editor.OpenGlobalEditor() )
         {
             e.InsertBefore( insertionPoint, newText );
             // We then create a brand new (1 token length) ImportStatement with the toMerge line
             // and we add it to the spans.
-            var newStatement = new ImportStatement( insertionPoint, insertionPoint + 1, _include, _importPath );
+            var newStatement = new ImportStatement( insertionPoint, insertionPoint + 1, include, importPath );
             editor.AddSourceSpan( newStatement );
+            return newStatement;
         }
     }
 
@@ -95,5 +121,35 @@ public sealed class EnsureImportStatement : TransformStatement
     public override string ToString()
     {
         return ImportStatement.Write( new StringBuilder( "ensure " ), _include, _exclude, _importPath ).ToString();
+    }
+
+    /// <summary>
+    /// Ensures that the <paramref name="imports"/> appear in the enumerated order.
+    /// </summary>
+    /// <param name="editor">The code editor.</param>
+    /// <param name="imports">The ordered imports.</param>
+    public static void EnsureOrderedImports( SourceCodeEditor editor,
+                                             IEnumerable<EnsureImportLine> imports )
+    {
+        ImportStatement? lastOrdered = null;
+        foreach( var i in imports )
+        {
+            var found = FindAndUpdate( editor, i.Include, i.Exclude, i.ImportPath, out var veryLastImport );
+            if( found == null )
+            {
+                lastOrdered = Create( editor, i.Include, i.ImportPath, lastOrdered );
+            }
+            else
+            {
+                // The @import has been found but is it well positioned?
+                // If we have no lastOrdered yet then it is our first import, we have nothing to do.
+                if( lastOrdered != null && lastOrdered.Span.End > found.Span.End )
+                {
+                    // found should be before lastOrdered!
+                    editor.MoveSpanBefore( found, lastOrdered );
+                }
+            }
+
+        }
     }
 }

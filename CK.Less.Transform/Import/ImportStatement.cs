@@ -30,29 +30,12 @@ public sealed class ImportStatement : SourceSpan
     /// </summary>
     public string ImportPath => _importPath;
 
-    static ImportKeyword Normalize( ImportKeyword newOne )
-    {
-        // Multiple has the priority over the 'once' default.
-        if( (newOne & ImportKeyword.Multiple) != 0 ) newOne &= ~ImportKeyword.Once;
-        if( (newOne & ImportKeyword.Once) != 0 ) newOne &= ~ImportKeyword.Multiple;
-
-        // Less has the priority over 'css'.
-        if( (newOne & ImportKeyword.Less) != 0 ) newOne &= ~ImportKeyword.Css;
-        if( (newOne & ImportKeyword.Css) != 0 ) newOne &= ~ImportKeyword.Less;
-
-        return newOne;
-    }
-
     #region Mutators
-    // Quick implementation: mutation becomes a mono-token (potential comments inside are lost... but who cares?).
 
+    // Quick implementation: mutation becomes a mono-token (potential comments inside are lost... but who cares?).
     internal void SetImportKeyword( SourceCodeEditor editor, ImportKeyword include, ImportKeyword exclude )
     {
-        // Accounting the priorities.
-        if( (include & ImportKeyword.Css) != 0 ) exclude |= ImportKeyword.Less;
-        if( (include & ImportKeyword.Once) != 0 ) exclude |= ImportKeyword.Multiple;
-        var newOne = (_keyword & ~exclude) | include;
-        newOne = Normalize( newOne );
+        var newOne = _keyword.Apply( include, exclude );
         if( newOne != _keyword )
         {
             _keyword = newOne;
@@ -116,8 +99,8 @@ public sealed class ImportStatement : SourceSpan
                 // Allow traing comma (even if this is not allowed).
                 head.TryAcceptToken( TokenType.Comma, out _ );
             }
-            excludedKeyword = Normalize( excludedKeyword );
-            keyword = Normalize( keyword & ~excludedKeyword );
+            excludedKeyword = excludedKeyword.Normalize();
+            keyword = (keyword & ~excludedKeyword).Normalize();
         }
         return keyword;
 
