@@ -1,5 +1,3 @@
-using CK.Core;
-
 namespace CK.Transform.Core;
 
 /// <summary>

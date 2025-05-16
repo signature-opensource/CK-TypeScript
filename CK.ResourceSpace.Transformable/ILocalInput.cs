@@ -1,6 +1,5 @@
 using System.Threading;
 using System;
-using static CK.Core.ActivityMonitorErrorCounter;
 using System.IO;
 using System.Collections.Generic;
 using CK.EmbeddedResources;

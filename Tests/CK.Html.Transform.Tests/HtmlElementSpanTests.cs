@@ -13,12 +13,11 @@ public class HtmlElementSpanTests
     [TestCase( "<d></d>B", 3, 0 )]
     public void single_empty_element_tests( string text, int tokenCount, int idxStart )
     {
-        var a = new HtmlAnalyzer();
-        var sourceCode = a.ParseOrThrow( text );
+        var sourceCode = new HtmlAnalyzer().ParseOrThrow( text );
         sourceCode.Tokens.Count.ShouldBe( tokenCount );
         sourceCode.Spans.Count().ShouldBe( 1 );
         var s = sourceCode.Spans.Single();
-        s.Parent.ShouldBeNull();
+        s.Parent.ShouldBeSameAs( sourceCode.Spans );
         s.Children.ShouldBeEmpty();
         s.Span.ShouldBe( new TokenSpan( idxStart, idxStart + 2 ) );
     }
@@ -62,12 +61,11 @@ public class HtmlElementSpanTests
     [TestCase( "<d class='mm' />", 5 )]
     public void void_and_auto_closing_WITH_attributes_have_covering_span( string text, int tokenCount )
     {
-        var a = new HtmlAnalyzer();
-        var sourceCode = a.ParseOrThrow( text );
+        var sourceCode = new HtmlAnalyzer().ParseOrThrow( text );
         sourceCode.Tokens.Count.ShouldBe( tokenCount );
         sourceCode.Spans.Count().ShouldBe( 1 );
         var s = sourceCode.Spans.Single();
-        s.Parent.ShouldBeNull();
+        s.Parent.ShouldBeSameAs( sourceCode.Spans );
         s.Children.ShouldBeEmpty();
     }
 }

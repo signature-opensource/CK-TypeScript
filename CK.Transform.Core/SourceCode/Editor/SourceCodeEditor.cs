@@ -1,9 +1,9 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CK.Transform.Core;
 
@@ -11,7 +11,7 @@ namespace CK.Transform.Core;
 /// Editor for <see cref="SourceCode"/>.
 /// </summary>
 [DebuggerDisplay( "{ToString(),nq}" )]
-public sealed partial class SourceCodeEditor
+public sealed partial class SourceCodeEditor : IDisposable
 {
     readonly SourceCode _code;
     List<Token> _tokens;
@@ -23,15 +23,23 @@ public sealed partial class SourceCodeEditor
     readonly ActivityMonitorExtension.ErrorTracker _errorTracker;
     bool _hasError;
 
-    TransformerHost.Language _language;
+    TransformerHost.Language? _language;
     bool _needReparse;
 
-    internal SourceCodeEditor( IActivityMonitor monitor,
-                               TransformerHost.Language language,
-                               SourceCode code )
+    /// <summary>
+    /// Initializes a new editor. This is primarily used by <see cref="TransformerHost.Transform(IActivityMonitor, string, IEnumerable{TransformerFunction})"/>
+    /// and is public only for tests.
+    /// </summary>
+    /// <param name="monitor">Captured monitor. Used internally to track errors.</param>
+    /// <param name="code">The code to edit.</param>
+    /// <param name="language">The language (required by <see cref="Reparse()"/>).</param>
+    public SourceCodeEditor( IActivityMonitor monitor,
+                             SourceCode code,
+                             TransformerHost.Language? language = null )
     {
-        Throw.CheckNotNullArgument( language );
         Throw.CheckNotNullArgument( code );
+        Throw.CheckState( !code.HasEditor );
+        code.HasEditor = true;
         _monitor = monitor;
         _language = language;
         _code = code;
@@ -43,8 +51,13 @@ public sealed partial class SourceCodeEditor
 
     void OnError() => _hasError = true;
 
-    internal void Dispose()
+    /// <summary>
+    /// Release this editor.
+    /// <see cref="Code"/> is free to be edited by another editor.
+    /// </summary>
+    public void Dispose()
     {
+        _code.HasEditor = false;
         _errorTracker.Dispose();
     }
 
@@ -64,9 +77,9 @@ public sealed partial class SourceCodeEditor
     public SourceCode Code => _code;
 
     /// <summary>
-    /// Gets the language.
+    /// Gets the language if it has been specified.
     /// </summary>
-    public TransformerHost.Language Language => _language;
+    public TransformerHost.Language? Language => _language;
 
     /// <summary>
     /// Pushes a new token operator.
@@ -137,13 +150,18 @@ public sealed partial class SourceCodeEditor
 
     bool DoReparse( TransformerHost.Language? newLanguage )
     {
+        Throw.CheckArgument( newLanguage != null || Language != null );
         using( _monitor.OpenTrace( "Parsing transformation result." ) )
         {
             if( newLanguage != null )
             {
-                _monitor.Trace( $"Changing language from '{_language.LanguageName}' to '{newLanguage.LanguageName}'." );
+                if( _language != null )
+                {
+                    _monitor.Trace( $"Changing language from '{_language.LanguageName}' to '{newLanguage.LanguageName}'." );
+                }
                 _language = newLanguage;
             }
+            Throw.DebugAssert( _language != null );
             string text = _code.ToString();
             var r = _language.TargetLanguageAnalyzer.TryParse( _monitor, text.AsMemory() );
             if( r == null ) return false;
@@ -170,6 +188,35 @@ public sealed partial class SourceCodeEditor
     /// </summary>
     /// <param name="newOne">The span to add.</param>
     public void AddSourceSpan( SourceSpan newOne ) => _code._spans.Add( newOne );
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="span"></param>
+    /// <param name="second"></param>
+    public void MoveSpanBefore( SourceSpan span, SourceSpan newNext )
+    {
+        Throw.CheckArgument( span != newNext
+                             && !span.IsDetached && !newNext.IsDetached
+                             && span.GetRoot() == _code.Spans
+                             && newNext.GetRoot() == _code.Spans );
+
+        var rel = newNext.Span.GetRelationship( span.Span );
+        if( rel is SpanRelationship.Independent or SpanRelationship.Contiguous )
+        {
+            var tokens = CollectionsMarshal.AsSpan( _tokens );
+            var moved = tokens.Slice( span.Span.Beg, span.Span.Length ).ToArray();
+            tokens.Slice( newNext.Span.Beg, span.Span.Beg - newNext.Span.Beg )
+                .CopyTo( tokens.Slice( newNext.Span.Beg + span.Span.Length ) );
+            moved.CopyTo( tokens.Slice( newNext.Span.Beg ) );
+            _code._spans.MoveSpanBefore( span, newNext );
+            _code.OnTokensChanged();
+        }
+        else
+        {
+            Throw.InvalidOperationException( $"Spans '{span.Span}' and '{newNext.Span}' are already ordered or overlap." );
+        }
+    }
 
     bool DoReplace( int index, int count, ReadOnlySpan<Token> tokens, bool insertBefore = false )
     {
@@ -218,4 +265,5 @@ public sealed partial class SourceCodeEditor
     /// </summary>
     /// <returns>The source code.</returns>
     public override string ToString() => _code.ToString();
+
 }

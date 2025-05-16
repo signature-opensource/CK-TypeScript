@@ -1,10 +1,7 @@
 using CK.Core;
 using CK.Transform.Core;
-using Microsoft.Extensions.Primitives;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -129,27 +126,31 @@ public sealed class EnsureImportStatement : TransformStatement
     /// <param name="editor">The code editor.</param>
     /// <param name="imports">The ordered imports.</param>
     public static void EnsureOrderedImports( SourceCodeEditor editor,
-                                             IEnumerable<EnsureImportLine> imports )
+                                             params IEnumerable<EnsureImportLine> imports )
     {
+        var statements = new List<ImportStatement>();
         ImportStatement? lastOrdered = null;
-        foreach( var i in imports )
+        foreach( var ensure in imports )
         {
-            var found = FindAndUpdate( editor, i.Include, i.Exclude, i.ImportPath, out var veryLastImport );
+            var found = FindAndUpdate( editor, ensure.Include, ensure.Exclude, ensure.ImportPath, out var veryLastImport );
             if( found == null )
             {
-                lastOrdered = Create( editor, i.Include, i.ImportPath, lastOrdered );
+                lastOrdered = Create( editor, ensure.Include, ensure.ImportPath, lastOrdered ?? veryLastImport );
             }
             else
             {
-                // The @import has been found but is it well positioned?
-                // If we have no lastOrdered yet then it is our first import, we have nothing to do.
-                if( lastOrdered != null && lastOrdered.Span.End > found.Span.End )
-                {
-                    // found should be before lastOrdered!
-                    editor.MoveSpanBefore( found, lastOrdered );
-                }
+                lastOrdered = found;
             }
-
+            statements.Add( lastOrdered );
+        }
+        for( int i = statements.Count - 1; i >= 1; --i )
+        {
+            var prev = statements[i - 1];
+            var s = statements[i];
+            if( s.Span.End < prev.Span.End )
+            {
+                editor.MoveSpanBefore( prev, s );
+            }
         }
     }
 }

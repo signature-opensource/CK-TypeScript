@@ -148,16 +148,16 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
     }
 
     /// <summary>
-    /// Registers the package in the <paramref name="spaceBuilder"/> and handles
+    /// Registers the package in the <see cref="ResSpaceConfiguration"/> and handles
     /// the "index.ts" barrel file if it exists.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
     /// <param name="spaceBuilder">The resource space builder.</param>
     /// <returns>True on success, false on error.</returns>
-    internal protected virtual bool ConfigureResDescriptor( IActivityMonitor monitor,
-                                                            TypeScriptContext context,
-                                                            ResSpaceConfiguration spaceBuilder )
+    internal protected virtual bool CreateResPackageDescriptor( IActivityMonitor monitor,
+                                                                TypeScriptContext context,
+                                                                ResSpaceConfiguration spaceBuilder )
     {
         var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
         if( d == null ) return false;
@@ -169,27 +169,73 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
             context.Root.Root.FindOrCreateResourceFile( barrel, targetPath );
             monitor.Trace( $"Exported barrel '{targetPath}'." );
         }
-        return OnConfiguredDescriptor( monitor, context, spaceBuilder, d );
+        return OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );
     }
 
     /// <summary>
-    /// Called by <see cref="ConfigureResDescriptor(IActivityMonitor, TypeScriptContext, ResSpaceConfiguration)"/>.
-    /// Calls all <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnConfiguredDescriptor(IActivityMonitor, TypeScriptGroupOrPackageAttributeImpl, TypeScriptContext, ResPackageDescriptor, ResSpaceConfiguration)"/>.
+    /// Called by <see cref="CreateResPackageDescriptor(IActivityMonitor, TypeScriptContext, ResSpaceConfiguration)"/>.
+    /// Calls all <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnConfiguredDescriptor(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResPackageDescriptor, ResSpaceConfiguration)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
     /// <param name="spaceBuilder">The resource space builder.</param>
     /// <param name="d">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
-    protected virtual bool OnConfiguredDescriptor( IActivityMonitor monitor,
-                                                   TypeScriptContext context,
-                                                   ResSpaceConfiguration spaceBuilder,
-                                                   ResPackageDescriptor d )
+    protected virtual bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
+                                                         TypeScriptContext context,
+                                                         ResSpaceConfiguration spaceBuilder,
+                                                         ResPackageDescriptor d )
     {
         bool success = true;
         foreach( var e in _extensions )
         {
-            success &= e.OnConfiguredDescriptor( monitor, this, context, d, spaceBuilder );
+            success &= e.OnConfiguredDescriptor( monitor, context, this, d, spaceBuilder );
+        }
+        return success;
+    }
+
+    /// <summary>
+    /// a [ReaDI] method called when the <see cref="ResPackage"/> is available.
+    /// <para>
+    /// At this level, dispatches the call to <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnResPackageAvailable(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResPackage)"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="resPackage">The associated ResPackage.</param>
+    /// <returns>True on success, false on error. Errors must be logged.</returns>
+    internal protected virtual bool OnResPackageAvailable( IActivityMonitor monitor,
+                                                           TypeScriptContext context,
+                                                           ResPackage resPackage )
+    {
+        bool success = true;
+        foreach( var e in _extensions )
+        {
+            success &= e.OnResPackageAvailable( monitor, context, this, resPackage );
+        }
+        return success;
+    }
+
+    /// <summary>
+    /// a [ReaDI] method called when the final <see cref="ResSpace"/> is available.
+    /// <para>
+    /// At this level, dispatches the call to <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnResSpaceAvailable(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResPackage, ResSpace)"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="resPackage">The associated ResPackage.</param>
+    /// <param name="resSpace">The available ResSpace.</param>
+    /// <returns>True on success, false on error. Errors must be logged.</returns>
+    internal protected virtual bool OnResSpaceAvailable( IActivityMonitor monitor,
+                                                         TypeScriptContext context,
+                                                         ResPackage resPackage,
+                                                         ResSpace resSpace )
+    {
+        bool success = true;
+        foreach( var e in _extensions )
+        {
+            success &= e.OnResSpaceAvailable( monitor, context, this, resPackage, resSpace );
         }
         return success;
     }

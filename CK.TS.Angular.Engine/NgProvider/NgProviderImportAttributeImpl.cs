@@ -30,8 +30,8 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
 
     /// <inheritdoc />
     protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
-                                                 TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                  TypeScriptContext context,
+                                                 TypeScriptGroupOrPackageAttributeImpl tsPackage,
                                                  ResPackageDescriptor d,
                                                  ResSpaceConfiguration resourcesConfiguration )
     {
@@ -81,3 +81,6 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
         return true;
     }
 }
+
+
+

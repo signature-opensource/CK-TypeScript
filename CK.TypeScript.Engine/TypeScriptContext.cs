@@ -219,15 +219,17 @@ public sealed partial class TypeScriptContext
         //
         success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
 
-        // ResPackageDescriptor can be registered on the initial ResourceSpaceConfiguration (but also on the
-        // following ResourceSpaceCollector). By registering our discovered TypeScriptPackage here, we maximize
+        // ResPackageDescriptor can be registered on the initial ResSpaceConfiguration (but also on the
+        // following ResSpaceCollector). By registering our discovered TypeScriptPackage here, we maximize
         // the possibilities for other participants to use them.
         // We manually trigger TypeScriptPackage registration.
-        success = ConfigureResPackages( monitor, resSpaceConfiguration, _initializer.Packages, typeScriptContext );
+        using( monitor.OpenInfo( $"Configuring {_initializer.Packages.Count} TypeScript resource packages." ) )
+        {
+            success &= SafePackageCall( monitor, _initializer.Packages, ( monitor, p ) => p.CreateResPackageDescriptor( monitor, this, resSpaceConfiguration ) );
+        }
 
         var resSpaceCollector = resSpaceConfiguration.Build( monitor );
         if( resSpaceCollector == null ) return false;
-
 
         // With CK-ReaDI, publishing this ResourceSpaceCollector here will allow
         // any code to register additional packages in it, including totally "virtual"
@@ -261,15 +263,39 @@ public sealed partial class TypeScriptContext
             return false;
         }
 
+        // From ResSpaceCollector to ResSpaceData.
+        //
+        // When a ResSpaceData is available, we are almost done.
+        // It exposes all the read only ResPackage including the head "<Code>" and tail "<App>" packages
+        // topologically ordered.
+        // The "<Code>" may still be empty: setting the GeneratedCodeContainer can be defferred up to
+        // the ResourceSpaceBuilder.
+        //
+
         var dataSpaceBuilder = new ResSpaceDataBuilder( resSpaceCollector );
         var spaceData = dataSpaceBuilder.Build( monitor );
         if( spaceData == null ) return false;
 
-        // When a ResourceSpaceData is available, we are almost done.
-        // It exposes all the read only packages including the head "<Code>" and tail "<App>" packages
-        // topologically ordered.
-        // The "<Code>" may still be empty: setting the GeneratedCodeContainer can be defferred up to
-        // the ResourceSpaceBuilder.
+        // With CK-ReaDI, the ResPackage that comes from a ResPackageDescriptor created by an
+        // object (here the TypeScriptGroupOrPackageAttributeImpl) should be in the "TypeScope"
+        // (or "OriginatorScope") of the object: the object can have [ReaDI] methods that accept
+        // a ResPackage that will be called when its ResPackage appears.
+        // We simulate this here with the "OnResPackageAvailable" method.
+        using( monitor.OpenInfo( $"Calling OnResPackageAvailable on {_initializer.Packages.Count} packages." ) )
+        {
+            success &= SafePackageCall( monitor, _initializer.Packages, ( monitor, p ) =>
+            {
+                // Currently, Angular support comes with the AppComponent : NgComponent that
+                // is a "fake" component that is used to reference the "root router".
+                // We have no ResPackage for it, so we skip here any ResPackage not found...
+                // This is NOT ideal!
+                if( !spaceData.PackageIndex.TryGetValue( p.DecoratedType, out var resPackage ) )
+                {
+                    return true;
+                }
+                return p.OnResPackageAvailable( monitor, this, resPackage );
+            } );
+        }
 
         // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
         // final ResourceSpace.
@@ -302,12 +328,31 @@ public sealed partial class TypeScriptContext
         if( resSpace == null ) return false;
         //
         // Currently, Install must be called. We should either:
-        // 1 - Integrate the Install to the ResourceSpaceBuilder.Build().
-        // 2 - Introduce a ResourceSpaceInstaller builder.
+        // 1 - Integrate the Install to the ResSpaceBuilder.Build().
+        // 2 - Introduce a ResSpaceInstaller builder.
         // But because of the "handler => installer" rule, 1 seems the good choice... but it seems odd to not have
-        // a distinct phasis for the install...
-        // 
-        return resSpace.Install( monitor );
+        // a distinct phasis for the install... AND the existence of a ResSpace (not yet installed) can be useful
+        // for some participants.
+        // Se we should go for a ResSpaceInstaller builder (that is basically the resSpace.Install action). 
+        //
+        // Here again, we simulate a [ReaDI] method that is called once the final ResSpace is available.
+        using( monitor.OpenInfo( $"Calling OnResSpaceAvailable on {_initializer.Packages.Count} packages." ) )
+        {
+            success &= SafePackageCall( monitor, _initializer.Packages, ( monitor, p ) =>
+            {
+                // Currently, Angular support comes with the AppComponent : NgComponent that
+                // is a "fake" component that is used to reference the "root router".
+                // We have no ResPackage for it, so we skip here any ResPackage not found...
+                // This is NOT ideal!
+                if( !spaceData.PackageIndex.TryGetValue( p.DecoratedType, out var resPackage ) )
+                {
+                    return true;
+                }
+                return p.OnResSpaceAvailable( monitor, this, resPackage, resSpace );
+            } );
+        }
+
+        return success && resSpace.Install( monitor );
 
 
         static bool StartGlobalCodeGeneration( IActivityMonitor monitor,
@@ -341,35 +386,31 @@ public sealed partial class TypeScriptContext
             return true;
         }
 
-        static bool ConfigureResPackages( IActivityMonitor monitor,
-                                          ResSpaceConfiguration resourcesConfiguration,
-                                          IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
-                                          TypeScriptContext context )
-        {
-            using( monitor.OpenInfo( $"Configuring {packages.Count} TypeScript resource packages." ) )
-            {
-                var success = true;
-                foreach( var p in packages )
-                {
-                    try
-                    {
-                        success &= p.ConfigureResDescriptor( monitor, context, resourcesConfiguration );
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Error( ex );
-                        success = false;
-                    }
-                }
-                if( !success )
-                {
-                    monitor.CloseGroup( "Failed." );
-                    return false;
-                }
-            }
-            return true;
-        }
+    }
 
+    static bool SafePackageCall( IActivityMonitor monitor,
+                                 IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
+                                 Func<IActivityMonitor, TypeScriptGroupOrPackageAttributeImpl, bool> action )
+    {
+        var success = true;
+        foreach( var p in packages )
+        {
+            try
+            {
+                success &= action( monitor, p );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( ex );
+                success = false;
+            }
+        }
+        if( !success )
+        {
+            monitor.CloseGroup( "Failed." );
+            return false;
+        }
+        return true;
     }
 
     bool ResolveRegisteredTypes( IActivityMonitor monitor )

@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Transform.Core;
 using Shouldly;
 using NUnit.Framework;
-using System.Linq;
 
 namespace CK.TypeScript.Transform.Tests;
 

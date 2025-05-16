@@ -151,12 +151,12 @@ public sealed partial class SourceCodeEditor
 
         public SourceSpan? GetDeepestSpanAt( int index )
         {
-            return _editor.Code.Spans.GetSpanAt( index );
+            return _editor.Code.Spans.GetChildrenSpanAt( index );
         }
 
         public SourceSpan? GetDeepestSpanAt( int index, Type spanType )
         {
-            var s = _editor.Code.Spans.GetSpanAt( index );
+            var s = _editor.Code.Spans.GetChildrenSpanAt( index );
             while( s != null )
             {
                 if( spanType.IsAssignableFrom( s.GetType() ) ) return s;

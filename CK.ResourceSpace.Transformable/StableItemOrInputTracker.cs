@@ -1,4 +1,3 @@
-using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
@@ -110,7 +109,7 @@ sealed partial class StableItemOrInputTracker
     }
 
     // Called only if at least one change has been recorded in _localchanges.
-    internal void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment )
+    internal HashSet<LocalItem>? ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment )
     {
         // First pass: handles removal of ILocalInput that disappeared or didn't change.
         HashSet<NormalizedPath>? removedTargetPaths = null;
@@ -142,57 +141,61 @@ sealed partial class StableItemOrInputTracker
                 hasRemainingChanges |= set.Count > 0;
             }
         }
-        if( hasRemainingChanges )
+        if( !hasRemainingChanges )
         {
-            var toBeInstalled = new HashSet<LocalItem>();
-
-            // Second pass: Now that disappeared entities have been removed from the environment,
-            //              we can update the changed ones and inject the new ones.
-            //              This is done following the topological order and this is the key to
-            //              handle this in a simple manner: resources of a IResPackageResource
-            //              can safely handle the resources of the previous IResPackageResource
-            //              as all their Reachables are settled.
-            for( int iLocalResource = 0; iLocalResource < _localChanges.Length; iLocalResource++ )
+            return null;
+        }
+        var toBeInstalled = new HashSet<LocalItem>();
+        // Second pass: Now that disappeared entities have been removed from the environment,
+        //              we can update the changed ones and inject the new ones.
+        //              This is done following the topological order and this is the key to
+        //              handle this in a simple manner: resources of a IResPackageResource
+        //              can safely handle the resources of the previous IResPackageResource
+        //              as all their Reachables are settled.
+        for( int iLocalResource = 0; iLocalResource < _localChanges.Length; iLocalResource++ )
+        {
+            HashSet<object>? set = _localChanges[iLocalResource];
+            if( set != null && set.Count > 0 )
             {
-                HashSet<object>? set = _localChanges[iLocalResource];
-                if( set != null && set.Count > 0 )
+                var resources = _spaceData.LocalPackageResources[iLocalResource];
+                foreach( var c in set )
                 {
-                    var resources = _spaceData.LocalPackageResources[iLocalResource];
-                    foreach( var c in set )
+                    if( c is string fullPath )
                     {
-                        if( c is string fullPath )
+                        // New file. Language has alredy been (successfuly) obtained by OnChange but
+                        // this may change in the future (if we need to handle folders), so it doesn't
+                        // cost much to be defensive here.
+                        var language = environment.TransformerHost.FindFromFilename( fullPath, out _ );
+                        if( language != null )
                         {
-                            // New file. Language has alredy been (successfuly) obtained by OnChange but
-                            // this may change in the future (if we need to handle folders), so it doesn't
-                            // cost much to be defensive here.
-                            var language = environment.TransformerHost.FindFromFilename( fullPath, out _ );
-                            if( language != null )
+                            // We reuse the Register of the initial phasis: it does everything
+                            // we need and if it fails, we let the error be logged and continue.
+                            var r = new ResourceLocator( resources.Resources, fullPath );
+                            var text = ILocalInput.SafeReadText( monitor, r );
+                            if( text != null )
                             {
-                                // We reuse the Register of the initial phasis: it does everything
-                                // we need and if it fails, we let the error be logged and continue.
-                                var r = new ResourceLocator( resources.Resources, fullPath );
-                                var text = ILocalInput.SafeReadText( monitor, r );
-                                if( text != null )
+                                var input = environment.Register( monitor, resources, language, r, text );
+                                Throw.DebugAssert( input == null || input is ILocalInput );
+                                if( input is LocalItem newItem )
                                 {
-                                    var input = environment.Register( monitor, resources, language, r, text );
-                                    Throw.DebugAssert( input == null || input is ILocalInput );
-                                    if( input is LocalItem newItem )
-                                    {
-                                        toBeInstalled.Add( newItem );
-                                    }
+                                    toBeInstalled.Add( newItem );
                                 }
                             }
                         }
-                        else
-                        {
-                            Throw.DebugAssert( c is ILocalInput );
-                            ((ILocalInput)c).ApplyChanges( monitor, environment, toBeInstalled );
-                        }
                     }
-
+                    else
+                    {
+                        Throw.DebugAssert( c is ILocalInput );
+                        ((ILocalInput)c).ApplyChanges( monitor, environment, toBeInstalled );
+                    }
                 }
+
             }
         }
+
+        return toBeInstalled.Count > 0
+                ? toBeInstalled
+                : null;
     }
 
     public void AddStableItem( TransformableItem stable )

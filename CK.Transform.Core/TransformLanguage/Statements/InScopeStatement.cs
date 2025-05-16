@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Transform.Core;
 
@@ -32,7 +31,7 @@ public sealed class InScopeStatement : TransformStatement
     public override bool CheckValid()
     {
         return base.CheckValid()
-               && Children.FirstChild is InScope
+               && FirstChild is InScope
                && Body is not null;
     }
 
@@ -46,7 +45,7 @@ public sealed class InScopeStatement : TransformStatement
     /// Gets the statements.
     /// Never null when <see cref="CheckValid()"/> is true.
     /// </summary>
-    public TransformStatement? Body => Children.LastChild as TransformStatement;
+    public TransformStatement? Body => LastChild as TransformStatement;
 
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {

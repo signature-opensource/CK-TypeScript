@@ -5,7 +5,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Transform.Core;
 
@@ -156,7 +155,7 @@ public ref struct TokenizerHead
         _lastToken = subHead._lastToken;
         _firstError ??= subHead._firstError;
         _inlineErrorCount += subHead._inlineErrorCount;
-        if( subHead._spans._children.HasChildren ) subHead._spans.TransferTo( _spans );
+        if( subHead._spans.HasChildren ) subHead._spans.TransferTo( _spans );
         subHead._tokens = null;
 
         // Reseting these fileds is highly optional...
@@ -266,7 +265,7 @@ public ref struct TokenizerHead
         code = new SourceCode( _tokens, _spans, sourceText );
         inlineErrorCount = _inlineErrorCount;
 
-        Throw.DebugAssert( "SourceCode ctor transfered the spans.", !_spans._children.HasChildren );
+        Throw.DebugAssert( "SourceCode ctor transfered the spans.", !_spans.HasChildren );
         _tokens = null;
         _lastTokenIndex = -1;
         _inlineErrorCount = 0;

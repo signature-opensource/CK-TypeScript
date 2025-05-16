@@ -1,7 +1,5 @@
-using CK.Core;
 using CK.Transform.Core;
 using System;
-using System.Collections.Generic;
 
 namespace CK.TypeScript.Transform;
 

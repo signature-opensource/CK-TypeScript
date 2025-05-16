@@ -94,6 +94,11 @@ public sealed partial class ResPackage
     internal (AggregateId RequiresAggregateId, AggregateId ChildrenAggregateId) GetAggregateIdentifiers() => (_requiresAggregateId, _childrenAggregateId);
 
     /// <summary>
+    /// Gets the <see cref="ResSpaceData"/> that contains this package.
+    /// </summary>
+    public ResSpaceData SpaceData => _spaceData;
+
+    /// <summary>
     /// Gets this package full name. When built from a type, this is the type's full name.
     /// </summary>
     public string FullName => _fullName;
@@ -132,7 +137,6 @@ public sealed partial class ResPackage
 
     /// <summary>
     /// Gets the index in the <see cref="ResSpaceData.Packages"/>.
-    /// This is 1-based (0 is an invalid index).
     /// </summary>
     public int Index => _index;
 

@@ -1,8 +1,6 @@
 using CK.Core;
-using CK.Transform.Core.Tests.Helpers;
 using NUnit.Framework;
 using Shouldly;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Transform.Core.Tests.TestLanguageTests;

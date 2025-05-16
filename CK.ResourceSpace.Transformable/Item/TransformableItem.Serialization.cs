@@ -1,6 +1,4 @@
 using CK.BinarySerialization;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace CK.Core;

@@ -1,4 +1,3 @@
-using CK.EmbeddedResources;
 using System;
 using System.IO;
 

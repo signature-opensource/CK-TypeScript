@@ -1,6 +1,3 @@
-using CK.Core;
-using System;
-
 namespace CK.Transform.Core;
 
 /// <summary>
@@ -19,18 +16,18 @@ public sealed class InScope : SourceSpan
     /// </summary>
     public override bool CheckValid()
     {
-        return base.CheckValid() && Children.FirstChild is RangeLocation or LocationMatcher;
+        return base.CheckValid() && FirstChild is RangeLocation or LocationMatcher;
     }
 
     /// <summary>
     /// Gets the after/before/between ... range if this is not a <see cref="LocationMatch"/>.
     /// </summary>
-    public RangeLocation? RangeMatch => Children.FirstChild as RangeLocation;
+    public RangeLocation? RangeMatch => FirstChild as RangeLocation;
 
     /// <summary>
     /// Gets the location matcher if this is not a <see cref="RangeMatch"/>.
     /// </summary>
-    public LocationMatcher? LocationMatch => Children.FirstChild as LocationMatcher;
+    public LocationMatcher? LocationMatch => FirstChild as LocationMatcher;
 
     /// <summary>
     /// Gets the filtered token provider.
@@ -38,7 +35,7 @@ public sealed class InScope : SourceSpan
     /// This is never null when <see cref="CheckValid"/> is true.
     /// </para>
     /// </summary>
-    public ITokenFilterOperator? Scope => Children.FirstChild as ITokenFilterOperator;
+    public ITokenFilterOperator? Scope => FirstChild as ITokenFilterOperator;
 
 
     internal static InScope? Match( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, Token? inToken )

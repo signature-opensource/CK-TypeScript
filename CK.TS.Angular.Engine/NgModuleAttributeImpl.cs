@@ -45,7 +45,7 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
     /// <param name="spaceBuilder">The resource space builder.</param>
     /// <param name="d">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
-    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
         if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
@@ -56,7 +56,7 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
         Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
 
-        return base.OnConfiguredDescriptor( monitor, context, spaceBuilder, d )
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().RegisterModule( monitor, this, tsType );
     }
 

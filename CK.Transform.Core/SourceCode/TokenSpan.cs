@@ -17,6 +17,11 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
     public static readonly TokenSpan Empty = default;
 
     /// <summary>
+    /// The infinite span is [0,<see cref="int.MaxValue["/>.
+    /// </summary>
+    public static readonly TokenSpan Infinite = new TokenSpan( 0, int.MaxValue );
+
+    /// <summary>
     /// Initializes a non empty span.
     /// </summary>
     /// <param name="beg">The start of the span. Must be greater or equal to 0.</param>
@@ -153,6 +158,13 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
     }
 
     /// <summary>
+    /// Returns an offsetted TokenSpan.
+    /// </summary>
+    /// <param name="delta">The offset to apply.</param>
+    /// <returns>Offsetted span.</returns>
+    public TokenSpan Offset( int delta ) => new TokenSpan( Beg + delta, End + delta );
+
+    /// <summary>
     /// Returns an updated TokenSpan considering the <paramref name="removed"/> span.
     /// Returns <see cref="Empty"/> when this span is covered by the removed one.
     /// </summary>
@@ -176,7 +188,7 @@ public readonly struct TokenSpan : IEquatable<TokenSpan>
             // [span[XXX]]
             SpanRelationship.SameEnd => new TokenSpan( Beg, removed.Beg ),
             // [[XXX]span]
-            SpanRelationship.SameStart | SpanRelationship.Swapped => new TokenSpan( removed.End, End ),
+            SpanRelationship.SameStart | SpanRelationship.Swapped => new TokenSpan( removed.Beg, End - removed.Length ),
             // [sp[XXX]an]
             SpanRelationship.Contained => new TokenSpan( Beg, End - removed.Length ),
             // [sp[XaXnX]X]

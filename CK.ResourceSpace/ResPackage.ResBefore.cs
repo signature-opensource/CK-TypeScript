@@ -2,7 +2,6 @@ using CK.BinarySerialization;
 using CK.EmbeddedResources;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Net.Http.Headers;
 
 namespace CK.Core;
 

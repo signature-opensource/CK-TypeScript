@@ -23,5 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CK.Ng.AspNet.Auth\PasswordLost\Res[After]\" />
+    <Folder Include="CK.Ng.PublicSection\Res\" />
+    <Folder Include="CK.Ng.Zorro\Res\" />
   </ItemGroup>
 </Project>

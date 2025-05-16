@@ -1,12 +1,7 @@
 using CK.BinarySerialization;
-using CK.EmbeddedResources;
 using CK.Transform.Core;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading.Channels;
 
 namespace CK.Core;
 
@@ -56,15 +51,6 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         return true;
     }
 
-    TransformableFileHandler( IResourceSpaceItemInstaller? installer,
-                              ResSpaceData spaceData,
-                              TransformerHost transformerHost,
-                              IBinaryDeserializer d )
-        : this( installer, transformerHost )
-    {
-        _environment = new TransformEnvironment( spaceData, transformerHost, d );
-    }
-
     /// <summary>
     /// Restores a <see cref="ILiveUpdater"/>.
     /// </summary>
@@ -84,25 +70,40 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var transformerHost = new TransformerHost( languages );
         var environment = new TransformEnvironment( spaceData, transformerHost, d );
         environment.PostDeserialization( monitor );
-        return new LiveState( environment );
+        return new LiveState( environment, installer );
     }
-
 
     sealed class LiveState : ILiveUpdater
     {
         readonly TransformEnvironment _environment;
+        readonly FileSystemInstaller _installer;
         int _changeCount;
 
-        public LiveState( TransformEnvironment environment )
+        public LiveState( TransformEnvironment environment, FileSystemInstaller installer )
         {
             _environment = environment;
+            _installer = installer;
         }
 
         public void ApplyChanges( IActivityMonitor monitor )
         {
             var c = _changeCount;
             _changeCount = 0;
-            if( c != 0 ) _environment.Tracker.ApplyChanges( monitor, _environment );
+            if( c != 0 )
+            {
+                var toBeInstalled = _environment.Tracker.ApplyChanges( monitor, _environment );
+                if( toBeInstalled != null )
+                {
+                    foreach( var i in toBeInstalled )
+                    {
+                        var text = i.GetFinalText( monitor, _environment.TransformerHost );
+                        if( text != null )
+                        {
+                            _installer.Write( i.TargetPath, text );
+                        }
+                    }
+                }
+            }
         }
 
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )

@@ -12,4 +12,5 @@ const ckGenInjected: CKGenInjected = [];
 })
 export class PublicTopbarComponent {
 
+    // <TestPoint/>
 }

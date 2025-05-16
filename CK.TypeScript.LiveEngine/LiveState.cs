@@ -1,6 +1,5 @@
 using CK.BinarySerialization;
 using CK.Core;
-using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

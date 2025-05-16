@@ -3,7 +3,6 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Core;
 

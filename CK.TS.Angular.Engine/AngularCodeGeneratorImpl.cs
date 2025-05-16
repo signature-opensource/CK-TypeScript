@@ -1,5 +1,7 @@
 using CK.Core;
+using CK.Less.Transform;
 using CK.Setup;
+using CK.Transform.Core;
 using CK.TypeScript.CodeGen;
 using CSemVer;
 using System;
@@ -41,6 +43,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         [AllowNull] ITSCodePart _importModulePart;
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
+        [AllowNull] PriorityQueue<EnsureImportLine, int>? _appStylesImport;
 
         public ITSFileImportSection CKGenAppModuleImports => _ckGenAppModule.Imports;
 
@@ -60,6 +63,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             _providerPart.Append( "CKGenAppModule.s( " ).Append( providerCode ).Append( ", " ).AppendSourceString( sourceName ).Append( " )," ).NewLine();
         }
 
+        /// <summary>
+        /// Called by NgModuleAttributeImpl.
+        /// </summary>
         internal bool RegisterModule( IActivityMonitor monitor, NgModuleAttributeImpl module, ITSDeclaredFileType tsType )
         {
             _ckGenAppModule.Imports.Import( tsType );
@@ -71,6 +77,15 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             _importModulePart.Append( module.ModuleName );
             _exportModulePart.Append( module.ModuleName );
             return true;
+        }
+
+        /// <summary>
+        /// Called by NgAppStyleImportAttributeImpl.
+        /// </summary>
+        internal void AddAppStyle( int order, string importPath )
+        {
+            _appStylesImport ??= new PriorityQueue<EnsureImportLine, int>();
+            _appStylesImport.Enqueue( new EnsureImportLine( ImportKeyword.None, ImportKeyword.None, importPath ), order );
         }
 
         bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
@@ -479,12 +494,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnAfterIntegration( object? sender, TypeScriptIntegrationContext.AfterEventArgs e )
         {
-            // Awful implementation.
+            // Temporary.
+            TemporaryEnsureGlobalStylesAndVariables( e.Monitor, e.CKGenFolder );
+            // This one is good.
+            TransformAppStyles( e.Monitor, e.SrcFolderPath.Combine( "styles.less" ), _appStylesImport );
+
+            // Awful implementations.
             // Waiting for transformers.
             TransformAppComponent( e.Monitor, e.SrcFolderPath.Combine( "app/app.component.ts" ) );
             TransformAppComponentConfig( e.Monitor, e.SrcFolderPath.Combine( "app/app.config.ts" ) );
             TransformAppComponentRoutes( e.Monitor, e.SrcFolderPath.Combine( "app/app.routes.ts" ) );
-            TransformStyles( e.Monitor, e.SrcFolderPath.Combine( "styles.less" ), e.CKGenFolder );
             TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), e.CKGenFolder );
 
             static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
@@ -709,66 +728,73 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
             }
 
-            [Obsolete("Styles should be handled directly.")]
-            static void TransformStyles( IActivityMonitor monitor, NormalizedPath stylesFilePath, NormalizedPath ckGenFolder )
+            static void TransformAppStyles( IActivityMonitor monitor,
+                                            NormalizedPath stylesFilePath,
+                                            PriorityQueue<EnsureImportLine, int>? appStylesImport )
             {
-                EnsureGlobalStylesAndVariables( monitor, ckGenFolder );
-
-                var styles = File.Exists( stylesFilePath )
-                                ? File.ReadAllText( stylesFilePath )
-                                : "";
-                bool hasVariables = styles.Contains( "@import '@local/ck-gen/styles/global.variables.less';" );
-                bool hasStyles = styles.Contains( "@import '@local/ck-gen/styles/global.styles.less';" );
-                if( hasVariables && hasStyles )
+                var ckGenFinal = new EnsureImportLine( ImportKeyword.None,
+                                                       ImportKeyword.None,
+                                                       "../ck-gen/styles/global.styles.less" );
+                IEnumerable<EnsureImportLine> imports;
+                if( appStylesImport != null )
                 {
-                    monitor.Trace( "File 'src/styles.less' imports the '@local/ck-gen/styles/' global.styles.less and global.variables.less'. Skipping transformation." );
+                    var toImport = new List<EnsureImportLine>( appStylesImport.Count + 1 );
+                    while( appStylesImport.TryDequeue( out var imp, out _ ) )
+                    {
+                        toImport.Add( imp );
+                    }
+                    toImport.Add( ckGenFinal );
+                    imports = toImport;
                 }
                 else
                 {
-                    using( monitor.OpenInfo( "Transforming file 'src/styles.less'." ) )
-                    {
-                        if( !hasVariables )
-                        {
-                            styles = """
-                                @import '@local/ck-gen/styles/global.variables.less';
-
-                                """ + styles;
-                        }
-                        if( !hasStyles )
-                        {
-                            styles = """
-                                @import '@local/ck-gen/styles/global.styles.less';
-
-                                """ + styles;
-                        }
-                        File.WriteAllText( stylesFilePath, styles );
-                    }
+                    imports = [ckGenFinal];
                 }
-
-                static void EnsureGlobalStylesAndVariables( IActivityMonitor monitor, NormalizedPath ckGenFolder )
+                var text = File.Exists( stylesFilePath )
+                            ? File.ReadAllText( stylesFilePath )
+                            : "";
+                var result = new LessAnalyzer().TryParse( monitor, text );
+                if( result != null )
                 {
-                    var stylesPath = ckGenFolder.AppendPart( "styles" );
-                    if( !Directory.Exists( stylesPath ) )
+                    using( var editor = new SourceCodeEditor( monitor, result.SourceCode ) )
                     {
-                        monitor.Info( "Creating 'ck-gen/styles' folder." );
-                        Directory.CreateDirectory( stylesPath );
+                        EnsureImportStatement.EnsureOrderedImports( editor, imports );
+                        if( !editor.HasError )
+                        {
+                            text = result.SourceCode.ToString();
+                        }
                     }
-                    var gVarFilePath = stylesPath.AppendPart( "global.variables.less" );
-                    if( !File.Exists( gVarFilePath ) )
-                    {
-                        File.WriteAllText( gVarFilePath, """
-                            /* This file can be altered by 'global.variables.less.t' components' resources. */
+                    File.WriteAllText( stylesFilePath, text );
+                }
+            }
 
-                            """ );
-                    }
-                    var gStyleFilePath = stylesPath.Combine( "global.styles.less" );
-                    if( !File.Exists( gStyleFilePath ) )
-                    {
-                        File.WriteAllText( gStyleFilePath, """
-                            /* This file can be altered by 'global.styles.less.t' components' resources. */
+            static void TemporaryEnsureGlobalStylesAndVariables( IActivityMonitor monitor, NormalizedPath ckGenFolder )
+            {
+                var stylesPath = ckGenFolder.AppendPart( "styles" );
+                if( !Directory.Exists( stylesPath ) )
+                {
+                    monitor.Info( "Creating 'ck-gen/styles' folder." );
+                    Directory.CreateDirectory( stylesPath );
+                }
+                var gVarFilePath = stylesPath.AppendPart( "global.variables.less" );
+                if( !File.Exists( gVarFilePath ) )
+                {
+                    File.WriteAllText( gVarFilePath, """
+                        // This file contains the lifted content of all the "variables.less" resources
+                        // (following their topological order).
 
-                            """ );
-                    }
+                        """ );
+                }
+                var gStyleFilePath = stylesPath.Combine( "global.styles.less" );
+                if( !File.Exists( gStyleFilePath ) )
+                {
+                    File.WriteAllText( gStyleFilePath, """
+                        // Imports all lifted variables.
+                        @import './global.variables.less';
+
+                        // Imports all stylesheets that are not imported by any parent package.
+
+                        """ );
                 }
             }
 

@@ -1,7 +1,5 @@
 using CK.Core;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text;
 
@@ -20,11 +18,13 @@ public sealed class SourceCode
     // This should be benchmarked with real sized lists before considering this, but this is doable.
     List<Token> _tokens;
     string? _toString;
+    // Flag for single SourceCodeEditor.
+    internal bool HasEditor;
 
     internal SourceCode( List<Token> tokens, SourceSpanRoot spans, string? sourceText )
     {
         _spans = new SourceSpanRoot();
-        if( spans._children._firstChild != null ) spans.TransferTo( _spans );
+        if( spans._firstChild != null ) spans.TransferTo( _spans );
         _tokens = tokens;
         _toString = sourceText;
     }
@@ -50,8 +50,8 @@ public sealed class SourceCode
     {
         code._tokens = _tokens;
         code._toString = _toString;
-        code._spans._children.Clear();
-        if( _spans._children.HasChildren ) _spans.TransferTo( code._spans );
+        code._spans.ClearChildren();
+        if( _spans.HasChildren ) _spans.TransferTo( code._spans );
     }
 
     /// <summary>

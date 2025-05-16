@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Transform.Core;
-using System;
 
 namespace CK.TypeScript.Transform;
 

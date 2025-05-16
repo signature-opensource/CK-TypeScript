@@ -1,6 +1,6 @@
 using CK.Core;
 
-namespace CK.Transform.Core.Tests.Helpers;
+namespace CK.Transform.Core.Tests;
 
 sealed class BraceSpan : SourceSpan
 {

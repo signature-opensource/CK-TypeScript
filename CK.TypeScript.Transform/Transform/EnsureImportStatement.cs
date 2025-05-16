@@ -25,14 +25,14 @@ public sealed class EnsureImportStatement : TransformStatement
     [MemberNotNullWhen( true, nameof(ImportStatement) )]
     public override bool CheckValid()
     {
-        return base.CheckValid() && Children.FirstChild is ImportStatement;
+        return base.CheckValid() && FirstChild is ImportStatement;
     }
 
     /// <summary>
     /// Gets the import statement.
     /// Never null when <see cref="CheckValid()"/> doesn't throw.
     /// </summary>
-    public ImportStatement? ImportStatement => Children.FirstChild as ImportStatement;
+    public ImportStatement? ImportStatement => FirstChild as ImportStatement;
 
 
     /// <inheritdoc />

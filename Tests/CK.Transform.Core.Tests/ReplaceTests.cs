@@ -1,4 +1,3 @@
-using CK.Core;
 using NUnit.Framework;
 using Shouldly;
 using static CK.Testing.MonitorTestHelper;

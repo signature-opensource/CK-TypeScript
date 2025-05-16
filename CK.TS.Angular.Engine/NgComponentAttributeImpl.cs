@@ -77,14 +77,14 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// <param name="context">The context.</param>
     /// <param name="spaceBuilder">The resource space builder.</param>
     /// <returns>True on success, false on error.</returns>
-    protected override bool ConfigureResDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
+    protected override bool CreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
     {
         // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
         {
             return true;
         }
-        return base.ConfigureResDescriptor( monitor, context, spaceBuilder );
+        return base.CreateResPackageDescriptor( monitor, context, spaceBuilder );
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// <param name="spaceBuilder">The resource space builder.</param>
     /// <param name="d">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
-    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
                                                     TypeScriptContext context,
                                                     ResSpaceConfiguration spaceBuilder,
                                                     ResPackageDescriptor d )
@@ -109,7 +109,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
         Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-        return base.OnConfiguredDescriptor( monitor, context, spaceBuilder, d )
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 

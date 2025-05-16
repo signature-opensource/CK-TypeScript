@@ -1,7 +1,7 @@
 using CK.Core;
 using System;
 
-namespace CK.Transform.Core.Tests.Helpers;
+namespace CK.Transform.Core.Tests;
 
 /// <summary>
 /// Basic analyser for Test language.

@@ -1,4 +1,3 @@
-using CK.Transform.Core.Tests.Helpers;
 using NUnit.Framework;
 using Shouldly;
 using static CK.Testing.MonitorTestHelper;

@@ -1,9 +1,7 @@
 using CK.Core;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using static CK.Transform.Core.TransformerHost;
 
 namespace CK.Transform.Core;
 

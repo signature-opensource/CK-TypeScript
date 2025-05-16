@@ -1,9 +1,4 @@
-using CK.Core;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 
 namespace CK.Transform.Core;
 
@@ -31,7 +26,7 @@ public sealed partial class LocationMatcher : SourceSpan
     /// Gets the optional match cardinality.
     /// When null, the match is "single" (the <see cref="LocationCardinality.SingleCardinality"/> operator is used).
     /// </summary>
-    public LocationCardinality? Cardinality => Children.FirstChild as LocationCardinality;
+    public LocationCardinality? Cardinality => FirstChild as LocationCardinality;
 
     /// <summary>
     /// Gets the span matcher.
@@ -41,7 +36,7 @@ public sealed partial class LocationMatcher : SourceSpan
     {
         get
         {
-            var c = Children.FirstChild;
+            var c = FirstChild;
             return c as SpanMatcher ?? c?.NextSibling as SpanMatcher;
         }
     }

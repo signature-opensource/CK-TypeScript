@@ -1,7 +1,6 @@
 using CK.EmbeddedResources;
 using CK.Transform.Core;
 using System;
-using System.ComponentModel.Design;
 using static CK.Core.TFunction;
 
 namespace CK.Core;

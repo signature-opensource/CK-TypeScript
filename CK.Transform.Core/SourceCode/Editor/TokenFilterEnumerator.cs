@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using static CK.Core.ActivityMonitor;
 
 namespace CK.Transform.Core;
 

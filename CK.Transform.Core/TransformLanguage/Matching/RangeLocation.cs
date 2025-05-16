@@ -1,6 +1,5 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
@@ -63,13 +62,13 @@ public sealed partial class RangeLocation : SourceSpan
     /// Gets the first location matcher.
     /// Never null when <see cref="CheckValid()"/> is true.
     /// </summary>
-    public LocationMatcher? First => Children.FirstChild as LocationMatcher;
+    public LocationMatcher? First => FirstChild as LocationMatcher;
 
     /// <summary>
     /// Gets the "between ... and " second location.
     /// Not null only when <see cref="IsBetween"/> is true.
     /// </summary>
-    public LocationMatcher? Second => Children.FirstChild?.NextSibling as LocationMatcher;
+    public LocationMatcher? Second => FirstChild?.NextSibling as LocationMatcher;
 
     internal static RangeLocation? Match( TransformLanguageAnalyzer analyzer, ref TokenizerHead head )
     {

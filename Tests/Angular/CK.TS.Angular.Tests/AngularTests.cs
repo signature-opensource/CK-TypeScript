@@ -32,7 +32,10 @@ public class AngularTests
                                               // CK.Ng.PublicSection
                                               typeof( PublicSectionPackage ),
                                               typeof( PublicFooterComponent ),
-                                              typeof( PublicTopbarComponent ) );
+                                              typeof( PublicTopbarComponent ),
+                                              // CK.Ng.Zorro
+                                              typeof( CK.Ng.Zorro.TSPackage )
+                                            );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

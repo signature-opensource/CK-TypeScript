@@ -271,7 +271,7 @@ public sealed partial class TransformerHost
         AnalyzerResult? r = transformer.Language.TargetLanguageAnalyzer.TryParse( monitor, text );
         if( r == null ) return null;
 
-        var codeEditor = new SourceCodeEditor( monitor, transformer.Language, r.SourceCode );
+        var codeEditor = new SourceCodeEditor( monitor, r.SourceCode, transformer.Language );
         try
         {
             transformer.Apply( codeEditor );

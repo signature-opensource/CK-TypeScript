@@ -1,8 +1,6 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 namespace CK.Transform.Core;
 
@@ -25,7 +23,7 @@ public sealed class ReplaceStatement : TransformStatement
     /// <summary>
     /// Gets the optional matcher. When null it is a "replace * with ..." statement.
     /// </summary>
-    public LocationMatcher? Matcher => Children.FirstChild as LocationMatcher;
+    public LocationMatcher? Matcher => FirstChild as LocationMatcher;
 
     /// <inheritdoc />
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
@@ -61,7 +59,7 @@ public sealed class ReplaceStatement : TransformStatement
     internal static ReplaceStatement? Parse( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, Token replaceToken )
     {
         Throw.DebugAssert( replaceToken.Text.Span.Equals( "replace", StringComparison.Ordinal ) );
-        int begSpan = head.LastTokenIndex + 1;
+        int begSpan = head.LastTokenIndex;
         LocationMatcher? matcher = null;
         bool hasMatcher = false;
         if( head.LowLevelTokenType is TokenType.Asterisk )

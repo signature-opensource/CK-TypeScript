@@ -1,9 +1,6 @@
-using System.Collections.Generic;
 using System;
 using CK.Core;
 using System.Text;
-using System.Linq;
-using System.Reflection;
 
 namespace CK.Transform.Core;
 

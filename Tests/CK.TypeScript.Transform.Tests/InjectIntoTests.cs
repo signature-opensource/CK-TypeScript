@@ -1,4 +1,3 @@
-using CK.Core;
 using CK.Transform.Core;
 using NUnit.Framework;
 using Shouldly;

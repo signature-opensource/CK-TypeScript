@@ -1,8 +1,6 @@
 using CK.Core;
-using CK.Transform.Core.Tests.Helpers;
 using NUnit.Framework;
 using Shouldly;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Transform.Core.Tests.TestLanguageTests;
 

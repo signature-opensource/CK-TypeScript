@@ -1,6 +1,4 @@
-using System;
-
-namespace CK.Transform.Core.Tests.Helpers;
+namespace CK.Transform.Core.Tests;
 
 public sealed class TestLanguage : TransformLanguage
 {
