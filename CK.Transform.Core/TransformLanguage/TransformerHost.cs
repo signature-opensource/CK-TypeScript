@@ -38,7 +38,7 @@ public sealed partial class TransformerHost
             }
         }
         _rootLanguage = new Language( this, RootTransformLanguage, _languages.Count );
-        _languages.Add( _rootLanguage );
+        _autoTLanguages.Add( _rootLanguage );
     }
 
     /// <summary>

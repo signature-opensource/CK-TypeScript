@@ -1,6 +1,7 @@
 using CK.BinarySerialization;
 using CK.Transform.Core;
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace CK.Core;
@@ -28,19 +29,21 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     public bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
     {
         Throw.DebugAssert( "Otherwise LiveState would have been disabled.", Installer is FileSystemInstaller );
-        Throw.DebugAssert( _environment != null );
+        Throw.DebugAssert( "Environment is null only during deserialization.", _environment != null );
+
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
-        // Writes the types of the TransformLanguage except the TransformerLanguage itself.
-        s.Writer.WriteNonNegativeSmallInt32( _transformerHost.Languages.Count - 1 );
-        foreach( var l in _transformerHost.Languages.Select( l => l.TransformLanguage )
-                                                    .Where( l => !l.IsAutoLanguage ) )
+        s.WriteValue( _installHooks );
+        // Writes the types of the TransformLanguage.
+        Throw.DebugAssert( "There is no AutoLanguage in languages.", !_transformerHost.Languages.Any( l => l.IsAutoLanguage ) );
+        s.Writer.WriteNonNegativeSmallInt32( _transformerHost.Languages.Count );
+        foreach( var l in _transformerHost.Languages.Select( l => l.TransformLanguage ) )
         {
             var t = l.GetType();
-            if( t.GetConstructor( System.Type.EmptyTypes ) == null )
+            if( t.GetConstructor( Type.EmptyTypes ) == null )
             {
                 monitor.Error( $"""
                     TransformLanguage '{t:C}' cannot be serialized because it misses a default public constructor.
-                    Unable to serialize the TransformHost.
+                    Unable to serialize the TransformerHost.
                     """ );
                 return false;
                     
@@ -48,6 +51,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             s.WriteTypeInfo( l.GetType() );
         }
         _environment.Serialize( s );
+
         return true;
     }
 
@@ -61,6 +65,9 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
+        var hooks = d.ReadValue<ImmutableArray<ITransformableFileInstallHook>>();
+        var installAction = ITransformableFileInstallHook.BuildInstallAction( hooks, installer );
+
         var languages = new TransformLanguage[d.Reader.ReadNonNegativeSmallInt32()];
         for( int i = 0; i < languages.Length; ++i )
         {
@@ -70,19 +77,19 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var transformerHost = new TransformerHost( languages );
         var environment = new TransformEnvironment( spaceData, transformerHost, d );
         environment.PostDeserialization( monitor );
-        return new LiveState( environment, installer );
+        return new LiveState( environment, installAction );
     }
 
     sealed class LiveState : ILiveUpdater
     {
         readonly TransformEnvironment _environment;
-        readonly FileSystemInstaller _installer;
+        readonly ITransformableFileInstallHook.NextHook _installAction;
         int _changeCount;
 
-        public LiveState( TransformEnvironment environment, FileSystemInstaller installer )
+        public LiveState( TransformEnvironment environment, ITransformableFileInstallHook.NextHook installAction )
         {
             _environment = environment;
-            _installer = installer;
+            _installAction = installAction;
         }
 
         public void ApplyChanges( IActivityMonitor monitor )
@@ -99,7 +106,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
                         var text = i.GetFinalText( monitor, _environment.TransformerHost );
                         if( text != null )
                         {
-                            _installer.Write( i.TargetPath, text );
+                            _installAction( monitor, i, text );
                         }
                     }
                 }

@@ -36,9 +36,9 @@ sealed class AssetCache : ResPackageDataCache<FinalResourceAssetSet>
     {
         FinalResourceAssetSet? initial = null;
         if( package.Resources.Resources.LoadAssets( monitor,
-                                                           package.DefaultTargetPath,
-                                                           out var definitions,
-                                                           _rootFolderName ) )
+                                                    package.DefaultTargetPath,
+                                                    out var definitions,
+                                                    _rootFolderName ) )
         {
             initial = definitions != null
                             ? definitions.ToInitialFinalSet( monitor )

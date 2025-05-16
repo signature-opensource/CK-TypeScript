@@ -61,7 +61,7 @@ sealed partial class TransformEnvironment
         // registering the resource.
         Throw.DebugAssert( !IsLive || loadedText != null );
         var text = loadedText ?? r.ReadAsText();
-        if( language.TransformLanguage.IsAutoLanguage )
+        if( language.IsTransformLanguage )
         {
             if( resources.LocalPath != null )
             {

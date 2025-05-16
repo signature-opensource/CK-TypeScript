@@ -35,6 +35,12 @@ public sealed partial class TransformerHost
         public ITargetAnalyzer TargetLanguageAnalyzer => _transformLanguageAnalyzer.TargetAnalyzer;
 
         /// <summary>
+        /// Gets whether this is a transform language: the <see cref="TargetLanguageAnalyzer"/> is
+        /// a <see cref="TransformLanguageAnalyzer"/>.
+        /// </summary>
+        public bool IsTransformLanguage => _transformLanguageAnalyzer.TargetAnalyzer is TransformLanguageAnalyzer;
+
+        /// <summary>
         /// Gets whether this is an automatic language.
         /// See <see cref="TransformLanguage.IsAutoLanguage"/>.
         /// </summary>

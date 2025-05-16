@@ -1,19 +1,21 @@
 using CK.EmbeddedResources;
 using CK.Transform.Core;
 using System;
-using static CK.Core.TFunction;
 
 namespace CK.Core;
 
 /// <summary>
-/// Item source. This works for stable items.
-/// <see cref="LocalItem"/> specializes it.
+/// A transformable item is <see cref="IResourceInput"/> and a <see cref="ITransformable"/>.
+/// This concrete class applies to stable items. <see cref="LocalItem"/> specializes it.
+/// <para>
+/// The <see cref="IInstallableItem"/> is its single public interface.
+/// </para>
 /// </summary>
-partial class TransformableItem : IResourceInput, ITransformable
+partial class TransformableItem : IResourceInput, ITransformable, IInstallableItem
 {
     readonly IResPackageResources _resources;
     protected readonly string _fullResourceName;
-    TransformableImpl _transformableImpl;
+    TFunction.TransformableImpl _transformableImpl;
     internal TransformableItem? _nextInPackage;
     internal TransformableItem? _prevInPackage;
     string _text;

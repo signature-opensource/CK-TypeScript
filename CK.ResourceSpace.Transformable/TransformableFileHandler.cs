@@ -10,19 +10,30 @@ namespace CK.Core;
 public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
 {
     readonly TransformerHost _transformerHost;
+    readonly ImmutableArray<ITransformableFileInstallHook> _installHooks;
+    readonly ITransformableFileInstallHook.NextHook? _installAction;
     TransformEnvironment? _environment;
 
     /// <summary>
     /// Initializes a new <see cref="TransformableFileHandler"/> for all the file extensions from
-    /// <see cref="TransformerHost.LockLanguages()"/>'s <see cref="TransformLanguage.FileExtensions"/>.
+    /// <see cref="TransformerHost.LockLanguages()"/>'s <see cref="TransformLanguage.FileExtensions"/>
+    /// and any number of <see cref="ITransformableFileInstallHook"/>.
     /// </summary>
     /// <param name="installer">The installer that <see cref="Install(IActivityMonitor)"/> will use.</param>
     /// <param name="transformerHost">The transfomer host that will be used by this file handler.</param>
-    public TransformableFileHandler( IResourceSpaceItemInstaller? installer, TransformerHost transformerHost )
+    /// <param name="installHooks">Optional install hooks.</param>
+    public TransformableFileHandler( IResourceSpaceItemInstaller? installer,
+                                     TransformerHost transformerHost,
+                                     params ImmutableArray<ITransformableFileInstallHook> installHooks )
         : base( installer,
                 transformerHost.LockLanguages().SelectMany( l => l.TransformLanguage.FileExtensions ).Distinct().ToImmutableArray() )
     {
         _transformerHost = transformerHost;
+        _installHooks = installHooks;
+        if( installer != null )
+        {
+            _installAction = ITransformableFileInstallHook.BuildInstallAction( installHooks, installer );
+        }
     }
 
     /// <summary>
@@ -56,7 +67,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     /// <inheritdoc />
     protected override bool Install( IActivityMonitor monitor )
     {
-        if( Installer is null )
+        if( _installAction is null )
         {
             monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
             return true;
@@ -72,7 +83,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
             }
             else
             {
-                Installer.Write( i.TargetPath, text );
+                _installAction( monitor, i, text );
             }
         }
         return success;

@@ -14,8 +14,4 @@
     <ItemGroup>
         <PackageReference Include="CK.BinarySerialization.Sliced" Version="9.1.0" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="FileInstallHook\" />
-    </ItemGroup>
 </Project>
