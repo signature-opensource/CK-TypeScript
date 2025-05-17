@@ -28,9 +28,9 @@ public sealed class ResSpaceCollector
     IResourceContainer? _generatedCodeContainer;
 
     internal ResSpaceCollector( CoreCollector coreCollector,
-                                     IResourceContainer? generatedCodeContainer,
-                                     string? appResourcesLocalPath,
-                                     string liveStatePath )
+                                IResourceContainer? generatedCodeContainer,
+                                string? appResourcesLocalPath,
+                                string liveStatePath )
     {
         _coreCollector = coreCollector;
         _generatedCodeContainer = generatedCodeContainer;

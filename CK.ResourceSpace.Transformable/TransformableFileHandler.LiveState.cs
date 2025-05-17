@@ -51,7 +51,6 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             s.WriteTypeInfo( l.GetType() );
         }
         _environment.Serialize( s );
-
         return true;
     }
 
@@ -66,7 +65,6 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
         var hooks = d.ReadValue<ImmutableArray<ITransformableFileInstallHook>>();
-        var installAction = ITransformableFileInstallHook.BuildInstallAction( hooks, installer );
 
         var languages = new TransformLanguage[d.Reader.ReadNonNegativeSmallInt32()];
         for( int i = 0; i < languages.Length; ++i )
@@ -77,19 +75,21 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var transformerHost = new TransformerHost( languages );
         var environment = new TransformEnvironment( spaceData, transformerHost, d );
         environment.PostDeserialization( monitor );
-        return new LiveState( environment, installAction );
+        return new LiveState( environment, hooks, installer );
     }
 
     sealed class LiveState : ILiveUpdater
     {
         readonly TransformEnvironment _environment;
-        readonly ITransformableFileInstallHook.NextHook _installAction;
+        readonly ImmutableArray<ITransformableFileInstallHook> _installHooks;
+        readonly FileSystemInstaller _installer;
         int _changeCount;
 
-        public LiveState( TransformEnvironment environment, ITransformableFileInstallHook.NextHook installAction )
+        public LiveState( TransformEnvironment environment, ImmutableArray<ITransformableFileInstallHook> hooks, FileSystemInstaller installer )
         {
             _environment = environment;
-            _installAction = installAction;
+            _installHooks = hooks;
+            _installer = installer;
         }
 
         public void ApplyChanges( IActivityMonitor monitor )
@@ -101,14 +101,17 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
                 var toBeInstalled = _environment.Tracker.ApplyChanges( monitor, _environment );
                 if( toBeInstalled != null )
                 {
+                    var installer = new InstallHooksHelper( _installHooks, _installer );
+                    installer.Start( monitor );
                     foreach( var i in toBeInstalled )
                     {
                         var text = i.GetFinalText( monitor, _environment.TransformerHost );
                         if( text != null )
                         {
-                            _installAction( monitor, i, text );
+                            installer.Handle( monitor, new TransformInstallableItem( i, _environment.TransformerHost ), text );
                         }
                     }
+                    installer.Stop( monitor );
                 }
             }
         }

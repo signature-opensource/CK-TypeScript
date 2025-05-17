@@ -1,6 +1,7 @@
 using CK.Transform.Core;
 using System.Collections.Immutable;
 using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Core;
 
@@ -11,7 +12,6 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
 {
     readonly TransformerHost _transformerHost;
     readonly ImmutableArray<ITransformableFileInstallHook> _installHooks;
-    readonly ITransformableFileInstallHook.NextHook? _installAction;
     TransformEnvironment? _environment;
 
     /// <summary>
@@ -30,10 +30,6 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     {
         _transformerHost = transformerHost;
         _installHooks = installHooks;
-        if( installer != null )
-        {
-            _installAction = ITransformableFileInstallHook.BuildInstallAction( installHooks, installer );
-        }
     }
 
     /// <summary>
@@ -67,13 +63,16 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     /// <inheritdoc />
     protected override bool Install( IActivityMonitor monitor )
     {
-        if( _installAction is null )
+        if( Installer is null )
         {
             monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
             return true;
         }
         Throw.CheckState( _environment != null );
+
+        var installer = new InstallHooksHelper( _installHooks, Installer );
         bool success = true;
+        installer.Start( monitor );
         foreach( var i in _environment.Items.Values )
         {
             var text = i.GetFinalText( monitor, _environment.TransformerHost );
@@ -83,9 +82,10 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
             }
             else
             {
-                _installAction( monitor, i, text );
+                installer.Handle( monitor, new TransformInstallableItem( i, _transformerHost ), text );
             }
         }
+        installer.Stop( monitor );
         return success;
     }
 }

@@ -187,11 +187,24 @@ public sealed partial class ResSpaceData
     public string LiveStatePath => _liveStatePath;
 
     /// <summary>
-    /// Gets the watch root. Null if no local packages exist and "&lt;App&gt;" package
-    /// has no defined folder (<see cref="ResSpaceCollector.AppResourcesLocalPath"/> was not set).
-    /// <para>
-    /// This is also null if <see cref="LiveStatePath"/> is <see cref="ResSpaceCollector.NoLiveState"/>.
-    /// </para>
+    /// Gets whether this space has a Live state. This is true and <see cref="WatchRoot"/> is not null if:
+    /// <list type="bullet">
+    ///     <item>
+    ///     At least one local packages exists,
+    ///     <para>
+    ///     or the "&lt;App&gt;" package has a defined folder (<see cref="ResSpaceCollector.AppResourcesLocalPath"/> was set).
+    ///     </para>
+    ///     </item>
+    ///     <item>
+    ///     And <see cref="LiveStatePath"/> is not the <see cref="ResSpaceCollector.NoLiveState"/> string.
+    ///     </item>
+    /// </list>
+    /// </summary>
+    [MemberNotNullWhen( true, nameof( WatchRoot ) )]
+    public bool HasLiveState => _watchRoot != null;
+
+    /// <summary>
+    /// Gets the watch root when <see cref="HasLiveState"/> is true. Null otherwise.
     /// </summary>
     public string? WatchRoot => _watchRoot;
 

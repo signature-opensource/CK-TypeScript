@@ -18,6 +18,8 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
 
     public string FullPath => _fullResourceName;
 
+    public override bool IsLocalItem => true;
+
     ILocalInput? ILocalInput.Prev { get => _prev; set => _prev = value; }
 
     ILocalInput? ILocalInput.Next { get => _next; set => _next = value; }

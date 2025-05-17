@@ -38,9 +38,6 @@ sealed partial class TransformEnvironment
         _functionSourceCollector = new List<FunctionSource>();
     }
 
-    [MemberNotNullWhen( true, nameof( UnboundFunctions ) )]
-    internal bool IsLive => _unboundFunctions != null;
-
     internal Dictionary<NormalizedPath,TransformableItem> Items => _items;
 
     internal TransformerHost TransformerHost => _transformerHost;
@@ -48,6 +45,9 @@ sealed partial class TransformEnvironment
     internal Dictionary<string, TFunction> TransformFunctions => _transformFunctions;
 
     internal StableItemOrInputTracker Tracker => _tracker;
+
+    [MemberNotNullWhen( true, nameof( UnboundFunctions ) )]
+    internal bool IsLive => _unboundFunctions != null;
 
     internal HashSet<TFunction>? UnboundFunctions => _unboundFunctions;
 

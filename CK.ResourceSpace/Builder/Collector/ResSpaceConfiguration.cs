@@ -196,9 +196,9 @@ public sealed class ResSpaceConfiguration
                                                 ? ResSpaceCollector.NoLiveState
                                                 : _appResourcesLocalPath + ".ck-watch" + Path.DirectorySeparatorChar);
         return new ResSpaceCollector( _coreCollector,
-                                           _generatedCodeContainer,
-                                           _appResourcesLocalPath,
-                                           liveStatePath );
+                                      _generatedCodeContainer,
+                                      _appResourcesLocalPath,
+                                      liveStatePath );
     }
 
 }
