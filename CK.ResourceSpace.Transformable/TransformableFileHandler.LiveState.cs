@@ -3,11 +3,14 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Core;
 
 public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
 {
+    static Type[] _installHookReadParameters = new[] { typeof( IActivityMonitor ), typeof( IBinaryDeserializer ) };
+
     /// <summary>
     /// Live update is currently supported only when installing on the file system:
     /// the <see cref="FileSystemInstaller.TargetPath"/> is serialized in the live state
@@ -32,7 +35,18 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         Throw.DebugAssert( "Environment is null only during deserialization.", _environment != null );
 
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
-        s.WriteValue( _installHooks );
+        foreach( var hook in _installHooks )
+        {
+            Throw.DebugAssert( hook is TransformableFileInstallHook );
+            var h = Unsafe.As<TransformableFileInstallHook>( hook );
+            if( h.ShouldWriteLiveState )
+            {
+                s.Writer.Write( true );
+                s.WriteTypeInfo( h.GetType() );
+                h.WriteLiveState( s );
+            }
+        }
+        s.Writer.Write( false );
         // Writes the types of the TransformLanguage.
         Throw.DebugAssert( "There is no AutoLanguage in languages.", !_transformerHost.Languages.Any( l => l.IsAutoLanguage ) );
         s.Writer.WriteNonNegativeSmallInt32( _transformerHost.Languages.Count );
@@ -64,7 +78,11 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
-        var hooks = d.ReadValue<ImmutableArray<ITransformableFileInstallHook>>();
+
+        var hooksBuilder = ImmutableArray.CreateBuilder<ITransformableFileInstallHook>();
+        bool success = ReadInstallHooks( monitor, d, hooksBuilder );
+        if( !success ) return null;
+        var installHooks = hooksBuilder.DrainToImmutable();
 
         var languages = new TransformLanguage[d.Reader.ReadNonNegativeSmallInt32()];
         for( int i = 0; i < languages.Length; ++i )
@@ -75,7 +93,41 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var transformerHost = new TransformerHost( languages );
         var environment = new TransformEnvironment( spaceData, transformerHost, d );
         environment.PostDeserialization( monitor );
-        return new LiveState( environment, hooks, installer );
+        return new LiveState( environment, installHooks, installer );
+    }
+
+    private static bool ReadInstallHooks( IActivityMonitor monitor, IBinaryDeserializer d, ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
+    {
+        bool success = true;
+        object[] installHookReadArgs = [monitor, d];
+        while( d.Reader.ReadBoolean() )
+        {
+            var tHook = d.ReadTypeInfo().ResolveLocalType();
+            var mRead = tHook.GetMethod( "ReadLiveState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, _installHookReadParameters );
+            if( mRead == null || mRead.ReturnType != typeof( ITransformableFileInstallHook ) )
+            {
+                monitor.Error( $"""
+                    Type '{tHook:C}' requires a method:
+                    public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, IBinaryDeserializer d );
+                    """ );
+                success = false;
+            }
+            else
+            {
+                var o = mRead.Invoke( null, installHookReadArgs ) as ITransformableFileInstallHook;
+                if( o != null )
+                {
+                    hooksBuilder.Add( o );
+                }
+                else
+                {
+                    monitor.Error( $"Type '{tHook:C}' failed to load its Live state." );
+                    success = false;
+                }
+            }
+        }
+
+        return success;
     }
 
     sealed class LiveState : ILiveUpdater
