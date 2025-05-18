@@ -61,6 +61,11 @@ public sealed partial class TypeScriptContext // Less styles support.
                                             string finalText,
                                             IResourceSpaceItemInstaller installer )
         {
+            Throw.DebugAssert( IsInitialized );
+            if( _lessLanguage != null && item.LanguageIndex == _lessLanguage.Index )
+            {
+
+            }
             return false;
         }
 
@@ -104,9 +109,22 @@ public sealed partial class TypeScriptContext // Less styles support.
                                 ? [ckGenLocalVariables, ckGenStableVariables]
                                 : [ckGenStableVariables];
                 }
-                var text = File.Exists( stylesFilePath )
-                            ? File.ReadAllText( stylesFilePath )
-                            : "";
+                string text;
+                if( File.Exists( stylesFilePath ) )
+                {
+                    text = File.ReadAllText( stylesFilePath );
+                }
+                else
+                {
+                    var srcDirectory = Path.GetDirectoryName( stylesFilePath );
+                    Throw.CheckState( srcDirectory != null );
+                    if( !Directory.Exists( srcDirectory ) )
+                    {
+                        monitor.Info( $"Creating '/src' directory: '{srcDirectory}'." );
+                        Directory.CreateDirectory( srcDirectory );
+                    }
+                    text = "";
+                }
                 var result = new LessAnalyzer().TryParse( monitor, text );
                 if( result != null )
                 {

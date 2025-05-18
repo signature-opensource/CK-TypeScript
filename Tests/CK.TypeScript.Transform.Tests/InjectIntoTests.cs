@@ -138,7 +138,7 @@ public class InjectIntoTests
     """"
         create <typescript> transformer
         begin
-            in each {class} "title = 'Demo'"
+            in each {class} where "title = 'Demo'"
                 inject """
                        otherTitle = 'Other Title';
                        """ into <Body>;

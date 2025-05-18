@@ -87,8 +87,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             _ckGenAppModule = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
             _ckGenAppModule.Imports.ImportFromLibrary( _angularCore, "NgModule, Provider, EnvironmentProviders" );
             _ckGenAppModule.Body.Append( """
-
-                export type CKGenInjected = any[];
                 
                 export type SourcedProvider = (EnvironmentProviders | Provider) & {source: string};
 
@@ -502,7 +500,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
                 else
                 {
-                    var importLine = "import { CKGenAppModule, CKGenInjected } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
+                    var importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
                     var m = Regex.Match( app,
                                          """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""",
                                          RegexOptions.CultureInvariant );
@@ -521,10 +519,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     {
                         using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
                         {
-                            InjectBeforeComponent( monitor, """
-                            const ckGenInjected: CKGenInjected = [];
-
-                            """, ref app );
                             bool success = AddInImports( monitor, ref app );
                             AddImportAndConclude( monitor,
                                                   appFilePath,
@@ -533,18 +527,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                                   importLine );
                         }
                     }
-                }
-
-                static bool InjectBeforeComponent( IActivityMonitor monitor, string s, ref string app )
-                {
-                    int idx = app.IndexOf( "@Component(" );
-                    if( idx < 0 )
-                    {
-                        monitor.Warn( "Unable to find the @Component(...) declaration." );
-                        return false;
-                    }
-                    app = app.Insert( idx, s );
-                    return true;
                 }
 
                 static bool AddInImports( IActivityMonitor monitor, ref string app )
@@ -562,12 +544,12 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             {
                                 if( app[idxEnd] == ',' )
                                 {
-                                    app = app.Insert( idxEnd, " CKGenAppModule, ...ckGenInjected," );
+                                    app = app.Insert( idxEnd, " CKGenAppModule," );
                                 }
                                 else
                                 {
                                     Throw.DebugAssert( app[idxEnd] == ']' );
-                                    app = app.Insert( idx + 12, ", CKGenAppModule, ...ckGenInjected" );
+                                    app = app.Insert( idx + 12, ", CKGenAppModule" );
                                 }
                                 monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
                                 return true;
