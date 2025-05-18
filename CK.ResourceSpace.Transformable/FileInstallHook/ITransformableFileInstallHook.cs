@@ -27,7 +27,7 @@ public interface ITransformableFileInstallHook
     /// False to let the next hooks (and utimately the <paramref name="installer"/>) do their job.
     /// </returns>
     bool HandleInstall( IActivityMonitor monitor,
-                        TransformInstallableItem item,
+                        ITransformInstallableItem item,
                         string finalText,
                         IResourceSpaceItemInstaller installer );
 

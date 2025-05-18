@@ -322,7 +322,15 @@ public sealed partial class TypeScriptContext
                                                                                       typeScriptContext.ActiveCultures,
                                                                                       LocalesResourceHandler.InstallOption.Full ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
-        success &= spaceBuilder.RegisterHandler( monitor, new TransformableFileHandler( installer, transformerHost ) );
+        var transformableFiles = new TransformableFileHandler( installer,
+                                                               transformerHost,
+                                                               new LessVariablesFileInstallHook(),
+                                                               new LessStylesFileInstallHook( _integrationContext != null
+                                                                                                    ? _integrationContext.SrcFolderPath
+                                                                                                    : default,
+                                                                                              _appStylesImport ) );
+
+        success &= spaceBuilder.RegisterHandler( monitor, transformableFiles );
 
         var resSpace = spaceBuilder.Build( monitor );
         if( resSpace == null ) return false;

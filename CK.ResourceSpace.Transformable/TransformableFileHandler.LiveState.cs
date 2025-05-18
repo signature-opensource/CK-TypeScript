@@ -94,41 +94,42 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var environment = new TransformEnvironment( spaceData, transformerHost, d );
         environment.PostDeserialization( monitor );
         return new LiveState( environment, installHooks, installer );
-    }
 
-    private static bool ReadInstallHooks( IActivityMonitor monitor, IBinaryDeserializer d, ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
-    {
-        bool success = true;
-        object[] installHookReadArgs = [monitor, d];
-        while( d.Reader.ReadBoolean() )
+        static bool ReadInstallHooks( IActivityMonitor monitor, IBinaryDeserializer d, ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
         {
-            var tHook = d.ReadTypeInfo().ResolveLocalType();
-            var mRead = tHook.GetMethod( "ReadLiveState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, _installHookReadParameters );
-            if( mRead == null || mRead.ReturnType != typeof( ITransformableFileInstallHook ) )
+            bool success = true;
+            object[] installHookReadArgs = [monitor, d];
+            while( d.Reader.ReadBoolean() )
             {
-                monitor.Error( $"""
-                    Type '{tHook:C}' requires a method:
-                    public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, IBinaryDeserializer d );
-                    """ );
-                success = false;
-            }
-            else
-            {
-                var o = mRead.Invoke( null, installHookReadArgs ) as ITransformableFileInstallHook;
-                if( o != null )
+                var tHook = d.ReadTypeInfo().ResolveLocalType();
+                var mRead = tHook.GetMethod( "ReadLiveState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, _installHookReadParameters );
+                if( mRead == null || mRead.ReturnType != typeof( ITransformableFileInstallHook ) )
                 {
-                    hooksBuilder.Add( o );
+                    monitor.Error( $"""
+                        Type '{tHook:C}' requires a method:
+                        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, IBinaryDeserializer d );
+                        """ );
+                    success = false;
                 }
                 else
                 {
-                    monitor.Error( $"Type '{tHook:C}' failed to load its Live state." );
-                    success = false;
+                    var o = mRead.Invoke( null, installHookReadArgs ) as ITransformableFileInstallHook;
+                    if( o != null )
+                    {
+                        hooksBuilder.Add( o );
+                    }
+                    else
+                    {
+                        monitor.Error( $"Type '{tHook:C}' failed to load its Live state." );
+                        success = false;
+                    }
                 }
             }
-        }
 
-        return success;
+            return success;
+        }
     }
+
 
     sealed class LiveState : ILiveUpdater
     {
@@ -160,7 +161,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
                         var text = i.GetFinalText( monitor, _environment.TransformerHost );
                         if( text != null )
                         {
-                            installer.Handle( monitor, new TransformInstallableItem( i, _environment.TransformerHost ), text );
+                            installer.Handle( monitor, i, text );
                         }
                     }
                     installer.Stop( monitor );

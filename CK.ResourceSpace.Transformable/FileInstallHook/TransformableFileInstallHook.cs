@@ -13,7 +13,7 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
     TransformerHost? _transformerHost;
     ResSpaceData? _data;
 
-    protected void Initialize( ResSpaceData data, TransformerHost host )
+    internal void Initialize( ResSpaceData data, TransformerHost host )
     {
         _data = data;
         _transformerHost = host;
@@ -22,18 +22,21 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
     /// <summary>
     /// Gets whether this hook is initialized.
     /// </summary>
-    [MemberNotNullWhen( true, nameof( TransformerHost ), nameof( _data ) )]
+    [MemberNotNullWhen( true, nameof( TransformerHost ), nameof( SpaceData ) )]
     protected bool IsInitialized => _transformerHost != null;
 
     /// <summary>
-    /// Gets the <see cref="ResSpaceData.HasLiveState"/>.
+    /// Gets the <see cref="SpaceData"/>.
+    /// <para>
+    /// <see cref="IsInitialized"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
+    /// </para>
     /// </summary>
-    protected bool HasLiveState
+    protected ResSpaceData? SpaceData
     {
         get
         {
             Throw.CheckState( IsInitialized );
-            return _data.HasLiveState;
+            return _data;
         }
     }
 
@@ -57,7 +60,7 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
 
     /// <inheritdoc />
     public abstract bool HandleInstall( IActivityMonitor monitor,
-                                        TransformInstallableItem item,
+                                        ITransformInstallableItem item,
                                         string finalText,
                                         IResourceSpaceItemInstaller installer );
 
@@ -66,15 +69,18 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
 
     /// <summary>
     /// Gets whether <see cref="WriteLiveState(IBinarySerializer)"/> must be called.
-    /// Defaults to true: by default if <see cref="HasLiveState"/> is true, a hook must be able
+    /// Defaults to true: by default if <see cref="ResSpaceData.HasLiveState"/> is true, a hook must be able
     /// to restore a Live <see cref="ITransformableFileInstallHook"/>.
+    /// <para>
+    /// This is never called when <see cref="ResSpaceData.HasLiveState"/> is false.
+    /// </para>
     /// </summary>
     /// <returns></returns>
-    internal virtual bool ShouldWriteLiveState => true;
+    internal protected virtual bool ShouldWriteLiveState => true;
 
     /// <summary>
     /// Writes the live state in the primary live state file.
-    /// This is called when <see cref="HasLiveState"/> and <see cref="ShouldWriteLiveState"/> are both true.
+    /// This is called when <see cref="ResSpaceData.HasLiveState"/> and <see cref="ShouldWriteLiveState"/> are both true.
     /// <para>
     /// A public static method with the following signature must be defined:
     /// <code>

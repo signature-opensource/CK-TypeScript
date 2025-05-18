@@ -776,15 +776,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     monitor.Info( "Creating 'ck-gen/styles' folder." );
                     Directory.CreateDirectory( stylesPath );
                 }
-                var gVarFilePath = stylesPath.AppendPart( "global.variables.less" );
-                if( !File.Exists( gVarFilePath ) )
-                {
-                    File.WriteAllText( gVarFilePath, """
-                        // This file contains the lifted content of all the "variables.less" resources
-                        // (following their topological order).
-
-                        """ );
-                }
                 var gStyleFilePath = stylesPath.Combine( "global.styles.less" );
                 if( !File.Exists( gStyleFilePath ) )
                 {

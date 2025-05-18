@@ -1,6 +1,4 @@
-using System.Collections.Immutable;
-using static System.Net.Mime.MediaTypeNames;
-using System.Threading;
+using System.Collections.Generic;
 
 namespace CK.Core;
 
@@ -9,10 +7,11 @@ namespace CK.Core;
 /// </summary>
 readonly struct InstallHooksHelper
 {
-    readonly ImmutableArray<ITransformableFileInstallHook> _hooks;
+    readonly IEnumerable<ITransformableFileInstallHook> _hooks;
     readonly IResourceSpaceItemInstaller _installer;
 
-    public InstallHooksHelper( ImmutableArray<ITransformableFileInstallHook> hooks, IResourceSpaceItemInstaller installer )
+    public InstallHooksHelper( IEnumerable<ITransformableFileInstallHook> hooks,
+                               IResourceSpaceItemInstaller installer )
     {
         _hooks = hooks;
         _installer = installer;
@@ -26,7 +25,7 @@ readonly struct InstallHooksHelper
         }
     }
 
-    public void Handle( IActivityMonitor monitor, TransformInstallableItem item, string text )
+    public void Handle( IActivityMonitor monitor, ITransformInstallableItem item, string text )
     {
         bool handled = false;
         foreach( var h in _hooks )

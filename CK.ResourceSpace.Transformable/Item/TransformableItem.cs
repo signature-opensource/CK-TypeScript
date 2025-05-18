@@ -8,10 +8,10 @@ namespace CK.Core;
 /// A transformable item is <see cref="IResourceInput"/> and a <see cref="ITransformable"/>.
 /// This concrete class applies to stable items. <see cref="LocalItem"/> specializes it.
 /// <para>
-/// This is exposed publicly only through the <see cref="TransformInstallableItem"/> facade.
+/// This is exposed publicly only through the <see cref="ITransformInstallableItem"/> interface.
 /// </para>
 /// </summary>
-partial class TransformableItem : IResourceInput, ITransformable
+partial class TransformableItem : IResourceInput, ITransformable, ITransformInstallableItem
 {
     readonly IResPackageResources _resources;
     protected readonly string _fullResourceName;

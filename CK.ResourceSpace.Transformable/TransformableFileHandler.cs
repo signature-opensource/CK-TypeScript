@@ -11,7 +11,7 @@ namespace CK.Core;
 public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
 {
     readonly TransformerHost _transformerHost;
-    readonly ImmutableArray<ITransformableFileInstallHook> _installHooks;
+    readonly ImmutableArray<TransformableFileInstallHook> _installHooks;
     TransformEnvironment? _environment;
 
     /// <summary>
@@ -24,7 +24,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     /// <param name="installHooks">Optional install hooks.</param>
     public TransformableFileHandler( IResourceSpaceItemInstaller? installer,
                                      TransformerHost transformerHost,
-                                     params ImmutableArray<ITransformableFileInstallHook> installHooks )
+                                     params ImmutableArray<TransformableFileInstallHook> installHooks )
         : base( installer,
                 transformerHost.LockLanguages().SelectMany( l => l.TransformLanguage.FileExtensions ).Distinct().ToImmutableArray() )
     {
@@ -56,6 +56,10 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
         if( success )
         {
             _environment = environment;
+            foreach( var item in _installHooks )
+            {
+                item.Initialize( spaceData, _transformerHost );
+            }
         }
         return success;
     }
@@ -82,7 +86,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
             }
             else
             {
-                installer.Handle( monitor, new TransformInstallableItem( i, _transformerHost ), text );
+                installer.Handle( monitor, i, text );
             }
         }
         installer.Stop( monitor );
