@@ -43,7 +43,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         [AllowNull] ITSCodePart _importModulePart;
         [AllowNull] ITSCodePart _exportModulePart;
         [AllowNull] ITSCodePart _providerPart;
-        [AllowNull] PriorityQueue<EnsureImportLine, int>? _appStylesImport;
 
         public ITSFileImportSection CKGenAppModuleImports => _ckGenAppModule.Imports;
 
@@ -77,15 +76,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             _importModulePart.Append( module.ModuleName );
             _exportModulePart.Append( module.ModuleName );
             return true;
-        }
-
-        /// <summary>
-        /// Called by NgAppStyleImportAttributeImpl.
-        /// </summary>
-        internal void AddAppStyle( int order, string importPath )
-        {
-            _appStylesImport ??= new PriorityQueue<EnsureImportLine, int>();
-            _appStylesImport.Enqueue( new EnsureImportLine( ImportKeyword.None, ImportKeyword.None, importPath ), order );
         }
 
         bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
@@ -494,11 +484,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnAfterIntegration( object? sender, TypeScriptIntegrationContext.AfterEventArgs e )
         {
-            // Temporary.
-            TemporaryEnsureGlobalStylesAndVariables( e.Monitor, e.CKGenFolder );
-            // This one is good.
-            TransformAppStyles( e.Monitor, e.SrcFolderPath.Combine( "styles.less" ), _appStylesImport );
-
             // Awful implementations.
             // Waiting for transformers.
             TransformAppComponent( e.Monitor, e.SrcFolderPath.Combine( "app/app.component.ts" ) );
@@ -725,67 +710,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         lines[idx] = lines[idx] + Environment.NewLine + importStatement;
                     }
                     return true;
-                }
-            }
-
-            static void TransformAppStyles( IActivityMonitor monitor,
-                                            NormalizedPath stylesFilePath,
-                                            PriorityQueue<EnsureImportLine, int>? appStylesImport )
-            {
-                var ckGenFinal = new EnsureImportLine( ImportKeyword.None,
-                                                       ImportKeyword.None,
-                                                       "../ck-gen/styles/global.styles.less" );
-                IEnumerable<EnsureImportLine> imports;
-                if( appStylesImport != null )
-                {
-                    var toImport = new List<EnsureImportLine>( appStylesImport.Count + 1 );
-                    while( appStylesImport.TryDequeue( out var imp, out _ ) )
-                    {
-                        toImport.Add( imp );
-                    }
-                    toImport.Add( ckGenFinal );
-                    imports = toImport;
-                }
-                else
-                {
-                    imports = [ckGenFinal];
-                }
-                var text = File.Exists( stylesFilePath )
-                            ? File.ReadAllText( stylesFilePath )
-                            : "";
-                var result = new LessAnalyzer().TryParse( monitor, text );
-                if( result != null )
-                {
-                    using( var editor = new SourceCodeEditor( monitor, result.SourceCode ) )
-                    {
-                        EnsureImportStatement.EnsureOrderedImports( editor, imports );
-                        if( !editor.HasError )
-                        {
-                            text = result.SourceCode.ToString();
-                        }
-                    }
-                    File.WriteAllText( stylesFilePath, text );
-                }
-            }
-
-            static void TemporaryEnsureGlobalStylesAndVariables( IActivityMonitor monitor, NormalizedPath ckGenFolder )
-            {
-                var stylesPath = ckGenFolder.AppendPart( "styles" );
-                if( !Directory.Exists( stylesPath ) )
-                {
-                    monitor.Info( "Creating 'ck-gen/styles' folder." );
-                    Directory.CreateDirectory( stylesPath );
-                }
-                var gStyleFilePath = stylesPath.Combine( "global.styles.less" );
-                if( !File.Exists( gStyleFilePath ) )
-                {
-                    File.WriteAllText( gStyleFilePath, """
-                        // Imports all lifted variables.
-                        @import './global.variables.less';
-
-                        // Imports all stylesheets that are not imported by any parent package.
-
-                        """ );
                 }
             }
 

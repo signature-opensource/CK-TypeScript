@@ -2,7 +2,6 @@ using CK.BinarySerialization;
 using CK.Core;
 using CK.Less.Transform;
 using CK.Transform.Core;
-using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -62,7 +61,7 @@ public sealed partial class TypeScriptContext // Less styles support.
                                             string finalText,
                                             IResourceSpaceItemInstaller installer )
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public override void StopInstall( IActivityMonitor monitor, IResourceSpaceItemInstaller installer )
@@ -125,9 +124,10 @@ public sealed partial class TypeScriptContext // Less styles support.
 
         }
 
+        protected override bool ShouldWriteLiveState => _lessLanguage != null;
+
         protected override void WriteLiveState( IBinarySerializer s )
         {
-            throw new NotImplementedException();
         }
     }
 }
