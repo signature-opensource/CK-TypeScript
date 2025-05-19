@@ -37,6 +37,5 @@
     "typescript": "~5.7.3"
   },
   "ckVersion": 1,
-  "packageManager": "yarn@4.8.1",
-  "peerDependencies": {}
+  "packageManager": "yarn@4.8.1"
 }
