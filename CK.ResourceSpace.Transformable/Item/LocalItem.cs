@@ -26,7 +26,7 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
 
     public bool InitializeApplyChanges( IActivityMonitor monitor,
                                         TransformEnvironment environment,
-                                        ref HashSet<NormalizedPath>? removedTargets )
+                                        ref List<LocalItem>? toBeRemoved )
     {
         Throw.DebugAssert( environment.IsLive );
         if( ILocalInput.TryReadText( monitor, this, out var newText ) )
@@ -43,14 +43,14 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
             environment.Tracker.Remove( this );
             Throw.DebugAssert( environment.Items.TryGetValue( TargetPath, out var found ) && found == this );
             environment.Items.Remove( TargetPath );
-            removedTargets ??= new HashSet<NormalizedPath>();
-            removedTargets.Add( TargetPath );
             var f = FirstFunction;
             while( f != null )
             {
                 environment.UnboundFunctions.Add( f );
                 f = f.NextFunction;
             }
+            toBeRemoved ??= new List<LocalItem>();
+            toBeRemoved.Add( this );
         }
         return false;
     }

@@ -1,12 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <!--
-    Project references don't propagate build (transitive or not) NuGet files.
-    We need to reference them explicitly.        
-    -->
-    <Import Project="../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.props" />
-    <Import Project="../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.targets" />
-    
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <IsPackable>false</IsPackable>

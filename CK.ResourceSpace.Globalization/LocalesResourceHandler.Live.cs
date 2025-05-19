@@ -18,7 +18,18 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
     /// </summary>
     public bool DisableLiveUpdate => Installer is not FileSystemInstaller;
 
-    bool ILiveResourceSpaceHandler.WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
+    /// <summary>
+    /// Writes the live state in the primary live state file and into auxiliary files in
+    /// the <see cref="ResSpaceData.LiveStatePath"/>.
+    /// <para>
+    /// This can be overridden (and a static <see cref="ReadLiveState"/> must always be implemented).
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="s">The serializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
+    /// <param name="spaceData">The resource space that has been serialized.</param>
+    /// <returns>True on success, false on error. Errors must be logged.</returns>
+    public virtual bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
     {
         Throw.DebugAssert( "Otherwise LiveState would have been disabled.", Installer is FileSystemInstaller );
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
@@ -97,6 +108,10 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
 
     /// <summary>
     /// Restores a <see cref="ILiveUpdater"/>.
+    /// <para>
+    /// The live updater implementation is sealed and private. If the updater behavior must be overridden,
+    /// please use a <see cref="ILiveUpdater"/> wrapper that delegates to this updater.
+    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="spaceData">The deserialized resource space data.</param>

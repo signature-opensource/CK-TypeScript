@@ -1,6 +1,7 @@
 using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace CK.Core;
 
@@ -15,27 +16,39 @@ readonly struct InstallHooksHelper
 
     public InstallHooksHelper( IEnumerable<ITransformableFileInstallHook> hooks,
                                IResourceSpaceItemInstaller installer,
-                               Transform.Core.TransformerHost transformerHost )
+                               TransformerHost transformerHost )
     {
         _hooks = hooks;
         _installer = installer;
         _transformerHost = transformerHost;
     }
 
-    public bool Run( IActivityMonitor monitor, IEnumerable<TransformableItem> items )
+    public bool Run( IActivityMonitor monitor, IEnumerable<TransformableItem>? toBeInstalled, List<LocalItem>? toBeRemoved )
     {
         bool success = true;
         Start( monitor );
-        foreach( var i in items )
+        if( toBeRemoved != null )
         {
-            var text = i.GetFinalText( monitor, _transformerHost );
-            if( text == null )
+            Throw.CheckState( _installer is ILiveResourceSpaceItemInstaller );
+            var live = Unsafe.As<ILiveResourceSpaceItemInstaller>( _installer );
+            foreach( var i in toBeRemoved )
             {
-                success = false;
+
             }
-            else
+        }
+        if( toBeInstalled != null )
+        {
+            foreach( var i in toBeInstalled )
             {
-                success &= Handle( monitor, i, text );
+                var text = i.GetFinalText( monitor, _transformerHost );
+                if( text == null )
+                {
+                    success = false;
+                }
+                else
+                {
+                    success &= Install( monitor, i, text );
+                }
             }
         }
         Stop( monitor, success );
@@ -50,7 +63,7 @@ readonly struct InstallHooksHelper
         }
     }
 
-    bool Handle( IActivityMonitor monitor, ITransformInstallableItem item, string text )
+    bool Install( IActivityMonitor monitor, ITransformInstallableItem item, string text )
     {
         bool success = true;
         bool handled = false;

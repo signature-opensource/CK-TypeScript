@@ -109,12 +109,17 @@ sealed partial class StableItemOrInputTracker
     }
 
     // Called only if at least one change has been recorded in _localchanges.
-    internal HashSet<LocalItem>? ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment )
+    internal (List<LocalItem>? ToBeRemoved, HashSet<LocalItem>? ToBeInstalled) ApplyChanges( IActivityMonitor monitor,
+                                                                                             TransformEnvironment environment )
     {
         // First pass: handles removal of ILocalInput that disappeared or didn't change.
-        HashSet<NormalizedPath>? removedTargetPaths = null;
-        List<ILocalInput>? removed = null;
+        List<LocalItem>? toBeRemoved = null;
+
         bool hasRemainingChanges = false;
+
+        // Reusable buffer the captures the _localChanges' set ILocalInput that have
+        // disappeared or didn't actually changed. 
+        List<ILocalInput>? removedChanges = null;
         foreach( var set in _localChanges )
         {
             if( set != null && set.Count > 0 )
@@ -123,27 +128,27 @@ sealed partial class StableItemOrInputTracker
                 {
                     if( c is ILocalInput input )
                     {
-                        if( !input.InitializeApplyChanges( monitor, environment, ref removedTargetPaths ) )
+                        if( !input.InitializeApplyChanges( monitor, environment, ref toBeRemoved ) )
                         {
-                            removed ??= new List<ILocalInput>();
-                            removed.Add( input );
+                            removedChanges ??= new List<ILocalInput>();
+                            removedChanges.Add( input );
                         }
                     }
                 }
-                if( removed != null && removed.Count > 0 )
+                if( removedChanges != null && removedChanges.Count > 0 )
                 {
-                    foreach( var i in removed )
+                    foreach( var i in removedChanges )
                     {
                         set.Remove( i );
                     }
-                    removed.Clear();
+                    removedChanges.Clear();
                 }
                 hasRemainingChanges |= set.Count > 0;
             }
         }
         if( !hasRemainingChanges )
         {
-            return null;
+            return (toBeRemoved, null);
         }
         var toBeInstalled = new HashSet<LocalItem>();
         // Second pass: Now that disappeared entities have been removed from the environment,
@@ -192,10 +197,11 @@ sealed partial class StableItemOrInputTracker
 
             }
         }
-
-        return toBeInstalled.Count > 0
-                ? toBeInstalled
-                : null;
+        if( toBeInstalled.Count == 0 )
+        {
+            toBeInstalled = null;
+        }
+        return (toBeRemoved, toBeInstalled);
     }
 
     public void AddStableItem( TransformableItem stable )

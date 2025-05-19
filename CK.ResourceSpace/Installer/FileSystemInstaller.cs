@@ -1,13 +1,14 @@
 using CK.EmbeddedResources;
 using System;
 using System.IO;
+using System.Threading;
 
 namespace CK.Core;
 
 /// <summary>
 /// Basic implementation that can be specialized.
 /// </summary>
-public class FileSystemInstaller : IResourceSpaceItemInstaller
+public class FileSystemInstaller : ILiveResourceSpaceItemInstaller
 {
     readonly char[] _pathBuffer;
     string _targetPath;
@@ -178,15 +179,35 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
         }
     }
 
+    /// <inheritdoc />
+    public void SafeDelete( IActivityMonitor monitor, NormalizedPath path )
+    {
+        var sPath = GetTargetPath( path.Path ).ToString();
+        if( File.Exists( sPath ) )
+        {
+            int retryCount = 0;
+            retry:
+            try
+            {
+                File.Delete( sPath );
+                monitor.Trace( $"Deleted file '{sPath}'." );
+            }
+            catch( Exception ex )
+            {
+                if( ++retryCount < 3 )
+                {
+                    monitor.Warn( $"While deleting file '{sPath}'.", ex );
+                    Thread.Sleep( retryCount * 100 );
+                    goto retry;
+                }
+                monitor.Warn( $"Unable to delete file '{sPath}'.", ex );
+            }
+        }
+    }
+
     string GetTargetPathAndEnsureDirectory( ReadOnlySpan<char> resName )
     {
-        var dest = _pathBuffer.AsSpan( _targetPath.Length, resName.Length );
-        resName.CopyTo( dest );
-        if( Path.DirectorySeparatorChar != NormalizedPath.DirectorySeparatorChar )
-        {
-            dest.Replace( NormalizedPath.DirectorySeparatorChar, Path.DirectorySeparatorChar );
-        }
-        var sPath = _pathBuffer.AsSpan( 0, _targetPath.Length + resName.Length );
+        ReadOnlySpan<char> sPath = GetTargetPath( resName );
         // No choice here: we must instantiate a string to ensure that the directory exists.
         // Caching the known directories may not be a great idea or is it?
         // Perf tests here may be welcome...
@@ -196,6 +217,18 @@ public class FileSystemInstaller : IResourceSpaceItemInstaller
             Directory.CreateDirectory( sDir.ToString() );
         }
         return sPath.ToString();
+    }
+
+    ReadOnlySpan<char> GetTargetPath( ReadOnlySpan<char> resName )
+    {
+        var dest = _pathBuffer.AsSpan( _targetPath.Length, resName.Length );
+        resName.CopyTo( dest );
+        if( Path.DirectorySeparatorChar != NormalizedPath.DirectorySeparatorChar )
+        {
+            dest.Replace( NormalizedPath.DirectorySeparatorChar, Path.DirectorySeparatorChar );
+        }
+        var sPath = _pathBuffer.AsSpan( 0, _targetPath.Length + resName.Length );
+        return sPath;
     }
 
     /// <summary>

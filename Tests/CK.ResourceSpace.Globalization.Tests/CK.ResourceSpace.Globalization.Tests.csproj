@@ -5,14 +5,6 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
-    <!--
-    Project references don't propagate build (transitive or not) NuGet files.
-    We need to reference them explicitly.        
-    -->
-    <Import Project="../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.props" />
-    <Import Project="../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.targets" />
-
-
     <ItemGroup>
         <PackageReference Include="CK.Testing.Nunit" Version="12.1.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />

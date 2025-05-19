@@ -21,7 +21,7 @@ public interface ILiveResourceSpaceHandler
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="s">The serializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <param name="spaceData">The resource space that has been serialized.</param>
-    /// <returns>True on success, false on error. Errorrs must be logged.</returns>
+    /// <returns>True on success, false on error. Errors must be logged.</returns>
     bool WriteLiveState( IActivityMonitor monitor,
                          IBinarySerializer s,
                          ResSpaceData spaceData );

@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.Globalization" Version="2.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CK.EmbeddedResources\CK.EmbeddedResources.csproj" />
+    <PackageReference Include="CK.EmbeddedResources" Version="0.26.1" />
   </ItemGroup>
 </Project>

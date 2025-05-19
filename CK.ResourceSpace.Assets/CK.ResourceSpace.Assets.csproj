@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CK.EmbeddedResources.Assets\CK.EmbeddedResources.Assets.csproj" />
+    <PackageReference Include="CK.EmbeddedResources.Assets" Version="0.26.1" />
     <ProjectReference Include="..\CK.ResourceSpace\CK.ResourceSpace.csproj" />
   </ItemGroup>
 

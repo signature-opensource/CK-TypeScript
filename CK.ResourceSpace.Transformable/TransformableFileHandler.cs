@@ -75,6 +75,6 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
         Throw.CheckState( _environment != null );
 
         var installer = new InstallHooksHelper( _installHooks, Installer, _transformerHost );
-        return installer.Run( monitor, _environment.Items.Values );
+        return installer.Run( monitor, _environment.Items.Values, toBeRemoved: null );
     }
 }

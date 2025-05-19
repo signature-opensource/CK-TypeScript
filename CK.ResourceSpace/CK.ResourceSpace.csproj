@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\CK.EmbeddedResources\CK.EmbeddedResources.csproj" />
+      <PackageReference Include="CK.EmbeddedResources" Version="0.26.1" />
       <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
     </ItemGroup>
 

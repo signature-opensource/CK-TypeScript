@@ -6,6 +6,6 @@
     <PackageReference Include="CSemVer" Version="12.0.4--0000-develop" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CK.EmbeddedResources\CK.EmbeddedResources.csproj" />
+    <PackageReference Include="CK.EmbeddedResources" Version="0.26.1" />
   </ItemGroup>
 </Project>

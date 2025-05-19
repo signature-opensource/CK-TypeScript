@@ -20,7 +20,9 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
 
     ILocalInput? ILocalInput.Next { get => _next; set => _next = value; }
 
-    public bool InitializeApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, ref HashSet<NormalizedPath>? removedTargets )
+    public bool InitializeApplyChanges( IActivityMonitor monitor,
+                                        TransformEnvironment environment,
+                                        ref List<LocalItem>? toBeRemoved )
     {
         Throw.DebugAssert( environment.IsLive );
         if( ILocalInput.TryReadText( monitor, this, out var newText ) )
@@ -80,7 +82,10 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
         }
         RemoveMissing( environment, functions, updated, toBeInstalled );
 
-        static void RemoveMissing( TransformEnvironment environment, List<TFunction> functions, BitArray updated, HashSet<LocalItem> toBeInstalled )
+        static void RemoveMissing( TransformEnvironment environment,
+                                   List<TFunction> functions,
+                                   BitArray updated,
+                                   HashSet<LocalItem> toBeInstalled )
         {
             int idx = 0;
             for( int i = 0; i < updated.Count; ++i )

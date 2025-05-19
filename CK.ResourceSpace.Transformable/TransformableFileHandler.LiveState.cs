@@ -173,11 +173,11 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             _changeCount = 0;
             if( c != 0 )
             {
-                var toBeInstalled = _environment.Tracker.ApplyChanges( monitor, _environment );
-                if( toBeInstalled != null )
+                var (toBeRemoved, toBeInstalled) = _environment.Tracker.ApplyChanges( monitor, _environment );
+                if( toBeInstalled != null || toBeRemoved != null )
                 {
                     var installer = new InstallHooksHelper( _installHooks, _installer, _environment.TransformerHost );
-                    installer.Run( monitor, toBeInstalled );
+                    installer.Run( monitor, toBeInstalled, toBeRemoved );
                 }
             }
         }

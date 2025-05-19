@@ -29,14 +29,14 @@ interface ILocalInput : IResourceInput
     /// <summary>
     /// Returns true if ApplyChanges must be called.
     /// False if nothing else must be done: on error, this input has been removed from the environment.
-    /// For <see cref="LocalItem"/>, the <see cref="TransformableItem.TargetPath"/> file has been
-    /// removed from the target folder.
     /// </summary>
     /// <param name="monitor">The monitor.</param>
     /// <param name="environment">The environment.</param>
-    /// <param name="removedTargets">Collector for removed <see cref="TransformableItem.TargetPath"/>.</param>
+    /// <param name="toBeRemoved">Collector for disappeared local items.</param>
     /// <returns>True if ApplyChanges must be called, false otherwise.</returns>
-    bool InitializeApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, ref HashSet<NormalizedPath>? removedTargets );
+    bool InitializeApplyChanges( IActivityMonitor monitor,
+                                 TransformEnvironment environment,
+                                 ref List<LocalItem>? toBeRemoved );
 
 
     void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<LocalItem> toBeInstalled );

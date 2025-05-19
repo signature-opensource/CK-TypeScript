@@ -9,6 +9,9 @@ namespace CK.Core;
 /// <summary>
 /// Locales folder handler.
 /// See <see cref="ResourceContainerGlobalizationExtension.LoadTranslations(IResourceContainer, CK.Core.IActivityMonitor, CK.Core.ActiveCultureSet, out TranslationDefinitionSet?, string, bool)"/>.
+/// <para>
+/// This can be specialized: a static <see cref="ReadLiveState"/> must always be implemented.
+/// </para>
 /// </summary>
 public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
 {
