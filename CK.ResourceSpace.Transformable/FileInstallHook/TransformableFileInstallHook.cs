@@ -62,10 +62,11 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
     public abstract bool HandleInstall( IActivityMonitor monitor,
                                         ITransformInstallableItem item,
                                         string finalText,
-                                        IResourceSpaceItemInstaller installer );
+                                        IResourceSpaceItemInstaller installer,
+                                        out bool handled );
 
     /// <inheritdoc />
-    public abstract void StopInstall( IActivityMonitor monitor, IResourceSpaceItemInstaller installer );
+    public abstract void StopInstall( IActivityMonitor monitor, bool success, IResourceSpaceItemInstaller installer );
 
     /// <summary>
     /// Gets whether <see cref="WriteLiveState(IBinarySerializer)"/> must be called.

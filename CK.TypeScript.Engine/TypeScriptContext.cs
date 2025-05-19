@@ -8,6 +8,8 @@ using CK.Transform.Core;
 using CK.TypeScript.Transform;
 using CK.Html.Transform;
 using CK.Less.Transform;
+using System.Xml.Linq;
+using System.Runtime.InteropServices;
 
 namespace CK.Setup;
 
@@ -316,11 +318,9 @@ public sealed partial class TypeScriptContext
         success &= spaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer,
                                                                                      spaceData.SpaceDataCache,
                                                                                      "ts-assets" ) );
-        success &= spaceBuilder.RegisterHandler( monitor, new LocalesResourceHandler( installer,
-                                                                                      spaceData.SpaceDataCache,
-                                                                                      "ts-locales",
-                                                                                      typeScriptContext.ActiveCultures,
-                                                                                      LocalesResourceHandler.InstallOption.Full ) );
+        success &= spaceBuilder.RegisterHandler( monitor, new TypeScriptLocalesResourceHandler( installer,
+                                                                                                spaceData.SpaceDataCache,
+                                                                                                typeScriptContext.ActiveCultures ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var transformableFiles = new TransformableFileHandler( installer,
                                                                transformerHost,

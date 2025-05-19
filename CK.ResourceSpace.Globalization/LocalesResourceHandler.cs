@@ -124,6 +124,11 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     }
 
     /// <summary>
+    /// Gets the active cultures.
+    /// </summary>
+    protected ActiveCultureSet ActiveCultures => _cache.ActiveCultures;
+
+    /// <summary>
     /// Saves the initialized <see cref="FinalTranslations"/> into into this <see cref="ResourceSpaceFolderHandler.Installer"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

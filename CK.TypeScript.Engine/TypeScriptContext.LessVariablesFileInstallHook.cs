@@ -2,24 +2,80 @@ using CK.BinarySerialization;
 using CK.Core;
 using CK.Transform.Core;
 using System;
-using System.Linq;
 using System.Text;
 
 namespace CK.Setup;
 
 public sealed partial class TypeScriptContext
 {
+
+    static bool IsPackageVariablesFile( ITransformInstallableItem item )
+    {
+        Throw.DebugAssert( "variables".Length == 9 );
+        var fName = System.IO.Path.GetFileNameWithoutExtension( item.TargetPath.Path.AsSpan() );
+        return fName.EndsWith( "variables" )
+            && (fName.Length == 9
+                || (fName[^9] == '.'
+                    && IsFolderBasedName( fName, item.Resources.Package.DefaultTargetPath.LastPart )));
+
+        static bool IsFolderBasedName( ReadOnlySpan<char> fName, string folderName )
+        {
+            return fName.Length > folderName.Length + 10
+                   && fName.StartsWith( folderName, StringComparison.Ordinal )
+                   && fName[folderName.Length] == '.';
+        }
+    }
+
+
+    static bool ErrorAmbiguousVariablesFile( IActivityMonitor monitor, ITransformInstallableItem item, ITransformInstallableItem fItem )
+    {
+        monitor.Error( $"""
+                        Ambiguous variables less file for '{item.Resources}': file '{item.TargetPath.LastPart}' and '{fItem.TargetPath.LastPart}'
+                        are named that match a variables.less file. Only one can exist.
+                        """ );
+        return false;
+    }
+
+    const string _commonHeader = """
+        // This file contains the lifted content of all the "Res/variables.less", "Res/<package or group name>.variables.less",
+        // "Res[After]/variables.less" or "Res[After]/<package or group name>.variables.less" (following their topological order)
+        """;
+
+    sealed class LocalBuilder
+    {
+        readonly StringBuilder _builder;
+
+        public LocalBuilder( ResSpaceData spaceData )
+        {
+            _builder = new StringBuilder( $"""
+                    {_commonHeader}
+                    // of the {spaceData.LocalPackages.Length} local packages.
+
+
+                    """ );
+        }
+
+        public void Add( ITransformInstallableItem item, string finalText )
+        {
+            _builder.Append( "// " ).Append( item.TargetPath ).AppendLine()
+                    .Append( finalText )
+                    .AppendLine();
+        }
+
+        public override string ToString() => _builder.ToString();
+    }
+
     sealed class LessVariablesFileInstallHook : TransformableFileInstallHook
     {
         TransformerHost.Language? _lessLanguage;
-        StringBuilder? _stableVariables;
 
-        // When ResSpaceData.HasLiveState is true.
-        // The "ck-gen/styles/local.variables.less" content file.
-        StringBuilder? _localVariables;
-        // The index in the _localVariables of each IResPackageResources.LocalIndex.
-        // Even positions contain the start of the resource package section, odd ones contain the end.
-        int[]? _localVariablesResIndex;
+        // SpaceData.AllPackageResources.Length array of the ITransformInstallableItem that is the primary
+        // variables file of the IResPackageResources.
+        // If there are more than one file that match the IsPackageVariablesFile pattern, HandleInstall
+        // signals an error.
+        ITransformInstallableItem?[]? _primaryVariableFiles;
+        // Captures the text of each primary variables file.
+        string?[]? _finalTexts;
 
         public LessVariablesFileInstallHook()
         {
@@ -34,88 +90,91 @@ public sealed partial class TypeScriptContext
                 monitor.Warn( "Missing Less language registration in TransformerHost." );
                 return;
             }
-            const string commonHeader = """
-                // This file contains the lifted content of all the "Res/variables.less", "Res/<package or group name>.variables.less",
-                // "Res[After]/variables.less" or "Res[After]/<package or group name>.variables.less" (following their topological order)
-                """;
 
-            if( SpaceData.HasLiveState )
-            {
-                _stableVariables = new StringBuilder( $"""
-                    {commonHeader}
-                    // of the {SpaceData.Packages.Length - SpaceData.LocalPackages.Length} stable packages.
-
-
-                    """ );
-                _localVariables = new StringBuilder( $"""
-                    {commonHeader}
-                    // of the {SpaceData.LocalPackages.Length} local packages.
-
-
-                    """ );
-                _localVariablesResIndex = new int[2*SpaceData.LocalPackageResources.Length];
-            }
-            else
-            {
-                _stableVariables = new StringBuilder( $"""
-                    {commonHeader}
-                    // of the {SpaceData.Packages.Length} packages.
-
-
-                    """ );
-            }
+            _primaryVariableFiles = new ITransformInstallableItem?[SpaceData.AllPackageResources.Length];
+            _finalTexts = new string?[SpaceData.AllPackageResources.Length];
         }
 
-        public override bool HandleInstall( IActivityMonitor monitor, ITransformInstallableItem item, string finalText, IResourceSpaceItemInstaller installer )
+        public override bool HandleInstall( IActivityMonitor monitor,
+                                            ITransformInstallableItem item,
+                                            string finalText,
+                                            IResourceSpaceItemInstaller installer,
+                                            out bool handled )
         {
             Throw.DebugAssert( IsInitialized );
+            handled = false;
             if( _lessLanguage != null && item.LanguageIndex == _lessLanguage.Index )
             {
-                Throw.DebugAssert( "variables".Length == 9 );
-                var fName = System.IO.Path.GetFileNameWithoutExtension( item.TargetPath.Path.AsSpan() );
-                if( fName.EndsWith( "variables" )
-                    && (fName.Length == 9
-                        || (fName[^9] == '.'
-                            && fName[..^9].Equals( item.Resources.Package.DefaultTargetPath.LastPart, StringComparison.Ordinal ))) )
+                Throw.DebugAssert( _primaryVariableFiles != null && _finalTexts != null );
+
+                if( IsPackageVariablesFile( item ) )
                 {
-                    bool isLocal = SpaceData.HasLiveState && item.IsLocalItem;
-                    StringBuilder? b;
-                    if( isLocal )
+                    // Variables files are not installed.
+                    handled = true;
+                    ref var fItem = ref _primaryVariableFiles[item.Resources.Index];
+                    if( fItem == null )
                     {
-                        Throw.DebugAssert( _localVariables != null && _localVariablesResIndex != null );
-                        b = _localVariables;
-                        _localVariablesResIndex[2 * item.Resources.LocalIndex] = b.Length;
+                        fItem = item;
+                        _finalTexts[item.Resources.Index] = finalText;
                     }
                     else
                     {
-                        Throw.DebugAssert( _stableVariables != null );
-                        b = _stableVariables;
+                        return ErrorAmbiguousVariablesFile( monitor, item, fItem );
                     }
-                    b.Append( "// " ).Append( item.TargetPath ).AppendLine()
-                     .Append( finalText ).AppendLine();
-                    if( isLocal )
-                    {
-                        Throw.DebugAssert( _localVariablesResIndex != null );
-                        _localVariablesResIndex[2 * item.Resources.LocalIndex + 1] = b.Length;
-                    }
-                    return true;
                 }
             }
-            return false;
+            return true;
         }
 
-        public override void StopInstall( IActivityMonitor monitor, IResourceSpaceItemInstaller installer )
+        public override void StopInstall( IActivityMonitor monitor, bool success, IResourceSpaceItemInstaller installer )
         {
             Throw.DebugAssert( IsInitialized );
             if( _lessLanguage != null )
             {
-                if( SpaceData.HasLiveState )
+                Throw.DebugAssert( _primaryVariableFiles != null && _finalTexts != null );
+
+                StringBuilder stableVariables = new StringBuilder( $"""
+                    {_commonHeader}
+                    // of the {(SpaceData.HasLiveState
+                                ? SpaceData.Packages.Length - SpaceData.LocalPackages.Length
+                                : SpaceData.Packages.Length)} stable packages.
+
+                    """ );
+
+                var localVariables = SpaceData.HasLiveState
+                                         ? new LocalBuilder( SpaceData )
+                                         : null;
+
+                foreach( var item in _primaryVariableFiles )
                 {
-                    Throw.DebugAssert( _localVariables != null );
-                    installer.Write( "styles/local.variables.less", _localVariables.ToString() );
+                    if( item == null ) continue;
+                    var text = _finalTexts[item.Resources.Index];
+                    Throw.DebugAssert( text != null );
+                    if( localVariables != null && item.IsLocalItem )
+                    {
+                        localVariables.Add( item, text );
+                    }
+                    else
+                    {
+                        stableVariables.Append( "// " ).Append( item.TargetPath ).AppendLine()
+                                       .Append( text )
+                                       .AppendLine();
+                    }
                 }
-                Throw.DebugAssert( _stableVariables != null );
-                installer.Write( "styles/stable.variables.less", _stableVariables.ToString() );
+                if( localVariables != null )
+                {
+                    installer.Write( "styles/stable.variables.less", stableVariables.ToString() );
+                    installer.Write( "styles/local.variables.less", localVariables.ToString() );
+                    installer.Write( "styles/variables.less", """
+                        @import './stable.variables.less';
+                        @import './local.variables.less';
+
+                        """ );
+                }
+                else
+                {
+                    installer.Write( "styles/variables.less", stableVariables.ToString() );
+                }
             }
         }
 
@@ -123,15 +182,111 @@ public sealed partial class TypeScriptContext
 
         protected override void WriteLiveState( IBinarySerializer s )
         {
-            Throw.DebugAssert( _lessLanguage != null && _localVariables != null && _localVariablesResIndex != null );
+            Throw.DebugAssert( IsInitialized
+                               && _lessLanguage != null
+                               && _primaryVariableFiles != null
+                               && _finalTexts != null );
             s.Writer.Write( _lessLanguage.Index );
-            s.WriteObject( _localVariablesResIndex );
+            // Saves the LocalItem's primary variables files.
+            foreach( var res in SpaceData.LocalPackageResources )
+            {
+                var item = _primaryVariableFiles[res.Index];
+                s.WriteNullableObject( item );
+                if( item != null )
+                {
+                    var text = _finalTexts[res.Index];
+                    Throw.DebugAssert( text != null );
+                    s.Writer.Write( text );
+                }
+            }
         }
 
-        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, IBinaryDeserializer d )
+        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
+                                                                    ResSpaceData spaceData,
+                                                                    IBinaryDeserializer d )
         {
-            return null;
+            int lessLanguageIndex = d.Reader.ReadInt32();
+            var primaryVariableFiles = new ITransformInstallableItem?[spaceData.LocalPackageResources.Length];
+            var finalTexts = new string?[spaceData.LocalPackageResources.Length];
+            for( int i = 0; i < primaryVariableFiles.Length; i++ )
+            {
+                var item = d.ReadNullableObject<ITransformInstallableItem>();
+                if( item != null )
+                {
+                    Throw.DebugAssert( i == item.Resources.LocalIndex );
+                    primaryVariableFiles[i] = item;
+                    finalTexts[i] = d.Reader.ReadString();
+                }
+            }
+            return new LiveHook( spaceData, lessLanguageIndex, primaryVariableFiles, finalTexts );
         }
 
+        sealed class LiveHook : ITransformableFileInstallHook
+        {
+            readonly ResSpaceData _spaceData;
+            readonly int _lessLanguageIndex;
+            readonly ITransformInstallableItem?[] _primaryVariableFiles;
+            readonly string?[] _finalTexts;
+            bool _rebuildAll;
+
+            public LiveHook( ResSpaceData spaceData,
+                             int lessLanguageIndex,
+                             ITransformInstallableItem?[] primaryVariableFiles,
+                             string?[] finalTexts )
+            {
+                _spaceData = spaceData;
+                _lessLanguageIndex = lessLanguageIndex;
+                _primaryVariableFiles = primaryVariableFiles;
+                _finalTexts = finalTexts;
+            }
+
+            public void StartInstall( IActivityMonitor monitor )
+            {
+                _rebuildAll = false;
+            }
+
+            public bool HandleInstall( IActivityMonitor monitor, ITransformInstallableItem item, string finalText, IResourceSpaceItemInstaller installer, out bool handled )
+            {
+                handled = false;
+                if( item.LanguageIndex == _lessLanguageIndex )
+                {
+                    if( IsPackageVariablesFile( item ) )
+                    {
+                        // Variables files are not installed.
+                        handled = true;
+                        // Check new (rebuild all) or clash (ErrorAmbiguousVariablesFile).
+                        ref var fItem = ref _primaryVariableFiles[item.Resources.LocalIndex];
+                        if( fItem == null || fItem == item )
+                        {
+                            fItem = item;
+                            _finalTexts[item.Resources.LocalIndex] = finalText;
+                        }
+                        else
+                        {
+                            return ErrorAmbiguousVariablesFile( monitor, item, fItem );
+                        }
+                        // TODO: use the _localVariablesResIndex.
+                        _rebuildAll = true;
+                    }
+                }
+                return true;
+            }
+
+            public void StopInstall( IActivityMonitor monitor, bool success, IResourceSpaceItemInstaller installer )
+            {
+                if( _rebuildAll )
+                {
+                    var localVariables = new LocalBuilder( _spaceData );
+                    foreach( var item in _primaryVariableFiles )
+                    {
+                        if( item == null ) continue;
+                        var text = _finalTexts[item.Resources.LocalIndex];
+                        Throw.DebugAssert( text != null );
+                        localVariables.Add( item, text );
+                    }
+                    installer.Write( "styles/local.variables.less", localVariables.ToString() );
+                }
+            }
+        }
     }
 }

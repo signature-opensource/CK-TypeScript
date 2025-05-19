@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
 
-var (logFilter, debounce, launchDebugger) = DisplayHeaderAndHandleArguments( args );
+if( DisplayHeaderAndHandleHelpArguments( args ) ) return;
+
+var (logFilter, debounce, launchDebugger) = HandleArguments( args );
 
 // Don't try to attach a debugger if one is already attached.
 if( launchDebugger && !Debugger.IsAttached )
@@ -32,11 +34,11 @@ AssemblyLoadContext.Default.Resolving += static ( AssemblyLoadContext ctx, Assem
 };
 
 var ckGenAppPath = Path.Combine( Environment.CurrentDirectory, "ck-gen-app" ) + Path.DirectorySeparatorChar;
-var liveStateFilePath = ckGenAppPath + ResSpace.LiveStateFileName;
+var liveStateFilePath = ckGenAppPath + ".ck-watch" + Path.DirectorySeparatorChar + ResSpace.LiveStateFileName;
 
 await Runner.RunAsync( monitor, liveStateFilePath, debounce, ctrlCHandler.Token );
 
-static (LogFilter LogFilter, uint Debounce, bool LaunchDebugger) DisplayHeaderAndHandleArguments( string[] args )
+static bool DisplayHeaderAndHandleHelpArguments( string[] args )
 {
     Console.WriteLine( $"CK.TypeScript.LiveEngine v{CSemVer.InformationalVersion.ReadFromAssembly( Assembly.GetExecutingAssembly() ).Version}" );
     if( Array.IndexOf( args, "-h" ) >= 0
@@ -60,8 +62,13 @@ static (LogFilter LogFilter, uint Debounce, bool LaunchDebugger) DisplayHeaderAn
                               Default to 100ms.
                               Provided value is clamped between 40 and 1000.
         """ );
+        return true;
     }
+    return false;
+}
 
+static (LogFilter LogFilter, uint Debounce, bool LaunchDebugger) HandleArguments( string[] args )
+{
     LogFilter log = LogFilter.Normal;
     string logName = nameof( LogFilter.Normal );
     int idxV = Array.IndexOf( args, "--verbosity" );

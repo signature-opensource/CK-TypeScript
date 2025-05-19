@@ -9,7 +9,9 @@ namespace CK.Core;
 
 public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
 {
-    static Type[] _installHookReadParameters = new[] { typeof( IActivityMonitor ), typeof( IBinaryDeserializer ) };
+    static Type[] _installHookReadParameters = [ typeof( IActivityMonitor ),
+                                                 typeof( ResSpaceData ),
+                                                 typeof( IBinaryDeserializer ) ];
 
     /// <summary>
     /// Live update is currently supported only when installing on the file system:
@@ -80,7 +82,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
 
         var hooksBuilder = ImmutableArray.CreateBuilder<ITransformableFileInstallHook>();
-        bool success = ReadInstallHooks( monitor, d, hooksBuilder );
+        bool success = ReadInstallHooks( monitor, spaceData, d, hooksBuilder );
         if( !success ) return null;
         var installHooks = hooksBuilder.DrainToImmutable();
 
@@ -95,19 +97,24 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         environment.PostDeserialization( monitor );
         return new LiveState( environment, installHooks, installer );
 
-        static bool ReadInstallHooks( IActivityMonitor monitor, IBinaryDeserializer d, ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
+        static bool ReadInstallHooks( IActivityMonitor monitor,
+                                      ResSpaceData spaceData,
+                                      IBinaryDeserializer d,
+                                      ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
         {
             bool success = true;
-            object[] installHookReadArgs = [monitor, d];
+            object[] installHookReadArgs = [monitor, spaceData, d];
             while( d.Reader.ReadBoolean() )
             {
                 var tHook = d.ReadTypeInfo().ResolveLocalType();
-                var mRead = tHook.GetMethod( "ReadLiveState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, _installHookReadParameters );
+                var mRead = tHook.GetMethod( "ReadLiveState",
+                                             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                                             _installHookReadParameters );
                 if( mRead == null || mRead.ReturnType != typeof( ITransformableFileInstallHook ) )
                 {
                     monitor.Error( $"""
                         Type '{tHook:C}' requires a method:
-                        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, IBinaryDeserializer d );
+                        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d );
                         """ );
                     success = false;
                 }
@@ -145,30 +152,6 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             _installer = installer;
         }
 
-        public void ApplyChanges( IActivityMonitor monitor )
-        {
-            var c = _changeCount;
-            _changeCount = 0;
-            if( c != 0 )
-            {
-                var toBeInstalled = _environment.Tracker.ApplyChanges( monitor, _environment );
-                if( toBeInstalled != null )
-                {
-                    var installer = new InstallHooksHelper( _installHooks, _installer );
-                    installer.Start( monitor );
-                    foreach( var i in toBeInstalled )
-                    {
-                        var text = i.GetFinalText( monitor, _environment.TransformerHost );
-                        if( text != null )
-                        {
-                            installer.Handle( monitor, i, text );
-                        }
-                    }
-                    installer.Stop( monitor );
-                }
-            }
-        }
-
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
             Throw.DebugAssert( changed.Resources.LocalPath != null );
@@ -183,5 +166,21 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
             }
             return false;
         }
+
+        public void ApplyChanges( IActivityMonitor monitor )
+        {
+            var c = _changeCount;
+            _changeCount = 0;
+            if( c != 0 )
+            {
+                var toBeInstalled = _environment.Tracker.ApplyChanges( monitor, _environment );
+                if( toBeInstalled != null )
+                {
+                    var installer = new InstallHooksHelper( _installHooks, _installer, _environment.TransformerHost );
+                    installer.Run( monitor, toBeInstalled );
+                }
+            }
+        }
+
     }
 }
