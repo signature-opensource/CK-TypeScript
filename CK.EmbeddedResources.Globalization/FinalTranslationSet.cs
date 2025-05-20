@@ -195,7 +195,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
                         changed = true;
                     }
                 }
-                result = changed ? candidate : s1.Translations;
+                result = changed ? candidate : s2.Translations;
             }
             else
             {

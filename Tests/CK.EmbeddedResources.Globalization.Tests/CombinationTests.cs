@@ -1,6 +1,7 @@
 using CK.Core;
 using NUnit.Framework;
 using Shouldly;
+using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.EmbeddedResources.Globalization.Tests;
@@ -113,4 +114,118 @@ public class CombinationTests
             t.Text.ShouldBe( "It's Yo!" );
         }
     }
+
+    [Test]
+    public void Aggregate_function_with_empty_translations()
+    {
+        var p1 = CreateEnFr( "p1", """{ "K1": "en-P1" }""", """{ "K1": "fr-P1" }""" );
+        var p2 = CreateEnFr( "p2", """{ "K2": "en-P2" }""", """{                }""" );
+        var p3 = CreateEnFr( "p3", """{ "K3": "en-P3" }""", """{ "K3": "fr-P3" }""" );
+        var p4 = CreateEnFr( "p4", """{ "K4": "en-P4" }""", """{                }""" );
+        var p5 = CreateEnFr( "p5", """{ "K5": "en-P5" }""", """{ "K5": "fr-P5" }""" );
+        var p6 = CreateEnFr( "p6", """{               }""", """{                }""" );
+        var p7 = CreateEnFr( "p7", """{ "K7": "en-P7" }""", """{ "K7": "fr-P7" }""" );
+
+        var f1 = p1.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f2 = p2.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f3 = p3.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f4 = p4.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f5 = p5.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f6 = p6.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f7 = p7.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+
+        var fLeft = f1.Aggregate( f2 ).Aggregate( f3 ).Aggregate( f4 ).Aggregate( f5 ).Aggregate( f6 ).Aggregate( f7 );
+        fLeft.IsAmbiguous.ShouldBeFalse();
+        fLeft.Parent.ShouldBeNull();
+        fLeft.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
+        fLeft.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7"], ignoreOrder: true );
+
+        var fRight = f7.Aggregate( f6 ).Aggregate( f5 ).Aggregate( f4 ).Aggregate( f3 ).Aggregate( f2 ).Aggregate( f1 );
+        fRight.IsAmbiguous.ShouldBeFalse();
+        fRight.Parent.ShouldBeNull();
+        fRight.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
+        fRight.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7",], ignoreOrder: true );
+
+    }
+
+    [Test]
+    public void Aggregate_function_without_ambiguities()
+    {
+        var p1 = CreateEnFr( "p1", """{ "K1": "Hop", "K2": "Hip" , "K3": "Bing" }""", """{ "K1": "HOP" }""" );
+        var p2 = CreateEnFr( "p2", """{ "K1": "Hop", "K2": "Hip" }""", """{ "K1": "HOP", "K2": "HIP" }""" );
+
+        var f1 = p1.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+        var f2 = p2.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+
+        Check( f1.Aggregate( f2 ) );
+        Check( f2.Aggregate( f1 ) );
+    }
+
+    private static void Check( FinalTranslationSet agg )
+    {
+        agg.IsAmbiguous.ShouldBeFalse();
+        agg.Translations.Keys.ShouldBe( ["K1", "K2", "K3"], ignoreOrder: true );
+        agg.Translations["K1"].Text.ShouldBe( "Hop" );
+        agg.Translations["K2"].Text.ShouldBe( "Hip" );
+        agg.Translations["K3"].Text.ShouldBe( "Bing" );
+        var fr = agg.Children.Single().Translations;
+        fr.Keys.ShouldBe( ["K1", "K2"], ignoreOrder: true );
+        fr["K1"].Text.ShouldBe( "HOP" );
+        fr["K2"].Text.ShouldBe( "HIP" );
+    }
+
+    [Test]
+    public void Combine_function()
+    {
+        var p1 = CreateEnFr( "p1", """{ "K1": "en-P1" }""", """{ "K1": "fr-P1" }""" );
+        var p2 = CreateEnFr( "p2", """{ "K2": "en-P2" }""", """{                }""" );
+        var p3 = CreateEnFr( "p3", """{ "K3": "en-P3" }""", """{ "K3": "fr-P3" }""" );
+        var p4 = CreateEnFr( "p4", """{ "K4": "en-P4" }""", """{                }""" );
+        var p5 = CreateEnFr( "p5", """{ "K5": "en-P5" }""", """{ "K5": "fr-P5" }""" );
+        var p6 = CreateEnFr( "p6", """{               }""", """{                }""" );
+        var p7 = CreateEnFr( "p7", """{ "K7": "en-P7" }""", """{ "K7": "fr-P7" }""" );
+
+        {
+            var f1 = p1.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+            var f2 = p2.Combine( TestHelper.Monitor, f1 ).ShouldNotBeNull();
+            var f3 = p3.Combine( TestHelper.Monitor, f2 ).ShouldNotBeNull();
+            var f4 = p4.Combine( TestHelper.Monitor, f3 ).ShouldNotBeNull();
+            var f5 = p5.Combine( TestHelper.Monitor, f4 ).ShouldNotBeNull();
+            var f6 = p6.Combine( TestHelper.Monitor, f5 ).ShouldNotBeNull();
+            var f7 = p7.Combine( TestHelper.Monitor, f6 ).ShouldNotBeNull();
+
+            f7.IsAmbiguous.ShouldBeFalse();
+            f7.Parent.ShouldBeNull();
+            f7.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
+            f7.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7"], ignoreOrder: true );
+        }
+
+        {
+            var f7 = p7.ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+            var f6 = p6.Combine( TestHelper.Monitor, f7 ).ShouldNotBeNull();
+            var f5 = p5.Combine( TestHelper.Monitor, f6 ).ShouldNotBeNull();
+            var f4 = p4.Combine( TestHelper.Monitor, f5 ).ShouldNotBeNull();
+            var f3 = p3.Combine( TestHelper.Monitor, f4 ).ShouldNotBeNull();
+            var f2 = p2.Combine( TestHelper.Monitor, f3 ).ShouldNotBeNull();
+            var f1 = p1.Combine( TestHelper.Monitor, f2 ).ShouldNotBeNull();
+
+            f1.IsAmbiguous.ShouldBeFalse();
+            f1.Parent.ShouldBeNull();
+            f1.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
+            f1.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7"], ignoreOrder: true );
+        }
+
+
+    }
+
+    TranslationDefinitionSet CreateEnFr( string name, string v1, string v2 )
+    {
+        var c = new CodeGenResourceContainer( name );
+        c.AddText( "locales/default.jsonc", v1 );
+        c.AddText( "locales/fr.jsonc", v2 );
+        c.LoadTranslations( TestHelper.Monitor, C.EnFrSet, out var translations, "locales" ).ShouldBeTrue();
+        translations.ShouldNotBeNull();
+        return translations;
+    }
+
 }

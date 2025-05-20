@@ -52,7 +52,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     /// Creates a new initial <see cref="FinalTranslationSet"/> from this definition that is independent
     /// of any other translation definition.
     /// <para>
-    /// No <see cref="TranslationDefinition.Override"/> in <see cref="Translations"/> cannot be <see cref="ResourceOverrideKind.Regular"/>
+    /// No <see cref="TranslationDefinition.Override"/> in <see cref="Translations"/> can be <see cref="ResourceOverrideKind.Regular"/>
     /// otherwise it is an error and null is returned.
     /// </para>
     /// <para>

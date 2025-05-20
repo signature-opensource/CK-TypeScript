@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 
 namespace CK.EmbeddedResources.Globalization.Tests;
 
@@ -13,5 +13,6 @@ static class C
     public static NormalizedCultureInfo Es = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "es" );
     public static NormalizedCultureInfo EsES = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "es-ES" );
     public static NormalizedCultureInfo EsMX = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "es-MX" );
+    public static ActiveCultureSet EnFrSet = new ActiveCultureSet( [Fr] );
     public static ActiveCultureSet ActiveCultures = new ActiveCultureSet( [Fr, FrFR, FrCA, FrFRA1, FrFRA2, Es, EsES, EsMX] );
 }

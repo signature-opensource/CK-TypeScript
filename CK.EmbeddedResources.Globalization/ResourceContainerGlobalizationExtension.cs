@@ -65,6 +65,7 @@ public static class ResourceContainerGlobalizationExtension
                 var defaultSet = CreateRoot( monitor, activeCultures, content, isOverrideFolder );
                 if( defaultSet != null )
                 {
+                    monitor.Trace( $"Successfully loaded {defaultSet.Translations.Count} translations from {defaultSet.Origin}." );
                     translations = ReadTranslations( monitor, defaultSet, isOverrideFolder, content.AllResources, activeCultures, ref unactiveCultureWarned );
                     return translations != null;
                 }
@@ -74,7 +75,10 @@ public static class ResourceContainerGlobalizationExtension
         return true;
     }
 
-    static TranslationDefinitionSet? CreateRoot( IActivityMonitor monitor, ActiveCultureSet activeCultures, ResourceFolder folder, bool isOverrideFolder )
+    static TranslationDefinitionSet? CreateRoot( IActivityMonitor monitor,
+                                                 ActiveCultureSet activeCultures,
+                                                 ResourceFolder folder,
+                                                 bool isOverrideFolder )
     {
         if( folder.TryGetResource( "default.jsonc", out var defFile )
             || isOverrideFolder && folder.TryGetResource( "en.jsonc", out defFile ) )
