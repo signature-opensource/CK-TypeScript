@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace CK.Core;
 
 /// <summary>
-/// Required hook implementation on the setup side: Live hooks can be simple <see cref="ITransformableFileInstallHook"/>.
+/// Required hook implementation on the setup side: Live hooks must be <see cref="ILiveTransformableFileInstallHook"/>.
 /// </summary>
 public abstract class TransformableFileInstallHook : ITransformableFileInstallHook
 {
@@ -94,8 +94,8 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
     ///     /// &lt;param name="monitor"&gt;The monitor to use.&lt;/param&gt;
     ///     /// &lt;param name="d"&gt;The deserializer.&lt;/param&gt;
     ///     /// &lt;returns&gt;The live updater on success, null on error. Errors must be logged.&lt;/returns&gt;
-    ///     public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
-    ///                                                                 IBinaryDeserializer d )
+    ///     public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
+    ///                                                                     IBinaryDeserializer d )
     ///     { ... }
     ///
     /// </code>

@@ -102,37 +102,35 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
                                       IBinaryDeserializer d,
                                       ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
         {
-            bool success = true;
             object[] installHookReadArgs = [monitor, spaceData, d];
+            bool success = true;
             while( d.Reader.ReadBoolean() )
             {
                 var tHook = d.ReadTypeInfo().ResolveLocalType();
                 var mRead = tHook.GetMethod( "ReadLiveState",
                                              System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
                                              _installHookReadParameters );
-                if( mRead == null || mRead.ReturnType != typeof( ITransformableFileInstallHook ) )
+                if( mRead == null || mRead.ReturnType != typeof( ILiveTransformableFileInstallHook ) )
                 {
                     monitor.Error( $"""
                         Type '{tHook:C}' requires a method:
-                        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d );
+                        public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d );
                         """ );
+                    // Don't continue here: we haven't consume the stream data!
                     success = false;
+                    break;
+                }
+                var o = mRead.Invoke( null, installHookReadArgs ) as ITransformableFileInstallHook;
+                if( o != null )
+                {
+                    hooksBuilder.Add( o );
                 }
                 else
                 {
-                    var o = mRead.Invoke( null, installHookReadArgs ) as ITransformableFileInstallHook;
-                    if( o != null )
-                    {
-                        hooksBuilder.Add( o );
-                    }
-                    else
-                    {
-                        monitor.Error( $"Type '{tHook:C}' failed to load its Live state." );
-                        success = false;
-                    }
+                    monitor.Error( $"Type '{tHook:C}' failed to load its Live state." );
+                    success = false;
                 }
             }
-
             return success;
         }
     }
@@ -156,7 +154,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         {
             Throw.DebugAssert( changed.Resources.LocalPath != null );
             // This is NOT right!
-            if( _environment.TransformerHost.FindFromFilename( changed.SubPath, out _ ) != null )
+            if( _environment.FindFromFileName( changed.SubPath, out _ ) != null )
             {
                 if( _environment.Tracker.OnChange( monitor, changed ) )
                 {

@@ -180,7 +180,7 @@ public class FileSystemInstaller : ILiveResourceSpaceItemInstaller
     }
 
     /// <inheritdoc />
-    public void SafeDelete( IActivityMonitor monitor, NormalizedPath path )
+    public bool SafeDelete( IActivityMonitor monitor, NormalizedPath path )
     {
         var sPath = GetTargetPath( path.Path ).ToString();
         if( File.Exists( sPath ) )
@@ -196,13 +196,15 @@ public class FileSystemInstaller : ILiveResourceSpaceItemInstaller
             {
                 if( ++retryCount < 3 )
                 {
-                    monitor.Warn( $"While deleting file '{sPath}'.", ex );
+                    monitor.Warn( $"While deleting file '{sPath}'. Retrying.", ex );
                     Thread.Sleep( retryCount * 100 );
                     goto retry;
                 }
                 monitor.Warn( $"Unable to delete file '{sPath}'.", ex );
+                return false;
             }
         }
+        return true;
     }
 
     string GetTargetPathAndEnsureDirectory( ReadOnlySpan<char> resName )

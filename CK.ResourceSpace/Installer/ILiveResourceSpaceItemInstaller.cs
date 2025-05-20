@@ -7,8 +7,11 @@ public interface ILiveResourceSpaceItemInstaller : IResourceSpaceItemInstaller
 {
     /// <summary>
     /// Deletes the item.
+    /// Unlike the regular <see cref="IResourceSpaceItemInstaller"/> methods that either succeed or throw,
+    /// this may fail, log error, and kindly return false. Errors may be ignored (this depends on the actual
+    /// type of the installation target).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="path">The item path to delete.</param>
-    void SafeDelete( IActivityMonitor monitor, NormalizedPath path );
+    bool SafeDelete( IActivityMonitor monitor, NormalizedPath path );
 }

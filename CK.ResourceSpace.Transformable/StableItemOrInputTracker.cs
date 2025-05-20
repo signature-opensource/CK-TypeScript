@@ -75,12 +75,15 @@ sealed partial class StableItemOrInputTracker
     {
         var resources = changed.Resources;
         var o = _o[resources.Index];
+        Throw.DebugAssert( "We are on a local package.", (o is null || o is ILocalInput) && (o is not IReadOnlyList<TransformableItem>) );
+        // Ensures that a HashSet (of string or ILocalInput) exists for this package resource.
+        ref var changes = ref _localChanges[resources.LocalIndex];
+        changes ??= new HashSet<object>();
+        bool foundMatch = false;
+        // If we know at least one ILocalInput, search it (or them by path).
         if( o is ILocalInput input )
         {
             Throw.DebugAssert( resources.LocalPath != null && resources.LocalIndex >= 0 );
-            ref var changes = ref _localChanges[resources.LocalIndex];
-            changes ??= new HashSet<object>();
-            bool foundMatch = false;
             int lenRoot = resources.LocalPath.Length;
             for(; ; )
             {
@@ -94,18 +97,15 @@ sealed partial class StableItemOrInputTracker
                 if( next == null ) break;
                 input = next;
             }
-            if( !foundMatch )
-            {
-                // Adds the candidate in IResPackageResource slot.
-                changes.Add( changed.FullPath );
-            }
-            return true;
         }
-        if( o != null )
+        // If we didn't find the input, add the changed path: this may
+        // become a new LocalItem.
+        if( !foundMatch )
         {
-            monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, $"Unexpected '{o.GetType():N}'." );
+            // Adds the candidate in IResPackageResource slot.
+            changes.Add( changed.FullPath );
         }
-        return false;
+        return true;
     }
 
     // Called only if at least one change has been recorded in _localchanges.
@@ -170,7 +170,7 @@ sealed partial class StableItemOrInputTracker
                         // New file. Language has alredy been (successfuly) obtained by OnChange but
                         // this may change in the future (if we need to handle folders), so it doesn't
                         // cost much to be defensive here.
-                        var language = environment.TransformerHost.FindFromFilename( fullPath, out _ );
+                        var language = environment.FindFromFileName( fullPath, out _ );
                         if( language != null )
                         {
                             // We reuse the Register of the initial phasis: it does everything
@@ -247,7 +247,7 @@ sealed partial class StableItemOrInputTracker
         }
         else
         {
-            ref var o = ref _o[item.Resources.Package.Index];
+            ref var o = ref _o[item.Resources.Index];
             Throw.DebugAssert( o == item );
             o = next;
         }

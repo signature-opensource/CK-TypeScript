@@ -7,7 +7,7 @@ using CK.EmbeddedResources;
 namespace CK.Core;
 
 /// <summary>
-/// Local imput is a <see cref="LocalFunctionSource"/> or a <see cref="LocalItem"/>.
+/// Local input is a <see cref="LocalFunctionSource"/> or a <see cref="LocalItem"/>.
 /// </summary>
 interface ILocalInput : IResourceInput
 {

@@ -54,7 +54,7 @@ partial class FunctionSource : IResourceInput
     internal bool Initialize( IActivityMonitor monitor, TransformEnvironment environment )
     {
         Throw.DebugAssert( _functions.Count == 0 );
-        _sourceName = HandleSourceName( environment.TransformerHost, Origin, ref _languageHintIndex );
+        _sourceName = HandleSourceName( environment, Origin, ref _languageHintIndex );
         var preFunctions = Parse( monitor, environment, strict: true );
         if( preFunctions == null ) return false;
         foreach( var p in preFunctions )
@@ -63,12 +63,12 @@ partial class FunctionSource : IResourceInput
         }
         return true;
 
-        static string HandleSourceName( TransformerHost transformerHost, ResourceLocator origin, ref int languageHintIndex )
+        static string HandleSourceName( TransformEnvironment environment, ResourceLocator origin, ref int languageHintIndex )
         {
             Throw.DebugAssert( origin.ResourceName.EndsWith( ".t" ) );
             var rName = origin.ResourceName;
             int sourceNameLength = rName.Length - 2;
-            var languageHint = transformerHost.FindFromFilename( rName.Slice( 0, sourceNameLength ), out var fileExtension );
+            var languageHint = environment.FindFromFileName( rName.Slice( 0, sourceNameLength ), out var fileExtension );
             if( languageHint != null )
             {
                 languageHintIndex = languageHint.Index;

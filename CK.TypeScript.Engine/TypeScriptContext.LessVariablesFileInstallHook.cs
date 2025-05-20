@@ -9,18 +9,18 @@ namespace CK.Setup;
 public sealed partial class TypeScriptContext
 {
 
-    static bool IsPackageVariablesFile( ITransformInstallableItem item )
+    static bool IsVariablesFile( ITransformInstallableItem item )
     {
         Throw.DebugAssert( "variables".Length == 9 );
         var fName = System.IO.Path.GetFileNameWithoutExtension( item.TargetPath.Path.AsSpan() );
         return fName.EndsWith( "variables" )
             && (fName.Length == 9
-                || (fName[^9] == '.'
+                || (fName[^10] == '.'
                     && IsFolderBasedName( fName, item.Resources.Package.DefaultTargetPath.LastPart )));
 
         static bool IsFolderBasedName( ReadOnlySpan<char> fName, string folderName )
         {
-            return fName.Length > folderName.Length + 10
+            return fName.Length >= folderName.Length + 10
                    && fName.StartsWith( folderName, StringComparison.Ordinal )
                    && fName[folderName.Length] == '.';
         }
@@ -30,8 +30,11 @@ public sealed partial class TypeScriptContext
     static bool ErrorAmbiguousVariablesFile( IActivityMonitor monitor, ITransformInstallableItem item, ITransformInstallableItem fItem )
     {
         monitor.Error( $"""
-                        Ambiguous variables less file for '{item.Resources}': file '{item.TargetPath.LastPart}' and '{fItem.TargetPath.LastPart}'
-                        are named that match a variables.less file. Only one can exist.
+                        Ambiguous variables less file for '{item.Resources}':
+                        - file '{item.TargetPath.LastPart}'
+                        - and '{fItem.TargetPath.LastPart}'
+                        Both names match a variables file variables.less file, only one can exist.
+                        Here, renaming the first one (for instance) 'alt-{item.TargetPath.LastPart}', 'alt.{item.TargetPath.LastPart}' is possible.
                         """ );
         return false;
     }
@@ -103,24 +106,22 @@ public sealed partial class TypeScriptContext
         {
             Throw.DebugAssert( IsInitialized );
             handled = false;
-            if( _lessLanguage != null && item.LanguageIndex == _lessLanguage.Index )
+            if( _lessLanguage != null
+                && item.LanguageIndex == _lessLanguage.Index
+                && IsVariablesFile( item ) )
             {
+                // Variables files are not installed.
+                handled = true;
                 Throw.DebugAssert( _primaryVariableFiles != null && _finalTexts != null );
-
-                if( IsPackageVariablesFile( item ) )
+                ref var fItem = ref _primaryVariableFiles[item.Resources.Index];
+                if( fItem == null )
                 {
-                    // Variables files are not installed.
-                    handled = true;
-                    ref var fItem = ref _primaryVariableFiles[item.Resources.Index];
-                    if( fItem == null )
-                    {
-                        fItem = item;
-                        _finalTexts[item.Resources.Index] = finalText;
-                    }
-                    else
-                    {
-                        return ErrorAmbiguousVariablesFile( monitor, item, fItem );
-                    }
+                    fItem = item;
+                    _finalTexts[item.Resources.Index] = finalText;
+                }
+                else
+                {
+                    return ErrorAmbiguousVariablesFile( monitor, item, fItem );
                 }
             }
             return true;
@@ -187,7 +188,8 @@ public sealed partial class TypeScriptContext
                                && _primaryVariableFiles != null
                                && _finalTexts != null );
             s.Writer.Write( _lessLanguage.Index );
-            // Saves the LocalItem's primary variables files.
+            // Saves the LocalItem's only primary variables files
+            // (with their captured text).
             foreach( var res in SpaceData.LocalPackageResources )
             {
                 var item = _primaryVariableFiles[res.Index];
@@ -201,9 +203,9 @@ public sealed partial class TypeScriptContext
             }
         }
 
-        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
-                                                                    ResSpaceData spaceData,
-                                                                    IBinaryDeserializer d )
+        public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
+                                                                        ResSpaceData spaceData,
+                                                                        IBinaryDeserializer d )
         {
             int lessLanguageIndex = d.Reader.ReadInt32();
             var primaryVariableFiles = new ITransformInstallableItem?[spaceData.LocalPackageResources.Length];
@@ -221,7 +223,7 @@ public sealed partial class TypeScriptContext
             return new LiveHook( spaceData, lessLanguageIndex, primaryVariableFiles, finalTexts );
         }
 
-        sealed class LiveHook : ITransformableFileInstallHook
+        sealed class LiveHook : ILiveTransformableFileInstallHook
         {
             readonly ResSpaceData _spaceData;
             readonly int _lessLanguageIndex;
@@ -245,12 +247,35 @@ public sealed partial class TypeScriptContext
                 _rebuildAll = false;
             }
 
+            public bool HandleRemove( IActivityMonitor monitor,
+                          ITransformInstallableItem item,
+                          ILiveResourceSpaceItemInstaller installer,
+                          out bool handled )
+            {
+                handled = false;
+                // No need to test the file name here.
+                if( item.LanguageIndex == _lessLanguageIndex )
+                {
+                    // If we handled this item, clears our memory, signals a
+                    // required rebuild and declare its handling (there's nothing to delete).
+                    ref var fItem = ref _primaryVariableFiles[item.Resources.LocalIndex];
+                    if( fItem == item )
+                    {
+                        fItem = null;
+                        _finalTexts[item.Resources.LocalIndex] = null;
+                        _rebuildAll = true;
+                        handled = true;
+                    }
+                }
+                return true;
+            }
+
             public bool HandleInstall( IActivityMonitor monitor, ITransformInstallableItem item, string finalText, IResourceSpaceItemInstaller installer, out bool handled )
             {
                 handled = false;
                 if( item.LanguageIndex == _lessLanguageIndex )
                 {
-                    if( IsPackageVariablesFile( item ) )
+                    if( IsVariablesFile( item ) )
                     {
                         // Variables files are not installed.
                         handled = true;
@@ -260,13 +285,12 @@ public sealed partial class TypeScriptContext
                         {
                             fItem = item;
                             _finalTexts[item.Resources.LocalIndex] = finalText;
+                            _rebuildAll = true;
                         }
                         else
                         {
                             return ErrorAmbiguousVariablesFile( monitor, item, fItem );
                         }
-                        // TODO: use the _localVariablesResIndex.
-                        _rebuildAll = true;
                     }
                 }
                 return true;
@@ -284,6 +308,7 @@ public sealed partial class TypeScriptContext
                         Throw.DebugAssert( text != null );
                         localVariables.Add( item, text );
                     }
+                    monitor.Info( $"Updated 'styles/local.variables.less' file." );
                     installer.Write( "styles/local.variables.less", localVariables.ToString() );
                 }
             }

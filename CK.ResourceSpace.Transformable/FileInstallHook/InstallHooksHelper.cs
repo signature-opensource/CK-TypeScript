@@ -33,7 +33,7 @@ readonly struct InstallHooksHelper
             var live = Unsafe.As<ILiveResourceSpaceItemInstaller>( _installer );
             foreach( var i in toBeRemoved )
             {
-
+                success &= Remove( monitor, i, live );
             }
         }
         if( toBeInstalled != null )
@@ -61,6 +61,26 @@ readonly struct InstallHooksHelper
         {
             h.StartInstall( monitor );
         }
+    }
+
+    bool Remove( IActivityMonitor monitor, ITransformInstallableItem item, ILiveResourceSpaceItemInstaller live )
+    {
+        bool success = true;
+        bool handled = false;
+        // Use the foreach downcast capability here.
+        foreach( ILiveTransformableFileInstallHook h in _hooks )
+        {
+            success = h.HandleRemove( monitor, item, live, out handled );
+            if( !success || handled )
+            {
+                break;
+            }
+        }
+        if( success && !handled )
+        {
+            live.SafeDelete( monitor, item.TargetPath );
+        }
+        return success;
     }
 
     bool Install( IActivityMonitor monitor, ITransformInstallableItem item, string text )

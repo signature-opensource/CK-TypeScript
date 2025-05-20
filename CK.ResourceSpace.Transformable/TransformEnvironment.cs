@@ -3,7 +3,9 @@ using CK.Transform.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CK.Core;
 
@@ -80,7 +82,12 @@ sealed partial class TransformEnvironment
         var targetPath = resources.Package.DefaultTargetPath.Combine( r.ResourceName.ToString() );
         if( _items.TryGetValue( targetPath, out var exists ) )
         {
-            monitor.Error( $"Both {r} and {exists.Origin} have the same target final path '{targetPath}'." );
+            monitor.Error( $"""
+                Both:
+                - {r}
+                - and {exists.Origin}
+                have the same target final path '{targetPath}'.
+                """ );
             return null;
         }
 
@@ -335,4 +342,8 @@ sealed partial class TransformEnvironment
         }
     }
 
+    internal TransformerHost.Language? FindFromFileName( ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension )
+    {
+        return _transformerHost.FindFromFileName( fileName, out extension );
+    }
 }

@@ -27,7 +27,7 @@ public sealed partial class TypeScriptContext // Less styles support.
     }
 
 
-    static bool IsPackagePrimaryLessFile( ITransformInstallableItem item )
+    static bool IsPrimaryLessFile( ITransformInstallableItem item )
     {
         Throw.DebugAssert( "styles".Length == 6 );
         var fName = Path.GetFileNameWithoutExtension( item.TargetPath.Path.AsSpan() );
@@ -44,8 +44,12 @@ public sealed partial class TypeScriptContext // Less styles support.
     static bool ErrorAmbiguousPrimaryFile( IActivityMonitor monitor, ITransformInstallableItem item, ITransformInstallableItem fItem )
     {
         monitor.Error( $"""
-                            Ambiguous primary less file for '{item.Resources}': file '{item.TargetPath.LastPart}' and '{fItem.TargetPath.LastPart}'
-                            are named that match a primary less file. Only one can exist.
+                            Ambiguous primary less file for '{item.Resources}':
+                            - file '{item.TargetPath.LastPart}'
+                            - and '{fItem.TargetPath.LastPart}'
+                            Both names match a primary less file, only one can exist. Alternate sylesheets can exist:
+                            the file name must not start with the folder name.
+                            Here, renaming the first one (for instance) 'dark.{item.TargetPath.LastPart}' or 'alt-{item.TargetPath.LastPart}' is possible.
                             """ );
         return false;
     }
@@ -95,21 +99,23 @@ public sealed partial class TypeScriptContext // Less styles support.
                                             out bool handled )
         {
             Throw.DebugAssert( IsInitialized );
+            // We never declare to handle a .less file (that is not a variables.less) because
+            // we want it to be installed. Only variable files are truly hooked.
             handled = false;
-            if( _lessLanguage != null && item.LanguageIndex == _lessLanguage.Index )
+            if( _lessLanguage != null
+                && item.LanguageIndex == _lessLanguage.Index
+                && IsPrimaryLessFile( item ) )
             {
                 Throw.DebugAssert( _primaryLessFiles != null );
-                if( IsPackagePrimaryLessFile( item ) )
+                Throw.DebugAssert( "Hook for variables must be BEFORE hook for less files.", !IsVariablesFile( item ) );
+                ref var fItem = ref _primaryLessFiles[item.Resources.Index];
+                if( fItem == null )
                 {
-                    ref var fItem = ref _primaryLessFiles[item.Resources.Index];
-                    if( fItem == null )
-                    {
-                        fItem = item;
-                    }
-                    else
-                    {
-                        return ErrorAmbiguousPrimaryFile( monitor, item, fItem );
-                    }
+                    fItem = item;
+                }
+                else
+                {
+                    return ErrorAmbiguousPrimaryFile( monitor, item, fItem );
                 }
             }
             return true;
@@ -121,7 +127,7 @@ public sealed partial class TypeScriptContext // Less styles support.
 
             if( !_srcFolderPath.IsEmptyPath )
             {
-                TransformAppStyles( monitor, _srcFolderPath.Combine( "styles.less" ), _appStylesImport, SpaceData.HasLiveState );
+                TransformAppStyles( monitor, _srcFolderPath.Combine( "styles.less" ), _appStylesImport );
             }
             if( _lessLanguage != null )
             {
@@ -167,8 +173,7 @@ public sealed partial class TypeScriptContext // Less styles support.
 
             static void TransformAppStyles( IActivityMonitor monitor,
                                             NormalizedPath stylesFilePath,
-                                            PriorityQueue<EnsureImportLine, int>? appStylesImport,
-                                            bool hasLiveState )
+                                            PriorityQueue<EnsureImportLine, int>? appStylesImport )
             {
                 var ckGenStyles = new EnsureImportLine( ImportKeyword.None,
                                                             ImportKeyword.None,
@@ -226,8 +231,8 @@ public sealed partial class TypeScriptContext // Less styles support.
         protected override void WriteLiveState( IBinarySerializer s )
         {
             Throw.DebugAssert( IsInitialized
-                         && _lessLanguage != null
-                         && _primaryLessFiles != null );
+                               && _lessLanguage != null
+                               && _primaryLessFiles != null );
             s.Writer.Write( _lessLanguage.Index );
             // Saves the LocalItem's primary variables files.
             foreach( var res in SpaceData.LocalPackageResources )
@@ -236,9 +241,9 @@ public sealed partial class TypeScriptContext // Less styles support.
             }
         }
 
-        public static ITransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
-                                                                    ResSpaceData spaceData,
-                                                                    IBinaryDeserializer d )
+        public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
+                                                                        ResSpaceData spaceData,
+                                                                        IBinaryDeserializer d )
         {
             int lessLanguageIndex = d.Reader.ReadInt32();
             var primaryLessFiles = new ITransformInstallableItem?[spaceData.LocalPackageResources.Length];
@@ -254,9 +259,8 @@ public sealed partial class TypeScriptContext // Less styles support.
             return new LiveHook( spaceData, lessLanguageIndex, primaryLessFiles );
         }
 
-        sealed class LiveHook : ITransformableFileInstallHook
+        sealed class LiveHook : ILiveTransformableFileInstallHook
         {
-            readonly ResSpaceData _spaceData;
             readonly int _lessLanguageIndex;
             readonly ITransformInstallableItem?[] _primaryLessFiles;
             bool _rebuildAll;
@@ -265,7 +269,6 @@ public sealed partial class TypeScriptContext // Less styles support.
                              int lessLanguageIndex,
                              ITransformInstallableItem?[] primaryLessFiles )
             {
-                _spaceData = spaceData;
                 _lessLanguageIndex = lessLanguageIndex;
                 _primaryLessFiles = primaryLessFiles;
             }
@@ -275,27 +278,53 @@ public sealed partial class TypeScriptContext // Less styles support.
                 _rebuildAll = false;
             }
 
-            public bool HandleInstall( IActivityMonitor monitor, ITransformInstallableItem item, string finalText, IResourceSpaceItemInstaller installer, out bool handled )
+            public bool HandleRemove( IActivityMonitor monitor,
+                                      ITransformInstallableItem item,
+                                      ILiveResourceSpaceItemInstaller installer,
+                                      out bool handled )
             {
+                // We don't declare that we handle the file because we always want it to be eventually deleted.
                 handled = false;
+                // No need to test the file name here.
                 if( item.LanguageIndex == _lessLanguageIndex )
                 {
-                    if( IsPackageVariablesFile( item ) )
+                    // If we handled this item, clears our memory and signals
+                    // a required rebuild.
+                    ref var fItem = ref _primaryLessFiles[item.Resources.LocalIndex];
+                    if( fItem == item )
                     {
-                        // Variables files are not installed.
-                        handled = true;
-                        // Check new (rebuild all) or clash (ErrorAmbiguousVariablesFile).
-                        ref var fItem = ref _primaryLessFiles[item.Resources.LocalIndex];
-                        if( fItem == null || fItem == item )
-                        {
-                            fItem = item;
-                        }
-                        else
-                        {
-                            return ErrorAmbiguousVariablesFile( monitor, item, fItem );
-                        }
+                        fItem = null;
                         _rebuildAll = true;
                     }
+                }
+                return true;
+            }
+
+            public bool HandleInstall( IActivityMonitor monitor,
+                                       ITransformInstallableItem item,
+                                       string finalText,
+                                       IResourceSpaceItemInstaller installer,
+                                       out bool handled )
+            {
+                handled = false;
+                if( item.LanguageIndex == _lessLanguageIndex
+                    && IsPrimaryLessFile( item ) )
+                {
+                    Throw.DebugAssert( "Hook for variables must be BEFORE hook for less files.",
+                                        !IsVariablesFile( item ) );
+                    // Variables files are not installed.
+                    handled = true;
+                    // Check new (rebuild all) or clash (ErrorAmbiguousVariablesFile).
+                    ref var fItem = ref _primaryLessFiles[item.Resources.LocalIndex];
+                    if( fItem == null || fItem == item )
+                    {
+                        fItem = item;
+                    }
+                    else
+                    {
+                        return ErrorAmbiguousVariablesFile( monitor, item, fItem );
+                    }
+                    _rebuildAll = true;
                 }
                 return true;
             }
@@ -316,6 +345,7 @@ public sealed partial class TypeScriptContext // Less styles support.
                             localStyles.Append( "@import '../" ).Append( item.TargetPath ).Append( "';" ).AppendLine();
                         }
                     }
+                    monitor.Info( $"Updated 'styles/local.styles.less' file." );
                     installer.Write( "styles/local.styles.less", localStyles.ToString() );
                 }
             }

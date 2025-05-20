@@ -3,8 +3,8 @@ using System.Collections.Immutable;
 namespace CK.Core;
 
 /// <summary>
-/// Basic low-level interface.
-/// Instances must be serializable (typically by implementing <see cref="ICKSimpleBinarySerializable"/> support).
+/// Basic low-level interface used by initial <see cref="TransformableFileHandler"/> and by
+/// Live hooks.
 /// </summary>
 public interface ITransformableFileInstallHook
 {
@@ -43,3 +43,6 @@ public interface ITransformableFileInstallHook
     /// <param name="installer">Final installer to use.</param>
     void StopInstall( IActivityMonitor monitor, bool success, IResourceSpaceItemInstaller installer );
 }
+
+
+

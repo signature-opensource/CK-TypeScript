@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace CK.Transform.Core;
 
@@ -173,25 +174,33 @@ public sealed partial class TransformerHost
     }
 
     /// <summary>
-    /// Tries to find a registered <see cref="Language"/> from a file name.
+    /// Tries to find a <see cref="Language"/> from a file name.
+    /// It can be a <see cref="Language.IsAutoLanguage"/> and/or a <see cref="Language.IsTransformLanguage"/>.
     /// </summary>
     /// <param name="fileName">The file name or path.</param>
     /// <param name="extension">The extension that matched.</param>
     /// <returns>The language or null.</returns>
-    [Obsolete( "Shoud not be used... or used differently." )]
-    public Language? FindFromFilename( ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension )
+    public Language? FindFromFileName( ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension )
     {
-        foreach( var l in _languages )
+        var m = TransformExtension().EnumerateMatches( fileName );
+        if( m.MoveNext() )
         {
-            extension = l.TransformLanguage.CheckLangageFilename( fileName );
-            if( extension.Length > 0 )
+            extension = fileName.Slice( m.Current.Index );
+            var l = FindLanguage( extension, withFileExtensions: true );
+            if( l != null ) return l;
+            if( extension[^2] == '.' && extension[^1] == 't' )
             {
-                return l;
+                extension = extension[^2..];
+                return _rootLanguage;
             }
         }
         extension = default;
         return null;
     }
+
+    [GeneratedRegex( @"\.\w+(?:\.t|T)*$" )]
+    private static partial Regex TransformExtension();
+
 
     /// <inheritdoc cref="TryParseFunction(IActivityMonitor,ReadOnlyMemory{char})"/>
     public TransformerFunction? TryParseFunction( IActivityMonitor monitor, string text ) => TryParseFunction( monitor, text.AsMemory() );
