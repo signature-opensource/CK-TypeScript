@@ -259,7 +259,13 @@ public static class YarnHelper
                     lines.Insert( 0, firstLine );
                 }
                 var newOne = string.Join( Environment.NewLine, lines );
-                monitor.Info( $"Updated .yarnrc.yml from:{Environment.NewLine}{current}{Environment.NewLine}to:{Environment.NewLine}{newOne}" );
+                monitor.Info( $"""
+                    Updated .yarnrc.yml from:
+                    {current}
+                    to:
+                    {newOne}
+                    """ );
+                    
                 File.WriteAllText( yarnrcFile, newOne );
             }
             else
