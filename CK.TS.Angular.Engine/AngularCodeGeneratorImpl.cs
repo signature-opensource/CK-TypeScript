@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace CK.TS.Angular.Engine;
 
@@ -231,6 +232,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     return CreateNewAngular( monitor, e, tempFolderPath, newFolderPath, tempPackageJsonPath )
                            && UpdateNewPackageJson( monitor, newFolderPath, targetPackageJson, out IList<PackageDependency> savedLatestDependencies, out var newPackageJson )
+                           // We remove the "src/styles.less" file because we have already created it. 
+                           && DeleteStylesLess( monitor, newFolderPath )
                            && CleanupAppComponentHtml( monitor, newFolderPath )
                            && RemoveUselessAngularJsonTestSection( monitor, newFolderPath, newPackageJson )
                            && LiftContent( monitor, targetProjectPath, newFolderPath )
@@ -310,6 +313,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     return true;
                 }
 
+                static bool DeleteStylesLess( IActivityMonitor monitor, NormalizedPath newFolderPath )
+                {
+                    NormalizedPath filePath = newFolderPath.Combine( "src/styles.less" );
+                    if( File.Exists( filePath ) )
+                    {
+                        File.Delete( filePath );
+                    }
+                    return true;
+                }
+
                 static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
                 {
                     NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
@@ -381,17 +394,53 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         {
                             // This is idempotent (as long as the comment is not removed in the lifted file).
                             MoveGitIgnore( newFolderPath, targetProjectPath );
+
+                            // Process the src directory first and file by files instead of using Directory/file moves.
+                            var newSrcPath = newFolderPath.AppendPart( "src" );
+                            // Ensure that the directories exist.
+                            foreach( var srcDir in Directory.EnumerateDirectories( newSrcPath, "*", SearchOption.AllDirectories ) )
+                            {
+                                currentTarget = srcDir.Remove( idxRemove, lenRemove );
+                                if( !Directory.Exists( currentTarget ) )
+                                {
+                                    Directory.CreateDirectory( currentTarget );
+                                }
+                            }
+                            // Then for each file, either move it to the target /src or /_ckConflict_ directory.
+                            foreach( var fName in Directory.EnumerateFiles( newSrcPath, "*", SearchOption.AllDirectories ) )
+                            {
+                                currentTarget = fName.Remove( idxRemove, lenRemove );
+                                if( File.Exists( currentTarget ) )
+                                {
+                                    MoveToConflicts( monitor, ref hasConflict, targetProjectPath.Path.Length, currentTarget, conflictFolderPath );
+                                }
+                                else
+                                {
+                                    File.Move( fName, currentTarget );
+                                }
+                            }
+                            // Deletes the now empty src folder... but it is not really empty because of empty folders (/src/app).
+                            // Use recursive cleanup here.
+                            TypeScriptContext.DeleteFolder( monitor, newSrcPath, recursive: true );
+
                             // Consider the root _new_/XXX/ level by using Directory.Move that handles
                             // folders and files.
-                            // On conflict, the /_ckConflict_ will contain the whole sub folder ("/src" for example).
+                            // On conflict, the /_ckConflict_ will contain the whole sub folder.
                             foreach( var entry in Directory.EnumerateFileSystemEntries( newFolderPath ) )
                             {
                                 currentTarget = entry.Remove( idxRemove, lenRemove );
                                 if( Path.Exists( currentTarget ) )
                                 {
-                                    MoveToConflicts( monitor, ref hasConflict, targetProjectPath.Path.Length, currentTarget, conflictFolderPath );
+                                    // We have handled /src specifically above.
+                                    if( !currentTarget.EndsWith( Path.DirectorySeparatorChar + "src" ) )
+                                    {
+                                        MoveToConflicts( monitor, ref hasConflict, targetProjectPath.Path.Length, currentTarget, conflictFolderPath );
+                                    }
                                 }
-                                Directory.Move( entry, currentTarget );
+                                else
+                                {
+                                    Directory.Move( entry, currentTarget );
+                                }
                             }
                         }
                         catch( Exception ex )
@@ -402,11 +451,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return true;
                     }
 
-                    static bool MoveToConflicts( IActivityMonitor monitor, ref bool hasConflict, int targetProjectPathLength, string currentTarget, NormalizedPath conflictFolderPath )
+                    static bool MoveToConflicts( IActivityMonitor monitor,
+                                                 ref bool hasConflict,
+                                                 int targetProjectPathLength,
+                                                 string currentTarget,
+                                                 NormalizedPath conflictFolderPath )
                     {
                         if( !hasConflict )
                         {
                             hasConflict = true;
+                            monitor.Warn( $"Conflicts found at least on '{currentTarget.AsSpan( targetProjectPathLength )}'. See '{_conflictFolderName}' folder." );
                             Directory.CreateDirectory( conflictFolderPath );
                             File.WriteAllText( conflictFolderPath + "/.gitignore", "*" );
                         }
