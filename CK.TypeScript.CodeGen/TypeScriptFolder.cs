@@ -139,7 +139,7 @@ public sealed partial class TypeScriptFolder
     /// <summary>
     /// Gets the total number of files that this folder will publish.
     /// This can differ from the <see cref="AllFilesRecursive"/> count because of the 'index.ts'
-    /// barrel management.
+    /// barrel management and that <see cref="ResourceTypeScriptFile"/> are not published.
     /// </summary>
     public int FileCount => _fileCount;
 

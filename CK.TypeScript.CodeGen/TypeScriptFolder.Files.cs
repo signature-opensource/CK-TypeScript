@@ -134,8 +134,15 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
     /// </summary>
     /// <param name="locator">The resource locator of the file.</param>
     /// <param name="path">The file's path to create. Must not be empty.</param>
+    /// <param name="publishedResource">
+    /// True to publish this file in a <see cref="ITypeScriptPublishTarget"/>.
+    /// This is false by default: a file that belongs a resource container will be eventually published
+    /// by its container, not by the Code Generated container.
+    /// </param>
     /// <returns>The resource file.</returns>
-    public ResourceTypeScriptFile FindOrCreateResourceFile( ResourceLocator locator, NormalizedPath path )
+    public ResourceTypeScriptFile FindOrCreateResourceFile( ResourceLocator locator,
+                                                            NormalizedPath path,
+                                                            bool publishedResource = false )
     {
         Throw.CheckArgument( !path.IsEmptyPath );
         var folder = FindOrCreateParentFolder( path );
@@ -149,14 +156,18 @@ public sealed partial class TypeScriptFolder // TypeScriptFile management.
             }
             Throw.DebugAssert( f is ResourceTypeScriptFile );
             var rF = Unsafe.As<ResourceTypeScriptFile>( f );
-            if( rF.Locator == locator )
+            if( rF.Locator != locator )
             {
-                return rF;
+                throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file already comes from {rF.Locator}." );
             }
-            throw new InvalidOperationException( $"Unable fo create '{path}' from {locator}. This file already comes from {rF.Locator}." );
+            if( rF.IsPublishedResource != publishedResource )
+            {
+                throw new InvalidOperationException( $"ResourceTypeScript.IsPublishedResource mismatch: '{path}' from {locator} redefinition cannot change the IsPublishedResource status." );
+            }
+            return rF;
         }
         CheckCreateLocalName( name, isFolder: false );
-        return new ResourceTypeScriptFile( folder, name, locator, previous );
+        return new ResourceTypeScriptFile( folder, name, locator, previous, publishedResource );
     }
 
 }

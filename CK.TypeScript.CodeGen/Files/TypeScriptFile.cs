@@ -26,7 +26,7 @@ public sealed class TypeScriptFile : TypeScriptFileBase
     internal readonly FileImportCodePart _imports;
 
     internal TypeScriptFile( TypeScriptFolder folder, string name, TypeScriptFileBase? previous )
-        : base( folder, name, previous )
+        : base( folder, name, previous, unpublishedResourceFile: false )
     {
         _imports = new FileImportCodePart( this );
         _body = new FileBodyCodePart( this );

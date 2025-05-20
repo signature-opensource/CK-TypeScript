@@ -5,6 +5,7 @@ using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
+using CK.EmbeddedResources;
 
 namespace CK.TS.Angular.Engine;
 
@@ -45,10 +46,13 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
     /// <param name="spaceBuilder">The resource space builder.</param>
     /// <param name="d">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
-    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder, ResPackageDescriptor d )
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceBuilder,
+                                                          ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
-        if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
+        if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
         }

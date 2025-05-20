@@ -5,6 +5,7 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using CK.EmbeddedResources;
 
 namespace CK.TS.Angular.Engine;
 
@@ -102,7 +103,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     {
         Throw.DebugAssert( !IsAppComponent );
         var fName = _snakeName + ".component.ts";
-        if( !d.RemoveExpectedCodeHandledResource( monitor, fName, out var res ) )
+        if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
         }

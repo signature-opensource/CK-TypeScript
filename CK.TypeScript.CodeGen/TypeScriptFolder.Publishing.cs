@@ -57,18 +57,33 @@ public sealed partial class TypeScriptFolder
             do
             {
                 // Publish files until a folder has a lexically ordered greater name including the separator!
-                while( cFile != null && (cFolder == null || cFile.Name.AsSpan().CompareTo( cFolder.NameWithSeparator, StringComparison.Ordinal ) < 0) )
+                while( cFile != null
+                       && (cFolder == null || cFile.Name.AsSpan().CompareTo( cFolder.NameWithSeparator, StringComparison.Ordinal ) < 0) )
                 {
                     if( !hasBarrel && cFile.Name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) )
                     {
                         hasBarrel = true;
                         monitor.Trace( "Publishing existing 'index.ts' barrel file." );
+                        target.Publish( cFile.Name, cFile.GetCurrentText() );
+                    }
+                    else if( cFile is TypeScriptFile )
+                    {
+                        monitor.Trace( $"-> '{cFile.Name}'." );
+                        target.Publish( cFile.Name, cFile.GetCurrentText() );
                     }
                     else
                     {
-                        monitor.Trace( $"-> '{cFile.Name}'." );
+                        Throw.DebugAssert( cFile is ResourceTypeScriptFile );
+                        if( ((ResourceTypeScriptFile)cFile).IsPublishedResource )
+                        {
+                            monitor.Trace( $"-> '{cFile.Name}' (resource)." );
+                            target.Publish( cFile.Name, cFile.GetCurrentText() );
+                        }
+                        else
+                        {
+                            monitor.Debug( $"-> '{cFile.Name}' (Skipped resource)." );
+                        }
                     }
-                    target.Publish( cFile.Name, cFile.GetCurrentText() );
                     cFile = cFile._next;
                 }
                 // Publish the folder and continue on files.

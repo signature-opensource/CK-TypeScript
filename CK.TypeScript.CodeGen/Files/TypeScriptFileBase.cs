@@ -11,7 +11,7 @@ namespace CK.TypeScript.CodeGen;
 /// or other means to define the code itself. Available implementations are:
 /// <list type="bullet">
 ///     <item>The regular <see cref="TypeScriptFile"/> that is used to fully generate code.</item>
-///     <item>The resource based <see cref="ResourceTypeScriptFile"/>.</item>
+///     <item>The resource based <see cref="ResourceTypeScriptFile"/> for which only TS types can be declared.</item>
 /// </list>
 /// </summary>
 public abstract partial class TypeScriptFileBase
@@ -25,7 +25,10 @@ public abstract partial class TypeScriptFileBase
     readonly TypeScriptFolder _folder;
     internal TypeScriptFileBase? _next;
 
-    private protected TypeScriptFileBase( TypeScriptFolder folder, string name, TypeScriptFileBase? previous )
+    private protected TypeScriptFileBase( TypeScriptFolder folder,
+                                          string name,
+                                          TypeScriptFileBase? previous,
+                                          bool unpublishedResourceFile )
     {
         _folder = folder;
         _name = name;
@@ -43,7 +46,7 @@ public abstract partial class TypeScriptFileBase
                 folder.EnsureBarrel();
                 folder.SetHasExportedSymbol();
             }
-            else
+            else if( !unpublishedResourceFile )
             {
                 folder.IncrementFileCount();
             }
