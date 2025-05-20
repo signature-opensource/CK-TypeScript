@@ -27,4 +27,3 @@ begin
     replace "I'm the top bar. "
         with "I'm the top bar (altered by Res[After]/PublicSection/public-topbar.t).<hr>";
 end
-

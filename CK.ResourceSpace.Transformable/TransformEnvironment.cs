@@ -346,4 +346,21 @@ sealed partial class TransformEnvironment
     {
         return _transformerHost.FindFromFileName( fileName, out extension );
     }
+
+    internal int Rebind( IActivityMonitor monitor, ITransformable newItem )
+    {
+        Throw.DebugAssert( IsLive );
+        var toRebind = UnboundFunctions.Where( u => u.Target.TransfomableTargetName == newItem.TransfomableTargetName )
+                                       .OrderBy( f => f.Source.Resources.Index )
+                                       .ToList();
+        TFunction? previous = null;
+        foreach( var f in toRebind )
+        {
+            newItem.Add( f, previous );
+            f.SetNewTarget( newItem );
+            previous = f;
+            UnboundFunctions.Remove( f );
+        }
+        return toRebind.Count;
+    }
 }

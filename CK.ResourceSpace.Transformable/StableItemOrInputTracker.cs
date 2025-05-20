@@ -109,11 +109,15 @@ sealed partial class StableItemOrInputTracker
     }
 
     // Called only if at least one change has been recorded in _localchanges.
-    internal (List<LocalItem>? ToBeRemoved, HashSet<LocalItem>? ToBeInstalled) ApplyChanges( IActivityMonitor monitor,
-                                                                                             TransformEnvironment environment )
+    internal (List<LocalItem>? ToBeRemoved, HashSet<TransformableItem>? ToBeInstalled) ApplyChanges( IActivityMonitor monitor,
+                                                                                                     TransformEnvironment environment )
     {
         // First pass: handles removal of ILocalInput that disappeared or didn't change.
         List<LocalItem>? toBeRemoved = null;
+        // When handling removal of a FunctionSource, the existing functions's PeeledTarget must
+        // be installed. This is why the ILocaInput.InitializeApplyChanges take this set in its
+        // parameters.
+        HashSet<TransformableItem>? toBeInstalled = null;
 
         bool hasRemainingChanges = false;
 
@@ -128,7 +132,7 @@ sealed partial class StableItemOrInputTracker
                 {
                     if( c is ILocalInput input )
                     {
-                        if( !input.InitializeApplyChanges( monitor, environment, ref toBeRemoved ) )
+                        if( !input.InitializeApplyChanges( monitor, environment, ref toBeInstalled, ref toBeRemoved ) )
                         {
                             removedChanges ??= new List<ILocalInput>();
                             removedChanges.Add( input );
@@ -148,9 +152,9 @@ sealed partial class StableItemOrInputTracker
         }
         if( !hasRemainingChanges )
         {
-            return (toBeRemoved, null);
+            return (toBeRemoved, toBeInstalled);
         }
-        var toBeInstalled = new HashSet<LocalItem>();
+        toBeInstalled ??= new HashSet<TransformableItem>();
         // Second pass: Now that disappeared entities have been removed from the environment,
         //              we can update the changed ones and inject the new ones.
         //              This is done following the topological order and this is the key to
@@ -183,7 +187,14 @@ sealed partial class StableItemOrInputTracker
                                 Throw.DebugAssert( input == null || input is ILocalInput );
                                 if( input is LocalItem newItem )
                                 {
+                                    // Rebind any unbound functions that target this item.
+                                    environment.Rebind( monitor, newItem );
                                     toBeInstalled.Add( newItem );
+                                }
+                                else
+                                {
+                                    Throw.DebugAssert( input is LocalFunctionSource );
+                                    ((LocalFunctionSource)input).OnAppear( monitor, environment, toBeInstalled );
                                 }
                             }
                         }
@@ -194,9 +205,11 @@ sealed partial class StableItemOrInputTracker
                         ((ILocalInput)c).ApplyChanges( monitor, environment, toBeInstalled );
                     }
                 }
-
+                // Don't forget to clear the changes!
+                set.Clear();
             }
         }
+        Throw.DebugAssert( _localChanges.All( s => s == null || s.Count == 0 ) );
         if( toBeInstalled.Count == 0 )
         {
             toBeInstalled = null;

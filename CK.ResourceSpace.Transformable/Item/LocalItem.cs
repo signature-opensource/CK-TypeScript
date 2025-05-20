@@ -26,6 +26,7 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
 
     public bool InitializeApplyChanges( IActivityMonitor monitor,
                                         TransformEnvironment environment,
+                                        ref HashSet<TransformableItem>? toBeInstalled,
                                         ref List<LocalItem>? toBeRemoved )
     {
         Throw.DebugAssert( environment.IsLive );
@@ -40,6 +41,8 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
         }
         else
         {
+            // The local item disappeared.
+            // Its associated transform functions are "unbound".
             environment.Tracker.Remove( this );
             Throw.DebugAssert( environment.Items.TryGetValue( TargetPath, out var found ) && found == this );
             environment.Items.Remove( TargetPath );
@@ -55,7 +58,7 @@ sealed partial class LocalItem : TransformableItem, ILocalInput
         return false;
     }
 
-    public void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<LocalItem> toBeInstalled )
+    public void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<TransformableItem> toBeInstalled )
     {
         // If we are called, then we have changed and must be installed.
         toBeInstalled.Add( this );

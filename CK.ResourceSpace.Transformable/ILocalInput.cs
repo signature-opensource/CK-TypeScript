@@ -32,14 +32,22 @@ interface ILocalInput : IResourceInput
     /// </summary>
     /// <param name="monitor">The monitor.</param>
     /// <param name="environment">The environment.</param>
+    /// <param name="toBeInstalled">Collector for items to install.</param>
     /// <param name="toBeRemoved">Collector for disappeared local items.</param>
     /// <returns>True if ApplyChanges must be called, false otherwise.</returns>
     bool InitializeApplyChanges( IActivityMonitor monitor,
                                  TransformEnvironment environment,
+                                 ref HashSet<TransformableItem>? toBeInstalled,
                                  ref List<LocalItem>? toBeRemoved );
 
 
-    void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<LocalItem> toBeInstalled );
+    /// <summary>
+    /// Applies the changes (called when <see cref="InitializeApplyChanges"/> returned true).
+    /// </summary>
+    /// <param name="monitor">The monitor.</param>
+    /// <param name="environment">The environment.</param>
+    /// <param name="toBeInstalled">Collector for items to install.</param>
+    void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<TransformableItem> toBeInstalled );
 
     internal static bool TryReadText( IActivityMonitor monitor, ILocalInput input, out string? newText )
     {

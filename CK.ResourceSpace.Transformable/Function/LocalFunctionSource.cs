@@ -22,6 +22,7 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
 
     public bool InitializeApplyChanges( IActivityMonitor monitor,
                                         TransformEnvironment environment,
+                                        ref HashSet<TransformableItem>? toBeInstalled,
                                         ref List<LocalItem>? toBeRemoved )
     {
         Throw.DebugAssert( environment.IsLive );
@@ -43,9 +44,12 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
         }
         else
         {
+            // FunctionSource disappeared: impacted function targets must be installed.
+            toBeInstalled ??= new HashSet<TransformableItem>();
             environment.Tracker.Remove( this );
             foreach( var f in Functions )
             {
+                toBeInstalled.Add( f.PeeledTarget );
                 f.Remove( environment );
                 f.Destroy( environment );
             }
@@ -53,7 +57,7 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
         return false;
     }
 
-    public void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<LocalItem> toBeInstalled )
+    public void ApplyChanges( IActivityMonitor monitor, TransformEnvironment environment, HashSet<TransformableItem> toBeInstalled )
     {
         var functions = Functions;
         var updated = new BitArray( functions.Count );
@@ -85,7 +89,7 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
         static void RemoveMissing( TransformEnvironment environment,
                                    List<TFunction> functions,
                                    BitArray updated,
-                                   HashSet<LocalItem> toBeInstalled )
+                                   HashSet<TransformableItem> toBeInstalled )
         {
             int idx = 0;
             for( int i = 0; i < updated.Count; ++i )

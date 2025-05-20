@@ -7,7 +7,8 @@ sealed partial class TFunction : ITransformable
     readonly FunctionSource _source;
     // The target of the function is the key to detect an update of
     // an existing function vs. a destroy/insert of a new TFunction.
-    readonly ITransformable _target;
+    // It is not readonly as an unbound function can be rebound to a new target.
+    ITransformable _target;
     // The function name is used as the transform target
     // for transform of transform.
     string _functionName;
@@ -54,7 +55,9 @@ sealed partial class TFunction : ITransformable
 
     internal ITransformable Target => _target;
 
-    internal LocalItem PeeledTarget
+    internal void SetNewTarget( ITransformable t ) => _target = t;
+
+    internal TransformableItem PeeledTarget
     {
         get
         {
@@ -63,8 +66,8 @@ sealed partial class TFunction : ITransformable
             {
                 peeledTarget = f2._target;
             }
-            Throw.DebugAssert( peeledTarget is LocalItem );
-            return (LocalItem)peeledTarget;
+            Throw.DebugAssert( peeledTarget is TransformableItem );
+            return (TransformableItem)peeledTarget;
         }
     }
 
