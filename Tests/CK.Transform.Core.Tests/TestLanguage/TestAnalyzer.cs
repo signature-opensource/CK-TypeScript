@@ -130,7 +130,7 @@ sealed partial class TestAnalyzer : TargetLanguageAnalyzer
             {
                 "braces" => new SpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
                 "brackets" => new SpanTypeOperator( typeof( BracketSpan ), "{brackets}" ),
-                "^braces" => new StrictCoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
+                "^braces" => new CoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
                 _ => $"""
                          Invalid span type '{spanSpec}'. Allowed are "braces", "brackets".
                          """

@@ -73,7 +73,7 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
             return singleSpanType switch
             {
                 "braces" => new SpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
-                "^braces" => new StrictCoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
+                "^braces" => new CoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
                 "class" => new SpanTypeOperator( typeof( ClassDefinition ), "{class}" ),
                 "import" => new SpanTypeOperator( typeof( ImportStatement ), "{import}" ),
                 _ => $"""

@@ -1,26 +1,20 @@
+using CK.Core;
 using System;
 using System.Text;
 
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="ITokenFilterOperator"/> that splits matches to
-/// the top spans that can be assigned to a type.
-/// <para>
-/// Narrowing and splitter operator.
-/// </para>
+/// The anchored version of the <see cref="CoveringSpanTypeOperator"/>:
+/// the tokens are the ones from the where "pattern" but the span scope used
+/// is the corresponding match in the previous input.
 /// </summary>
-public sealed class StrictCoveringSpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchoredOperator
+sealed class CoveringSpanTypeOperatorAnchored : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
 
-    /// <summary>
-    /// Initializes a new <see cref="StrictCoveringSpanTypeOperator"/>.
-    /// </summary>
-    /// <param name="spanType">The span type to consider.</param>
-    /// <param name="displayName">The span type name to display.</param>
-    public StrictCoveringSpanTypeOperator( Type spanType, string displayName )
+    public CoveringSpanTypeOperatorAnchored( Type spanType, string displayName )
     {
         _spanType = spanType;
         _displayName = displayName;
@@ -39,16 +33,26 @@ public sealed class StrictCoveringSpanTypeOperator : ITokenFilterOperator, IToke
 
     public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
+        Throw.DebugAssert( "Our previous is the where TokenPatternOperator.", input.Previous != null );
         var builder = context.SharedBuilder;
         var spanCollector = new TokenSpanCoveringCollector();
+        var ePrevious = input.Previous.CreateTokenEnumerator();
         var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
+            ePrevious.NextEach();
+            Throw.DebugAssert( e.CurrentEachIndex == ePrevious.CurrentEachIndex );
             while( e.NextMatch() )
             {
+                if( ePrevious.State is TokenFilterEnumeratorState.Each
+                    || ePrevious.CurrentMatch.Span.End < e.CurrentMatch.Span.Beg )
+                {
+                    ePrevious.NextMatch();
+                }
+                Throw.DebugAssert( ePrevious.CurrentMatch.Span.ContainsOrEquals( e.CurrentMatch.Span ) );
                 while( e.NextToken() )
                 {
-                    var s = context.GetTopSpanAt( e.Token.Index, _spanType, e.CurrentMatch.Span );
+                    var s = context.GetTopSpanAt( e.Token.Index, _spanType, ePrevious.CurrentMatch.Span );
                     if( s != null ) spanCollector.Add( s.Span );
                 }
             }
@@ -61,14 +65,9 @@ public sealed class StrictCoveringSpanTypeOperator : ITokenFilterOperator, IToke
         context.SetResult( builder );
     }
 
-    public ITokenFilterOperator ToAnchoredOperator()
-    {
-        return new AnchoredCoveringSpanTypeOperator( _spanType, _displayName );
-    }
-
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
-        if( !parsable ) b.Append( "[StrictCoveringSpanType] " );
+        if( !parsable ) b.Append( "[AnchoredCoveringSpanType] " );
         return b.Append( _displayName );
     }
 

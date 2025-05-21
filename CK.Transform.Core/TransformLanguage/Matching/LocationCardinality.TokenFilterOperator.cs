@@ -156,12 +156,18 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
             context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {inputMatchCount}.", null );
             return;
         }
+        // When all matches already are "each" buckets, we have nothing to do.
         if( internalInputMatches[^1].EachIndex == inputMatchCount - 1 )
         {
+            // TODO EachScope: Should this operator align the EachScope span to its match's span?
+            //                 Probably yes.
             context.SetUnchangedResult();
         }
         else
         {
+            // Promotes all matches to the "each" level.
+            // TODO EachScope: Injects the EachScope with a span equals to the match's span.
+            //                 
             context.SetResult( internalInputMatches.Select( ( m, index ) => new TokenMatch( index, 0, m.Span ) ).ToArray() );
         }
     }
