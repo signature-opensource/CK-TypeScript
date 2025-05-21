@@ -244,9 +244,9 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     /// </summary>
     /// <param name="tokenSpec">The span specification to analyze.</param>
     /// <returns>The provider or an error string.</returns>
-    internal protected override object ParseSpanSpec( RawString tokenSpec )
+    internal protected override object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var singleSpanType = tokenSpec.InnerText.Span.Trim();
+        var singleSpanType = tokenSpec.InnerText.Trim();
         if( singleSpanType.Length > 0 )
         {
             return singleSpanType switch

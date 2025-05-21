@@ -134,8 +134,10 @@ public sealed class RawString : Token
     }
 
     /// <summary>
-    /// Matches a <see cref="RawString"/> that can use any quote character: the current <see cref="TokenizerHead.Head"/>
-    /// character defines the quote.
+    /// Matches a <see cref="RawString"/> that can use any quote characters.
+    /// <para>
+    /// The head must start with <paramref name="beqQuote"/> otherwise an <see cref="ArgumentException"/> is thrown.
+    /// </para>
     /// </summary>
     /// <param name="head">The tokenizer head.</param>
     /// <param name="beqQuote">The opening quote character.</param>
@@ -146,6 +148,10 @@ public sealed class RawString : Token
     {
         var start = head.Head.TrimStart( beqQuote );
         var quoteCount = head.Head.Length - start.Length;
+        if( quoteCount == 0 )
+        {
+            Throw.ArgumentException( nameof( head ), $"Expecting head to start with the beginning quote '{beqQuote}' character." );
+        }
         Throw.DebugAssert( quoteCount > 0 );
         // Empty string.
         if( quoteCount == 2 )

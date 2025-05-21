@@ -33,15 +33,15 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     /// or an error string.
     /// <para>
     /// At this level, this returns the "Invalid span specification '...'. Language '...' doesn't handle any span specification."
-    /// error or the <see cref="ITokenFilterOperator.Empty"/> if the span specification is empty (to allow <c>in {} "..."</c>
+    /// error or the <see cref="ITokenFilterOperator.Empty"/> if the span specification is empty (to allow <c>in {} where "..."</c>
     /// syntax).
     /// </para>
     /// </summary>
     /// <param name="tokenSpec">The pre-parsed token specification.</param>
     /// <returns>The provider or an error string.</returns>
-    internal protected virtual object ParseSpanSpec( RawString tokenSpec )
+    internal protected virtual object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var content = tokenSpec.InnerText.Span.Trim();
+        var content = tokenSpec.InnerText.Trim();
         if( content.Length > 0 )
         {
             return $"""
