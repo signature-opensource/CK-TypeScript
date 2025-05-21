@@ -6,22 +6,22 @@ namespace CK.Transform.Core;
 
 /// <summary>
 /// A <see cref="ITokenFilterOperator"/> that extends a matched range to
-/// the deepest span that can be assigned to a type.
+/// the deepest spans that can be assigned to a type.
 /// <para>
 /// Widening and fusion operator.
 /// </para>
 /// </summary>
-public sealed class SingleSpanTypeOperator : ITokenFilterOperator
+public sealed class SpanTypeOperator : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
 
     /// <summary>
-    /// Initializes a new <see cref="SingleSpanTypeOperator"/>.
+    /// Initializes a new <see cref="SpanTypeOperator"/>.
     /// </summary>
     /// <param name="spanType">The span type to consider.</param>
     /// <param name="displayName">The span type name to display.</param>
-    public SingleSpanTypeOperator( Type spanType, string displayName )
+    public SpanTypeOperator( Type spanType, string displayName )
     {
         _spanType = spanType;
         _displayName = displayName;

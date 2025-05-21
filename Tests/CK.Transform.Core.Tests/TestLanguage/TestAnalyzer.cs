@@ -128,8 +128,8 @@ sealed partial class TestAnalyzer : TargetLanguageAnalyzer
         {
             return singleSpanType switch
             {
-                "braces" => new SingleSpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
-                "brackets" => new SingleSpanTypeOperator( typeof( BracketSpan ), "{brackets}" ),
+                "braces" => new SpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
+                "brackets" => new SpanTypeOperator( typeof( BracketSpan ), "{brackets}" ),
                 _ => $"""
                          Invalid span type '{singleSpanType}'. Allowed are "braces", "brackets".
                          """
