@@ -56,7 +56,7 @@ public sealed partial class FinalTranslationSet // SubSets
         {
             get
             {
-                // This should be optimal:
+                // This is not obvious but should be optimal:
                 // - No allocation for the direct children of the root.
                 // - A single HashSet hidden by closure for deeper children.
                 IEnumerable<KeyValuePair<string, FinalTranslationValue>> source = _translations;

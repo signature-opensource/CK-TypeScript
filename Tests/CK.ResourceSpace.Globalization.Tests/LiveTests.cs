@@ -38,9 +38,18 @@ public class LiveTests
         Random,
     }
 
-    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr", LocalFileSupport.AllLocal )]
-    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr", LocalFileSupport.Random )]
-    [TestCase( Scenario.ModifyAppResources, LocalesResourceHandler.InstallOption.Minimal, "en-GB,en-US,fr", LocalFileSupport.NoLocal )]
+    [TestCase( Scenario.ModifyAppResources,
+               LocalesResourceHandler.InstallOption.Minimal|LocalesResourceHandler.InstallOption.WithSortedKeys,
+               "en-GB,en-US,fr",
+               LocalFileSupport.AllLocal )]
+    [TestCase( Scenario.ModifyAppResources,
+               LocalesResourceHandler.InstallOption.Minimal|LocalesResourceHandler.InstallOption.WithSortedKeys,
+               "en-GB,en-US,fr",
+               LocalFileSupport.Random )]
+    [TestCase( Scenario.ModifyAppResources,
+               LocalesResourceHandler.InstallOption.Minimal|LocalesResourceHandler.InstallOption.WithSortedKeys,
+               "en-GB,en-US,fr",
+               LocalFileSupport.NoLocal )]
     public async Task LiveState_in_action_Async( Scenario scenario,
                                                  LocalesResourceHandler.InstallOption install,
                                                  string activeCultures,

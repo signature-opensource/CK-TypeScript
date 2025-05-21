@@ -12,12 +12,15 @@ public sealed partial class TypeScriptContext
     {
         public TypeScriptLocalesResourceHandler( IResourceSpaceItemInstaller? installer,
                                                  ISpaceDataCache packageDataCache,
-                                                 ActiveCultureSet activeCultures )
+                                                 ActiveCultureSet activeCultures,
+                                                 bool sortKeys )
             : base( installer,
                     packageDataCache,
                     "ts-locales",
                     activeCultures,
-                    InstallOption.Full )
+                    installOption: sortKeys
+                                    ? InstallOption.Full | InstallOption.WithSortedKeys
+                                    : InstallOption.Full )
         {
         }
 

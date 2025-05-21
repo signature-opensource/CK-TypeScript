@@ -320,7 +320,8 @@ public sealed partial class TypeScriptContext
                                                                                      "ts-assets" ) );
         success &= spaceBuilder.RegisterHandler( monitor, new TypeScriptLocalesResourceHandler( installer,
                                                                                                 spaceData.SpaceDataCache,
-                                                                                                typeScriptContext.ActiveCultures ) );
+                                                                                                typeScriptContext.ActiveCultures,
+                                                                                                sortKeys: spaceData.HasLiveState ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var transformableFiles = new TransformableFileHandler( installer,
                                                                transformerHost,

@@ -1,6 +1,7 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 
@@ -20,35 +21,32 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     FinalTranslationSet? _finalTranslations;
 
     /// <summary>
-    /// Specify how the final locale translation files must be generated.
+    /// Specify how the final locale translations files must be generated.
     /// </summary>
+    [Flags]
     public enum InstallOption
     {
         /// <summary>
         /// Generates a file for each culture in the <see cref="ActiveCultureSet"/> with the
         /// <see cref="IFinalTranslationSet.RootPropagatedTranslations"/> even when there is no translations.
         /// </summary>
-        Full,
-
-        /// <summary>
-        /// Generates a file for each existing <see cref="FinalTranslationSet.AllTranslationSets"/>
-        /// with the <see cref="IFinalTranslationSet.RootPropagatedTranslations"/> only if the set
-        /// is not empty.
-        /// </summary>
-        FullNoEmptySet,
+        Full = 0,
 
         /// <summary>
         /// Generates a file for each culture in the <see cref="ActiveCultureSet"/> with its
         /// <see cref="IFinalTranslationSet.Translations"/> even when there is no translations.
         /// </summary>
-        Minimal,
+        Minimal = 1,
 
         /// <summary>
-        /// Generates a file for each existing <see cref="FinalTranslationSet.AllTranslationSets"/>
-        /// with its <see cref="IFinalTranslationSet.Translations"/> only if the set
-        /// is not empty.
+        /// When set, this bit prevents an empty set to be generated.
         /// </summary>
-        MinimalNoEmptySet
+        WithoutEmptySet = 2,
+
+        /// <summary>
+        /// When set, this bit sorts the keys in the final translation sets.
+        /// </summary>
+        WithSortedKeys = 4
     }
 
     /// <summary>
@@ -161,20 +159,19 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     {
         try
         {
-            switch( _installOption )
+            if( (_installOption & InstallOption.WithoutEmptySet) != 0 )
             {
-                case InstallOption.Full:
-                    WriteAllCultures( final, installer, rootPropagated: true );
-                    break;
-                case InstallOption.FullNoEmptySet:
-                    WriteExistingSets( final, installer, rootPropagated: true );
-                    break;
-                case InstallOption.Minimal:
-                    WriteAllCultures( final, installer, rootPropagated: false );
-                    break;
-                case InstallOption.MinimalNoEmptySet:
-                    WriteExistingSets( final, installer, rootPropagated: false );
-                    break;
+                WriteExistingSets( final,
+                                   installer,
+                                   rootPropagated: (_installOption & InstallOption.Minimal) == 0,
+                                   sortKeys: (_installOption & InstallOption.WithSortedKeys) != 0 );
+            }
+            else
+            {
+                WriteAllCultures( final,
+                                  installer,
+                                   rootPropagated: (_installOption & InstallOption.Minimal) == 0,
+                                   sortKeys: (_installOption & InstallOption.WithSortedKeys) != 0 );
             }
             return true;
         }
@@ -185,18 +182,18 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         }
 
 
-        static void WriteExistingSets( FinalTranslationSet final, IResourceSpaceItemInstaller target, bool rootPropagated )
+        static void WriteExistingSets( FinalTranslationSet final, IResourceSpaceItemInstaller target, bool rootPropagated, bool sortKeys )
         {
             foreach( var set in final.AllTranslationSets.Where( set => set.Translations.Count > 0 ) )
             {
                 var translations = rootPropagated
                                     ? set.RootPropagatedTranslations
                                     : set.Translations;
-                WriteJson( target, $"{set.Culture.Culture.Name}.json", translations );
+                WriteJson( target, $"{set.Culture.Culture.Name}.json", translations, sortKeys );
             }
         }
 
-        static void WriteAllCultures( FinalTranslationSet final, IResourceSpaceItemInstaller target, bool rootPropagated )
+        static void WriteAllCultures( FinalTranslationSet final, IResourceSpaceItemInstaller target, bool rootPropagated, bool sortKeys )
         {
             foreach( var c in final.Culture.ActiveCultures.AllActiveCultures )
             {
@@ -213,20 +210,21 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
                 }
                 else
                 {
-                    WriteJson( target, fPath, translations );
+                    WriteJson( target, fPath, translations, sortKeys );
                 }
             }
         }
 
         static void WriteJson( IResourceSpaceItemInstaller target,
                                NormalizedPath fPath,
-                               IEnumerable<KeyValuePair<string, FinalTranslationValue>> translations )
+                               IEnumerable<KeyValuePair<string, FinalTranslationValue>> translations,
+                               bool sortKeys )
         {
             using( var s = target.OpenWriteStream( fPath ) )
             using( var w = new Utf8JsonWriter( s, new JsonWriterOptions() { Indented = true } ) )
             {
                 w.WriteStartObject();
-                foreach( var t in translations )
+                foreach( var t in sortKeys ? translations.OrderBy( kv => kv.Key ) : translations )
                 {
                     w.WriteString( t.Key, t.Value.Text );
                 }
