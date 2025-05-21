@@ -56,7 +56,7 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     /// or an error string.
     /// <para>
     /// By default, at this level, a head is created on the <see cref="RawString.InnerText"/>,
-    /// <see cref="ParseStandardMatchPattern"/> is called and a <see cref="TokenSpanFilter"/> is created on the
+    /// <see cref="ParseStandardMatchPattern"/> is called and a <see cref="TokenPatternOperator"/> is created on the
     /// parsed tokens (or an error string if no tokens have been parsed).
     /// </para>
     /// </summary>
@@ -81,7 +81,7 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
         {
             return "No token found in match pattern.";
         }
-        return new TokenSpanFilter( tokenPattern, head.Tokens.ToImmutableArray() );
+        return new TokenPatternOperator( tokenPattern, head.Tokens.ToImmutableArray() );
     }
 
     /// <summary>

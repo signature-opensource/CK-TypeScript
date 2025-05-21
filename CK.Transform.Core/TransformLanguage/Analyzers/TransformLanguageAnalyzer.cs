@@ -240,7 +240,7 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     }
 
     /// <summary>
-    /// Overridden to handle "{statement}", "{inject}", "{replace}" and return a <see cref="SingleSpanTypeFilter"/> on success.
+    /// Overridden to handle "{statement}", "{inject}", "{replace}" and return a <see cref="SingleSpanTypeOperator"/> on success.
     /// </summary>
     /// <param name="tokenSpec">The span specification to analyze.</param>
     /// <returns>The provider or an error string.</returns>
@@ -251,9 +251,9 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
         {
             return singleSpanType switch
             {
-                "statement" => new SingleSpanTypeFilter( typeof( TransformStatement ), "{statement}" ),
-                "inject" => new SingleSpanTypeFilter( typeof( InjectIntoStatement ), "{inject}" ),
-                "replace" => new SingleSpanTypeFilter( typeof( ReplaceStatement ), "{replace}" ),
+                "statement" => new SingleSpanTypeOperator( typeof( TransformStatement ), "{statement}" ),
+                "inject" => new SingleSpanTypeOperator( typeof( InjectIntoStatement ), "{inject}" ),
+                "replace" => new SingleSpanTypeOperator( typeof( ReplaceStatement ), "{replace}" ),
                 _ => $"""
                          Invalid span type '{singleSpanType}'. Allowed are "statement", "inject", "replace".
                          """

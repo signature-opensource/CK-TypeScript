@@ -7,18 +7,21 @@ namespace CK.Transform.Core;
 /// <summary>
 /// A <see cref="ITokenFilterOperator"/> that extends a matched range to
 /// the deepest span that can be assigned to a type.
+/// <para>
+/// Widening and fusion operator.
+/// </para>
 /// </summary>
-public sealed class SingleSpanTypeFilter : ITokenFilterOperator
+public sealed class SingleSpanTypeOperator : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
 
     /// <summary>
-    /// Initializes a new <see cref="SingleSpanTypeFilter"/>.
+    /// Initializes a new <see cref="SingleSpanTypeOperator"/>.
     /// </summary>
     /// <param name="spanType">The span type to consider.</param>
     /// <param name="displayName">The span type name to display.</param>
-    public SingleSpanTypeFilter( Type spanType, string displayName )
+    public SingleSpanTypeOperator( Type spanType, string displayName )
     {
         _spanType = spanType;
         _displayName = displayName;
@@ -38,7 +41,7 @@ public sealed class SingleSpanTypeFilter : ITokenFilterOperator
     public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         var builder = context.SharedBuilder;
-        var spanCollector = new DeepestSpanCollector();
+        var spanCollector = new DeepestSpanTypeCollector();
         var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
@@ -50,7 +53,7 @@ public sealed class SingleSpanTypeFilter : ITokenFilterOperator
                     if( s != null ) spanCollector.Add( s.Span );
                 }
             }
-            if( !spanCollector.ExtractResultTo( builder ) )
+            if( !spanCollector.ExtractResultToNewEach( builder ) )
             {
                 context.SetFailedResult( "Missing span.", e );
                 return;
@@ -69,16 +72,16 @@ public sealed class SingleSpanTypeFilter : ITokenFilterOperator
     public override string ToString() => _displayName;
 
 
-    readonly struct DeepestSpanCollector
+    readonly struct DeepestSpanTypeCollector
     {
         readonly List<TokenSpan> _spans;
 
-        public DeepestSpanCollector()
+        public DeepestSpanTypeCollector()
         {
             _spans = new List<TokenSpan>();
         }
 
-        public bool ExtractResultTo( TokenFilterBuilder builder )
+        public bool ExtractResultToNewEach( TokenFilterBuilder builder )
         {
             if( _spans.Count == 0 ) return false;
             builder.StartNewEach();
@@ -86,6 +89,7 @@ public sealed class SingleSpanTypeFilter : ITokenFilterOperator
             {
                 builder.AddMatch( s );
             }
+            _spans.Clear();
             return true;
         }
 

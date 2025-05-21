@@ -28,7 +28,31 @@ public sealed class TokenFilterBuilder
         if( _list.Count > 0 )
         {
             var last = _list[^1].Span;
-            Throw.CheckArgument( last.GetRelationship( span ) is SpanRelationship.Independent or SpanRelationship.Contiguous );
+            var relationshipWithLast = last.GetRelationship( span );
+            // The regular case is that the added span must be
+            // after or contiguous to the last one.
+            if( relationshipWithLast is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
+            {
+                // If we have already entered a new "each" bucket (_match > 0), the added span MUST be
+                // after or contiguous to the last one.
+                //
+                // But if we are on the first span of a new "each" bucket (_match == 0):
+                // - If the initial span of the new "each" is the same as the previous one
+                //   we silently ignore it: the previous each wins (as it is the first one).
+                // - If the span is before the last one, this is an error: the calling operators must
+                //   definitly not do this. It must be fixed.
+                // - If the span overlaps the last one, we could kindly truncate the new span so that
+                //   it starts right after the last one.
+                //   This is weird: the span doesn't cover what the operator decided, this change the span semantics.
+                //   This currently seems dangerous to allow this. If required, we'll add a bool allowTruncateInitialEachSpan = false
+                //   parameter to this method (or to the constructor).
+                //
+                if( _match == 0 && relationshipWithLast is SpanRelationship.Equal )
+                {
+                    return;
+                }
+                Throw.ArgumentException( nameof(span), $"Added span '{span}' must be after the last one '{last}' (CurrentEachNumber: {_each}, CurrentMatchNumber: {_match})." );
+            }
         }
         _list.Add( new TokenMatch( _each, _match++, span ) );
     }

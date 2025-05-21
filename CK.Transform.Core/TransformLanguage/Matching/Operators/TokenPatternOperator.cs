@@ -6,9 +6,10 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
+/// Each-scoped, narrowing and splitter operator.
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-public sealed class TokenSpanFilter : ITokenFilterOperator
+public sealed class TokenPatternOperator : ITokenFilterOperator
 {
     readonly RawString _tokenPattern;
     readonly ImmutableArray<Token> _tokens;
@@ -18,7 +19,7 @@ public sealed class TokenSpanFilter : ITokenFilterOperator
     /// Initializes a new token span filter.
     /// </summary>
     /// <param name="tokens">The tokens. Must not be empty or default.</param>
-    public TokenSpanFilter( RawString tokenPattern, ImmutableArray<Token> tokens )
+    public TokenPatternOperator( RawString tokenPattern, ImmutableArray<Token> tokens )
     {
         Throw.CheckArgument( !tokens.IsDefaultOrEmpty );
         _tokenPattern = tokenPattern;

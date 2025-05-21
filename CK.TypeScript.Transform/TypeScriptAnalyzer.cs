@@ -72,9 +72,9 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
         {
             return singleSpanType switch
             {
-                "braces" => new SingleSpanTypeFilter( typeof( BraceSpan ), "{braces}" ),
-                "class" => new SingleSpanTypeFilter( typeof( ClassDefinition ), "{class}" ),
-                "import" => new SingleSpanTypeFilter( typeof( ImportStatement ), "{import}" ),
+                "braces" => new SingleSpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
+                "class" => new SingleSpanTypeOperator( typeof( ClassDefinition ), "{class}" ),
+                "import" => new SingleSpanTypeOperator( typeof( ImportStatement ), "{import}" ),
                 _ => $"""
                      Invalid span type '{singleSpanType}'. Allowed are "braces", "class", "import".
                      """

@@ -65,7 +65,7 @@ public class TransformTests
         One A { A { this works } A } A { A }
         """
         )]
-    //TODO: ^ for top span.
+    //TODO: ^ for covering span.
     //[TestCase( "n°4bis",
     //    """
     //    One A { A { A } A } A { A }
