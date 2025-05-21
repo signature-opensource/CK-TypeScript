@@ -59,6 +59,10 @@ public sealed partial class SpanMatcher : SourceSpan
             head.AppendError( "Expected {span specification}, \"pattern\" or {span specification} where \"pattern\".", 0 );
             return null;
         }
+        if( specOperator is ITokenFilterAnchoredOperator a && patternOperator != null )
+        {
+            specOperator = a.ToAnchoredOperator();
+        }
         return head.AddSpan( new SpanMatcher( begSpan,
                                               head.LastTokenIndex + 1,
                                               specOperator,
@@ -71,7 +75,7 @@ public sealed partial class SpanMatcher : SourceSpan
             specProvider = null;
             if( head.LowLevelTokenType is TokenType.OpenBrace )
             {
-                var tokenSpec = RawString.MatchAnyQuote( ref head, '{', '}' );
+                var tokenSpec = BalancedString.TryMatch( ref head, '{', '}' );
                 if( tokenSpec == null )
                 {
                     return false;

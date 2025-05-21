@@ -4,23 +4,23 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="ITokenFilterOperator"/> that extends a matched range to
-/// the deepest spans that can be assigned to a type.
+/// A <see cref="ITokenFilterOperator"/> that splits matches to
+/// the top spans that can be assigned to a type.
 /// <para>
-/// Widening and fusion operator.
+/// Narrowing and splitter operator.
 /// </para>
 /// </summary>
-public sealed class SpanTypeOperator : ITokenFilterOperator
+public sealed class StrictCoveringSpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchoredOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
 
     /// <summary>
-    /// Initializes a new <see cref="SpanTypeOperator"/>.
+    /// Initializes a new <see cref="StrictCoveringSpanTypeOperator"/>.
     /// </summary>
     /// <param name="spanType">The span type to consider.</param>
     /// <param name="displayName">The span type name to display.</param>
-    public SpanTypeOperator( Type spanType, string displayName )
+    public StrictCoveringSpanTypeOperator( Type spanType, string displayName )
     {
         _spanType = spanType;
         _displayName = displayName;
@@ -40,7 +40,7 @@ public sealed class SpanTypeOperator : ITokenFilterOperator
     public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         var builder = context.SharedBuilder;
-        var spanCollector = new TokenSpanDeepestCollector();
+        var spanCollector = new TokenSpanCoveringCollector();
         var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
         {
@@ -48,7 +48,7 @@ public sealed class SpanTypeOperator : ITokenFilterOperator
             {
                 while( e.NextToken() )
                 {
-                    var s = context.GetDeepestSpanAt( e.Token.Index, _spanType );
+                    var s = context.GetTopSpanAt( e.Token.Index, _spanType, e.CurrentMatch.Span );
                     if( s != null ) spanCollector.Add( s.Span );
                 }
             }
@@ -61,10 +61,14 @@ public sealed class SpanTypeOperator : ITokenFilterOperator
         context.SetResult( builder );
     }
 
+    public ITokenFilterOperator ToAnchoredOperator()
+    {
+        return new AnchoredCoveringSpanTypeOperator( _spanType, _displayName );
+    }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
-        if( !parsable ) b.Append( "[SpanType] " );
+        if( !parsable ) b.Append( "[StrictCoveringSpanType] " );
         return b.Append( _displayName );
     }
 

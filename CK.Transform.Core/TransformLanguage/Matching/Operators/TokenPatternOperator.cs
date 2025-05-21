@@ -6,7 +6,7 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Each-scoped, narrowing and splitter operator.
+/// Narrowing and splitter operator.
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
 public sealed class TokenPatternOperator : ITokenFilterOperator

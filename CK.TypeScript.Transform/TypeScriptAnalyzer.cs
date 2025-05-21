@@ -65,18 +65,19 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
     /// </summary>
     /// <param name="tokenSpec">The span specification to analyze.</param>
     /// <returns>The provider or an error string.</returns>
-    protected override object ParseSpanSpec( RawString tokenSpec )
+    protected override object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var singleSpanType = tokenSpec.InnerText.Span.Trim();
+        var singleSpanType = tokenSpec.InnerText.Trim();
         if( singleSpanType.Length > 0 )
         {
             return singleSpanType switch
             {
                 "braces" => new SpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
+                "^braces" => new StrictCoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
                 "class" => new SpanTypeOperator( typeof( ClassDefinition ), "{class}" ),
                 "import" => new SpanTypeOperator( typeof( ImportStatement ), "{import}" ),
                 _ => $"""
-                     Invalid span type '{singleSpanType}'. Allowed are "braces", "class", "import".
+                     Invalid span type '{singleSpanType}'. Allowed are "braces", "^braces", "class", "import".
                      """
             };
         }

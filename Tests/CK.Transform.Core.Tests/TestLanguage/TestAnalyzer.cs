@@ -121,17 +121,18 @@ sealed partial class TestAnalyzer : TargetLanguageAnalyzer
 
     protected override void DoParse( ref TokenizerHead head ) => _reusableScanner.Parse( ref head );
 
-    protected override object ParseSpanSpec( RawString tokenSpec )
+    protected override object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var singleSpanType = tokenSpec.InnerText.Span.Trim();
-        if( singleSpanType.Length > 0 )
+        var spanSpec = tokenSpec.InnerText.Trim();
+        if( spanSpec.Length > 0 )
         {
-            return singleSpanType switch
+            return spanSpec switch
             {
                 "braces" => new SpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
                 "brackets" => new SpanTypeOperator( typeof( BracketSpan ), "{brackets}" ),
+                "^braces" => new StrictCoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
                 _ => $"""
-                         Invalid span type '{singleSpanType}'. Allowed are "braces", "brackets".
+                         Invalid span type '{spanSpec}'. Allowed are "braces", "brackets".
                          """
             };
         }

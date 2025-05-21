@@ -46,11 +46,25 @@ public interface ITokenFilterOperatorContext
 
     /// <summary>
     /// Gets the deepest span assignable to a <paramref name="spanType"/>.
+    /// <para>
+    /// Unlike <see cref="GetTopSpanAt(int, Type, TokenSpan)"/> this method has no scope
+    /// restriction because it can be done at the call site because there are no other candidates
+    /// than the returned span: scoping it is simply rejecting it.
+    /// </para>
     /// </summary>
     /// <param name="index">The token index.</param>
     /// <param name="spanType">Type of the span.</param>
     /// <returns>The deepest span or null.</returns>
     SourceSpan? GetDeepestSpanAt( int index, Type spanType );
+
+    /// <summary>
+    /// Gets the widest span assignable to a <paramref name="spanType"/> in a given <paramref name="scope"/>.
+    /// </summary>
+    /// <param name="index">The token index.</param>
+    /// <param name="spanType">Type of the span.</param>
+    /// <param name="scope">Restricts the result to be in this span. Use <see cref="TokenSpan.Empty"/> for no scope.</param>
+    /// <returns>The deepest span or null.</returns>
+    SourceSpan? GetTopSpanAt( int index, Type spanType, TokenSpan scope );
 
     /// <summary>
     /// Gets a shared builder that <see cref="ITokenFilterOperator.Apply"/> can use.

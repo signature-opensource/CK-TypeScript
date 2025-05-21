@@ -6,11 +6,20 @@ namespace CK.Transform.Core;
 /// <summary>
 /// A <c>TokenMatch</c> captures each/match/token structure: tokens are grouped by matches
 /// and matches are grouped by each buckets. See <see cref="LocationCardinality.LocationKind.Each"/>.
+/// <para>
+/// The <c>default</c> has a false <see cref="IsValid"/>.
+/// </para>
 /// </summary>
 /// <param name="EachIndex">The "each" bucket number.</param>
 /// <param name="MatchIndex">The match number in the "each" bucket.</param>
 /// <param name="Span">The covered token span.</param>
-public readonly record struct TokenMatch( int EachIndex, int MatchIndex, TokenSpan Span );
+public readonly record struct TokenMatch( int EachIndex, int MatchIndex, TokenSpan Span )
+{
+    /// <summary>
+    /// Gets whether this match is valid.
+    /// </summary>
+    public bool IsValid => !Span.IsEmpty;
+}
 
 public static class TokenMatchExtensions
 {

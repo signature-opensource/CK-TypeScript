@@ -165,6 +165,23 @@ public sealed partial class SourceCodeEditor
             return null;
         }
 
+        public SourceSpan? GetTopSpanAt( int index, Type spanType, TokenSpan scope )
+        {
+            // This is not optimized at all. This can be done later.
+            var s = GetDeepestSpanAt( index, spanType );
+            if( s == null || !(scope.IsEmpty || scope.ContainsOrEquals( s.Span )) )
+            {
+                return null;
+            }
+            var sAbove = s.Parent;
+            while( sAbove != null && (scope.IsEmpty || scope.ContainsOrEquals( sAbove.Span )) )
+            {
+                s = sAbove;
+                sAbove = s.Parent;
+            }
+            return s;
+        }
+
         StringBuilder WriteFullPath( StringBuilder b )
         {
             if( _previous == null )
