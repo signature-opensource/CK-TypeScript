@@ -5,16 +5,16 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// The anchored version of the <see cref="CoveringSpanTypeOperator"/>:
+/// The anchored version of the <see cref="SpanTypeOperator"/>:
 /// the tokens are the ones from the where "pattern" but the span scope used
 /// is the corresponding match in the previous input.
 /// </summary>
-sealed class CoveringSpanTypeOperatorAnchored : ITokenFilterOperator
+sealed class SpanTypeOperatorAnchored : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
 
-    public CoveringSpanTypeOperatorAnchored( Type spanType, string displayName )
+    public SpanTypeOperatorAnchored( Type spanType, string displayName )
     {
         _spanType = spanType;
         _displayName = displayName;
@@ -35,7 +35,7 @@ sealed class CoveringSpanTypeOperatorAnchored : ITokenFilterOperator
     {
         Throw.DebugAssert( "Our previous is the where TokenPatternOperator.", input.Previous != null );
         var builder = context.SharedBuilder;
-        var spanCollector = new TokenSpanCoveringCollector();
+        var spanCollector = new TokenSpanDeepestCollector();
         var ePrevious = input.Previous.CreateTokenEnumerator();
         var e = input.CreateTokenEnumerator();
         while( e.NextEach() )
@@ -52,8 +52,11 @@ sealed class CoveringSpanTypeOperatorAnchored : ITokenFilterOperator
                 Throw.DebugAssert( ePrevious.CurrentMatch.Span.ContainsOrEquals( e.CurrentMatch.Span ) );
                 while( e.NextToken() )
                 {
-                    var s = context.GetTopSpanAt( e.Token.Index, _spanType, ePrevious.CurrentMatch.Span );
-                    if( s != null ) spanCollector.Add( s.Span );
+                    var s = context.GetDeepestSpanAt( e.Token.Index, _spanType );
+                    if( s != null && ePrevious.CurrentMatch.Span.Contains( s.Span ) )
+                    {
+                        spanCollector.Add( s.Span );
+                    }
                 }
             }
             if( !spanCollector.ExtractResultToNewEach( builder ) )
@@ -67,7 +70,7 @@ sealed class CoveringSpanTypeOperatorAnchored : ITokenFilterOperator
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
-        if( !parsable ) b.Append( "[SpanTypeAnchored] " );
+        if( !parsable ) b.Append( "[AnchoredCoveringSpanType] " );
         return b.Append( _displayName );
     }
 

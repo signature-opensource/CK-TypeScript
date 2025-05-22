@@ -6,7 +6,11 @@ using System.Text;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Narrowing and splitter operator.
+/// Supports 2 modes:
+/// <list type="number">
+///     <item>As an independent operator, it splits each match into matched patterns.</item>
+///     <item>As the {span specification} where "Patterh" operator, it filters out the matches that don't contain at least one pattern.</item>
+/// </list>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
 public sealed class TokenPatternOperator : ITokenFilterOperator
@@ -14,16 +18,18 @@ public sealed class TokenPatternOperator : ITokenFilterOperator
     readonly RawString _tokenPattern;
     readonly ImmutableArray<Token> _tokens;
     readonly int[] _prefixTable;
+    readonly bool _whereMode;
 
     /// <summary>
     /// Initializes a new token span filter.
     /// </summary>
     /// <param name="tokens">The tokens. Must not be empty or default.</param>
-    public TokenPatternOperator( RawString tokenPattern, ImmutableArray<Token> tokens )
+    public TokenPatternOperator( RawString tokenPattern, ImmutableArray<Token> tokens, bool whereMode )
     {
         Throw.CheckArgument( !tokens.IsDefaultOrEmpty );
         _tokenPattern = tokenPattern;
         _tokens = tokens;
+        _whereMode = whereMode;
         _prefixTable = BuildPrefixTable( tokens );
     }
 
@@ -54,7 +60,15 @@ public sealed class TokenPatternOperator : ITokenFilterOperator
 
     void ITokenFilterOperator.Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
-        new TokenMatcher( _tokens, _prefixTable ).CreateMatches( context, input );
+        var m = new TokenMatcher( _tokens, _prefixTable );
+        if( _whereMode )
+        {
+            m.FilterWhere( context, input );
+        }
+        else
+        {
+            m.CreateMatches( context, input );
+        }
     }
 
     struct TokenMatcher
@@ -95,6 +109,29 @@ public sealed class TokenPatternOperator : ITokenFilterOperator
             return default;
         }
 
+        internal void FilterWhere( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
+        {
+            var builder = context.SharedBuilder;
+            var e = input.CreateTokenEnumerator();
+            while( e.NextEach() )
+            {
+                builder.StartNewEach();
+                while( e.NextMatch() )
+                {
+                    Reset();
+                    while( e.NextToken() )
+                    {
+                        var s = Match( e.Token );
+                        if( !s.IsEmpty )
+                        {
+                            builder.AddMatch( e.CurrentMatch.Span );
+                            continue;
+                        }
+                    }
+                }
+            }
+            context.SetResult( builder );
+        }
 
         internal void CreateMatches( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
         {
@@ -146,9 +183,10 @@ public sealed class TokenPatternOperator : ITokenFilterOperator
     {
         if( !parsable )
         {
-            b.Append( "[Pattern] \"" );
+            b.Append( _whereMode ? "[Where] \"" : "[Pattern] \"" );
             return _tokens.WriteCompact( b ).Append( '"' );
         }
+        if( _whereMode ) b.Append( "where " );
         return _tokenPattern.Lines.Length > 1
                 ? b.Append( _tokenPattern.OpeningQuotes ).AppendLine()
                    .Append( _tokenPattern.TextLines ).AppendLine()

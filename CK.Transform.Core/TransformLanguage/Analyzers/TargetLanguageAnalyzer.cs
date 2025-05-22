@@ -33,7 +33,7 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     /// or an error string.
     /// <para>
     /// At this level, this returns the "Invalid span specification '...'. Language '...' doesn't handle any span specification."
-    /// error or the <see cref="ITokenFilterOperator.Empty"/> if the span specification is empty (to allow <c>in {} where "..."</c>
+    /// error, even if the span specification is empty to disallow <c>in {} where "..."</c>.
     /// syntax).
     /// </para>
     /// </summary>
@@ -41,14 +41,9 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     /// <returns>The provider or an error string.</returns>
     internal protected virtual object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var content = tokenSpec.InnerText.Trim();
-        if( content.Length > 0 )
-        {
-            return $"""
-                Invalid span specification '{content}'. Language '{_languageName}' doesn't handle any span specification.
+        return $"""
+                Invalid span specification '{tokenSpec.Text}'. Language '{_languageName}' doesn't handle any span specification.
                 """;
-        }
-        return ITokenFilterOperator.Empty;
     }
 
     /// <summary>
@@ -60,11 +55,12 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
     /// parsed tokens (or an error string if no tokens have been parsed).
     /// </para>
     /// </summary>
-    /// <param name="language">The current language.</param>
     /// <param name="tokenPattern">The pre-parsed token pattern.</param>
     /// <param name="spanSpec">
-    /// Optional associated {span specification} that appears before the pattern in a <see cref="SpanMatcher"/>.
+    /// The optional {span specification} that appears before the pattern in a <see cref="SpanMatcher"/>
+    /// when where "Pattern" syntax is used.
     /// For some languages the span specification can contain hints for the pattern parsing and/or matching.
+    /// At this level, this drives whether the returned <see cref="TokenPatternOperator"/> will be in "where" mode.
     /// </param>
     /// <returns>The provider or an error string.</returns>
     internal protected virtual object ParsePattern( RawString tokenPattern,
@@ -81,7 +77,7 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
         {
             return "No token found in match pattern.";
         }
-        return new TokenPatternOperator( tokenPattern, head.Tokens.ToImmutableArray() );
+        return new TokenPatternOperator( tokenPattern, head.Tokens.ToImmutableArray(), whereMode: spanSpec != null );
     }
 
     /// <summary>

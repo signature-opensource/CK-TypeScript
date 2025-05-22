@@ -58,40 +58,27 @@ public class TransformTests
         """"
         create <Test> transformer
         begin
-            in first {braces} where "{" replace all "A" with "this works";
+            in first {braces} replace all "A" with "this works";
         end
         """",
         """
         One A { A { this works } A } A { A }
         """
         )]
-    [TestCase( "n°4ter",
+    [TestCase( "n°5",
         """
         One A { A { A } A } A { A }
         """,
         """"
         create <Test> transformer
         begin
-            in first {braces} 
-                in first {braces} replace all "A" with "this works";
+            in first {^braces} 
+                in first {braces}
+                    replace all "A" with "this works";
         end
         """",
         """
         One A { A { this works } A } A { A }
-        """
-        )]
-    [TestCase( "n°5 - useless where pattern",
-        """
-        One A { A { A } A } A { A }
-        """,
-        """"
-        create <Test> transformer
-        begin
-            in all {braces} where "{" replace all "A" with "this works";
-        end
-        """",
-        """
-        One A { A { this works } A } A { this works }
         """
         )]
     [TestCase( "n°6",
@@ -101,7 +88,21 @@ public class TransformTests
         """"
         create <Test> transformer
         begin
-            in last {braces} where "{" replace all "A" with "this works";
+            in all {braces} replace all "A" with "this works";
+        end
+        """",
+        """
+        One A { A { this works } A } A { this works }
+        """
+        )]
+    [TestCase( "n°7",
+        """
+        One A { A { A } A } A { A }
+        """,
+        """"
+        create <Test> transformer
+        begin
+            in last {braces} replace all "A" with "this works";
         end
         """",
         """

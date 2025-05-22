@@ -1,16 +1,18 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="ITokenFilterOperator"/> that extends a matched range to
+/// A <see cref="ITokenFilterOperator"/> that splits matches to
 /// the deepest spans that can be assigned to a type.
 /// <para>
-/// Widening and fusion operator.
+/// Narrowing and splitter operator.
 /// </para>
 /// </summary>
-public sealed class SpanTypeOperator : ITokenFilterOperator
+public sealed class SpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchoredOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
@@ -46,10 +48,17 @@ public sealed class SpanTypeOperator : ITokenFilterOperator
         {
             while( e.NextMatch() )
             {
+                // We should work at the match's span level here.
+                // This is currently far from optimal but it defines
+                // the right behavior. Any optimization should produce
+                // the same results.
                 while( e.NextToken() )
                 {
                     var s = context.GetDeepestSpanAt( e.Token.Index, _spanType );
-                    if( s != null ) spanCollector.Add( s.Span );
+                    if( s != null && e.CurrentMatch.Span.Contains( s.Span ) )
+                    {
+                        spanCollector.Add( s.Span );
+                    }
                 }
             }
             if( !spanCollector.ExtractResultToNewEach( builder ) )
@@ -61,6 +70,10 @@ public sealed class SpanTypeOperator : ITokenFilterOperator
         context.SetResult( builder );
     }
 
+    public ITokenFilterOperator ToAnchoredOperator()
+    {
+        return new SpanTypeOperatorAnchored( _spanType, _displayName );
+    }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
@@ -69,7 +82,6 @@ public sealed class SpanTypeOperator : ITokenFilterOperator
     }
 
     public override string ToString() => _displayName;
-
 
 }
 
