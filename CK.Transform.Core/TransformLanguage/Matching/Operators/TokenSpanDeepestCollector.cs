@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
@@ -11,18 +11,29 @@ readonly struct TokenSpanDeepestCollector
         _spans = new List<TokenSpan>();
     }
 
-    public bool ExtractResultToNewEach( TokenFilterBuilder builder )
+    /// <summary>
+    /// Adds all the collected spans to the <see cref="TokenFilterBuilder.AddMatch(TokenSpan)"/>.
+    /// </summary>
+    /// <param name="builder">The target builder.</param>
+    /// <returns>The number of added matches.</returns>
+    public int ExtractSpansTo( TokenFilterBuilder builder )
     {
-        if( _spans.Count == 0 ) return false;
-        builder.StartNewEach();
-        foreach( var s in _spans )
+        int count = _spans.Count;
+        if( count != 0 )
         {
-            builder.AddMatch( s );
+            foreach( var s in _spans )
+            {
+                builder.AddMatch( s );
+            }
+            _spans.Clear();
         }
-        _spans.Clear();
-        return true;
+        return count;
     }
 
+    /// <summary>
+    /// Adds a span, keeping the deepest ones.
+    /// </summary>
+    /// <param name="span">The new span to add.</param>
     public void Add( TokenSpan span )
     {
         for( int i = 0; i < _spans.Count; i++ )

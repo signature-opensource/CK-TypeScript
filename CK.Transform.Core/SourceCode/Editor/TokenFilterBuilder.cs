@@ -20,7 +20,7 @@ public sealed class TokenFilterBuilder
 
     /// <summary>
     /// Adds a matched span to the current "each".
-    /// The span must not overlap the last added one otherwise a <see cref="ArgumentException"/> is thrown.
+    /// The span can be the same as the last added one or must be after it otherwise a <see cref="ArgumentException"/> is thrown.
     /// </summary>
     /// <param name="span">The span to add.</param>
     public void AddMatch( TokenSpan span )
@@ -31,26 +31,12 @@ public sealed class TokenFilterBuilder
             var relationshipWithLast = last.GetRelationship( span );
             // The regular case is that the added span must be
             // after or contiguous to the last one.
+            if( relationshipWithLast is SpanRelationship.Equal  )
+            {
+                return;
+            }
             if( relationshipWithLast is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
             {
-                // If we have already entered a new "each" bucket (_match > 0), the added span MUST be
-                // after or contiguous to the last one.
-                //
-                // But if we are on the first span of a new "each" bucket (_match == 0):
-                // - If the initial span of the new "each" is the same as the previous one
-                //   we silently ignore it: the previous each wins (as it is the first one).
-                // - If the span is before the last one, this is an error: the calling operators must
-                //   definitly not do this. It must be fixed.
-                // - If the span overlaps the last one, we could kindly truncate the new span so that
-                //   it starts right after the last one.
-                //   This is weird: the span doesn't cover what the operator decided, this change the span semantics.
-                //   This currently seems dangerous to allow this. If required, we'll add a bool allowTruncateInitialEachSpan = false
-                //   parameter to this method (or to the constructor).
-                //
-                if( _match == 0 && relationshipWithLast is SpanRelationship.Equal )
-                {
-                    return;
-                }
                 Throw.ArgumentException( nameof(span), $"Added span '{span}' must be after the last one '{last}' (CurrentEachNumber: {_each}, CurrentMatchNumber: {_match})." );
             }
         }
@@ -68,15 +54,31 @@ public sealed class TokenFilterBuilder
     public int CurrentMatchNumber => _match;
 
     /// <summary>
-    /// Starts a new "each" bucket. If no match has been added to the current "each"
+    /// Starts a new "each" bucket.
+    /// <para>
+    /// When <paramref name="skipEmpty"/> is true, if no match has been added to the current "each"
     /// (<see cref="CurrentMatchNumber"/> is 0) nothing is done.
+    /// </para>
+    /// <para>
+    /// When <paramref name="skipEmpty"/> is false, if no match has been added to the current "each"
+    /// a <see cref="TokenMatch.IsEmpty"/> is added to the current "each" and a new "each" is opened.
+    /// </para>
     /// </summary>
-    public void StartNewEach()
+    /// <param name="skipEmpty">
+    /// True to add a <see cref="TokenMatch.IsEmpty"/> match if none has been added,
+    /// false to keep the <see cref="CurrentEachNumber"/> unchanged.
+    /// </param>
+    public void StartNewEach( bool skipEmpty )
     {
         if( _match != 0 )
         {
             ++_each;
             _match = 0;
+        }
+        else if( !skipEmpty )
+        {
+            _list.Add( new TokenMatch( _each, 0, TokenSpan.Empty ) );
+            ++_each;
         }
     }
 

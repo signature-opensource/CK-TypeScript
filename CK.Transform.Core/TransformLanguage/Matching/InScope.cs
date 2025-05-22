@@ -35,7 +35,7 @@ public sealed class InScope : SourceSpan
     /// This is never null when <see cref="CheckValid"/> is true.
     /// </para>
     /// </summary>
-    public ITokenFilterOperator? Scope => FirstChild as ITokenFilterOperator;
+    public ITokenFilterOperator? Operator => FirstChild as ITokenFilterOperator;
 
 
     internal static InScope? Match( TransformLanguageAnalyzer analyzer, ref TokenizerHead head, Token? inToken )

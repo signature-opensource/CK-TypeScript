@@ -94,7 +94,7 @@ struct TokenFilterEnumeratorImpl
         }
     }
 
-    public bool NextEach()
+    public bool NextEach( bool skipEmpty )
     {
         if( _state is TokenFilterEnumeratorState.Finished )
         {
@@ -104,10 +104,14 @@ struct TokenFilterEnumeratorImpl
         {
             Throw.DebugAssert( _input.Length > 0 );
             _state = TokenFilterEnumeratorState.Each;
+            if( skipEmpty )
+            {
+                return SkipEmpty();
+            }
             CheckInvariants();
             return true;
         }
-        // Wahtever happens now, we lose any current token.
+        // Whatever happens now, we lose any current token.
         _tIndex = -1;
         _token = null;
         int currentEach = _input[_mIndex].EachIndex;
@@ -121,10 +125,30 @@ struct TokenFilterEnumeratorImpl
                 CheckInvariants();
                 return false;
             }
+            if( skipEmpty && SkipEmpty() )
+            {
+                return false;
+            }
             nextMatch = _input[_mIndex];
         }
         while( nextMatch.EachIndex == currentEach );
         _state = TokenFilterEnumeratorState.Each;
+        CheckInvariants();
+        return true;
+    }
+
+    bool SkipEmpty()
+    {
+        Throw.DebugAssert( _mIndex < _input.Length );
+        while( _input[_mIndex].IsEmpty )
+        {
+            if( ++_mIndex == _input.Length )
+            {
+                _state = TokenFilterEnumeratorState.Finished;
+                CheckInvariants();
+                return false;
+            }
+        }
         CheckInvariants();
         return true;
     }
@@ -172,6 +196,10 @@ struct TokenFilterEnumeratorImpl
             _tIndex = -1;
             _token = null;
             _state = TokenFilterEnumeratorState.Match;
+            if( _input[_mIndex].IsEmpty )
+            {
+                return false;
+            }
             CheckInvariants();
             return true;
         }

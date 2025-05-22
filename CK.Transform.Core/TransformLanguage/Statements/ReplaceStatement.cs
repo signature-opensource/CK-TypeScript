@@ -35,7 +35,7 @@ public sealed class ReplaceStatement : TransformStatement
             bool applied = false;
             using( var e = editor.OpenScopedEditor() )
             {
-                while( e.Tokens.NextEach() )
+                while( e.Tokens.NextEach( skipEmpty: true ) )
                 {
                     while( e.Tokens.NextMatch( out var first, out var last, out var count ) )
                     {

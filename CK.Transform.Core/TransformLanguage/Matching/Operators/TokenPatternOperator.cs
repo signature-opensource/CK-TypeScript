@@ -13,7 +13,7 @@ namespace CK.Transform.Core;
 /// </list>
 /// Implements Knuth-Morris-Pratt find algorithm.
 /// </summary>
-public sealed class TokenPatternOperator : ITokenFilterOperator
+public sealed partial class TokenPatternOperator : ITokenFilterOperator
 {
     readonly RawString _tokenPattern;
     readonly ImmutableArray<Token> _tokens;
@@ -68,114 +68,6 @@ public sealed class TokenPatternOperator : ITokenFilterOperator
         else
         {
             m.CreateMatches( context, input );
-        }
-    }
-
-    struct TokenMatcher
-    {
-        readonly ImmutableArray<Token> _pattern;
-        readonly int[] _prefixTable;
-        int _iMatch;
-
-        public TokenMatcher( ImmutableArray<Token> tokens, int[] prefixTable )
-        {
-            _pattern = tokens;
-            _prefixTable = prefixTable;
-        }
-
-        public void Reset() => _iMatch = 0;
-
-        public int Length => _pattern.Length;
-
-        TokenSpan Match( SourceToken t )
-        {
-            bool match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
-            while( _iMatch > 0 && !match )
-            {
-                _iMatch = _prefixTable[_iMatch];
-                match = _pattern[_iMatch].Text.Span.Equals( t.Token.Text.Span, StringComparison.OrdinalIgnoreCase );
-            }
-            if( match )
-            {
-                _iMatch++;
-            }
-            if( _iMatch == Length )
-            {
-                int endMatch = t.Index + 1;
-                var result = new TokenSpan( endMatch - Length, endMatch );
-                _iMatch = 0;
-                return result;
-            }
-            return default;
-        }
-
-        internal void FilterWhere( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
-        {
-            var builder = context.SharedBuilder;
-            var e = input.CreateTokenEnumerator();
-            while( e.NextEach() )
-            {
-                builder.StartNewEach();
-                while( e.NextMatch() )
-                {
-                    Reset();
-                    while( e.NextToken() )
-                    {
-                        var s = Match( e.Token );
-                        if( !s.IsEmpty )
-                        {
-                            builder.AddMatch( e.CurrentMatch.Span );
-                            continue;
-                        }
-                    }
-                }
-            }
-            context.SetResult( builder );
-        }
-
-        internal void CreateMatches( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
-        {
-            var builder = context.SharedBuilder;
-            var e = input.CreateTokenEnumerator();
-            while( e.NextEach() )
-            {
-                builder.StartNewEach();
-                while( e.NextMatch() )
-                {
-                    Reset();
-                    while( e.NextToken() )
-                    {
-                        var s = Match( e.Token );
-                        if( !s.IsEmpty ) builder.AddMatch( s );
-                    }
-                    if( builder.CurrentMatchNumber == 0 )
-                    {
-                        MatchError( context, e );
-                        return;
-                    }
-                }
-                if( builder.CurrentMatchNumber == 0 )
-                {
-                    MatchError( context, e );
-                    return;
-                }
-            }
-            if( builder.CurrentMatchNumber == 0 )
-            {
-                MatchError( context, e );
-            }
-            else
-            {
-                context.SetResult( builder );
-            }
-        }
-
-        void MatchError( ITokenFilterOperatorContext context, TokenFilterEnumerator e )
-        {
-            context.SetFailedResult( $"""
-                                    Failed to match pattern:
-                                    {_pattern.ToFullString()}
-                                    """, e );
         }
     }
 

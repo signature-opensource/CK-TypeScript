@@ -45,7 +45,7 @@ public sealed class InjectIntoStatement : TransformStatement
         // process all the tokens (to detect duplicate errors).
         using var e = editor.OpenScopedEditor();
         bool noTokenAtAll = true;
-        while( e.Tokens.NextEach() )
+        while( e.Tokens.NextEach(skipEmpty: false) )
         {
             noTokenAtAll = false;
             while( e.Tokens.NextMatch() )

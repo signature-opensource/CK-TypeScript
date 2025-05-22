@@ -52,7 +52,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
     static void HandleSingle( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         var e = input.CreateTokenEnumerator();
-        while( e.NextEach() )
+        while( e.NextEach( skipEmpty: false ) )
         {
             int count = 0;
             while( e.NextMatch() ) ++count;
@@ -69,9 +69,8 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         Throw.DebugAssert( CheckValid() && _kind == LocationKind.First );
         var builder = context.SharedBuilder;
         var e = input.CreateTokenEnumerator();
-        while( e.NextEach() )
+        while( e.NextEach( skipEmpty: false ) )
         {
-            builder.StartNewEach();
             int matchCount = 0;
             while( e.NextMatch() )
             {
@@ -86,6 +85,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
                 context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
                 return;
             }
+            builder.StartNewEach( skipEmpty: false );
             if( _expectedMatchCount > 0 )
             {
                 while( e.NextMatch() ) ++matchCount;
@@ -104,9 +104,8 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         Throw.DebugAssert( _kind == LocationKind.Last );
         var builder = context.SharedBuilder;
         var e = input.CreateTokenEnumerator();
-        while( e.NextEach() )
+        while( e.NextEach( skipEmpty: false ) )
         {
-            builder.StartNewEach();
             int matchCount = 0;
             while( e.NextMatch() ) ++matchCount;
             if( _expectedMatchCount > 0 && _expectedMatchCount != matchCount )
@@ -120,6 +119,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
                 return;
             }
             builder.AddMatch( e.Input[e.CurrentInputIndex - _offset].Span );
+            builder.StartNewEach( skipEmpty: false );
         }
         context.SetResult( builder );
     }
@@ -131,7 +131,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         if( _expectedMatchCount > 0 )
         {
             var e = input.CreateTokenEnumerator();
-            while( e.NextEach() )
+            while( e.NextEach( skipEmpty: false ) )
             {
                 int matchCount = 0;
                 while( e.NextMatch() ) ++matchCount;
@@ -159,15 +159,11 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         // When all matches already are "each" buckets, we have nothing to do.
         if( internalInputMatches[^1].EachIndex == inputMatchCount - 1 )
         {
-            // TODO EachScope: Should this operator align the EachScope span to its match's span?
-            //                 Probably yes.
             context.SetUnchangedResult();
         }
         else
         {
             // Promotes all matches to the "each" level.
-            // TODO EachScope: Injects the EachScope with a span equals to the match's span.
-            //                 
             context.SetResult( internalInputMatches.Select( ( m, index ) => new TokenMatch( index, 0, m.Span ) ).ToArray() );
         }
     }

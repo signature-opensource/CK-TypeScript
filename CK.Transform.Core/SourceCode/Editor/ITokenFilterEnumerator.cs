@@ -60,18 +60,22 @@ public interface ITokenFilterEnumerator
     /// Moves to the next "each" bucket.
     /// This initializes this enumerator when State is <see cref="TokenFilterEnumeratorState.Unitialized"/>.
     /// </summary>
+    /// <param name="skipEmpty">
+    /// True to ignore a bucket with a <see cref="TokenMatch.IsEmpty"/> match.
+    /// False to consider it: the first <see cref="NextMatch()"/> will return false.
+    /// </param>
     /// <returns>
     /// True if move succeeded, false if the <see cref="TokenFilterEnumeratorState.Finished"/> state
     /// has been reached.
     /// </returns>
-    bool NextEach();
+    bool NextEach( bool skipEmpty );
 
     /// <summary>
     /// Moves to the next match in the current each bucket.
     /// <para>
     /// <c>NextEach()</c> must have been called before oherwise
     /// an <see cref="InvalidOperationException"/> is thrown.
-    /// This is necessarily true after a successful call to <c>NextEach()</c>.
+    /// This is necessarily true after a successful call to <c>NextEach( skipEmpty: true )</c>.
     /// </para>
     /// </summary>
     /// <returns>

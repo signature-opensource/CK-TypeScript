@@ -59,7 +59,7 @@ public sealed partial class RangeLocation : ITokenFilterOperator
             var builder = context.SharedBuilder;
             var eInput = input.CreateTokenEnumerator();
             var ePrevious = previousInput.CreateTokenEnumerator();
-            while( eInput.NextEach() )
+            while( eInput.NextEach( skipEmpty: true ) )
             {
                 eInput.NextMatch();
                 // Our end is the start of the mono-location matcher.
@@ -67,19 +67,17 @@ public sealed partial class RangeLocation : ITokenFilterOperator
                 Throw.DebugAssert( "Working on the result of a mono-location LocationCardinality.", !eInput.NextMatch() );
 
                 // Previous corresponding 'each' necessarily exists.
-                ePrevious.NextEach();
+                ePrevious.NextEach( skipEmpty: true );
                 ePrevious.NextMatch();
                 // Our start is the start of the first match in previous.
                 int beg = ePrevious.CurrentMatch.Span.Beg;
 
-                builder.StartNewEach();
                 Throw.DebugAssert( "The input mono match is inside one of the previous matches.", beg <= end );
-                if( beg == end )
+                if( beg < end )
                 {
-                    context.SetFailedResult( $"No token exist 'before'.", eInput );
-                    return;
+                    builder.AddMatch( new TokenSpan( beg, end ) );
                 }
-                builder.AddMatch( new TokenSpan( beg, end ) );
+                builder.StartNewEach( skipEmpty: true );
             }
             context.SetResult( builder );
         }
@@ -123,7 +121,7 @@ public sealed partial class RangeLocation : ITokenFilterOperator
             var builder = context.SharedBuilder;
             var eInput = input.CreateTokenEnumerator();
             var ePrevious = previousInput.CreateTokenEnumerator();
-            while( eInput.NextEach() )
+            while( eInput.NextEach( skipEmpty: true ) )
             {
                 eInput.NextMatch();
                 // Our start is the end of the mono-location matcher.
@@ -132,7 +130,7 @@ public sealed partial class RangeLocation : ITokenFilterOperator
                 Throw.DebugAssert( "Working on the result of a mono-location LocationCardinality.", !eInput.NextMatch() );
 
                 // Previous corresponding 'each' necessarily exists.
-                ePrevious.NextEach();
+                ePrevious.NextEach( skipEmpty: true );
 
                 // Find the end of the last match of the previous.
                 ePrevious.NextMatch();
@@ -141,14 +139,12 @@ public sealed partial class RangeLocation : ITokenFilterOperator
                 {
                     end = ePrevious.CurrentMatch.Span.End;
                 }
-                builder.StartNewEach();
                 Throw.DebugAssert( "The input mono match is inside one of the previous matches.", beg <= end );
-                if( beg == end )
+                if( beg < end )
                 {
-                    context.SetFailedResult( $"No token exist 'after'.", eInput );
-                    return;
+                    builder.AddMatch( new TokenSpan( beg, end ) );
                 }
-                builder.AddMatch( new TokenSpan( beg, end ) );
+                builder.StartNewEach( skipEmpty: true );
             }
             context.SetResult( builder );
         }

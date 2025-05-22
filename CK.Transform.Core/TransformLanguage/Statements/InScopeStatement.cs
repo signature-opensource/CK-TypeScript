@@ -55,7 +55,7 @@ public sealed class InScopeStatement : TransformStatement
         {
             foreach( var s in Scopes )
             {
-                scopeCount += editor.PushTokenOperator( s.Scope! );
+                scopeCount += editor.PushTokenOperator( s.Operator! );
             }
             Body.Apply( monitor, editor );
         }

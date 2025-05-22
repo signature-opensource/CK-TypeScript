@@ -37,10 +37,10 @@ public readonly struct TokenFilter : IEquatable<TokenFilter>
 
     /// <summary>
     /// Gets the match at a specified token position.
-    /// When no match contains the position, the <c>default</c> TokenMatch is returned (<see cref="TokenMatch.IsValid"/> is false).
+    /// When no match contains the position, the <c>default</c> TokenMatch is returned (<see cref="TokenMatch.IsEmpty"/> is true).
     /// </summary>
     /// <param name="tokenIndex">The token index.</param>
-    /// <returns>The match that is not <see cref="TokenMatch.IsValid"/> when not found.</returns>
+    /// <returns>The match that is <see cref="TokenMatch.IsEmpty"/> when not found.</returns>
     public TokenMatch FindMatchAt( int tokenIndex ) => _matches.FirstOrDefault( m => m.Span.Contains( tokenIndex ) );
 
     public override bool Equals( [NotNullWhen( true )] object? obj ) => obj is TokenFilter f && Equals( f );

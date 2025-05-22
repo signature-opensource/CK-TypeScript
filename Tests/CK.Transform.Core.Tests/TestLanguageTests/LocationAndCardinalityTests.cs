@@ -118,7 +118,8 @@ public class LocationAndCardinalityTests
         end
         """",
         """
-        Failed to match pattern:
+        Expected a single match but got 0.
+        Current filter: (all) |> [Pattern] "Z" > [Cardinality] single
         """
     )]
     public void single_failure( string title, string source, string transformer, string error )

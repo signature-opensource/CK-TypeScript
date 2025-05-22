@@ -12,7 +12,7 @@ namespace CK.Transform.Core;
 /// Narrowing and splitter operator.
 /// </para>
 /// </summary>
-public sealed class SpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchoredOperator
+public sealed class SpanTypeOperator : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
@@ -44,7 +44,7 @@ public sealed class SpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchore
         var builder = context.SharedBuilder;
         var spanCollector = new TokenSpanDeepestCollector();
         var e = input.CreateTokenEnumerator();
-        while( e.NextEach() )
+        while( e.NextEach( skipEmpty: false ) )
         {
             while( e.NextMatch() )
             {
@@ -60,19 +60,13 @@ public sealed class SpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchore
                         spanCollector.Add( s.Span );
                     }
                 }
+                // We can free the current collector list as
+                // the spans between matches are independent.
+                spanCollector.ExtractSpansTo( builder );
             }
-            if( !spanCollector.ExtractResultToNewEach( builder ) )
-            {
-                context.SetFailedResult( "Missing span.", e );
-                return;
-            }
+            builder.StartNewEach( skipEmpty: false );
         }
         context.SetResult( builder );
-    }
-
-    public ITokenFilterOperator ToAnchoredOperator()
-    {
-        return new SpanTypeOperatorAnchored( _spanType, _displayName );
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )

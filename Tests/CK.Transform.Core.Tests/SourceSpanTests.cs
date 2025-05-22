@@ -57,41 +57,6 @@ public class SourceSpanTests
         A x D E
         """
         )]
-    [TestCase( "n°3",
-        """
-        A { X B C X } D E
-        """,
-        """"
-        create <Test> transformer
-        begin
-            in all "X"
-                in {braces}
-                    replace * with "x";
-        end
-        """",
-        """
-        A x D E
-        """
-        )]
-    // The TokenFilterBuilder silenty ignores the first span of a new
-    // "each" bucket that is the same as the last of the previous bucket.
-    // Here, starting with 2 "each" buckets, we endup with a single one.
-    [TestCase( "n°4 - Ambiguity here!",
-        """
-        A { X B C X } D E
-        """,
-        """"
-        create <Test> transformer
-        begin
-            in each "X"
-                in {braces}
-                    replace * with "x";
-        end
-        """",
-        """
-        A x D E
-        """
-        )]
     public void amibiguous_spans_of_braces( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TestLanguage() );

@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -59,10 +60,6 @@ public sealed partial class SpanMatcher : SourceSpan
             head.AppendError( "Expected {span specification}, \"pattern\" or {span specification} where \"pattern\".", 0 );
             return null;
         }
-        if( specOperator is ITokenFilterAnchoredOperator a && patternOperator != null )
-        {
-            specOperator = a.ToAnchoredOperator();
-        }
         return head.AddSpan( new SpanMatcher( begSpan,
                                               head.LastTokenIndex + 1,
                                               specOperator,
@@ -78,6 +75,11 @@ public sealed partial class SpanMatcher : SourceSpan
                 var tokenSpec = BalancedString.TryMatch( ref head, '{', '}' );
                 if( tokenSpec == null )
                 {
+                    return false;
+                }
+                if( tokenSpec.InnerText.Trim().Length == 0 )
+                {
+                    head.AppendError( "Span specification cannot be empty.", 0 );
                     return false;
                 }
                 object m = analyzer.TargetAnalyzer.ParseSpanSpec( tokenSpec );

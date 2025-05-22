@@ -25,7 +25,7 @@ public class TransformTests
         )]
     [TestCase( "n°2 - all {span} where Pattern",
         """
-        One A { A HERE { A } A } A { HERE A }
+        One A { A not HERE { A HERE} A } A {HERE A}
         """,
         """"
         create <Test> transformer
@@ -34,12 +34,12 @@ public class TransformTests
         end
         """",
         """
-        One A { YES HERE { YES } YES } A { HERE YES }
+        One A { A not HERE { YES HERE} A } A {HERE YES}
         """
         )]
     [TestCase( "n°3 - first {span} where Pattern",
         """
-        One A { A HERE { A } A } A { HERE A }
+        One A { A not HERE { A } A } A { HERE A }
         """,
         """"
         create <Test> transformer
@@ -48,7 +48,7 @@ public class TransformTests
         end
         """",
         """
-        One A { B HERE { B } B } A { HERE A }
+        One A { A not HERE { A } A } A { HERE B }
         """
         )]
     [TestCase( "n°4",

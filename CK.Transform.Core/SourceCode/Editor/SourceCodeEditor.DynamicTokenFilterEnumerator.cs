@@ -34,7 +34,7 @@ public sealed partial class SourceCodeEditor
         public SourceToken Token => _impl.Token;
 
         /// <inheritdoc cref="ITokenFilterEnumerator.NextEach"/>
-        public bool NextEach() => _impl.NextEach();
+        public bool NextEach( bool skipEmpty ) => _impl.NextEach( skipEmpty );
 
         /// <inheritdoc cref="ITokenFilterEnumerator.NextMatch"/>
         public bool NextMatch() => _impl.NextMatch();

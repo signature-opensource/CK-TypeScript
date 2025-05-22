@@ -10,7 +10,7 @@ namespace CK.Transform.Core;
 /// Narrowing and splitter operator.
 /// </para>
 /// </summary>
-public sealed class CoveringSpanTypeOperator : ITokenFilterOperator, ITokenFilterAnchoredOperator
+public sealed class CoveringSpanTypeOperator : ITokenFilterOperator
 {
     readonly Type _spanType;
     readonly string _displayName;
@@ -42,28 +42,26 @@ public sealed class CoveringSpanTypeOperator : ITokenFilterOperator, ITokenFilte
         var builder = context.SharedBuilder;
         var spanCollector = new TokenSpanCoveringCollector();
         var e = input.CreateTokenEnumerator();
-        while( e.NextEach() )
+        while( e.NextEach( skipEmpty: false ) )
         {
             while( e.NextMatch() )
             {
+                // We should work at the match's span level here.
+                // This is currently far from optimal but it defines
+                // the right behavior. Any optimization should produce
+                // the same results.
                 while( e.NextToken() )
                 {
                     var s = context.GetTopSpanAt( e.Token.Index, _spanType, e.CurrentMatch.Span );
                     if( s != null ) spanCollector.Add( s.Span );
                 }
+                // We can free the current collector list as
+                // the spans between matches are independent.
+                spanCollector.ExtractSpansTo( builder );
             }
-            if( !spanCollector.ExtractResultToNewEach( builder ) )
-            {
-                context.SetFailedResult( "Missing span.", e );
-                return;
-            }
+            builder.StartNewEach( skipEmpty: false );
         }
         context.SetResult( builder );
-    }
-
-    public ITokenFilterOperator ToAnchoredOperator()
-    {
-        return new CoveringSpanTypeOperatorAnchored( _spanType, _displayName );
     }
 
     public StringBuilder Describe( StringBuilder b, bool parsable )

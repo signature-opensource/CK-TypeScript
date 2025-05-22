@@ -7,7 +7,7 @@ namespace CK.Transform.Core;
 /// A <c>TokenMatch</c> captures each/match/token structure: tokens are grouped by matches
 /// and matches are grouped by each buckets. See <see cref="LocationCardinality.LocationKind.Each"/>.
 /// <para>
-/// The <c>default</c> has a false <see cref="IsValid"/>.
+/// The <c>default</c> is <see cref="IsEmpty"/>.
 /// </para>
 /// </summary>
 /// <param name="EachIndex">The "each" bucket number.</param>
@@ -16,9 +16,9 @@ namespace CK.Transform.Core;
 public readonly record struct TokenMatch( int EachIndex, int MatchIndex, TokenSpan Span )
 {
     /// <summary>
-    /// Gets whether this match is valid.
+    /// Gets whether this match is empty (<see cref="TokenSpan.IsEmpty"/> is true).
     /// </summary>
-    public bool IsValid => !Span.IsEmpty;
+    public bool IsEmpty => Span.IsEmpty;
 }
 
 public static class TokenMatchExtensions
@@ -88,9 +88,13 @@ public static class TokenMatchExtensions
                 var nextSpan = matches[i + 1].Span;
                 if( span.IsEmpty )
                 {
-                    return $"Empty span found at {i}.";
+                    if( match != 0 )
+                    {
+                        return $"Empty span found at {i} but this is not the first match of a each.";
+                    }
+                    ++expectedEach;
                 }
-                if( span.GetRelationship( nextSpan ) is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
+                else if( span.GetRelationship( nextSpan ) is not SpanRelationship.Independent and not SpanRelationship.Contiguous )
                 {
                     return $"Span at {i} ({span}) overlaps the next one {nextSpan}.";
                 }
