@@ -77,7 +77,7 @@ class NgRoute
                 var f = c._tsType.File;
                 body.Append( ", loadComponent: () => import( " )
                     .AppendSourceString( routes.Folder.GetRelativePathTo( f.Folder ).AppendPart( f.Name.Remove( f.Name.Length - 3 ) ) )
-                    .Append( " )" );
+                    .Append( " ).then( c => c." ).Append( comp.ComponentName ).Append( " )" );
             }
             if( c.HasChildren && c is not NgRouteWithRoutes )
             {
