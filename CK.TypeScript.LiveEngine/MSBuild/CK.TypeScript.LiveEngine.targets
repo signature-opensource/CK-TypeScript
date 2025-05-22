@@ -1,0 +1,21 @@
+
+<!--
+    This target simply reproduces the <building app>.runtimeconfig.json
+    as CK.TypeScript.LiveEngine.runtimeconfig.json in order to allow
+    CK.TypeScript.LiveEngine.dll to be runnable.
+
+    This is not ideal: we'd be better use the actual CK.TypeScript.LiveEngine.runtimeconfig.json
+    file from the CK.TypeScript.LiveEngine nuget package rather than copying the builder
+    appliction one.
+    But this works (until someone resolves this MSBuild magic).
+-->
+<Target Name="AddRuntimeDependenciesToContent"
+        Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"
+        BeforeTargets="GetCopyToOutputDirectoryItems"
+        DependsOnTargets="GenerateBuildDependencyFile; GenerateBuildRuntimeConfigurationFiles">
+    <ItemGroup>
+        <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)"
+                               TargetPath="CK.TypeScript.LiveEngine.runtimeconfig.json"
+                               CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+</Target>
