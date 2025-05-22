@@ -251,9 +251,9 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
         {
             return singleSpanType switch
             {
-                "statement" => new SpanTypeOperator( typeof( TransformStatement ), "{statement}" ),
-                "inject" => new SpanTypeOperator( typeof( InjectIntoStatement ), "{inject}" ),
-                "replace" => new SpanTypeOperator( typeof( ReplaceStatement ), "{replace}" ),
+                "statement" => new SpanTypeOperator( "{statement}", typeof( TransformStatement ) ),
+                "inject" => new SpanTypeOperator( "{inject}", typeof( InjectIntoStatement ) ),
+                "replace" => new SpanTypeOperator( "{replace}", typeof( ReplaceStatement ) ),
                 _ => $"""
                          Invalid span type '{singleSpanType}'. Allowed are "statement", "inject", "replace".
                          """

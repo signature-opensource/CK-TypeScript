@@ -38,7 +38,7 @@ public class RawStringTests
     [TestCaseSource( nameof( Source_valid_single_line_RawString_tests ) )]
     public void valid_single_line_RawString_tests( string code, string expected )
     {
-        var codeSource = new TestAnalyzer().ParseOrThrow( code );
+        var codeSource = new TestAnalyzer( useSourceSpanBraceAndBrackets: true ).ParseOrThrow( code );
         var rawString = codeSource.Tokens[0] as RawString;
         Throw.DebugAssert( rawString != null );
         rawString.Lines.Length.ShouldBe( 1 );
@@ -55,7 +55,7 @@ public class RawStringTests
                "Single-line string must not contain end of line." )]
     public void invalid_single_line_RawString_tests( string code, string errorMessage )
     {
-        var r = new TestAnalyzer().Parse( code );
+        var r = new TestAnalyzer( useSourceSpanBraceAndBrackets: true ).Parse( code );
         r.Success.ShouldBeFalse();
         Throw.DebugAssert( r.FirstError != null );
 
@@ -73,7 +73,7 @@ public class RawStringTests
                """" )]
     public void unterminated_string_covers_the_whole_text( string code )
     {
-        var r = new TestAnalyzer().Parse( code );
+        var r = new TestAnalyzer( useSourceSpanBraceAndBrackets: true ).Parse( code );
         r.Success.ShouldBeFalse();
         Throw.DebugAssert( r.FirstError != null );
         r.SourceCode.Tokens.Count.ShouldBe( 2 );
@@ -138,7 +138,7 @@ public class RawStringTests
                            """"""" )]
     public void valid_multi_line_RawString_tests( string code, string expected )
     {
-        var codeSource = new TestAnalyzer().ParseOrThrow( code );
+        var codeSource = new TestAnalyzer( useSourceSpanBraceAndBrackets: true ).ParseOrThrow( code );
         var rawString = codeSource.Tokens[0] as RawString;
         Throw.DebugAssert( rawString != null );
         rawString.Lines.ShouldBe( expected.Split( Environment.NewLine ).ToImmutableArray() );
@@ -190,7 +190,7 @@ public class RawStringTests
                """""""", "Invalid multi-line raw string: there must be no character before column 5 in '    XSome'." )]
     public void invalid_multi_line_RawString_tests( string code, string errorMessage )
     {
-        var r = new TestAnalyzer().Parse( code );
+        var r = new TestAnalyzer( useSourceSpanBraceAndBrackets: true ).Parse( code );
         r.Success.ShouldBeFalse();
         Throw.DebugAssert( r.FirstError != null );
 

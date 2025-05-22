@@ -12,7 +12,7 @@ public class ParsingTests
     [TestCase( "Works until /*C1*/BUG/*C2*/", "BUG/*C2*/" )]
     public void detecting_blocked_parse( string buggyTest, string remainingText )
     {
-        var a = new TestAnalyzer();
+        var a = new TestAnalyzer( useSourceSpanBraceAndBrackets: false );
         Should.Throw<CKException>( () => a.Parse( buggyTest ) )
               .Message.ShouldBe( $"""
                 Unforwarded head on error at:

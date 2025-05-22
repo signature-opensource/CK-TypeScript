@@ -6,9 +6,6 @@ namespace CK.Transform.Core;
 /// <summary>
 /// A <see cref="ITokenFilterOperator"/> that splits matches to
 /// the top spans that can be assigned to a type.
-/// <para>
-/// Narrowing and splitter operator.
-/// </para>
 /// </summary>
 public sealed class CoveringSpanTypeOperator : ITokenFilterOperator
 {
@@ -18,9 +15,9 @@ public sealed class CoveringSpanTypeOperator : ITokenFilterOperator
     /// <summary>
     /// Initializes a new <see cref="CoveringSpanTypeOperator"/>.
     /// </summary>
-    /// <param name="spanType">The span type to consider.</param>
     /// <param name="displayName">The span type name to display.</param>
-    public CoveringSpanTypeOperator( Type spanType, string displayName )
+    /// <param name="spanType">The span type to consider.</param>
+    public CoveringSpanTypeOperator( string displayName, Type spanType )
     {
         _spanType = spanType;
         _displayName = displayName;

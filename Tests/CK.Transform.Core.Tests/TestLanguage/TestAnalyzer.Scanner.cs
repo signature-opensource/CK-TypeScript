@@ -9,6 +9,12 @@ sealed partial class TestAnalyzer
     {
         int _braceDepth;
         int _bracketDepth;
+        readonly bool _useSourceSpanBraceAndBrackets;
+
+        public Scanner( bool useSourceSpanBraceAndBrackets )
+        {
+            _useSourceSpanBraceAndBrackets = useSourceSpanBraceAndBrackets;
+        }
 
         internal int BraceDepth => _braceDepth;
 
@@ -35,13 +41,16 @@ sealed partial class TestAnalyzer
         internal SourceSpan? HandleKnownSpan( ref TokenizerHead head, Token t )
         {
             Throw.DebugAssert( t is not TokenError );
-            if( t.TokenType is TokenType.OpenBrace )
+            if( _useSourceSpanBraceAndBrackets )
             {
-                return BraceSpan.Match( this, ref head, t );
-            }
-            if( t.TokenType is TokenType.OpenBracket )
-            {
-                return BracketSpan.Match( this, ref head, t );
+                if( t.TokenType is TokenType.OpenBrace )
+                {
+                    return BraceSpan.Match( this, ref head, t );
+                }
+                if( t.TokenType is TokenType.OpenBracket )
+                {
+                    return BracketSpan.Match( this, ref head, t );
+                }
             }
             return null;
         }

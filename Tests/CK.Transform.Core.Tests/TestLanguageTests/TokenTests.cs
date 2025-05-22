@@ -248,7 +248,7 @@ public class TokenTests
                """, 7, 10 )]
     public void Parsed_token_SourcePosition( string nTest, string text, int line, int column )
     {
-        var a = new TestAnalyzer().ParseOrThrow( text );
+        var a = new TestAnalyzer( useSourceSpanBraceAndBrackets: true ).ParseOrThrow( text );
         var token = a.Tokens[0];
         token.GetColumnNumber().ShouldBe( column );
         token.GetSourcePosition().ShouldBe( new SourcePosition( line, column ) );

@@ -14,7 +14,7 @@ public class SourceSpanTests
     [Test]
     public void moving_spans_of_braces()
     {
-        var a = new TestAnalyzer();
+        var a = new TestAnalyzer( useSourceSpanBraceAndBrackets: true );
         SourceCode code = a.ParseOrThrow( "A { B } C { D } { E }" );
         code.Spans.Count().ShouldBe( 3 );
         code.Spans.Select( s => s.ToString() ).Concatenate()
@@ -57,7 +57,7 @@ public class SourceSpanTests
         A x D E
         """
         )]
-    public void amibiguous_spans_of_braces( string title, string source, string transformer, string result )
+    public void replacements( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TestLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();

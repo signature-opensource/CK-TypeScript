@@ -24,10 +24,7 @@ public class LocationAndCardinalityTests
         )]
     public void before( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
     [TestCase( "n°1",
@@ -46,10 +43,7 @@ public class LocationAndCardinalityTests
         )]
     public void after( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
 
@@ -101,10 +95,7 @@ public class LocationAndCardinalityTests
         )]
     public void between( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
     [TestCase( "n°1",

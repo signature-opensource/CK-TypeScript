@@ -1,27 +1,25 @@
-using CK.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Text;
 
 namespace CK.Transform.Core;
 
 /// <summary>
-/// A <see cref="ITokenFilterOperator"/> that splits matches to the deepest
-/// spans defined by opening/closing pair of one (or more) tokens.
+/// A <see cref="ITokenFilterOperator"/> that splits matches to the
+/// top spans defined by opening/closing pair of one (or more) tokens.
 /// <para>
-/// This is like the <see cref="SpanTypeOperator"/> but "dynamic" as no
+/// This is like the <see cref="CoveringSpanTypeOperator"/> but "dynamic" as no
 /// <see cref="SourceSpan"/> are required to exist.
 /// </para>
 /// </summary>
-public sealed class SpanEnclosedOperator : ITokenFilterOperator
+public sealed class CoveringSpanEnclosedOperator : ITokenFilterOperator
 {
     readonly Func<IReadOnlyList<Token>, int, EnclosingTokenType> _enclosing;
     readonly string _displayName;
 
     public void Activate( Action<ITokenFilterOperator> collector ) => collector( this );
 
-    public SpanEnclosedOperator( string displayName, Func<IReadOnlyList<Token>, int, EnclosingTokenType> enclosing )
+    public CoveringSpanEnclosedOperator( string displayName, Func<IReadOnlyList<Token>, int, EnclosingTokenType> enclosing )
     {
         _enclosing = enclosing;
         _displayName = displayName;
@@ -30,13 +28,13 @@ public sealed class SpanEnclosedOperator : ITokenFilterOperator
     public void Apply( ITokenFilterOperatorContext context, ITokenFilterOperatorSource input )
     {
         var builder = context.SharedBuilder;
-        var spanCollector = new TokenSpanDeepestCollector();
+        var spanCollector = new TokenSpanCoveringCollector();
         var e = input.CreateTokenEnumerator();
         while( e.NextEach( skipEmpty: false ) )
         {
             while( e.NextMatch() )
             {
-                var spans = new EnclosedSpanDeepestEnumerator( context.UnfilteredTokens, e.CurrentMatch.Span, _enclosing );
+                var spans = new EnclosedSpanCoveringEnumerator( context.UnfilteredTokens, e.CurrentMatch.Span, _enclosing );
                 while( spans.MoveNext() )
                 {
                     builder.AddMatch( spans.Current );
@@ -49,7 +47,7 @@ public sealed class SpanEnclosedOperator : ITokenFilterOperator
 
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
-        if( !parsable ) b.Append( "[SpanEnclosed] " );
+        if( !parsable ) b.Append( "[CoveringSpanEnclosed] " );
         return b.Append( _displayName );
     }
 

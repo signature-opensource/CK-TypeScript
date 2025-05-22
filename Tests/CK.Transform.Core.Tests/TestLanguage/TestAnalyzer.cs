@@ -20,11 +20,13 @@ namespace CK.Transform.Core.Tests;
 sealed partial class TestAnalyzer : TargetLanguageAnalyzer
 {
     readonly Scanner _reusableScanner;
+    readonly bool _useSourceSpanBraceAndBrackets;
 
-    public TestAnalyzer()
+    public TestAnalyzer( bool useSourceSpanBraceAndBrackets )
         : base( TestLanguage._langageName )
     {
-        _reusableScanner = new Scanner();
+        _reusableScanner = new Scanner( useSourceSpanBraceAndBrackets );
+        _useSourceSpanBraceAndBrackets = useSourceSpanBraceAndBrackets;
     }
 
     /// <summary>
@@ -128,11 +130,40 @@ sealed partial class TestAnalyzer : TargetLanguageAnalyzer
         {
             return spanSpec switch
             {
-                "braces" => new SpanTypeOperator( typeof( BraceSpan ), "{braces}" ),
-                "brackets" => new SpanTypeOperator( typeof( BracketSpan ), "{brackets}" ),
-                "^braces" => new CoveringSpanTypeOperator( typeof( BraceSpan ), "{^braces}" ),
+                "braces" => _useSourceSpanBraceAndBrackets
+                                ? new SpanTypeOperator( "{braces}", typeof( BraceSpan ) )
+                                : new SpanEnclosedOperator( "{braces}", ( tokens, idx ) => tokens[idx].TokenType switch
+                                    {
+                                        TokenType.OpenBrace => EnclosingTokenType.Open,
+                                        TokenType.CloseBrace => EnclosingTokenType.Close,
+                                        _ => EnclosingTokenType.None
+                                    } ),
+                "^braces" => _useSourceSpanBraceAndBrackets
+                                ? new CoveringSpanTypeOperator( "{^braces}", typeof( BraceSpan ) )
+                                : new CoveringSpanEnclosedOperator( "{^braces}", ( tokens, idx ) => tokens[idx].TokenType switch
+                                {
+                                    TokenType.OpenBrace => EnclosingTokenType.Open,
+                                    TokenType.CloseBrace => EnclosingTokenType.Close,
+                                    _ => EnclosingTokenType.None
+                                } ),
+                "brackets" => _useSourceSpanBraceAndBrackets
+                                ? new SpanTypeOperator( "{brackets}", typeof( BracketSpan ) )
+                                : new SpanEnclosedOperator( "{brackets}", ( tokens, idx ) => tokens[idx].TokenType switch
+                                {
+                                    TokenType.OpenBracket => EnclosingTokenType.Open,
+                                    TokenType.CloseBracket => EnclosingTokenType.Close,
+                                    _ => EnclosingTokenType.None
+                                } ),
+                "^brackets" => _useSourceSpanBraceAndBrackets
+                                ? new CoveringSpanTypeOperator( "{^brackets}", typeof( BracketSpan ) )
+                                : new CoveringSpanEnclosedOperator( "{^brackets}", ( tokens, idx ) => tokens[idx].TokenType switch
+                                {
+                                    TokenType.OpenBracket => EnclosingTokenType.Open,
+                                    TokenType.CloseBracket => EnclosingTokenType.Close,
+                                    _ => EnclosingTokenType.None
+                                } ),
                 _ => $"""
-                         Invalid span type '{spanSpec}'. Allowed are "braces", "brackets".
+                         Invalid span type '{spanSpec}'. Allowed are "braces", "^braces", "brackets", "^brackets".
                          """
             };
         }

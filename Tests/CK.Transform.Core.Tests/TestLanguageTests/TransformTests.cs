@@ -111,10 +111,7 @@ public class TransformTests
         )]
     public void scoped_braces_replace( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
     [TestCase( "n°1",
@@ -162,10 +159,7 @@ public class TransformTests
         )]
     public void scoped_covering_replace( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
 
@@ -199,10 +193,7 @@ public class TransformTests
     )]
     public void replace_expand( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
     [TestCase( "n°1",
@@ -231,10 +222,7 @@ public class TransformTests
     )]
     public void replace_remove( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
 
@@ -272,10 +260,7 @@ public class TransformTests
     )]
     public void replace_multiple( string title, string source, string transformer, string result )
     {
-        var h = new TransformerHost( new TestLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        TestLanguage.StandardTest( source, transformer, result );
     }
 
 
