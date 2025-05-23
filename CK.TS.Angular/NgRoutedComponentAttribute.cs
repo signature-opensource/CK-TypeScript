@@ -32,7 +32,7 @@ public class NgRoutedComponentAttribute : NgComponentAttribute
     /// <summary>
     /// Gets or sets the route for this component.
     /// <para>
-    /// When let to null, the route name is the component name: the decorated type name without the "Component" suffix in snake-case.
+    /// When let to null, the route name is the component name: the decorated type name in snake-case without the "Component" suffix.
     /// </para>
     /// </summary>
     public string? Route { get; set; }
@@ -43,5 +43,3 @@ public class NgRoutedComponentAttribute : NgComponentAttribute
     /// </summary>
     public RouteRegistrationMode RegistrationMode { get; set; }
 }
-
-

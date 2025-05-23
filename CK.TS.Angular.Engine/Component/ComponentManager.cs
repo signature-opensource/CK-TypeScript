@@ -3,6 +3,9 @@ using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace CK.TS.Angular.Engine;
 
@@ -23,22 +26,22 @@ sealed class ComponentManager
     internal bool RegisterComponent( IActivityMonitor monitor, NgComponentAttributeImpl ngComponent, ITSDeclaredFileType tsType )
     {
         NgRoute? target = null;
-        var routedComponent = ngComponent as NgRoutedComponentAttributeImpl;
-        if( routedComponent != null )
+        var asRoutedComponent = ngComponent as NgRoutedComponentAttributeImpl;
+        if( asRoutedComponent != null )
         {
-            if( !_routes.TryGetValue( routedComponent.Attribute.TargetComponent, out target ) )
+            if( !_routes.TryGetValue( asRoutedComponent.Attribute.TargetComponent, out target ) )
             {
-                monitor.Error( $"""Invalid [NgRoutedComponent] on '{routedComponent.DecoratedType:N}': TargetComponent '{routedComponent.Attribute.TargetComponent:C}' is not a component with routes.""" );
+                monitor.Error( $"""Invalid [NgRoutedComponent] on '{asRoutedComponent.DecoratedType:N}': TargetComponent '{asRoutedComponent.Attribute.TargetComponent:C}' is not a component with routes.""" );
                 return false;
             }
         }
         if( ngComponent.Attribute.HasRoutes )
         {
-            RegisterNgRouteWithRoutes( ngComponent.DecoratedType, ngComponent.TypeScriptFolder, target, routedComponent, tsType );
+            RegisterNgRouteWithRoutes( ngComponent.DecoratedType, ngComponent.TypeScriptFolder, target, asRoutedComponent, tsType );
         }
         else if( target != null )
         {
-            _routes.Add( ngComponent.DecoratedType, new NgRoute( target, routedComponent, tsType ) );
+            _routes.Add( ngComponent.DecoratedType, new NgRoute( target, asRoutedComponent, tsType ) );
         }
         return true;
     }
@@ -57,13 +60,19 @@ sealed class ComponentManager
 
     void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e )
     {
+        Throw.DebugAssert( _routes[typeof( AppComponent )].IsAppComponent );
+        Throw.DebugAssert( _routes.Values.Count( r => r.IsAppComponent ) == 1 );
+        StringBuilder bLog = new StringBuilder( "Generating Angular static Routes:" );
+        bLog.AppendLine().Append( "[AppComponent]" ).AppendLine();
         var r = _firstWithRoutes;
         do
         {
-            r.GenerateRoutes( e.Monitor );
+            if( !r.IsAppComponent ) r.Write( bLog, 1 );
+            r.GenerateRoutes( e.Monitor, 0 );
             r = r._nextWithRoutes;
         }
         while( r != null );
+        e.Monitor.Info( bLog.ToString() );
     }
 
 }

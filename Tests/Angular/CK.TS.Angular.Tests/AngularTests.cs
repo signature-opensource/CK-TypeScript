@@ -1,5 +1,5 @@
 using CK.Core;
-using CK.Demo;
+using CK.NgModduleDemo;
 using CK.Ng.PublicSection;
 using CK.Ng.AspNet.Auth;
 using CK.Testing;
@@ -28,6 +28,8 @@ public class AngularTests
                                               // CK.Ng.AspNet.Auth folder.
                                               typeof( LoginComponent ),
                                               typeof( PasswordLostComponent ),
+                                              typeof( LogoutConfirmComponent ),
+                                              typeof( LogoutResultComponent ),
                                               typeof( SomeAuthPackage ),
                                               // CK.Ng.PublicSection
                                               typeof( PublicSectionPackage ),

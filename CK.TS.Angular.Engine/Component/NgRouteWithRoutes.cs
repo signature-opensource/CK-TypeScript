@@ -20,13 +20,15 @@ sealed class NgRouteWithRoutes : NgRoute
         _nextWithRoutes = nextWithRoutes;
     }
 
-    internal void GenerateRoutes( IActivityMonitor monitor )
+    public TypeScriptFile RoutesFile => _routes;
+
+    internal void GenerateRoutes( IActivityMonitor monitor, int childDepth )
     {
         _routes.Body.Append( """
                 export default [
 
                 """ );
-        GenerateRoutes( monitor, _routes );
+        GenerateRoutes( monitor, _routes, childDepth );
         _routes.Body.Append( """
 
                 ];

@@ -1,6 +1,6 @@
 using CK.TS.Angular;
 
-namespace CK.Demo;
+namespace CK.NgModduleDemo;
 
 // Her we use a NgModule BUT this should simply be a 
 [NgModule]
