@@ -173,10 +173,6 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
             {
                 return ClassDefinition.Match( this, ref head, t );
             }
-            if( t.TokenType is TokenType.OpenBrace )
-            {
-                return BraceSpan.Match( this, ref head, t );
-            }
             return null;
         }
 

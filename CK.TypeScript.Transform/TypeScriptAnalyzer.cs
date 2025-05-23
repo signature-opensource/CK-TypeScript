@@ -68,15 +68,59 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
     protected override object ParseSpanSpec( BalancedString tokenSpec )
     {
         var spanSpec = tokenSpec.InnerText.Trim();
+
         return spanSpec switch
         {
-            "braces" => new SpanTypeOperator( "{braces}", typeof( BraceSpan ) ),
-            "^braces" => new CoveringSpanTypeOperator( "{^braces}", typeof( BraceSpan ) ),
+            "{}" or
+            "braces" => new SpanEnclosedOperator( "{braces}", ( tokens, idx ) => tokens[idx].TokenType switch
+                           {
+                               TokenType.OpenBrace => EnclosingTokenType.Open,
+                               TokenType.CloseBrace => EnclosingTokenType.Close,
+                               _ => EnclosingTokenType.None
+                           } ),
+            "^{}" or
+            "^braces" => new CoveringSpanEnclosedOperator( "{^braces}", ( tokens, idx ) => tokens[idx].TokenType switch
+                            {
+                                TokenType.OpenBrace => EnclosingTokenType.Open,
+                                TokenType.CloseBrace => EnclosingTokenType.Close,
+                                _ => EnclosingTokenType.None
+                            } ),
+            "[]" or
+            "brackets" => new SpanEnclosedOperator( "{brackets}", ( tokens, idx ) => tokens[idx].TokenType switch
+                            {
+                                TokenType.OpenBracket => EnclosingTokenType.Open,
+                                TokenType.CloseBracket => EnclosingTokenType.Close,
+                                _ => EnclosingTokenType.None
+                            } ),
+            "^[]" or
+            "^brackets" => new CoveringSpanEnclosedOperator( "{^brackets}", ( tokens, idx ) => tokens[idx].TokenType switch
+                            {
+                                TokenType.OpenBracket => EnclosingTokenType.Open,
+                                TokenType.CloseBracket => EnclosingTokenType.Close,
+                                _ => EnclosingTokenType.None
+                            } ),
+            "()" or
+            "parens" => new SpanEnclosedOperator( "{parens}", ( tokens, idx ) => tokens[idx].TokenType switch
+                            {
+                                TokenType.OpenBracket => EnclosingTokenType.Open,
+                                TokenType.CloseBracket => EnclosingTokenType.Close,
+                                _ => EnclosingTokenType.None
+                            } ),
+            "^()" or
+            "^parens" => new CoveringSpanEnclosedOperator( "{^parens}", ( tokens, idx ) => tokens[idx].TokenType switch
+                            {
+                                TokenType.OpenParen => EnclosingTokenType.Open,
+                                TokenType.CloseParen => EnclosingTokenType.Close,
+                                _ => EnclosingTokenType.None
+                            } ),
             "class" => new SpanTypeOperator( "{class}", typeof( ClassDefinition ) ),
+            "^class" => new CoveringSpanTypeOperator( "{class}", typeof( ClassDefinition ) ),
             "import" => new SpanTypeOperator( "{import}", typeof( ImportStatement ) ),
-            _ => $"""
-                    Invalid span type '{spanSpec}'. Allowed are "braces", "^braces", "class", "import".
-                    """
+            _ => $$"""
+                        Invalid span type '{spanSpec}'.
+                        Allowed are "braces", "{}", "^braces", "^{}", "brackets", "[]", "^brackets", "^[]",
+                        "class", "^class", "import".
+                        """
         };
     }
 

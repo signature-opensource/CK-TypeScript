@@ -23,11 +23,25 @@ public sealed class ClassDefinition : SourceSpan
             return null;
         }
         Throw.DebugAssert( head.LastToken?.TokenType is TokenType.OpenBrace );
-        if( BraceSpan.Match( scanner, ref head, head.LastToken ) == null )
+        int expectedDepth = scanner.BraceDepth - 1;
+        for(; ; )
         {
-            return null;
+            var t = scanner.GetNextToken( ref head );
+            if( scanner.BraceDepth == expectedDepth )
+            {
+                return head.FirstError == null
+                        ? head.AddSpan( new ClassDefinition( begSpan, head.LastTokenIndex + 1 ) )
+                        : null;
+            }
+            if( t.TokenType is TokenType.EndOfInput )
+            {
+                return null;
+            }
+            if( t is not TokenError )
+            {
+                scanner.HandleKnownSpan( ref head, t );
+            }
         }
-        return head.AddSpan( new ClassDefinition( begSpan, head.LastTokenIndex + 1 ) );
 
         static int FindBegSpan( ref TokenizerHead head )
         {
