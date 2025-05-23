@@ -3,10 +3,9 @@ using NUnit.Framework;
 using Shouldly;
 using System;
 using System.Linq;
-using static CK.Core.CheckedWriteStream;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.Transform.Core.Tests;
+namespace CK.Transform.Core.Tests.TestLanguageTests;
 
 [TestFixture]
 public class SourceSpanTests
@@ -27,6 +26,21 @@ public class SourceSpanTests
         code.Spans.Select( s => s.ToString() ).Concatenate()
             .ShouldBe( "BraceSpan [1,4[, BraceSpan [4,7[, BraceSpan [8,11[" );
         code.ToString().ShouldBe( "A { D } { B } C { E }" );
+    }
+
+    [Test]
+    public void spans_braces_brackets_parens()
+    {
+        var a = new TestAnalyzer( useSourceSpanBraceAndBrackets: true );
+        SourceCode code = a.ParseOrThrow( """
+            someFunc( { import: [] } )
+            Module( { x: f( import: [] ), import: [
+            ] } )
+            class A { import: [] }
+            """ );
+        code.Spans.AllSpans.Count().ShouldBe( 10 );
+        code.Spans.AllSpans.Select( s => s.ToString() ).Concatenate()
+            .ShouldBe( "ParenSpan [1,9[, BraceSpan [2,8[, BracketSpan [5,7[, ParenSpan [10,28[, BraceSpan [11,27[, ParenSpan [15,21[, BracketSpan [18,20[, BracketSpan [24,26[, BraceSpan [30,36[, BracketSpan [33,35[" );
     }
 
     [TestCase( "n°1",

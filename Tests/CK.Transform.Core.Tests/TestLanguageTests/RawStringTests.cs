@@ -4,7 +4,7 @@ using Shouldly;
 using System;
 using System.Collections.Immutable;
 
-namespace CK.Transform.Core.Tests;
+namespace CK.Transform.Core.Tests.TestLanguageTests;
 
 // Use the TranformFunction on "target" to test the string...
 // Waiting for my brain to decide what a (PEG) Matcher is.

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 
 namespace CK.Transform.Core;
 
-
 /// <summary>
 /// Read only view of the <see cref="SourceCode.Spans"/>.
 /// </summary>
@@ -17,4 +16,10 @@ public interface ISourceSpanRoot : IEnumerable<SourceSpan>
     /// <param name="index">The token index.</param>
     /// <returns>The deepest span or null if no span covers the token at this position.</returns>
     SourceSpan? GetChildrenSpanAt( int index );
+
+    /// <summary>
+    /// Gets all spans recursively.
+    /// </summary>
+    IEnumerable<SourceSpan> AllSpans { get; }
+
 }

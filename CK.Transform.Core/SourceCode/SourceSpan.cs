@@ -57,6 +57,21 @@ public abstract partial class SourceSpan
         }
     }
 
+    public IEnumerable<SourceSpan> AllSpans
+    {
+        get
+        {
+            foreach( var s in Children )
+            {
+                yield return s;
+                foreach( var sub in s.AllSpans )
+                {
+                    yield return sub;
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Checks whether this span is valid. At this level, it must not be <see cref="IsDetached"/>
     /// and all children's <see cref="SourceSpanChildren.CheckValidChildren()"/> must return true.

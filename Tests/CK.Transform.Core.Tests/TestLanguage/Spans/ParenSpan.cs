@@ -2,28 +2,28 @@ using CK.Core;
 
 namespace CK.Transform.Core.Tests;
 
-sealed class BracketSpan : SourceSpan
+sealed class ParenSpan : SourceSpan
 {
-    public BracketSpan( int beg, int end )
+    public ParenSpan( int beg, int end )
         : base( beg, end )
     {
     }
 
-    internal static BracketSpan? Match( TestAnalyzer.Scanner scanner, ref TokenizerHead head, Token openBracketToken )
+    internal static ParenSpan? Match( TestAnalyzer.Scanner scanner, ref TokenizerHead head, Token openParenToken )
     {
         Throw.DebugAssert( !head.IsCondemned
-                           && head.LastToken == openBracketToken
-                           && openBracketToken.TokenType == TokenType.OpenBracket
-                           && scanner.BracketDepth > 0 );
+                           && head.LastToken == openParenToken
+                           && openParenToken.TokenType == TokenType.OpenParen
+                           && scanner.ParenDepth > 0 );
         int begSpan = head.LastTokenIndex;
-        int expectedDepth = scanner.BracketDepth - 1;
+        int expectedDepth = scanner.ParenDepth - 1;
         for(; ; )
         {
             var t = scanner.GetNextToken( ref head );
-            if( scanner.BracketDepth == expectedDepth )
+            if( scanner.ParenDepth == expectedDepth )
             {
                 return head.FirstError == null
-                        ? head.AddSpan( new BracketSpan( begSpan, head.LastTokenIndex + 1 ) )
+                        ? head.AddSpan( new ParenSpan( begSpan, head.LastTokenIndex + 1 ) )
                         : null;
             }
             if( t.TokenType is TokenType.EndOfInput )

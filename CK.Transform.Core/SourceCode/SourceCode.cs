@@ -30,7 +30,7 @@ public sealed class SourceCode
     }
 
     /// <summary>
-    /// Gets the spans.
+    /// Gets the top spans.
     /// </summary>
     public ISourceSpanRoot Spans => _spans;
 

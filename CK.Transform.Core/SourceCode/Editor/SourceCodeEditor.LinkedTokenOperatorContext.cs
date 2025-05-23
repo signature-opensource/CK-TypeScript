@@ -1,8 +1,11 @@
 using CK.Core;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CK.Transform.Core;
 
@@ -109,9 +112,11 @@ public sealed partial class SourceCodeEditor
             }
             else
             {
+                b.AppendLine();
                 using( _editor.Monitor.OpenError( b.ToString() ) )
                 {
-                    _editor.Monitor.Error( "TODO" );
+                    WriteFullPath( b, withMatches: true );
+                    _editor.Monitor.Error( b.ToString() );
                 }
             }
         }
@@ -119,27 +124,35 @@ public sealed partial class SourceCodeEditor
         void ITokenFilterOperatorContext.SetResult( TokenMatch[] result )
         {
             Throw.CheckArgument( result != null );
-            if( !result.CheckValid( _editor._tokens, out var error ) )
+            if( !_hasFailed )
             {
-                Throw.ArgumentException( nameof( result ), error );
+                if( !result.CheckValid( _editor._tokens, out var error ) )
+                {
+                    Throw.ArgumentException( nameof( result ), error );
+                }
+                _matches = result;
             }
-            _matches = result;
         }
 
         void ITokenFilterOperatorContext.SetResult( TokenFilterBuilder builder )
         {
             Throw.CheckArgument( builder != null );
-            var builderResult = builder.ExtractResult();
-            Throw.CheckState( builderResult.Length == 0 || builderResult[^1].Span.End <= _editor._tokens.Count );
-            _matches = builderResult;
+            if( !_hasFailed )
+            {
+                var builderResult = builder.ExtractResult();
+                Throw.CheckState( builderResult.Length == 0 || builderResult[^1].Span.End <= _editor._tokens.Count );
+                _matches = builderResult;
+            }
         }
 
         void ITokenFilterOperatorContext.SetUnchangedResult()
         {
             Throw.CheckState( _previous != null );
-            _matches = _previous._matches;
+            if( !_hasFailed )
+            {
+                _matches = _previous._matches;
+            }
         }
-
 
         public ITokenFilterOperator? Operator => _operator;
 
@@ -182,7 +195,7 @@ public sealed partial class SourceCodeEditor
             return s;
         }
 
-        StringBuilder WriteFullPath( StringBuilder b )
+        StringBuilder WriteFullPath( StringBuilder b, bool withMatches = false )
         {
             if( _previous == null )
             {
@@ -191,8 +204,68 @@ public sealed partial class SourceCodeEditor
             else
             {
                 Throw.DebugAssert( _operator != null );
-                _previous.WriteFullPath( b ).Append( _previous._syntaxBorder ? " |> " : " > " );
+                _previous.WriteFullPath( b, withMatches ).Append( _previous._syntaxBorder ? " |> " : " > " );
                 _operator.Describe( b, parsable: false );
+            }
+            if( withMatches )
+            {
+                b.AppendLine().Append( "   " );
+                if( _matches == null )
+                {
+                    b.Append( "<null>" );
+                }
+                else if( _matches.Length == 0 )
+                {
+                    b.Append( "<no matches>" );
+                }
+                else if( !_matches.CheckValid( _editor._code.Tokens, out var error ) )
+                {
+                    b.Append( "Invalid matches: " ).Append( error );
+                }
+                else
+                {
+                    var e = new TokenFilterEnumerator( _matches, _editor._code.Tokens );
+                    if( e.IsSingleEach )
+                    {
+                        e.NextEach( skipEmpty: false );
+                        if( !e.NextMatch() )
+                        {
+                            b.Append( "Single each with empty matches." );
+                        }
+                        else
+                        {
+                            bool atLeastOne = false;
+                            do
+                            {
+                                if( atLeastOne ) b.Append( ", " );
+                                atLeastOne = true;
+                                b.Append( e.CurrentMatch.Span );
+                            }
+                            while( e.NextMatch() );
+                        }
+                    }
+                    else
+                    {
+                        while( e.NextEach( skipEmpty: false ) )
+                        {
+                            if( e.CurrentEachIndex > 0 )
+                            {
+                                b.AppendLine().Append( "   " );
+                            }
+                            b.Append( "Each n°" ).Append( e.CurrentEachIndex ).Append( ':' ).AppendLine();
+                            b.Append( "      " );
+                            bool atLeastOne = false;
+                            do
+                            {
+                                if( atLeastOne ) b.Append( ", " );
+                                atLeastOne = true;
+                                b.Append( e.CurrentMatch.Span );
+                            }
+                            while( e.NextMatch() );
+                        }
+                    }
+                }
+                b.AppendLine();
             }
             return b;
         }

@@ -14,7 +14,7 @@ public interface ITokenFilterOperatorContext
     IReadOnlyList<Token> UnfilteredTokens { get; }
 
     /// <summary>
-    /// Signals an operator error.
+    /// Signals an operator error. Once called <c>SetResult</c> ignore the result.
     /// </summary>
     /// <param name="failureMessage">The error message.</param>
     /// <param name="current">Optional enumerator to dump the error detailed position.</param>
@@ -22,18 +22,21 @@ public interface ITokenFilterOperatorContext
 
     /// <summary>
     /// Sets the result of the operator.
+    /// Does nothing if <see cref="SetFailedResult(string, ITokenFilterEnumerator?)"/> has been called.
     /// </summary>
     /// <param name="result">The result.</param>
     void SetResult( TokenMatch[] result );
 
     /// <summary>
     /// Sets the result of the operator.
+    /// Does nothing if <see cref="SetFailedResult(string, ITokenFilterEnumerator?)"/> has been called.
     /// </summary>
     /// <param name="builder">The result builder.</param>
     void SetResult( TokenFilterBuilder builder );
 
     /// <summary>
     /// Sets a no-op result for the operator.
+    /// Does nothing if <see cref="SetFailedResult(string, ITokenFilterEnumerator?)"/> has been called.
     /// </summary>
     void SetUnchangedResult();
 

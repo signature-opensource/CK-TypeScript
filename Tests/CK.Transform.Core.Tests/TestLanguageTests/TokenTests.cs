@@ -2,7 +2,7 @@ using Shouldly;
 using NUnit.Framework;
 using System;
 
-namespace CK.Transform.Core.Tests;
+namespace CK.Transform.Core.Tests.TestLanguageTests;
 
 [TestFixture]
 public class TokenTests

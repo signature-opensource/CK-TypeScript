@@ -246,20 +246,16 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     /// <returns>The provider or an error string.</returns>
     internal protected override object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var singleSpanType = tokenSpec.InnerText.Trim();
-        if( singleSpanType.Length > 0 )
+        var spanSpec = tokenSpec.InnerText.Trim();
+        return spanSpec switch
         {
-            return singleSpanType switch
-            {
-                "statement" => new SpanTypeOperator( "{statement}", typeof( TransformStatement ) ),
-                "inject" => new SpanTypeOperator( "{inject}", typeof( InjectIntoStatement ) ),
-                "replace" => new SpanTypeOperator( "{replace}", typeof( ReplaceStatement ) ),
-                _ => $"""
-                         Invalid span type '{singleSpanType}'. Allowed are "statement", "inject", "replace".
-                         """
-            };
-        }
-        return ITokenFilterOperator.Empty;
+            "statement" => new SpanTypeOperator( "{statement}", typeof( TransformStatement ) ),
+            "inject" => new SpanTypeOperator( "{inject}", typeof( InjectIntoStatement ) ),
+            "replace" => new SpanTypeOperator( "{replace}", typeof( ReplaceStatement ) ),
+            _ => $"""
+                 Invalid span type '{spanSpec}'. Allowed are "statement", "inject", "replace".
+                 """
+        };
     }
 
     protected override void ParseStandardMatchPattern( ref TokenizerHead head )

@@ -67,21 +67,17 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
     /// <returns>The provider or an error string.</returns>
     protected override object ParseSpanSpec( BalancedString tokenSpec )
     {
-        var singleSpanType = tokenSpec.InnerText.Trim();
-        if( singleSpanType.Length > 0 )
+        var spanSpec = tokenSpec.InnerText.Trim();
+        return spanSpec switch
         {
-            return singleSpanType switch
-            {
-                "braces" => new SpanTypeOperator( "{braces}", typeof( BraceSpan ) ),
-                "^braces" => new CoveringSpanTypeOperator( "{^braces}", typeof( BraceSpan ) ),
-                "class" => new SpanTypeOperator( "{class}", typeof( ClassDefinition ) ),
-                "import" => new SpanTypeOperator( "{import}", typeof( ImportStatement ) ),
-                _ => $"""
-                     Invalid span type '{singleSpanType}'. Allowed are "braces", "^braces", "class", "import".
-                     """
-            };
-        }
-        return ITokenFilterOperator.Empty;
+            "braces" => new SpanTypeOperator( "{braces}", typeof( BraceSpan ) ),
+            "^braces" => new CoveringSpanTypeOperator( "{^braces}", typeof( BraceSpan ) ),
+            "class" => new SpanTypeOperator( "{class}", typeof( ClassDefinition ) ),
+            "import" => new SpanTypeOperator( "{import}", typeof( ImportStatement ) ),
+            _ => $"""
+                    Invalid span type '{spanSpec}'. Allowed are "braces", "^braces", "class", "import".
+                    """
+        };
     }
 
     protected override void ParseStandardMatchPattern( ref TokenizerHead head )

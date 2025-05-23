@@ -109,7 +109,7 @@ public class TransformTests
         One A { A { A } A } A { this works }
         """
         )]
-    public void scoped_braces_replace( string title, string source, string transformer, string result )
+    public void braces_replace( string title, string source, string transformer, string result )
     {
         TestLanguage.StandardTest( source, transformer, result );
     }
@@ -157,7 +157,34 @@ public class TransformTests
         One A { A { this works HERE } A } A { A }
         """
         )]
-    public void scoped_covering_replace( string title, string source, string transformer, string result )
+    public void covering_scoped_replace( string title, string source, string transformer, string result )
+    {
+        TestLanguage.StandardTest( source, transformer, result );
+    }
+
+    [TestCase( "n°1",
+        """
+        someFunc( { import: [] } )
+        Module( { x: f( import: [] ), import: [
+        ] } )
+        class A { import: [] }
+        """,
+        """"
+        create <Test> transformer
+        begin
+            in after "Module"
+                in first {^{}}
+                    in after last "import:"
+                        replace "[]" with """[ "ITEM" ]""";
+        end
+        """",
+        """
+        someFunc( { import: [] } )
+        Module( { x: f( import: [] ), import: [ "ITEM" ] } )
+        class A { import: [] }
+        """
+        )]
+    public void ts_like_replace( string title, string source, string transformer, string result )
     {
         TestLanguage.StandardTest( source, transformer, result );
     }

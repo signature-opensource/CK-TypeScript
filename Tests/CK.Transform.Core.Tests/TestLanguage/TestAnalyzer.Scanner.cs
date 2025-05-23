@@ -9,6 +9,7 @@ sealed partial class TestAnalyzer
     {
         int _braceDepth;
         int _bracketDepth;
+        int _parenDepth;
         readonly bool _useSourceSpanBraceAndBrackets;
 
         public Scanner( bool useSourceSpanBraceAndBrackets )
@@ -20,10 +21,13 @@ sealed partial class TestAnalyzer
 
         internal int BracketDepth => _bracketDepth;
 
+        internal int ParenDepth => _parenDepth;
+
         internal void Reset()
         {
             _braceDepth = 0;
             _bracketDepth = 0;
+            _parenDepth = 0;
         }
 
         internal void Parse( ref TokenizerHead head  )
@@ -50,6 +54,10 @@ sealed partial class TestAnalyzer
                 if( t.TokenType is TokenType.OpenBracket )
                 {
                     return BracketSpan.Match( this, ref head, t );
+                }
+                if( t.TokenType is TokenType.OpenParen )
+                {
+                    return ParenSpan.Match( this, ref head, t );
                 }
             }
             return null;
@@ -90,6 +98,21 @@ sealed partial class TestAnalyzer
                     else
                     {
                         --_bracketDepth;
+                        head.AcceptLowLevelToken();
+                    }
+                    break;
+                case TokenType.OpenParen:
+                    head.AcceptLowLevelToken();
+                    ++_parenDepth;
+                    break;
+                case TokenType.CloseParen:
+                    if( _parenDepth == 0 )
+                    {
+                        head.AppendUnexpectedToken();
+                    }
+                    else
+                    {
+                        --_parenDepth;
                         head.AcceptLowLevelToken();
                     }
                     break;
