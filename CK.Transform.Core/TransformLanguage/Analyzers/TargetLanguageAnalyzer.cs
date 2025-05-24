@@ -104,4 +104,23 @@ public abstract class TargetLanguageAnalyzer : Analyzer, ITargetAnalyzer
         }
     }
 
+    /// <summary>
+    /// Must create a <see cref="Trivia"/> for an <see cref="InjectionPoint"/>.
+    /// </summary>
+    /// <param name="target">The injection point.</param>
+    /// <param name="syntax">The <see cref="InjectionPoint.Kind"/> to create.</param>
+    /// <param name="inlineIfPossible">
+    /// True to avoid an ending new line if possible.
+    /// A block comment can be chosen rather than a line comment.
+    /// </param>
+    /// <returns>The trivia.</returns>
+    protected internal abstract Trivia CreateInjectionPointTrivia( InjectionPoint target,
+                                                                   InjectionPoint.Kind syntax = InjectionPoint.Kind.AutoClosing,
+                                                                   bool inlineIfPossible = false );
+
+    /*
+            var tt = TokenTypeExtensions.GetTriviaBlockCommentType( 4, 3 );
+            var marker = new Trivia( tt, $"<!-- <{target.Name} /> -->{Environment.NewLine}" );
+     */
+
 }

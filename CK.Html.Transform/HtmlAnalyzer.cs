@@ -273,4 +273,13 @@ public sealed partial class HtmlAnalyzer : TargetLanguageAnalyzer
     [GeneratedRegex( "^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture )]
     private static partial Regex VoidElements();
 
+    /// <inheritdoc/>
+    protected override Trivia CreateInjectionPointTrivia( InjectionPoint target,
+                                                          InjectionPoint.Kind syntax,
+                                                          bool inlineIfPossible )
+    {
+        var marker = $"<!-- {InjectionPoint.GetString( target.Name, syntax )} -->{(inlineIfPossible ? "" : Environment.NewLine)}";
+        return new Trivia( CK.Transform.Core.TokenTypeExtensions.GetTriviaBlockCommentType( 4, 3 ),
+                           marker );
+    }
 }

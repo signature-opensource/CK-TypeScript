@@ -86,7 +86,7 @@ public class LessAnalyzer : TargetLanguageAnalyzer
             //      Otherwise, return a <delim-token> with its value set to the current input code point.
             //
             return isOneCharValid // Basic css syntax.
-                   || iS >= (c == '@' ? 3 : 2)      
+                   || iS >= (c == '@' ? 3 : 2)
                          ? new LowLevelToken( TokenType.GenericIdentifier, iS )
                          : default;
 
@@ -181,5 +181,16 @@ public class LessAnalyzer : TargetLanguageAnalyzer
                 ImportStatement.TryMatch( t, ref head );
             }
         }
+    }
+
+    /// <inheritdoc/>
+    protected override Trivia CreateInjectionPointTrivia( InjectionPoint target,
+                                                          InjectionPoint.Kind syntax,
+                                                          bool inlineIfPossible )
+    {
+        var tag = InjectionPoint.GetString( target.Name, syntax );
+        return inlineIfPossible
+                ? new Trivia( TokenTypeExtensions.GetTriviaBlockCommentType( 2, 2 ), $"/* {tag} */" )
+                : new Trivia( TokenTypeExtensions.GetTriviaLineCommentType( 2 ), $"// {tag}{Environment.NewLine}" );
     }
 }
