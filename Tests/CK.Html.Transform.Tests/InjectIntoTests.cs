@@ -5,6 +5,7 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Html.Transform.Tests;
 
+[TestFixture]
 public class InjectIntoTests
 {
     [TestCase( "n°1",
@@ -96,5 +97,4 @@ public class InjectIntoTests
         var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
-
 }

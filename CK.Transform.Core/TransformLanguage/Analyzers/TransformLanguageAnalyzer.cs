@@ -207,6 +207,7 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
     /// At this level, this handles transform statements that apply to any language:
     /// <see cref="ReparseStatement"/>, <see cref="InjectIntoStatement"/>,
     /// <see cref="InScopeStatement"/>, <see cref="ReplaceStatement"/> and
+    /// <see cref="InsertStatement"/>, <see cref="UnlessStatement"/> and
     /// <see cref="TransformStatementBlock"/> (<c>begin</c>...<c>end</c> blocks).
     /// </para>
     /// </summary>
@@ -225,6 +226,14 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
         if( head.TryAcceptToken( "replace", out var replaceT ) )
         {
             return ReplaceStatement.Parse( this, ref head, replaceT );
+        }
+        if( head.TryAcceptToken( "insert", out var insertT ) )
+        {
+            return InsertStatement.Parse( this, ref head, insertT );
+        }
+        if( head.TryAcceptToken( "unless", out var unlessT ) )
+        {
+            return UnlessStatement.Parse( this, ref head, unlessT );
         }
         if( head.TryAcceptToken( "reparse", out _ ) )
         {

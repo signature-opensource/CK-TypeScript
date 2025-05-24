@@ -193,4 +193,16 @@ sealed partial class TestAnalyzer : TargetLanguageAnalyzer
         _reusableScanner.Reset();
         _reusableScanner.TokenOnlyParse( ref head );
     }
+
+    /// <inheritdoc/>
+    protected override Trivia CreateInjectionPointTrivia( InjectionPoint target,
+                                                          InjectionPoint.Kind syntax,
+                                                          bool inlineIfPossible )
+    {
+        var tag = InjectionPoint.GetString( target.Name, syntax );
+        return inlineIfPossible
+                ? new Trivia( TokenTypeExtensions.GetTriviaBlockCommentType( 2, 2 ), $"/* {tag} */" )
+                : new Trivia( TokenTypeExtensions.GetTriviaLineCommentType( 2 ), $"// {tag}{Environment.NewLine}" );
+    }
+
 }
