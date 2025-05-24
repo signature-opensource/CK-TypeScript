@@ -34,10 +34,10 @@ public sealed partial class SourceCodeEditor
             return this;
         }
 
-        internal IScopedCodeEditor OpenScoped()
+        internal IScopedCodeEditor OpenScoped( bool allowEmpty )
         {
             Throw.CheckState( OpenState is OpenEditorState.None );
-            var matches = _currentFilter.Setup();
+            var matches = _currentFilter.Setup( allowEmpty );
             _filteredTokens.Reset( matches ?? [], _e._tokens );
             _openState = OpenEditorState.Scoped;
             return this;

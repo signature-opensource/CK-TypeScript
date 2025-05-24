@@ -132,7 +132,7 @@ public sealed partial class SourceCodeEditor : IDisposable
     /// modification on the filtered tokens.
     /// </summary>
     /// <returns>The editor that must be disposed.</returns>
-    public IScopedCodeEditor OpenScopedEditor() => _editor.OpenScoped();
+    public IScopedCodeEditor OpenScopedEditor( bool allowEmpty = false ) => _editor.OpenScoped( allowEmpty );
 
     /// <summary>
     /// Unconditionally reparses the <see cref="SourceCode"/>.

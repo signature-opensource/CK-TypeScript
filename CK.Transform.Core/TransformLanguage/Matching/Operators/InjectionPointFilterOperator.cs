@@ -57,7 +57,8 @@ public sealed class InjectionPointFilterOperator : ITokenFilterOperator
         {
             foreach( var t in trivias )
             {
-                if( InjectionPointFinder.ParseTrivia( t, name, out _, out _, out _, out _ ) )
+                if( t.CommentStartLength != 0
+                    && InjectionPointFinder.ParseTrivia( t, name, out _, out _, out _, out _ ) )
                 {
                     return true;
                 }

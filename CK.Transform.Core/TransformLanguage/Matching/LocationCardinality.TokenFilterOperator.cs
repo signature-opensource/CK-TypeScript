@@ -56,7 +56,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         {
             int count = 0;
             while( e.NextMatch() ) ++count;
-            if( count != 1 )
+            if( count != 1 && (!context.AllowEmpty || count != 0) )
             {
                 context.SetFailedResult( $"Expected a single match but got {count}.", e );
             }
@@ -80,7 +80,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
                     break;
                 }
             }
-            if( builder.CurrentMatchNumber == 0 )
+            if( builder.CurrentMatchNumber == 0 && (!context.AllowEmpty || matchCount != 0) )
             {
                 context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
                 return;
@@ -89,7 +89,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
             if( _expectedMatchCount > 0 )
             {
                 while( e.NextMatch() ) ++matchCount;
-                if( _expectedMatchCount != matchCount )
+                if( _expectedMatchCount != matchCount && (!context.AllowEmpty || matchCount != 0) )
                 {
                     context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
                     return;
@@ -108,17 +108,20 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         {
             int matchCount = 0;
             while( e.NextMatch() ) ++matchCount;
-            if( _expectedMatchCount > 0 && _expectedMatchCount != matchCount )
+            if( matchCount > 0 || !context.AllowEmpty )
             {
-                context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
-                return;
+                if( _expectedMatchCount > 0 && _expectedMatchCount != matchCount )
+                {
+                    context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
+                    return;
+                }
+                if( _offset > matchCount )
+                {
+                    context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
+                    return;
+                }
+                builder.AddMatch( e.Input[e.CurrentInputIndex - _offset].Span );
             }
-            if( _offset > matchCount )
-            {
-                context.SetFailedResult( $"Expected '{ToString()}' but got {matchCount} matches.", e );
-                return;
-            }
-            builder.AddMatch( e.Input[e.CurrentInputIndex - _offset].Span );
             builder.StartNewEach( skipEmpty: false );
         }
         context.SetResult( builder );
@@ -135,7 +138,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
             {
                 int matchCount = 0;
                 while( e.NextMatch() ) ++matchCount;
-                if( _expectedMatchCount != matchCount )
+                if( _expectedMatchCount != matchCount && (!context.AllowEmpty || matchCount != 0) )
                 {
                     context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {matchCount}.", e );
                     return;
@@ -151,7 +154,7 @@ public sealed partial class LocationCardinality : ITokenFilterOperator
         // Each is a very special operator: it is implemented internally.
         var internalInputMatches = input.Tokens.ArrayMatches;
         int inputMatchCount = internalInputMatches.Length;
-        if( _expectedMatchCount != 0 && _expectedMatchCount != inputMatchCount )
+        if( _expectedMatchCount != 0 && _expectedMatchCount != inputMatchCount && (!context.AllowEmpty || inputMatchCount != 0) )
         {
             context.SetFailedResult( $"Expected {_expectedMatchCount} matches but got {inputMatchCount}.", null );
             return;

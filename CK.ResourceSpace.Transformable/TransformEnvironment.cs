@@ -116,7 +116,7 @@ sealed partial class TransformEnvironment
 
     internal ITransformable? FindTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
     {
-        return f.Language.TransformLanguage.IsAutoLanguage
+        return f.Language.IsTransformLanguage
                     ? FindFunctionTarget( monitor, source, f )
                     : FindTransformableItemTarget( monitor, source, f );
     }

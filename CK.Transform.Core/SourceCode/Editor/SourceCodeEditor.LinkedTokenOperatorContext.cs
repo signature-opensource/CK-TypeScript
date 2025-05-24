@@ -21,6 +21,7 @@ public sealed partial class SourceCodeEditor
         TokenMatch[]? _matches;
         bool _syntaxBorder;
         bool _hasFailed;
+        bool _allowEmpty;
 
         internal LinkedTokenOperatorContext( SourceCodeEditor editor,
                                              ITokenFilterOperator op,
@@ -55,6 +56,8 @@ public sealed partial class SourceCodeEditor
 
         public bool HasFailed => _hasFailed;
 
+        public bool AllowEmpty => _allowEmpty;
+
         public TokenFilter Tokens
         {
             get
@@ -73,10 +76,11 @@ public sealed partial class SourceCodeEditor
         }
 
 
-        internal TokenMatch[]? Setup()
+        internal TokenMatch[]? Setup( bool allowEmpty )
         {
             _hasFailed = false;
             _matches = null;
+            _allowEmpty = allowEmpty;
             if( IsRoot )
             {
                 int count = _editor.Code.Tokens.Count;
@@ -86,7 +90,7 @@ public sealed partial class SourceCodeEditor
             }
             else
             {
-                var prevMatches = _previous.Setup();
+                var prevMatches = _previous.Setup( allowEmpty );
                 if( prevMatches != null )
                 {
                     _operator.Apply( this, _previous );

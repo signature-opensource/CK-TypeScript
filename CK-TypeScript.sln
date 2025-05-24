@@ -100,6 +100,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.ResourceSpace.Transforma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.ResourceSpace.Globalization.Tests", "Tests\CK.ResourceSpace.Globalization.Tests\CK.ResourceSpace.Globalization.Tests.csproj", "{77A0193C-A7AF-45AE-B0DA-BA87885C2CBB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.PublicPage", "CK.Ng.PublicPage\CK.Ng.PublicPage.csproj", "{D122BE22-A740-49B8-A66D-D11320737573}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -250,6 +252,10 @@ Global
 		{77A0193C-A7AF-45AE-B0DA-BA87885C2CBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77A0193C-A7AF-45AE-B0DA-BA87885C2CBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77A0193C-A7AF-45AE-B0DA-BA87885C2CBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D122BE22-A740-49B8-A66D-D11320737573}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D122BE22-A740-49B8-A66D-D11320737573}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D122BE22-A740-49B8-A66D-D11320737573}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D122BE22-A740-49B8-A66D-D11320737573}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

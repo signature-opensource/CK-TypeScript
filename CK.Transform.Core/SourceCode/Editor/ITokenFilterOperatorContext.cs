@@ -14,6 +14,12 @@ public interface ITokenFilterOperatorContext
     IReadOnlyList<Token> UnfilteredTokens { get; }
 
     /// <summary>
+    /// Dirty trick that <see cref="LocationCardinality"/> use to skip
+    /// triggering errors on empty matches.
+    /// </summary>
+    bool AllowEmpty { get; }
+
+    /// <summary>
     /// Signals an operator error. Once called <c>SetResult</c> ignore the result.
     /// </summary>
     /// <param name="failureMessage">The error message.</param>

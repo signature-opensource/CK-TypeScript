@@ -82,12 +82,12 @@ ref struct InjectionPointFinder
     public bool Match( IActivityMonitor monitor, Trivia t )
     {
         if( t.CommentStartLength == 0 
-            || ParseTrivia( t,
-                            _injectionPoint.Name,
-                            out bool isClosing,
-                            out ReadOnlySpan<char> injectDef,
-                            out bool isRevert,
-                            out bool isAutoClosing ) )
+            || !ParseTrivia( t,
+                             _injectionPoint.Name,
+                             out bool isClosing,
+                             out ReadOnlySpan<char> injectDef,
+                             out bool isRevert,
+                             out bool isAutoClosing ) )
         {
             return false;
         }

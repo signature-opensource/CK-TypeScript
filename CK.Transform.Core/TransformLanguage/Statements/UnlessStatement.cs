@@ -31,16 +31,24 @@ public sealed class UnlessStatement : TransformStatement
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         var count = editor.PushTokenOperator( new InjectionPointFilterOperator( false, _target ) );
-        _body.Apply( monitor, editor );
-        using( var e = editor.OpenScopedEditor() )
+        bool hasMatches;
+        using( var e = editor.OpenScopedEditor( allowEmpty: true ) )
         {
-            while( e.Tokens.NextEach( skipEmpty: true ) )
+            hasMatches = e.Tokens.NextEach( skipEmpty: true );
+        }
+        if( hasMatches )
+        {
+            _body.Apply( monitor, editor );
+            using( var e = editor.OpenScopedEditor( allowEmpty: true ) )
             {
-                while( e.Tokens.NextMatch( out var first, out var last, out _ ) )
+                while( e.Tokens.NextEach( skipEmpty: true ) )
                 {
-                    var leading = first.Token.LeadingTrivias.Prepend( _marker ).ToImmutableArray();
-                    var t = first.Token.SetTrivias( leading );
-                    e.Replace( first.Index, t );
+                    while( e.Tokens.NextMatch( out var first, out var last, out _ ) )
+                    {
+                        var leading = first.Token.LeadingTrivias.Prepend( _marker ).ToImmutableArray();
+                        var t = first.Token.SetTrivias( leading );
+                        e.Replace( first.Index, t );
+                    }
                 }
             }
         }

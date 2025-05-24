@@ -20,22 +20,20 @@ public class InsertTests
         begin
             insert before * """
                             @if( isAuthenticated() ) {
+                            <ck-private-page />
+                            } @else {
 
                             """;
-            insert after * """
-                           } @else {
-                           <ck-private-page />
-                           }
-                           """;
+            insert "}" after *;
         end
         """",
         """
         @if( isAuthenticated() ) {
+        <ck-private-page />
+        } @else {
         <!-- <PrePublic revert /> -->
         <router-outlet />
         <!-- <PostPublic /> -->
-        } @else {
-        <ck-private-page />
         }
         """
     )]
@@ -53,13 +51,11 @@ public class InsertTests
             begin
                 insert before * """
                                 @if( isAuthenticated() ) {
-
+                                <ck-private-page />
+                                } @else {
+        
                                 """;
-                insert after * """
-                               } @else {
-                               <ck-private-page />
-                               }
-                               """;
+                insert "}" after *;
             end
         end
         """",

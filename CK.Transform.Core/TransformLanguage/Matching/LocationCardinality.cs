@@ -16,6 +16,10 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed partial class LocationCardinality : SourceSpan
 {
+    int _expectedMatchCount;
+    int _offset;
+    LocationKind _kind;
+
     /// <summary>
     /// The possible <see cref="LocationKind"/>.
     /// </summary>
@@ -52,10 +56,6 @@ public sealed partial class LocationCardinality : SourceSpan
         /// </summary>
         Each
     }
-
-    int _expectedMatchCount;
-    int _offset;
-    LocationKind _kind;
 
     LocationCardinality( int beg,
                          int end,
