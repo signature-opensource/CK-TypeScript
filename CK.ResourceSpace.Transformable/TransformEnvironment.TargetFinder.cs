@@ -8,6 +8,16 @@ namespace CK.Core;
 
 sealed partial class TransformEnvironment // TargetFinder
 {
+    internal bool FindTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f, out ITransformable? target )
+    {
+        if( f.Language.IsTransformLanguage )
+        {
+            target = FindFunctionTarget( monitor, source, f );
+            return target != null;
+        }
+        return FindTransformableItemTarget( monitor, source, f, out target );
+    }
+
     TFunction? FindFunctionTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
     {
         if( string.IsNullOrEmpty( f.Target ) )
@@ -58,7 +68,10 @@ sealed partial class TransformEnvironment // TargetFinder
                             """;
     }
 
-    ITransformable? FindTransformableItemTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
+    bool FindTransformableItemTarget( IActivityMonitor monitor,
+                                      FunctionSource source,
+                                      TransformerFunction f,
+                                      out ITransformable? result )
     {
         GetTargetNameToFind( source, f, out var expectedPath, out var isNamePrefix, out var name );
         if( name.Length == 0 )
@@ -67,9 +80,34 @@ sealed partial class TransformEnvironment // TargetFinder
                 Unable to derive a target name for {source.Origin} transformer:
                 {f.Text}
                 """ );
-            return null;
+            result = null;
+            return false;
         }
-        return FindTransformableItemsInReachableResources( monitor, source, f, expectedPath, isNamePrefix, name );
+        if( expectedPath.StartsWith( "../" ) )
+        {
+            result = null;
+            if( _externalItemResolver != null )
+            {
+                var extItem = _externalItemResolver.Resolve( monitor, f, expectedPath, isNamePrefix, name );
+                if( extItem == null )
+                {
+                    return false;
+                }
+                result = new ExternalItem( extItem );
+            }
+            else
+            {
+                if( !IsLive )
+                {
+                    monitor.Error( $"A transform function in {source.Origin} targets an external item '{f.Target}' but no {nameof( IExternalTransformableItemResolver )} has been configured." );
+                    return false;
+                }
+                monitor.Warn( $"A transform function in {source.Origin} targets an external item '{f.Target}'. This is ignored in Live mode." );
+            }
+            return true;
+        }
+        result = FindTransformableItemsInReachableResources( monitor, source, f, expectedPath, isNamePrefix, name );
+        return result != null;
     }
 
     static bool MatchName( bool isNamePrefix,

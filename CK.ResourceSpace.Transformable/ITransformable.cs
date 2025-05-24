@@ -3,7 +3,8 @@ using CK.Transform.Core;
 namespace CK.Core;
 
 /// <summary>
-/// A <see cref="ITransformable"/> is a <see cref="TFunction"/> or a <see cref="TransformableItem"/>.
+/// A <see cref="ITransformable"/> is a <see cref="TFunction"/>, a <see cref="TransformableItem"/>
+/// or a <see cref="ExternalItem"/>.
 /// </summary>
 interface ITransformable
 {

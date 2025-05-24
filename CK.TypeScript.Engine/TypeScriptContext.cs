@@ -323,8 +323,12 @@ public sealed partial class TypeScriptContext
                                                                                                 typeScriptContext.ActiveCultures,
                                                                                                 sortKeys: spaceData.HasLiveState ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
+        var externalItemResolver = _integrationContext != null
+                                    ? new ExternalItemResolver( _integrationContext.CKGenFolder, _integrationContext.SrcFolderPath )
+                                    : null;
         var transformableFiles = new TransformableFileHandler( installer,
                                                                transformerHost,
+                                                               externalItemResolver,
                                                                new LessVariablesFileInstallHook(),
                                                                new LessStylesFileInstallHook( _integrationContext != null
                                                                                                     ? _integrationContext.SrcFolderPath

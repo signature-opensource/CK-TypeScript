@@ -12,6 +12,7 @@ namespace CK.Core;
 sealed partial class TransformEnvironment
 {
     readonly TransformerHost _transformerHost;
+
     // Required to detect duplicate resources mapping to the same target path.
     // This is used during setup and live (when new files appear).
     readonly Dictionary<NormalizedPath, TransformableItem> _items;
@@ -30,10 +31,16 @@ sealed partial class TransformEnvironment
     // Functions that lost their targets.
     // => This is not null only in Live.
     readonly HashSet<TFunction>? _unboundFunctions;
+    // External resolver.
+    // This is always null in Live.
+    readonly IExternalTransformableItemResolver? _externalItemResolver;
 
-    internal TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost )
+    internal TransformEnvironment( ResSpaceData spaceData,
+                                   TransformerHost transformerHost,
+                                   IExternalTransformableItemResolver? externalItemResolver )
     {
         _transformerHost = transformerHost;
+        _externalItemResolver = externalItemResolver;
         _items = new Dictionary<NormalizedPath, TransformableItem>();
         _transformFunctions = new Dictionary<string, TFunction>();
         _tracker = new StableItemOrInputTracker( spaceData );
@@ -112,13 +119,6 @@ sealed partial class TransformEnvironment
             tracker.AddStableItem( stableItem );
             return stableItem;
         }
-    }
-
-    internal ITransformable? FindTarget( IActivityMonitor monitor, FunctionSource source, TransformerFunction f )
-    {
-        return f.Language.IsTransformLanguage
-                    ? FindFunctionTarget( monitor, source, f )
-                    : FindTransformableItemTarget( monitor, source, f );
     }
 
     internal TransformerHost.Language? FindFromFileName( ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension )

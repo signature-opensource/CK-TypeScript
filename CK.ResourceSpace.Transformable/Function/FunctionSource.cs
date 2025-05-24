@@ -106,12 +106,11 @@ partial class FunctionSource : IResourceInput
             }
             else
             {
-                var target = environment.FindTarget( monitor, this, f );
-                if( target == null )
-                {
-                    success = false;
-                }
-                else
+                // If we don't find the target, it is not necessarily an error:
+                // if we are in live and the function's target is a "../" external item, the
+                // transfomer must not be run.
+                success = environment.FindTarget( monitor, this, f, out ITransformable? target );
+                if( target != null )
                 {
                     var functionName = TFunction.ComputeName( this, f, target );
                     var already = result.FirstOrDefault( f => f.Name == functionName );
@@ -167,7 +166,8 @@ partial class FunctionSource : IResourceInput
         {
             return success ? result : null;
         }
-        return result.Count > 0 ? result : null;
+        // We may return an empty list here.
+        return result;
     }
 
 }

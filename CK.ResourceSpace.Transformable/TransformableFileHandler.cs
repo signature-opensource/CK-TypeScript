@@ -1,7 +1,6 @@
 using CK.Transform.Core;
 using System.Collections.Immutable;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Core;
 
@@ -11,6 +10,7 @@ namespace CK.Core;
 public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
 {
     readonly TransformerHost _transformerHost;
+    readonly IExternalTransformableItemResolver? _externalItemResolver;
     readonly ImmutableArray<TransformableFileInstallHook> _installHooks;
     TransformEnvironment? _environment;
 
@@ -21,14 +21,17 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     /// </summary>
     /// <param name="installer">The installer that <see cref="Install(IActivityMonitor)"/> will use.</param>
     /// <param name="transformerHost">The transfomer host that will be used by this file handler.</param>
+    /// <param name="externalItemResolver">Optional resolver for external items.</param>
     /// <param name="installHooks">Optional install hooks.</param>
     public TransformableFileHandler( IResourceSpaceItemInstaller? installer,
                                      TransformerHost transformerHost,
+                                     IExternalTransformableItemResolver? externalItemResolver,
                                      params ImmutableArray<TransformableFileInstallHook> installHooks )
         : base( installer,
                 transformerHost.LockLanguages().SelectMany( l => l.TransformLanguage.FileExtensions ).Distinct().ToImmutableArray() )
     {
         _transformerHost = transformerHost;
+        _externalItemResolver = externalItemResolver;
         _installHooks = installHooks;
     }
 
@@ -42,7 +45,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData, FolderExclusion folderFilter )
     {
         bool success = true;
-        var environment = new TransformEnvironment( spaceData, _transformerHost );
+        var environment = new TransformEnvironment( spaceData, _transformerHost, _externalItemResolver );
         foreach( var resources in spaceData.AllPackageResources )
         {
             foreach( var r in resources.Resources.AllResources )
