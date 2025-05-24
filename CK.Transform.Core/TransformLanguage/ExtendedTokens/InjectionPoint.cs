@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Immutable;
 
@@ -13,9 +14,52 @@ namespace CK.Transform.Core;
 /// </summary>
 public sealed class InjectionPoint : Token
 {
-    internal InjectionPoint( ReadOnlyMemory<char> text, ImmutableArray<Trivia> leading = default, ImmutableArray<Trivia> trailing = default )
+    internal InjectionPoint( ReadOnlyMemory<char> text,
+                             ImmutableArray<Trivia> leading = default,
+                             ImmutableArray<Trivia> trailing = default )
         : base( TokenType.GenericIdentifier, leading, text, trailing )
     {
+    }
+
+    /// <summary>
+    /// Models the different forms that an injection point can take.
+    /// <see cref="GetString(ReadOnlySpan{char}, Kind)"/> can be used to create the string.
+    /// <para>
+    /// In the transform language, only the <see cref="Definition"/> is handled. The other kind
+    /// are handled by <see cref="InjectionPointFinder"/>.
+    /// </para>
+    /// </summary>
+    public enum Kind
+    {
+        /// <summary>
+        /// <c>&lt;Name&gt;</c> is also the <see cref="Definition"/> (in the transform language).
+        /// </summary>
+        Opened,
+
+        /// <summary>
+        /// <c>&lt;Name revert &gt;</c>
+        /// </summary>
+        OpenedRevert,
+
+        /// <summary>
+        /// <c>&lt;Name /&gt;</c>
+        /// </summary>
+        AutoClosing,
+
+        /// <summary>
+        /// <c>&lt;Name revert /&gt;</c>
+        /// </summary>
+        AutoClosingRevert,
+
+        /// <summary>
+        /// <c>&lt;/Name&gt;</c>
+        /// </summary>
+        Closing,
+
+        /// <summary>
+        /// Definition of an injection point is the <c>&lt;Name&gt;</c> opened form.
+        /// </summary>
+        Definition = Opened
     }
 
     /// <summary>
@@ -34,6 +78,25 @@ public sealed class InjectionPoint : Token
         int iS = 0;
         while( ++iS < sHead.Length && (sHead[iS] == '.' || char.IsAsciiLetterOrDigit( sHead[iS] )) ) ;
         return iS;
+    }
+
+    /// <summary>
+    /// Gets a string from a <see cref="Name"/> and a <see cref="Kind"/>.
+    /// </summary>
+    /// <param name="name">The injection point name. Must not be empty.</param>
+    /// <param name="kind">The kind to create.</param>
+    /// <returns>The resulting string.</returns>
+    public static string GetString( ReadOnlySpan<char> name, Kind kind )
+    {
+        Throw.CheckArgument( name.Length > 0 );
+        return kind switch
+        {
+            Kind.OpenedRevert => $"<{name} revert>",
+            Kind.AutoClosing => $"<{name} />",
+            Kind.AutoClosingRevert => $"<{name} revert />",
+            Kind.Closing => $"</{name}>",
+            _ => $"<{name}>",
+        };
     }
 
     /// <summary>
