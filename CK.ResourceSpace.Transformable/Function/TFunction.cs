@@ -31,12 +31,7 @@ sealed partial class TFunction : ITransformable
 
     internal static string ComputeName( FunctionSource source, TransformerFunction function, ITransformable target )
     {
-        var n = function.Name;
-        if( n == null )
-        {
-            n = $"{source.SourceName}({target.TransfomableTargetName})";
-        }
-        return n;
+        return function.Name ?? $"{source.SourceName}({target.TransfomableTargetName})";
     }
 
     public string FunctionName => _functionName;

@@ -62,11 +62,11 @@ public class InsertTests
         """
         <!-- <CK.Ng.AspNet.Auth /> -->
         @if( isAuthenticated() ) {
+        <ck-private-page />
+        } @else {
         <!-- <PrePublic revert /> -->
         <router-outlet />
         <!-- <PostPublic /> -->
-        } @else {
-        <ck-private-page />
         }
         """
     )]
