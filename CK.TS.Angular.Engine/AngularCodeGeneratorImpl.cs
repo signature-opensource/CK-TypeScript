@@ -326,20 +326,18 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
                 {
                     NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
-                    File.WriteAllText( filePath, """
+                    const string defaultApp = """
                         <h1>Hello, {{ title }}</h1>
 
-                        <!-- <PrePublic revert> -->
+                        <!-- <PrePublic revert /> -->
                         <router-outlet />
-                        <!-- <PostPublic> -->
-                        """ );
-                    monitor.Trace( """
-                                   File 'app.component.html' is:
-                                   <h1>Hello, {{ title }}</h1>
+                        <!-- <PostPublic /> -->
 
-                                   <!-- <PrePublic revert> -->
-                                   <router-outlet />
-                                   <!-- <PostPublic> -->
+                        """;
+                    File.WriteAllText( filePath, defaultApp );
+                    monitor.Trace( $"""
+                                   File 'app.component.html' is:
+                                   {defaultApp}
                                    """ );
                     return true;
                 }
