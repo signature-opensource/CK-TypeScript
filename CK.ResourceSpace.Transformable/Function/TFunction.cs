@@ -1,4 +1,5 @@
 using CK.Transform.Core;
+using System.Collections.Generic;
 
 namespace CK.Core;
 
@@ -31,7 +32,7 @@ sealed partial class TFunction : ITransformable
 
     internal static string ComputeName( FunctionSource source, TransformerFunction function, ITransformable target )
     {
-        return function.Name ?? $"{source.SourceName}({target.TransfomableTargetName})";
+        return function.Name ?? $"{source.Resources.Package.FullName}({target.TransfomableTargetName})";
     }
 
     public string FunctionName => _functionName;
@@ -52,18 +53,19 @@ sealed partial class TFunction : ITransformable
 
     internal void SetNewTarget( ITransformable t ) => _target = t;
 
-    internal TransformableItem PeeledTarget
+    internal void MustApplyChangesToTarget( HashSet<TransformableItem> toBeInstalled )
     {
-        get
+        // This is only called in Live mode: 
+        // ExternalItem are not serialized (their functions are not registered) and
+        // on change their source, they are not resolved (as there's no external item resolver).
+        // => There is no more ExternalItem, only TFunction and TransformableItem.
+        var peeledTarget = _target;
+        while( peeledTarget is TFunction f2 )
         {
-            var peeledTarget = _target;
-            while( peeledTarget is TFunction f2 )
-            {
-                peeledTarget = f2._target;
-            }
-            Throw.DebugAssert( peeledTarget is TransformableItem );
-            return (TransformableItem)peeledTarget;
+            peeledTarget = f2._target;
         }
+        Throw.DebugAssert( peeledTarget is TransformableItem );
+        toBeInstalled.Add( (TransformableItem)peeledTarget );
     }
 
     internal void Update( TransformerFunction transformerFunction, string functionName )

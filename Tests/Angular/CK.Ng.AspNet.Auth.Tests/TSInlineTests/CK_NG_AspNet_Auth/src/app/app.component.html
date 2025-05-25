@@ -1,12 +1,10 @@
 <!-- <CK.Ng.AspNet.Auth /> -->
-@if( !isAuthenticated() ) {
-
+@if( isAuthenticated() ) {
+<ck-private-page />
+} @else {
 <h1>Hello, {{ title }}</h1>
 
 <!-- <PrePublic revert /> -->
 <router-outlet />
 <!-- <PostPublic /> -->
-
-} @else {
-<ck-private-page />
 }

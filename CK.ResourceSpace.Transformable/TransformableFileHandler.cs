@@ -1,4 +1,5 @@
 using CK.Transform.Core;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -78,6 +79,50 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
         Throw.CheckState( _environment != null );
 
         var installer = new InstallHooksHelper( _installHooks, Installer, _transformerHost );
-        return installer.Run( monitor, _environment.Items.Values, toBeRemoved: null );
+        if( installer.Run( monitor, _environment.Items.Values, toBeRemoved: null ) )
+        {
+            // Consider the external items once the regular ones have been successfully handled.
+            if( _environment.ExternalItems != null )
+            {
+                return UpdateExternalItems( monitor, _environment.ExternalItems, _transformerHost );
+            }
+            return true;
+        }
+        return false;
+
+        static bool UpdateExternalItems( IActivityMonitor monitor,
+                                         IReadOnlyList<ExternalItem> externalItems,
+                                         TransformerHost transformerHost )
+        {
+            using var _ = monitor.OpenTrace( $"Handling {externalItems.Count} external items." );
+            bool success = true;
+            foreach( var e in externalItems )
+            {
+                var transformed = e.GetTransformedText( monitor, transformerHost );
+                if( transformed == null )
+                {
+                    success = false;
+                }
+                else
+                {
+                    if( transformed != e.Item.InitialText )
+                    {
+                        if( success )
+                        {
+                            e.Item.Install( monitor, transformed );
+                        }
+                        else
+                        {
+                            monitor.Trace( $"External item '{e.Item.ExternalPath}' needs to be updated. Skipped because of previous error." );
+                        }
+                    }
+                    else
+                    {
+                        monitor.Trace( $"External item '{e.Item.ExternalPath}' is up to date." );
+                    }
+                }
+            }
+            return success;
+        }
     }
 }

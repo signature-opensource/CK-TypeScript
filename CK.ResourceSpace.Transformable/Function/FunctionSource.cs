@@ -12,6 +12,9 @@ partial class FunctionSource : IResourceInput
     readonly IResPackageResources _resources;
     protected readonly string _fullResourceName;
     string _text;
+    // The functions defined in this source. Functions that target an ExternaItem
+    // are not registered: the source doesn't know them (they are referenced only by the
+    // ExternalItem). This list can be empty.
     readonly List<TFunction> _functions;
     int _languageHintIndex;
     string? _sourceName;
@@ -81,9 +84,12 @@ partial class FunctionSource : IResourceInput
     protected TFunction AddNewFunction( TransformEnvironment environment, PreFunction p )
     {
         var f = new TFunction( this, p.F, p.Target, p.Name );
-        environment.TransformFunctions.Add( p.Name, f );
+        if( p.Target is not ExternalItem )
+        {
+            environment.TransformFunctions.Add( p.Name, f );
+            _functions.Add( f );
+        }
         p.Target.Add( f, p.Before );
-        _functions.Add( f );
         return f;
     }
 
@@ -108,7 +114,7 @@ partial class FunctionSource : IResourceInput
             {
                 // If we don't find the target, it is not necessarily an error:
                 // if we are in live and the function's target is a "../" external item, the
-                // transfomer must not be run.
+                // transfom function is ignored.
                 success = environment.FindTarget( monitor, this, f, out ITransformable? target );
                 if( target != null )
                 {

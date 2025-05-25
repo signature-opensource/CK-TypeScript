@@ -265,13 +265,33 @@ public sealed partial class TransformerHost
                                   string text,
                                   params IEnumerable<TransformerFunction> transformers )
     {
-        return Transform( monitor, text.AsMemory(), transformers );
+        return Transform( monitor, text.AsMemory(), transformers, idempotenceCheck: false );
     }
 
-    /// <inheritdoc cref="Transform(IActivityMonitor, string, IEnumerable{TransformerFunction})"/>
+    /// <summary>
+    /// Applies a sequence of transformers to an initial <paramref name="text"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor that will receive logs and errors.</param>
+    /// <param name="text">The text to transform.</param>
+    /// <param name="transformers">The transformers to apply in order.</param>
+    /// <param name="idempotenceCheck">
+    /// When true, each function is applied twice and an error is emitted if the second
+    /// application results in a change of the first application.
+    /// </param>
+    /// <returns>The transformed result on success and null if an error occurred.</returns>
+    public SourceCode? Transform( IActivityMonitor monitor,
+                                  string text,
+                                  IEnumerable<TransformerFunction> transformers,
+                                  bool idempotenceCheck )
+    {
+        return Transform( monitor, text.AsMemory(), transformers, idempotenceCheck );
+    }
+
+    /// <inheritdoc cref="Transform(IActivityMonitor, string, IEnumerable{TransformerFunction}, bool)"/>
     public SourceCode? Transform( IActivityMonitor monitor,
                                   ReadOnlyMemory<char> text,
-                                  params IEnumerable<TransformerFunction> transformers )
+                                  IEnumerable<TransformerFunction> transformers,
+                                  bool idempotenceCheck )
     {
         Throw.CheckArgument( transformers.All( t => t.Language.Host == this ) );
         var transformer = transformers.FirstOrDefault();
@@ -286,6 +306,11 @@ public sealed partial class TransformerHost
             transformer.Apply( codeEditor );
             if( codeEditor.HasError ) return null;
 
+            if( idempotenceCheck && !IdempotenceCheck( monitor, transformer, codeEditor ) )
+            {
+                return null;
+            }
+
             foreach( var t in transformers.Skip( 1 ) )
             {
                 if( t.Language != codeEditor.Language )
@@ -297,12 +322,46 @@ public sealed partial class TransformerHost
                 }
                 t.Apply( codeEditor );
                 if( codeEditor.HasError ) return null;
+                if( idempotenceCheck && !IdempotenceCheck( monitor, transformer, codeEditor ) )
+                {
+                    return null;
+                }
             }
             return codeEditor.Code;
         }
         finally
         {
             codeEditor.Dispose();
+        }
+
+        static bool IdempotenceCheck( IActivityMonitor monitor,
+                                      TransformerFunction transformer,
+                                      SourceCodeEditor codeEditor )
+        {
+            var t1 = codeEditor.ToString();
+            transformer.Apply( codeEditor );
+            if( codeEditor.HasError )
+            {
+                monitor.Error( $"Idempotence check: error during the second application of the function." );
+                return false;
+            }
+            var t2 = codeEditor.ToString();
+            if( t1 != t2 )
+            {
+                monitor.Error( $"""
+                            Idempotence check fail for transformer:
+                            {transformer.Text}
+
+                            The first application produced:
+                            {t1}
+
+                            The second application produced a different text:
+                            {t2}
+
+                            """ );
+                return false;
+            }
+            return true;
         }
     }
 

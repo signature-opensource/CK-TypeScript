@@ -49,7 +49,7 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
             environment.Tracker.Remove( this );
             foreach( var f in Functions )
             {
-                toBeInstalled.Add( f.PeeledTarget );
+                f.MustApplyChangesToTarget( toBeInstalled );
                 f.Remove( environment );
                 f.Destroy( environment );
             }
@@ -81,7 +81,7 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
                     environment.TransformFunctions.Add( p.Name, f );
                     p.Target.Add( f, p.Before );
                 }
-                toBeInstalled.Add( f.PeeledTarget );
+                f.MustApplyChangesToTarget( toBeInstalled );
             }
         }
         RemoveMissing( environment, functions, updated, toBeInstalled );
@@ -101,7 +101,7 @@ sealed partial class LocalFunctionSource : FunctionSource, ILocalInput
                     // f.Remove( environment );
                     f.Destroy( environment );
                     functions.RemoveAt( idx );
-                    toBeInstalled.Add( f.PeeledTarget );
+                    f.MustApplyChangesToTarget( toBeInstalled );
                 }
                 else
                 {

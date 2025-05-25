@@ -93,7 +93,14 @@ sealed partial class TransformEnvironment // TargetFinder
                 {
                     return false;
                 }
-                result = new ExternalItem( extItem );
+                var e = new ExternalItem( extItem );
+                // Okay, this is not really elegant but it's so easy to register the external
+                // items here and, above all, safe because external items are only used once during
+                // the initial setup and if somethig goes wrong later, the setup will be canceled
+                // as a whole.
+                _externalItems ??= new List<ExternalItem>();
+                _externalItems.Add( e );
+                result = e;
             }
             else
             {

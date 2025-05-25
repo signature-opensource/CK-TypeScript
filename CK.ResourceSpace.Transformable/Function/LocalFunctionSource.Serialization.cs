@@ -28,7 +28,7 @@ sealed partial class LocalFunctionSource
         foreach( var f in Functions )
         {
             environment.Rebind( monitor, f );
-            toBeInstalled.Add( f.PeeledTarget );
+            f.MustApplyChangesToTarget( toBeInstalled );
         }
     }
 }

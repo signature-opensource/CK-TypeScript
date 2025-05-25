@@ -31,9 +31,10 @@ sealed partial class TransformEnvironment
     // Functions that lost their targets.
     // => This is not null only in Live.
     readonly HashSet<TFunction>? _unboundFunctions;
-    // External resolver.
-    // This is always null in Live.
+    // External resolver and external items collector.
+    // These are always null in Live.
     readonly IExternalTransformableItemResolver? _externalItemResolver;
+    List<ExternalItem>? _externalItems;
 
     internal TransformEnvironment( ResSpaceData spaceData,
                                    TransformerHost transformerHost,
@@ -59,6 +60,8 @@ sealed partial class TransformEnvironment
     internal bool IsLive => _unboundFunctions != null;
 
     internal HashSet<TFunction>? UnboundFunctions => _unboundFunctions;
+
+    internal IReadOnlyList<ExternalItem>? ExternalItems => _externalItems;
 
     internal IResourceInput? Register( IActivityMonitor monitor,
                                        IResPackageResources resources,

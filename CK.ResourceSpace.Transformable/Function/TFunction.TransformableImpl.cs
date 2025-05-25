@@ -105,11 +105,14 @@ sealed partial class TFunction
             return result;
         }
 
-        internal readonly string? Transform( IActivityMonitor monitor, TransformerHost transformerHost, ReadOnlyMemory<char> text )
+        internal readonly string? Transform( IActivityMonitor monitor,
+                                             TransformerHost transformerHost,
+                                             ReadOnlyMemory<char> text,
+                                             bool idempotenceCheck = false )
         {
             var transformers = TryGetTransfomerFunctions( monitor, transformerHost );
             if( transformers == null ) return null;
-            var sourceCode = transformerHost.Transform( monitor, text, transformers );
+            var sourceCode = transformerHost.Transform( monitor, text, transformers, idempotenceCheck );
             return sourceCode?.ToString();
         }
 

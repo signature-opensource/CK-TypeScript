@@ -34,7 +34,6 @@ public class EnsureArrayTests
                         in first {^[]}
                             // ensure array contains "NewComponent"
                             replace "RouterOutlet" with "RouterOutlet, NewComponent";
-                            
         end
         """",
         """

@@ -1,4 +1,6 @@
 using CK.Transform.Core;
+using System;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Core;
 
@@ -11,7 +13,7 @@ sealed class ExternalItem : ITransformable
     readonly ExternalTransformableItem _item;
     TFunction.TransformableImpl _transformableImpl;
 
-    public ExternalItem( ExternalTransformableItem item )
+    internal ExternalItem( ExternalTransformableItem item )
     {
         _item = item;
     }
@@ -19,7 +21,7 @@ sealed class ExternalItem : ITransformable
     /// <summary>
     /// Gets the external item itself.
     /// </summary>
-    public ExternalTransformableItem Item => _item;
+    internal ExternalTransformableItem Item => _item;
 
     TFunction? ITransformable.FirstFunction => _transformableImpl.FirstFunction;
 
@@ -33,4 +35,13 @@ sealed class ExternalItem : ITransformable
     void ITransformable.Add( TFunction f, TFunction? before ) => _transformableImpl.Add( f, before );
 
     void ITransformable.Remove( TFunction f ) => _transformableImpl.Remove( f );
+
+    internal string? GetTransformedText( IActivityMonitor monitor, TransformerHost transformerHost )
+    {
+        Throw.DebugAssert( "Otherwise this ExternalItem would not exist.", _transformableImpl.HasFunctions );
+        return _transformableImpl.Transform( monitor,
+                                             transformerHost,
+                                             _item.InitialText.AsMemory(),
+                                             idempotenceCheck: true );
+    }
 }

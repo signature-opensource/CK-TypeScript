@@ -210,7 +210,9 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
                     {
                         if( --_braceDepth < 0 )
                         {
-                            head.AppendUnexpectedToken();
+                            // Don't error here. We want to be able to parse
+                            // fragments...
+                            _braceDepth = 0;
                         }
                         head.AcceptLowLevelToken();
                     }
@@ -237,10 +239,7 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
                 case TokenType.None when(head.EndOfInput is not null):
                 case TokenType.EndOfInput:
                     Throw.DebugAssert( head.EndOfInput is not null );
-                    if( _braceDepth > 0 )
-                    {
-                        head.AppendError( "Missing closing '}'.", 0 );
-                    }
+                    // Don't error here _braceDepth > 0.
                     return head.EndOfInput;
                 case TokenType.None when(head.EndOfInput is null):
                     head.AppendError( "Unrecognized token.", 1 );
@@ -276,9 +275,13 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
             if( escape ) continue;
             if( mayBeHole && c == '{' )
             {
-                return new LowLevelToken( start ? TokenType.GenericInterpolatedStringStart : TokenType.GenericInterpolatedStringSegment, iS + 1 );
+                return new LowLevelToken( start
+                                            ? TokenType.GenericInterpolatedStringStart
+                                            : TokenType.GenericInterpolatedStringSegment, iS + 1 );
             }
-            if( c == '`' ) return new LowLevelToken( start ? TokenType.GenericString : TokenType.GenericInterpolatedStringEnd, iS + 1 );
+            if( c == '`' ) return new LowLevelToken( start
+                                                        ? TokenType.GenericString
+                                                        : TokenType.GenericInterpolatedStringEnd, iS + 1 );
             escape = c == '\\';
             mayBeHole = !escape && c == '$';
         }
