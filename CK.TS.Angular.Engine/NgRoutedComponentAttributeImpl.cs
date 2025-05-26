@@ -18,11 +18,11 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
     public NgRoutedComponentAttributeImpl( IActivityMonitor monitor, NgRoutedComponentAttribute attr, Type type )
         : base( monitor, attr, type )
     {
-        if( !typeof( NgRoutedComponent ).IsAssignableFrom( type ) )
+        if( !typeof( INgRoutedComponent ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[NgRoutedComponent] can only decorate a NgRoutedComponent: '{type:N}' is not a NgRoutedComponent." );
         }
-        if( !typeof( NgComponent ).IsAssignableFrom( attr.TargetComponent ) )
+        if( !typeof( INgComponent ).IsAssignableFrom( attr.TargetComponent ) )
         {
             monitor.Error( $"[NgRoutedComponent] on '{type:C}': TargetRoutedComponent = typeof({attr.TargetComponent:C}) is not a NgComponent." );
         }

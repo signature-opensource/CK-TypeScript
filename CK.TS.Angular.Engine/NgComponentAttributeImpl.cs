@@ -25,7 +25,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     public NgComponentAttributeImpl( IActivityMonitor monitor, NgComponentAttribute attr, Type type )
         : base( monitor, attr, type )
     {
-        if( !typeof( NgComponent ).IsAssignableFrom( type ) )
+        if( !typeof( INgComponent ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[NgComponent] can only decorate a NgComponent: '{type:N}' is not a NgComponent." );
         }
@@ -97,9 +97,9 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// <param name="d">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
     protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
-                                                    TypeScriptContext context,
-                                                    ResSpaceConfiguration spaceBuilder,
-                                                    ResPackageDescriptor d )
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceBuilder,
+                                                          ResPackageDescriptor d )
     {
         Throw.DebugAssert( !IsAppComponent );
         var fName = _snakeName + ".component.ts";

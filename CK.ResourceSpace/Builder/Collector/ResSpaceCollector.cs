@@ -25,6 +25,7 @@ public sealed class ResSpaceCollector
     readonly CoreCollector _coreCollector;
     readonly string? _appResourcesLocalPath;
     readonly string _liveStatePath;
+    IResPackageDescriptorResolver? _packageResolver;
     IResourceContainer? _generatedCodeContainer;
 
     internal ResSpaceCollector( CoreCollector coreCollector,
@@ -40,7 +41,7 @@ public sealed class ResSpaceCollector
 
     internal bool CloseRegistrations( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
     {
-        return _coreCollector.Close( monitor, out codeHandledResources );
+        return _coreCollector.Close( monitor, PackageResolver, out codeHandledResources );
     }
 
     /// <summary>
@@ -110,6 +111,23 @@ public sealed class ResSpaceCollector
     /// See <see cref="ResSpaceConfiguration.LiveStatePath"/>.
     /// </summary>
     public string LiveStatePath => _liveStatePath;
+
+    /// <summary>
+    /// Gets or sets the <see cref="IResPackageDescriptorResolver"/> that will be used by
+    /// <see cref="ResSpaceDataBuilder"/>.
+    /// <para>
+    /// Defaults to the <see cref="DefaultResPackageDescriptorResolver"/>.
+    /// </para>
+    /// </summary>
+    public IResPackageDescriptorResolver PackageResolver
+    {
+        get => _packageResolver ??= new DefaultResPackageDescriptorResolver();
+        set
+        {
+            Throw.CheckNotNullArgument( nameof( value ) );
+            _packageResolver = value;
+        }
+    }
 
     /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, string, NormalizedPath, IResourceContainer, IResourceContainer)"/>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,

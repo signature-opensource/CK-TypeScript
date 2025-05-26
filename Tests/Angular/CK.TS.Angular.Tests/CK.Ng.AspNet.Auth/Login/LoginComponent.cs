@@ -3,7 +3,7 @@ using CK.TS.Angular;
 
 namespace CK.Ng.AspNet.Auth;
 
-[NgRoutedComponent<AppComponent>( HasRoutes = true )]
+[NgRoutedComponent<INgPublicPageComponent>( HasRoutes = true )]
 [Package<SomeAuthPackage>]
 public sealed class LoginComponent : NgRoutedComponent
 {

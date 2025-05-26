@@ -1,5 +1,3 @@
-﻿using CK.Core;
-
 namespace CK.TypeScript;
 
 /// <summary>
@@ -9,6 +7,7 @@ namespace CK.TypeScript;
 /// The [TypeScriptPackage] attribute provides the support of the "Res/" (and "Res[After/]" folders.
 /// </para>
 /// </summary>
-public abstract class TypeScriptGroup : IResourceGroup
+public abstract class TypeScriptGroup : ITypeScriptGroup
 {
+    void ITypeScriptGroup.LocalImplementationOnly() {}
 }

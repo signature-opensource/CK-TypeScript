@@ -117,14 +117,16 @@ sealed class CoreCollector
 
     public int TypedPackageCount => _typedPackageCount;
 
-    public bool Close( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
+    public bool Close( IActivityMonitor monitor,
+                       IResPackageDescriptorResolver packageResolver,
+                       out HashSet<ResourceLocator> codeHandledResources )
     {
         codeHandledResources = _packageDescriptorContext.Close();
         bool success = true;
         foreach( var r in _packages )
         {
             Throw.DebugAssert( r.Package == null );
-            success &= r.Initialize( monitor, _packageIndex );
+            success &= r.Initialize( monitor, packageResolver, _packageIndex );
         }
         return success;
     }
