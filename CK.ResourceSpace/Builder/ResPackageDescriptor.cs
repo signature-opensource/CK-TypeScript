@@ -10,7 +10,7 @@ namespace CK.Core;
 /// <summary>
 /// Mutable package descriptor.
 /// </summary>
-public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDependentItemContainerRef
+public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped, IDependentItemContainerRef
 {
     readonly ResPackageDescriptorContext _context;
     readonly string _fullName;
@@ -18,11 +18,12 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     readonly NormalizedPath _defaultTargetPath;
     readonly StoreContainer _resources;
     readonly StoreContainer _afterResources;
-    ResPackageDescriptor? _package;
-    List<ResPackageDescriptor>? _requires;
-    List<ResPackageDescriptor>? _requiredBy;
-    List<ResPackageDescriptor>? _groups;
-    List<ResPackageDescriptor>? _children;
+    List<object>? _singleMappings;
+    Ref _package;
+    List<Ref>? _requires;
+    List<Ref>? _requiredBy;
+    List<Ref>? _groups;
+    List<Ref>? _children;
     bool _isGroup;
 
     internal ResPackageDescriptor( ResPackageDescriptorContext context,
@@ -144,56 +145,43 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     public bool IsGroup { get => _isGroup; set => _isGroup = value; }
 
     /// <summary>
-    /// Gets or sets the package that owns this one.
+    /// Gets or sets a <see cref="Ref"/> to the package that owns this one.
     /// <para>
-    /// It must belong to the same collector otherwise an <see cref="ArgumentException"/> is thrown.
+    /// Defaults to the <c>default</c> value (<see cref="Ref.IsValid"/> is false): there
+    /// is no owner.
+    /// </para>
+    /// <para>
     /// Before calling <see cref="ResSpaceDataBuilder.Build(IActivityMonitor)"/>, <see cref="IsGroup"/> must
     /// be false otherwise this will be an error.
     /// </para>
     /// </summary>
-    public ResPackageDescriptor? Package
-    {
-        get => _package;
-        set
-        {
-            if( value != null )
-            {
-                if( value._context != _context )
-                {
-                    Throw.ArgumentException( nameof( value ), $"Package mismatch. The package '{value.FullName}' belongs to another collector." );
-                }
-            }
-            _package = value;
-        }
-
-    }
+    public Ref Package { get => _package; set => _package = value; }
 
     /// <summary>
-    /// Gets a mutable list of requirements that can be named optional references.
+    /// Gets a mutable list of requirements that can be optional references.
     /// </summary>
-    public IList<ResPackageDescriptor> Requires => _requires ??= new List<ResPackageDescriptor>();
+    public IList<Ref> Requires => _requires ??= new List<Ref>();
 
     /// <summary>
     /// Gets a mutable list of revert dependencies (a package can specify that it is itself required by another one). 
-    /// A "RequiredBy" constraint is optional: a missing "RequiredBy" is not an error (it is considered 
-    /// as a reverted optional dependency).
+    /// Often, a "RequiredBy" constraint should be specified as <see cref="Ref.IsOptional"/>.
     /// </summary>
-    public IList<ResPackageDescriptor> RequiredBy => _requiredBy ??= new List<ResPackageDescriptor>();
+    public IList<Ref> RequiredBy => _requiredBy ??= new List<Ref>();
 
     /// <summary>
     /// Gets a mutable list of children.
     /// </summary>
-    public IList<ResPackageDescriptor> Children => _children ??= new List<ResPackageDescriptor>();
+    public IList<Ref> Children => _children ??= new List<Ref>();
 
     /// <summary>
     /// Gets a mutable list of groups to which this item belongs. If one of these groups is a container,
     /// it must be the only container of this item (otherwise it is an error).
     /// </summary>
-    public IList<ResPackageDescriptor> Groups => _groups ??= new List<ResPackageDescriptor>();
+    public IList<Ref> Groups => _groups ??= new List<Ref>();
 
     internal bool Initialize( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
     {
-        bool success = true;
+        bool success = InitializeConfiguredDependencies( monitor, packageIndex );
         if( _type != null )
         {
             success &= InitializeFromType( monitor, packageIndex );
@@ -226,6 +214,91 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
             }
         }
         return success;
+    }
+
+    bool InitializeConfiguredDependencies( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
+    {
+        bool success = true;
+        if( _package.IsValid )
+        {
+            _package = ResolveRef( monitor, "Package", _package, _context, packageIndex );
+            success &= _package.IsValid || _package.IsOptional;
+        }
+        success &= ResolveReferences( monitor, "Requires", _requires, _context, packageIndex );
+        success &= ResolveReferences( monitor, "RequiredBy", _requiredBy, _context, packageIndex );
+        success &= ResolveReferences( monitor, "Groups", _groups, _context, packageIndex );
+        success &= ResolveReferences( monitor, "Children", _children, _context, packageIndex );
+        return success;
+
+        static bool ResolveReferences( IActivityMonitor monitor,
+                                       string relName,
+                                       List<Ref>? list,
+                                       ResPackageDescriptorContext context,
+                                       IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
+        {
+            if( list == null ) return true;
+            bool success = true;
+            for( int i = 0; i < list.Count; i++ )
+            {
+                var r = list[i];
+                if( r.IsValid )
+                {
+                    r = ResolveRef( monitor, relName, list[i], context, packageIndex );
+                    if( !r.IsValid )
+                    {
+                        if( r.IsOptional )
+                        {
+                            list.RemoveAt( i-- );
+                        }
+                        else
+                        {
+                            success = false;
+                        }
+                    }
+                }
+                else
+                {
+                    list.RemoveAt( i-- );
+                }
+            }
+            return success;
+        }
+
+        static Ref ResolveRef( IActivityMonitor monitor,
+                               string relName,
+                               Ref r,
+                               ResPackageDescriptorContext context,
+                               IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
+        {
+            Throw.DebugAssert( r.IsValid );
+            var p = r.AsPackageDescriptor;
+            if( p != null )
+            {
+                return CheckContext( monitor, "Package", context, p ) ? r : default;
+            }
+            if( packageIndex.TryGetValue( r._ref, out var result ) )
+            {
+                return result;
+            }
+            if( r.IsOptional )
+            {
+                monitor.Warn( $"'{relName}' optional reference '{r}' resoltion failed. Skipped." );
+                return Ref.OptionalInvalid;
+            }
+            monitor.Error( $"'{relName}' resolution failed. The reference '{r}' is not registered." );
+            return Ref.Invalid;
+        }
+
+        static bool CheckContext( IActivityMonitor monitor, string relName, ResPackageDescriptorContext context, ResPackageDescriptor p )
+        {
+            if( p._context != context )
+            {
+                monitor.Error( $"'{relName}' relationship context mismatch. The package '{p}' belongs to another collector." );
+                return false;
+            }
+            return true;
+        }
+
     }
 
     bool InitializeFromType( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
@@ -300,7 +373,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     void HandleMultiName( IActivityMonitor monitor,
                           IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex,
                           string[] commaSeparatedPackageFullnames,
-                          ref List<ResPackageDescriptor>? list, string relName )
+                          ref List<Ref>? list, string relName )
     {
         foreach( var n in commaSeparatedPackageFullnames )
         {
@@ -314,7 +387,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                 {
                     if( list == null )
                     {
-                        list = new List<ResPackageDescriptor> { package };
+                        list = new List<Ref> { package };
                     }
                     else
                     {
@@ -354,7 +427,14 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
             }
             else
             {
-                _package = package;
+                if( _package.IsValid )
+                {
+                    monitor.Info( $"[Package( \"{packageNAttr.PackageFullName}\" )] on type '{_type:N}' skipped as the Package is already configered by code to be '{_package}'." );
+                }
+                else
+                {
+                    _package = package;
+                }
             }
         }
         var packageTAttr = genAttributes.FirstOrDefault( a => a.GenType == typeof( PackageAttribute<> ) ).GenArgs?[0];
@@ -362,7 +442,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
         {
             if( packageNAttr != null )
             {
-                monitor.Error( $"Only one of [Package<{packageTAttr:N}>] and [Package( \"{packageNAttr.PackageFullName}\" )] can decorate type '{_type:N}'." );
+                monitor.Error( $"Only one of [Package<{packageTAttr:N}>] or [Package( \"{packageNAttr.PackageFullName}\" )] can decorate type '{_type:N}'." );
                 success = false;
             }
             else
@@ -371,7 +451,17 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                 {
                     monitor.Warn( $"[Package<{packageTAttr:N}>] on type '{_type:N}' skipped as type target is not registered in this ResourceSpace." );
                 }
-                _package = package;
+                else
+                {
+                    if( _package.IsValid )
+                    {
+                        monitor.Info( $"[Package<{packageTAttr:N}>] on type '{_type:N}' skipped as the Package is already configered by code to be '{_package}'." );
+                    }
+                    else
+                    {
+                        _package = package;
+                    }
+                }
             }
         }
     }
@@ -379,7 +469,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
     void HandleMultiType( IActivityMonitor monitor,
                           IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex,
                           IEnumerable<(object Attribute, Type GenType, Type[] GenArgs)> genAttributes,
-                          ref List<ResPackageDescriptor>? list,
+                          ref List<Ref>? list,
                           string relName,
                           params Type[] genTypes )
     {
@@ -395,7 +485,7 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
                 {
                     if( list == null )
                     {
-                        list = new List<ResPackageDescriptor> { package };
+                        list = new List<Ref> { package };
                     }
                     else
                     {
@@ -415,22 +505,39 @@ public sealed class ResPackageDescriptor : IDependentItemContainerTyped, IDepend
 
     void InitializeFromPackageDescriptor( IActivityMonitor monitor, XmlReader xmlReader )
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException( "Package.xml resource is reserved for future use." );
     }
 
     DependentItemKind IDependentItemContainerTyped.ItemKind => _isGroup ? DependentItemKind.Group : DependentItemKind.Container;
 
-    IDependentItemContainerRef? IDependentItem.Container => _package;
+    IDependentItemContainerRef? IDependentItem.Container => _package.AsPackageDescriptor;
 
-    IEnumerable<IDependentItemRef>? IDependentItem.Requires => _requires;
+    // We don't use the Optional feature of th CK.SetupDependency model: optionality
+    // is managed here, at the PackageDescriptor level and this is for the best.
+    // This feature should be removed from CK.SetupDependency or a new, simpler package
+    // should be created without optionality and registration features that complicates
+    // (a lot) its implementation.
+    sealed class Adapter : IDependentItemGroupRef
+    {
+        readonly string _fullName;
+        public Adapter( Ref r )
+        {
+            Throw.DebugAssert( r.IsValid );
+            _fullName = r.FullName;
+        }
+        public string FullName => _fullName;
+        public bool Optional => false;
+    }
 
-    IEnumerable<IDependentItemRef>? IDependentItem.RequiredBy => _requiredBy;
+    IEnumerable<IDependentItemRef>? IDependentItem.Requires => _requires?.Select( r => new Adapter( r ) );
 
-    IEnumerable<IDependentItemRef>? IDependentItemGroup.Children => _children;
+    IEnumerable<IDependentItemRef>? IDependentItem.RequiredBy => _requiredBy?.Select( r => new Adapter( r ) );
+
+    IEnumerable<IDependentItemRef>? IDependentItemGroup.Children => _children?.Select( r => new Adapter( r ) );
 
     IDependentItemRef? IDependentItem.Generalization => null;
 
-    IEnumerable<IDependentItemGroupRef>? IDependentItem.Groups => _groups;
+    IEnumerable<IDependentItemGroupRef>? IDependentItem.Groups => _groups?.Select( r => new Adapter( r ) );
 
     bool IDependentItemRef.Optional => false;
 
