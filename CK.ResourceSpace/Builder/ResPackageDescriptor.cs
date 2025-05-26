@@ -130,6 +130,51 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
         return false;
     }
 
+    /// <summary>
+    /// Adds a mapping from a name to this package descriptor.
+    /// The <paramref name="alias"/> must not be already associated to a package descriptor
+    /// otherwise an error is logged and false is returned.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="alias">The name to map to this descriptor.</param>
+    /// <returns>True on success, false on error.</returns>
+    public bool AddSingleMapping( IActivityMonitor monitor, string alias )
+    {
+        Throw.CheckNotNullOrWhiteSpaceArgument( alias );
+        if( _context.AddSingleMapping( monitor, alias, this ) )
+        {
+            _singleMappings ??= new List<object>();
+            _singleMappings.Add( alias );
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Adds a mapping from a type to this package descriptor:
+    /// <list type="number">
+    ///     <item><see cref="Type"/> must not be null.</item>
+    ///     <item>The <paramref name="alias"/> must be assignable from <see cref="Type"/>.</item>
+    ///     <item>The <paramref name="alias"/> must not be already associated to a package descriptor.</item>
+    /// </list>
+    /// If any of these conditions is not met, an error is logged and false is returned.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="alias">The type to map to this descriptor.</param>
+    /// <returns>True on success, false on error.</returns>
+    public bool AddSingleMapping( IActivityMonitor monitor, Type alias )
+    {
+        Throw.CheckNotNullArgument( alias );
+        if( _context.AddSingleMapping( monitor, alias, this ) )
+        {
+            _singleMappings ??= new List<object>();
+            _singleMappings.Add( alias );
+            return true;
+        }
+        return false;
+    }
+
+    internal IReadOnlyList<object>? SingleMappings => _singleMappings;
 
     /// <summary>
     /// Gets the default target path that will prefix resources that are items.

@@ -20,7 +20,7 @@ sealed class CoreCollector
     {
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
-        _packageDescriptorContext = new ResPackageDescriptorContext();
+        _packageDescriptorContext = new ResPackageDescriptorContext( _packageIndex );
 
     }
 
@@ -117,13 +117,14 @@ sealed class CoreCollector
 
     public int TypedPackageCount => _typedPackageCount;
 
+    public int SingleMappingCount => _packageDescriptorContext.SingleMappingCount;
+
     public bool Close( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
     {
         codeHandledResources = _packageDescriptorContext.Close();
         bool success = true;
         foreach( var r in _packages )
         {
-            Throw.DebugAssert( r.Package == null );
             success &= r.Initialize( monitor, _packageIndex );
         }
         return success;

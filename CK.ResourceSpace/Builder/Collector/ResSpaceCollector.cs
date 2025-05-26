@@ -68,6 +68,8 @@ public sealed class ResSpaceCollector
     /// </summary>
     public int TypedPackageCount => _coreCollector.TypedPackageCount;
 
+    internal int SingleMappingCount => _coreCollector.SingleMappingCount;
+
     /// <summary>
     /// Finds a mutable package descriptor by its full name.
     /// </summary>

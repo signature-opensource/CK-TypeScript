@@ -160,8 +160,9 @@ public sealed class ResSpaceDataBuilder
         // The final size of the package index:
         // - 1 FullName per ResPackageDescriptor.
         // - Plus the type for the typed package.
+        // - Plus the number of single mappings.
         // - Plus the name of the "<Code>" and "<App>" packages.
-        var packageIndexSize = descriptorPackageCount + _collector.TypedPackageCount + 2;
+        var packageIndexSize = descriptorPackageCount + _collector.SingleMappingCount + _collector.TypedPackageCount + 2;
         // The final size of the _resourceIndex (the IResourceContainer to IResPackageResources map
         // for BeforeResources and AfterResources plus the GeneratedCodeContainer or the wrapper).
         // This is by default. AppResourcesLocalPath can add 1 more key.
@@ -261,6 +262,14 @@ public sealed class ResSpaceDataBuilder
                 if( p.Type != null )
                 {
                     packageIndex.Add( p.Type, p );
+                }
+                var mappings = d.SingleMappings;
+                if( mappings != null )
+                {
+                    foreach( var m in mappings )
+                    {
+                        packageIndex.Add( m, p );
+                    }
                 }
                 // Index the actual container, not the StoreContainer that is "transparent".
                 // This is why on the ResSpaceData, there's no GetPackageResources( IResourceContainer )
