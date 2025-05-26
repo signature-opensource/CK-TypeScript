@@ -23,10 +23,17 @@ class NgRoute
         _tsType = tsType;
     }
 
-    public bool BindToTarget( IActivityMonitor monitor, Dictionary<Type, NgRoute> routes )
+    public bool BindToTarget( IActivityMonitor monitor, Dictionary<Type, NgRoute> routes, Func<Type, Type?> typeMapper )
     {
         Throw.DebugAssert( _routedAttr != null );
-        if( !routes.TryGetValue( _routedAttr.Attribute.TargetComponent, out var target ) )
+        var t = _routedAttr.Attribute.TargetComponent;
+        var mapped = t == typeof( AppComponent ) ? t : typeMapper( t );
+        if( mapped == null )
+        {
+            monitor.Error( $"""Invalid [NgRoutedComponent] on '{_routedAttr.DecoratedType:N}': TargetComponent '{_routedAttr.Attribute.TargetComponent:C}' type cannot be resolved.""" );
+            return false;
+        }
+        if( !routes.TryGetValue( mapped, out var target ) )
         {
             monitor.Error( $"""Invalid [NgRoutedComponent] on '{_routedAttr.DecoratedType:N}': TargetComponent '{_routedAttr.Attribute.TargetComponent:C}' is not a component with routes.""" );
             return false;

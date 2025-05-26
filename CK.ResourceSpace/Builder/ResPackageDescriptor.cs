@@ -288,8 +288,12 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
                 var r = list[i];
                 if( r.IsValid )
                 {
-                    r = ResolveRef( monitor, relName, list[i], context, packageIndex );
-                    if( !r.IsValid )
+                    r = ResolveRef( monitor, relName, r, context, packageIndex );
+                    if( r.IsValid )
+                    {
+                        list[i] = r;
+                    }
+                    else
                     {
                         if( r.IsOptional )
                         {

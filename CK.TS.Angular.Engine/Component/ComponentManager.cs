@@ -52,12 +52,20 @@ sealed class ComponentManager
     {
         Throw.DebugAssert( _routes[typeof( AppComponent )].IsAppComponent );
         Throw.DebugAssert( _routes.Values.Count( r => r.IsAppComponent ) == 1 );
+        Throw.DebugAssert( "We can reach the ResSpaceData...", _context.ResSpaceData != null );
+
+        // This is why we need the SpaceData here: the routed target is a Type
+        // that can be an abstraction (INgPublic/PrivatePageComponent).
+        var typeMapper = delegate ( Type t )
+        {
+            return _context.ResSpaceData.PackageIndex.GetValueOrDefault( t )?.Type;
+        };
         bool success = true;
         foreach( var route in _routes.Values )
         {
             if( route.IsRouted )
             {
-                success &= route.BindToTarget( e.Monitor, _routes );
+                success &= route.BindToTarget( e.Monitor, _routes, typeMapper );
             }
         }
         if( success )

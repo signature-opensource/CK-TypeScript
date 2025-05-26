@@ -7,6 +7,7 @@ namespace CK.TS.Angular;
 /// the <see cref="CKGenAppModule"/>.
 /// </para>
 /// </summary>
-public abstract class NgRoutedComponent : NgComponent
+public abstract class NgRoutedComponent : NgComponent, INgRoutedComponent
 {
+    void INgRoutedComponent.LocalImplementationOnly() {}
 }

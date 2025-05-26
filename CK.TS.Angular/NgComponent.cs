@@ -14,7 +14,8 @@ namespace CK.TS.Angular;
 // AlsoRegisterType will be replaced with CK.Core.RegisterCKType but this is not
 // supported yet because of the current use of the old CK.StObj.Engine.
 // [RegisterCKType( typeof( AppComponent ) )]
-public abstract class NgComponent : TypeScriptPackage
+public abstract class NgComponent : TypeScriptPackage, INgComponent
 {
+    void INgComponent.LocalImplementationOnly() {}
 }
 

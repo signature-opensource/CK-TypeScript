@@ -10,6 +10,6 @@ namespace CK.Ng.AspNet.Auth;
 
 [NgComponent( HasRoutes = true )]
 [Package<TSPackage>]
-public sealed class PrivatePageComponent : NgComponent
+public sealed class PrivatePageComponent : NgComponent, INgPrivatePageComponent
 {
 }

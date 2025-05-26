@@ -29,6 +29,9 @@ public sealed partial class TypeScriptContext
     readonly TypeScriptRoot _tsRoot;
     readonly PocoCodeGenerator _pocoGenerator;
 
+    // Dirty trick used to expose the SpaceData when available. 
+    ResSpaceData? _spaceData;
+
     internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                 TypeScriptBinPathAspectConfiguration tsBinPathConfig,
                                 TSContextInitializer initializer,
@@ -196,6 +199,11 @@ public sealed partial class TypeScriptContext
     /// </summary>
     public event EventHandler<EventMonitoredArgs>? AfterCodeGeneration;
 
+    /// <summary>
+    /// Exposes the space data computed by Run. Ugly.
+    /// </summary>
+    public ResSpaceData? ResSpaceData => _spaceData;
+
     internal bool Run( IActivityMonitor monitor )
     {
         using var _ = monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" );
@@ -242,7 +250,6 @@ public sealed partial class TypeScriptContext
         // With CK-ReaDI, they could have a similar ConfigureResPackages. They would then be able
         // to create new ResPackage in addition to (as of today) registering import libraries, creating
         // TypeScriptFile and registering to events (that should ideally not exist...).
-        // if( success ) success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
 
         // Resolving registered types:
         // Calls Root.TSTypes.ResolveType for each RegisteredType:
@@ -253,17 +260,6 @@ public sealed partial class TypeScriptContext
         // modularity for more than one piece of code to resolve and implement a type.
         // This may be replaced with a RegisteredTypes ReaDI object but this is not obvious.
         if( success ) success = ResolveRegisteredTypes( monitor );
-
-        // This is the last step that generates all the TypeScriptFiles that must be generated (runs all
-        // the deferred Implementors).
-        // This raises events and closes Type registration (generates the code for all ITSFileCSharpType, running
-        // the deferred Implementors).
-        // 
-        if( !success || !_tsRoot.GenerateCode( monitor ) )
-        {
-            // Time to give up.
-            return false;
-        }
 
         // From ResSpaceCollector to ResSpaceData.
         //
@@ -277,6 +273,23 @@ public sealed partial class TypeScriptContext
         var dataSpaceBuilder = new ResSpaceDataBuilder( resSpaceCollector );
         var spaceData = dataSpaceBuilder.Build( monitor );
         if( spaceData == null ) return false;
+
+        // This is the last step that generates all the TypeScriptFiles that must be generated (runs all
+        // the deferred Implementors).
+        // This raises events and closes Type registration (generates the code for all ITSFileCSharpType, running
+        // the deferred Implementors).
+        // During this step, and because of the current event approach, we are a little bit embarassed
+        // with the ResSpaceData we just obtained: it should be required by some participants, typically for
+        // the type mapping that is now available on the ResSpaceData.
+        // This is ugly but we expose it on this TypeScriptContext...
+
+        _spaceData = spaceData;
+
+        if( !success || !_tsRoot.GenerateCode( monitor ) )
+        {
+            // Time to give up.
+            return false;
+        }
 
         // With CK-ReaDI, the ResPackage that comes from a ResPackageDescriptor created by an
         // object (here the TypeScriptGroupOrPackageAttributeImpl) should be in the "TypeScope"

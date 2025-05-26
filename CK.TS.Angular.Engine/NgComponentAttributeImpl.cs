@@ -25,7 +25,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     public NgComponentAttributeImpl( IActivityMonitor monitor, NgComponentAttribute attr, Type type )
         : base( monitor, attr, type )
     {
-        if( !typeof( NgComponent ).IsAssignableFrom( type ) )
+        if( !typeof( INgComponent ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[NgComponent] can only decorate a NgComponent: '{type:N}' is not a NgComponent." );
         }
@@ -105,6 +105,33 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                                                           ResPackageDescriptor d )
     {
         Throw.DebugAssert( !IsAppComponent );
+        // Okay... This is temporary... or not.
+        // This approcah doesn't automatically support other abstractions than
+        // the public and private pages.
+        // If we need this we may here lookup for all DecoratedType's interface
+        // and select the ones that are marked with a [IsSingle] attribute (not existing yet)
+        // for instance, or enables declaration of such abstractions by any other means.
+        //
+        // This can always be done later.
+        //
+        // Note: We don't check that the same component implements both. This doesn't
+        //       make any sense and the result will be what it will be.
+        //
+        if( typeof( INgPublicPageComponent ).IsAssignableFrom( DecoratedType ) )
+        {
+            if( !d.AddSingleMapping( monitor, typeof( INgPublicPageComponent ) ) )
+            {
+                return false;
+            }
+        }
+        if( typeof( INgPrivatePageComponent ).IsAssignableFrom( DecoratedType ) )
+        {
+            if( !d.AddSingleMapping( monitor, typeof( INgPrivatePageComponent ) ) )
+            {
+                return false;
+            }
+        }
+
         var fName = _snakeName + ".component.ts";
         if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
