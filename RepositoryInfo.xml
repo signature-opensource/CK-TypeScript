@@ -2,7 +2,7 @@
   <SimpleGitVersion StartingVersion="0.20.0-alpha">
     <Branches>
       <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
-      <Branch Name="no-more-Lazy-evaluation" CIVersionMode="ZeroTimed" VersionName="explo" />
+      <Branch Name="vNext" CIVersionMode="ZeroTimed" VersionName="explo" />
     </Branches>
   </SimpleGitVersion>
 </RepositoryInfo>
