@@ -1,6 +1,6 @@
 create <html> transformer on "../src/app/app.component.html"
 begin
-    unless <CK.Ng.PublicPage>
+    unless <HasNgPublicPage>
     begin
         replace single "<router-outlet />" with "<ck-public-page />";
     end
@@ -8,9 +8,13 @@ end
 
 create <ts> transformer on "../src/app/app.component.ts"
 begin
-    unless <CK.Ng.AspNet.Auth>
+    unless <HasNgPublicPage>
     begin
         ensure import { PublicPageComponent } from '@local/ck-gen';
+
+        insert before "@Component" """
+                                   // Public Page is from CK.Ng.PublicPage package.
+                                   """;
 
         in after "@Component" 
             in first {^braces}

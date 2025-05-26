@@ -77,7 +77,7 @@ sealed class CoreCollector
         bool isGroup = true;
         if( type != null )
         {
-            isGroup = !typeof( IResourcePackage ).IsAssignableFrom( type ); ;
+            isGroup = !typeof( IResourcePackage ).IsAssignableFrom( type );
             if( _packageIndex.TryGetValue( type, out already ) )
             {
                 monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );

@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using static CK.Core.ResPackage;
 
 namespace CK.Core;
 
@@ -338,7 +337,7 @@ public sealed class ResSpaceDataBuilder
         {
             if( r.LocalPath != null )
             {
-                ((IResPackageData)r).SetLocalIndex( bLocalPackageResources.Count );
+                ((ResPackage.IResPackageData)r).SetLocalIndex( bLocalPackageResources.Count );
                 bLocalPackageResources.Add( r );
             }
         }

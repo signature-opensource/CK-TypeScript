@@ -1,6 +1,6 @@
 create <html> transformer on "../src/app/app.component.html"
 begin
-    unless <CK.Ng.AspNet.Auth>
+    unless <HasNgPrivatePage>
     begin
         insert before * """
                         @if( isAuthenticated() ) {
@@ -14,11 +14,15 @@ end
 
 create <ts> transformer on "../src/app/app.component.ts"
 begin
-    unless <CK.Ng.AspNet.Auth>
+    unless <HasNgPrivatePage>
     begin
         ensure import { inject, computed } from '@angular/core';
         ensure import { CommonModule } from '@angular/common';
         ensure import { PrivatePageComponent, NgAuthService } from '@local/ck-gen';
+
+        insert before "@Component" """
+                            // Private Page is from CK.Ng.AspNet.Auth package.
+                            """;
 
         in after "@Component" 
             in first {^braces}
