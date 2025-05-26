@@ -1,11 +1,12 @@
 using CK.Core;
-using CK.NgModduleDemo;
+using CK.MiscDemo;
 using CK.Ng.PublicSection;
 using CK.Ng.AspNet.Auth;
 using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
+using CK.Ng.PublicPage;
 
 namespace CK.TS.Angular.Tests;
 
@@ -25,6 +26,9 @@ public class AngularTests
 
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ),
+                                              typeof( AppRoutedComponent ),
+                                              // CK.Ng.PublicPage.
+                                              typeof( PublicPageComponent ),
                                               // CK.Ng.AspNet.Auth folder.
                                               typeof( LoginComponent ),
                                               typeof( PasswordLostComponent ),

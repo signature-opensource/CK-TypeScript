@@ -30,6 +30,7 @@ begin
                     in first {^[]}
                         // ensure array contains "CommonModule, PrivatePageComponent"
                         replace "RouterOutlet" with "RouterOutlet, CommonModule, PrivatePageComponent";
+
         in {class} where "AppComponent"
             insert after first "{"
                     """

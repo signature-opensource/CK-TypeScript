@@ -1,5 +1,5 @@
 using CK.Core;
-using CK.NgModduleDemo;
+using CK.MiscDemo;
 using CK.Setup;
 using CK.Testing;
 using NUnit.Framework;

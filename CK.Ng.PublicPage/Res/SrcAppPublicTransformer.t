@@ -14,6 +14,7 @@ begin
 
         insert before "@Component" """
                                    // Public Page is from CK.Ng.PublicPage package.
+
                                    """;
 
         in after "@Component" 

@@ -80,7 +80,8 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// <returns>True on success, false on error.</returns>
     protected override bool CreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
     {
-        // Skip the AppComponent. It has no resources, we don't create a ResPackage for it.
+        // Skip the AppComponent.
+        // It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
         {
             return true;
@@ -89,7 +90,9 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     }
 
     /// <summary>
-    /// Overridden to handle the component "*.component.ts" file name.
+    /// Overridden to handle the component "*.component.ts" file name: it must exist
+    /// and is created as a <see cref="ResourceTypeScriptFile"/> (but still published
+    /// by the resource container).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
@@ -97,9 +100,9 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// <param name="d">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
     protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
-                                                    TypeScriptContext context,
-                                                    ResSpaceConfiguration spaceBuilder,
-                                                    ResPackageDescriptor d )
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceBuilder,
+                                                          ResPackageDescriptor d )
     {
         Throw.DebugAssert( !IsAppComponent );
         var fName = _snakeName + ".component.ts";

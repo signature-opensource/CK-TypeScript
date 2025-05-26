@@ -19,41 +19,31 @@ sealed class ComponentManager
     {
         _context = context;
         _routes = new Dictionary<Type, NgRoute>();
-        _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( AppComponent ), "CK/Angular", null, null, null );
+        _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( AppComponent ), "CK/Angular", null, null );
         _context.AfterCodeGeneration += OnAfterCodeGeneration;
     }
 
     internal bool RegisterComponent( IActivityMonitor monitor, NgComponentAttributeImpl ngComponent, ITSDeclaredFileType tsType )
     {
-        NgRoute? target = null;
         var asRoutedComponent = ngComponent as NgRoutedComponentAttributeImpl;
-        if( asRoutedComponent != null )
-        {
-            if( !_routes.TryGetValue( asRoutedComponent.Attribute.TargetComponent, out target ) )
-            {
-                monitor.Error( $"""Invalid [NgRoutedComponent] on '{asRoutedComponent.DecoratedType:N}': TargetComponent '{asRoutedComponent.Attribute.TargetComponent:C}' is not a component with routes.""" );
-                return false;
-            }
-        }
         if( ngComponent.Attribute.HasRoutes )
         {
-            RegisterNgRouteWithRoutes( ngComponent.DecoratedType, ngComponent.TypeScriptFolder, target, asRoutedComponent, tsType );
+            RegisterNgRouteWithRoutes( ngComponent.DecoratedType, ngComponent.TypeScriptFolder, asRoutedComponent, tsType );
         }
-        else if( target != null )
+        else if( asRoutedComponent != null )
         {
-            _routes.Add( ngComponent.DecoratedType, new NgRoute( target, asRoutedComponent, tsType ) );
+            _routes.Add( ngComponent.DecoratedType, new NgRoute( asRoutedComponent, tsType ) );
         }
         return true;
     }
 
     NgRouteWithRoutes RegisterNgRouteWithRoutes( Type type,
                                                  NormalizedPath folder,
-                                                 NgRoute? parent,
                                                  NgRoutedComponentAttributeImpl? component,
                                                  ITSDeclaredFileType? tsType )
     {
         var r = _context.Root.Root.FindOrCreateTypeScriptFile( folder.AppendPart( "routes.ts" ) );
-        var c = new NgRouteWithRoutes( r, parent, component, tsType, _firstWithRoutes );
+        var c = new NgRouteWithRoutes( r, component, tsType, _firstWithRoutes );
         _routes.Add( type, c );
         return _firstWithRoutes = c;
     }
@@ -62,17 +52,27 @@ sealed class ComponentManager
     {
         Throw.DebugAssert( _routes[typeof( AppComponent )].IsAppComponent );
         Throw.DebugAssert( _routes.Values.Count( r => r.IsAppComponent ) == 1 );
-        StringBuilder bLog = new StringBuilder( "Generating Angular static Routes:" );
-        bLog.AppendLine().Append( "[AppComponent]" ).AppendLine();
-        var r = _firstWithRoutes;
-        do
+        bool success = true;
+        foreach( var route in _routes.Values )
         {
-            if( !r.IsAppComponent ) r.Write( bLog, 1 );
-            r.GenerateRoutes( e.Monitor, 0 );
-            r = r._nextWithRoutes;
+            if( route.IsRouted )
+            {
+                success &= route.BindToTarget( e.Monitor, _routes );
+            }
         }
-        while( r != null );
-        e.Monitor.Info( bLog.ToString() );
+        if( success )
+        {
+            StringBuilder bLog = new StringBuilder( "Generating Angular static Routes:" );
+            bLog.AppendLine().Append( "[AppComponent]" ).AppendLine();
+            var r = _firstWithRoutes;
+            do
+            {
+                if( !r.IsAppComponent ) r.Write( bLog, 1 );
+                r.GenerateRoutes( e.Monitor, 0 );
+                r = r._nextWithRoutes;
+            }
+            while( r != null );
+            e.Monitor.Info( bLog.ToString() );
+        }
     }
-
 }

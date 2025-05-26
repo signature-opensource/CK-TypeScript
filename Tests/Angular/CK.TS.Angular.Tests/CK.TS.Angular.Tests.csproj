@@ -13,6 +13,7 @@
         <EmbeddedResource Remove="TSInlineTests/**" />
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\..\..\CK.Ng.PublicPage\CK.Ng.PublicPage.csproj" />
         <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
         <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
     </ItemGroup>

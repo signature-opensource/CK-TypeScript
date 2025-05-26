@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.TypeScript.CodeGen;
 using Microsoft.Extensions.Primitives;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,39 +10,46 @@ namespace CK.TS.Angular.Engine;
 
 class NgRoute
 {
-    readonly NgRoute? _parent;
     readonly NgRoutedComponentAttributeImpl? _routedAttr;
     readonly ITSDeclaredFileType? _tsType;
     NgRoute? _firstChild;
     NgRoute? _lastChild;
     NgRoute? _nextChild;
 
-    public NgRoute( NgRoute? parent, NgRoutedComponentAttributeImpl? component, ITSDeclaredFileType? tsType )
+    public NgRoute( NgRoutedComponentAttributeImpl? component, ITSDeclaredFileType? tsType )
     {
-        Throw.DebugAssert( (parent == null) == (component == null) );
-        Throw.DebugAssert( "Only NgRouteWithRoutes may NOT be a RoutedComponent.", parent != null || this is NgRouteWithRoutes );
         Throw.DebugAssert( "component != null => tsType != null", component == null || tsType != null );
-        _parent = parent;
         _routedAttr = component;
         _tsType = tsType;
-        if( _parent != null )
+    }
+
+    public bool BindToTarget( IActivityMonitor monitor, Dictionary<Type, NgRoute> routes )
+    {
+        Throw.DebugAssert( _routedAttr != null );
+        if( !routes.TryGetValue( _routedAttr.Attribute.TargetComponent, out var target ) )
         {
-            if( _parent._firstChild == null )
+            monitor.Error( $"""Invalid [NgRoutedComponent] on '{_routedAttr.DecoratedType:N}': TargetComponent '{_routedAttr.Attribute.TargetComponent:C}' is not a component with routes.""" );
+            return false;
+        }
+        if( target != null )
+        {
+            if( target._firstChild == null )
             {
-                _parent._firstChild = this;
+                target._firstChild = this;
             }
             else
             {
-                Throw.DebugAssert( _parent._lastChild != null );
-                _parent._lastChild._nextChild = this;
+                Throw.DebugAssert( target._lastChild != null );
+                target._lastChild._nextChild = this;
             }
-            _parent._lastChild = this;
+            target._lastChild = this;
         }
+        return true;
     }
 
-    public bool IsAppComponent => _routedAttr == null && _tsType == null;
+    public bool IsAppComponent => _tsType == null;
 
-    public NgRoutedComponentAttributeImpl? Component => _routedAttr;
+    public bool IsRouted => _routedAttr != null;
 
     public bool HasChildren => _firstChild != null;
 
@@ -118,28 +126,5 @@ class NgRoute
         }
         return b;
     }
-
-    public StringBuilder WritePath( StringBuilder b )
-    {
-        if( IsAppComponent ) return b.Append( "[AppComponent]" );
-
-        var name = _routedAttr?.FileComponentName ?? _tsType!.TypeName;
-        if( this is NgRouteWithRoutes r )
-        {
-            b.Append("[WithRoutes ").Append( name ).Append( " - " ).Append( r.Children.Count() ).Append( "] " );
-        }
-        else
-        {
-            b.Append( "[Route" ).Append( name ).Append( ']' );
-        }
-        if( _parent != null )
-        {
-            b.Append( " -> " );
-            _parent.WritePath( b );
-        }
-        return b;
-    }
-
-    public override sealed string ToString() => WritePath( new StringBuilder() ).ToString();
 
 }

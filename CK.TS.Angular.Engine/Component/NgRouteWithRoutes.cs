@@ -10,11 +10,10 @@ sealed class NgRouteWithRoutes : NgRoute
     internal NgRouteWithRoutes? _nextWithRoutes;
 
     public NgRouteWithRoutes( TypeScriptFile routeFile,
-                              NgRoute? parent,
                               NgRoutedComponentAttributeImpl? component,
                               ITSDeclaredFileType? tsType,
                               NgRouteWithRoutes? nextWithRoutes )
-        : base( parent, component, tsType )
+        : base( component, tsType )
     {
         _routes = routeFile;
         _nextWithRoutes = nextWithRoutes;

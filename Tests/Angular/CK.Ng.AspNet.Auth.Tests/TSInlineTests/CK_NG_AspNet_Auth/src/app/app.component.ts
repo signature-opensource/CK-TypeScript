@@ -16,6 +16,5 @@ export class AppComponent {
 #authService = inject(NgAuthService);
 isAuthenticated = computed(() => this.#authService.authenticationInfo().user.userId !== 0);
 
-
   title = 'Demo';
 }
