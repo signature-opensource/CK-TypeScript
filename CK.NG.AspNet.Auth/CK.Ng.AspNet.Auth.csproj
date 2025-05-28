@@ -3,6 +3,10 @@
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CK.Ng.Zorro" Version="0.0.0--05fhycf-explo" />
+    </ItemGroup>
     
     <ItemGroup>
         <ProjectReference Include="..\CK.Ng.Axios\CK.Ng.Axios.csproj" />

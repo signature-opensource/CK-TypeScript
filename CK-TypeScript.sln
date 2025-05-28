@@ -102,6 +102,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.ResourceSpace.Globalizat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.PublicPage", "CK.Ng.PublicPage\CK.Ng.PublicPage.csproj", "{D122BE22-A740-49B8-A66D-D11320737573}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.AspNet.Auth.Basic", "CK.Ng.AspNet.Auth.Basic\CK.Ng.AspNet.Auth.Basic.csproj", "{4A47E244-9B7D-4F5C-8A03-104DDF168CF4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -256,6 +258,10 @@ Global
 		{D122BE22-A740-49B8-A66D-D11320737573}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D122BE22-A740-49B8-A66D-D11320737573}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D122BE22-A740-49B8-A66D-D11320737573}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A47E244-9B7D-4F5C-8A03-104DDF168CF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A47E244-9B7D-4F5C-8A03-104DDF168CF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A47E244-9B7D-4F5C-8A03-104DDF168CF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A47E244-9B7D-4F5C-8A03-104DDF168CF4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
