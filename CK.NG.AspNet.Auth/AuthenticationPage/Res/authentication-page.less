@@ -1,0 +1,43 @@
+.ck-authentication-page {
+    height: 100vh;
+}
+
+.ck-auth-mobile {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.ck-auth-desktop {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+
+    .left {
+        flex: 6;
+        position: relative;
+        display: grid;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+
+        .logo {
+            position: relative;
+            margin: auto;
+            object-fit: cover;
+            height: auto;
+            width: 55%;
+        }
+    }
+
+    .right {
+        flex: 4;
+    }
+}
+
+.ck-back-btn {
+    font-size: @subtitle-font-size;
+    position: absolute;
+    top: 5%;
+    margin-left: 2%;
+}
