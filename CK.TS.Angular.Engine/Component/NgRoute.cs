@@ -69,7 +69,8 @@ class NgRoute
             {
                 Throw.DebugAssert( "Child route can only be a RoutedComponent.", c._routedAttr != null );
                 yield return c;
-                c = _nextChild;
+
+                c = c._nextChild;
             }
         }
     }
@@ -86,6 +87,7 @@ class NgRoute
             {
                 body.Append( "," ).NewLine();
             }
+            atLeastOne = true;
             body.Whitespace( childDepth * 2 ).Append( "{ path: " ).AppendSourceString( comp.Route );
             if( comp.Attribute.RegistrationMode == RouteRegistrationMode.None )
             {
@@ -120,7 +122,7 @@ class NgRoute
         var name = _routedAttr?.FileComponentName ?? _tsType!.TypeName;
         if( this is NgRouteWithRoutes r )
         {
-            b.Append('[').Append( name ).Append( ']' ).AppendLine();
+            b.Append( '[' ).Append( name ).Append( ']' ).AppendLine();
             foreach( var c in r.Children )
             {
                 c.Write( b, childDepth + 1 );
