@@ -9,6 +9,7 @@ namespace CK.Ng.Zorro;
 [TypeScriptImportLibrary( "luxon", "^3", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@types/luxon", "^3", DependencyKind.DevDependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@angular/cdk", "^19", DependencyKind.Dependency, ForceUse = true )]
+[TypeScriptImportLibrary( "@angular/animations", "^19", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@fortawesome/angular-fontawesome", "^1", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@fortawesome/fontawesome-svg-core", "^6", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@fortawesome/free-brands-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
