@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using DependencyKind = CK.TypeScript.CodeGen.DependencyKind;
 
 namespace CK.Setup;
@@ -104,12 +105,53 @@ public sealed partial class TypeScriptIntegrationContext
     public int InitialCKVersion => _initialCKVersion;
 
     /// <summary>
+    /// Gets the configured library versions.
+    /// </summary>
+    public ImmutableDictionary<string, SVersionBound> ConfiguredLibraries => _libVersionsConfig;
+
+    /// <summary>
+    /// Calls Yarn with the provided <paramref name="command"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="command">The command to run.</param>
+    /// <param name="environmentVariables">Optional environment variables to set.</param>
+    /// <param name="workingDirectory">Optional working directory. Deadults to <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/>.</param>
+    /// <returns>True on success, false if the process failed.</returns>
+    public bool RunYarn( IActivityMonitor monitor,
+                         string command,
+                         Dictionary<string, string>? environmentVariables = null,
+                         NormalizedPath workingDirectory = default )
+    {
+        if( workingDirectory.IsEmptyPath ) workingDirectory = _configuration.TargetProjectPath;
+        return YarnHelper.DoRunYarn( monitor, workingDirectory, command, _yarnPath, environmentVariables );
+    }
+
+    /// <summary>
+    /// Executes a command.
+    /// </summary>
+    /// <param name="fileName">The process file name.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="environmentVariables">Optional environment variables.</param>
+    /// <param name="workingDirectory">Optional working directory. Defaults to <see cref="TargetProjectPath"/>.</param>
+    /// <returns>The process exit code.</returns>
+    public int RunProcess( IActivityMonitor monitor,
+                           string fileName,
+                           string arguments,
+                           Dictionary<string, string>? environmentVariables = null,
+                           NormalizedPath workingDirectory = default )
+    {
+        if( workingDirectory.IsEmptyPath ) workingDirectory = _configuration.TargetProjectPath;
+        return YarnHelper.RunProcess( monitor.ParallelLogger, fileName, arguments, workingDirectory, environmentVariables );
+    }
+
+
+    /// <summary>
     /// Raised before the integration step when <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/> is
     /// not <see cref="CKGenIntegrationMode.None"/>.
     /// <para>
     /// When this event is raised we only know that Yarn is available but we don't know anything about the integration
-    /// context (the TypeScript version is not known yet). The target project folder exists, the ck-gen/ folder has been generated but it may only contain the
-    /// ck-gen/ folder.
+    /// context (the TypeScript version is not known yet). The target project folder exists, the ck-gen/ folder has been
+    /// generated but it may only contain the ck-gen/ folder.
     /// </para>
     /// This can be used to setup the target project before running (such as initializing from scratch an angular application).
     /// Any project structure can be setup (or altered) and <see cref="BaseEventArgs.RunYarn(string, Dictionary{string, string}?, NormalizedPath)"/>
@@ -409,7 +451,7 @@ public sealed partial class TypeScriptIntegrationContext
         return true;
     }
 
-    internal bool Run( IActivityMonitor monitor, DependencyCollection generatedDependencies )
+    internal bool Initialize( IActivityMonitor monitor )
     {
         Throw.DebugAssert( _configuration.IntegrationMode is CKGenIntegrationMode.Inline );
 
@@ -424,7 +466,12 @@ public sealed partial class TypeScriptIntegrationContext
         // Sets the "packageManager" to the yarn version (even if we don't use CorePack) to avoid warnings if possible.
         Throw.DebugAssert( yarnVersion != null );
         _targetPackageJson.PackageManager = $"yarn@{yarnVersion.ToString( 3 )}";
+        return true;
+    }
 
+
+    internal bool Run( IActivityMonitor monitor, DependencyCollection generatedDependencies )
+    {
         // Setup the target project dependencies according to the integration mode.
         using( monitor.OpenInfo( $"Updating target package.json dependencies from code generated ones." ) )
         {
@@ -456,7 +503,6 @@ public sealed partial class TypeScriptIntegrationContext
         }
         // It is important to settle the TypeScript version here to ensure
         // that the _saver.GeneratedDependencies contains the right TypeScript version.
-        // (NpmPackageIntegrate and TSPathInlineIntegrate would both have do this first.)
         if( !SettleTypeScriptVersion( monitor, out var typeScriptDep ) )
         {
             return false;

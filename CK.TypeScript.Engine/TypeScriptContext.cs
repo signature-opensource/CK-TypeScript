@@ -208,6 +208,13 @@ public sealed partial class TypeScriptContext
     {
         using var _ = monitor.OpenInfo( $"Running TypeScript code generation for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" );
 
+        // Initializes yarn.
+        if( _integrationContext != null
+            && !_integrationContext.Initialize( monitor ) )
+        {
+            return false;
+        }
+
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
         bool success = true;
 
@@ -222,8 +229,8 @@ public sealed partial class TypeScriptContext
         // and NgComponent registers themselves on it.
         // So we call StartGlobalCodeGeneration now...
         // If another GlobalCodeGenerators needs the ResPackage, we must add a new method on ITSCodeGenerator (something like
-        // "OnPackageReady") and call it. This imperative paradigm is intrinsically limited...
-        // ReaDI handles this transparently: the global generators can be any ReaDI object with (IActivityMonitor, TypeScriptContext)
+        // "OnResPackageAvailable") and call it. This imperative paradigm is intrinsically limited...
+        // ReaDI would handle this transparently: the global generators can be any ReaDI object with (IActivityMonitor, TypeScriptContext)
         // parameters... And if the same object wants to generate code in the TypeScriptContext based on the topologically ordered
         // set of packages, another method with (IActivityMonitor, TypeScriptContext, ResourceSpaceData) can be written.
         //

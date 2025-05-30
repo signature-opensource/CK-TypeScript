@@ -37,11 +37,6 @@ public sealed partial class TypeScriptIntegrationContext
         public NormalizedPath TargetProjectPath => IntegrationContext.Configuration.TargetProjectPath;
 
         /// <summary>
-        /// Gets the configured LibraryVersions.
-        /// </summary>
-        public ImmutableDictionary<string, SVersionBound> ConfiguredLibraries => IntegrationContext._libVersionsConfig;
-
-        /// <summary>
         /// Gets or sets the <see cref="JestSetupHandler"/> to use.
         /// <para>
         /// This is null and must remain null when <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallJest"/> is false.
@@ -57,37 +52,6 @@ public sealed partial class TypeScriptIntegrationContext
                 Throw.CheckNotNullArgument( value );
                 IntegrationContext._jestSetup = value;
             }
-        }
-
-        /// <summary>
-        /// Calls Yarn with the provided <paramref name="command"/>.
-        /// The monitor used is this <see cref="EventMonitoredArgs.Monitor"/>.
-        /// </summary>
-        /// <param name="command">The command to run.</param>
-        /// <param name="environmentVariables">Optional environment variables to set.</param>
-        /// <param name="workingDirectory">Optional working directory. Deadults to <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/>.</param>
-        /// <returns>True on success, false if the process failed.</returns>
-        public bool RunYarn( string command, Dictionary<string, string>? environmentVariables = null, NormalizedPath workingDirectory = default )
-        {
-            if( workingDirectory.IsEmptyPath ) workingDirectory = IntegrationContext.Configuration.TargetProjectPath;
-            return YarnHelper.DoRunYarn( Monitor, workingDirectory, command, _yarnPath, environmentVariables );
-        }
-
-        /// <summary>
-        /// Executes a command.
-        /// </summary>
-        /// <param name="fileName">The process file name.</param>
-        /// <param name="arguments">The arguments.</param>
-        /// <param name="environmentVariables">Optional environment variables.</param>
-        /// <param name="workingDirectory">Optional working directory. Defaults to <see cref="TargetProjectPath"/>.</param>
-        /// <returns>The process exit code.</returns>
-        public int RunProcess( string fileName,
-                               string arguments,
-                               Dictionary<string, string>? environmentVariables = null,
-                               NormalizedPath workingDirectory = default )
-        {
-            if( workingDirectory.IsEmptyPath ) workingDirectory = IntegrationContext.Configuration.TargetProjectPath;
-            return YarnHelper.RunProcess( Monitor.ParallelLogger, fileName, arguments, workingDirectory, environmentVariables );
         }
     }
 
