@@ -371,8 +371,13 @@ public sealed partial class TypeScriptIntegrationContext
                 monitor.Trace( $"No '.yarn/install-state.gz' found. 'yarn install' will be done. " );
                 canSkipRun = false;
             }
+            if( !YarnHelper.HasYarnLockFile( _configuration.TargetProjectPath ) )
+            {
+                monitor.Trace( $"No 'yarn.lock' file found. 'yarn install' will be done. " );
+                canSkipRun = false;
+            }
         }
-        PackageDependency[] manualPeerDeps = ExtractLatestDependencies( _targetPackageJson, finalCommand );
+        PackageDependency[] manualPeerDeps = ExtractLatestDependencies( monitor, _targetPackageJson, finalCommand );
         if( canSkipRun && manualPeerDeps.Length == 0 )
         {
             var text = _targetPackageJson.WriteAsString();
@@ -396,9 +401,15 @@ public sealed partial class TypeScriptIntegrationContext
         return true;
     }
 
-    static PackageDependency[] ExtractLatestDependencies( PackageJsonFile packageJson, StringBuilder finalCommand )
+    static PackageDependency[] ExtractLatestDependencies( IActivityMonitor monitor, PackageJsonFile packageJson, StringBuilder finalCommand )
     {
         var manual = packageJson.Dependencies.RemoveLatestDependencies();
+        int idxLocalCkGen = manual.IndexOf( dep => dep.Name == "@local/ck-gen" );
+        if( idxLocalCkGen >= 0 )
+        {
+            monitor.Warn( $"'@local/ck-gen' has been registered in the target package dependencies. It has been removed." );
+            manual.RemoveAt( idxLocalCkGen );
+        }
         PackageDependency[] manualPeerDeps = [];
         if( manual.Count > 0 )
         {

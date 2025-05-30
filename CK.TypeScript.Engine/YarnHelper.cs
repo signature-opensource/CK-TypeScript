@@ -287,6 +287,12 @@ public static class YarnHelper
         return File.Exists( integrationsFile );
     }
 
+    internal static bool HasYarnLockFile( NormalizedPath targetProjectPath )
+    {
+        var f = targetProjectPath.AppendPart( "yarn.lock" );
+        return File.Exists( f );
+    }
+
     static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
     {
         // Here we should find a .yarnrc.yml:
