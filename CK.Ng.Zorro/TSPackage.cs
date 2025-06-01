@@ -16,8 +16,12 @@ namespace CK.Ng.Zorro;
 [TypeScriptImportLibrary( "@fortawesome/free-regular-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
 [TypeScriptImportLibrary( "@fortawesome/free-solid-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
 
+
 [NgProviderImport( "fr_FR, provideNzI18n", LibraryName = "ng-zorro-antd/i18n" )]
 [NgProvider( "provideNzI18n( fr_FR )" )]
+
+[RegisterTypeScriptType( typeof( SimpleUserMessage ) )]
+[RegisterTypeScriptType( typeof( UserMessageLevel ) )]
 
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]
 [Requires<CK.Ng.Localization.TSPackage>]
