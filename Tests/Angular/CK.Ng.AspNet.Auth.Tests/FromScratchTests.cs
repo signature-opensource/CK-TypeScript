@@ -91,5 +91,8 @@ public class FromScratchTests
         await using var runner = TestHelper.CreateTypeScriptRunner( root, server.ServerAddress );
         await TestHelper.SuspendAsync( resume => resume );
         runner.Run();
+        // It's not because the "src/app.component.spec.ts" succeeds that
+        // build is successful: even "src/app.component.ts" may not compile...
+        runner.Run( "build" );
     }
 }

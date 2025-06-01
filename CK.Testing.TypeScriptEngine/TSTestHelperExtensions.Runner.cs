@@ -38,10 +38,14 @@ public static partial class TSTestHelperExtensions
         /// <summary>
         /// Runs the yarn command and fails on error.
         /// </summary>
-        public void Run()
+        /// <param name="yarnCommand">
+        /// When not null, specifies another yarn command that the default one specified by <see cref="CreateTypeScriptRunner"/>.
+        /// </param>
+        public void Run( string? yarnCommand = null )
         {
-            YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, _yarnCommand, _environmentVariables )
-                .ShouldBeTrue( $"'yarn {_yarnCommand}' should be sucessfull." );
+            yarnCommand ??= _yarnCommand;
+            YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, yarnCommand, _environmentVariables )
+                .ShouldBeTrue( $"'yarn {yarnCommand}' should be sucessfull." );
         }
 
         /// <summary>
