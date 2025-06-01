@@ -407,7 +407,7 @@ public sealed partial class TypeScriptIntegrationContext
         int idxLocalCkGen = manual.IndexOf( dep => dep.Name == "@local/ck-gen" );
         if( idxLocalCkGen >= 0 )
         {
-            monitor.Warn( $"'@local/ck-gen' has been registered in the target package dependencies. It has been removed." );
+            monitor.Trace( "'@local/ck-gen' has been registered in the target package dependencies. It has been removed." );
             manual.RemoveAt( idxLocalCkGen );
         }
         PackageDependency[] manualPeerDeps = [];

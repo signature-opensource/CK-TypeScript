@@ -37,7 +37,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
     {
         ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 
-        if( Attribute.LibraryName.StartsWith( "@local/ck-gen/" ) )
+        if( Attribute.LibraryName == "@local/ck-gen" )
         {
             imports.ImportFromLocalCKGen( Attribute.SymbolNames );
         }
@@ -76,7 +76,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
                                                                    TypeScript.CodeGen.DependencyKind.DevDependency,
                                                                    $"[{AttributeName}] on '{Type:C}'." );
             }
-            imports.ImportFromLibrary( (lib,subPath), Attribute.SymbolNames );
+            imports.ImportFromLibrary( (lib, subPath), Attribute.SymbolNames );
         }
         return true;
     }
