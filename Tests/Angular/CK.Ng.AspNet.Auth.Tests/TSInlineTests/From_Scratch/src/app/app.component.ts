@@ -1,13 +1,13 @@
 // <HasNgPrivatePage />
 import { Component, inject, computed } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { CommonModule } from '@angular/common';
 import { PrivatePageComponent, NgAuthService } from '@local/ck-gen';
-import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 // Private Page is from CK.Ng.AspNet.Auth package.
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet CKGenAppModule,, CommonModule, PrivatePageComponent],
+  imports: [RouterOutlet, CommonModule, PrivatePageComponent, CKGenAppModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.less'
 })
@@ -18,4 +18,3 @@ isAuthenticated = computed(() => this.#authService.authenticationInfo().user.use
 
   title = 'From_Scratch';
 }
-

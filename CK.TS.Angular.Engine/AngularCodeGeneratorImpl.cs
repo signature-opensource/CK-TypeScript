@@ -10,6 +10,8 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Nodes;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -233,8 +235,11 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                && UpdateNewPackageJson( monitor, newFolderPath, targetPackageJson, out IList<PackageDependency> savedLatestDependencies, out var newPackageJson )
                                // We remove the "src/styles.less" file because we have already created it. 
                                && DeleteStylesLess( monitor, newFolderPath )
+                               && TransformAppComponent( monitor, newFolderPath.Combine( "src/app/app.component.ts" ) )
+                               && TransformAppComponentConfig( monitor, newFolderPath.Combine( "src/app/app.config.ts" ) )
+                               && TransformAppComponentRoutes( monitor, newFolderPath.Combine( "src/app/app.routes.ts" ) )
                                && CleanupAppComponentHtml( monitor, newFolderPath )
-                               && RemoveUselessAngularJsonTestSection( monitor, newFolderPath, newPackageJson )
+                               && SetupAngularJsonFile( monitor, newFolderPath )
                                && LiftContent( monitor, targetProjectPath, newFolderPath )
                                && ReloadTargetTSConfigAndPackageJson( monitor, context.IntegrationContext.TSConfigJson, targetPackageJson, savedLatestDependencies )
                                && DeleteNewFolder( monitor, tempFolderPath, newFolderPath, tempPackageJsonPath );
@@ -326,6 +331,127 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return true;
                     }
 
+                    static bool TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
+                    {
+                        var app = File.ReadAllText( appFilePath );
+                        using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
+                        {
+                            var importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
+                            bool success = AddCKGenAppModuleInImports( monitor, ref app );
+                            return AddImportAndConclude( monitor,
+                                                         appFilePath,
+                                                         success,
+                                                         ref app,
+                                                         importLine );
+                        }
+
+                        static bool AddCKGenAppModuleInImports( IActivityMonitor monitor, ref string app )
+                        {
+                            int idx = app.IndexOf( "imports: [" );
+                            if( idx > 0 )
+                            {
+                                idx = app.IndexOf( "RouterOutlet", idx );
+                                if( idx > 0 )
+                                {
+                                    Throw.DebugAssert( "RouterOutlet".Length == 12 );
+                                    int idxEnd = idx + 12;
+                                    while( app[idxEnd] != ',' && app[idxEnd] != ']' && idxEnd < app.Length ) ++idxEnd;
+                                    if( idxEnd < app.Length )
+                                    {
+                                        if( app[idxEnd] == ',' )
+                                        {
+                                            app = app.Insert( idxEnd, " CKGenAppModule," );
+                                        }
+                                        else
+                                        {
+                                            Throw.DebugAssert( app[idxEnd] == ']' );
+                                            app = app.Insert( idx + 12, ", CKGenAppModule" );
+                                        }
+                                        monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
+                                        return true;
+                                    }
+                                }
+                            }
+                            monitor.Warn( "Unable to find an 'imports: [ ... RouterOutlet ...]' substring." );
+                            return false;
+                        }
+                    }
+
+                    static bool TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
+                    {
+                        var app = File.ReadAllText( configFilePath );
+                        using( monitor.OpenInfo( "Transforming file 'src/app/app.config.ts'." ) )
+                        {
+                            const string importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
+                            bool success = true;
+                            int idx = app.IndexOf( "provideRouter(routes)" );
+                            if( idx < 0 )
+                            {
+                                monitor.Warn( "Unable to find the 'provideRouter(routes)' substring." );
+                                success = false;
+                            }
+                            else
+                            {
+                                Throw.DebugAssert( "provideRouter(routes)".Length == 21 );
+                                app = app.Insert( idx + 21, ", ...CKGenAppModule.Providers," );
+                                monitor.Info( "Added '...CKGenAppModule.Providers' in providers." );
+                            }
+                            return AddImportAndConclude( monitor, configFilePath, success, ref app, importLine );
+                        }
+                    }
+
+                    static bool TransformAppComponentRoutes( IActivityMonitor monitor, NormalizedPath routesFilePath )
+                    {
+                        var app = File.ReadAllText( routesFilePath );
+                        using( monitor.OpenInfo( "Transforming file 'src/app/app.routes.ts'." ) )
+                        {
+                            bool success = true;
+                            int idx = app.LastIndexOf( "];" );
+                            if( idx < 0 )
+                            {
+                                monitor.Warn( "Unable to find a closing '];'." );
+                                success = false;
+                            }
+                            else
+                            {
+                                if( !NeedComma( app, idx, out var needComma ) )
+                                {
+                                    monitor.Warn( "Unable to find te start of the array." );
+                                    success = false;
+                                }
+                                else
+                                {
+                                    app = app.Insert( idx, $"{Environment.NewLine}{(needComma ? ',' : ' ')}...CKGenRoutes{Environment.NewLine}" );
+                                    monitor.Info( "Added '...CKGenRoutes' in routes." );
+                                }
+                            }
+                            return AddImportAndConclude( monitor, routesFilePath, success, ref app, "import CKGenRoutes from '@local/ck-gen/CK/Angular/routes';" );
+                        }
+
+                        static bool NeedComma( string app, int idx, out bool needComma )
+                        {
+                            int idxC = idx - 1;
+                            while( idxC > 0 )
+                            {
+                                if( app[idxC] == '[' )
+                                {
+                                    needComma = false;
+                                    return true;
+                                }
+                                if( !char.IsWhiteSpace( app[idxC] ) )
+                                {
+                                    needComma = true;
+                                    return true;
+                                }
+                                --idxC;
+                            }
+                            needComma = false;
+                            return false;
+                        }
+                    }
+
+
+
                     static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
                     {
                         NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
@@ -345,29 +471,66 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return true;
                     }
 
-                    static bool RemoveUselessAngularJsonTestSection( IActivityMonitor monitor, NormalizedPath newFolderPath, PackageJsonFile newPackageJson )
+                    static bool SetupAngularJsonFile( IActivityMonitor monitor, NormalizedPath newFolderPath )
                     {
-                        // LOL! This is absolutely insane.
-                        // (But STJ is really bad at this. I don't want a dependency an have better thing to do right now.)
-                        NormalizedPath filePath = newFolderPath.AppendPart( "angular.json" );
-                        var text = File.ReadAllText( filePath ).ReplaceLineEndings();
-                        var start = """
-                    ,
-                            "test": {
-                    """.ReplaceLineEndings();
-                        int idxStart = text.IndexOf( start );
-                        if( idxStart > 0 )
+                        var path = newFolderPath.AppendPart( "angular.json" );
+                        if( !File.Exists( path ) )
                         {
-                            var idxEnd = text.IndexOf( Environment.NewLine + "        }", idxStart );
-                            if( idxEnd > 0 )
+                            monitor.Warn( $"Expecting file '{path}'. Skipping \"tests\" section removal and \"budgets\" configuration." );
+                            return true;
+                        }
+                        using var _ = monitor.OpenInfo( "Processing file '{path}': removing \"tests\" section and configuring \"budgets.maximumError\" to \"1GB\"." );
+                        try
+                        {
+                            bool testRemoved = false;
+                            bool budgetsSet = false;
+                            var angularJson = File.ReadAllText( path );
+                            var root = JsonNode.Parse( angularJson );
+                            if( root != null )
                             {
-                                text = text.Remove( idxStart, idxEnd - idxStart + 9 + Environment.NewLine.Length );
-                                File.WriteAllText( filePath, text );
-                                monitor.Info( "Removed useless \"test\" section from 'angular.json' file." );
-                                return true;
+                                var architect = root["projects"]?[0]?["architect"]?.AsObject();
+                                if( architect != null )
+                                {
+                                    var budgets = architect["build"]?["configurations"]?["production"]?["budgets"]?.AsArray();
+                                    if( budgets != null )
+                                    {
+                                        foreach( var b in budgets )
+                                        {
+                                            var o = b?.AsObject();
+                                            if( o != null )
+                                            {
+                                                if( o["maximumError"] != null )
+                                                {
+                                                    budgetsSet = true;
+                                                    o["maximumError"] = "1GB";
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if( !budgetsSet )
+                                    {
+                                        monitor.Warn( "Unable to find any \"budgets.maximumError\" to set them to \"1GB\"." );
+                                    }
+                                    testRemoved = architect.Remove( "test" );
+                                    if( !testRemoved )
+                                    {
+                                        monitor.Warn( "Unable to find \"architect.test\" section to remove." );
+                                    }
+                                }
+                                if( testRemoved || budgetsSet )
+                                {
+                                    using( var f = File.Create( path ) )
+                                    using( var w = new Utf8JsonWriter( f, new JsonWriterOptions { Indented = true } ) )
+                                    {
+                                        root.WriteTo( w );
+                                    }
+                                }
                             }
                         }
-                        monitor.Warn( "Unable to locate the \"test\" section in 'angular.json' file." );
+                        catch( Exception ex )
+                        {
+                            monitor.Warn( $"While processing file '{path}'.", ex );
+                        }
                         return true;
                     }
 
@@ -556,226 +719,10 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         {
             // Awful implementations.
             // Waiting for transformers.
-            TransformAppComponent( e.Monitor, e.SrcFolderPath.Combine( "app/app.component.ts" ) );
-            TransformAppComponentConfig( e.Monitor, e.SrcFolderPath.Combine( "app/app.config.ts" ) );
-            TransformAppComponentRoutes( e.Monitor, e.SrcFolderPath.Combine( "app/app.routes.ts" ) );
-            TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), e.CKGenFolder );
+            TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ) );
 
-            static void TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
+            static void TransformAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath )
             {
-                var app = File.ReadAllText( appFilePath );
-                if( Regex.IsMatch( app,
-                                   """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen/CK/Angular/CKGenAppModule'\s*;""",
-                                   RegexOptions.CultureInvariant ) )
-                {
-                    monitor.Trace( "File 'src/app/component.ts' imports the CKGenAppModule from its module. Skipping transformation." );
-                }
-                else
-                {
-                    var importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
-                    var m = Regex.Match( app,
-                                         """import\s+{.*CKGenAppModule.*?}\s+from\s+'@local/ck-gen'\s*;""",
-                                         RegexOptions.CultureInvariant );
-                    if( m.Success )
-                    {
-                        monitor.Warn( $"""
-                            Fixing 'src/app/component.ts' CKGenAppModule import. Replacing:
-                            {m.Value}
-                            With:
-                            {importLine}
-                            """ );
-                        app = app.Substring( 0, m.Index ) + importLine + app.Substring( m.Index + m.Length );
-                        File.WriteAllText( appFilePath, app );
-                    }
-                    else
-                    {
-                        using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
-                        {
-                            bool success = AddInImports( monitor, ref app );
-                            AddImportAndConclude( monitor,
-                                                  appFilePath,
-                                                  success,
-                                                  ref app,
-                                                  importLine );
-                        }
-                    }
-                }
-
-                static bool AddInImports( IActivityMonitor monitor, ref string app )
-                {
-                    int idx = app.IndexOf( "imports: [" );
-                    if( idx > 0 )
-                    {
-                        idx = app.IndexOf( "RouterOutlet", idx );
-                        if( idx > 0 )
-                        {
-                            Throw.DebugAssert( "RouterOutlet".Length == 12 );
-                            int idxEnd = idx + 12;
-                            while( app[idxEnd] != ',' && app[idxEnd] != ']' && idxEnd < app.Length ) ++idxEnd;
-                            if( idxEnd < app.Length )
-                            {
-                                if( app[idxEnd] == ',' )
-                                {
-                                    app = app.Insert( idxEnd, " CKGenAppModule," );
-                                }
-                                else
-                                {
-                                    Throw.DebugAssert( app[idxEnd] == ']' );
-                                    app = app.Insert( idx + 12, ", CKGenAppModule" );
-                                }
-                                monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
-                                return true;
-                            }
-                        }
-                    }
-                    monitor.Warn( "Unable to find an 'imports: [ ... RouterOutlet ...]' substring." );
-                    return false;
-                }
-            }
-
-            static void TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
-            {
-                const string importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
-                var app = File.ReadAllText( configFilePath );
-                if( app.Contains( importLine ) )
-                {
-                    monitor.Trace( "File 'src/app/app.config.ts' imports the CKGenAppModule from its module. Skipping transformation." );
-                }
-                else
-                {
-                    const string legacyLine = "import { CKGenAppModule } from '@local/ck-gen';";
-                    int idx = app.IndexOf( legacyLine );
-                    if( idx >= 0 )
-                    {
-                        monitor.Warn( $"""
-                                Fixing 'src/app/app.config.ts' CKGenAppModule import. Replacing:
-                                {legacyLine}
-                                With:
-                                {importLine}
-                                """ );
-                        app = app.Substring( 0, idx ) + importLine + app.Substring( idx + legacyLine.Length );
-                        File.WriteAllText( configFilePath, app );
-                    }
-                    else
-                    {
-                        using( monitor.OpenInfo( "Transforming file 'src/app/app.config.ts'." ) )
-                        {
-                            bool success = true;
-                            idx = app.IndexOf( "provideRouter(routes)" );
-                            if( idx < 0 )
-                            {
-                                monitor.Warn( "Unable to find the 'provideRouter(routes)' substring." );
-                                success = false;
-                            }
-                            else
-                            {
-                                Throw.DebugAssert( "provideRouter(routes)".Length == 21 );
-                                app = app.Insert( idx + 21, ", ...CKGenAppModule.Providers," );
-                                monitor.Info( "Added '...CKGenAppModule.Providers' in providers." );
-                            }
-                            AddImportAndConclude( monitor, configFilePath, success, ref app, importLine );
-                        }
-                    }
-                }
-            }
-
-            static void TransformAppComponentRoutes( IActivityMonitor monitor, NormalizedPath routesFilePath )
-            {
-                var app = File.ReadAllText( routesFilePath );
-                if( app.Contains( "import CKGenRoutes from '@local/ck-gen/CK/Angular/routes';" ) )
-                {
-                    monitor.Trace( "File 'src/app/app.routes.ts' imports the CKGenRoutes. Skipping transformation." );
-                }
-                else
-                {
-                    using( monitor.OpenInfo( "Transforming file 'src/app/app.routes.ts'." ) )
-                    {
-                        bool success = true;
-                        int idx = app.LastIndexOf( "];" );
-                        if( idx < 0 )
-                        {
-                            monitor.Warn( "Unable to find a closing '];'." );
-                            success = false;
-                        }
-                        else
-                        {
-                            if( !NeedComma( app, idx, out var needComma ) )
-                            {
-                                monitor.Warn( "Unable to find te start of the array." );
-                                success = false;
-                            }
-                            else
-                            {
-                                app = app.Insert( idx, $"{Environment.NewLine}{(needComma ? ',' : ' ')}...CKGenRoutes{Environment.NewLine}" );
-                                monitor.Info( "Added '...CKGenRoutes' in routes." );
-                            }
-                        }
-                        AddImportAndConclude( monitor, routesFilePath, success, ref app, "import CKGenRoutes from '@local/ck-gen/CK/Angular/routes';" );
-                    }
-                }
-
-                static bool NeedComma( string app, int idx, out bool needComma )
-                {
-                    int idxC = idx - 1;
-                    while( idxC > 0 )
-                    {
-                        if( app[idxC] == '[' )
-                        {
-                            needComma = false;
-                            return true;
-                        }
-                        if( !char.IsWhiteSpace( app[idxC] ) )
-                        {
-                            needComma = true;
-                            return true;
-                        }
-                        --idxC;
-                    }
-                    needComma = false;
-                    return false;
-                }
-            }
-
-            static void AddImportAndConclude( IActivityMonitor monitor, NormalizedPath filePath, bool success, ref string app, string importStatement )
-            {
-                app = app.ReplaceLineEndings();
-                var lines = app.Split( Environment.NewLine ).ToList();
-                success &= AddImportStatement( monitor, lines, importStatement );
-                if( !success )
-                {
-                    monitor.CloseGroup( "Failed to transform file. Leaving it as-is." );
-                }
-                else
-                {
-                    monitor.CloseGroup( "File has been transformed." );
-                    File.WriteAllLines( filePath, lines );
-                }
-
-                static bool AddImportStatement( IActivityMonitor monitor, List<string> lines, string importStatement )
-                {
-                    int idx = lines.FindLastIndex( l => l.StartsWith( "import " ) );
-                    if( idx < 0 )
-                    {
-                        monitor.Warn( "Unable to find an 'import ...' line." );
-                        return false;
-                    }
-                    else
-                    {
-                        lines[idx] = lines[idx] + Environment.NewLine + importStatement;
-                    }
-                    return true;
-                }
-            }
-
-            static void TransformAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath, NormalizedPath cKGenFolder )
-            {
-                // in single "assets": []
-                //    ensure first """
-                //      {
-                //        "glob": "**/*",
-                //        "input": "ck-gen/ts-assets"
-                //      }
-                //      """;
                 var text = File.ReadAllText( angularJsonPath );
                 var m = Regex.Match( text, """
                             "assets"\s*:\s*\[\s*{
@@ -791,6 +738,42 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         monitor.Info( "Added ck-gen/ts-assets to angular.json assets." );
                     }
                 }
+            }
+        }
+
+        static bool AddImportAndConclude( IActivityMonitor monitor,
+                                            NormalizedPath filePath,
+                                            bool success,
+                                            ref string app,
+                                            string importStatement )
+        {
+            app = app.ReplaceLineEndings();
+            var lines = app.Split( Environment.NewLine ).ToList();
+            success &= AddImportStatement( monitor, lines, importStatement );
+            if( !success )
+            {
+                monitor.CloseGroup( "Failed to transform file. Leaving it as-is." );
+            }
+            else
+            {
+                monitor.CloseGroup( "File has been transformed." );
+                File.WriteAllLines( filePath, lines );
+            }
+            return success;
+
+            static bool AddImportStatement( IActivityMonitor monitor, List<string> lines, string importStatement )
+            {
+                int idx = lines.FindLastIndex( l => l.StartsWith( "import " ) );
+                if( idx < 0 )
+                {
+                    monitor.Warn( "Unable to find an 'import ...' line." );
+                    return false;
+                }
+                else
+                {
+                    lines[idx] = lines[idx] + Environment.NewLine + importStatement;
+                }
+                return true;
             }
         }
 
