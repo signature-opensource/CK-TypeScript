@@ -1,7 +1,6 @@
 import { EnvironmentProviders, inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, HttpInterceptorFn } from '@angular/common/http';
 import { AuthService } from '@local/ck-gen/CK/AspNet/Auth/AuthService';
-import { authInterceptor } from './auth-interceptor';
 
 /**
  * Provides support providers for AuthService:
@@ -16,6 +15,16 @@ export function provideNgAuthSupport(): EnvironmentProviders {
         provideHttpClient(withInterceptors([authInterceptor]))
     ]);
 }
+
+const authInterceptor: HttpInterceptorFn = (request, next) => {
+    const authService = inject(AuthService);
+
+    const clonedRequest = authService.shouldSetToken(request.url) && authService.token
+        ? request.clone({ headers: request.headers.set('Authorization', `Bearer ${authService.token}`) })
+        : request;
+
+    return next(clonedRequest);
+};
 
 async function refreshAuthService() {
     const authService = inject(AuthService);

@@ -20,6 +20,8 @@ namespace CK.Ng.AspNet.Auth;
 [NgProviderImport( "inject", LibraryName = "@angular/core" )]
 [NgProvider( "{ provide: AuthService, useFactory: () => new AuthService( inject( AXIOS ) ) }" )]
 [NgProvider( "provideNgAuthSupport()", "#Support" )]
+[TypeScriptFile( "NgAuthService.ts", "NgAuthService" )]
+[TypeScriptFile( "auth-service-support.ts", "provideNgAuthSupport" )]
 public class TSPackage : TypeScriptPackage
 {
 }
