@@ -22,7 +22,6 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     ReactiveFormsModule,
     RouterLink,
     TranslateModule,
-    ResponsiveDirective,
     FontAwesomeModule,
     NzButtonModule,
     NzCheckboxModule,
