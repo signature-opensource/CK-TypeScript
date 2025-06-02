@@ -11,15 +11,12 @@ namespace CK.Ng.AspNet.Auth.Basic.Tests;
 public class NgAspNetAuthTests
 {
     [Test]
-    public async Task CK_Ng_AspNet_Auth_Async()
+    public async Task CK_Ng_AspNet_Auth_Basic_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        //configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
-        //configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth" );
-        //configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
         var builder = WebApplication.CreateSlimBuilder();
