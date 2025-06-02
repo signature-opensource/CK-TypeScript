@@ -14,6 +14,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using CK.TypeScript.Transform;
 
 namespace CK.TS.Angular.Engine;
 
@@ -236,6 +237,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                // We remove the "src/styles.less" file because we have already created it. 
                                && DeleteStylesLess( monitor, newFolderPath )
                                && TransformAppComponent( monitor, newFolderPath.Combine( "src/app/app.component.ts" ) )
+                               && TransformAppComponentSpec( monitor, newFolderPath.Combine( "src/app/app.component.spec.ts" ) )
                                && TransformAppComponentConfig( monitor, newFolderPath.Combine( "src/app/app.config.ts" ) )
                                && TransformAppComponentRoutes( monitor, newFolderPath.Combine( "src/app/app.routes.ts" ) )
                                && CleanupAppComponentHtml( monitor, newFolderPath )
@@ -377,6 +379,36 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         }
                     }
 
+                    static bool TransformAppComponentSpec( IActivityMonitor monitor, NormalizedPath appFilePath )
+                    {
+                        var _ = monitor.OpenInfo( "Adding appConfig providers to TestBed in 'src/app/app.component.spec.ts'." );
+                        var host = new TransformerHost( new TypeScriptLanguage() );
+                        var f = host.TryParseFunction( monitor, """"
+                            create <ts> transformer
+                            begin
+                                ensure import { appConfig } from './app.config';
+                                in after "await TestBed.configureTestingModule"
+                                    in first {^{}}
+                                        insert """
+                                                     // Added by CK.TS.AngularEngine: DI is fully configured and available in tests.
+                                                     providers: appConfig.providers,
+
+                                               """
+                                            before "imports:";
+                            end
+                            """" );
+                        if( f != null )
+                        {
+                            var app = File.ReadAllText( appFilePath );
+                            var code = host.Transform( monitor, app, f );
+                            if( code != null )
+                            {
+                                File.WriteAllText( appFilePath, code.ToString() );
+                            }
+                        }
+                        return true;
+                    }
+
                     static bool TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
                     {
                         var app = File.ReadAllText( configFilePath );
@@ -449,8 +481,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             return false;
                         }
                     }
-
-
 
                     static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
                     {
