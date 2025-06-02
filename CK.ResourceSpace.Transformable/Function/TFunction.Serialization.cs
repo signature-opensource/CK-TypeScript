@@ -16,7 +16,7 @@ sealed partial class TFunction : ICKSlicedSerializable
         _prevFunction = d.ReadNullableObject<TFunction>();
         _transformableImpl.Read( d );
         // This is initialized by reparsing the FunctionSource.Text
-        // in FunctionSource.PostDesrialization.
+        // in FunctionSource.PostDeserialization.
         _function = null!;
     }
 

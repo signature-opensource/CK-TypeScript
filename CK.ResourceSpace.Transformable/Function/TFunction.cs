@@ -53,19 +53,31 @@ sealed partial class TFunction : ITransformable
 
     internal void SetNewTarget( ITransformable t ) => _target = t;
 
+    /// <summary>
+    /// Follows the transform functions until the ultimate item to transform is reached:
+    /// it is a <see cref="TransformableItem"/> or a <see cref="ExternalItem"/>.
+    /// </summary>
+    internal ITransformable? PeeledTarget
+    {
+        get
+        {
+            var peeledTarget = _target;
+            while( peeledTarget is TFunction f2 )
+            {
+                peeledTarget = f2._target;
+            }
+            return peeledTarget;
+        }
+    }
+
     internal void MustApplyChangesToTarget( HashSet<TransformableItem> toBeInstalled )
     {
         // This is only called in Live mode: 
         // ExternalItem are not serialized (their functions are not registered) and
         // on change their source, they are not resolved (as there's no external item resolver).
         // => There is no more ExternalItem, only TFunction and TransformableItem.
-        var peeledTarget = _target;
-        while( peeledTarget is TFunction f2 )
-        {
-            peeledTarget = f2._target;
-        }
-        Throw.DebugAssert( peeledTarget is TransformableItem );
-        toBeInstalled.Add( (TransformableItem)peeledTarget );
+        Throw.DebugAssert( PeeledTarget is TransformableItem );
+        toBeInstalled.Add( (TransformableItem)PeeledTarget );
     }
 
     internal void Update( TransformerFunction transformerFunction, string functionName )

@@ -127,9 +127,9 @@ sealed class LiveState
                 return null;
             }
             var spaceData = d.ReadObject<ResSpaceData>();
-            if( spaceData.LiveStatePath + ResSpace.LiveStateFileName != liveStateFilePath )
+            if( !liveStateFilePath.Equals( spaceData.LiveStatePath + ResSpace.LiveStateFileName, StringComparison.OrdinalIgnoreCase ) )
             {
-                monitor.Error( $"Invalid paths. Expected '{ResSpace.LiveStateFileName}' to be in '{spaceData.LiveStatePath}'." );
+                monitor.Error( $"Invalid paths. LiveState loaded from '{liveStateFilePath}' is from '{spaceData.LiveStatePath}'." );
                 return null;
             }
             bool success = true;
