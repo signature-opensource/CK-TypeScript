@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace CK.Testing;
 
@@ -121,6 +122,18 @@ public static partial class TSTestHelperExtensions
     /// before calling the <see cref="Runner.Run()"/> in order to be able to keep a running context alive while
     /// working on the TypeScript side (fixing, debugging, analyzing, etc.) TypeScript code. 
     /// </para>
+    /// <para>
+    /// When <paramref name="serverAddress"/> is not null the tests are configured to be hosted on the server address:
+    /// the <c>window.location.origin</c> is the server address.
+    /// </para>
+    /// This also modifies the <c>ck-gen/CK/Angular/CKGenAppModule.ts</c> file
+    /// if it exists to inject the server address:
+    /// <list type="number">
+    ///     <item>In the first <c>new AuthService( inject( AXIOS ), { identityEndPoint: 'serverAddress' } )</c>.</item>
+    ///     <item>In the first <c>new HttpCrisEndpoint( inject( AXIOS ), 'serverAddress' )</c>.</item>
+    /// </list>
+    /// This (not really elegant - this package doesn't know CK.NG.AspNet.Auth nor CK.Ng.Cris.AspNet) trick enables
+    /// 'yarn start' when the backend is running to launch a fully operational application.
     /// </summary>
     /// <param name="this">This helper.</param>
     /// <param name="targetProjectPath">
@@ -143,7 +156,51 @@ public static partial class TSTestHelperExtensions
                                                                       out var afterRun,
                                                                       serverAddress,
                                                                       environmentVariables ).ShouldBeTrue();
-        return new Runner( @this, targetProjectPath, environmentVariables, command, afterRun );
+        Action? revert = serverAddress != null
+                            ? SetServerAddressInCKGenAppModule( @this, targetProjectPath, serverAddress )
+                            : null;
+        Action? final = afterRun;
+        if( revert != null )
+        {
+            final = afterRun == null
+                        ? revert
+                        : (() => { revert(); afterRun(); });
+
+        }
+        return new Runner( @this, targetProjectPath, environmentVariables, command, final );
+
+        static Action? SetServerAddressInCKGenAppModule( IMonitorTestHelper @this, NormalizedPath targetProjectPath, string serverAddress )
+        {
+            var ckGenAppModulePath = targetProjectPath.Combine( "ck-gen/CK/Angular/CKGenAppModule.ts" );
+            if( File.Exists( ckGenAppModulePath ) )
+            {
+                bool changed = false;
+                var originText = File.ReadAllText( ckGenAppModulePath );
+                var text = originText;
+                var idx = text.IndexOf( "new AuthService( inject( AXIOS ) )" );
+                if( idx > 0 )
+                {
+                    Throw.DebugAssert( "new AuthService( inject( AXIOS )".Length == 32 );
+                    text = text.Insert( idx + 32, $$""", { identityEndPoint: '{{serverAddress}}' }""" );
+                    @this.Monitor.Info( "Added authentication endpoint to new AuthService in 'CKGenAppModule.ts' file." );
+                    changed = true;
+                }
+                idx = text.IndexOf( "new HttpCrisEndpoint( inject( AXIOS ) )" );
+                if( idx > 0 )
+                {
+                    Throw.DebugAssert( "new HttpCrisEndpoint( inject( AXIOS )".Length == 37 );
+                    text = text.Insert( idx + 37, $$""", '{{serverAddress}}/.cris'""" );
+                    @this.Monitor.Info( "Added cris endpoint to new HttpCrisEndpoint in 'CKGenAppModule.ts' file." );
+                    changed = true;
+                }
+                if( changed )
+                {
+                    File.WriteAllText( ckGenAppModulePath, text );
+                    return () => File.WriteAllText( ckGenAppModulePath, originText );
+                }
+            }
+            return null;
+        }
     }
 
 }
