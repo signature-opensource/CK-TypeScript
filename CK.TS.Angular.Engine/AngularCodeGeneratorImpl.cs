@@ -92,7 +92,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
             _angularCore = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/core", DependencyKind.Dependency );
             _angularRouter = context.Root.LibraryManager.RegisterLibrary( monitor, "@angular/router", DependencyKind.Dependency );
-            _components = new ComponentManager( context );
 
             _ckGenAppModule = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
             _ckGenAppModule.Imports.ImportFromLibrary( _angularCore, "NgModule, Provider, EnvironmentProviders" );
@@ -162,6 +161,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
                 """ );
 
+            _components = new ComponentManager( context, _angularCore );
             context.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
             context.IntegrationContext.OnAfterIntegration += OnAfterIntegration;
             return true;

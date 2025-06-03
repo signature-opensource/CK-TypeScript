@@ -36,7 +36,7 @@ public class AngularTests
                                               typeof( LogoutResultComponent ),
                                               typeof( SomeAuthPackage ),
                                               // CK.Ng.PublicSection
-                                              typeof( PublicSectionPackage ),
+                                              typeof( PublicSectionComponent ),
                                               typeof( PublicFooterComponent ),
                                               typeof( PublicTopbarComponent ),
                                               // CK.Ng.Zorro

@@ -5,6 +5,6 @@ namespace CK.Ng.AspNet.Auth;
 
 [NgRoutedComponent<AppComponent>( HasRoutes = true, Route = "auth" )]
 [Package<TSPackage>]
-public sealed class AuthenticationPageComponent : NgRoutedComponent, INgPublicPageComponent
+public sealed class AuthenticationPageComponent : NgRoutedComponent
 {
 }

@@ -20,7 +20,7 @@ public interface ITransformableFileInstallHook
     /// </summary>
     /// <param name="monitor">Monitor to use.</param>
     /// <param name="item">The item to install.</param>
-    /// <param name="finalText">Final text, potentially transformed.</param>
+    /// <param name="finalText">Final text, potentially transformed and that can be modified by this hook.</param>
     /// <param name="installer">Final installer to use.</param>
     /// <param name="handled">
     /// True to cancel any further installation for the item.

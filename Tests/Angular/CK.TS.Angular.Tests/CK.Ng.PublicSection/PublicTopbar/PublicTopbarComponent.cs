@@ -5,7 +5,7 @@ using CK.TypeScript;
 namespace CK.Ng.PublicSection;
 
 [NgComponent]
-[Package<PublicSectionPackage>]
+[Package<PublicSectionComponent>]
 public sealed class PublicTopbarComponent : NgComponent
 {
 }

@@ -4,6 +4,7 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -13,33 +14,38 @@ sealed class ComponentManager
 {
     readonly Dictionary<Type, NgRoute> _routes;
     readonly TypeScriptContext _context;
-    readonly Dictionary<string, string> _namedComponents;
+    readonly LibraryImport _angularCore;
+    readonly Dictionary<string, ITSDeclaredFileType> _namedComponents;
+    readonly TypeScriptFile _namedComponentsResolver;
+
     NgRouteWithRoutes _firstWithRoutes;
 
-    public ComponentManager( TypeScriptContext context )
+    public ComponentManager( TypeScriptContext context, LibraryImport angularCore )
     {
         _context = context;
+        _angularCore = angularCore;
         _routes = new Dictionary<Type, NgRoute>();
-        _namedComponents = new Dictionary<string, string>();
         _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( AppComponent ), "CK/Angular", null, null );
+        _namedComponents = new Dictionary<string, ITSDeclaredFileType>();
+        _namedComponentsResolver = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/NamedComponentsResolver.ts" );
         _context.AfterCodeGeneration += OnAfterCodeGeneration;
     }
 
     internal bool RegisterComponent( IActivityMonitor monitor, NgComponentAttributeImpl ngComponent, ITSDeclaredFileType tsType )
     {
+        // Named component registration.
         if( typeof( INgNamedComponent ).IsAssignableFrom( ngComponent.DecoratedType ) )
         {
             var name = ngComponent.FileComponentName;
-            var path = tsType.File.Folder.Path + tsType.File.Name;
             if( _namedComponents.TryGetValue( name, out var exists ) )
             {
                 monitor.Error( $"""
                     Named component '{name}' defined by '{ngComponent.DecoratedType:N}'
-                    cannot be mapped to '{path}', it is already mapped to '{exists}'.
+                    cannot be mapped to '{tsType.File.Folder}{tsType.File}', it is already mapped to '{exists.File.Folder}{exists.File}'.
                     """ );
                 return false;
             }
-            _namedComponents.Add( name, path );
+            _namedComponents.Add( name, tsType );
         }
         // Routes handling.
         var asRoutedComponent = ngComponent as NgRoutedComponentAttributeImpl;
@@ -67,8 +73,41 @@ sealed class ComponentManager
 
     void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e )
     {
+        GenerateNamedComponentsResolver();
+        GenerateRoutes( e.Monitor );
+    }
+
+    void GenerateNamedComponentsResolver()
+    {
+        _namedComponentsResolver.Imports.ImportFromLibrary( _angularCore, "Type" );
+        var b = _namedComponentsResolver.Body;
+        b.Append( """
+            export function resolveNamedComponentTypeAsync( name: string ): Promise<Type<unknown>> | undefined {
+              switch( name ) {
+
+            """ );
+
+        foreach( var (name, type) in _namedComponents )
+        {
+            var path = _namedComponentsResolver.Folder.GetRelativePathTo( type.File.Folder )
+                                                      .AppendPart( Path.GetFileNameWithoutExtension( type.File.Name ) );
+            b.Append( "    case " ).AppendSourceString( name )
+                .Append( ": return import( " ).AppendSourceString( path )
+                .Append( " ).then( c => c." )
+                .Append( type.TypeName ).Append( " );" ).NewLine();
+        }
+        b.Append( """
+                    }
+                    return;
+                  }
+                  """ );
+    }
+
+    void GenerateRoutes( IActivityMonitor monitor )
+    {
         Throw.DebugAssert( _routes[typeof( AppComponent )].IsAppComponent );
         Throw.DebugAssert( _routes.Values.Count( r => r.IsAppComponent ) == 1 );
+
         Throw.DebugAssert( "We can reach the ResSpaceData...", _context.ResSpaceData != null );
 
         // This is why we need the SpaceData here: the routed target is a Type
@@ -82,7 +121,7 @@ sealed class ComponentManager
         {
             if( route.IsRouted )
             {
-                success &= route.BindToTarget( e.Monitor, _routes, typeMapper );
+                success &= route.BindToTarget( monitor, _routes, typeMapper );
             }
         }
         if( success )
@@ -93,11 +132,11 @@ sealed class ComponentManager
             do
             {
                 if( !r.IsAppComponent ) r.Write( bLog, 1 );
-                r.GenerateRoutes( e.Monitor, 0 );
+                r.GenerateRoutes( monitor, 0 );
                 r = r._nextWithRoutes;
             }
             while( r != null );
-            e.Monitor.Info( bLog.ToString() );
+            monitor.Info( bLog.ToString() );
         }
     }
 }

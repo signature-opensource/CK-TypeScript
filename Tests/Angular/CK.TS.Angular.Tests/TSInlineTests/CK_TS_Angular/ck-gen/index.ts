@@ -8,4 +8,5 @@ export * from './CK/Ng/AspNet/Auth/logout-result/logout-result.component';
 export * from './CK/Ng/AspNet/Auth/password-lost/password-lost.component';
 export * from './CK/Ng/PublicPage/public-page/public-page.component';
 export * from './CK/Ng/PublicSection/public-footer/public-footer.component';
+export * from './CK/Ng/PublicSection/public-section/public-section.component';
 export * from './CK/Ng/PublicSection/public-topbar/public-topbar.component';
