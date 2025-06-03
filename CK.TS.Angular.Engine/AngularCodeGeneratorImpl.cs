@@ -725,6 +725,42 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return TypeScriptContext.DeleteFolder( monitor, newFolderPath )
                                && TypeScriptContext.DeleteFolder( monitor, tempFolderPath );
                     }
+
+                    static bool AddImportAndConclude( IActivityMonitor monitor,
+                                                        NormalizedPath filePath,
+                                                        bool success,
+                                                        ref string app,
+                                                        string importStatement )
+                    {
+                        app = app.ReplaceLineEndings();
+                        var lines = app.Split( Environment.NewLine ).ToList();
+                        success &= AddImportStatement( monitor, lines, importStatement );
+                        if( !success )
+                        {
+                            monitor.CloseGroup( "Failed to transform file. Leaving it as-is." );
+                        }
+                        else
+                        {
+                            monitor.CloseGroup( "File has been transformed." );
+                            File.WriteAllLines( filePath, lines );
+                        }
+                        return success;
+
+                        static bool AddImportStatement( IActivityMonitor monitor, List<string> lines, string importStatement )
+                        {
+                            int idx = lines.FindLastIndex( l => l.StartsWith( "import " ) );
+                            if( idx < 0 )
+                            {
+                                monitor.Warn( "Unable to find an 'import ...' line." );
+                                return false;
+                            }
+                            else
+                            {
+                                lines[idx] = lines[idx] + Environment.NewLine + importStatement;
+                            }
+                            return true;
+                        }
+                    }
                 }
 
             }
@@ -768,42 +804,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         monitor.Info( "Added ck-gen/ts-assets to angular.json assets." );
                     }
                 }
-            }
-        }
-
-        static bool AddImportAndConclude( IActivityMonitor monitor,
-                                            NormalizedPath filePath,
-                                            bool success,
-                                            ref string app,
-                                            string importStatement )
-        {
-            app = app.ReplaceLineEndings();
-            var lines = app.Split( Environment.NewLine ).ToList();
-            success &= AddImportStatement( monitor, lines, importStatement );
-            if( !success )
-            {
-                monitor.CloseGroup( "Failed to transform file. Leaving it as-is." );
-            }
-            else
-            {
-                monitor.CloseGroup( "File has been transformed." );
-                File.WriteAllLines( filePath, lines );
-            }
-            return success;
-
-            static bool AddImportStatement( IActivityMonitor monitor, List<string> lines, string importStatement )
-            {
-                int idx = lines.FindLastIndex( l => l.StartsWith( "import " ) );
-                if( idx < 0 )
-                {
-                    monitor.Warn( "Unable to find an 'import ...' line." );
-                    return false;
-                }
-                else
-                {
-                    lines[idx] = lines[idx] + Environment.NewLine + importStatement;
-                }
-                return true;
             }
         }
 

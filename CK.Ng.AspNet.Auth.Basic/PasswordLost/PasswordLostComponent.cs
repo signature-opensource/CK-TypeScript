@@ -1,8 +1,7 @@
 using CK.Core;
-using CK.Ng.AspNet.Auth.AuthenticationPage;
 using CK.TS.Angular;
 
-namespace CK.Ng.AspNet.Auth.Basic.AuthenticationPage;
+namespace CK.Ng.AspNet.Auth.Basic;
 
 [NgRoutedComponent<AuthenticationPageComponent>( RegistrationMode = RouteRegistrationMode.Lazy )]
 [Package<TSPackage>]

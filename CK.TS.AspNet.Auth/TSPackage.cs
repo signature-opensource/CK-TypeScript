@@ -8,7 +8,7 @@ namespace CK.AspNet.Auth;
 /// </summary>
 [TypeScriptPackage]
 [TypeScriptImportLibrary( "axios", "^1.7.7", DependencyKind.PeerDependency, ForceUse = true )]
-[RegisterTypeScriptType( typeof( AuthLevel ) )]
+[RegisterTypeScriptType( typeof( AuthLevel ), Folder = "CK/AspNet/Auth" )]
 public class TSPackage : TypeScriptPackage
 {
 }

@@ -1,5 +1,5 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
-import { AuthLevel } from '@local/ck-gen/CK/Auth/AuthLevel';
+import { AuthLevel } from './AuthLevel';
 
 import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
 import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';

@@ -13,18 +13,35 @@ sealed class ComponentManager
 {
     readonly Dictionary<Type, NgRoute> _routes;
     readonly TypeScriptContext _context;
+    readonly Dictionary<string, string> _namedComponents;
     NgRouteWithRoutes _firstWithRoutes;
 
     public ComponentManager( TypeScriptContext context )
     {
         _context = context;
         _routes = new Dictionary<Type, NgRoute>();
+        _namedComponents = new Dictionary<string, string>();
         _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( AppComponent ), "CK/Angular", null, null );
         _context.AfterCodeGeneration += OnAfterCodeGeneration;
     }
 
     internal bool RegisterComponent( IActivityMonitor monitor, NgComponentAttributeImpl ngComponent, ITSDeclaredFileType tsType )
     {
+        if( typeof( INgNamedComponent ).IsAssignableFrom( ngComponent.DecoratedType ) )
+        {
+            var name = ngComponent.FileComponentName;
+            var path = tsType.File.Folder.Path + tsType.File.Name;
+            if( _namedComponents.TryGetValue( name, out var exists ) )
+            {
+                monitor.Error( $"""
+                    Named component '{name}' defined by '{ngComponent.DecoratedType:N}'
+                    cannot be mapped to '{path}', it is already mapped to '{exists}'.
+                    """ );
+                return false;
+            }
+            _namedComponents.Add( name, path );
+        }
+        // Routes handling.
         var asRoutedComponent = ngComponent as NgRoutedComponentAttributeImpl;
         if( ngComponent.Attribute.HasRoutes )
         {
@@ -71,7 +88,7 @@ sealed class ComponentManager
         if( success )
         {
             StringBuilder bLog = new StringBuilder( "Generating Angular static Routes:" );
-            bLog.AppendLine().Append( "[AppComponent]" ).AppendLine();
+            bLog.AppendLine().Append( "-> AppComponent" ).AppendLine();
             var r = _firstWithRoutes;
             do
             {
