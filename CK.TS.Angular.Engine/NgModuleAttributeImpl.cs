@@ -57,8 +57,7 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
             return false;
         }
         var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
-        Throw.DebugAssert( file is ResourceTypeScriptFile );
-        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
+        ITSDeclaredFileType tsType = file.DeclareType( ModuleName );
 
         return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().RegisterModule( monitor, this, tsType );

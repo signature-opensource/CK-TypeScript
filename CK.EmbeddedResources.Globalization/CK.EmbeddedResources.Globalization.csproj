@@ -6,6 +6,6 @@
     <PackageReference Include="CK.Globalization" Version="2.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.EmbeddedResources" Version="0.26.1" />
+    <PackageReference Include="CK.EmbeddedResources" Version="0.26.2--0002-develop" />
   </ItemGroup>
 </Project>

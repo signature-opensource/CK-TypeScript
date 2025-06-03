@@ -41,17 +41,40 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         // (resource containers have no notion of "target folder").
         // So we use the TypeScript CodeGen model for this: we transfer the resource to the code by
         // removing/hiding the resource from its container and registering the resource as a published one.
-        if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out var resource ) )
+        //
+        // Doing this has an impact: the resource moved to the <App> code becomes reachable from any
+        // package.
+        // To minimize this, we hide the resource from its container and publish it from the code container
+        // only if the attribute specifies a TargetFolder.
+        // When no target folder is specified, we only register its TS type names and the resource "stays"
+        // in its container.
+        //
+        bool isPublishedByCodeContainer = Attribute.TargetFolder != null;
+        EmbeddedResources.ResourceLocator resource;
+        NormalizedPath targetPath;
+        if( isPublishedByCodeContainer )
         {
-            return false;
+            if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out resource ) )
+            {
+                return false;
+            }
+            targetPath = Attribute.TargetFolder;
+            targetPath = targetPath.ResolveDots();
+            targetPath = targetPath.Combine( Path.GetFileName( Attribute.ResourcePath ) );
         }
-        NormalizedPath targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
-        targetPath = targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
-        var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath, publishedResource: true );
+        else
+        {
+            if( !d.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out resource, d.AfterResources ) )
+            {
+                return false;
+            }
+            targetPath = tsPackage.TypeScriptFolder.Combine( Attribute.ResourcePath );
+        }
+        var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath, isPublishedByCodeContainer );
         foreach( var tsType in Attribute.TypeNames )
         {
             if( string.IsNullOrWhiteSpace( tsType ) ) continue;
-            Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( tsType );
+            file.DeclareType( tsType );
         }
         return true;
     }
