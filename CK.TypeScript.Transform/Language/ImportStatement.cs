@@ -74,6 +74,8 @@ public sealed class ImportStatement : SourceSpan, IImportLine
 
     internal void AddNamedImport( SourceCodeEditor editor, ImportLine.NamedImport named ) => _line.AddNamedImport( editor, Span, named );
 
+    internal void RemoveNamedImport( SourceCodeEditor editor, int index ) => _line.RemoveNamedImport( editor, Span, index );
+
     internal static ImportStatement? Match( ref TokenizerHead head, Token importToken )
     {
         Throw.DebugAssert( head.LastToken == importToken && importToken.TextEquals( "import" ) );

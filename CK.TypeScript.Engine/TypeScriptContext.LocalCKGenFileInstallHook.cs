@@ -7,7 +7,6 @@ using System.IO;
 
 namespace CK.Setup;
 
-
 public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
 {
     sealed class LocalCKGenFileInstallHook : TransformableFileInstallHook
@@ -38,7 +37,15 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
                 && item.LanguageIndex == _tsLanguage.Index
                 && finalText.Contains( "'@local/ck-gen'" ) )
             {
+                // One alternative here:
+                // - We can use a parsing and EnsureImport API.
+                // - Or we use a brutal regex approach, considering that
+                //   only named imports can be done from '@local/ck-gen' barrel
+                //   (no default, no namaspace, no side-effect only) but there may be
+                //   type only imports.
+                //
 
+                
             }
             return true;
         }

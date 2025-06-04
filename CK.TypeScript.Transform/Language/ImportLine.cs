@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Text;
+using System.Xml.Linq;
 
 namespace CK.TypeScript.Transform;
 
@@ -187,6 +188,26 @@ public sealed class ImportLine : IImportLine
             }
             using var e = editor.OpenGlobalEditor();
             e.Replace( tokenIndex, 1, b.ToArray() );
+        }
+    }
+
+    internal void RemoveNamedImport( SourceCodeEditor editor, TokenSpan span, int index )
+    {
+        Throw.DebugAssert( index >= 0 && index < NamedImports.Count );
+        if( span.Length == 1 )
+        {
+            NamedImports.RemoveAt( index );
+            MonoTokenUpdate( editor, span );
+        }
+        else
+        {
+            int tokenIndex = GetTokenIndexOfNamedIndex( span, index );
+            int removeCount = editor.Code.Tokens[tokenIndex + 1].TokenType is TokenType.Comma
+                                ? 2
+                                : 1;
+            NamedImports.RemoveAt( index );
+            using var e = editor.OpenGlobalEditor();
+            e.RemoveRange( tokenIndex, removeCount );
         }
     }
 
