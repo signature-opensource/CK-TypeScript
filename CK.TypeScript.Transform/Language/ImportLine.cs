@@ -2,7 +2,9 @@ using CK.Core;
 using CK.Transform.Core;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Text;
+using System.Xml.Linq;
 
 namespace CK.TypeScript.Transform;
 
@@ -84,6 +86,9 @@ public sealed class ImportLine : IImportLine
     /// Gets or sets the import path. Defaults to empty.
     /// </summary>
     public string ImportPath { get; set; }
+
+    /// <inheritdoc />
+    public string ToStringImport() => ToString();
 
     IReadOnlyList<NamedImport> IImportLine.NamedImports => NamedImports;
 
@@ -186,6 +191,25 @@ public sealed class ImportLine : IImportLine
         }
     }
 
+    internal void RemoveNamedImport( SourceCodeEditor editor, TokenSpan span, int index )
+    {
+        Throw.DebugAssert( index >= 0 && index < NamedImports.Count );
+        if( span.Length == 1 )
+        {
+            NamedImports.RemoveAt( index );
+            MonoTokenUpdate( editor, span );
+        }
+        else
+        {
+            int tokenIndex = GetTokenIndexOfNamedIndex( span, index );
+            int removeCount = (NamedImports[index].IsAliased ? 3 : 1)   // "A as B" or "A"
+                              + (index < NamedImports.Count - 1 ? 1 : 0); // Trailing ,
+            NamedImports.RemoveAt( index );
+            using var e = editor.OpenGlobalEditor();
+            e.RemoveRange( tokenIndex, removeCount );
+        }
+    }
+
     int GetTokenIndexOfNamedIndex( TokenSpan span, int index )
     {
         int offset = span.Beg + 1; // import
@@ -199,11 +223,11 @@ public sealed class ImportLine : IImportLine
             int idx = 0;
             foreach( var named in NamedImports )
             {
+                if( idx > 0 ) ++offset; // ,
                 if( idx == index ) return offset;
-                if( idx++ > 0 ) ++offset; // ,
                 if( named.TypeOnly ) ++offset;
                 offset += named.IsAliased ? 3 : 1; // "A as B" or "A"
-                if( idx == NamedImports.Count ) break;
+                ++idx;
             }
         }
         return offset;

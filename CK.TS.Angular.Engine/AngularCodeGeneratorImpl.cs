@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Less.Transform;
 using CK.Setup;
 using CK.Transform.Core;
 using CK.TypeScript.CodeGen;
@@ -13,7 +12,6 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using CK.TypeScript.Transform;
 
 namespace CK.TS.Angular.Engine;

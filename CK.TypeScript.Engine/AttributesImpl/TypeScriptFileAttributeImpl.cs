@@ -1,11 +1,9 @@
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.Setup;
-using CK.TypeScript.CodeGen;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 
 namespace CK.TypeScript.Engine;
 

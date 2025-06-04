@@ -114,10 +114,24 @@ public abstract partial class SourceSpan
         return null;
     }
 
+    /// <summary>
+    /// Defines <see cref="Detach(DetachMode)"/> behavior.
+    /// </summary>
     public enum DetachMode
     {
+        /// <summary>
+        /// The spans of the detached span are detached (removed from the span).
+        /// </summary>
         ClearChildren,
+
+        /// <summary>
+        /// The span's children (if any) are attached to the span's parent.
+        /// </summary>
         LiftChilderen,
+
+        /// <summary>
+        /// The span's children are kept in the detached <see cref="Children"/>.
+        /// </summary>
         KeepChildren
     }
 

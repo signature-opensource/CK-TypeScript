@@ -5,6 +5,7 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TypeScript.Transform.Tests;
 
+
 [TestFixture]
 public class EnsureImportTests
 {
@@ -248,6 +249,110 @@ public class EnsureImportTests
         """
     )]
     public void merging_imports( string nTest, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new TypeScriptLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
+        sourceCode.ToString().ShouldBe( result );
+    }
+
+    [TestCase( "n°1",
+    """
+        import { Some } from '@local/ck-gen';
+        """,
+        """"
+        create <ts> transformer
+        begin
+            ensure import { Some } from '@local/ck-gen/Better';
+        end
+        """",
+        """
+        import { Some } from '@local/ck-gen/Better';
+
+        """
+    )]
+    [TestCase( "n°2",
+    """
+        import { Some, Other, Orphan } from '@local/ck-gen';
+
+        some code;
+        """,
+        """"
+        create <ts> transformer
+        begin
+            ensure import { Some } from '@local/ck-gen/Better';
+            ensure import { Other } from '@local/ck-gen/Better';
+        end
+        """",
+        """
+        import { Orphan } from '@local/ck-gen';
+        import { Some, Other } from '@local/ck-gen/Better';
+        
+        some code;
+        """
+    )]
+    [TestCase( "n°3",
+    """
+        import { Some, Other, Orphan } from '@local/ck-gen';
+
+        some other code;
+        """,
+        """"
+        create <ts> transformer
+        begin
+            ensure import { Some } from '@local/ck-gen/Better';
+            ensure import { Other } from '@local/ck-gen/Better';
+        end
+        """",
+        """
+        import { Orphan } from '@local/ck-gen';
+        import { Some, Other } from '@local/ck-gen/Better';
+        
+        some other code;
+        """
+    )]
+    [TestCase( "n°4",
+    """
+        import { Some, Other } from '@local/ck-gen';
+        import { Another as X, AndY } from '@local/ck-gen';
+        """,
+        """"
+        create <ts> transformer
+        begin
+            ensure import { Some } from '@local/ck-gen/Better';
+            ensure import { Other } from '@local/ck-gen/AnotherBetter';
+            ensure import { Another as X } from '@local/ck-gen/AnotherBetter';
+            ensure import { AndY } from '@local/ck-gen/Better';
+        end
+        """",
+        """
+        import { Some, AndY } from '@local/ck-gen/Better';
+        import { Other, Another as X } from '@local/ck-gen/AnotherBetter';
+        
+        """
+    )]
+    [TestCase( "n°5",
+    """
+        import { Before, Some, Other, After } from './Up/Folder';
+        import { Before2, Another as X, AndY, After2 } from './Up/Folder';
+
+        """,
+        """"
+        create <ts> transformer
+        begin
+            ensure import { Some, AndY } from './Up/Folder/Better';
+            ensure import { Other, Another as X } from './Up/Folder/AnotherBetter';
+        end
+        """",
+        """
+        import { Before, After } from './Up/Folder';
+        import { Before2, After2 } from './Up/Folder';
+        import { Some, AndY } from './Up/Folder/Better';
+        import { Other, Another as X } from './Up/Folder/AnotherBetter';
+        
+        """
+    )]
+    public void allowing_more_precise_import_path( string nTest, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
         var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();

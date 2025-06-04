@@ -26,7 +26,6 @@ public sealed partial class TypeScriptContext // Less styles support.
         _appStylesImport.Enqueue( new EnsureImportLine( ImportKeyword.None, ImportKeyword.None, importPath ), order );
     }
 
-
     static bool IsPrimaryLessFile( ITransformInstallableItem item )
     {
         Throw.DebugAssert( "styles".Length == 6 );

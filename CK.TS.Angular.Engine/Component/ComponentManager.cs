@@ -3,7 +3,6 @@ using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -89,11 +88,9 @@ sealed class ComponentManager
 
         foreach( var (name, type) in _namedComponents )
         {
-            var path = _namedComponentsResolver.Folder.GetRelativePathTo( type.File.Folder )
-                                                      .AppendPart( Path.GetFileNameWithoutExtension( type.File.Name ) );
             b.Append( "    case " ).AppendSourceString( name )
-                .Append( ": return import( " ).AppendSourceString( path )
-                .Append( " ).then( c => c." )
+                .Append( ": return import( '../../" ).AppendSourceString( type.ImportPath )
+                .Append( "' ).then( c => c." )
                 .Append( type.TypeName ).Append( " );" ).NewLine();
         }
         b.Append( """

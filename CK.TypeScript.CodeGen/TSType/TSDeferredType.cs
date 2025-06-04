@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.IO;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -13,6 +14,7 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
     readonly ITSKeyedCodePart _part;
     readonly Type _type;
     readonly TypeScriptFile _file;
+    string? _importPath;
     string? _defaultValueSource;
     readonly bool _hasError;
 
@@ -46,6 +48,8 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
     public override TypeScriptFile File => _file;
 
     public override string? DefaultValueSource => _defaultValueSource;
+
+    public string ImportPath => _importPath ??= _file.Folder.Path + Path.GetFileNameWithoutExtension( _file.Name );
 
     internal void SetDefaultValueSource( string? v ) => _defaultValueSource = v;
 
