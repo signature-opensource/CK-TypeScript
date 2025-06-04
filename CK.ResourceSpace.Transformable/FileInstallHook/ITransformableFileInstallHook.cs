@@ -31,7 +31,7 @@ public interface ITransformableFileInstallHook
     /// </returns>
     bool HandleInstall( IActivityMonitor monitor,
                         ITransformInstallableItem item,
-                        string finalText,
+                        ref string finalText,
                         IResourceSpaceItemInstaller installer,
                         out bool handled );
 

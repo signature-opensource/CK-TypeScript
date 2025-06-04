@@ -94,7 +94,7 @@ public sealed partial class TypeScriptContext // Less styles support.
 
         public override bool HandleInstall( IActivityMonitor monitor,
                                             ITransformInstallableItem item,
-                                            string finalText,
+                                            ref string finalText,
                                             IResourceSpaceItemInstaller installer,
                                             out bool handled )
         {
@@ -302,7 +302,7 @@ public sealed partial class TypeScriptContext // Less styles support.
 
             public bool HandleInstall( IActivityMonitor monitor,
                                        ITransformInstallableItem item,
-                                       string finalText,
+                                       ref string finalText,
                                        IResourceSpaceItemInstaller installer,
                                        out bool handled )
             {

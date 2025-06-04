@@ -14,11 +14,13 @@ public sealed partial class TypeScriptFolder
         readonly ITypeScriptPublishTarget _target;
         ReadOnlySpan<char> _path;
         public readonly StringBuilder BarrelStringBuilder;
+        public readonly TSTypeManager TSTypes;
 
-        internal PublishContext( Span<char> pathBuffer, ITypeScriptPublishTarget target )
+        internal PublishContext( Span<char> pathBuffer, ITypeScriptPublishTarget target, TSTypeManager tsTypes )
         {
             _pathBuffer = pathBuffer;
             _target = target;
+            TSTypes = tsTypes;
             BarrelStringBuilder = new StringBuilder();
         }
 
@@ -64,12 +66,12 @@ public sealed partial class TypeScriptFolder
                     {
                         hasBarrel = true;
                         monitor.Trace( "Publishing existing 'index.ts' barrel file." );
-                        target.Publish( cFile.Name, cFile.GetCurrentText() );
+                        target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
                     }
                     else if( cFile is TypeScriptFile )
                     {
                         monitor.Trace( $"-> '{cFile.Name}'." );
-                        target.Publish( cFile.Name, cFile.GetCurrentText() );
+                        target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
                     }
                     else
                     {
@@ -77,7 +79,7 @@ public sealed partial class TypeScriptFolder
                         if( ((ResourceTypeScriptFile)cFile).IsPublishedResource )
                         {
                             monitor.Trace( $"-> '{cFile.Name}' (resource)." );
-                            target.Publish( cFile.Name, cFile.GetCurrentText() );
+                            target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
                         }
                         else
                         {

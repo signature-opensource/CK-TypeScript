@@ -89,7 +89,7 @@ readonly struct InstallHooksHelper
         bool handled = false;
         foreach( var h in _hooks )
         {
-            success = h.HandleInstall( monitor, item, text, _installer, out handled );
+            success = h.HandleInstall( monitor, item, ref text, _installer, out handled );
             if( !success || handled )
             {
                 break;

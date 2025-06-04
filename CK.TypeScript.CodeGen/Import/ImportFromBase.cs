@@ -34,6 +34,10 @@ abstract class ImportFromBase : ITSImportLine
         {
             if( n.StartsWith( "default " ) )
             {
+                if( FromLocalCkGen )
+                {
+                    Throw.InvalidOperationException( $"'@local/ck-gen' barrel doesn't support default import. Symbols: '{symbolNames}'." );
+                }
                 var newDef = n.Substring( 8 );
                 SetDefaultImportSymbol( newDef );
             }
@@ -100,18 +104,22 @@ abstract class ImportFromBase : ITSImportLine
         }
         if( hasNames )
         {
-            b.Builder.Append( "{ " );
-            hasNames = false;
-            foreach( var n in _importedNames )
-            {
-                if( hasNames ) b.Builder.Append( ", " );
-                hasNames = true;
-                if( n.IsAliased ) b.Builder.Append( n.ExportedName ).Append( " as " ).Append( n.ImportedName );
-                else b.Builder.Append( n.ExportedName );
-            }
-            b.Builder.Append( " }" );
+            WriteImportedNamesInBraces( b, _importedNames );
         }
         return true;
     }
 
+    protected static void WriteImportedNamesInBraces( SmarterStringBuilder b, IEnumerable<TSImportedName> importedNames )
+    {
+        bool atLeastOne = false;
+        b.Builder.Append( "{ " );
+        foreach( var n in importedNames )
+        {
+            if( atLeastOne ) b.Builder.Append( ", " );
+            atLeastOne = true;
+            b.Builder.Append( n.ExportedName );
+            if( n.IsAliased ) b.Builder.Append( " as " ).Append( n.ImportedName );
+        }
+        b.Builder.Append( " }" );
+    }
 }
