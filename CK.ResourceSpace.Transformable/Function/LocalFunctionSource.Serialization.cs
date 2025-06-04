@@ -1,5 +1,4 @@
 using CK.BinarySerialization;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 

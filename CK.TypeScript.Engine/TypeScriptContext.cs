@@ -8,8 +8,6 @@ using CK.Transform.Core;
 using CK.TypeScript.Transform;
 using CK.Html.Transform;
 using CK.Less.Transform;
-using System.Xml.Linq;
-using System.Runtime.InteropServices;
 
 namespace CK.Setup;
 
@@ -353,7 +351,8 @@ public sealed partial class TypeScriptContext
                                                                new LessStylesFileInstallHook( _integrationContext != null
                                                                                                     ? _integrationContext.SrcFolderPath
                                                                                                     : default,
-                                                                                              _appStylesImport ) );
+                                                                                              _appStylesImport ),
+                                                               new LocalCKGenFileInstallHook( _tsRoot.TSTypes ) );
 
         success &= spaceBuilder.RegisterHandler( monitor, transformableFiles );
 

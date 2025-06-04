@@ -4,7 +4,6 @@ using CK.TypeScript;
 using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Runtime.CompilerServices;
 using CK.EmbeddedResources;
 
 namespace CK.TS.Angular.Engine;

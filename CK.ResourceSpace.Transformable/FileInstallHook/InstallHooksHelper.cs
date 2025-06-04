@@ -1,5 +1,4 @@
 using CK.Transform.Core;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 

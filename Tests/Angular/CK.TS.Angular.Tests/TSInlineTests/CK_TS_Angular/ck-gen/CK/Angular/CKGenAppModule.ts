@@ -1,6 +1,6 @@
 import { NgModule, Provider, EnvironmentProviders } from '@angular/core';
 import { DemoNgModule } from '../MiscDemo/demo-ng/demo-ng.module';
-import { SomeAuthService } from '@local/ck-gen';
+import { SomeAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/SomeAuthService';
 
 
 export type SourcedProvider = (EnvironmentProviders | Provider) & {source: string};
