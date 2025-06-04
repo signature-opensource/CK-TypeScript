@@ -3,7 +3,7 @@ using CK.TS.Angular;
 
 namespace CK.Ng.AspNet.Auth;
 
-[NgRoutedComponent<AuthenticationPageComponent>]
+[NgRoutedComponent<AuthenticationPageComponent>( Route = "" )]
 [Package<TSPackage>]
 public sealed class LoginComponent : NgRoutedComponent
 {

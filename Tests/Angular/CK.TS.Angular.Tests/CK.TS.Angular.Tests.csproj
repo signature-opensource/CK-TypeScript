@@ -21,6 +21,7 @@
         <Folder Include="CK.Ng.AspNet.Auth\PasswordLost\Res[After]\" />
         <Folder Include="CK.Ng.PublicSection\Res\SomeFolder\" />
         <Folder Include="CK.Ng.Zorro\Res\" />
+        <Folder Include="TSInlineTests\" />
     </ItemGroup>
     
 </Project>

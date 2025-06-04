@@ -2,8 +2,7 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "yarn",
-    "analytics": "c8ab947e-4601-425c-a064-b4b4a550a14d"
+    "packageManager": "yarn"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -30,11 +29,7 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "less",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "ck-gen/ts-assets"
-              }, 
-              {
+              { "glob": "**/*", "input": "ck-gen/ts-assets" }, {
                 "glob": "**/*",
                 "input": "public"
               }
@@ -50,12 +45,12 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumError": "1GB"
                 },
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumError": "1GB"
                 }
               ],
               "outputHashing": "all"

@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { TranslateModule } from '@ngx-translate/core';
-import { Router, RouterLink } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faEnvelope, faEye, faEyeSlash, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import { ResponsiveDirective, AuthLevel, AuthService, CKNotificationService } from '@local/ck-gen';
+import { faEye, faEyeSlash, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
+import { AuthService } from '@local/ck-gen/CK/AspNet/Auth';
+import { CKNotificationService } from '@local/ck-gen/CK/Ng/Zorro';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
@@ -20,7 +20,6 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    RouterLink,
     TranslateModule,
     FontAwesomeModule,
     NzButtonModule,
@@ -35,17 +34,16 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 export class BasicLoginFormComponent {
   readonly #authService = inject( AuthService );
   readonly #formBuilder = inject( FormBuilder );
-  readonly #router = inject( Router );
   readonly #notifService = inject( CKNotificationService );
+  readonly #translateService = inject( TranslateService );
 
   protected eyeIcon = faEye;
   protected eyeSlashIcon = faEyeSlash;
-  protected emailIcon = faEnvelope;
   protected passwordIcon = faLock;
-  protected guestIcon = faUser;
+  protected userIcon = faUser;
 
   loginForm: FormGroup = this.#formBuilder.group( {
-    userName: new FormControl( this.#authService.authenticationInfo.user.userName, { nonNullable: true, validators: [Validators.required, Validators.email] } ),
+    userName: new FormControl( this.#authService.authenticationInfo.unsafeUser.userName, { nonNullable: true, validators: [Validators.required] } ),
     password: new FormControl( '', { nonNullable: true, validators: [Validators.required] } ),
     rememberMe: new FormControl( this.#authService.rememberMe, { nonNullable: true } )
   } );
@@ -59,10 +57,8 @@ export class BasicLoginFormComponent {
         this.loginForm.get( 'rememberMe' )!.value
       );
 
-      if ( !this.#authService.lastResult.error ) {
-        this.#router.navigate( [''] );
-      } else {
-        this.#notifService.displaySimpleMessage( 'error', this.#authService.lastResult.error.errorId );
+      if ( this.#authService.lastResult.error ) {
+        this.#notifService.displaySimpleMessage( 'error', this.#translateService.instant( this.#authService.lastResult.error.errorId ) );
       }
     }
   }

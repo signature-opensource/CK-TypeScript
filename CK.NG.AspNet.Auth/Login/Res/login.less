@@ -1,4 +1,4 @@
-.ck-login {
+ck-login {
     width: 100%;
     height: 100%;
     padding: @ck-login-padding;
@@ -29,4 +29,35 @@
         font-size: @subtitle-font-size;
         color: @light-grey;
     }
+}
+
+.ck-login-providers {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: @ck-login-form-width;
+
+    > * {
+        margin-top: 2%;
+    }
+}
+
+.ck-login-provider-btn {
+    width: @ck-login-form-width;
+    display: flex;
+    align-items: center;
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 4px;
+}
+
+.ck-login-provider-logo {
+    max-height: 32px;
+    max-width: 32px;
+    width: 32px;
+    height: 32px;
+    flex: 1;
+}
+
+.ck-login-provider {
+    flex: 9;
 }

@@ -19,6 +19,8 @@ namespace CK.Ng.Zorro;
 
 [NgProviderImport( "fr_FR, provideNzI18n", LibraryName = "ng-zorro-antd/i18n" )]
 [NgProvider( "provideNzI18n( fr_FR )" )]
+[NgProviderImport( "provideAnimationsAsync", LibraryName = "@angular/platform-browser/animations/async" )]
+[NgProvider( "provideAnimationsAsync()" )]
 
 [RegisterTypeScriptType( typeof( SimpleUserMessage ) )]
 [RegisterTypeScriptType( typeof( UserMessageLevel ) )]
