@@ -190,10 +190,26 @@ public sealed partial class SourceCodeEditor : IDisposable
     public void AddSourceSpan( SourceSpan newOne ) => _code._spans.Add( newOne );
 
     /// <summary>
-    /// 
+    /// Removes a source span with its tokens. The <paramref name="span"/>
+    /// is detached using <see cref="SourceSpan.DetachMode.KeepChildren"/>.
     /// </summary>
-    /// <param name="span"></param>
-    /// <param name="second"></param>
+    /// <param name="span">The span to remove from the code.</param>
+    public void RemoveSpan( SourceSpan span )
+    {
+        Throw.CheckArgument( !span.IsDetached && span.GetRoot() == _code.Spans );
+        // Removes the tokens.
+        _tokens.RemoveRange( span.Span.Beg, span.Span.Length );
+        // Detaches the span and its children.
+        span.Detach( SourceSpan.DetachMode.KeepChildren );
+        // Adjusts, the other spans positions.
+        _code._spans.OnRemoveTokens( span.Span );
+    }
+
+    /// <summary>
+    /// Moves a source span and its token before another one.
+    /// </summary>
+    /// <param name="span">The span to move.</param>
+    /// <param name="newNext">The span before which <paramref name="span"/> must be moved.</param>
     public void MoveSpanBefore( SourceSpan span, SourceSpan newNext )
     {
         Throw.CheckArgument( span != newNext
