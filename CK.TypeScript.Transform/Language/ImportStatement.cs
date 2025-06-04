@@ -65,6 +65,9 @@ public sealed class ImportStatement : SourceSpan, IImportLine
     /// <inheritdoc />
     public string ImportPath => _line.ImportPath;
 
+    /// <inheritdoc />
+    public string ToStringImport() => _line.ToStringImport();
+
     internal void RemoveTypeOnly( SourceCodeEditor editor ) => _line.RemoveTypeOnly( editor, Span );
 
     internal void SetNamedImportType( SourceCodeEditor editor, int index, bool set ) => _line.SetNamedImportType( editor, Span, index, set );

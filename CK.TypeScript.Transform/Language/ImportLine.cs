@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Text;
 
 namespace CK.TypeScript.Transform;
@@ -84,6 +85,9 @@ public sealed class ImportLine : IImportLine
     /// Gets or sets the import path. Defaults to empty.
     /// </summary>
     public string ImportPath { get; set; }
+
+    /// <inheritdoc />
+    public string ToStringImport() => ToString();
 
     IReadOnlyList<NamedImport> IImportLine.NamedImports => NamedImports;
 

@@ -7,7 +7,6 @@ using System.Linq;
 
 namespace CK.TypeScript.Transform;
 
-
 /// <summary>
 /// Ensure import statement.
 /// </summary>
@@ -34,19 +33,28 @@ public sealed class EnsureImportStatement : TransformStatement
     /// </summary>
     public ImportStatement? ImportStatement => FirstChild as ImportStatement;
 
-
     /// <inheritdoc />
     public override void Apply( IActivityMonitor monitor, SourceCodeEditor editor )
     {
         Throw.DebugAssert( CheckValid() );
-        var importStatement = ImportStatement;
+        EnsureImport( monitor, editor, ImportStatement );
+    }
+
+    /// <summary>
+    /// Reusable implementation of <see cref="Apply(IActivityMonitor, SourceCodeEditor)"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="editor">The source code.</param>
+    /// <param name="toImport">The import line to add.</param>
+    public static void EnsureImport( IActivityMonitor monitor, SourceCodeEditor editor, IImportLine toImport )
+    {
         // No need to respect any scope here. Imports are top-level statements.
         // Even if an import can appear anywhere in a file, it is not a good practice
         // and semantically useless.
         // No need to look for subordinated spans.
 
         // We work on a clone.
-        var toMerge = new ImportLine( importStatement );
+        var toMerge = new ImportLine( toImport );
         bool toMergeInitialSideEffectOnly = toMerge.SideEffectOnly;
 
         // This may handle existing default, namespace and side-effect only import.
@@ -81,7 +89,7 @@ public sealed class EnsureImportStatement : TransformStatement
                 {
                     if( existingName.ExportedName != named.ExportedName )
                     {
-                        monitor.Error( $"Cannot 'ensure {importStatement._line.ToString()}' because '{named}' conflicts with already imported '{existingName}'." );
+                        monitor.Error( $"Cannot 'ensure {toImport.ToStringImport()}' because '{named}' conflicts with already imported '{existingName}'." );
                     }
                     else if( !editor.HasError )
                     {
@@ -137,7 +145,7 @@ public sealed class EnsureImportStatement : TransformStatement
                 }
                 else
                 {
-                    monitor.Error( $"Cannot 'ensure {importStatement._line.ToString()}' because '{named.FinalName}' is already imported from '{exists.ImportPath}'." );
+                    monitor.Error( $"Cannot 'ensure {toImport.ToStringImport()}' because '{named.FinalName}' is already imported from '{exists.ImportPath}'." );
                 }
             }
         }
@@ -204,12 +212,12 @@ public sealed class EnsureImportStatement : TransformStatement
             }
         }
 
-        bool PreProcess( IActivityMonitor monitor,
-                         SourceCodeEditor editor,
-                         ImportLine toMerge,
-                         bool toMergeInitialSideEffectOnly,
-                         out Dictionary<string, ImportStatement> existingNamedImports,
-                         out ImportStatement? lastImport )
+        static bool PreProcess( IActivityMonitor monitor,
+                    SourceCodeEditor editor,
+                    ImportLine toMerge,
+                    bool toMergeInitialSideEffectOnly,
+                    out Dictionary<string, ImportStatement> existingNamedImports,
+                    out ImportStatement? lastImport )
         {
             // Indexed ImportStatement by named imports. 
             existingNamedImports = new Dictionary<string, ImportStatement>();
@@ -262,7 +270,7 @@ public sealed class EnsureImportStatement : TransformStatement
                             }
                             else
                             {
-                                monitor.Warn( $"Module '{import.ImportPath}' default export is already named '{import.DefaultImport}'. It will also be named '{importStatement.DefaultImport}'." );
+                                monitor.Warn( $"Module '{import.ImportPath}' default export is already named '{import.DefaultImport}'. It will also be named '{toMerge.DefaultImport}'." );
                             }
                         }
                         else
