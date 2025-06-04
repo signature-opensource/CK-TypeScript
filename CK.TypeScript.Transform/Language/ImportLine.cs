@@ -202,9 +202,8 @@ public sealed class ImportLine : IImportLine
         else
         {
             int tokenIndex = GetTokenIndexOfNamedIndex( span, index );
-            int removeCount = editor.Code.Tokens[tokenIndex + 1].TokenType is TokenType.Comma
-                                ? 2
-                                : 1;
+            int removeCount = (NamedImports[index].IsAliased ? 3 : 1)   // "A as B" or "A"
+                              + (index < NamedImports.Count - 1 ? 1 : 0); // Trailing ,
             NamedImports.RemoveAt( index );
             using var e = editor.OpenGlobalEditor();
             e.RemoveRange( tokenIndex, removeCount );
@@ -224,11 +223,11 @@ public sealed class ImportLine : IImportLine
             int idx = 0;
             foreach( var named in NamedImports )
             {
+                if( idx > 0 ) ++offset; // ,
                 if( idx == index ) return offset;
-                if( idx++ > 0 ) ++offset; // ,
                 if( named.TypeOnly ) ++offset;
                 offset += named.IsAliased ? 3 : 1; // "A as B" or "A"
-                if( idx == NamedImports.Count ) break;
+                ++idx;
             }
         }
         return offset;

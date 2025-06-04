@@ -333,8 +333,9 @@ public class EnsureImportTests
     )]
     [TestCase( "n°5",
     """
-        import { Some, Other } from './Up/Folder';
-        import { Another as X, AndY } from './Up/Folder';
+        import { Before, Some, Other, After } from './Up/Folder';
+        import { Before2, Another as X, AndY, After2 } from './Up/Folder';
+
         """,
         """"
         create <ts> transformer
@@ -344,6 +345,8 @@ public class EnsureImportTests
         end
         """",
         """
+        import { Before, After } from './Up/Folder';
+        import { Before2, After2 } from './Up/Folder';
         import { Some, AndY } from './Up/Folder/Better';
         import { Other, Another as X } from './Up/Folder/AnotherBetter';
         

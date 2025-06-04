@@ -25,7 +25,7 @@ sealed class ImportFromLocalCKGen : ImportFromBase
         }
         else
         {
-            var resolved = ImportedNames.GroupBy( i => (tsTypes.FindByTypeName( i.ExportedName ) as ITSDeclaredFileType)?.File );
+            var resolved = ImportedNames.GroupBy( i => tsTypes.FindByTypeName( i.ExportedName ) as ITSDeclaredFileType );
             foreach( var i in resolved )
             {
                 if( i.Key == null )
@@ -44,7 +44,7 @@ sealed class ImportFromLocalCKGen : ImportFromBase
                     b.Builder.Append( "import " );
                     WriteImportedNamesInBraces( b, i );
                     b.Builder.Append( " from '@local/ck-gen/" )
-                             .Append( i.Key.Folder ).Append( Path.GetFileNameWithoutExtension( i.Key.Name ) )
+                             .Append( i.Key.ImportPath )
                              .AppendLine( "';" );
                 }
             }
