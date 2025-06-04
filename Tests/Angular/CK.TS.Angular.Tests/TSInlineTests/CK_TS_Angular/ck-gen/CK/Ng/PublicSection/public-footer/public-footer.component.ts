@@ -1,3 +1,4 @@
+import { SomeAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/SomeAuthService';
 import { Component } from '@angular/core';
 
 //<TestPoint>

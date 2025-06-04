@@ -107,8 +107,10 @@ public abstract partial class TypeScriptFileBase
     /// <summary>
     /// Must return the full content if this file.
     /// </summary>
+    /// <param name="monitor">Required monitor for warnings when types from '@local/ck-gen' cannot be resolved.</param>
+    /// <param name="tsTypes">The type manager required to handle imports from '@local/ck-gen'.</param>
     /// <returns>This file's content.</returns>
-    public abstract string GetCurrentText();
+    public abstract string GetCurrentText( IActivityMonitor monitor, TSTypeManager tsTypes );
 
     /// <summary>
     /// Overridden to return this file name.

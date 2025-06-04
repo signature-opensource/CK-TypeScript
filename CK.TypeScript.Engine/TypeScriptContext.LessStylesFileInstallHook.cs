@@ -26,7 +26,6 @@ public sealed partial class TypeScriptContext // Less styles support.
         _appStylesImport.Enqueue( new EnsureImportLine( ImportKeyword.None, ImportKeyword.None, importPath ), order );
     }
 
-
     static bool IsPrimaryLessFile( ITransformInstallableItem item )
     {
         Throw.DebugAssert( "styles".Length == 6 );
@@ -94,7 +93,7 @@ public sealed partial class TypeScriptContext // Less styles support.
 
         public override bool HandleInstall( IActivityMonitor monitor,
                                             ITransformInstallableItem item,
-                                            string finalText,
+                                            ref string finalText,
                                             IResourceSpaceItemInstaller installer,
                                             out bool handled )
         {
@@ -302,7 +301,7 @@ public sealed partial class TypeScriptContext // Less styles support.
 
             public bool HandleInstall( IActivityMonitor monitor,
                                        ITransformInstallableItem item,
-                                       string finalText,
+                                       ref string finalText,
                                        IResourceSpaceItemInstaller installer,
                                        out bool handled )
             {

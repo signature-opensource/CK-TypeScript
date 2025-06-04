@@ -5,6 +5,8 @@ namespace CK.TypeScript.CodeGen;
 /// <summary>
 /// Models an imported name from a <see cref="ITSImportLine"/>.
 /// </summary>
+/// <param name="ExportedName">The actual name to import.</param>
+/// <param name="ImportedName">Optional alias name for the exported name.</param>
 public readonly record struct TSImportedName( string ExportedName, string? ImportedName )
 {
     /// <summary>

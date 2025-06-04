@@ -4,7 +4,7 @@ using CK.TS.Angular;
 namespace CK.Ng.PublicSection;
 
 [NgComponent]
-[Package<PublicSectionPackage>]
+[Package<PublicSectionComponent>]
 public sealed class PublicFooterComponent : NgComponent
 {
 }

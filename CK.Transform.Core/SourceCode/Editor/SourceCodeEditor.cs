@@ -24,6 +24,7 @@ public sealed partial class SourceCodeEditor : IDisposable
     bool _hasError;
 
     TransformerHost.Language? _language;
+    IAnalyzer? _analyzer;
     bool _needReparse;
 
     /// <summary>
@@ -35,13 +36,28 @@ public sealed partial class SourceCodeEditor : IDisposable
     /// <param name="language">The language (required by <see cref="Reparse()"/>).</param>
     public SourceCodeEditor( IActivityMonitor monitor,
                              SourceCode code,
-                             TransformerHost.Language? language = null )
+                             TransformerHost.Language language )
+        : this( monitor, code, language?.TargetLanguageAnalyzer )
+    {
+        Throw.CheckNotNullArgument( language );
+        _language = language;
+    }
+
+    /// <summary>
+    /// Initializes a new editor, optionally bound to a <see cref="IAnalyzer"/>.
+    /// </summary>
+    /// <param name="monitor">Captured monitor. Used internally to track errors.</param>
+    /// <param name="code">The code to edit.</param>
+    /// <param name="analyzer">The analyzer (required by <see cref="Reparse()"/>).</param>
+    public SourceCodeEditor( IActivityMonitor monitor,
+                             SourceCode code,
+                             IAnalyzer? analyzer = null )
     {
         Throw.CheckNotNullArgument( code );
         Throw.CheckState( !code.HasEditor );
         code.HasEditor = true;
         _monitor = monitor;
-        _language = language;
+        _analyzer = analyzer;
         _code = code;
         _tokens = code.InternalTokens;
         _errorTracker = monitor.OnError( OnError );
@@ -82,6 +98,11 @@ public sealed partial class SourceCodeEditor : IDisposable
     public TransformerHost.Language? Language => _language;
 
     /// <summary>
+    /// Gets the analyzer if it has been specified.
+    /// </summary>
+    public IAnalyzer? Analyzer => _analyzer;
+
+/// <summary>
     /// Pushes a new token operator.
     /// Returns the number of actual operators that have been pushed. This count must be provided to <see cref="PopTokenOperator"/>.
     /// </summary>
@@ -141,8 +162,8 @@ public sealed partial class SourceCodeEditor : IDisposable
     public bool Reparse() => DoReparse( null );
 
     /// <summary>
-    /// Unconditionally reparses the <see cref="SourceCode"/> with a new <paramref name="newAnalyzer"/>
-    /// and sets it as the current <see cref="Analyzer"/>.
+    /// Unconditionally reparses the <see cref="SourceCode"/> with a new <paramref name="newLanguage"/>
+    /// and sets it as the current <see cref="Language"/> (and <see cref="Analyzer"/>).
     /// </summary>
     /// <param name="newLanguage">New language that replaces <see cref="Language"/>.</param>
     /// <returns>True on success, false on error.</returns>
@@ -150,7 +171,7 @@ public sealed partial class SourceCodeEditor : IDisposable
 
     bool DoReparse( TransformerHost.Language? newLanguage )
     {
-        Throw.CheckArgument( newLanguage != null || Language != null );
+        Throw.CheckArgument( newLanguage != null || Analyzer != null );
         using( _monitor.OpenTrace( "Parsing transformation result." ) )
         {
             if( newLanguage != null )
@@ -161,9 +182,9 @@ public sealed partial class SourceCodeEditor : IDisposable
                 }
                 _language = newLanguage;
             }
-            Throw.DebugAssert( _language != null );
+            Throw.DebugAssert( _analyzer != null );
             string text = _code.ToString();
-            var r = _language.TargetLanguageAnalyzer.TryParse( _monitor, text.AsMemory() );
+            var r = _analyzer.TryParse( _monitor, text.AsMemory() );
             if( r == null ) return false;
             r.SourceCode.TransferTo( _code );
             _tokens = _code.InternalTokens;
@@ -190,10 +211,26 @@ public sealed partial class SourceCodeEditor : IDisposable
     public void AddSourceSpan( SourceSpan newOne ) => _code._spans.Add( newOne );
 
     /// <summary>
-    /// 
+    /// Removes a source span with its tokens. The <paramref name="span"/>
+    /// is detached using <see cref="SourceSpan.DetachMode.KeepChildren"/>.
     /// </summary>
-    /// <param name="span"></param>
-    /// <param name="second"></param>
+    /// <param name="span">The span to remove from the code.</param>
+    public void RemoveSpan( SourceSpan span )
+    {
+        Throw.CheckArgument( !span.IsDetached && span.GetRoot() == _code.Spans );
+        // Removes the tokens.
+        _tokens.RemoveRange( span.Span.Beg, span.Span.Length );
+        // Detaches the span and its children.
+        span.Detach( SourceSpan.DetachMode.KeepChildren );
+        // Adjusts, the other spans positions.
+        _code._spans.OnRemoveTokens( span.Span );
+    }
+
+    /// <summary>
+    /// Moves a source span and its token before another one.
+    /// </summary>
+    /// <param name="span">The span to move.</param>
+    /// <param name="newNext">The span before which <paramref name="span"/> must be moved.</param>
     public void MoveSpanBefore( SourceSpan span, SourceSpan newNext )
     {
         Throw.CheckArgument( span != newNext

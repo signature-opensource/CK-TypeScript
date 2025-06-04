@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.EmbeddedResources;
 
 namespace CK.TypeScript.CodeGen;
@@ -34,11 +35,8 @@ public sealed class ResourceTypeScriptFile : TypeScriptFileBase
     /// </summary>
     public bool IsPublishedResource => _isPublishedResource;
 
-    /// <summary>
-    /// Gets the resource textual content.
-    /// </summary>
-    /// <returns>This file's content.</returns>
-    public override string GetCurrentText() => _locator.ReadAsText();
+    /// <inheritdoc />
+    public override string GetCurrentText( IActivityMonitor monitor, TSTypeManager tSTypes ) => _locator.ReadAsText();
 }
 
 

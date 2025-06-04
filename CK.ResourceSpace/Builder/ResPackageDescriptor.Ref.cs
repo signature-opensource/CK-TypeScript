@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 namespace CK.Core;
 

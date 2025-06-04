@@ -337,4 +337,10 @@ public sealed partial class TypeScriptFolder
             return result;
         }
     }
+
+    /// <summary>
+    /// Overridden to return the <see cref="Path"/>.
+    /// </summary>
+    /// <returns>This <see cref="Path"/>.</returns>
+    public override string ToString() => _path;
 }

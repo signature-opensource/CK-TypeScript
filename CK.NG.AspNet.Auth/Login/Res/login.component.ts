@@ -2,7 +2,7 @@ import { Component, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
-import { AuthService } from '@local/ck-gen';
+import { AuthService } from '../../../../../CK/AspNet/Auth';
 
 @Component( {
   selector: 'ck-login',

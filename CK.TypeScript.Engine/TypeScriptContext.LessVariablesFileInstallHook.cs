@@ -100,7 +100,7 @@ public sealed partial class TypeScriptContext
 
         public override bool HandleInstall( IActivityMonitor monitor,
                                             ITransformInstallableItem item,
-                                            string finalText,
+                                            ref string finalText,
                                             IResourceSpaceItemInstaller installer,
                                             out bool handled )
         {
@@ -248,9 +248,9 @@ public sealed partial class TypeScriptContext
             }
 
             public bool HandleRemove( IActivityMonitor monitor,
-                          ITransformInstallableItem item,
-                          ILiveResourceSpaceItemInstaller installer,
-                          out bool handled )
+                                      ITransformInstallableItem item,
+                                      ILiveResourceSpaceItemInstaller installer,
+                                      out bool handled )
             {
                 handled = false;
                 // No need to test the file name here.
@@ -270,7 +270,11 @@ public sealed partial class TypeScriptContext
                 return true;
             }
 
-            public bool HandleInstall( IActivityMonitor monitor, ITransformInstallableItem item, string finalText, IResourceSpaceItemInstaller installer, out bool handled )
+            public bool HandleInstall( IActivityMonitor monitor,
+                                       ITransformInstallableItem item,
+                                       ref string finalText,
+                                       IResourceSpaceItemInstaller installer,
+                                       out bool handled )
             {
                 handled = false;
                 if( item.LanguageIndex == _lessLanguageIndex )

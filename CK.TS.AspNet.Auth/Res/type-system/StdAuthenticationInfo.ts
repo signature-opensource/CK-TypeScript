@@ -1,5 +1,5 @@
 import { IUserInfo } from '../authService.model.public';
-import { AuthLevel } from '@local/ck-gen/CK/Auth/AuthLevel';
+import { AuthLevel } from '../AuthLevel';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
 
 /**

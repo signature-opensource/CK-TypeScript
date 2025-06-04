@@ -120,18 +120,13 @@ class NgRoute
         if( childDepth > 0 ) b.Append( ' ', childDepth * 2 );
 
         var name = _routedAttr?.FileComponentName ?? _tsType!.TypeName;
+        b.Append( "-> " ).Append( name ).AppendLine();
         if( this is NgRouteWithRoutes r )
         {
-            b.Append( '[' ).Append( name ).Append( ']' ).AppendLine();
             foreach( var c in r.Children )
             {
                 c.Write( b, childDepth + 1 );
             }
-            b.Append( ']' ).AppendLine();
-        }
-        else
-        {
-            b.Append( '[' ).Append( name ).Append( ']' );
         }
         return b;
     }

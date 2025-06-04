@@ -84,7 +84,7 @@ public class EnumAndCommentTests
         ctx.TSTypes.ResolveTSType( TestHelper.Monitor, typeof( CommentedEnum ) );
         ctx.GenerateCode( TestHelper.Monitor );
         var f = ctx.Root.FindFile( "CK/TypeScript/Tests/CommentedEnum.ts".AsSpan() );
-        var s = f.ShouldNotBeNull().GetCurrentText();
+        var s = f.ShouldNotBeNull().GetCurrentText( TestHelper.Monitor, ctx.TSTypes );
 
         s.ShouldContain( "Commented enumeration." );
 
@@ -143,7 +143,7 @@ public class EnumAndCommentTests
         GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
 
         var s = f.Body.ToString();
-        f.GetCurrentText().ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "An interface with comment." );
 
@@ -199,7 +199,7 @@ public class EnumAndCommentTests
         GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
 
         var s = f.Body.ToString();
-        f.GetCurrentText().ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "Generic interface." );
         s.ShouldContain( "@typeParam T1 The FIRST generic type!" );
@@ -272,7 +272,7 @@ public class EnumAndCommentTests
         GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
 
         var s = f.Body.ToString();
-        f.GetCurrentText().ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "Class doc." );
         s.ShouldContain( "Constructor doc." );
@@ -344,7 +344,7 @@ public class EnumAndCommentTests
         GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
         
         var s = f.Body.ToString();
-        f.GetCurrentText().ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "WithCodeReference doc." );
         s.ShouldContain( "Initializes a new WithCodeReference instance (seealso is treated like see)." );
@@ -380,7 +380,7 @@ public class EnumAndCommentTests
         GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );
         
         var s = f.Body.ToString();
-        f.GetCurrentText().ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "A buggy reference: ~~!:TypeNotFound~~." );
     }

@@ -57,12 +57,15 @@ public sealed class TypeScriptFile : TypeScriptFileBase
     /// <summary>
     /// Overridden to compute and returns the concatenated <see cref="Imports"/> and <see cref="Body"/>.
     /// </summary>
+    /// <param name="monitor">Required monitor for warnings when types from '@local/ck-gen' cannot be resolved.</param>
+    /// <param name="tsTypes">The type manager required to handle imports from '@local/ck-gen'.</param>
     /// <returns>The full file content.</returns>
-    public override string GetCurrentText()
+    public sealed override string GetCurrentText( IActivityMonitor monitor, TSTypeManager tsTypes )
     {
+        Throw.CheckNotNullArgument( tsTypes );
         var b = new StringBuilder();
         SmarterStringBuilder sB = new SmarterStringBuilder( b );
-        _imports.Build( ref sB );
+        _imports.Build( ref sB, monitor, tsTypes );
         if( b.Length > 0 ) b.Append( Environment.NewLine );
         // closeScope parameter is ignored here (a body has no closer).
         _body.Build( b, false );

@@ -1,9 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { SimpleUserMessage, UserMessageLevel } from '@local/ck-gen';
 import { TranslateService } from '@ngx-translate/core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { first } from 'rxjs';
+import { UserMessageLevel } from '../../Core/UserMessageLevel';
+import { SimpleUserMessage } from '../../Core/SimpleUserMessage';
 
 @Injectable( {
   providedIn: 'root'

@@ -1,6 +1,5 @@
 using CK.Transform.Core;
 using System;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.Core;
 

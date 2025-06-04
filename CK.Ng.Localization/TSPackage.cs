@@ -10,9 +10,10 @@ namespace CK.Ng.Localization;
 [TypeScriptPackage]
 [TypeScriptImportLibrary( "@ngx-translate/core", "^16", DependencyKind.Dependency )]
 
+[TypeScriptFile( "TranslationsLoader.ts", "CKTranslationsLoader" )]
 [NgProviderImport( "provideTranslateService, TranslateLoader", LibraryName = "@ngx-translate/core" )]
+[NgProviderImport( "CKTranslationsLoader", LibraryName = "@local/ck-gen" )]
 [NgProvider( "provideTranslateService( { defaultLanguage: 'fr', loader: { provide: TranslateLoader, useClass: CKTranslationsLoader } })" )]
-[NgProviderImport( "CKTranslationsLoader", LibraryName = "@local/ck-gen/CK/Ng/Localization/TranslationsLoader" )]
 public class TSPackage : TypeScriptPackage
 {
 }

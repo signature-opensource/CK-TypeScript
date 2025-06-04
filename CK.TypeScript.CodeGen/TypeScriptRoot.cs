@@ -282,7 +282,7 @@ public sealed partial class TypeScriptRoot
             {
                 return false;
             }
-            var ctx = new TypeScriptFolder.PublishContext( new char[1024], target );
+            var ctx = new TypeScriptFolder.PublishContext( new char[1024], target, _tsTypes );
             _root.Publish( monitor, ref ctx );
             return target.Close( monitor, this, null );
         }

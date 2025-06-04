@@ -4,7 +4,6 @@ using CK.Testing;
 using Microsoft.AspNetCore.Builder;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;

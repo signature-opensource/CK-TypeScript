@@ -44,4 +44,10 @@ public interface IImportLine
     /// Gets the import path (without the quotes).
     /// </summary>
     string ImportPath { get; }
+
+    /// <summary>
+    /// Returns the "import ...;" statement.
+    /// </summary>
+    /// <returns>The statement.</returns>
+    string ToStringImport();
 }
