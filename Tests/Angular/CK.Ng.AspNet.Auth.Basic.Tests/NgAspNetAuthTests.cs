@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Testing;
 using Microsoft.AspNetCore.Builder;
 using NUnit.Framework;
@@ -17,6 +18,7 @@ public class NgAspNetAuthTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
         var builder = WebApplication.CreateSlimBuilder();

@@ -20,6 +20,6 @@ export class LogoutComponent {
   }
 
   return(): void {
-    this.#router.navigate( ['login'] );
+    this.#router.navigate( ['auth'] );
   }
 }
