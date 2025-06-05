@@ -10,9 +10,7 @@ export class AuthServiceConfiguration {
     public get webFrontAuthEndPoint(): string { return this.#identityServerEndPoint; }
 
     constructor(config?: IAuthServiceConfiguration) {
-        if (!config) {
-            config = { useLocalStorage: true };
-        }
+        config = config || {};
         if (!config.identityEndPoint) {
             if (typeof (window) === 'undefined') {
                 throw new Error("IAuthServiceConfiguration required.");
@@ -28,7 +26,9 @@ export class AuthServiceConfiguration {
         else {
             this.#identityServerEndPoint = AuthServiceConfiguration.getUrlFromEndPoint(config.identityEndPoint);
         }
-        if (config.useLocalStorage) this.localStorage = this.getAvailableStorage('localStorage');
+        if (config.useLocalStorage === undefined || config.useLocalStorage) {
+            this.localStorage = this.getAvailableStorage('localStorage');
+        }
     }
 
     private static getUrlFromEndPoint(endPoint: IEndPoint): string {
