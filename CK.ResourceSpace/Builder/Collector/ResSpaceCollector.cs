@@ -15,7 +15,7 @@ namespace CK.Core;
 /// the descriptors to produce the immutable <see cref="ResSpaceData.Packages"/>.
 /// </para>
 /// </summary>
-public sealed class ResSpaceCollector
+public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
 {
     /// <summary>
     /// Marker for <see cref="LiveStatePath"/> when no Live state must be created.
@@ -113,29 +113,31 @@ public sealed class ResSpaceCollector
     /// </summary>
     public string LiveStatePath => _liveStatePath;
 
-    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, string, NormalizedPath, IResourceContainer, IResourceContainer)"/>
+    /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   string fullName,
                                                   NormalizedPath defaultTargetPath,
                                                   IResourceContainer resourceStore,
-                                                  IResourceContainer resourceAfterStore )
+                                                  IResourceContainer resourceAfterStore,
+                                                  bool isOptional )
     {
-        return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore );
+        return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
     }
 
-    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, NormalizedPath, bool)"/>
+    /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
                                                   NormalizedPath defaultTargetPath,
+                                                  bool? isOptional = null,
                                                   bool ignoreLocal = false )
     {
-        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, ignoreLocal );
+        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, isOptional, ignoreLocal );
     }
 
     /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, bool)"/>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool ignoreLocal = false )
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool? isOptional = null, bool ignoreLocal = false )
     {
         var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
-        return _coreCollector.RegisterPackage( monitor, type, targetPath, ignoreLocal );
+        return _coreCollector.RegisterPackage( monitor, type, targetPath, isOptional, ignoreLocal );
     }
 }

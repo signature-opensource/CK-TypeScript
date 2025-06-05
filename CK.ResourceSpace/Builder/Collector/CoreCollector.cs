@@ -1,10 +1,11 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CK.Core;
 
-sealed class CoreCollector
+sealed partial class CoreCollector : IResPackageDescriptorRegistrar
 {
     // Packages are indexed by their FullName, their Type if package is defined
     // by type and by their Resources Store container.
@@ -12,7 +13,15 @@ sealed class CoreCollector
     // containers are shared by 2 packages.
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     readonly List<ResPackageDescriptor> _packages;
+    // Contains the package initially optional. After the topological
+    // sort, they may be no more optional.
+    readonly List<ResPackageDescriptor> _optionalPackages;
     readonly ResPackageDescriptorContext _packageDescriptorContext;
+    // Set by ResSpaceConfiguration.
+    internal IResPackageExcluder? _packageExcluder;
+    internal ITypedResPackageResolver? _typedPackageResolver;
+    internal INamedResPackageResolver? _namedPackageResolver;
+
     int _localPackageCount;
     int _typedPackageCount;
 
@@ -20,26 +29,34 @@ sealed class CoreCollector
     {
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
+        _optionalPackages = new List<ResPackageDescriptor>();
         _packageDescriptorContext = new ResPackageDescriptorContext( _packageIndex );
-
     }
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   string fullName,
                                                   NormalizedPath defaultTargetPath,
                                                   IResourceContainer resourceStore,
-                                                  IResourceContainer resourceAfterStore )
+                                                  IResourceContainer resourceAfterStore,
+                                                  bool? isOptional )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fullName );
         Throw.CheckArgument( resourceStore is not null && resourceStore.IsValid );
         Throw.CheckArgument( resourceAfterStore is not null && resourceStore.IsValid );
         Throw.CheckArgument( resourceStore != resourceAfterStore );
-        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore );
+        return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
+    }
+
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool? isOptional, bool ignoreLocal = false )
+    {
+        var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
+        return RegisterPackage( monitor, type, targetPath, isOptional, ignoreLocal );
     }
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   Type type,
                                                   NormalizedPath defaultTargetPath,
+                                                  bool? isOptional,
                                                   bool ignoreLocal )
     {
         Throw.CheckNotNullArgument( type );
@@ -48,7 +65,7 @@ sealed class CoreCollector
         IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true, ignoreLocal: ignoreLocal );
 
         return resourceStore.IsValid && resourceAfterStore.IsValid
-               ? DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore )
+               ? DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore, isOptional )
                : null;
     }
 
@@ -57,7 +74,8 @@ sealed class CoreCollector
                                       Type? type,
                                       NormalizedPath defaultTargetPath,
                                       IResourceContainer resourceStore,
-                                      IResourceContainer resourceAfterStore )
+                                      IResourceContainer resourceAfterStore,
+                                      bool? isOptional )
     {
         if( _packageIndex.TryGetValue( fullName, out var already ) )
         {
@@ -74,30 +92,40 @@ sealed class CoreCollector
             monitor.Error( $"Package resources mismatch: {resourceAfterStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
             return null;
         }
-        bool isGroup = true;
-        if( type != null )
+        if( type != null && _packageIndex.TryGetValue( type, out already ) )
         {
-            isGroup = !typeof( IResourcePackage ).IsAssignableFrom( type );
-            if( _packageIndex.TryGetValue( type, out already ) )
-            {
-                monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );
-                return null;
-            }
+            monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );
+            return null;
         }
+
         var p = new ResPackageDescriptor( _packageDescriptorContext,
                                           fullName,
                                           type,
                                           defaultTargetPath,
                                           resources: new StoreContainer( _packageDescriptorContext, resourceStore ),
                                           afterResources: new StoreContainer( _packageDescriptorContext, resourceAfterStore ) );
-        p.IsGroup = isGroup;
-        bool isLocal = resourceStore is FileSystemResourceContainer fs && fs.HasLocalFilePathSupport
-                       || resourceAfterStore is FileSystemResourceContainer fsA && fsA.HasLocalFilePathSupport;
-        if( isLocal )
+        bool initialized = type != null
+                            ? p.InitializeFromType( monitor, isOptional )
+                            : p.InitializeFromManifest( monitor, isOptional );
+        if( !initialized )
+        {
+            return null;
+        }
+        if( p.IsOptional )
+        {
+            _optionalPackages.Add( p );
+        }
+        else
+        {
+            _packages.Add( p );
+        }
+        // Whether the package is optional or not, we index it.
+        // An optional package will be removed it is still optional after the
+        // topological sort (RemoveDefinitelyOptional below).
+        if( p.IsLocalPackage )
         {
             ++_localPackageCount;
         }
-        _packages.Add( p );
         _packageIndex.Add( fullName, p );
         _packageIndex.Add( resourceStore, p );
         _packageIndex.Add( resourceAfterStore, p );
@@ -107,6 +135,31 @@ sealed class CoreCollector
             _packageIndex.Add( type, p );
         }
         return p;
+    }
+
+    void RemoveDefinitelyOptional( ResPackageDescriptor p )
+    {
+        Throw.DebugAssert( p.IsOptional );
+        if( p.IsLocalPackage )
+        {
+            --_localPackageCount;
+        }
+        _packageIndex.Remove( p.FullName );
+        _packageIndex.Remove( p.ResourcesInnerContainer );
+        _packageIndex.Remove( p.AfterResourcesInnerContainer );
+        if( p.Type != null )
+        {
+            --_typedPackageCount;
+            _packageIndex.Remove( p.Type );
+        }
+    }
+
+    void SetNoMoreOptionalPackage( ResPackageDescriptor p )
+    {
+        Throw.DebugAssert( p.IsOptional );
+        Throw.DebugAssert( !_packages.Contains( p ) );
+        p._isOptional = false;
+        _packages.Add( p );
     }
 
     public IReadOnlyDictionary<object, ResPackageDescriptor> PackageIndex => _packageIndex;
