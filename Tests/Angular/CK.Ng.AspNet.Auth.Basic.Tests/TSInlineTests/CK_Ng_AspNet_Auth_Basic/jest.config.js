@@ -32,7 +32,7 @@ module.exports = {
     // Do NOT alter the comments below.
     testEnvironmentOptions: { 
         // Start-CKTypeScriptSrv
-        url: 'http://[::1]:63904',
+        url: 'http://[::1]:61130',
         // Stop-CKTypeScriptSrv
     },
     setupFilesAfterEnv: ['<rootDir>/jest-setup.ts']

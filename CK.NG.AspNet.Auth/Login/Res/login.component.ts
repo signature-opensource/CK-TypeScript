@@ -3,9 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 
-import { IUserSchemeInfo } from '../../../../../CK/AspNet/Auth';
-import { NgAuthService } from '../NgAuthService';
-import { ResponsiveDirective } from '../../../Zorro/responsive.directive';
+import { IUserSchemeInfo, NgAuthService, ResponsiveDirective } from '@local/ck-gen';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 

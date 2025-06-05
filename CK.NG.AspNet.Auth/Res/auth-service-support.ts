@@ -1,6 +1,6 @@
 import { EnvironmentProviders, inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
 import { provideHttpClient, withInterceptors, HttpInterceptorFn } from '@angular/common/http';
-import { AuthService } from '@local/ck-gen/CK/AspNet/Auth/AuthService';
+import { AuthService } from '@local/ck-gen';
 
 /**
  * Provides support providers for AuthService:

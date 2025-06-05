@@ -4,8 +4,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faEye, faEyeSlash, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import { AuthService } from '@local/ck-gen/CK/AspNet/Auth';
-import { CKNotificationService } from '@local/ck-gen/CK/Ng/Zorro';
+import { AuthService, CKNotificationService } from '@local/ck-gen';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
