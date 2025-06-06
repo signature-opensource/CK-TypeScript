@@ -12,6 +12,13 @@ public sealed partial class ResPackageDescriptor
         Throw.DebugAssert( _type != null );
         _isGroup = !typeof( IResourcePackage ).IsAssignableFrom( _type );
         _isOptional = isOptional ?? _type.CustomAttributes.Any( a => a.AttributeType == typeof( OptionalTypeAttribute ) );
+        // Detect a useless CKPackage.xml for the type: currently, there's
+        // no "merge" possible, the type drives.
+        var descriptor = _resources.GetResource( "CKPackage.xml" );
+        if( descriptor.IsValid )
+        {
+            monitor.Warn( $"Found {descriptor} for type '{_type:N}'. Ignored." );
+        }
 
         bool errorSinglePackage = false;
         foreach( var a in _type.CustomAttributes )

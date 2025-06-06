@@ -13,7 +13,7 @@ namespace CK.Core;
 /// code generated folder including the Live state.
 /// </para>
 /// </summary>
-public sealed class ResSpaceConfiguration
+public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
 {
     readonly CoreCollector _coreCollector;
     IResourceContainer? _generatedCodeContainer;
@@ -109,34 +109,64 @@ public sealed class ResSpaceConfiguration
     }
 
     /// <summary>
-    /// Gets or sets the optional <see cref="IResPackageExcluder"/>.
-    /// When let to null, <see cref="IResPackageExcluder.Empty"/> is eventually used: any type or full name
-    /// are accepted.
+    /// Gets or sets the optional <see cref="IResPackageDescriptorResolver"/>.
+    /// When let to null, the initial set of packages must contain all the non-optional packages.
     /// </summary>
-    public IResPackageExcluder? PackageExcluder
+    public IResPackageDescriptorResolver? PackageResolver
     {
-        get => _coreCollector._packageExcluder;
-        set => _coreCollector._packageExcluder = value;
+        get => _coreCollector._packageResolver;
+        set => _coreCollector._packageResolver = value;
     }
 
     /// <summary>
-    /// Gets or sets the optional <see cref="ITypedResPackageResolver"/>.
-    /// When let to null, all required type-bound packages must be explicitly registered.
+    /// Gets or sets whether the topological sort uses ascending or descending order
+    /// of the <see cref="ResPackageDescriptor.FullName"/> to guaranty determinism of
+    /// the final ordering.
+    /// <para>
+    /// If, when reverting the order, <see cref="ResSpaceDataBuilder.Build(IActivityMonitor)"/> fails,
+    /// this means that a there is a missing topological constraint in the graph.
+    /// </para>
     /// </summary>
-    public ITypedResPackageResolver? TypedPackageResolver
+    public bool RevertOrderingNames
     {
-        get => _coreCollector._typedPackageResolver;
-        set => _coreCollector._typedPackageResolver = value;
+        get => _coreCollector._revertOrderingNames;
+        set => _coreCollector._revertOrderingNames = value;
     }
 
-    /// <summary>
-    /// Gets or sets the optional <see cref="INamedResPackageResolver"/>.
-    /// When let to null, all required named packages must be explicitly registered.
-    /// </summary>
-    public INamedResPackageResolver? NamedPackageResolver
+    /// <inheritdoc />
+    public ResPackageDescriptor? FindByFullName( string fullName ) => _coreCollector.FindByFullName( fullName );
+
+    /// <inheritdoc />
+    public ResPackageDescriptor? FindByType( Type type ) => _coreCollector.FindByType( type );
+
+    /// <inheritdoc />
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                                  string fullName,
+                                                  NormalizedPath defaultTargetPath,
+                                                  IResourceContainer resourceStore,
+                                                  IResourceContainer resourceAfterStore,
+                                                  bool? isOptional )
     {
-        get => _coreCollector._namedPackageResolver;
-        set => _coreCollector._namedPackageResolver = value;
+        return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
+    }
+
+    /// <inheritdoc />
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                                  Type type,
+                                                  bool? isOptional = null,
+                                                  bool ignoreLocal = false )
+    {
+        return _coreCollector.RegisterPackage( monitor, type, isOptional, ignoreLocal );
+    }
+
+    /// <inheritdoc />
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                                  Type type,
+                                                  NormalizedPath defaultTargetPath,
+                                                  bool? isOptional = null,
+                                                  bool ignoreLocal = false )
+    {
+        return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, isOptional, ignoreLocal );
     }
 
     /// <summary>

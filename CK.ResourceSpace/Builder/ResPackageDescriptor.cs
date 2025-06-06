@@ -3,7 +3,6 @@ using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
 
 namespace CK.Core;
 
@@ -19,14 +18,33 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
     readonly StoreContainer _resources;
     readonly StoreContainer _afterResources;
     List<object>? _singleMappings;
-    Ref _package;
-    List<Ref>? _requires;
-    List<Ref>? _requiredBy;
-    List<Ref>? _groups;
-    List<Ref>? _children;
-    bool _isGroup;
-    // Set by the CoreCollector during topological sort.
+    // Accessed by the CoreCollector during topological sort.
+    // The sorter sets this to null if only optional references were in it.
+    internal List<Ref>? _requires;
+    // The sorter sets this to null if only optional references were in it.
+    internal List<Ref>? _children;
+    // The sorter transfers RequiredBy, Groups and Package to Requires and Children. 
+    internal List<Ref>? _requiredBy;
+    internal List<Ref>? _groups;
+    internal Ref _package;
+
+    // Topological sort state. This is all that we need.
+    //  - The sorted package index.
+    internal int _idxPackage;
+    //  - The sorted resources index.
+    internal int _idxHeader;
+    //  - The sorted after resources index.
+    internal int _idxFooter;
+    // - Set to true as soon as a group contains it or it is required by another package:
+    //   When still false after the sort, this is an
+    //   entry point that must be required by the <App>.
+    internal bool _hasIncomingDeps;
+
+    // The sorter may transition this from true to false.
     internal bool _isOptional;
+    // IsGroup is mutable. The topological sort checks incoherencies
+    // of Group vs. Package definition.
+    bool _isGroup;
 
     internal ResPackageDescriptor( ResPackageDescriptorContext context,
                                    string fullName,
@@ -42,6 +60,9 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
         _defaultTargetPath = defaultTargetPath;
         _resources = resources;
         _afterResources = afterResources;
+        _idxPackage = -1;
+        _idxHeader = -1;
+        _idxFooter = -1;
     }
 
     /// <summary>
@@ -193,7 +214,8 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
     /// <summary>
     /// Gets or sets whether this is a group instead of a regular package.
     /// <para>
-    /// Defaults to false.
+    /// Defaults to false. When registering a Type, this is set to true if the
+    /// type doesn't support <see cref="IResourcePackage"/>.
     /// </para>
     /// </summary>
     public bool IsGroup { get => _isGroup; set => _isGroup = value; }
@@ -243,111 +265,6 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
         return true;
     }
 
-
-    internal bool Initialize( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
-    {
-        bool success = InitializeConfiguredDependencies( monitor, packageIndex );
-        if( _type != null )
-        {
-            // Detect a useless CKPackage.xml for the type: currently, there's
-            // no "merge" possible, the type drives.
-            var descriptor = _resources.GetResource( "CKPackage.xml" );
-            if( descriptor.IsValid )
-            {
-                monitor.Warn( $"Found {descriptor} for type '{_type:N}'. Ignored." );
-            }
-        }
-        return success;
-    }
-
-    bool InitializeConfiguredDependencies( IActivityMonitor monitor, IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
-    {
-        bool success = true;
-        if( _package.IsValid )
-        {
-            _package = ResolveRef( monitor, "Package", _package, _context, packageIndex );
-            success &= _package.IsValid || _package.IsOptional;
-        }
-        success &= ResolveReferences( monitor, "Requires", _requires, _context, packageIndex );
-        success &= ResolveReferences( monitor, "RequiredBy", _requiredBy, _context, packageIndex );
-        success &= ResolveReferences( monitor, "Groups", _groups, _context, packageIndex );
-        success &= ResolveReferences( monitor, "Children", _children, _context, packageIndex );
-        return success;
-
-        static bool ResolveReferences( IActivityMonitor monitor,
-                                       string relName,
-                                       List<Ref>? list,
-                                       ResPackageDescriptorContext context,
-                                       IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
-        {
-            if( list == null ) return true;
-            bool success = true;
-            for( int i = 0; i < list.Count; i++ )
-            {
-                var r = list[i];
-                if( r.IsValid )
-                {
-                    r = ResolveRef( monitor, relName, r, context, packageIndex );
-                    if( r.IsValid )
-                    {
-                        list[i] = r;
-                    }
-                    else
-                    {
-                        if( r.IsOptional )
-                        {
-                            list.RemoveAt( i-- );
-                        }
-                        else
-                        {
-                            success = false;
-                        }
-                    }
-                }
-                else
-                {
-                    list.RemoveAt( i-- );
-                }
-            }
-            return success;
-        }
-
-        static Ref ResolveRef( IActivityMonitor monitor,
-                               string relName,
-                               Ref r,
-                               ResPackageDescriptorContext context,
-                               IReadOnlyDictionary<object, ResPackageDescriptor> packageIndex )
-        {
-            Throw.DebugAssert( r.IsValid );
-            var p = r.AsPackageDescriptor;
-            if( p != null )
-            {
-                return CheckContext( monitor, relName, context, p ) ? r : default;
-            }
-            if( packageIndex.TryGetValue( r._ref, out var result ) )
-            {
-                return result;
-            }
-            if( r.IsOptional )
-            {
-                monitor.Warn( $"'{relName}' optional reference '{r}' resolution failed. Skipped." );
-                return Ref.OptionalInvalid;
-            }
-            monitor.Error( $"'{relName}' resolution failed. The reference '{r}' is not registered." );
-            return Ref.Invalid;
-        }
-
-        static bool CheckContext( IActivityMonitor monitor, string relName, ResPackageDescriptorContext context, ResPackageDescriptor p )
-        {
-            if( p._context != context )
-            {
-                monitor.Error( $"'{relName}' relationship context mismatch. The package '{p}' belongs to another collector." );
-                return false;
-            }
-            return true;
-        }
-
-    }
 
     DependentItemKind IDependentItemContainerTyped.ItemKind => _isGroup ? DependentItemKind.Group : DependentItemKind.Container;
 

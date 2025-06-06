@@ -9,6 +9,20 @@ namespace CK.Core;
 public interface IResPackageDescriptorRegistrar
 {
     /// <summary>
+    /// Finds a mutable package descriptor by its full name.
+    /// </summary>
+    /// <param name="fullName">The full name.</param>
+    /// <returns>The package or null if not found.</returns>
+    ResPackageDescriptor? FindByFullName( string fullName );
+
+    /// <summary>
+    /// Finds a mutable package descriptor by its type.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The package or null if not found.</returns>
+    ResPackageDescriptor? FindByType( Type type );
+
+    /// <summary>
     /// Registers a package. It must not already exist: <paramref name="fullName"/>, <paramref name="resourceStore"/>
     /// or <paramref name="resourceAfterStore"/> must not have been already registered.
     /// <para>

@@ -18,9 +18,9 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     readonly List<ResPackageDescriptor> _optionalPackages;
     readonly ResPackageDescriptorContext _packageDescriptorContext;
     // Set by ResSpaceConfiguration.
-    internal IResPackageExcluder? _packageExcluder;
-    internal ITypedResPackageResolver? _typedPackageResolver;
-    internal INamedResPackageResolver? _namedPackageResolver;
+    internal IResPackageDescriptorResolver? _packageResolver;
+    internal bool _revertOrderingNames;
+
 
     int _localPackageCount;
     int _typedPackageCount;
@@ -32,6 +32,10 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         _optionalPackages = new List<ResPackageDescriptor>();
         _packageDescriptorContext = new ResPackageDescriptorContext( _packageIndex );
     }
+
+    public ResPackageDescriptor? FindByFullName( string fullName ) => _packageIndex.GetValueOrDefault( fullName );
+
+    public ResPackageDescriptor? FindByType( Type type ) => _packageIndex.GetValueOrDefault( type );
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   string fullName,
@@ -175,11 +179,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     public bool Close( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
     {
         codeHandledResources = _packageDescriptorContext.Close();
-        bool success = true;
-        foreach( var r in _packages )
-        {
-            success &= r.Initialize( monitor, _packageIndex );
-        }
-        return success;
+        var sorter = new TopologicalSorter( monitor, this );
+        return sorter.Run();
     }
 }

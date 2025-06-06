@@ -119,7 +119,7 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
                                                   NormalizedPath defaultTargetPath,
                                                   IResourceContainer resourceStore,
                                                   IResourceContainer resourceAfterStore,
-                                                  bool isOptional )
+                                                  bool? isOptional )
     {
         return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
     }
