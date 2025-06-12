@@ -4,12 +4,12 @@ import { RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { ResponsiveDirective } from '@local/ck-gen';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { ResponsiveDirective } from '@local/ck-gen';
 
-@Component({
+@Component( {
     selector: 'ck-authentication-page',
     imports: [
         CommonModule,
@@ -21,13 +21,16 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
         NzButtonModule,
     ],
     templateUrl: './authentication-page.component.html'
-})
+} )
 export class AuthenticationPageComponent {
     protected leftIcon = faArrowLeft;
 
-    logoSrc = input<string>( 'logos/login-logo.png' );
-    logoWhiteSrc = input<string>( 'logos/login-logo-white.png' );
+    // assets can be overridden
+    displayedLogoSrc: string = 'logos/login-logo.png';
 
     // TODO: handle light/dark mode toggle
-    // displayedLogoSrc: string;
+    //logoWhiteSrc = input<string>( 'logos/login-logo-white.png' );
+    constructor() {
+
+    }
 }

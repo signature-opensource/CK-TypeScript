@@ -21,21 +21,23 @@ export class LoginComponent {
   readonly #authService = inject( NgAuthService );
   readonly #router = inject( Router );
 
-  logoSrc = input<string>( 'logos/login-logo.png' );
-  logoWhiteSrc = input<string>( 'logos/login-logo-white.png' );
-  redirectionPath = input<string>( '' );
-
   // TODO: handle light/dark mode toggle
-  // displayedLogoSrc: string;
+  // logoWhiteSrc = input<string>( 'logos/login-logo-white.png' );
+
+  // assets can be overridden
+  displayedLogoSrc: string = 'logos/login-logo.png';
+
+  // <RedirectionPath />
+  redirectionPath: string = '';
 
   sortedProviders: Array<string> = [];
 
   constructor() {
     this.#authService.authService.addOnChange( async ( auth ) => {
       if ( auth.authenticationInfo.user.userId !== 0 ) {
-        this.#router.navigate( [this.redirectionPath()] );
+        this.#router.navigate( [this.redirectionPath] );
       }
-    });
+    } );
 
     effect( () => {
       this.sortStringsByLastUsed();
@@ -47,7 +49,18 @@ export class LoginComponent {
   }
 
   getProviderLogoSrc( p: string ): string {
+    if ( p.includes( 'Oidc.' ) ) {
+      return `login-providers/${p.split( 'Oidc.' )[1].toLocaleLowerCase()}.png`;
+    }
     return `login-providers/${p.toLocaleLowerCase()}.png`;
+  }
+
+  getProviderName( p: string ): string {
+    if ( p.includes( 'Oidc.' ) ) {
+      return p.split( 'Oidc.' )[1];
+    }
+
+    return p;
   }
 
   sortStringsByLastUsed(): void {

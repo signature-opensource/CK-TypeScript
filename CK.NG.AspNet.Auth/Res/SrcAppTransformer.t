@@ -35,8 +35,8 @@ begin
             insert after first "{"
                     """
 
-                    readonly #authService = inject( NgAuthService );
-                    isAuthenticated = computed( () => this.#authService.authenticationInfo().user.userId !== 0 );
+                      readonly #authService = inject( NgAuthService );
+                      isAuthenticated = computed( () => this.#authService.authenticationInfo().user.userId !== 0 );
 
 
                     """;

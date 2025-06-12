@@ -1,5 +1,5 @@
 <ng-container *appResponsive="'(max-width: 1024px)'">
-    <img [src]="logoSrc()" class="ck-login-logo" priority alt />
+    <img [src]="displayedLogoSrc" class="ck-login-logo" priority alt />
 </ng-container>
 
 <div class="ck-login-welcome">
@@ -14,7 +14,7 @@
         } @else {
             <button nz-button nzType="default" class="ck-login-provider-btn" (click)="loginWithProvider( p )">
                 <img class="ck-login-provider-logo" [src]="getProviderLogoSrc( p )" />
-                <span class="ck-login-provider">{{ 'Login.ExternalProvider.ButtonLabel' | translate }} {{ p }}</span>
+                <span class="ck-login-provider">{{ 'Login.ExternalProvider.ButtonLabel' | translate }} {{ getProviderName(p) }}</span>
             </button>
         }
     }
