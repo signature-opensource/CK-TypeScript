@@ -13,8 +13,8 @@ import { PrivatePageComponent, NgAuthService } from '@local/ck-gen';
 })
 export class AppComponent {
 
-readonly #authService = inject( NgAuthService );
-isAuthenticated = computed( () => this.#authService.authenticationInfo().user.userId !== 0 );
+  readonly #authService = inject( NgAuthService );
+  isAuthenticated = computed( () => this.#authService.authenticationInfo().user.userId !== 0 );
 
   title = 'From_Scratch';
 }
