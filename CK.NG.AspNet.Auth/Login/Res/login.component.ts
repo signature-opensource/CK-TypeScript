@@ -1,4 +1,4 @@
-import { Component, effect, inject, input } from '@angular/core';
+import { Component, effect, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
@@ -17,7 +17,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
   ],
   templateUrl: './login.component.html'
 } )
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   readonly #authService = inject( NgAuthService );
   readonly #router = inject( Router );
 
@@ -42,6 +42,12 @@ export class LoginComponent {
     effect( () => {
       this.sortStringsByLastUsed();
     } );
+  }
+
+  ngOnInit(): void {
+    if( this.#authService.authenticationInfo().user.userId > 0 ) {
+      this.#router.navigate( [this.redirectionPath] );
+    }
   }
 
   async loginWithProvider( p: string ): Promise<void> {
