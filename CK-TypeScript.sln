@@ -106,6 +106,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.AspNet.Auth.Basic", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Zorro", "CK.Ng.Zorro\CK.Ng.Zorro.csproj", "{53831EF2-6392-EDEC-62E0-9D0AA89DA52A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.ResourceSpace.Tests", "Tests\CK.ResourceSpace.Tests\CK.ResourceSpace.Tests.csproj", "{6FD73B7A-15E9-448D-983A-BCEDEE6C27A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -268,6 +270,10 @@ Global
 		{53831EF2-6392-EDEC-62E0-9D0AA89DA52A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53831EF2-6392-EDEC-62E0-9D0AA89DA52A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53831EF2-6392-EDEC-62E0-9D0AA89DA52A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FD73B7A-15E9-448D-983A-BCEDEE6C27A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FD73B7A-15E9-448D-983A-BCEDEE6C27A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FD73B7A-15E9-448D-983A-BCEDEE6C27A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FD73B7A-15E9-448D-983A-BCEDEE6C27A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -296,6 +302,7 @@ Global
 		{5CE0FC24-2FAC-4713-BB4C-F413CD4E6FB4} = {BDF1A6D5-0D4A-4C52-9F5D-E7BF0F137848}
 		{65B0FB79-DD50-4881-9D22-0D382A412829} = {554E1709-5785-4982-89F9-6AB3C5684F43}
 		{77A0193C-A7AF-45AE-B0DA-BA87885C2CBB} = {554E1709-5785-4982-89F9-6AB3C5684F43}
+		{6FD73B7A-15E9-448D-983A-BCEDEE6C27A8} = {554E1709-5785-4982-89F9-6AB3C5684F43}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {99B45435-DA3D-4967-A869-813B52AE2EF2}

@@ -77,4 +77,45 @@ public class InsertTests
         var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
         sourceCode.ToString().ShouldBe( result );
     }
+
+    [TestCase( "n°1",
+        """
+        TEXT
+        """,
+        """"
+        create <html> transformer
+        begin
+            insert """
+                   <fa-icon [icon]="ytIcon" class="icon"></fa-icon>
+        
+                   """ before "TEXT";
+        end
+        """",
+        """
+        <fa-icon [icon]="ytIcon" class="icon"></fa-icon>
+        TEXT
+        """
+    )]
+    [TestCase( "n°2",
+        """
+        TEXT
+        """,
+        """"
+        create <html> transformer
+        begin
+            insert """<fa-icon [icon]="ytIcon" class="icon" ></fa-icon>""" after "TEXT";
+        end
+        """",
+        """
+        TEXT<fa-icon [icon]="ytIcon" class="icon" ></fa-icon>
+        """
+    )]
+
+    public void insert_before( string title, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new HtmlLanguage() );
+        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
+        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
+        sourceCode.ToString().ShouldBe( result );
+    }
 }

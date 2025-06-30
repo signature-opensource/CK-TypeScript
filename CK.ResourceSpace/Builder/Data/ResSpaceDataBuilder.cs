@@ -58,17 +58,6 @@ public sealed class ResSpaceDataBuilder
         {
             return null;
         }
-        var sortResult = DependencySorter<ResPackageDescriptor>.OrderItems( monitor,
-                                                                            _collector.Packages,
-                                                                            discoverers: null );
-        if( !sortResult.IsComplete )
-        {
-            sortResult.LogError( monitor );
-            return null;
-        }
-        Throw.DebugAssert( sortResult.SortedItems != null );
-        Throw.DebugAssert( "No items, only containers (and maybe groups).",
-                            sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
 
         // The "<Code>" package is the first package and represents the generated code.
         // It is empty (no child) and only contains the generated code as AfterResources by design.
@@ -220,88 +209,102 @@ public sealed class ResSpaceDataBuilder
         string? watchRoot = null;
 
         var bAppRequirements = ImmutableArray.CreateBuilder<ResPackage>();
-        foreach( var s in sortResult.SortedItems )
+        foreach( var d in _collector.Packages )
         {
-            Throw.DebugAssert( s.IsGroup == (s.HeadForGroup != null) );
-            if( s.HeadForGroup != null )
+            Throw.DebugAssert( d.Resources is StoreContainer && d.AfterResources is StoreContainer );
+            // Close the CodeGen resources (if they are code generated).
+            if( d.ResourcesInnerContainer is CodeGenResourceContainer c1 ) c1.Close();
+            if( d.AfterResourcesInnerContainer is CodeGenResourceContainer c2 ) c2.Close();
+
+            // Requirements and children have already been indexed because the collector packages are sorted.
+            ImmutableArray<ResPackage> requires;
+            ImmutableArray<ResPackage> children;
+            if( d._requires == null )
             {
-                ResPackageDescriptor d = s.Item;
-                Throw.DebugAssert( d.Resources is StoreContainer && d.AfterResources is StoreContainer );
-                // Close the CodeGen resources (if they are code generated).
-                if( d.ResourcesInnerContainer is CodeGenResourceContainer c1 ) c1.Close();
-                if( d.AfterResourcesInnerContainer is CodeGenResourceContainer c2 ) c2.Close();
+                requires = requiresCode;
+            }
+            else
+            {
+                Throw.DebugAssert( d._requires.All( r => r.IsValid && !r.IsOptional ) );
+                requires = d._requires.Select( r => packageIndex[r.FullName!] ).ToImmutableArray();
+            }
+            if( d._children == null )
+            {
+                children = ImmutableArray<ResPackage>.Empty;
+            }
+            else
+            {
+                Throw.DebugAssert( d._children.All( r => r.IsValid && !r.IsOptional ) );
+                children = d._children.Select( r => packageIndex[r.FullName!] ).ToImmutableArray();
+            }
+            Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
+                               !requires.Intersect( children ).Any() );
 
-                Throw.DebugAssert( "A child cannot be required and a requirement cannot be a child.",
-                                   !s.Requires.Intersect( s.Children ).Any() );
-                // Requirements and children have already been indexed.
-                ImmutableArray<ResPackage> requires = s.Requires.Any()
-                                                        ? s.Requires.Select( s => packageIndex[s.Item.FullName] ).ToImmutableArray()
-                                                        : requiresCode;
-                ImmutableArray<ResPackage> children = s.Children.Select( s => packageIndex[s.Item.FullName] ).ToImmutableArray();
-                var p = new ResPackage( dataCacheBuilder,
-                                        d.FullName,
-                                        d.DefaultTargetPath,
-                                        s.HeadForGroup.Index + 2,
-                                        d.Resources,
-                                        s.Index + 2,
-                                        d.AfterResources,
-                                        d.IsGroup,
-                                        d.Type,
-                                        requires,
-                                        children,
-                                        bAll.Count );
-                bAll.Add( p );
-                if( p.IsLocalPackage )
+            var p = new ResPackage( dataCacheBuilder,
+                                    d.FullName,
+                                    d.DefaultTargetPath,
+                                    d._idxHeader + 2,
+                                    d.Resources,
+                                    d._idxFooter + 2,
+                                    d.AfterResources,
+                                    d.IsGroup,
+                                    d.Type,
+                                    requires,
+                                    children,
+                                    bAll.Count );
+            bAll.Add( p );
+            if( p.IsLocalPackage )
+            {
+                if( p.Resources.LocalPath != null ) ++localPackageResourceCount;
+                if( p.AfterResources.LocalPath != null ) ++localPackageResourceCount;
+                bLocal.Add( p );
+            }
+            // Index it.
+            packageIndex.Add( p.FullName, p );
+            if( p.Type != null )
+            {
+                packageIndex.Add( p.Type, p );
+            }
+            var mappings = d.SingleMappings;
+            if( mappings != null )
+            {
+                foreach( var m in mappings )
                 {
-                    if( p.Resources.LocalPath != null ) ++localPackageResourceCount;
-                    if( p.AfterResources.LocalPath != null ) ++localPackageResourceCount;
-                    bLocal.Add( p );
+                    packageIndex.Add( m, p );
                 }
-                // Index it.
-                packageIndex.Add( p.FullName, p );
-                if( p.Type != null )
-                {
-                    packageIndex.Add( p.Type, p );
-                }
-                var mappings = d.SingleMappings;
-                if( mappings != null )
-                {
-                    foreach( var m in mappings )
-                    {
-                        packageIndex.Add( m, p );
-                    }
-                }
-                // Index the actual container, not the StoreContainer that is "transparent".
-                // This is why on the ResSpaceData, there's no GetPackageResources( IResourceContainer )
-                // but only GetPackageResources( ResourceLocator ) and GetPackageResources( ResourceFolder ):
-                // the IResPackageResources.Resources cannot be found, only their inner containers can and these
-                // are the resource's locator and folder containers.
-                Throw.DebugAssert( p.Resources.Resources == d.Resources && p.AfterResources.Resources == d.AfterResources);
-                resourceIndex.Add( d.ResourcesInnerContainer, p.Resources );
-                resourceIndex.Add( d.AfterResourcesInnerContainer, p.AfterResources );
+            }
+            // Index the actual container, not the StoreContainer that is "transparent".
+            // This is why on the ResSpaceData, there's no GetPackageResources( IResourceContainer )
+            // but only GetPackageResources( ResourceLocator ) and GetPackageResources( ResourceFolder ):
+            // the IResPackageResources.Resources cannot be found, only their inner containers can and these
+            // are the resource's locator and folder containers.
+            Throw.DebugAssert( p.Resources.Resources == d.Resources && p.AfterResources.Resources == d.AfterResources);
+            resourceIndex.Add( d.ResourcesInnerContainer, p.Resources );
+            resourceIndex.Add( d.AfterResourcesInnerContainer, p.AfterResources );
 
-                // Enlist the package resources.
-                allPackageResources[p.Resources.Index] = p.Resources;
-                allPackageResources[p.AfterResources.Index] = p.AfterResources;
-                // Track the watch root.
-                var local = p.Resources.LocalPath ?? p.AfterResources.LocalPath;
-                if( local != null && _collector.LiveStatePath != ResSpaceCollector.NoLiveState )
+            // Enlist the package resources.
+            Throw.DebugAssert( allPackageResources[p.Resources.Index] == null );
+            allPackageResources[p.Resources.Index] = p.Resources;
+            Throw.DebugAssert( allPackageResources[p.AfterResources.Index] == null );
+            allPackageResources[p.AfterResources.Index] = p.AfterResources;
+            // Track the watch root.
+            var local = p.Resources.LocalPath ?? p.AfterResources.LocalPath;
+            if( local != null && _collector.LiveStatePath != ResSpaceCollector.NoLiveState )
+            {
+                Throw.DebugAssert( local.EndsWith( Path.DirectorySeparatorChar ) );
+                if( watchRoot == null )
                 {
-                    Throw.DebugAssert( local.EndsWith( Path.DirectorySeparatorChar ) );
-                    if( watchRoot == null )
-                    {
-                        watchRoot = local.Substring( 0, local.LastIndexOf( Path.DirectorySeparatorChar, local.Length - 2) + 1 );
-                    }
-                    else
-                    {
-                        watchRoot = CommonParentPath( watchRoot, local );
-                    }
-                    Throw.DebugAssert( watchRoot.EndsWith( Path.DirectorySeparatorChar ) );
+                    watchRoot = local.Substring( 0, local.LastIndexOf( Path.DirectorySeparatorChar, local.Length - 2) + 1 );
                 }
-                if( s.IsEntryPoint )
+                else
                 {
-                    bAppRequirements.Add( p );
+                    watchRoot = CommonParentPath( watchRoot, local );
                 }
+                Throw.DebugAssert( watchRoot.EndsWith( Path.DirectorySeparatorChar ) );
+            }
+            if( !d._hasIncomingDeps )
+            {
+                bAppRequirements.Add( p );
             }
         }
         // We now can initialize the "<App>" package.
@@ -328,7 +331,7 @@ public sealed class ResSpaceDataBuilder
         }
         monitor.Debug( bAll.Skip( 1 )
                            .Select( x => $"""
-                           {(x.IsLocalPackage ? "(local) " : "        " )}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string(' ', x.ToString().Length)} |{c}" ))}
+                           {(x.IsLocalPackage ? "(local) " : "        " )}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string(' ', x.ToString().Length + 8)} |{c}" ))}
                            """ )
                            .Concatenate( Environment.NewLine ) );
 

@@ -23,11 +23,6 @@ public sealed partial class ResPackageDescriptor
         public static Ref Invalid => default;
 
         /// <summary>
-        /// Gets the invalid but optional reference.
-        /// </summary>
-        public static Ref OptionalInvalid => new Ref( true, null );
-
-        /// <summary>
         /// Initializes a new <see cref="Ref"/>.
         /// </summary>
         /// <param name="fullName">The full name. Must not be empty or whitespace.</param>
@@ -113,24 +108,6 @@ public sealed partial class ResPackageDescriptor
             Type t => t.FullName,
             _ => null
         };
-
-        Ref( bool o, object? r )
-        {
-            _ref = r;
-            _optional = o;
-        }
-
-        /// <summary>
-        /// Returns an optional reference.
-        /// </summary>
-        /// <returns>An optional reference.</returns>
-        public Ref ToOptional() => new Ref( false, _ref );
-
-        /// <summary>
-        /// Returns a required reference.
-        /// </summary>
-        /// <returns>A required reference.</returns>
-        public Ref ToRequired() => new Ref( true, _ref );
 
         public static implicit operator Ref( string fullName ) => new Ref( fullName );
         public static implicit operator Ref( ResPackageDescriptor package ) => new Ref( package );

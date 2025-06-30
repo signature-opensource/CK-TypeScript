@@ -1,4 +1,4 @@
-﻿using CK.Transform.Core;
+using CK.Transform.Core;
 using System;
 
 namespace CK.Html.Transform;
@@ -18,8 +18,8 @@ public static class TokenExtensions
         return (HtmlTokenType)t.TokenType switch
         {
             HtmlTokenType.StartingTag
-            or HtmlTokenType.StartingVoidElement
-            or HtmlTokenType.StartingEmptyElement
+            or HtmlTokenType.StartingVoidElement => t.Text.Span.Slice( 1 ),
+            HtmlTokenType.StartingEmptyElement
             or HtmlTokenType.EmptyElement
             or HtmlTokenType.EmptyVoidElement => GetName( 1, t ),
             HtmlTokenType.EndingTag => GetName( 2, t ),

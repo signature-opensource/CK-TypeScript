@@ -115,7 +115,11 @@ public class LiveTests
                                                         }
                                                         """ ) );
 
-            await Task.Delay( 500 );
+            const int waitMs = 300;
+            using( TestHelper.Monitor.OpenInfo( $"Waiting {waitMs} ms." ) )
+            {
+                await Task.Delay( waitMs );
+            }
             var changed = File.ReadAllText( enFinalPath );
             changed.ShouldContain( $$"""
                     "Public.Title": "{{changeString}}"
@@ -167,10 +171,10 @@ public class LiveTests
             };
         }
 
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Gear.SystemState.Package ), IgnoreLocal() );
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.TopBar.Package ), IgnoreLocal() );
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.Footer.Package ), IgnoreLocal() );
-        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.PublicSection.Package ), IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Gear.SystemState.Package ), ignoreLocal: IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.TopBar.Package ), ignoreLocal: IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.Public.Footer.Package ), ignoreLocal: IgnoreLocal() );
+        spaceCollector.RegisterPackage( TestHelper.Monitor, typeof( Demo.PublicSection.Package ), ignoreLocal: IgnoreLocal() );
 
         var spaceDataBuilder = new ResSpaceDataBuilder( spaceCollector );
         var spaceData = spaceDataBuilder.Build( TestHelper.Monitor ).ShouldNotBeNull();
