@@ -90,6 +90,28 @@ public class InjectIntoTests
         <!--</FirstInjectionPointEver>-->
         """
         )]
+    [TestCase( "n°4",
+        """
+        TEXT
+        <!-- <HERE />-->
+        """,
+        """"
+        create <html> transformer
+        begin
+            inject """
+
+                   <fa-icon [icon]="ytIcon" class="icon" />
+        
+                   """ into <HERE>;
+        end
+        """",
+        """
+        TEXT
+        <!--<HERE >-->
+        <fa-icon [icon]="ytIcon" class="icon" />
+        <!--</HERE>-->
+        """
+        )]
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new HtmlLanguage() );
