@@ -9,7 +9,7 @@ namespace CK.Core;
 /// <summary>
 /// Mutable package descriptor.
 /// </summary>
-public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped, IDependentItemContainerRef
+public sealed partial class ResPackageDescriptor
 {
     readonly ResPackageDescriptorContext _context;
     readonly string _fullName;
@@ -264,42 +264,6 @@ public sealed partial class ResPackageDescriptor : IDependentItemContainerTyped,
         }
         return true;
     }
-
-
-    DependentItemKind IDependentItemContainerTyped.ItemKind => _isGroup ? DependentItemKind.Group : DependentItemKind.Container;
-
-    IDependentItemContainerRef? IDependentItem.Container => _package.AsPackageDescriptor;
-
-    // We don't use the Optional feature of th CK.SetupDependency model: optionality
-    // is managed here, at the PackageDescriptor level and this is for the best.
-    // This feature should be removed from CK.SetupDependency or a new, simpler package
-    // should be created without optionality and registration features that complicates
-    // (a lot) its implementation.
-    sealed class Adapter : IDependentItemGroupRef
-    {
-        readonly string _fullName;
-        public Adapter( Ref r )
-        {
-            Throw.DebugAssert( r.IsValid );
-            _fullName = r.FullName;
-        }
-        public string FullName => _fullName;
-        public bool Optional => false;
-    }
-
-    IEnumerable<IDependentItemRef>? IDependentItem.Requires => _requires?.Select( r => new Adapter( r ) );
-
-    IEnumerable<IDependentItemRef>? IDependentItem.RequiredBy => _requiredBy?.Select( r => new Adapter( r ) );
-
-    IEnumerable<IDependentItemRef>? IDependentItemGroup.Children => _children?.Select( r => new Adapter( r ) );
-
-    IDependentItemRef? IDependentItem.Generalization => null;
-
-    IEnumerable<IDependentItemGroupRef>? IDependentItem.Groups => _groups?.Select( r => new Adapter( r ) );
-
-    bool IDependentItemRef.Optional => false;
-
-    object? IDependentItem.StartDependencySort( IActivityMonitor m ) => null;
 
     /// <inheritdoc cref="ResPackage.ToString()"/>
     public override string ToString() => ResPackage.ToString( _fullName, _type );

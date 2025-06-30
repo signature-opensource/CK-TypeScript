@@ -59,20 +59,6 @@ public sealed class ResSpaceDataBuilder
             return null;
         }
 
-        var sortResult = DependencySorter<ResPackageDescriptor>.OrderItems( monitor,
-                                                                            _collector.Packages,
-                                                                            discoverers: null );
-        if( !sortResult.IsComplete )
-        {
-            sortResult.LogError( monitor );
-            return null;
-        }
-        Throw.DebugAssert( sortResult.SortedItems != null );
-        Throw.DebugAssert( "No items, only containers (and maybe groups).",
-                            sortResult.SortedItems.All( s => s.IsGroup || s.IsGroupHead ) );
-
-
-
         // The "<Code>" package is the first package and represents the generated code.
         // It is empty (no child) and only contains the generated code as AfterResources by design.
         // The code container, if not yet knwon, is a ResourceContainerWrapper that can transition from

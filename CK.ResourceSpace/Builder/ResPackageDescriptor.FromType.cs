@@ -13,7 +13,7 @@ public sealed partial class ResPackageDescriptor
         _isGroup = !typeof( IResourcePackage ).IsAssignableFrom( _type );
         _isOptional = isOptional ?? _type.CustomAttributes.Any( a => a.AttributeType == typeof( OptionalTypeAttribute ) );
         // Detect a useless CKPackage.xml for the type: currently, there's
-        // no "merge" possible, the type drives.
+        // no "merge" possible: the type drives.
         var descriptor = _resources.GetResource( "CKPackage.xml" );
         if( descriptor.IsValid )
         {
@@ -47,48 +47,49 @@ public sealed partial class ResPackageDescriptor
             }
             else if( aType.IsGenericType )
             {
-                if( aType == typeof( PackageAttribute<> ) )
+                var gType = aType.GetGenericTypeDefinition();
+                if( gType == typeof( PackageAttribute<> ) )
                 {
                     errorSinglePackage |= _package.IsValid;
                     _package = aType.GetGenericArguments()[0];
                 }
-                else if( aType == typeof( RequiresAttribute<> ) || aType == typeof( RequiresAttribute<,> ) || aType == typeof( RequiresAttribute<,,> )
-                         || aType == typeof( RequiresAttribute<,,,> ) || aType == typeof( RequiresAttribute<,,,,> ) || aType == typeof( RequiresAttribute<,,,,,> ) )
+                else if( gType == typeof( RequiresAttribute<> ) || gType == typeof( RequiresAttribute<,> ) || gType == typeof( RequiresAttribute<,,> )
+                         || gType == typeof( RequiresAttribute<,,,> ) || gType == typeof( RequiresAttribute<,,,,> ) || gType == typeof( RequiresAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), false, ref _requires );
                 }
-                else if( aType == typeof( OptionalRequiresAttribute<> ) || aType == typeof( OptionalRequiresAttribute<,> ) || aType == typeof( OptionalRequiresAttribute<,,> )
-                         || aType == typeof( OptionalRequiresAttribute<,,,> ) || aType == typeof( OptionalRequiresAttribute<,,,,> ) || aType == typeof( OptionalRequiresAttribute<,,,,,> ) )
+                else if( gType == typeof( OptionalRequiresAttribute<> ) || gType == typeof( OptionalRequiresAttribute<,> ) || gType == typeof( OptionalRequiresAttribute<,,> )
+                         || gType == typeof( OptionalRequiresAttribute<,,,> ) || gType == typeof( OptionalRequiresAttribute<,,,,> ) || gType == typeof( OptionalRequiresAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), true, ref _requires );
                 }
-                else if( aType == typeof( RequiredByAttribute<> ) || aType == typeof( RequiredByAttribute<,> ) || aType == typeof( RequiredByAttribute<,,> )
-                         || aType == typeof( RequiredByAttribute<,,,> ) || aType == typeof( RequiredByAttribute<,,,,> ) || aType == typeof( RequiredByAttribute<,,,,,> ) )
+                else if( gType == typeof( RequiredByAttribute<> ) || gType == typeof( RequiredByAttribute<,> ) || gType == typeof( RequiredByAttribute<,,> )
+                         || gType == typeof( RequiredByAttribute<,,,> ) || gType == typeof( RequiredByAttribute<,,,,> ) || gType == typeof( RequiredByAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), false, ref _requiredBy );
                 }
-                else if( aType == typeof( OptionalRequiredByAttribute<> ) || aType == typeof( OptionalRequiredByAttribute<,> ) || aType == typeof( OptionalRequiredByAttribute<,,> )
-                         || aType == typeof( OptionalRequiredByAttribute<,,,> ) || aType == typeof( OptionalRequiredByAttribute<,,,,> ) || aType == typeof( OptionalRequiredByAttribute<,,,,,> ) )
+                else if( gType == typeof( OptionalRequiredByAttribute<> ) || gType == typeof( OptionalRequiredByAttribute<,> ) || gType == typeof( OptionalRequiredByAttribute<,,> )
+                         || gType == typeof( OptionalRequiredByAttribute<,,,> ) || gType == typeof( OptionalRequiredByAttribute<,,,,> ) || gType == typeof( OptionalRequiredByAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), true, ref _requiredBy );
                 }
-                else if( aType == typeof( GroupsAttribute<> ) || aType == typeof( GroupsAttribute<,> ) || aType == typeof( GroupsAttribute<,,> )
-                         || aType == typeof( GroupsAttribute<,,,> ) || aType == typeof( GroupsAttribute<,,,,> ) || aType == typeof( GroupsAttribute<,,,,,> ) )
+                else if( gType == typeof( GroupsAttribute<> ) || gType == typeof( GroupsAttribute<,> ) || gType == typeof( GroupsAttribute<,,> )
+                         || gType == typeof( GroupsAttribute<,,,> ) || gType == typeof( GroupsAttribute<,,,,> ) || gType == typeof( GroupsAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), false, ref _groups );
                 }
-                else if( aType == typeof( OptionalGroupsAttribute<> ) || aType == typeof( OptionalGroupsAttribute<,> ) || aType == typeof( OptionalGroupsAttribute<,,> )
-                         || aType == typeof( OptionalGroupsAttribute<,,,> ) || aType == typeof( OptionalGroupsAttribute<,,,,> ) || aType == typeof( OptionalGroupsAttribute<,,,,,> ) )
+                else if( gType == typeof( OptionalGroupsAttribute<> ) || gType == typeof( OptionalGroupsAttribute<,> ) || gType == typeof( OptionalGroupsAttribute<,,> )
+                         || gType == typeof( OptionalGroupsAttribute<,,,> ) || gType == typeof( OptionalGroupsAttribute<,,,,> ) || gType == typeof( OptionalGroupsAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), true, ref _groups );
                 }
-                else if( aType == typeof( ChildrenAttribute<> ) || aType == typeof( ChildrenAttribute<,> ) || aType == typeof( ChildrenAttribute<,,> )
-                         || aType == typeof( ChildrenAttribute<,,,> ) || aType == typeof( ChildrenAttribute<,,,,> ) || aType == typeof( ChildrenAttribute<,,,,,> ) )
+                else if( gType == typeof( ChildrenAttribute<> ) || gType == typeof( ChildrenAttribute<,> ) || gType == typeof( ChildrenAttribute<,,> )
+                         || gType == typeof( ChildrenAttribute<,,,> ) || gType == typeof( ChildrenAttribute<,,,,> ) || gType == typeof( ChildrenAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), false, ref _children );
                 }
-                else if( aType == typeof( OptionalChildrenAttribute<> ) || aType == typeof( OptionalChildrenAttribute<,> ) || aType == typeof( OptionalChildrenAttribute<,,> )
-                         || aType == typeof( OptionalChildrenAttribute<,,,> ) || aType == typeof( OptionalChildrenAttribute<,,,,> ) || aType == typeof( OptionalChildrenAttribute<,,,,,> ) )
+                else if( gType == typeof( OptionalChildrenAttribute<> ) || gType == typeof( OptionalChildrenAttribute<,> ) || gType == typeof( OptionalChildrenAttribute<,,> )
+                         || gType == typeof( OptionalChildrenAttribute<,,,> ) || gType == typeof( OptionalChildrenAttribute<,,,,> ) || gType == typeof( OptionalChildrenAttribute<,,,,,> ) )
                 {
                     AddTypes( aType.GetGenericArguments(), true, ref _children );
                 }
@@ -123,22 +124,6 @@ public sealed partial class ResPackageDescriptor
             }
         }
 
-    }
-
-
-    void HandleMultiType( IActivityMonitor monitor,
-                          IEnumerable<(Type GenType, Type[] GenArgs, bool Optional)> genAttributes,
-                          ref List<Ref>? list,
-                          params Type[] genTypes )
-    {
-        foreach( var genAttribute in genAttributes.Where( a => genTypes.Contains( a.GenType ) ) )
-        {
-            foreach( var t in genAttribute.GenArgs )
-            {
-                list ??= new List<Ref>( genAttribute.GenArgs.Length );
-                list.Add( new Ref( t, genAttribute.Optional ) );
-            }
-        }
     }
 
 }
