@@ -10,7 +10,7 @@ namespace CK.Setup;
 /// <para>
 /// <see cref="ToAttribute(IActivityMonitor, Func{string, Type?})"/> checks the validity and creates the
 /// corresponding attribute. Then <see cref="TypeScriptTypeAttribute.ApplyOverride(ITypeScriptTypeDecorationAttribute?)"/> is used if the
-/// type is decorated with the TypeScriptAttribute. The configuration overrides the declare attribute values.
+/// type is decorated with the TypeScriptAttribute. The configuration overrides the attribute values.
 /// </para>
 /// </summary>
 public sealed class TypeScriptTypeConfiguration
