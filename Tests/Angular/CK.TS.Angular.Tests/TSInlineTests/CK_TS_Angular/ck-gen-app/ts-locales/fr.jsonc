@@ -1,8 +1,0 @@
-{
-  // This one will be ignored: this key doesn't exist.
-  "PublicFooter.Title": "Titre du pied de page",
-  // This one will be handled.
-  // It is useless to specify "O:" prefix: all files in
-  // ck-gen-transform/ts-locales are "override" files: their keys are implictely prefixed by "O:".
-  "PublicFooter.Address": "29 Avenue de l'industrie, 42390 Villars (FRANCE!)"
-}

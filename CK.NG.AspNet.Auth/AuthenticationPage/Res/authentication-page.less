@@ -1,4 +1,4 @@
-.ck-authentication-page {
+ck-authentication-page {
     height: 100vh;
 }
 
@@ -19,7 +19,8 @@
         flex: 6;
         position: relative;
         display: grid;
-        box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+        background-color: @ck-backoffice-bg-color;
 
         .logo {
             position: relative;
@@ -35,9 +36,9 @@
     }
 }
 
-.ck-back-btn {
+.ck-auth-back-btn {
     font-size: @subtitle-font-size;
     position: absolute;
-    top: 5%;
-    margin-left: 2%;
+    top: @ck-auth-back-btn-top;
+    margin-left: @ck-auth-back-btn-left-margin;
 }

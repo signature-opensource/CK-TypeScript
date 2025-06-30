@@ -1,16 +1,17 @@
 <div class="ck-auth-mobile" *appResponsive="'(max-width: 1024px)'">
-    <button class="ck-back-btn" nz-button nzType="link" routerLink="/">
+    <button class="ck-auth-back-btn" nz-button nzType="link" routerLink="">
         <fa-icon class="ck-btn-icon" [icon]="leftIcon"></fa-icon>
         {{ 'Button.Back' | translate }}
     </button>
+    <router-outlet />
 </div>
 
 <div class="ck-auth-desktop" *appResponsive="'(min-width: 1025px)'">
     <div class="left">
-        <img src="CK/Ng/AspNet/Auth/AuthenticationPage/login-logo.png" class="logo" width="766" height="200" priority alt />
+        <img [src]="displayedLogoSrc" class="logo" width="766" height="200" priority alt />
     </div>
     <div class="right">
-        <button class="ck-back-btn" nz-button nzType="link" routerLink="/">
+        <button class="ck-auth-back-btn" nz-button nzType="link" routerLink="/">
             <fa-icon class="ck-btn-icon" [icon]="leftIcon"></fa-icon>
             {{ 'Button.Back' | translate }}
         </button>

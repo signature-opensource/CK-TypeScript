@@ -19,9 +19,14 @@ namespace CK.Ng.Zorro;
 
 [NgProviderImport( "fr_FR, provideNzI18n", LibraryName = "ng-zorro-antd/i18n" )]
 [NgProvider( "provideNzI18n( fr_FR )" )]
+[NgProviderImport( "provideAnimationsAsync", LibraryName = "@angular/platform-browser/animations/async" )]
+[NgProvider( "provideAnimationsAsync()" )]
 
 [RegisterTypeScriptType( typeof( SimpleUserMessage ) )]
 [RegisterTypeScriptType( typeof( UserMessageLevel ) )]
+[TypeScriptFile( "datetime.pipe.ts", "DateFormatPipe" )]
+[TypeScriptFile( "notification.service.ts", "CKNotificationService" )]
+[TypeScriptFile( "responsive.directive.ts", "ResponsiveDirective" )]
 
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]
 [Requires<CK.Ng.Localization.TSPackage>]

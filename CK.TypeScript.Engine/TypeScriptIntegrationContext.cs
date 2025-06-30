@@ -495,6 +495,7 @@ public sealed partial class TypeScriptIntegrationContext
                 _targetPackageJson.Scripts.TryAdd( "test", "jest" );
                 if( !AddOrUpdateTargetProjectDependency( monitor, "jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
                     || !AddOrUpdateTargetProjectDependency( monitor, "ts-jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
+                    || !AddOrUpdateTargetProjectDependency( monitor, "jest-util", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
                     || !AddOrUpdateTargetProjectDependency( monitor, "@types/jest", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
                     || !AddOrUpdateTargetProjectDependency( monitor, "@types/node", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" )
                     || !AddOrUpdateTargetProjectDependency( monitor, "jest-environment-jsdom", SVersionBound.All, DependencyKind.DevDependency, "AutoInstallJest configuration" ) )

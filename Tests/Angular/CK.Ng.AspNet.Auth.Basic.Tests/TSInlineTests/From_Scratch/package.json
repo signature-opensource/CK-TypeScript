@@ -33,22 +33,24 @@
     "zone.js": "~0.15"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^19.2.14",
-    "@angular/cli": "^19.2.14",
+    "@angular-devkit/build-angular": "^19.2.15",
+    "@angular/cli": "^19.2.15",
     "@angular/compiler-cli": "^19.2",
     "@types/jest": "^29.5.14",
     "@types/luxon": "^3.6.2",
-    "@types/node": "^22.15.29",
+    "@types/node": "^24.0.1",
     "@yarnpkg/sdks": "^3.2.2",
     "axios": "^1.7.7",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "30.0.0-beta.3",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
     "jest-preset-angular": "^14.5.4",
-    "ts-jest": "^29.3.4",
+    "jest-util": "^30.0.0",
+    "ts-jest": "^29.4.0",
     "typescript": "~5.7.2"
   },
   "ckVersion": 1,
   "peerDependencies": {
     "axios": "^1.7.7"
-  }
+  },
+  "packageManager": "yarn@4.9.0+sha512.5f5f00843eae735dfab6f0442524603e987ceca55e98b36eb0120f4e58908e5b1406545321e46627dca97d15d562f23dc13fb96cabd4e6bc92d379f619001e4e"
 }

@@ -3,10 +3,8 @@ import { RouterOutlet } from '@angular/router';
 
 @Component({
     selector: 'ck-private-page',
-    standalone: true,
     imports: [RouterOutlet],
-    templateUrl: './private-page.component.html',
-    styleUrl: './private-page.component.less'
+    templateUrl: './private-page.component.html'
 })
 export class PrivatePageComponent {
 }

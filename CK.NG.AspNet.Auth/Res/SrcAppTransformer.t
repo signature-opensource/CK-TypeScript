@@ -4,7 +4,7 @@ begin
     begin
         insert before * """
                         @if( isAuthenticated() ) {
-                        <ck-private-page />
+                            <ck-private-page />
                         } @else {
         
                         """;
@@ -35,8 +35,8 @@ begin
             insert after first "{"
                     """
 
-                    #authService = inject(NgAuthService);
-                    isAuthenticated = computed(() => this.#authService.authenticationInfo().user.userId !== 0);
+                      readonly #authService = inject( NgAuthService );
+                      isAuthenticated = computed( () => this.#authService.authenticationInfo().user.userId !== 0 );
 
 
                     """;
