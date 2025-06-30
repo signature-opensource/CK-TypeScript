@@ -32,7 +32,7 @@ enum HtmlTokenType
     Text = HtmlClassBit,
 
     /// <summary>
-    /// The token is a starting <c>&lt;tag...</c> element with at least one attribute.
+    /// The token is a starting <c>&lt;tag</c> element with at least one attribute.
     /// <para>
     /// Per https://html.spec.whatwg.org/multipage/syntax.html#syntax-tag-name:
     /// <list type="bullet">

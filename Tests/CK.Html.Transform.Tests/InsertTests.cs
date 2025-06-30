@@ -86,13 +86,13 @@ public class InsertTests
         create <html> transformer
         begin
             insert """
-                   <fa-icon [icon]="ytIcon" class="icon" />
+                   <fa-icon [icon]="ytIcon" class="icon"></fa-icon>
         
                    """ before "TEXT";
         end
         """",
         """
-        <fa-icon [icon]="ytIcon" class="icon" />
+        <fa-icon [icon]="ytIcon" class="icon"></fa-icon>
         TEXT
         """
     )]
@@ -103,11 +103,11 @@ public class InsertTests
         """"
         create <html> transformer
         begin
-            insert """<fa-icon [icon]="ytIcon" class="icon" />""" after "TEXT";
+            insert """<fa-icon [icon]="ytIcon" class="icon" ></fa-icon>""" after "TEXT";
         end
         """",
         """
-        TEXT<fa-icon [icon]="ytIcon" class="icon" />
+        TEXT<fa-icon [icon]="ytIcon" class="icon" ></fa-icon>
         """
     )]
 
