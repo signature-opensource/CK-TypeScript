@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -52,10 +53,20 @@ sealed partial class CoreCollector
                 {
                     // Third step: Projects the Children to their corresponding Groups.
                     // This fails if a Groups contains more than one package that is not a Group (but a Package).
-                    if( CleanChildrenAndTransferToGroups() )
+
+                    // The initial package list and all requires and children
+                    // are sorted by FullName to guaranty determinism.
+                    // Reverting the names enables to discover missing topological constraints
+                    // in the graph.
+                    Comparison<ResPackageDescriptor> order = _collector._revertOrderingNames
+                                                                ? ( x, y ) => y.FullName.CompareTo( x.FullName )
+                                                                : ( x, y ) => x.FullName.CompareTo( y.FullName );
+                    var context = new SortContext( order );
+                    if( CleanChildrenAndTransferToGroups( ref context ) )
                     {
                         // The actual graph traversal can start.
-                        return DoSort( _collector._revertOrderingNames );
+                        _collector._packages.Sort( order );
+                        return DoSort( ref context );
                     }
                 }
 
@@ -164,7 +175,7 @@ sealed partial class CoreCollector
             // - this is necessarily a non optional package if the reference was not optional
             // - this can be a type, a string or a still optional package if the reference was optional.
             // Don't use Add on the dictionary here (we may come from an already cached optional reference and
-            // hanvig resolved a non optinal one).
+            // having resolved a non optional one).
             _resolved[r.FullName] = result._ref;
             var t = r.AsType;
             if( t != null )
@@ -247,7 +258,7 @@ sealed partial class CoreCollector
             return Ref.Invalid;
         }
 
-        #endregion    }
+        #endregion
 
         bool TransferToRequiresAndChildren()
         {
@@ -296,50 +307,55 @@ sealed partial class CoreCollector
             return success;
         }
 
-        bool CleanChildrenAndTransferToGroups()
+        bool CleanChildrenAndTransferToGroups( ref SortContext context )
         {
             bool success = true;
             // Use foreach: this checks that during this step the package
             // list is not touched.
             foreach( var p in _collector._packages )
             {
-                if( p._children != null )
+                // Skips when no children.
+                if( p._children == null ) continue;
+                // First, resolve the children to non optional ResPackageDescriptor,
+                // remove duplicates and apply the name ordering to the children set.
+                bool atLeastOne = false;
+                foreach( var r in p._children )
                 {
-                    for( int i = 0; i < p._children.Count; i++ )
+                    var child = FinalResolve( r );
+                    if( child != null )
                     {
-                        Ref r = p._children[i];
-                        var child = FinalResolve( r );
-                        if( child != null )
-                        {
-                            // Must check that no 2 !IsGroup there...
-                            if( child._groups == null )
-                            {
-                                child.Groups.Add( p );
-                            }
-                            else
-                            {
-                                if( !p.IsGroup )
-                                {
-                                    var alreadyPackage = child._groups.Select( r => r.AsPackageDescriptor )
-                                                                      .FirstOrDefault( IsActualPackage );
-                                    if( alreadyPackage != null )
-                                    {
-                                        _monitor.Error( $"Multiple package error: '{child}' is contained in '{p}' and '{alreadyPackage}' that are both Packages (and not Groups)." );
-                                        success = false;
-                                    }
-                                }
-                                child._groups.Add( p );
-                            }
-                        }
-                        else
-                        {
-                            p._children.RemoveAt( i );
-                        }
+                        atLeastOne = true;
+                        context.SharedBufferAddPackages( child );
                     }
+                }
+                if( !atLeastOne )
+                {
                     // Normalizes to null.
-                    if( p._children.Count == 0 )
+                    p._children = null;
+                    continue;
+                }
+                // Then, transfer children to groups while detecting "multiple package error" if
+                // the current package is a package rather than a simple Group.
+                foreach( var rChild in context.SharedBufferConclude( p._children ) )
+                {
+                    var child = Unsafe.As<ResPackageDescriptor>( rChild._ref! );
+                    if( child._groups == null )
                     {
-                        p._children = null;
+                        child.Groups.Add( p );
+                    }
+                    else
+                    {
+                        if( !p.IsGroup )
+                        {
+                            var alreadyPackage = child._groups.Select( r => r.AsPackageDescriptor )
+                                                              .FirstOrDefault( IsActualPackage );
+                            if( alreadyPackage != null && alreadyPackage != p )
+                            {
+                                _monitor.Error( $"Multiple package error: '{child}' is contained in '{p}' and '{alreadyPackage}' that are both Packages (and not Groups)." );
+                                success = false;
+                            }
+                        }
+                        child._groups.Add( p );
                     }
                 }
             }
@@ -421,7 +437,7 @@ sealed partial class CoreCollector
                 _unsortedPackagesBuffer.Add( d );
             }
 
-            internal readonly ResPackageDescriptor[] SharedBufferConclude( List<Ref> finalRefs )
+            internal readonly List<Ref> SharedBufferConclude( List<Ref> finalRefs )
             {
                 _sortedPackagesBuffer.AddRange( _unsortedPackagesBuffer );
                 _unsortedPackagesBuffer.Clear();
@@ -433,23 +449,13 @@ sealed partial class CoreCollector
                 {
                     finalRefs.Add( d );
                 }
-                var result = s.ToArray();
                 _sortedPackagesBuffer.Clear();
-                return result;
+                return finalRefs;
             }
         }
 
-        bool DoSort( bool revertNames )
+        bool DoSort( ref SortContext context )
         {
-            // The initial package list and all requires and children
-            // are sorted by FullName to guaranty determinism.
-            // Reverting the names enables to discover missing topological constraints
-            // in the graph.
-            Comparison<ResPackageDescriptor> order = revertNames
-                                                        ? ( x, y ) => y.FullName.CompareTo( x.FullName )
-                                                        : ( x, y ) => x.FullName.CompareTo( y.FullName );
-            var context = new SortContext( order );
-            _collector._packages.Sort( order );
             // Use foreach: this checks that during this step the package
             // list is not touched.
             foreach( var p in _collector._packages )
@@ -489,6 +495,10 @@ sealed partial class CoreCollector
             // No need to cleanup the groups list here: it's no more used.
             if( p._groups != null )
             {
+                // This is where the sorter is not perfectly determinist. If [Groups] are used (but this is
+                // barely used), because we don't sort the groups here, final order may be impacted (the result
+                // will always be correct but not exactly the same for the same logical graph).
+                // To make the sorter fully determinist, groups should be ordered here.
                 foreach( var g in p._groups )
                 {
                     var group = g.AsPackageDescriptor;
@@ -522,7 +532,7 @@ sealed partial class CoreCollector
                 {
                     foreach( var target in context.SharedBufferConclude( p._requires ) )
                     {
-                        if( !HandleRequires( ref context, p, target ) )
+                        if( !HandleRequires( ref context, p, Unsafe.As<ResPackageDescriptor>( target._ref! ) ) )
                         {
                             return false;
                         }
