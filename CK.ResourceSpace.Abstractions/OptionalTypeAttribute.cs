@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace CK.Core;
 
 /// <summary>
-/// Decorates an opt-in type: it must be explicitly registered or required by another
-/// registered component, otherwise it is ignored.
+/// Decorates an opt-in type: it must be explicitly registered (see <see cref="RegistrationMode.Explicit"/>)
+/// or required by another registered component, otherwise it is ignored.
+/// <para>
+/// Engines that handles such optional types should ensure that this is applied to "implementation": there is no
+/// such thing as an "optional abstraction", an abstraction is always "available" unless it has no registered "implementation".
+/// </para>
 /// </summary>
-[AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
+[AttributeUsage( AttributeTargets.Class|AttributeTargets.Struct|AttributeTargets.Interface, AllowMultiple = false, Inherited = false )]
 public sealed class OptionalTypeAttribute : Attribute
 {
 }

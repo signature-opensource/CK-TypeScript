@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.TypeScript;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     {
         Barrels = new HashSet<string>();
         Types = new List<TypeScriptTypeConfiguration>();
+        ExcludedTypes = new HashSet<Type>();
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
         GitIgnoreCKGenFolder = true;
@@ -93,6 +95,12 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public List<TypeScriptTypeConfiguration> Types { get; }
 
     /// <summary>
+    /// Gets the set of excluded types. When a type appears in this set, it is always
+    /// ignored even if it appears in <see cref="Types"/>.
+    /// </summary>
+    public HashSet<Type> ExcludedTypes { get; }
+
+    /// <summary>
     /// Gets or sets the name of this TypeScript configuration that is the <see cref="ExchangeableRuntimeFilter.Name"/>
     /// of the exhangeable type set defined by this configuration.
     /// <para>
@@ -124,20 +132,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </para>
     /// </summary>
     public string? DefaultTypeScriptVersion { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether yarn will be automatically installed (from an embedded resource in the engine)
-    /// if not found in <see cref="TargetProjectPath"/> or above.
-    /// <para>
-    /// if no yarn can be found in <see cref="TargetProjectPath"/> or above and this is set to false, no TypeScript build will
-    /// be done (as if <see cref="IntegrationMode"/> was set to <see cref="CKGenIntegrationMode.None"/>).
-    /// </para>
-    /// <para>
-    /// Defaults to false.
-    /// </para>
-    /// </summary>
-    [Obsolete( "Use InstallYarn = None/AutoInstall/AutoUpgrade", true )]
-    public bool AutoInstallYarn { get; set; }
 
     /// <summary>
     /// Gets or sets whether Yarn must be installed or upgraded.
@@ -217,6 +211,13 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                 ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( name ) );
             }
         }
+
+        ExcludedTypes.Clear();
+        ExcludedTypes.AddRange(
+            e.Elements( EngineConfiguration.xExcludedTypes )
+             .Elements( EngineConfiguration.xType )
+             .Select( e => SimpleTypeFinder.WeakResolver( (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value, throwOnError: true )! ) );
+
 
         Types.Clear();
         Types.AddRange( e.Elements( EngineConfiguration.xTypes )

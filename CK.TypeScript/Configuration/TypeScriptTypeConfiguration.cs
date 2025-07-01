@@ -5,6 +5,8 @@ using System.Xml.Linq;
 
 namespace CK.Setup;
 
+
+
 /// <summary>
 /// Configuration of a type that must be generated. This is the external version of <see cref="TypeScriptTypeAttribute"/>.
 /// <para>

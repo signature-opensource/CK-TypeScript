@@ -31,8 +31,8 @@ public interface ITypeScriptTypeDecorationAttribute
 
     /// <summary>
     /// Gets or sets another type which defines the final <see cref="Folder"/> and <see cref="FileName"/>.
-    /// Both Folder and FileName MUST be null otherwise an <see cref="InvalidOperationException"/> is raised (conversely, Folder and FileName can
-    /// be set to non null values only if this SameFileAs is null).
+    /// Both Folder and FileName MUST be null otherwise an <see cref="InvalidOperationException"/> is raised (conversely,
+    /// Folder and FileName can be set to non null values only if this SameFileAs is null).
     /// </summary>
     Type? SameFileAs { get; set; }
 

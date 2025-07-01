@@ -9,9 +9,6 @@ public static class CKomposableAppBuilderExtensions
     /// Ensures that at least one <see cref="TypeScriptBinPathAspectConfiguration"/> exists in the given <paramref name="binPathName"/>.
     /// If <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/> is empty, configures it to target the
     /// conventional "<see cref="ICKomposableAppBuilder.GetHostFolderPath">HostFolderPath</see>/<see cref="ICKomposableAppBuilder.ApplicationName">ApplicationName</see>.Web" path.
-    /// <para>
-    /// Sets <see cref="TypeScriptBinPathAspectConfiguration.AutoInstallYarn"/> and <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/> to true.
-    /// </para>
     /// </summary>
     /// <param name="builder">This builder.</param>
     /// <param name="binPathName">The <see cref="BinPathConfiguration.Name"/> to consider.</param>

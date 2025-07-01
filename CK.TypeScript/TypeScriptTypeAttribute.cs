@@ -4,6 +4,7 @@ using System.Diagnostics;
 
 namespace CK.TypeScript;
 
+
 /// <summary>
 /// Triggers TypeScript code generation for the decorated enumeration or configures code generation for a decorated classe,
 /// struct or interface.
