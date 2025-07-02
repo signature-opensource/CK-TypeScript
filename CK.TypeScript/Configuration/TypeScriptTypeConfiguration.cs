@@ -15,6 +15,7 @@ namespace CK.Setup;
 /// type is decorated with the TypeScriptAttribute. The configuration overrides the attribute values.
 /// </para>
 /// </summary>
+[Obsolete("Pouf")]
 public sealed class TypeScriptTypeConfiguration
 {
     /// <summary>

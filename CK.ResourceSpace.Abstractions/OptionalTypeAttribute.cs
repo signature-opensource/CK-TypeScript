@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace CK.Core;
 
 /// <summary>
-/// Decorates an opt-in type: it must be explicitly registered (see <see cref="RegistrationMode.Explicit"/>)
+/// Decorates an opt-in type: it must be explicitly registered (see <see cref="RegistrationMode.Required"/>)
 /// or required by another registered component, otherwise it is ignored.
 /// <para>
 /// Engines that handles such optional types should ensure that this is applied to "implementation": there is no

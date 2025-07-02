@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Setup;
 using System;
 using System.Diagnostics;
@@ -92,7 +93,7 @@ public class TypeScriptTypeAttribute : ContextBoundDelegationAttribute, ITypeScr
         if( other.TypeName != null ) TypeName = other.TypeName;
         if( other.SameFileAs != null )
         {
-            Debug.Assert( other.FileName == null && other.Folder == null && other.SameFolderAs == null );
+            Throw.DebugAssert( other.FileName == null && other.Folder == null && other.SameFolderAs == null );
             FileName = null;
             Folder = null;
             SameFolderAs = null;
@@ -100,7 +101,7 @@ public class TypeScriptTypeAttribute : ContextBoundDelegationAttribute, ITypeScr
         }
         else if( other.SameFolderAs != null )
         {
-            Debug.Assert( other.Folder == null );
+            Throw.DebugAssert( other.Folder == null );
             Folder = null;
             SameFolderAs = other.SameFolderAs;
         }

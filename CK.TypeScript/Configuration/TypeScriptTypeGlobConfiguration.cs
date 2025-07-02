@@ -1,5 +1,7 @@
 using CK.Core;
 using CK.TypeScript;
+using System;
+using System.Xml.Linq;
 
 namespace CK.Setup;
 
@@ -9,8 +11,8 @@ namespace CK.Setup;
 /// <para>
 /// When no * appear in the <paramref name="AssemblyQualifiedNamePattern"/>:
 /// <list type="bullet">
-///     <item>It acts as a <see cref="TypeScriptBinPathAspectConfiguration.ExcludedTypes"/> if <paramref name="RegistationMode"/> is <see cref="RegistrationMode.Excluded"/>.</item>
-///     <item>It is ignored if <paramref name="RegistationMode"/> is <see cref="RegistrationMode.None"/>.</item>
+///     <item>It acts as a <see cref="TypeScriptBinPathAspectConfiguration.ExcludedTypes"/> if <paramref name="RegistrationMode"/> is <see cref="RegistrationMode.Excluded"/>.</item>
+///     <item>It is ignored if <paramref name="RegistrationMode"/> is <see cref="RegistrationMode.None"/>.</item>
 ///     <item>Otherwise, it acts as a <see cref="TypeScriptTypeConfiguration2"/> for matching types.</item>
 /// </list>
 /// </para>
@@ -20,7 +22,20 @@ namespace CK.Setup;
 /// The configuration to apply to the type. When specified, this overrides the <see cref="TypeScriptTypeAttribute2"/> that may
 /// decorate the type.
 /// </param>
-/// <param name="RegistationMode">The registration mode to consider for all the types.</param>
+/// <param name="RegistrationMode">The registration mode to consider for all the types.</param>
 public sealed record class TypeScriptTypeGlobConfiguration( string AssemblyQualifiedNamePattern,
                                                             TypeScriptTypeAttribute2? Configuration = null,
-                                                            RegistrationMode RegistationMode = RegistrationMode.Regular );
+                                                            RegistrationMode RegistrationMode = RegistrationMode.Regular )
+{
+    internal XElement? ToXml()
+    {
+        return RegistrationMode == RegistrationMode.None
+            ? null
+            : new XElement( EngineConfiguration.xType,
+                                RegistrationMode != RegistrationMode.Regular
+                                    ? new XAttribute( TypeScriptAspectConfiguration.xRegistrationMode, RegistrationMode.ToString() )
+                                    : null,
+                                Configuration?.ToXmlAttributes(),
+                                AssemblyQualifiedNamePattern );
+    }
+}

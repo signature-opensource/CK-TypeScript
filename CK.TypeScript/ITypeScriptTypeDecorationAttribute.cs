@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript;
 
@@ -49,5 +50,6 @@ public interface ITypeScriptTypeDecorationAttribute
     /// <summary>
     /// Gets or sets the TypeScript type name to use for this type.
     /// </summary>
+    [DisallowNull]
     string? TypeName { get; set; }
 }

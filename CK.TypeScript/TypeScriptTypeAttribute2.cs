@@ -1,7 +1,10 @@
 using CK.Core;
 using CK.Setup;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
 
 namespace CK.TypeScript;
 
@@ -107,6 +110,7 @@ public class TypeScriptTypeAttribute2 : ContextBoundDelegationAttribute, ITypeSc
     /// <summary>
     /// Gets or sets the TypeScript type name to use for this type.
     /// </summary>
+    [DisallowNull]
     public string? TypeName
     {
         get => _typeName;
@@ -188,5 +192,59 @@ public class TypeScriptTypeAttribute2 : ContextBoundDelegationAttribute, ITypeSc
             if( other.Folder != null ) Folder = other.Folder;
         }
         return this;
+    }
+
+    /// <summary>
+    /// Initializes a <see cref="TypeScriptTypeAttribute2"/> from the attributes of a xml element.
+    /// Returns null when the element doesn't contain any TypeScript related attributes.
+    /// </summary>
+    /// <param name="e">The xml element.</param>
+    public static TypeScriptTypeAttribute2? ReadFrom( XElement e )
+    {
+        TypeScriptTypeAttribute2? result = null;
+        string? typeName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeName );
+        if( !string.IsNullOrWhiteSpace( typeName ) )
+        {
+            result = new TypeScriptTypeAttribute2();
+            result.TypeName = typeName;
+        }
+
+        string? sameFileAs = (string?)e.Attribute( TypeScriptAspectConfiguration.xSameFileAs );
+        if( !string.IsNullOrWhiteSpace( sameFileAs ) )
+        {
+            result ??= new TypeScriptTypeAttribute2();
+            result.SameFileAs = SimpleTypeFinder.WeakResolver( sameFileAs, throwOnError: true )!;
+        }
+
+        string? sameFolderAs = (string?)e.Attribute( TypeScriptAspectConfiguration.xSameFolderAs );
+        if( !string.IsNullOrWhiteSpace( sameFolderAs ) )
+        {
+            result ??= new TypeScriptTypeAttribute2();
+            result.SameFolderAs = SimpleTypeFinder.WeakResolver( sameFolderAs, throwOnError: true )!;
+        }
+
+        string? folder = (string?)e.Attribute( TypeScriptAspectConfiguration.xFolder );
+        if( folder != null )
+        {
+            result ??= new TypeScriptTypeAttribute2();
+            result.Folder = folder;
+        }
+
+        string? fileName = (string?)e.Attribute( TypeScriptAspectConfiguration.xFileName );
+        if( !string.IsNullOrWhiteSpace( fileName ) )
+        {
+            result ??= new TypeScriptTypeAttribute2();
+            result.FileName = fileName;
+        }
+        return result;
+    }
+
+    internal IEnumerable<XAttribute> ToXmlAttributes()
+    {
+        if( TypeName != null ) yield return new XAttribute( TypeScriptAspectConfiguration.xTypeName, TypeName );
+        if( Folder != null ) yield return new XAttribute( TypeScriptAspectConfiguration.xFolder, Folder );
+        if( FileName != null ) yield return new XAttribute( TypeScriptAspectConfiguration.xFileName, FileName );
+        if( SameFolderAs != null ) yield return new XAttribute( TypeScriptAspectConfiguration.xSameFolderAs, SameFolderAs );
+        if( SameFileAs != null ) yield return new XAttribute( TypeScriptAspectConfiguration.xSameFileAs, SameFileAs );
     }
 }

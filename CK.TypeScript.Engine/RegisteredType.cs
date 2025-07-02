@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.TypeScript;
 using System.Collections.Generic;
 
@@ -8,17 +9,27 @@ namespace CK.Setup;
 /// </summary>
 public readonly struct RegisteredType
 {
-    internal RegisteredType( IReadOnlyList<ITSCodeGeneratorType>? generators, IPocoType? pocoType, TypeScriptTypeAttribute? attr )
+    internal RegisteredType( bool required,
+                             IReadOnlyList<ITSCodeGeneratorType>? generators,
+                             IPocoType? pocoType,
+                             TypeScriptTypeAttribute? attr )
     {
+        Required = required;
         Generators = generators;
         PocoType = pocoType;
         Attribute = attr;
     }
 
     /// <summary>
+    /// Gets whether this type must be considered even if it's a [<see cref="OptionalTypeAttribute"/>] and no
+    /// one requires it.
+    /// </summary>
+    public readonly bool Required;
+
+    /// <summary>
     /// Gets the attribute that configures the TSType. This is null if the type:
     /// <list type="bullet">
-    /// <item>Doesn't appear in the <see cref="TypeScriptBinPathAspectConfiguration.Types"/> configuration.</item>
+    /// <item>Doesn't appear in the <see cref="TypeScriptBinPathAspectConfiguration.OldTypes"/> configuration.</item>
     /// <item>And has only one or more attribute that implement <see cref="ITSCodeGeneratorType"/> type specific generators.</item>
     /// </list>
     /// </summary>

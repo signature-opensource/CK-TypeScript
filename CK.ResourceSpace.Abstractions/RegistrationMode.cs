@@ -5,7 +5,7 @@ namespace CK.Core;
 /// is registered in a registrar.
 /// <para>
 /// This has been designed to be as simple as possible and combinable, the greater wins:
-/// <c>Excluded &gt; Explicit &gt; Regular &gt; None</c>.
+/// <c>Excluded &gt; Required &gt; Regular &gt; None</c>.
 /// </para>
 /// <para>
 /// Whether the exclusion propagates to other components that requires it or raises an error
@@ -30,7 +30,7 @@ public enum RegistrationMode
     /// <summary>
     /// The component is explicitly registered, even if it is an opt-in component, it will be considered.
     /// </summary>
-    Explicit,
+    Required,
 
     /// <summary>
     /// The component is excluded and will not be considered at all.

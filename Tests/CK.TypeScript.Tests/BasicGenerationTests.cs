@@ -66,7 +66,7 @@ public class BasicGenerationTests
                 TargetProjectPath = output2,
                 IntegrationMode = CKGenIntegrationMode.None
             };
-            tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+            tsB2.OldTypes.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
             b2.AddAspect( tsB2 );
             b2.Types.Add( types );
 

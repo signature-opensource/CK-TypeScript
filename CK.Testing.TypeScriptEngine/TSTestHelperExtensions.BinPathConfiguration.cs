@@ -62,8 +62,8 @@ public static partial class TSTestHelperExtensions
             tsBinPathAspect.InstallYarn = YarnInstallOption.None;
             tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.None;
         }
-        tsBinPathAspect.Types.Clear();
-        tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+        tsBinPathAspect.OldTypes.Clear();
+        tsBinPathAspect.OldTypes.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
         return tsBinPathAspect;
     }
 

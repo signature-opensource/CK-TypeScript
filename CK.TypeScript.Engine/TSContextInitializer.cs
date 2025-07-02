@@ -141,10 +141,10 @@ sealed class TSContextInitializer
                                                 out Dictionary<Type, RegisteredType> registeredTypes )
     {
         registeredTypes = new Dictionary<Type, RegisteredType>();
-        using( monitor.OpenInfo( $"Building TypeScriptAttribute for {binPathConfiguration.Types.Count} Type configurations." ) )
+        using( monitor.OpenInfo( $"Building TypeScriptAttribute for {binPathConfiguration.Types.Count + binPathConfiguration.GlobTypes.Count + binPathConfiguration.ExcludedTypes.Count} Type configurations." ) )
         {
             bool success = true;
-            foreach( TypeScriptTypeConfiguration c in binPathConfiguration.Types )
+            foreach( TypeScriptTypeConfiguration c in binPathConfiguration.OldTypes )
             {
                 Type? t = FindType( allExchangeableSet.TypeSystem.PocoDirectory, c.Type );
                 if( t == null )

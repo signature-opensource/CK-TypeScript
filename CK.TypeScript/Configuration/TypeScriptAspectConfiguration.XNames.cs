@@ -80,27 +80,37 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xTargetProjectPath = XNamespace.None + "TargetProjectPath";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.TypeName"/>.
+    /// The attribute name of <see cref="TypeScriptTypeConfiguration2.Required"/>.
+    /// </summary>
+    public static readonly XName xRequired = XNamespace.None + "Required";
+
+    /// <summary>
+    /// The attribute name of <see cref="TypeScriptTypeGlobConfiguration.RegistrationMode"/>.
+    /// </summary>
+    public static readonly XName xRegistrationMode = XNamespace.None + "RegistrationMode";
+
+    /// <summary>
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.TypeName"/>.
     /// </summary>
     public static readonly XName xTypeName = XNamespace.None + "TypeName";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.Folder"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.Folder"/>.
     /// </summary>
     public static readonly XName xFolder = XNamespace.None + "Folder";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.FileName"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.FileName"/>.
     /// </summary>
     public static readonly XName xFileName = XNamespace.None + "FileName";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFileAs"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.SameFileAs"/>.
     /// </summary>
     public static readonly XName xSameFileAs = XNamespace.None + "SameFileAs";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFolderAs"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.SameFolderAs"/>.
     /// </summary>
     public static readonly XName xSameFolderAs = XNamespace.None + "SameFolderAs";
 

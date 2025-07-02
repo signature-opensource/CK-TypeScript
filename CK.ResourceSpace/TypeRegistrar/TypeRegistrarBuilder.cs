@@ -8,8 +8,4 @@ namespace CK.Core;
 
 sealed class TypeRegistrarBuilder
 {
-    public bool Add( Type type, RegistrationMode mode = RegistrationMode.Regular )
-    {
-
-    }
 }

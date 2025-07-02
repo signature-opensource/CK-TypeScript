@@ -23,8 +23,12 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public TypeScriptBinPathAspectConfiguration()
     {
         Barrels = new HashSet<string>();
-        Types = new List<TypeScriptTypeConfiguration>();
+        OldTypes = new List<TypeScriptTypeConfiguration>();
+
+        Types = new Dictionary<Type, TypeScriptTypeConfiguration2>();
+        GlobTypes = new List<TypeScriptTypeGlobConfiguration>();
         ExcludedTypes = new HashSet<Type>();
+
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
         GitIgnoreCKGenFolder = true;
@@ -89,14 +93,22 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </summary>
     public HashSet<NormalizedCultureInfo> ActiveCultures { get; }
 
+    [Obsolete("Pouf")]
+    public List<TypeScriptTypeConfiguration> OldTypes { get; }
+
     /// <summary>
-    /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
+    /// Gets the type configurations.
     /// </summary>
-    public List<TypeScriptTypeConfiguration> Types { get; }
+    public Dictionary<Type,TypeScriptTypeConfiguration2> Types { get; }
+
+    /// <summary>
+    /// Gets the list of <see cref="TypeScriptTypeGlobConfiguration"/>.
+    /// </summary>
+    public List<TypeScriptTypeGlobConfiguration> GlobTypes { get; }
 
     /// <summary>
     /// Gets the set of excluded types. When a type appears in this set, it is always
-    /// ignored even if it appears in <see cref="Types"/>.
+    /// ignored even if it appears in <see cref="Types"/> or <see cref="GlobTypes"/>.
     /// </summary>
     public HashSet<Type> ExcludedTypes { get; }
 
@@ -217,13 +229,77 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             e.Elements( EngineConfiguration.xExcludedTypes )
              .Elements( EngineConfiguration.xType )
              .Select( e => SimpleTypeFinder.WeakResolver( (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value, throwOnError: true )! ) );
-
-
         Types.Clear();
-        Types.AddRange( e.Elements( EngineConfiguration.xTypes )
+        GlobTypes.Clear();
+        FillTypesAndGlobTypes( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ) );
+
+        OldTypes.Clear();
+        OldTypes.AddRange( e.Elements( EngineConfiguration.xTypes )
                            .Elements( EngineConfiguration.xType )
                            .Select( e => new TypeScriptTypeConfiguration( e ) ) );
         TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
+    }
+
+    void FillTypesAndGlobTypes( IEnumerable<XElement> typeElements )
+    {
+        foreach( XElement e in typeElements )
+        {
+            var tName = (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value;
+            if( string.IsNullOrWhiteSpace( tName ) )
+            {
+                Throw.XmlException( $"""
+                    Invalid assembly qualified type name in:
+                    {e}
+                    Attribute {EngineConfiguration.xName.LocalName}="Namespace.TypeName, SomeAssembly" is missing.
+                    The type name can also appear as the element value: <Type>Namespace.TypeName, SomeAssembly</Type>
+                    """ );
+            }
+            if( tName.Contains( '*' ) )
+            {
+                ToGlobType( tName, e );
+            }
+            else
+            {
+                Type type;
+                try
+                {
+                    type = SimpleTypeFinder.WeakResolver( tName, throwOnError: true )!;
+                }
+                catch( Exception ex )
+                {
+                    Throw.XmlException( $"""
+                                Unable to resolve type name for:
+                                {e}
+                                """, ex );
+                    return;
+                }
+                ToType( type, e );
+            }
+        }
+    }
+
+    void ToGlobType( string pattern, XElement e )
+    {
+        var m = (string?)e.Attribute( TypeScriptAspectConfiguration.xRegistrationMode );
+        if( m != null && m.Equals( "None", StringComparison.OrdinalIgnoreCase ) ) return;
+        RegistrationMode mode = m == null
+                                    ? RegistrationMode.Regular
+                                    : Enum.Parse<RegistrationMode>( m, ignoreCase: true );
+        GlobTypes.Add( new TypeScriptTypeGlobConfiguration( pattern, TypeScriptTypeAttribute2.ReadFrom( e ), mode ) );
+    }
+
+    void ToType( Type type, XElement e )
+    {
+        if( Types.ContainsKey( type ) )
+        {
+            Throw.XmlException( $"""
+                                Duplicate type name in <Types>:
+                                {e}
+                                Type '{type.ToCSharpName()}' is already registered. 
+                                """ );
+        }
+        bool required = (bool?)e.Attribute( TypeScriptAspectConfiguration.xRequired ) ?? false;
+        Types.Add( type, new TypeScriptTypeConfiguration2( required, TypeScriptTypeAttribute2.ReadFrom( e ) ) );
     }
 
     /// <inheritdoc />
@@ -252,7 +328,15 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                 ? new XAttribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences, true )
                 : null,
                new XAttribute( TypeScriptAspectConfiguration.xActiveCultures, ActiveCultures.Select( c => c.Culture.Name ).Concatenate( ", " ) ),
-               new XElement( EngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
+               new XElement( EngineConfiguration.xTypes,
+                                Types.Select( kv => new XElement( EngineConfiguration.xType,
+                                                            new XAttribute( TypeScriptAspectConfiguration.xRequired, kv.Value.Required ),
+                                                            kv.Value.Configuration?.ToXmlAttributes(),
+                                                            kv.Key.GetWeakTypeName() ) )
+                                .Concat( GlobTypes.Select( g => g.ToXml() ) )
+                           ),
+               new XElement( EngineConfiguration.xExcludedTypes,
+                             ExcludedTypes.Select( CKCORETypeExtensions.GetWeakTypeName ) )
             );
     }
 }
