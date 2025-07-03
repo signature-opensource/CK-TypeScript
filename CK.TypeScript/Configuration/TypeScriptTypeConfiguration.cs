@@ -64,22 +64,12 @@ public sealed class TypeScriptTypeConfiguration
         Throw.CheckArgument( typeName == null || !string.IsNullOrWhiteSpace( typeName ) );
         Throw.CheckArgument( folder == null || !string.IsNullOrWhiteSpace( folder ) );
 
-        Type = GetWeakTypeName( type, nameof( type ) );
+        Type = type.GetWeakAssemblyQualifiedName()!;
         TypeName = typeName;
         Folder = folder;
         FileName = fileName;
-        SameFolderAs = sameFolderAs != null ? GetWeakTypeName( sameFolderAs, nameof( sameFolderAs ) ) : null;
-        SameFileAs = sameFileAs != null ? GetWeakTypeName( sameFileAs, nameof( sameFileAs ) ) : null;
-
-        static string GetWeakTypeName( Type type, string argumenName )
-        {
-            string? t = null;
-            if( type.AssemblyQualifiedName == null || !SimpleTypeFinder.WeakenAssemblyQualifiedName( type.AssemblyQualifiedName, out t ) )
-            {
-                Throw.ArgumentException( argumenName, $"Unable to obtain assembly qualified name for type '{type}'." );
-            }
-            return t;
-        }
+        SameFolderAs = sameFolderAs == null ? null : sameFolderAs.GetWeakAssemblyQualifiedName();
+        SameFileAs = sameFileAs == null ? null : sameFileAs.GetWeakAssemblyQualifiedName();
     }
 
     /// <summary>
