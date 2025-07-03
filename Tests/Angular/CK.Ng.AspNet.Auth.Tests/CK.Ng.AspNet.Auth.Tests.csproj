@@ -4,12 +4,12 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Nunit" Version="12.1.0" />
+    <PackageReference Include="CK.Testing.Nunit" Version="12.1.1--0001-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="26.1.0" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="26.1.1--0001-develop" />
     <ProjectReference Include="..\..\..\CK.Ng.AspNet.Auth\CK.Ng.AspNet.Auth.csproj" />
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />

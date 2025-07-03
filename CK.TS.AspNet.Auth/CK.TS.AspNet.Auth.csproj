@@ -9,7 +9,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="26.1.0" />
+    <PackageReference Include="CK.AspNet.Auth" Version="26.1.1--0001-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
