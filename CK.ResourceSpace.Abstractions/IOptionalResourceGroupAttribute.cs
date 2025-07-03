@@ -1,6 +1,9 @@
 namespace CK.Core;
 
 /// <summary>
+///
+/// TODO: replace this with Commit: 9a4a17d5f40f5bfa192e313f6f4d002118e56f4e
+/// 
 /// This interface must be implemented by attributes that defines a family of <see cref="IResourceGroup"/> (and/or <see cref="IResourcePackage"/>)
 /// that CAN be optional. There should usually be at most one such attribute that decorate a Type but if there are mutiple ones, all of them
 /// must have a true <see cref="IsOptional"/> for the package to be considered optional by default.

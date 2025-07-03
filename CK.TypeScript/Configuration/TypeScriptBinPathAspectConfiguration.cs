@@ -327,11 +327,11 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                new XElement( EngineConfiguration.xTypes,
                                 Types.Select( kv => new XElement( EngineConfiguration.xType,
                                                             kv.Value?.ToXmlAttributes(),
-                                                            kv.Key.GetWeakTypeName() ) )
+                                                            kv.Key.GetWeakAssemblyQualifiedName() ) )
                                 .Concat( GlobTypes.Select( g => g.ToXml() ) )
                            ),
                new XElement( EngineConfiguration.xExcludedTypes,
-                             ExcludedTypes.Select( CKCORETypeExtensions.GetWeakTypeName ) )
+                             ExcludedTypes.Select( TypeExtensions.GetWeakAssemblyQualifiedName ) )
             );
     }
 }
