@@ -23,9 +23,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public TypeScriptBinPathAspectConfiguration()
     {
         Barrels = new HashSet<string>();
-        OldTypes = new List<TypeScriptTypeConfiguration>();
 
-        Types = new Dictionary<Type, TypeScriptTypeConfiguration2>();
+        Types = new Dictionary<Type, TypeScriptTypeAttribute?>();
         GlobTypes = new List<TypeScriptTypeGlobConfiguration>();
         ExcludedTypes = new HashSet<Type>();
 
@@ -93,13 +92,20 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </summary>
     public HashSet<NormalizedCultureInfo> ActiveCultures { get; }
 
-    [Obsolete("Pouf")]
-    public List<TypeScriptTypeConfiguration> OldTypes { get; }
-
     /// <summary>
-    /// Gets the type configurations.
+    /// Gets the explicit types to register with an optional <see cref="TypeScriptTypeAttribute"/> that
+    /// overrides the one defined in code if it exists.
+    /// <para>
+    /// Poco must be registered here or in <see cref="GlobTypes"/> for their TypeScript code to be generated
+    /// (unless they are decorated with a [<see cref="TypeScriptTypeAttribute">TypeScriptType</see>].
+    /// </para>
+    /// Other types registered here must be handled by a TypeScript code generator.
+    /// <para>
+    /// <see cref="TypeScriptGroup"/> or <see cref="TypeScriptPackage"/> MUST NOT be registered here.
+    /// They are handled automatically.
+    /// </para>
     /// </summary>
-    public Dictionary<Type,TypeScriptTypeConfiguration2> Types { get; }
+    public Dictionary<Type,TypeScriptTypeAttribute?> Types { get; }
 
     /// <summary>
     /// Gets the list of <see cref="TypeScriptTypeGlobConfiguration"/>.
@@ -224,6 +230,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             }
         }
 
+        // Starts with ExcludedTypes: if an excluded type appears in Types, this will throw because
+        // it is a bad configuration.
         ExcludedTypes.Clear();
         ExcludedTypes.AddRange(
             e.Elements( EngineConfiguration.xExcludedTypes )
@@ -233,10 +241,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         GlobTypes.Clear();
         FillTypesAndGlobTypes( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ) );
 
-        OldTypes.Clear();
-        OldTypes.AddRange( e.Elements( EngineConfiguration.xTypes )
-                           .Elements( EngineConfiguration.xType )
-                           .Select( e => new TypeScriptTypeConfiguration( e ) ) );
         TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
     }
 
@@ -256,7 +260,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             }
             if( tName.Contains( '*' ) )
             {
-                ToGlobType( tName, e );
+                GlobTypes.Add( new TypeScriptTypeGlobConfiguration( tName, TypeScriptTypeAttribute.ReadFrom( e ) ) );
             }
             else
             {
@@ -273,33 +277,25 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                                 """, ex );
                     return;
                 }
-                ToType( type, e );
+                if( ExcludedTypes.Contains( type ) )
+                {
+                    Throw.XmlException( $"""
+                            Configuration error in <Types>:
+                            {e}
+                            Type '{type.ToCSharpName()}' is declared in the <ExcludedTypes>. 
+                            """ );
+                }
+                if( Types.ContainsKey( type ) )
+                {
+                    Throw.XmlException( $"""
+                            Duplicate type name in <Types>:
+                            {e}
+                            Type '{type.ToCSharpName()}' is already registered. 
+                            """ );
+                }
+                Types.Add( type, TypeScriptTypeAttribute.ReadFrom( e ) );
             }
         }
-    }
-
-    void ToGlobType( string pattern, XElement e )
-    {
-        var m = (string?)e.Attribute( TypeScriptAspectConfiguration.xRegistrationMode );
-        if( m != null && m.Equals( "None", StringComparison.OrdinalIgnoreCase ) ) return;
-        RegistrationMode mode = m == null
-                                    ? RegistrationMode.Regular
-                                    : Enum.Parse<RegistrationMode>( m, ignoreCase: true );
-        GlobTypes.Add( new TypeScriptTypeGlobConfiguration( pattern, TypeScriptTypeAttribute2.ReadFrom( e ), mode ) );
-    }
-
-    void ToType( Type type, XElement e )
-    {
-        if( Types.ContainsKey( type ) )
-        {
-            Throw.XmlException( $"""
-                                Duplicate type name in <Types>:
-                                {e}
-                                Type '{type.ToCSharpName()}' is already registered. 
-                                """ );
-        }
-        bool required = (bool?)e.Attribute( TypeScriptAspectConfiguration.xRequired ) ?? false;
-        Types.Add( type, new TypeScriptTypeConfiguration2( required, TypeScriptTypeAttribute2.ReadFrom( e ) ) );
     }
 
     /// <inheritdoc />
@@ -330,8 +326,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                new XAttribute( TypeScriptAspectConfiguration.xActiveCultures, ActiveCultures.Select( c => c.Culture.Name ).Concatenate( ", " ) ),
                new XElement( EngineConfiguration.xTypes,
                                 Types.Select( kv => new XElement( EngineConfiguration.xType,
-                                                            new XAttribute( TypeScriptAspectConfiguration.xRequired, kv.Value.Required ),
-                                                            kv.Value.Configuration?.ToXmlAttributes(),
+                                                            kv.Value?.ToXmlAttributes(),
                                                             kv.Key.GetWeakTypeName() ) )
                                 .Concat( GlobTypes.Select( g => g.ToXml() ) )
                            ),

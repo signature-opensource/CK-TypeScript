@@ -80,16 +80,6 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xTargetProjectPath = XNamespace.None + "TargetProjectPath";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration2.Required"/>.
-    /// </summary>
-    public static readonly XName xRequired = XNamespace.None + "Required";
-
-    /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeGlobConfiguration.RegistrationMode"/>.
-    /// </summary>
-    public static readonly XName xRegistrationMode = XNamespace.None + "RegistrationMode";
-
-    /// <summary>
     /// The attribute name of <see cref="TypeScriptTypeAttribute2.TypeName"/>.
     /// </summary>
     public static readonly XName xTypeName = XNamespace.None + "TypeName";

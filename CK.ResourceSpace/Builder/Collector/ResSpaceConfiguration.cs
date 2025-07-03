@@ -170,8 +170,8 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     }
 
     /// <summary>
-    /// Produces the set of <see cref="ResPackageDescriptor"/> initialized from their <see cref="ResPackageDescriptor.Type"/>
-    /// or, if there is no definer type, from the "Package.xml" file in the <see cref="ResPackageDescriptor.Resources"/>.
+    /// Produces the <see cref="ResSpaceCollector"/> that can be used to continue to register packages and
+    /// eventually be handles by a <see cref="ResSpaceDataBuilder"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The collector with initialized packages or null on error.</returns>

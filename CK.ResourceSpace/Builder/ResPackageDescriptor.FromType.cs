@@ -11,7 +11,7 @@ public sealed partial class ResPackageDescriptor
     {
         Throw.DebugAssert( _type != null );
         _isGroup = !typeof( IResourcePackage ).IsAssignableFrom( _type );
-        _isOptional = isOptional ?? _type.CustomAttributes.Any( a => a.AttributeType == typeof( OptionalTypeAttribute ) );
+        _isOptional = isOptional ?? !IsRequired( _type );
         // Detect a useless CKPackage.xml for the type: currently, there's
         // no "merge" possible: the type drives.
         var descriptor = _resources.GetResource( "CKPackage.xml" );
@@ -124,6 +124,12 @@ public sealed partial class ResPackageDescriptor
             }
         }
 
+        static bool IsRequired( Type type )
+        {
+            return type.GetCustomAttributes( inherit: false )
+                       .OfType<IOptionalResourceGroupAttribute>()
+                       .All( a => !a.IsOptional );
+        }
     }
 
 }

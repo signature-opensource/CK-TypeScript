@@ -44,7 +44,7 @@ public class MultipleTypeScriptTests
             TargetProjectPath = "Clients/C1",
             TypeFilterName = "TypeScriptC1",
         };
-        ts1.OldTypes.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
+        ts1.Types.Add( typeof( ISamplePoco ), null );
 
         var ts2 = new TypeScriptBinPathAspectConfiguration()
         {
@@ -52,7 +52,7 @@ public class MultipleTypeScriptTests
             IntegrationMode = CKGenIntegrationMode.Inline,
             TypeFilterName = "TypeScriptC2",
         };
-        ts2.OldTypes.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
+        ts2.Types.Add( typeof( ISamplePoco ), null );
 
         engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
         binPath.AddAspect( ts1 );

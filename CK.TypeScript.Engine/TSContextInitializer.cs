@@ -144,56 +144,29 @@ sealed class TSContextInitializer
         using( monitor.OpenInfo( $"Building TypeScriptAttribute for {binPathConfiguration.Types.Count + binPathConfiguration.GlobTypes.Count + binPathConfiguration.ExcludedTypes.Count} Type configurations." ) )
         {
             bool success = true;
-            foreach( TypeScriptTypeConfiguration c in binPathConfiguration.OldTypes )
+            foreach( var (type, attr) in binPathConfiguration.Types )
             {
-                Type? t = FindType( allExchangeableSet.TypeSystem.PocoDirectory, c.Type );
-                if( t == null )
+                // If the configured type is a PocoType, then it MUST belong to the exchangeable set of types.
+                // If the configured type is a not a PocoType, we consider it as a simple C# type (that must
+                // eventually be handled by a TypeScript code generator).
+                var pocoType = allExchangeableSet.TypeSystem.FindByType( type );
+                if( pocoType != null )
                 {
-                    monitor.Error( $"Unable to resolve type '{c.Type}' in TypeScriptAspectConfiguration:{Environment.NewLine}{c.ToXml()}" );
-                    success = false;
-                }
-                else
-                {
-                    var attr = c.ToAttribute( monitor, typeName => FindType( allExchangeableSet.TypeSystem.PocoDirectory, typeName ) );
-                    if( attr == null ) success = false;
-                    else
+                    pocoType = pocoType.NonNullable;
+                    if( !allExchangeableSet.Contains( pocoType ) )
                     {
-                        // If the configured type is a PocoType, then it MUST belong to the exchangeable set of types.
-                        // If the configured type is a not a PocoType, we consider it as a simple C# type.
-                        var pT = allExchangeableSet.TypeSystem.FindByType( t );
-                        if( pT == null )
-                        {
-                            monitor.Warn( $"Type '{t:N}' is not registered in PocoTypeSystem." );
-                        }
-                        else
-                        {
-                            pT = pT.NonNullable;
-                            if( !allExchangeableSet.Contains( pT ) )
-                            {
-                                // If it is a IPocoType, then it must be exchangeable.
-                                // This is an error since it appears in the configuration.
-                                monitor.Error( $"Poco type '{pT}' is not exchangeable in TypeScriptAspectConfiguration:{Environment.NewLine}{c.ToXml()}" );
-                                success = false;
-                            }
-                        }
-                        if( success )
-                        {
-                            registeredTypes.Add( t, new RegisteredType( null, pT, attr ) );
-                        }
+                        // If it is a IPocoType, then it must be exchangeable.
+                        // This is an error since it appears in the configuration.
+                        monitor.Error( $"Registered Poco type '{pocoType}' is not exchangeable." );
+                        success = false;
                     }
+                }
+                if( success )
+                {
+                    registeredTypes.Add( type, new RegisteredType( null, pocoType, attr ) );
                 }
             }
             return success;
-        }
-
-        static Type? FindType( IPocoDirectory pocoDirectory, string typeName )
-        {
-            var t = SimpleTypeFinder.WeakResolver( typeName, false );
-            if( t == null && pocoDirectory.NamedFamilies.TryGetValue( typeName, out var rootInfo ) )
-            {
-                t = rootInfo.PrimaryInterface.PocoInterface;
-            }
-            return t;
         }
     }
 
@@ -207,7 +180,7 @@ sealed class TSContextInitializer
     {
         globals = new List<ITSCodeGeneratorFactory>();
         packages = new List<TypeScriptGroupOrPackageAttributeImpl>();
-        using( monitor.OpenInfo( "Analyzing types with [TypeScript], [TypeScriptPackage] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
+        using( monitor.OpenInfo( "Analyzing types with [TypeScript], [TypeScriptGroup/Package] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
         {
             // These variables are reused per type.
             TypeScriptTypeAttributeImpl? tsAttrImpl;
@@ -265,15 +238,16 @@ sealed class TSContextInitializer
                     // a IPocoType has been done by step 1.
                     // But if the type was not in the configuration (it has only a [TypeScript] or has a ITSGeneratorType attribute),
                     // then we check whether it is a IPocoType or not.
-                    // If it is, we associate its IPocoType only it it belongs to the exhangeable set.
+                    // If it is, we associate its IPocoType only it it belongs to the exchangeable set.
                     // If it doesn't belong to the exchangeable set, we have to decide if:
-                    // - We accept it: by setting the RegType.PocoType, we will add it to the final TypeScript Poco set... This is not possible: the 
-                    //   TypeScript Poco set will no more be a subset of the Poco exchangeable set. This breaks an invariant and we cannot anymore reason
-                    //   about the System.
-                    // - We raise an error: a PocoType that has been marked as NonExchangeable and has a [TypeScript] or has a ITSGeneratorType attribute
-                    //   is invalid and breaks the system.
+                    // - We accept it: by setting the RegType.PocoType, we will add it to the final TypeScript Poco set...
+                    // This is not possible: the TypeScript Poco set will no more be a subset of the Poco exchangeable set.
+                    // This breaks an invariant and we cannot anymore reason about the System.
+                    // - We raise an error: a PocoType that has been marked as NonExchangeable and has a [TypeScript] or has
+                    //   a ITSGeneratorType attribute is invalid and breaks the system.
                     // - Or we don't assign the RegType.PocoType and let the type be a simple C# type. If a TSCodeGenerator can handle it, then
-                    //   everything is fine but the PocoCodeGenerator will simply ignore it. If no code generator handle it, this will be an error.
+                    //   everything is fine but the PocoCodeGenerator will simply ignore it.
+                    //   If no code generator handle it, this will be an error.
                     //
                     // The last option is definitely the best. This leaves room for edge cases and keeps the TypeScript Poco set logically sound.
                     //

@@ -169,7 +169,7 @@ sealed partial class CoreCollector
             }
             var result = DoInitialResolveRef( relName, r );
             Throw.DebugAssert( "IsOptional => IsValid. Invalid and Optional cannot exist.", !result.IsOptional || result.IsValid );
-            Throw.DebugAssert( result.IsValid && !result.IsOptional == (result.AsPackageDescriptor?.IsOptional is false) );
+            Throw.DebugAssert( (result.IsValid && !result.IsOptional) == (result.AsPackageDescriptor?.IsOptional is false) );
             // Blindly remember the resulting referenced object.
             // This is a null for the Ref.Invalid, otherwise:
             // - this is necessarily a non optional package if the reference was not optional
@@ -292,7 +292,7 @@ sealed partial class CoreCollector
                     }
                     else
                     {
-                        targetPackage?.Children.Add( p );
+                        targetPackage.Children.Add( p );
                     }
                 }
                 if( p._groups != null )

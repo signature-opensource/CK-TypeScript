@@ -21,7 +21,6 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     internal IResPackageDescriptorResolver? _packageResolver;
     internal bool _revertOrderingNames;
 
-
     int _localPackageCount;
     int _typedPackageCount;
 

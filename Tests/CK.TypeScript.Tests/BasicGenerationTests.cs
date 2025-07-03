@@ -1,9 +1,10 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using Shouldly;
 using NUnit.Framework;
+using Shouldly;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -66,7 +67,7 @@ public class BasicGenerationTests
                 TargetProjectPath = output2,
                 IntegrationMode = CKGenIntegrationMode.None
             };
-            tsB2.OldTypes.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+            tsB2.Types.AddRange( types.Select( t => new KeyValuePair<Type, TypeScriptTypeAttribute?>( t, null ) ) );
             b2.AddAspect( tsB2 );
             b2.Types.Add( types );
 

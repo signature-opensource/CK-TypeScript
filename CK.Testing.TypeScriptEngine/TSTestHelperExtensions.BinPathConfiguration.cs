@@ -1,6 +1,8 @@
 using CK.Core;
 using CK.Setup;
+using CK.TypeScript;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CK.Testing;
@@ -62,8 +64,8 @@ public static partial class TSTestHelperExtensions
             tsBinPathAspect.InstallYarn = YarnInstallOption.None;
             tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.None;
         }
-        tsBinPathAspect.OldTypes.Clear();
-        tsBinPathAspect.OldTypes.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+        tsBinPathAspect.Types.Clear();
+        tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new KeyValuePair<Type,TypeScriptTypeAttribute?>( t, null ) ) );
         return tsBinPathAspect;
     }
 
