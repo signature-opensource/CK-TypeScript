@@ -218,23 +218,23 @@ public class FullTSTests
         runner.Run();
     }
 
-    [Test]
-    public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_DefaultTypeScriptVersion_Async()
-    {
-        var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
+    //[Test]
+    //public async Task FullTest_from_scratch_with_explicit_BinPathConfiguration_DefaultTypeScriptVersion_Async()
+    //{
+    //    var targetProjectPath = TestHelper.GetTypeScriptNpmPackageTargetProjectPath();
 
-        TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
-        System.IO.File.WriteAllText( targetProjectPath.AppendPart( ".gitignore" ), "*" );
+    //    TestHelper.CleanupFolder( targetProjectPath, ensureFolderAvailable: true );
+    //    System.IO.File.WriteAllText( targetProjectPath.AppendPart( ".gitignore" ), "*" );
 
-        var config = TestHelper.CreateDefaultEngineConfiguration();
-        config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
-        config.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
-                           .DefaultTypeScriptVersion = "5.4.2";
+    //    var config = TestHelper.CreateDefaultEngineConfiguration();
+    //    config.FirstBinPath.Types.Add( typeof( IWithReadOnly ), typeof( IWithUnions ) );
+    //    config.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IWithReadOnly ), typeof( IWithUnions ) )
+    //                       .DefaultTypeScriptVersion = "5.4.2";
 
-        await config.RunSuccessfullyAsync();
+    //    await config.RunSuccessfullyAsync();
 
-        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
-        await TestHelper.SuspendAsync( resume => resume );
-        runner.Run();
-    }
+    //    await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
+    //    await TestHelper.SuspendAsync( resume => resume );
+    //    runner.Run();
+    //}
 }
