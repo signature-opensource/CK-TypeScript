@@ -160,7 +160,7 @@ public partial class DotnetSolution : ICIWorkflow
             )
             {
                 string framework = buildDir.LastPart;
-                bool isNetFramework = framework.StartsWith( "net" ) && framework.Length == 6 && int.TryParse( framework.AsSpan( 3 ), out _ );
+                bool isNetFramework = framework.StartsWith( "net" ) && framework.Length == 6 && int.TryParse( framework.AsSpan( 3 ), out var _ );
                 string fileWithoutExtension = buildDir.AppendPart( project.Name );
                 string testBinariesPath = "";
                 if( isNunitLite )

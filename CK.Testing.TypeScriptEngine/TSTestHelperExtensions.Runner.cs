@@ -18,7 +18,7 @@ public static partial class TSTestHelperExtensions
         readonly NormalizedPath _targetProjectPath;
         readonly Dictionary<string, string>? _environmentVariables;
         readonly string _yarnCommand;
-        readonly Action? _jestDispose;
+        readonly Action<IActivityMonitor>? _jestDispose;
         bool _isDisposed;
         List<object>? _onDisposeList;
 
@@ -26,7 +26,7 @@ public static partial class TSTestHelperExtensions
                          NormalizedPath targetProjectPath,
                          Dictionary<string, string>? environmentVariables,
                          string yarnCommand,
-                         Action? jestDispose )
+                         Action<IActivityMonitor>? jestDispose )
         {
             _helper = helper;
             _targetProjectPath = targetProjectPath;
@@ -90,7 +90,7 @@ public static partial class TSTestHelperExtensions
             if( !_isDisposed )
             {
                 _isDisposed = true;
-                _jestDispose?.Invoke();
+                _jestDispose?.Invoke( _helper.Monitor );
                 if( _onDisposeList != null )
                 {
                     foreach( var o in _onDisposeList )

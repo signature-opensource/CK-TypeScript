@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 
 namespace CK.Setup;
 
@@ -266,7 +267,8 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             return true;
         }
 
-        static void InjectConfigJS( NormalizedPath jestConfigFilePath,
+        static void InjectConfigJS( IActivityMonitor monitor,
+                                    NormalizedPath jestConfigFilePath,
                                     string? serverAdress,
                                     IEnumerable<KeyValuePair<string, string>>? environmentVariables )
         {
@@ -294,14 +296,31 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
                 tail = content.AsSpan( iStopEnv );
                 envFirst = false;
             }
-            using var f = File.Create( jestConfigFilePath );
-            using var text = new StreamWriter( f );
-            text.Write( head );
-            WriteReplacement( envFirst, serverAdress, environmentVariables, f, text );
-            text.Write( middle );
-            WriteReplacement( !envFirst, serverAdress, environmentVariables, f, text );
-            text.Write( tail );
-
+            // New issue here. Without any obvious reasons, this starts to fail with (july 2025):
+            // The process cannot access the file '[...]\jest.config.js' because it is being used by another process.
+            // Is it .NET 9?
+            retry:
+            int retryCount = 0;
+            try
+            {
+                using var f = File.Create( jestConfigFilePath );
+                using var text = new StreamWriter( f );
+                text.Write( head );
+                WriteReplacement( envFirst, serverAdress, environmentVariables, f, text );
+                text.Write( middle );
+                WriteReplacement( !envFirst, serverAdress, environmentVariables, f, text );
+                text.Write( tail );
+            }
+            catch( IOException ex )
+            {
+                if( ++retryCount < 3 )
+                {
+                    monitor.Warn( $"While updating {jestConfigFilePath}. Retrying.", ex );
+                    Thread.Sleep( retryCount * 100 );
+                    goto retry;
+                }
+                throw;
+            }
             static void ThrowMismatch( NormalizedPath jestConfigFilePath, string content )
             {
                 throw new InvalidDataException( $"""
@@ -400,7 +419,7 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
         /// <returns>True on success, false on error.</returns>
         public static bool PrepareJestRun( IActivityMonitor monitor,
                                            NormalizedPath targetProjectPath,
-                                           out Action? afterRun,
+                                           out Action<IActivityMonitor>? afterRun,
                                            string? serverAddress = null,
                                            IReadOnlyDictionary<string, string>? ckTypeScriptEnv = null )
         {
@@ -413,8 +432,8 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             if( o.Scripts.TryGetValue( "test", out var command ) && (command == "jest" || command.StartsWith( "jest " )) )
             {
                 var jestConfigFilePath = targetProjectPath.AppendPart( JestConfigFileName );
-                InjectConfigJS( jestConfigFilePath, serverAddress, ckTypeScriptEnv ?? ImmutableDictionary<string, string>.Empty );
-                afterRun = () => InjectConfigJS( jestConfigFilePath, null, null );
+                InjectConfigJS( monitor, jestConfigFilePath, serverAddress, ckTypeScriptEnv ?? ImmutableDictionary<string, string>.Empty );
+                afterRun = monitor => InjectConfigJS( monitor, jestConfigFilePath, null, null );
             }
             return true;
         }

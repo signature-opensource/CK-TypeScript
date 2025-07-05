@@ -155,20 +155,22 @@ public static partial class TSTestHelperExtensions
                                                                       out var afterRun,
                                                                       serverAddress,
                                                                       environmentVariables ).ShouldBeTrue();
-        Action? revert = serverAddress != null
-                            ? SetServerAddressInCKGenAppModule( @this, targetProjectPath, serverAddress )
-                            : null;
-        Action? final = afterRun;
+        Action<IActivityMonitor>? revert = serverAddress != null
+                                            ? SetServerAddressInCKGenAppModule( @this.Monitor, targetProjectPath, serverAddress )
+                                            : null;
+        Action<IActivityMonitor>? final = afterRun;
         if( revert != null )
         {
             final = afterRun == null
                         ? revert
-                        : (() => { revert(); afterRun(); });
+                        : (monitor => { revert( monitor ); afterRun( monitor ); });
 
         }
         return new Runner( @this, targetProjectPath, environmentVariables, command, final );
 
-        static Action? SetServerAddressInCKGenAppModule( IMonitorTestHelper @this, NormalizedPath targetProjectPath, string serverAddress )
+        static Action<IActivityMonitor>? SetServerAddressInCKGenAppModule( IActivityMonitor monitor,
+                                                                           NormalizedPath targetProjectPath,
+                                                                           string serverAddress )
         {
             var ckGenAppModulePath = targetProjectPath.Combine( "ck-gen/CK/Angular/CKGenAppModule.ts" );
             if( File.Exists( ckGenAppModulePath ) )
@@ -181,7 +183,7 @@ public static partial class TSTestHelperExtensions
                 {
                     Throw.DebugAssert( "new AuthService( inject( AXIOS )".Length == 32 );
                     text = text.Insert( idx + 32, $$""", { identityEndPoint: '{{serverAddress}}' }""" );
-                    @this.Monitor.Info( "Added authentication endpoint to new AuthService in 'CKGenAppModule.ts' file." );
+                    monitor.Info( "Added authentication endpoint to new AuthService in 'CKGenAppModule.ts' file." );
                     changed = true;
                 }
                 idx = text.IndexOf( "new HttpCrisEndpoint( inject( AXIOS ) )" );
@@ -189,13 +191,13 @@ public static partial class TSTestHelperExtensions
                 {
                     Throw.DebugAssert( "new HttpCrisEndpoint( inject( AXIOS )".Length == 37 );
                     text = text.Insert( idx + 37, $$""", '{{serverAddress}}/.cris'""" );
-                    @this.Monitor.Info( "Added cris endpoint to new HttpCrisEndpoint in 'CKGenAppModule.ts' file." );
+                    monitor.Info( "Added cris endpoint to new HttpCrisEndpoint in 'CKGenAppModule.ts' file." );
                     changed = true;
                 }
                 if( changed )
                 {
                     File.WriteAllText( ckGenAppModulePath, text );
-                    return () => File.WriteAllText( ckGenAppModulePath, originText );
+                    return monitor => File.WriteAllText( ckGenAppModulePath, originText );
                 }
             }
             return null;
