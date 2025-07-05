@@ -11,6 +11,7 @@
     "@yarnpkg/sdks": "^3.2",
     "jest": "^29.7",
     "jest-environment-jsdom": "^29.7",
+    "jest-util": "^30.0.2",
     "ts-jest": "^29.2.5",
     "typescript": "=5.4.5"
   },

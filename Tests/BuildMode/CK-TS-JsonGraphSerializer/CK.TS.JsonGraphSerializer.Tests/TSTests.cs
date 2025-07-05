@@ -39,15 +39,12 @@ public class MultipleTypeScriptTests
         var binPath = engineConfig.FirstBinPath;
         binPath.Assemblies.Add( "CK.TS.JsonGraphSerializer" );
         binPath.Types.Add( typeof( ISamplePoco ), typeof( BringAxiosPackageAsDependency ), typeof( BringRxJSPackageAsPeerDependency ) );
-
-        // Removed NpmPackage mode test because of versions resolution.
-        //var ts1 = new TypeScriptBinPathAspectConfiguration()
-        //{
-        //    TargetProjectPath = "Clients/NpmPackage",
-        //    IntegrationMode = CKGenIntegrationMode.NpmPackage,
-        //    TypeFilterName = "TypeScriptN",
-        //};
-        //ts1.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
+        var ts1 = new TypeScriptBinPathAspectConfiguration()
+        {
+            TargetProjectPath = "Clients/C1",
+            TypeFilterName = "TypeScriptC1",
+        };
+        ts1.Types.Add( typeof( ISamplePoco ), null );
 
         var ts2 = new TypeScriptBinPathAspectConfiguration()
         {
@@ -58,20 +55,18 @@ public class MultipleTypeScriptTests
         ts2.Types.Add( typeof( ISamplePoco ), null );
 
         engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
-        //binPath.AddAspect( ts1 );
-        //ts1.AddOtherConfiguration( ts2 );
-        binPath.AddAspect( ts2 );
+        binPath.AddAspect( ts1 );
+        ts1.AddOtherConfiguration( ts2 );
 
         await engineConfig.RunSuccessfullyAsync();
 
-        // Removed NpmPackage mode test because of versions resolution.
-        //var t1 = TestHelper.TestProjectFolder.Combine( "Clients/NpmPackage" );
-        //await using var r1 = TestHelper.CreateTypeScriptRunner( t1 );
-        //r1.Run();
-
         // Runs the Jest tests.
+        var t1 = TestHelper.TestProjectFolder.Combine( "Clients/C1" );
+        await using var r1 = TestHelper.CreateTypeScriptRunner( t1 );
+        r1.Run();
+
+        var t2 = TestHelper.TestProjectFolder.Combine( "Clients/C2" );
         await using var r2 = TestHelper.CreateTypeScriptRunner( t2 );
         r2.Run();
     }
-
 }

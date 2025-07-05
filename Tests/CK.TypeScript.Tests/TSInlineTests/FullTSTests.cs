@@ -113,11 +113,11 @@ public class FullTSTests
             typeof( IWithTyped )
         };
         configuration.FirstBinPath.Types.Add( types );
-        var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
-        tsConfig.UseSrcFolder = true;
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, types );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath,
+                                                                    serverAddress: null,
                                                                     new Dictionary<string, string>()
                                                                     {
                                                                         { "SET_BY_THE_UNIT_TEST", "YES!" }

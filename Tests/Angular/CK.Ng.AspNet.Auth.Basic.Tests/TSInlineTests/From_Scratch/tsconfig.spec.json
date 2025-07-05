@@ -18,23 +18,10 @@
     "sourceMap": false,
     "target": "es2022",
     "module": "NodeNext",
-<<<<<<<< HEAD:Tests/CK.TypeScript.Tests/TSInlineTests/CrisLike_commands_and_results/tsconfig.json
-    "moduleResolution": "NodeNext",
-    "paths": {
-      "@local/ck-gen": [
-        "./ck-gen"
-      ],
-      "@local/ck-gen/*": [
-        "./ck-gen/*"
-      ]
-    }
-  }
-========
     "moduleResolution": "NodeNext"
   },
   "include": [
     "src/**/*.spec.ts",
     "src/**/*.d.ts"
   ]
->>>>>>>> explo:Tests/Angular/CK.Ng.AspNet.Auth.Basic.Tests/TSInlineTests/From_Scratch/tsconfig.spec.json
 }
