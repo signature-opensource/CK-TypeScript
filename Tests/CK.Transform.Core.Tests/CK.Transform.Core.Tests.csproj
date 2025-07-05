@@ -1,20 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-      <LangVersion>13</LangVersion>
-      <Nullable>enable</Nullable>
-      <IsPackable>false</IsPackable>
+    <LangVersion>13</LangVersion>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="CK.Testing.Nunit" Version="12.1.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\..\CK.Transform.Core\CK.Transform.Core.csproj" />
-    </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.Nunit" Version="13.0.1--0001-develop" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK.Transform.Core\CK.Transform.Core.csproj" />
+  </ItemGroup>
 </Project>

@@ -1,26 +1,25 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <LangVersion>13</LangVersion>
-    </PropertyGroup>
-    <ItemGroup>
-        <EmbeddedResource Include="../.yarn/releases/yarn-4.8.1.cjs" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="29.1.0" />
-        <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
-        <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
-
-        <ProjectReference Include="..\CK.ResourceSpace.Globalization\CK.ResourceSpace.Globalization.csproj" />
-        <ProjectReference Include="..\CK.ResourceSpace.Assets\CK.ResourceSpace.Assets.csproj" />
-        <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
-        <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
-        <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
-        <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
-        <!-- TypeScript Engine doesn't use the LiveEngine. This reference is here to bring the
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>13</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../.yarn/releases/yarn-4.8.1.cjs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="30.0.1--0001-develop" />
+    <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
+    <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
+    <ProjectReference Include="..\CK.ResourceSpace.Globalization\CK.ResourceSpace.Globalization.csproj" />
+    <ProjectReference Include="..\CK.ResourceSpace.Assets\CK.ResourceSpace.Assets.csproj" />
+    <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
+    <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
+    <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
+    <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
+    <!-- TypeScript Engine doesn't use the LiveEngine. This reference is here to bring the
              LiveEngine package and is used only to compute the relative path to the LiveEngine
              dll from the TargetProject path in order to compute the yarn "ck-watch" command that is
              "dotnet "$PROJECT_CWD/{relative}". -->
-        <ProjectReference Include="..\CK.TypeScript.LiveEngine\CK.TypeScript.LiveEngine.csproj" />
-    </ItemGroup>
+    <ProjectReference Include="..\CK.TypeScript.LiveEngine\CK.TypeScript.LiveEngine.csproj" />
+  </ItemGroup>
 </Project>

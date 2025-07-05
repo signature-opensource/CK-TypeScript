@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <RootNamespace>CK.AspNet.Auth</RootNamespace>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="CK.AspNet.Auth" Version="27.0.0" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
-    </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>CK.AspNet.Auth</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.AspNet.Auth" Version="27.0.1--0001-develop" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
+  </ItemGroup>
 </Project>

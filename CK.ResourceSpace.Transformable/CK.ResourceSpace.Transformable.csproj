@@ -1,17 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <LangVersion>13</LangVersion>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\CK.ResourceSpace\CK.ResourceSpace.csproj" />
-        <ProjectReference Include="..\CK.Transform.Core\CK.Transform.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="CK.BinarySerialization.Sliced" Version="9.1.0" />
-    </ItemGroup>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>13</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.ResourceSpace\CK.ResourceSpace.csproj" />
+    <ProjectReference Include="..\CK.Transform.Core\CK.Transform.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="10.0.1--0001-develop" />
+  </ItemGroup>
 </Project>

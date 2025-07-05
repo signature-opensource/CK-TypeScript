@@ -1,12 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <LangVersion>13</LangVersion>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="23.1.0" />
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>13</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="24.0.1--0001-develop" />
+  </ItemGroup>
 </Project>
