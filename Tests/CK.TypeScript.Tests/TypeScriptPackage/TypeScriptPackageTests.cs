@@ -14,7 +14,7 @@ public class TypeScriptPackageTests
 {
     [TypeScriptPackage]
     [SpecializedPackage]
-    public class SomePackage : TypeScriptPackage
+    public class SomeBuggyPackage : TypeScriptPackage
     {
     }
 
@@ -22,12 +22,12 @@ public class TypeScriptPackageTests
     public async Task single_TypeScriptPackage_attribute_is_allowed_Async()
     {
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
-        engineConfig.FirstBinPath.Types.Add( typeof( SomePackage ) );
+        engineConfig.FirstBinPath.Types.Add( typeof( SomeBuggyPackage ) );
         engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
         engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
 
         await engineConfig.GetFailedAutomaticServicesAsync( """
-                    TypeScript package 'CK.TypeScript.Tests.TypeScriptPackageTests.SomePackage' is decorated with more than one [TypeScriptPackage] or specialized attribute:
+                    TypeScript package 'CK.TypeScript.Tests.TypeScriptPackageTests.SomeBuggyPackage' is decorated with more than one [TypeScriptPackage] or specialized attribute:
                     [TypeScriptPackageAttribute], [SpecializedPackageAttribute]
                     """ );
     }
