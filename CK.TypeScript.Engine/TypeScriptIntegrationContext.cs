@@ -376,7 +376,11 @@ public sealed partial class TypeScriptIntegrationContext
                 canSkipRun = false;
             }
         }
-        PackageDependency[] manualPeerDeps = ExtractLatestDependencies( monitor, _targetPackageJson, finalCommand );
+        ExtractLatestDependencies( monitor,
+                                   _targetPackageJson,
+                                   finalCommand,
+                                   out PackageDependency[] manualPeerDeps,
+                                   ref canSkipRun );
         if( canSkipRun && manualPeerDeps.Length == 0 )
         {
             var text = _targetPackageJson.WriteAsString();
@@ -400,7 +404,11 @@ public sealed partial class TypeScriptIntegrationContext
         return true;
     }
 
-    static PackageDependency[] ExtractLatestDependencies( IActivityMonitor monitor, PackageJsonFile packageJson, StringBuilder finalCommand )
+    static void ExtractLatestDependencies( IActivityMonitor monitor,
+                                           PackageJsonFile packageJson,
+                                           StringBuilder finalCommand,
+                                           out PackageDependency[] manualPeerDeps,
+                                           ref bool canSkipRun )
     {
         var manual = packageJson.Dependencies.RemoveLatestDependencies();
         int idxLocalCkGen = manual.IndexOf( dep => dep.Name == "@local/ck-gen" );
@@ -409,7 +417,7 @@ public sealed partial class TypeScriptIntegrationContext
             monitor.Trace( "'@local/ck-gen' has been registered in the target package dependencies. It has been removed." );
             manual.RemoveAt( idxLocalCkGen );
         }
-        PackageDependency[] manualPeerDeps = [];
+        manualPeerDeps = [];
         if( manual.Count > 0 )
         {
             var regDeps = manual.Where( d => d.DependencyKind is DependencyKind.Dependency );
@@ -417,8 +425,8 @@ public sealed partial class TypeScriptIntegrationContext
             manualPeerDeps = manual.Where( d => d.DependencyKind is DependencyKind.PeerDependency ).ToArray();
             if( regDeps.Any() ) finalCommand.Append( $" && yarn add {regDeps.Select( d => d.Name ).Concatenate( " " )}" );
             if( devDeps.Any() ) finalCommand.Append( $" && yarn add -D {devDeps.Select( d => d.Name ).Concatenate( " " )}" );
+            canSkipRun = false;
         }
-        return manualPeerDeps;
     }
 
     static void ReloadAndUpdateLatestDependencies( IActivityMonitor monitor, PackageJsonFile packageJson, PackageDependency[] manualPeerDeps )
