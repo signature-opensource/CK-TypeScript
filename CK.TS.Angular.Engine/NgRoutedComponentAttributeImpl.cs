@@ -19,11 +19,11 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
     public NgRoutedComponentAttributeImpl( IActivityMonitor monitor, NgRoutedComponentAttribute attr, Type type )
         : base( monitor, attr, type )
     {
-        if( !typeof( NgRoutedComponent ).IsAssignableFrom( type ) )
+        if( !typeof( INgRoutedComponent ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[NgRoutedComponent] can only decorate a NgRoutedComponent: '{type:N}' is not a NgRoutedComponent." );
         }
-        if( !typeof( NgComponent ).IsAssignableFrom( attr.TargetComponent ) )
+        if( !typeof( INgComponent ).IsAssignableFrom( attr.TargetComponent ) )
         {
             monitor.Error( $"[NgRoutedComponent] on '{type:C}': TargetRoutedComponent = typeof({attr.TargetComponent:C}) is not a NgComponent." );
         }
@@ -43,15 +43,16 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
     /// </summary>
     public string Route => Attribute.Route ?? FileComponentName;
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceBuilder,
+                                                          ResPackageDescriptor d )
     {
-        base.OnConfigure( monitor, o );
-        // Makes the TargetComponent a requirement for this Real Object if this is not
-        // the AppComponent
         if( Attribute.TargetComponent != typeof( AppComponent ) )
         {
-            o.Requires.AddNew( Attribute.TargetComponent, StObjRequirementBehavior.ErrorIfNotStObj );
+            d.Requires.Add( Attribute.TargetComponent );
         }
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );
     }
 
 }

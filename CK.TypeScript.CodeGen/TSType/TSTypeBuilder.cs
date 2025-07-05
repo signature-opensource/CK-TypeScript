@@ -12,7 +12,7 @@ sealed class TSTypeBuilder : ITSTypeSignatureBuilder
 
     internal TSTypeBuilder( TypeScriptFolder hiddenRoot, int tsBuilderCount )
     {
-        var workFile = new TypeScriptFile( hiddenRoot, $"builder{tsBuilderCount}.ts" );
+        var workFile = new TypeScriptFile( hiddenRoot, $"builder{tsBuilderCount}.ts", null );
         _root = hiddenRoot.Root;
         _typeName = new RawCodePart( workFile, string.Empty );
         _defaultValue = new RawCodePart( workFile, string.Empty );

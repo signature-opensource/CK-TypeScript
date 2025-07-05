@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>13</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CK.BinarySerialization.Sliced" Version="9.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CK.EmbeddedResources" Version="0.26.2--0002-develop" />
+      <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>

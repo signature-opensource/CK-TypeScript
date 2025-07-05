@@ -1,14 +1,9 @@
 import axios from 'axios';
-import { CookieJar } from 'tough-cookie';
-import { wrapper as addCookieJar } from 'axios-cookiejar-support';
 
 import { AuthService, IAuthenticationInfo, AuthLevel, IUserInfo } from '@local/ck-gen';
 import { areUserInfoEquals, areAuthenticationInfoEquals } from '../helpers/test-helpers';
 
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(30 * 60 * 1000 ); // 30 minutes
-
-const serverAddress = CKTypeScriptEnv.SERVER_ADDRESS ?? "";
-const describeWithServer = serverAddress ? describe : describe.skip;
 
 /*
  * These tests require a webfrontauth() in order to run them.
@@ -20,7 +15,7 @@ const describeWithServer = serverAddress ? describe : describe.skip;
  *      }
  *  - A not null sliding expiration
  */
-describeWithServer('AuthService', function() {
+describe('AuthService', function() {
     let authService: AuthService;
 
     const anonymous: IUserInfo = {
@@ -43,11 +38,7 @@ describeWithServer('AuthService', function() {
 
     beforeAll(async function() {
         const axiosInstance = axios.create();
-        const cookieJar = new CookieJar();
-        addCookieJar(axiosInstance);
-        axiosInstance.defaults.jar = cookieJar;
-
-        authService = await AuthService.createAsync( axiosInstance, { identityEndPoint: serverAddress } );
+        authService = await AuthService.createAsync( axiosInstance );
     });
 
     beforeEach(async function() {

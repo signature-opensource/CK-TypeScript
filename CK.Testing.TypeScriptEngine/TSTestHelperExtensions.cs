@@ -30,21 +30,6 @@ public static partial class TSTestHelperExtensions
         return p.AppendPart( RemoveAsyncSuffix( testName ) );
     }
 
-    /// <summary>
-    /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSBuildOnly/<paramref name="testName"/>" path
-    /// for tests that must be compiled. Yarn is installed and "/ck-gen" is built in <see cref="CKGenIntegrationMode.NpmPackage"/>.
-    /// No VSCode support nor TypeScript test tooling is installed.
-    /// </summary>
-    /// <param name="helper">This helper.</param>
-    /// <param name="testName">The current test name.</param>
-    /// <returns>The TSBuildOnly test path.</returns>
-    public static NormalizedPath GetTypeScriptBuildOnlyTargetProjectPath( this IMonitorTestHelper helper, [CallerMemberName] string? testName = null )
-    {
-        var p = helper.TestProjectFolder.AppendPart( "TSBuildOnly" );
-        EnsureGitIgnore( helper, p );
-        return p.AppendPart( RemoveAsyncSuffix( testName ) );
-    }
-
     static void EnsureGitIgnore( IMonitorTestHelper helper, NormalizedPath p )
     {
         if( !Directory.Exists( p ) )
@@ -63,36 +48,12 @@ public static partial class TSTestHelperExtensions
     }
 
     /// <summary>
-    /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSNpmPackageTests/<paramref name="testName"/>" path
-    /// for real tests. Yarn is installed, VSCode support is setup, "/ck-gen" yarn workspace is built, a script "test" command is
-    /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
-    /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
-    /// the modified files.
-    /// <para>
-    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
-    /// the TypeScript tests.
-    /// </para>
-    /// </summary>
-    /// <param name="this">This helper.</param>
-    /// <param name="testName">The current test name.</param>
-    /// <returns>The TSNpmPackageTests test path.</returns>
-    public static NormalizedPath GetTypeScriptNpmPackageTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
-    {
-        var p = GetPath( @this, "TSNpmPackageTests", testName );
-        TEMPMigrate( @this, testName, p );
-        MigrateAny( @this, testName, p, "TSInlineTests", "TSBuildOnly", "TSGeneratedOnly" );
-        return p;
-    }
-
-    /// <summary>
     /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSInlineTests/<paramref name="testName"/>" path
     /// for real tests. Yarn is installed, VSCode support is setup, a script "test" command is
-    /// available and a "src/sample.spec.ts" file is ready to be used. Any modification in the /ck-gen folder
-    /// is preserved and the setup will fail until the modified files are deleted or the generated code exactly matches
-    /// the modified files.
+    /// available and a "src/sample.spec.ts" file is ready to be used.
     /// <para>
-    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/> can be used to execute
-    /// the TypeScript tests.
+    /// <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, string?, Dictionary{string, string}?, string)"/> can
+    /// be used to execute the TypeScript tests.
     /// </para>
     /// </summary>
     /// <param name="this">This helper.</param>
@@ -101,8 +62,7 @@ public static partial class TSTestHelperExtensions
     public static NormalizedPath GetTypeScriptInlineTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
     {
         var p = GetPath( @this, "TSInlineTests", testName );
-        TEMPMigrate( @this, testName, p );
-        MigrateAny( @this, testName, p, "TSNpmPackageTests", "TSBuildOnly", "TSGeneratedOnly" );
+        MigrateAny( @this, testName, p, "TSBuildOnly", "TSGeneratedOnly" );
         return p;
     }
 
@@ -112,21 +72,12 @@ public static partial class TSTestHelperExtensions
         {
             if( MoveDirectory( GetPath( @this, o, testName ), p ) )
             {
-
                 return;
             }
         }
     }
 
     static NormalizedPath GetPath( IBasicTestHelper @this, string type, string? testName ) => @this.TestProjectFolder.AppendPart( type ).AppendPart( RemoveAsyncSuffix( testName ) );
-
-    static void TEMPMigrate( IBasicTestHelper @this, string? testName, NormalizedPath p )
-    {
-        if( !MoveDirectory( @this.TestProjectFolder.AppendPart( "TSTests" ).AppendPart( RemoveAsyncSuffix( testName ) ), p ) )
-        {
-            MoveDirectory( @this.TestProjectFolder.AppendPart( "TSBuildAndTests" ).AppendPart( RemoveAsyncSuffix( testName ) ), p );
-        }
-    }
 
     static bool MoveDirectory( NormalizedPath old, NormalizedPath p )
     {
@@ -149,8 +100,6 @@ public static partial class TSTestHelperExtensions
     enum GenerateMode
     {
         GenerateOnly,
-        BuildOnly,
-        NpmPackage,
         Inline
     }
 
@@ -172,24 +121,85 @@ public static partial class TSTestHelperExtensions
     /// before calling the <see cref="Runner.Run()"/> in order to be able to keep a running context alive while
     /// working on the TypeScript side (fixing, debugging, analyzing, etc.) TypeScript code. 
     /// </para>
+    /// <para>
+    /// When <paramref name="serverAddress"/> is not null the tests are configured to be hosted on the server address:
+    /// the <c>window.location.origin</c> is the server address.
+    /// </para>
+    /// This also modifies the <c>ck-gen/CK/Angular/CKGenAppModule.ts</c> file
+    /// if it exists to inject the server address:
+    /// <list type="number">
+    ///     <item>In the first <c>new AuthService( inject( AXIOS ), { identityEndPoint: 'serverAddress' } )</c>.</item>
+    ///     <item>In the first <c>new HttpCrisEndpoint( inject( AXIOS ), 'serverAddress' )</c>.</item>
+    /// </list>
+    /// This (not really elegant - this package doesn't know CK.NG.AspNet.Auth nor CK.Ng.Cris.AspNet) trick enables
+    /// 'yarn start' when the backend is running to launch a fully operational application.
     /// </summary>
     /// <param name="this">This helper.</param>
     /// <param name="targetProjectPath">
-    /// The test target project path. Usually obtained by:
+    /// The test target project path. Should be obtained by:
     /// <list type="bullet">
     ///     <item><see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptInlineTargetProjectPath()</see></item>
-    ///     <item>or <see cref="GetTypeScriptNpmPackageTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptBuildModeTargetProjectPath()</see></item>
     /// </list>
     /// </param>
-    /// <param name="environmentVariables">Optional environment variables to set.</param>
+    /// <param name="serverAddress">Optional server address that will replace the default "http://localhost".</param>
+    /// <param name="environmentVariables">Optional environment variables to set (will apeear in CKTypeScriptEnv).</param>
     /// <param name="command">Yarn command that will be executed.</param>
     public static Runner CreateTypeScriptRunner( this IMonitorTestHelper @this,
                                                  NormalizedPath targetProjectPath,
+                                                 string? serverAddress = null,
                                                  Dictionary<string, string>? environmentVariables = null,
                                                  string command = "test" )
     {
-        TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor, targetProjectPath, environmentVariables, out var afterRun ).ShouldBeTrue();
-        return new Runner( @this, targetProjectPath, environmentVariables, command, afterRun );
+        TypeScriptIntegrationContext.JestSetupHandler.PrepareJestRun( @this.Monitor,
+                                                                      targetProjectPath,
+                                                                      out var afterRun,
+                                                                      serverAddress,
+                                                                      environmentVariables ).ShouldBeTrue();
+        Action? revert = serverAddress != null
+                            ? SetServerAddressInCKGenAppModule( @this, targetProjectPath, serverAddress )
+                            : null;
+        Action? final = afterRun;
+        if( revert != null )
+        {
+            final = afterRun == null
+                        ? revert
+                        : (() => { revert(); afterRun(); });
+
+        }
+        return new Runner( @this, targetProjectPath, environmentVariables, command, final );
+
+        static Action? SetServerAddressInCKGenAppModule( IMonitorTestHelper @this, NormalizedPath targetProjectPath, string serverAddress )
+        {
+            var ckGenAppModulePath = targetProjectPath.Combine( "ck-gen/CK/Angular/CKGenAppModule.ts" );
+            if( File.Exists( ckGenAppModulePath ) )
+            {
+                bool changed = false;
+                var originText = File.ReadAllText( ckGenAppModulePath );
+                var text = originText;
+                var idx = text.IndexOf( "new AuthService( inject( AXIOS ) )" );
+                if( idx > 0 )
+                {
+                    Throw.DebugAssert( "new AuthService( inject( AXIOS )".Length == 32 );
+                    text = text.Insert( idx + 32, $$""", { identityEndPoint: '{{serverAddress}}' }""" );
+                    @this.Monitor.Info( "Added authentication endpoint to new AuthService in 'CKGenAppModule.ts' file." );
+                    changed = true;
+                }
+                idx = text.IndexOf( "new HttpCrisEndpoint( inject( AXIOS ) )" );
+                if( idx > 0 )
+                {
+                    Throw.DebugAssert( "new HttpCrisEndpoint( inject( AXIOS )".Length == 37 );
+                    text = text.Insert( idx + 37, $$""", '{{serverAddress}}/.cris'""" );
+                    @this.Monitor.Info( "Added cris endpoint to new HttpCrisEndpoint in 'CKGenAppModule.ts' file." );
+                    changed = true;
+                }
+                if( changed )
+                {
+                    File.WriteAllText( ckGenAppModulePath, text );
+                    return () => File.WriteAllText( ckGenAppModulePath, originText );
+                }
+            }
+            return null;
+        }
     }
 
 }

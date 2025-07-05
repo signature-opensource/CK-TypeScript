@@ -271,3 +271,4 @@ CodeCakeBuilder/[Rr]eleases/
 
 # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz.
 **/.yarn/install-state.gz
+**/.yarn/unplugged

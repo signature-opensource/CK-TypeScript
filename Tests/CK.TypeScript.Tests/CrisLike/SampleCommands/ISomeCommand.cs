@@ -6,7 +6,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// <summary>
 /// Some command requires a regular authentication level.
 /// </summary>
-[TypeScript( Folder = "Cmd/Some" )]
+[TypeScriptType( Folder = "Cmd/Some" )]
 public interface ISomeCommand : ICommand, ICommandAuthNormal
 {
     /// <summary>
@@ -19,7 +19,7 @@ public interface ISomeCommand : ICommand, ICommandAuthNormal
 /// Secondary definition that makes SomeCommand require a critical authentication level and return
 /// a integer.
 /// </summary>
-[TypeScript( Folder = "Cmd/Some" )]
+[TypeScriptType( Folder = "Cmd/Some" )]
 public interface ISomeIsCriticalAndReturnsIntCommand : ISomeCommand, ICommand<int>, ICommandAuthCritical
 {
 }

@@ -1,5 +1,3 @@
-using CK.Core;
-
 namespace CK.TS.Angular;
 
 /// <summary>
@@ -9,7 +7,7 @@ namespace CK.TS.Angular;
 /// the <see cref="CKGenAppModule"/>.
 /// </para>
 /// </summary>
-[CKTypeDefiner]
-public abstract class NgRoutedComponent : NgComponent
+public abstract class NgRoutedComponent : NgComponent, INgRoutedComponent
 {
+    void INgRoutedComponent.LocalImplementationOnly() {}
 }

@@ -1,22 +1,17 @@
 using CK.Core;
+using CK.EmbeddedResources;
 using CK.Setup;
-using CK.TypeScript.CodeGen;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace CK.TypeScript.Engine;
 
-
-
 /// <summary>
 /// Creates a TypeScript resource file (from an embedded '.ts' resource).
 /// </summary>
-public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImplExtension
+public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
-    Core.ResourceLocator _resource;
-    NormalizedPath _targetPath;
-
     /// <summary>
     /// Initializes a new <see cref="TypeScriptFileAttributeImpl"/>.
     /// </summary>
@@ -32,28 +27,52 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptPackageAttributeImpl
         }
     }
 
+    /// <summary>
+    /// Gets the attribute/
+    /// </summary>
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
-    protected override void OnInitialize( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, ITypeAttributesCache owner )
+    /// <inheritdoc/>
+    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, TypeScriptGroupOrPackageAttributeImpl tsPackage, ResPackageDescriptor d, ResSpaceConfiguration spaceBuilder )
     {
-        if( tsPackage.Resources.TryGetResource( monitor, Attribute.ResourcePath, out _resource ) )
+        // There is currently no way to define a target path for a specific resource in reource container
+        // (resource containers have no notion of "target folder").
+        // So we use the TypeScript CodeGen model for this: we transfer the resource to the code by
+        // removing/hiding the resource from its container and registering the resource as a published one.
+        //
+        // Doing this has an impact: the resource moved to the <App> code becomes reachable from any
+        // package.
+        // To minimize this, we hide the resource from its container and publish it from the code container
+        // only if the attribute specifies a TargetFolder.
+        // When no target folder is specified, we only register its TS type names and the resource "stays"
+        // in its container.
+        //
+        bool isPublishedByCodeContainer = Attribute.TargetFolder != null;
+        EmbeddedResources.ResourceLocator resource;
+        NormalizedPath targetPath;
+        if( isPublishedByCodeContainer )
         {
-            _targetPath = Attribute.TargetFolder ?? tsPackage.TypeScriptFolder;
-            _targetPath = _targetPath.ResolveDots().AppendPart( Path.GetFileName( Attribute.ResourcePath ) );
-            tsPackage.RemoveResource( _resource );
+            if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out resource ) )
+            {
+                return false;
+            }
+            targetPath = Attribute.TargetFolder;
+            targetPath = targetPath.ResolveDots();
+            targetPath = targetPath.Combine( Path.GetFileName( Attribute.ResourcePath ) );
         }
-    }
-
-
-    protected internal override bool GenerateCode( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context )
-    {
-        Throw.DebugAssert( "If initialization failed, we never reach this point.", _resource.IsValid );
-        var file = context.Root.Root.CreateResourceFile( in _resource, _targetPath );
-        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
+        else
+        {
+            if( !d.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out resource, d.AfterResources ) )
+            {
+                return false;
+            }
+            targetPath = tsPackage.TypeScriptFolder.Combine( Attribute.ResourcePath );
+        }
+        var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath, isPublishedByCodeContainer );
         foreach( var tsType in Attribute.TypeNames )
         {
             if( string.IsNullOrWhiteSpace( tsType ) ) continue;
-            Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( tsType );
+            file.DeclareType( tsType );
         }
         return true;
     }

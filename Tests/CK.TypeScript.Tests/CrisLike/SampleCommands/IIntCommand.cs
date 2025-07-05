@@ -6,7 +6,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// <summary>
 /// Concrete command where <see cref="ICommandAbs"/> works with integers.
 /// </summary>
-[TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
+[TypeScriptType( SameFolderAs = typeof( ICommandAbs ) )]
 public interface IIntCommand : ICommand, ICommandAbs
 {
     /// <summary>

@@ -6,8 +6,7 @@ using System.Threading;
 
 namespace CK.Setup;
 
-
-public sealed partial class TypeScriptContext
+public sealed partial class TypeScriptContext // Save
 {
     /// <summary>
     /// The current version of this tooling is saved in the "ckVersion" property of
@@ -20,50 +19,10 @@ public sealed partial class TypeScriptContext
         bool success = true;
         using( monitor.OpenInfo( $"Saving generated TypeScript for:{Environment.NewLine}{BinPathConfiguration.ToOnlyThisXml()}" ) )
         {
-            var ckGenFolder = BinPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" );
-            var targetCKGenFolder = BinPathConfiguration.TargetCKGenPath;
-
-            // If a ck-gen/dist folder exists, we delete it no matter what.
-            // This applies to NpmPackage integration mode. 
-            // When UseSrcFolder is false, its files appear in the list of cleanup files and
-            // it should be recompiled anyway.
-            // In Inline mode, there is no dist/. And when there is no integration at all, the /dist
-            // shouldn't exist.
-            string distFolder = ckGenFolder + "/dist";
-            if( Directory.Exists( distFolder ) )
-            {
-                monitor.Info( "Found a 'ck-gen/dist' folder. Deleting it" );
-                DeleteFolder( monitor, distFolder, recursive: true );
-            }
-            var saver = BinPathConfiguration.CKGenBuildMode
-                        ? new BuildModeSaver( Root, targetCKGenFolder )
-                        : new TypeScriptFileSaveStrategy( Root, targetCKGenFolder );
-            // We want a root barrel for the generated module.
-            Root.Root.EnsureBarrel();
-            // If we are not using the ck-gen/src folder, ignore the files that are not
-            // directly concerned by the code generation.
-            if( !_binPathConfiguration.UseSrcFolder )
-            {
-                saver.CleanupIgnoreFiles.Add( ".gitignore" );
-                if( _binPathConfiguration.IntegrationMode != CKGenIntegrationMode.None )
-                {
-                    var prefix = _binPathConfiguration.IntegrationMode != CKGenIntegrationMode.NpmPackage
-                                    ? "CouldBe."
-                                    : null;
-                    saver.CleanupIgnoreFiles.Add( prefix + "package.json" );
-                    saver.CleanupIgnoreFiles.Add( prefix + "tsconfig.json" );
-                    saver.CleanupIgnoreFiles.Add( prefix + "tsconfig-cjs.json" );
-                    saver.CleanupIgnoreFiles.Add( prefix + "tsconfig-es6.json" );
-                }
-            }
-            // Saving the root.  
-            int? savedCount = Root.Save( monitor, saver );
-            if( !savedCount.HasValue )
-            {
-                return false;
-            }
+            var generatedDependencies = _tsRoot.LibraryManager.ExportDependencyCollection( monitor );
+            if( generatedDependencies == null ) return false;
             // Fix stupid mistake in code that may have declared typescript as a regular dependency.
-            if( saver.GeneratedDependencies.TryGetValue( "typescript", out var typeScriptFromCode ) )
+            if( generatedDependencies.TryGetValue( "typescript", out var typeScriptFromCode ) )
             {
                 if( typeScriptFromCode.DependencyKind != DependencyKind.DevDependency )
                 {
@@ -72,24 +31,36 @@ public sealed partial class TypeScriptContext
                     typeScriptFromCode.UnconditionalSetDependencyKind( DependencyKind.DevDependency );
                 }
             }
-            if( savedCount.Value == 0 )
+            if( BinPathConfiguration.GitIgnoreCKGenFolder )
             {
-                monitor.Warn( $"No files or folders have been generated in '{ckGenFolder}'. Skipping TypeScript integration." );
+                File.WriteAllText( Path.Combine( BinPathConfiguration.TargetCKGenPath, ".gitignore" ), "*" );
+            }
+            if( _integrationContext == null )
+            {
+                monitor.Info( "Skipping any TypeScript project setup since IntegrationMode is None." );
             }
             else
             {
-                if( BinPathConfiguration.GitIgnoreCKGenFolder )
+                var liveEnginePath = typeof( TypeScript.LiveEngine.Runner ).Assembly.Location;
+                if( BinPathConfiguration.TargetProjectPath.TryGetRelativePathTo( liveEnginePath,
+                                                                                    out var relative ) )
                 {
-                    File.WriteAllText( Path.Combine( ckGenFolder, ".gitignore" ), "*" );
-                }
-                if( _integrationContext == null )
-                {
-                    monitor.Info( "Skipping any TypeScript project setup since IntegrationMode is None." );
+                    _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
+                    dotnet "$PROJECT_CWD/{relative}"
+                    """;
                 }
                 else
                 {
-                    success &= _integrationContext.Run( monitor, saver );
+                    monitor.Warn( $"""
+                        Unable to compute relative path from:
+                        {BinPathConfiguration.TargetProjectPath}
+                        to:
+                        {liveEnginePath}
+                        No 'yarn ck-watch' command available.
+                        """ );
+                    _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
                 }
+                success &= _integrationContext.Run( monitor, generatedDependencies );
             }
         }
         return success;

@@ -1,0 +1,112 @@
+using CK.Transform.Core;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+namespace CK.Core;
+
+/// <summary>
+/// Simple helper.
+/// </summary>
+readonly struct InstallHooksHelper
+{
+    readonly IEnumerable<ITransformableFileInstallHook> _hooks;
+    readonly IResourceSpaceItemInstaller _installer;
+    readonly TransformerHost _transformerHost;
+
+    public InstallHooksHelper( IEnumerable<ITransformableFileInstallHook> hooks,
+                               IResourceSpaceItemInstaller installer,
+                               TransformerHost transformerHost )
+    {
+        _hooks = hooks;
+        _installer = installer;
+        _transformerHost = transformerHost;
+    }
+
+    public bool Run( IActivityMonitor monitor, IEnumerable<TransformableItem>? toBeInstalled, List<LocalItem>? toBeRemoved )
+    {
+        bool success = true;
+        Start( monitor );
+        if( toBeRemoved != null )
+        {
+            Throw.CheckState( _installer is ILiveResourceSpaceItemInstaller );
+            var live = Unsafe.As<ILiveResourceSpaceItemInstaller>( _installer );
+            foreach( var i in toBeRemoved )
+            {
+                success &= Remove( monitor, i, live );
+            }
+        }
+        if( toBeInstalled != null )
+        {
+            foreach( var i in toBeInstalled )
+            {
+                var text = i.GetFinalText( monitor, _transformerHost );
+                if( text == null )
+                {
+                    success = false;
+                }
+                else
+                {
+                    success &= Install( monitor, i, text );
+                }
+            }
+        }
+        Stop( monitor, success );
+        return success;
+    }
+
+    void Start( IActivityMonitor monitor )
+    {
+        foreach( var h in _hooks )
+        {
+            h.StartInstall( monitor );
+        }
+    }
+
+    bool Remove( IActivityMonitor monitor, ITransformInstallableItem item, ILiveResourceSpaceItemInstaller live )
+    {
+        bool success = true;
+        bool handled = false;
+        // Use the foreach downcast capability here.
+        foreach( ILiveTransformableFileInstallHook h in _hooks )
+        {
+            success = h.HandleRemove( monitor, item, live, out handled );
+            if( !success || handled )
+            {
+                break;
+            }
+        }
+        if( success && !handled )
+        {
+            live.SafeDelete( monitor, item.TargetPath );
+        }
+        return success;
+    }
+
+    bool Install( IActivityMonitor monitor, ITransformInstallableItem item, string text )
+    {
+        bool success = true;
+        bool handled = false;
+        foreach( var h in _hooks )
+        {
+            success = h.HandleInstall( monitor, item, ref text, _installer, out handled );
+            if( !success || handled )
+            {
+                break;
+            }
+        }
+        if( success && !handled )
+        {
+            _installer.Write( item.TargetPath, text );
+        }
+        return success;
+    }
+
+    void Stop( IActivityMonitor monitor, bool success )
+    {
+        foreach( var h in _hooks )
+        {
+            h.StopInstall( monitor, success, _installer );
+        }
+    }
+
+}

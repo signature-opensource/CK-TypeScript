@@ -1,19 +1,16 @@
+// <HasNgPublicPage />
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { CKGenAppModule, CKGenInjected, LoginComponent, SomeAuthService } from '@local/ck-gen';
-import { Component, inject } from '@angular/core';
-
-
-const ckGenInjected: CKGenInjected = [LoginComponent];
+import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
+import { PublicPageComponent } from '@local/ck-gen';
+// Public Page is from CK.Ng.PublicPage package.
 
 @Component({
   selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, CKGenAppModule, ...ckGenInjected],
+  imports: [RouterOutlet, PublicPageComponent, CKGenAppModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.less'
 })
 export class AppComponent {
-  title = 'Demo';
-  authService = inject(SomeAuthService);
+  title = 'CK_TS_Angular';
 }
-

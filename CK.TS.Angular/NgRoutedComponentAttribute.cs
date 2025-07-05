@@ -4,12 +4,17 @@ using System.Runtime.CompilerServices;
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Non generic base class of <see cref="NgRoutedComponent{T}"/>.
+/// Required attribute for <see cref="NgRoutedComponent"/>.
 /// </summary>
 public class NgRoutedComponentAttribute : NgComponentAttribute
 {
-    private protected NgRoutedComponentAttribute( Type targetRoutedComponent,
-                                                  [CallerFilePath] string? callerFilePath = null )
+    /// <summary>
+    /// Initializes a new <see cref="NgComponentAttribute"/>.
+    /// </summary>
+    /// <param name="targetRoutedComponent">See <see cref="TargetComponent"/>.</param>
+    /// <param name="callerFilePath">The caller path.</param>
+    public NgRoutedComponentAttribute( Type targetRoutedComponent,
+                                       [CallerFilePath] string? callerFilePath = null )
         : base( "CK.TS.Angular.Engine.NgRoutedComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
     {
         TargetComponent = targetRoutedComponent;
@@ -27,7 +32,7 @@ public class NgRoutedComponentAttribute : NgComponentAttribute
     /// <summary>
     /// Gets or sets the route for this component.
     /// <para>
-    /// When let to null, the route name is the component name: the decorated type name without the "Component" suffix in snake-case.
+    /// When let to null, the route name is the component name: the decorated type name in snake-case without the "Component" suffix.
     /// </para>
     /// </summary>
     public string? Route { get; set; }
@@ -38,5 +43,3 @@ public class NgRoutedComponentAttribute : NgComponentAttribute
     /// </summary>
     public RouteRegistrationMode RegistrationMode { get; set; }
 }
-
-

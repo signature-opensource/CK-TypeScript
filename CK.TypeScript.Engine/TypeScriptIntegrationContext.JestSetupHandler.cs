@@ -212,7 +212,15 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
                         // Do NOT alter the comments below.
                         // Start-CKTypeScriptEnv
                         CKTypeScriptEnv: {}
-                        // Stop-CKTypeScriptEnv-Stop
+                        // Stop-CKTypeScriptEnv
+                    },
+                    // TestHelper.CreateTypeScriptTestRunner also replaces the 'http://localhost' (that is the default)
+                    // with the server address (like 'http://[::1]:55235' - a free dynamic port is used). 
+                    // Do NOT alter the comments below.
+                    testEnvironmentOptions: { 
+                        // Start-CKTypeScriptSrv
+                        url: 'http://localhost' 
+                        // Stop-CKTypeScriptSrv
                     },
                     setupFilesAfterEnv: ['<rootDir>/{{JestSetupTSFileName}}']
                 };
@@ -258,95 +266,155 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
             return true;
         }
 
-        static void InjectGlobals( NormalizedPath jestConfigFilePath, IEnumerable<KeyValuePair<string, string>>? environmentVariables )
+        static void InjectConfigJS( NormalizedPath jestConfigFilePath,
+                                    string? serverAdress,
+                                    IEnumerable<KeyValuePair<string, string>>? environmentVariables )
         {
             var content = File.ReadAllText( jestConfigFilePath );
-            var (idxStart, idxStop) = GetRange( jestConfigFilePath, content );
-            var head = content.AsSpan( 0, idxStart );
-            var tail = content.AsSpan( idxStop );
-            using var f = File.Create( jestConfigFilePath );
-            using var text = new StreamWriter( f );
-            text.Write( head );
-            if( environmentVariables == null )
+            var (iStartEnv, iStopEnv) = GetRange( jestConfigFilePath, content, "Env" );
+            var (iStartSrv, iStopSrv) = GetRange( jestConfigFilePath, content, "Srv" );
+            ReadOnlySpan<char> head;
+            ReadOnlySpan<char> middle;
+            ReadOnlySpan<char> tail;
+            bool envFirst = true;
+            if( iStartEnv < iStartSrv )
             {
-                text.Write( "{}" );
+                var middleLen = iStartSrv - iStopEnv;
+                if( middleLen <= 0 ) ThrowMismatch( jestConfigFilePath, content );
+                head = content.AsSpan( 0, iStartEnv );
+                middle = content.AsSpan( iStopEnv, middleLen );
+                tail = content.AsSpan( iStopSrv );
             }
             else
             {
-                text.Flush();
-                using( var w = new Utf8JsonWriter( f ) )
-                {
-                    w.WriteStartObject();
-                    bool hasTestKey = false;
-                    foreach( var kv in environmentVariables )
-                    {
-                        hasTestKey |= kv.Key == TestRunningKey;
-                        w.WriteString( kv.Key, kv.Value );
-                    }
-                    if( !hasTestKey )
-                    {
-                        w.WriteString( TestRunningKey, "true" );
-                    }
-                    w.WriteEndObject();
-                    w.Flush();
-                }
+                var middleLen = iStartEnv - iStopSrv;
+                if( middleLen <= 0 ) ThrowMismatch( jestConfigFilePath, content );
+                head = content.AsSpan( 0, iStartSrv );
+                middle = content.AsSpan( iStopSrv, middleLen );
+                tail = content.AsSpan( iStopEnv );
+                envFirst = false;
             }
+            using var f = File.Create( jestConfigFilePath );
+            using var text = new StreamWriter( f );
+            text.Write( head );
+            WriteReplacement( envFirst, serverAdress, environmentVariables, f, text );
+            text.Write( middle );
+            WriteReplacement( !envFirst, serverAdress, environmentVariables, f, text );
             text.Write( tail );
 
-            static (int, int) GetRange( NormalizedPath jestConfigFilePath, string content )
+            static void ThrowMismatch( NormalizedPath jestConfigFilePath, string content )
             {
-                var idxStart = content.IndexOf( "// Start-CKTypeScriptEnv" );
+                throw new InvalidDataException( $"""
+                File '{jestConfigFilePath}' is invalid. Markers are overlapping. Content: 
+                {content}
+                """ );
+            }
+
+            static (int, int) GetRange( NormalizedPath jestConfigFilePath, string content, string markSuffix )
+            {
+                Throw.DebugAssert( markSuffix.Length == 3 );
+                var startPattern = $"// Start-CKTypeScript{markSuffix}";
+                var stopPattern = $"// Stop-CKTypeScript{markSuffix}";
+                var idxStart = content.IndexOf( startPattern );
                 if( idxStart > 0 )
                 {
-                    Throw.DebugAssert( "CKTypeScriptEnv:".Length == 16 );
-                    idxStart = content.IndexOf( "CKTypeScriptEnv:", idxStart ) + 16;
-                    while( content[++idxStart] != '{' && idxStart < content.Length ) ;
-                    if( idxStart < content.Length )
+                    idxStart += startPattern.Length;
+                    int idxStop = content.IndexOf( stopPattern, idxStart );
+                    if( idxStop > 0 )
                     {
-                        if( idxStart > 0 )
-                        {
-                            int idxStop = content.IndexOf( "// Stop-CKTypeScriptEnv", idxStart );
-                            if( idxStop > 0 )
-                            {
-                                while( content[--idxStop] != '}' && idxStop > idxStart ) ;
-                                if( idxStop > idxStart )
-                                {
-                                    return (idxStart, idxStop + 1);
-                                }
-                            }
-                        }
+                        return (idxStart, idxStop);
                     }
                 }
-                throw new InvalidOperationException( $"File '{jestConfigFilePath}' is invalid. CKTypeScriptEnv in its marker comments not found." );
+                throw new InvalidOperationException( $"""
+                        File '{jestConfigFilePath}' is invalid: unable to find '{startPattern}' and '{stopPattern}' markers. Content:
+                        {content}
+                        """ );
+            }
+
+            static void WriteReplacement( bool envFirst, string? serverAdress, IEnumerable<KeyValuePair<string, string>>? environmentVariables, FileStream f, StreamWriter text )
+            {
+                text.WriteLine();
+                text.Write( "        " );
+                if( envFirst )
+                {
+                    WriteEnv( environmentVariables, f, text );
+                }
+                else
+                {
+                    WriteSrv( serverAdress, text );
+                }
+                text.Write( "        " );
+
+                static void WriteEnv( IEnumerable<KeyValuePair<string, string>>? environmentVariables, FileStream f, StreamWriter text )
+                {
+                    text.Write( "CKTypeScriptEnv: " );
+                    if( environmentVariables == null )
+                    {
+                        text.WriteLine( "{}," );
+                    }
+                    else
+                    {
+                        text.Flush();
+                        using( var w = new Utf8JsonWriter( f ) )
+                        {
+                            w.WriteStartObject();
+                            bool hasTestKey = false;
+                            foreach( var kv in environmentVariables )
+                            {
+                                hasTestKey |= kv.Key == TestRunningKey;
+                                w.WriteString( kv.Key, kv.Value );
+                            }
+                            if( !hasTestKey )
+                            {
+                                w.WriteString( TestRunningKey, "true" );
+                            }
+                            w.WriteEndObject();
+                            w.Flush();
+                        }
+                        text.WriteLine( "," );
+                    }
+                }
+
+                static void WriteSrv( string? serverAdress, StreamWriter text )
+                {
+                    text.Write( "url: '" );
+                    text.Write( serverAdress ?? "http://localhost" );
+                    text.WriteLine( "'," );
+                }
             }
         }
 
         /// <summary>
         /// Prepares the project to run Jest by updating the <see cref="JestConfigFileName"/> file with
-        /// the provided <paramref name="environmentVariables"/> and (at least) the "CK_TYPESCRIPT_ENGINE = true".
+        /// the provided <paramref name="ckTypeScriptEnv"/> and (at least) the "CK_TYPESCRIPT_ENGINE = true".
         /// </summary>
         /// <param name="monitor">Required monitor.</param>
         /// <param name="targetProjectPath">The project path.</param>
-        /// <param name="environmentVariables">Optional environment variables.</param>
         /// <param name="afterRun">
         /// A cleanup action that must be run once the test is over.
         /// This is null if the target package.json file has no "test" script or if the "test" is
         /// not "jest".
         /// </param>
+        /// <param name="serverAddress">Optional server address that will replace the default "http://localhost".</param>
+        /// <param name="ckTypeScriptEnv">Optional CKTypeScriptEnv variables.</param>
         /// <returns>True on success, false on error.</returns>
         public static bool PrepareJestRun( IActivityMonitor monitor,
                                            NormalizedPath targetProjectPath,
-                                           IReadOnlyDictionary<string, string>? environmentVariables,
-                                           out Action? afterRun )
+                                           out Action? afterRun,
+                                           string? serverAddress = null,
+                                           IReadOnlyDictionary<string, string>? ckTypeScriptEnv = null )
         {
             afterRun = null;
-            var o = PackageJsonFile.ReadFile( monitor, targetProjectPath.AppendPart( "package.json" ), "Target project package.json", ignoreVersionsBound: true );
+            var o = PackageJsonFile.ReadFile( monitor,
+                                              targetProjectPath.AppendPart( "package.json" ),
+                                              "Target project package.json",
+                                              ignoreVersionsBound: true );
             if( o == null ) return false;
             if( o.Scripts.TryGetValue( "test", out var command ) && (command == "jest" || command.StartsWith( "jest " )) )
             {
                 var jestConfigFilePath = targetProjectPath.AppendPart( JestConfigFileName );
-                InjectGlobals( jestConfigFilePath, environmentVariables ?? ImmutableDictionary<string, string>.Empty );
-                afterRun = () => InjectGlobals( jestConfigFilePath, null );
+                InjectConfigJS( jestConfigFilePath, serverAddress, ckTypeScriptEnv ?? ImmutableDictionary<string, string>.Empty );
+                afterRun = () => InjectConfigJS( jestConfigFilePath, null, null );
             }
             return true;
         }

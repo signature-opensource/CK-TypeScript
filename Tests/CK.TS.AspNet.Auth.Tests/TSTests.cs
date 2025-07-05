@@ -5,7 +5,6 @@ using Shouldly;
 using Microsoft.AspNetCore.Builder;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
@@ -19,7 +18,6 @@ public class TSTests
     public async Task CK_TS_AspNet_Auth_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
-        targetProjectPath.Parts[^2].ShouldBe( "TSInlineTests" );
 
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
         engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.Auth" );
@@ -30,7 +28,7 @@ public class TSTests
         var builder = WebApplication.CreateSlimBuilder();
 
         await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
-        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
+        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, server.ServerAddress );
         await TestHelper.SuspendAsync( resume => resume );
         runner.Run();
     }
@@ -48,7 +46,6 @@ public class TSTests
             configuration.EnsureAspect<TypeScriptAspectConfiguration>();
             var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
             ts.TargetProjectPath = targetProjectPath;
-            ts.IntegrationMode = CKGenIntegrationMode.Inline;
             var r = await configuration.RunSuccessfullyAsync();
 
             File.Exists( targetProjectPath.Combine( "src/sample.spec.ts" ) ).ShouldBeTrue();
@@ -58,7 +55,7 @@ public class TSTests
             var builder = WebApplication.CreateSlimBuilder();
 
             await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
-            await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, new Dictionary<string, string> { { "SERVER_ADDRESS", server.ServerAddress } } );
+            await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, server.ServerAddress );
             await TestHelper.SuspendAsync( resume => resume );
             runner.Run();
         }

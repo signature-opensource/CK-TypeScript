@@ -1,4 +1,4 @@
-import { AuthLevel } from '@local/ck-gen/CK/Auth/AuthLevel';
+import { AuthLevel } from './AuthLevel';
 
 /** Defines the status of the user schemes (see @see IUserSchemeInfo). */
 export enum SchemeUsageStatus {
@@ -107,8 +107,9 @@ export interface IAuthServiceConfiguration {
      *  the protocol 'http://' or 'https://').
      */
     readonly identityEndPoint?: IEndPoint|string;
-    /** True to enable local storage: current authentication is stored and 
-     * restored (at Unsafe level) if server cannot be initially reached. */
+    /** False to disable local storage (this defaults to true).
+     * Current authentication is stored and restored (at Unsafe level)
+     * if server cannot be initially reached. */
     readonly useLocalStorage?: boolean;
 }
 

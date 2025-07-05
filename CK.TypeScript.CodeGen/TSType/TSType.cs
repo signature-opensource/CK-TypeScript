@@ -136,7 +136,7 @@ public abstract class TSType : ITSType
     /// <summary>
     /// Gets a null file at this level.
     /// </summary>
-    public virtual IMinimalTypeScriptFile? File => null;
+    public virtual TypeScriptFileBase? File => null;
 
     /// <inheritdoc />
     public int Index => _index;

@@ -1,0 +1,40 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": [
+      "jest"
+    ],
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": false,
+    "declarationMap": false,
+    "esModuleInterop": true,
+    "sourceMap": false,
+    "target": "es2022",
+    "module": "NodeNext",
+<<<<<<<< HEAD:Tests/CK.TypeScript.Tests/TSInlineTests/CrisLike_commands_and_results/tsconfig.json
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "@local/ck-gen": [
+        "./ck-gen"
+      ],
+      "@local/ck-gen/*": [
+        "./ck-gen/*"
+      ]
+    }
+  }
+========
+    "moduleResolution": "NodeNext"
+  },
+  "include": [
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts"
+  ]
+>>>>>>>> explo:Tests/Angular/CK.Ng.AspNet.Auth.Basic.Tests/TSInlineTests/From_Scratch/tsconfig.spec.json
+}

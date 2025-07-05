@@ -11,9 +11,8 @@ namespace CK.Setup;
 /// <summary>
 /// Aspect that drives TypeScript code generation. Handles (and initialized) by the <see cref="TypeScriptAspectConfiguration"/>.
 /// </summary>
-public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
+public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
 {
-    readonly TypeScriptAspectConfiguration _tsConfig;
     // This enables deferring the TypeScript generation at the final step of CS code generation.
     // A first part must run during the CS code generation to be able to register PocoTypeSet.
     // But TypeScript generation itself is not CS code generation and by deferring the TS we allow
@@ -32,7 +31,6 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
     /// <param name="config">The aspect configuration.</param>
     public TypeScriptAspect( TypeScriptAspectConfiguration config )
     {
-        _tsConfig = config;
         _deferedSave = config.DeferFileSave ? new List<TypeScriptContext>() : null;
         _runContexts = new List<TypeScriptContext>();
     }
@@ -48,13 +46,17 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
         for( int i = 0; i < allBinPathConfigurations.Count; i++ )
         {
             TypeScriptBinPathAspectConfiguration ts = allBinPathConfigurations[i];
+
             if( !KeepValidTargetProjectPath( monitor, basePath, ts ) )
             {
                 allBinPathConfigurations.RemoveAt( i-- );
             }
             else
             {
-                CompleteActiveCultureSet( ts );
+                // Ugly... Should we implement a NormalizedFolderPath?
+                var normalizedBarrels = ts.Barrels.Select( NormalizeFolderPath ).ToList();
+                ts.Barrels.Clear();
+                ts.Barrels.AddRange( normalizedBarrels );
             }
         }
         return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
@@ -148,35 +150,23 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             return success;
         }
 
-        static void CompleteActiveCultureSet( TypeScriptBinPathAspectConfiguration ts )
+        static string NormalizeFolderPath( string p )
         {
-            ts.ActiveCultures.Add( NormalizedCultureInfo.CodeDefault );
-            List<NormalizedCultureInfo>? missing = null;
-            foreach( var culture in ts.ActiveCultures )
+            if( p.Length > 0 )
             {
-                foreach( var parent in culture.Fallbacks )
+                p = p.Replace( '\\', '/' );
+                if( p[0] == '/' )
                 {
-                    if( !ts.ActiveCultures.Contains( parent ) )
-                    {
-                        missing ??= new List<NormalizedCultureInfo>();
-                        missing.Add( parent );
-                    }
+                    if( p.Length == 1 ) return string.Empty;
+                    p = p.Substring( 1, p.Length - 1 );
                 }
+                if( p[^1] == '/' ) return p;
+                return p + '/';
             }
-            if( missing != null )
-            {
-                foreach( var m in missing )
-                {
-                    ts.ActiveCultures.Add( m );
-                    foreach( var f in m.Fallbacks )
-                    {
-                        ts.ActiveCultures.Add( f );
-                    }
-                }
-            }
+            return p;
         }
-    }
 
+    }
 
     bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;
 
@@ -273,7 +263,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             {
                 // If Json serialization is available, let's get the name map for them.
                 // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
-                // beacause of anonymous record names that expose their fields).
+                // because of anonymous record names that expose their fields).
                 if( initializer.TypeScriptExchangeableSet.SameContentAs( typeSystem.SetManager.AllExchangeable ) )
                 {
                     exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames;

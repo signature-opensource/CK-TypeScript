@@ -4,14 +4,14 @@ using CK.TypeScript;
 using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
-using System.Runtime.CompilerServices;
+using CK.EmbeddedResources;
 
 namespace CK.TS.Angular.Engine;
 
 /// <summary>
 /// Implements <see cref="NgModuleAttribute"/>.
 /// </summary>
-public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
+public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
     readonly string _snakeName;
 
@@ -33,33 +33,32 @@ public class NgModuleAttributeImpl : TypeScriptPackageAttributeImpl
     }
 
     /// <summary>
-    /// Gets the module name that is the C# <see cref="TypeScriptFileAttributeImpl.DecoratedType"/> name (with "Module" suffix).
+    /// Gets the module name that is the C# <see cref="TypeScriptGroupOrPackageAttributeImpl.DecoratedType"/> name (with "Module" suffix).
     /// </summary>
     public string ModuleName => DecoratedType.Name;
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
-    {
-        base.OnConfigure( monitor, o );
-        if( o.Container.Type == typeof( RootTypeScriptPackage ) )
-        {
-            o.Container.Type = typeof( AppComponent );
-        }
-    }
-
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
+    /// <summary>
+    /// Overridden to handle the component "*.module.ts" file name.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <param name="d">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceBuilder,
+                                                          ResPackageDescriptor d )
     {
         var fName = _snakeName + ".module.ts";
-        if( !Resources.TryGetResource( monitor, fName, out var res ) )
+        if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
         }
-        // Removes the resource so that base.GenerateCode doesn't handle it.
-        RemoveResource( res );
-        var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-        Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ModuleName );
+        var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
+        ITSDeclaredFileType tsType = file.DeclareType( ModuleName );
 
-        return base.GenerateCode( monitor, context )
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().RegisterModule( monitor, this, tsType );
     }
 

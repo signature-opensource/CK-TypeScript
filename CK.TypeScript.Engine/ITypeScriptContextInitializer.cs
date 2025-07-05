@@ -4,7 +4,6 @@ using CK.TypeScript;
 using CK.TypeScript.Engine;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace CK.Setup;
 
@@ -50,14 +49,14 @@ public interface ITypeScriptContextInitializer
     /// <param name="monitor">The monitor.</param>
     /// <param name="t">The type that must be mapped in TypeScript.</param>
     /// <param name="mustBePocoType">True if the type must be a Poco compliant type.</param>
-    /// <param name="attributeConfigurator">Optional factory or updater of the associated <see cref="TypeScriptAttribute"/>.</param>
+    /// <param name="attributeConfigurator">Optional factory or updater of the associated <see cref="TypeScriptTypeAttribute"/>.</param>
     /// <returns>
     /// True on success, false on error (when the type is a non exchangeable Poco type and <paramref name="mustBePocoType"/> is true).
     /// </returns>
     bool EnsureRegister( IActivityMonitor monitor,
                          Type t,
                          bool mustBePocoType,
-                         Func<TypeScriptAttribute?, TypeScriptAttribute?>? attributeConfigurator = null );
+                         Func<TypeScriptTypeAttribute?, TypeScriptTypeAttribute?>? attributeConfigurator = null );
 
     /// <inheritdoc cref="TypeScriptContext.BinPathConfiguration"/>
     TypeScriptBinPathAspectConfiguration BinPathConfiguration { get; }
@@ -66,9 +65,9 @@ public interface ITypeScriptContextInitializer
     TypeScriptIntegrationContext? IntegrationContext { get; }
 
     /// <summary>
-    /// Gets the TypeScript packages topologically ordered.
+    /// Gets the TypeScript packages.
     /// </summary>
-    ImmutableArray<TypeScriptPackageAttributeImpl> Packages { get; }
+    IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages { get; }
 
     /// <summary>
     /// Gets the initial object mapping for <see cref="TypeScriptContext.Root"/> folder's memory.
@@ -78,5 +77,4 @@ public interface ITypeScriptContextInitializer
     /// </para>
     /// </summary>
     IDictionary<object, object?> RootMemory { get; }
-
 }

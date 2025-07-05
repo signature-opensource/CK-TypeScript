@@ -62,6 +62,19 @@ public static class TSCodeWriterExtensions
     }
 
     /// <summary>
+    /// Appends <paramref name="count"/> whitespaces.
+    /// </summary>
+    /// <typeparam name="T">Actual type of the code writer.</typeparam>
+    /// <param name="this">This code writer.</param>
+    /// <param name="count">Number of white spaces to append.</param>
+    /// <returns>This code writer to enable fluent syntax.</returns>
+    static public T Whitespace<T>( this T @this, int count ) where T : ITSCodeWriter
+    {
+        @this.DoAdd( new string( ' ', count ) );
+        return @this;
+    }
+
+    /// <summary>
     /// Appends a raw character.
     /// </summary>
     /// <typeparam name="T">Actual type of the code writer.</typeparam>

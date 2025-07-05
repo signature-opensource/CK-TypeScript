@@ -1,6 +1,8 @@
 using CK.Core;
 using CK.Setup;
+using CK.TypeScript;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CK.Testing;
@@ -11,10 +13,6 @@ public static partial class TSTestHelperExtensions
     /// Ensures that a <see cref="TypeScriptAspect"/> is available in <see cref="EngineConfiguration.Aspects"/> and that
     /// this <see cref="BinPathConfiguration"/> contains a <see cref="TypeScriptBinPathAspectConfiguration"/> configured
     /// for the <paramref name="targetProjectPath"/>.
-    /// <para>
-    /// <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> is false: to preserve the current ck-gen/ folder
-    /// and manually validate the changes, set it to true.
-    /// </para>
     /// </summary>
     /// <param name="binPath">This BinPath configuration to configure.</param>
     /// <param name="targetProjectPath">
@@ -34,11 +32,7 @@ public static partial class TSTestHelperExtensions
     }
 
     /// <summary>
-    /// Applies the options driven by <paramref name="targetProjectPath"/> to this <see cref="TypeScriptBinPathAspectConfiguration"/>
-    /// <para>
-    /// <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> is false: to preserve the current ck-gen/ folder
-    /// and manually validate the changes, set it to true.
-    /// </para>
+    /// Applies the options driven by <paramref name="targetProjectPath"/> to this <see cref="TypeScriptBinPathAspectConfiguration"/>.
     /// </summary>
     /// <param name="tsBinPathAspect">This configuration.</param>
     /// <param name="targetProjectPath">
@@ -55,15 +49,11 @@ public static partial class TSTestHelperExtensions
         var testMode = targetProjectPath.Parts[^2] switch
         {
             "TSGeneratedOnly" => GenerateMode.GenerateOnly,
-            "TSBuildOnly" => GenerateMode.BuildOnly,
-            "TSNpmPackageTests" => GenerateMode.NpmPackage,
             "TSInlineTests" => GenerateMode.Inline,
             _ => Throw.ArgumentException<GenerateMode>( nameof( targetProjectPath ), $"""
                                                         Unsupported target project path: '{targetProjectPath}'.
                                                         $"The target path must be obtained with TestHelper methods:
                                                         - GetTypeScriptGeneratedOnlyTargetProjectPath()
-                                                        - GetTypeScriptBuildOnlyTargetProjectPath()
-                                                        - GetTypeScriptNpmPackageTargetProjectPath() 
                                                         - GetTypeScriptInlineTargetProjectPath() 
                                                         """ )
         };
@@ -74,31 +64,8 @@ public static partial class TSTestHelperExtensions
             tsBinPathAspect.InstallYarn = YarnInstallOption.None;
             tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.None;
         }
-        else
-        {
-            if( testMode == GenerateMode.BuildOnly )
-            {
-                tsBinPathAspect.AutoInstallJest = false;
-                tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
-            }
-            else
-            {
-                if( testMode == GenerateMode.Inline )
-                {
-                    tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.Inline;
-                }
-                else if( testMode == GenerateMode.NpmPackage )
-                {
-                    tsBinPathAspect.IntegrationMode = CKGenIntegrationMode.NpmPackage;
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
-        }
         tsBinPathAspect.Types.Clear();
-        tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+        tsBinPathAspect.Types.AddRange( tsTypes.Select( t => new KeyValuePair<Type,TypeScriptTypeAttribute?>( t, null ) ) );
         return tsBinPathAspect;
     }
 

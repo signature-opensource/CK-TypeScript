@@ -8,7 +8,7 @@ namespace CK.TypeScript.CodeGen;
 /// <para>
 /// The generator function has access to the <see cref="ITSFileType.File"/> that hosts the code
 /// (with its <see cref="TypeScriptFile.Imports"/> section) and to the whole generation context
-/// thanks to <see cref="BaseFile.Root"/>.
+/// thanks to <see cref="TypeScriptFileBase.Root"/>.
 /// </para>
 /// </summary>
 /// <param name="monitor">The monitor to use.</param>

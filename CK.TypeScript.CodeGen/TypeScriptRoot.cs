@@ -3,27 +3,20 @@ using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text.Json;
 
 namespace CK.TypeScript.CodeGen;
 
 /// <summary>
 /// Central TypeScript context with options and a <see cref="Root"/> that contains as many <see cref="TypeScriptFolder"/>
-/// and <see cref="TypeScriptFile"/> as needed that can ultimately be <see cref="Save"/>d.
+/// and <see cref="TypeScriptFile"/>.
 /// <para>
 /// The <see cref="TSTypes"/> maps C# types to <see cref="ITSType"/>. Types can be registered directly or
 /// use the <see cref="TSTypeManager.ResolveTSType(IActivityMonitor, object)"/> that raises a <see cref="TSTypeManager.TSFromTypeRequired"/>
 /// or <see cref="TSTypeManager.TSFromObjectRequired"/> event.
 /// </para>
-/// <para>
-/// Once code generation succeeds, <see cref="Save"/> can be called.
-/// </para>
-/// <para>
-/// This class can be used as-is or can be specialized in order to offer a more powerful API.
-/// </para>
 /// </summary>
-public sealed class TypeScriptRoot
+public sealed partial class TypeScriptRoot
 {
     IDictionary<object, object?>? _memory;
     readonly TSTypeManager _tsTypes;
@@ -200,8 +193,8 @@ public sealed class TypeScriptRoot
         bool success = true;
         // If BeforeCodeGeneration emits an error, we skip the whole code generation.
         // If a TSGeneratedType.HasError is true, CodeGenerator will fail.
-        // If CodeGenerator emits an error, we skip the call to OnDeferredCodeGenerated and AfterCodeGeneration.
-        // If OnDeferredCodeGenerated emits an error, we skip the call to AfterCodeGeneration.
+        // If CodeGenerator emits an error, we skip the call to AfterDeferredCodeGeneration and AfterCodeGeneration.
+        // If AfterDeferredCodeGeneration emits an error, we skip the call to AfterCodeGeneration.
         using( monitor.OnError( () => success = false ) )
         {
             try
@@ -275,33 +268,29 @@ public sealed class TypeScriptRoot
     /// </remarks>
     public IDictionary<object, object?> Memory => _memory ??= new Dictionary<object, object?>();
 
-
     /// <summary>
-    /// Saves this <see cref="Root"/> (all its files and creates the necessary folders)
+    /// Publishes all files into a <see cref="ITypeScriptPublishTarget"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
-    /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
-    public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
+    /// <param name="target">The collector.</param>
+    /// <returns>True on success, false on error (the error has been logged).</returns>
+    public bool Publish( IActivityMonitor monitor, ITypeScriptPublishTarget target )
     {
-        Throw.CheckNotNullArgument( saver );
-        if( !saver.GeneratedDependencies.AddOrUpdate( monitor, _libraryManager.LibraryImports.Values.Where( i => i.IsUsed ).Select( i => i.PackageDependency ) ) )
-        {
-            return null;
-        }
         try
         {
-            if( !saver.Initialize( monitor ) )
+            if( !target.Open( monitor, this ) )
             {
-                return null;
+                return false;
             }
-            int? result = Root.Save( monitor, saver );
-            return saver.Finalize( monitor, result );
+            var ctx = new TypeScriptFolder.PublishContext( new char[1024], target, _tsTypes );
+            _root.Publish( monitor, ref ctx );
+            return target.Close( monitor, this, null );
         }
         catch( Exception ex )
         {
-            monitor.Error( $"Error while saving '{saver.Target}'.", ex );
-            return null;
+            monitor.Error( "Error while publishing TypeScript.", ex );
+            target.Close( monitor, this, ex );
+            return false;
         }
     }
 

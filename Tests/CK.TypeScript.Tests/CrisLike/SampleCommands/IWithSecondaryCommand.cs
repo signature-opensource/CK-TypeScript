@@ -7,7 +7,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// Tests the SecondaryPoco use. SecondaryPoco is erased in TS: the primary <see cref="IWithObjectCommand"/> is used
 /// everywhere a secondary definition appears.
 /// </summary>
-[TypeScript( Folder = "Cmd/WithObject" )]
+[TypeScriptType( Folder = "Cmd/WithObject" )]
 public interface IWithSecondaryCommand : ICommand
 {
     /// <summary>

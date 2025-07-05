@@ -19,7 +19,6 @@ public enum CKGenIntegrationMode
     ///        "@local/ck-gen/*": ["./ck-gen/*"]
     ///     },
     /// </code>
-    /// In this mode no /ck-gen/tsConfig.json is created, the /ck-gen doesn't need to be built.
     /// <para>
     /// This is the default.
     /// </para>
@@ -27,15 +26,8 @@ public enum CKGenIntegrationMode
     Inline,
 
     /// <summary>
-    /// The "@local/ck-gen" is a yarn workspace inside its parent application with its package.json and its tsConfig.json files.
-    /// (see <see cref="TypeScriptBinPathAspectConfiguration.ModuleSystem"/>).
-    /// </summary>
-    NpmPackage,
-
-    /// <summary>
-    /// Generated sources are saved in <see cref="TypeScriptBinPathAspectConfiguration.TargetCKGenPath"/> but no further processing
-    /// is done. The only other options that are considered are <see cref="TypeScriptBinPathAspectConfiguration.UseSrcFolder"/>, <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/>
-    /// and <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/>.
+    /// Generated sources are saved in "ck-gen/" but no further processing
+    /// is done. The only other option that is considered is <see cref="TypeScriptBinPathAspectConfiguration.GitIgnoreCKGenFolder"/>.
     /// </summary>
     None
 

@@ -25,7 +25,7 @@ public static class YarnHelper
     /// The current yarn version that is embedded in the CK.TypeScript.Engine assembly
     /// and can be automatically installed. See <see cref="TypeScriptBinPathAspectConfiguration.InstallYarn"/>.
     /// </summary>
-    public const string AutomaticYarnVersion = "4.6.0";
+    public const string AutomaticYarnVersion = "4.8.1";
 
     const string _yarnFileName = $"yarn-{AutomaticYarnVersion}.cjs";
     const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
@@ -48,7 +48,7 @@ public static class YarnHelper
     /// <returns>True on success, false if yarn cannot be found or the process failed.</returns>
     public static bool RunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command, Dictionary<string, string>? environmentVariables )
     {
-        var yarnPath = TryFindYarn( workingDirectory, out var _ );
+        var yarnPath = TryFindYarn( workingDirectory, out _ );
         if( yarnPath.HasValue )
         {
             return DoRunYarn( monitor, workingDirectory, command, yarnPath.Value, environmentVariables );
@@ -259,7 +259,13 @@ public static class YarnHelper
                     lines.Insert( 0, firstLine );
                 }
                 var newOne = string.Join( Environment.NewLine, lines );
-                monitor.Info( $"Updated .yarnrc.yml from:{Environment.NewLine}{current}{Environment.NewLine}to:{Environment.NewLine}{newOne}" );
+                monitor.Info( $"""
+                    Updated .yarnrc.yml from:
+                    {current}
+                    to:
+                    {newOne}
+                    """ );
+                    
                 File.WriteAllText( yarnrcFile, newOne );
             }
             else
@@ -279,6 +285,12 @@ public static class YarnHelper
     {
         var integrationsFile = targetProjectPath.Combine( ".yarn/install-state.gz" );
         return File.Exists( integrationsFile );
+    }
+
+    internal static bool HasYarnLockFile( NormalizedPath targetProjectPath )
+    {
+        var f = targetProjectPath.AppendPart( "yarn.lock" );
+        return File.Exists( f );
     }
 
     static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )

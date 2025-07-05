@@ -3,9 +3,17 @@ using CK.TypeScript;
 
 namespace CK.Ng.Localization;
 
+/// <summary>
+/// Imports the "@ngx-translate/core" library, adds automatic translations loader
+/// based on <c>ck-gen/ts-locales/locales.ts</c>.
+/// </summary>
 [TypeScriptPackage]
 [TypeScriptImportLibrary( "@ngx-translate/core", "^16", DependencyKind.Dependency )]
-public class TSPackage
+
+[TypeScriptFile( "TranslationsLoader.ts", "CKTranslationsLoader" )]
+[NgProviderImport( "provideTranslateService, TranslateLoader", LibraryName = "@ngx-translate/core" )]
+[NgProviderImport( "CKTranslationsLoader", LibraryName = "@local/ck-gen" )]
+[NgProvider( "provideTranslateService( { defaultLanguage: 'fr', loader: { provide: TranslateLoader, useClass: CKTranslationsLoader } })" )]
+public class TSPackage : TypeScriptPackage
 {
-    
 }

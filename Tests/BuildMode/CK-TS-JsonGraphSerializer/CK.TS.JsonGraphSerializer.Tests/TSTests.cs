@@ -51,12 +51,11 @@ public class MultipleTypeScriptTests
 
         var ts2 = new TypeScriptBinPathAspectConfiguration()
         {
-            TargetProjectPath = "Clients/Inline",
+            TargetProjectPath = "Clients/C2",
             IntegrationMode = CKGenIntegrationMode.Inline,
-            TypeFilterName = "TypeScriptI",
-            CKGenBuildMode = true
+            TypeFilterName = "TypeScriptC2",
         };
-        ts2.Types.Add( new TypeScriptTypeConfiguration( typeof( ISamplePoco ) ) );
+        ts2.Types.Add( typeof( ISamplePoco ), null );
 
         engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
         //binPath.AddAspect( ts1 );
@@ -71,7 +70,6 @@ public class MultipleTypeScriptTests
         //r1.Run();
 
         // Runs the Jest tests.
-        var t2 = TestHelper.TestProjectFolder.Combine( "Clients/Inline" );
         await using var r2 = TestHelper.CreateTypeScriptRunner( t2 );
         r2.Run();
     }

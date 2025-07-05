@@ -1,9 +1,9 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -13,11 +13,15 @@ namespace CK.TypeScript.CodeGen;
 public sealed partial class TypeScriptFolder
 {
     readonly TypeScriptRoot _root;
+    readonly TypeScriptFolder? _parent;
     TypeScriptFolder? _firstChild;
-    readonly TypeScriptFolder? _next;
-    internal BaseFile? _firstFile;
-    readonly NormalizedPath _path;
+    TypeScriptFolder? _next;
+    readonly string _path;
+    readonly string _name;
+    internal TypeScriptFileBase? _firstFile;
+    int _fileCount;
     bool _wantBarrel;
+    bool _hasExportedSymbol;
 
     // We consider the largest set of invalid characters and
     // only remove the '/' for paths.
@@ -33,16 +37,27 @@ public sealed partial class TypeScriptFolder
 
     internal TypeScriptFolder( TypeScriptRoot root )
     {
+        _path = string.Empty;
+        _name = string.Empty;
         _root = root;
     }
 
-    internal TypeScriptFolder( TypeScriptFolder parent, string name )
+    internal TypeScriptFolder( TypeScriptFolder parent, string name, TypeScriptFolder? previous )
     {
         _root = parent._root;
-        Parent = parent;
-        _path = parent._path.AppendPart( name );
-        _next = parent._firstChild;
-        parent._firstChild = this;
+        _parent = parent;
+        _path = parent._path + name + '/';
+        _name = name;
+        if( previous == null )
+        {
+            _next = parent._firstChild;
+            parent._firstChild = this;
+        }
+        else
+        {
+            _next = previous._next;
+            previous._next = this;
+        }
     }
 
     /// <summary>
@@ -50,22 +65,32 @@ public sealed partial class TypeScriptFolder
     /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>, otherwise
     /// it necessarily not empty and without '.ts' extension.
     /// </summary>
-    public string Name => _path.LastPart;
+    public string Name => _name;
+
+    /// <summary>
+    /// Gets "<see cref="Name"/>/" or an empty span if <see cref="IsRoot"/> is true.
+    /// </summary>
+    public ReadOnlySpan<char> NameWithSeparator => _parent == null
+                                                    ? default
+                                                    : _path.AsSpan( _parent._path.Length );
 
     /// <summary>
     /// Gets this folder's path from <see cref="Root"/>.
+    /// This string is empty when this is the <see cref="TypeScriptRoot.Root"/>.
+    /// It never starts with '/' but always end with '/'
     /// </summary>
-    public NormalizedPath Path => _path;
+    public string Path => _path;
 
     /// <summary>
     /// Gets whether this folder is the root one.
     /// </summary>
-    public bool IsRoot => _path.IsEmptyPath;
+    [MemberNotNullWhen( false, nameof( Parent ) )]
+    public bool IsRoot => _parent == null;
 
     /// <summary>
     /// Gets the parent folder. Null when this is the <see cref="TypeScriptRoot.Root"/>.
     /// </summary>
-    public TypeScriptFolder? Parent { get; }
+    public TypeScriptFolder? Parent => _parent;
 
     /// <summary>
     /// Gets the root TypeScript context.
@@ -73,40 +98,80 @@ public sealed partial class TypeScriptFolder
     public TypeScriptRoot Root => _root;
 
     /// <summary>
-    /// Gets whether this folder has a barrel (see https://basarat.gitbook.io/typescript/main-1/barrel).
+    /// Gets whether this folder has a barrel (see <see href="https://basarat.gitbook.io/typescript/main-1/barrel"/>).
+    /// When true, a 'index.ts' barrel file will be published if <see cref="HasExportedSymbol"/> is true.
     /// </summary>
     public bool HasBarrel => _wantBarrel;
 
     /// <summary>
     /// Definitely sets <see cref="HasBarrel"/> to true.
     /// </summary>
-    public void EnsureBarrel() => _wantBarrel = true;
+    public void EnsureBarrel()
+    {
+        if( !_wantBarrel )
+        {
+            _wantBarrel = true;
+            if( _hasExportedSymbol ) IncrementFileCount();
+        }
+    }
+
+    /// <summary>
+    /// Gets whether at least one of the file in this folder or any subfolder exports a type name.
+    /// </summary>
+    public bool HasExportedSymbol => _hasExportedSymbol;
+
+    internal void SetHasExportedSymbol()
+    {
+        if( !_hasExportedSymbol )
+        {
+            _hasExportedSymbol = true;
+            _parent?.SetHasExportedSymbol();
+            if( _wantBarrel ) IncrementFileCount();
+        }
+    }
+
+    internal void IncrementFileCount()
+    {
+        ++_fileCount;
+        _parent?.IncrementFileCount();
+    }
+
+    /// <summary>
+    /// Gets the total number of files that this folder will publish.
+    /// This can differ from the <see cref="AllFilesRecursive"/> count because of the 'index.ts'
+    /// barrel management and that <see cref="ResourceTypeScriptFile"/> are not published.
+    /// </summary>
+    public int FileCount => _fileCount;
 
     TypeScriptFolder FindOrCreateLocalFolder( string name )
     {
-        return FindLocalFolder( name ) ?? CreateLocalFolder( name );
+        return FindLocalFolder( name, out var previous ) ?? CreateLocalFolder( name, previous );
     }
 
-    TypeScriptFolder? FindLocalFolder( string name )
+    TypeScriptFolder? FindLocalFolder( ReadOnlySpan<char> name, out TypeScriptFolder? previous )
     {
+        previous = null;
         var c = _firstChild;
         while( c != null )
         {
-            if( c.Name == name ) return c;
+            int cmp = name.CompareTo( c.Name, StringComparison.Ordinal );
+            if( cmp == 0 ) return c;
+            if( cmp < 0 ) break;
+            previous = c;
             c = c._next;
         }
         return null;
     }
 
-    TypeScriptFolder CreateLocalFolder( string name )
+    TypeScriptFolder CreateLocalFolder( string name, TypeScriptFolder? previous )
     {
         CheckCreateLocalName( name, isFolder: true );
-        var f = new TypeScriptFolder( this, name );
+        var f = new TypeScriptFolder( this, name, previous );
         _root.OnFolderCreated( f );
         return f;
     }
 
-    void CheckCreateLocalName( string fileOrFolderName, bool isFolder )
+    static void CheckCreateLocalName( string fileOrFolderName, bool isFolder )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( fileOrFolderName );
         var e = GetInvalidFileOrFolderNameError( fileOrFolderName, isFolder );
@@ -114,22 +179,32 @@ public sealed partial class TypeScriptFolder
         {
             throw new ArgumentException( e, nameof( fileOrFolderName ) );
         }
-        if( isFolder
-                 ? FindLocalFile( fileOrFolderName ) != null
-                 : FindLocalFolder( fileOrFolderName ) != null )
+        bool tsExtension = fileOrFolderName.EndsWith( ".ts", StringComparison.OrdinalIgnoreCase );
+        if( isFolder )
         {
-            throw new InvalidOperationException( $"Unable to create {(isFolder ? "folder" : "file")} named '{fileOrFolderName}'. A {(isFolder ? "file" : "folder")} with this name exists." );
+            if( tsExtension )
+            {
+                Throw.ArgumentException( "folderName", $"Folder '{fileOrFolderName}' cannot end with '.ts'." );
+            }
+        }
+        else 
+        {
+            if( !tsExtension )
+            {
+                Throw.ArgumentException( "fileName", $"File '{fileOrFolderName}' must end with '.ts'." );
+            }
         }
     }
 
     internal static string? GetInvalidFileOrFolderNameError( string fileOrFolderName, bool isFolder )
     {
+        Throw.CheckNotNullOrWhiteSpaceArgument( fileOrFolderName );
         int bad = fileOrFolderName.IndexOfAny( isFolder ? _invalidPathChars : _invalidFileNameChars );
         if( bad >= 0 )
         {
             return $"Invalid character '{fileOrFolderName[bad]}' in '{fileOrFolderName}'.";
         }
-        if( fileOrFolderName == BaseFile._hiddenFileName )
+        if( fileOrFolderName == TypeScriptFileBase._hiddenFileName )
         {
             return $"Forbidden name '{fileOrFolderName}'.";
         }
@@ -159,18 +234,29 @@ public sealed partial class TypeScriptFolder
     /// </summary>
     /// <param name="path">The path to the subordinated folder to find.</param>
     /// <returns>The existing folder or null.</returns>
-    public TypeScriptFolder? FindFolder( NormalizedPath path )
+    public TypeScriptFolder? FindFolder( ReadOnlySpan<char> path )
     {
         var f = this;
-        if( !path.IsEmptyPath )
+        if( !path.IsEmpty )
         {
-            foreach( var name in path.Parts )
+            Span<Range> ranges = stackalloc Range[256];
+            foreach( var r in SplitPath( path, ranges ) )
             {
-                f = f.FindLocalFolder( name );
+                f = f.FindLocalFolder( path[r], out _ );
                 if( f == null ) return null;
             }
         }
         return f;
+    }
+
+    static ReadOnlySpan<Range> SplitPath( ReadOnlySpan<char> path, Span<Range> ranges )
+    {
+        int len = path.SplitAny( ranges, "/\\", StringSplitOptions.None );
+        if( len == ranges.Length )
+        {
+            Throw.ArgumentException( nameof( path ), $"Too many path separators in '{path}'. Max is {ranges.Length - 1}." );
+        }
+        return ranges.Slice( 0, len );
     }
 
     /// <summary>
@@ -191,7 +277,7 @@ public sealed partial class TypeScriptFolder
 
     /// <summary>
     /// Finds a folder below this one by returning its depth.
-    /// This returns 0 when this is the same as <paramref name="other"/>
+    /// This returns 0 when <paramref name="other"/> is this folder.
     /// and -1 if other is not subordinated to this folder.
     /// </summary>
     /// <param name="other">The other folder to locate.</param>
@@ -253,100 +339,8 @@ public sealed partial class TypeScriptFolder
     }
 
     /// <summary>
-    /// Saves this folder, its files and all its subordinated folders, into a folder on the file system.
+    /// Overridden to return the <see cref="Path"/>.
     /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="saver">The <see cref="TypeScriptFileSaveStrategy"/>.</param>
-    /// <returns>Number of files saved on success, null if an error occurred (the error has been logged).</returns>
-    public int? Save( IActivityMonitor monitor, TypeScriptFileSaveStrategy saver )
-    {
-        using( monitor.OpenTrace( IsRoot ? $"Saving TypeScript Root folder into {saver.Target}" : $"Saving /{Name}." ) )
-        {
-            var parentTarget = saver._currentTarget;
-            var target = IsRoot ? saver.Target : parentTarget.AppendPart( Name );
-            saver._currentTarget = target;
-            try
-            {
-                int result = 0;
-
-                bool createdDirectory = false;
-                if( _firstFile != null )
-                {
-                    Directory.CreateDirectory( target );
-                    createdDirectory = true;
-                    foreach( var file in AllFiles )
-                    {
-                        file.Save( monitor, saver );
-                        ++result;
-                    }
-                }
-                var folder = _firstChild;
-                while( folder != null )
-                {
-                    var r = folder.Save( monitor, saver );
-                    if( !r.HasValue ) return null;
-                    result += r.Value;
-                    folder = folder._next;
-                }
-                if( _wantBarrel && FindLocalFile( "index.ts" ) == null )
-                {
-                    var b = new StringBuilder();
-                    AddExportsToBarrel( default, b );
-                    if( b.Length > 0 )
-                    {
-                        if( !createdDirectory ) Directory.CreateDirectory( target );
-
-                        var index = target.AppendPart( "index.ts" );
-                        File.WriteAllText( index, b.ToString() );
-                        saver.CleanupFiles?.Remove( index );
-                        ++result;
-                    }
-                }
-                return result;
-            }
-            catch( Exception ex )
-            {
-                monitor.Error( ex );
-                return null;
-            }
-            finally
-            {
-                saver._currentTarget = parentTarget;
-            }
-        }
-    }
-
-    void AddExportsToBarrel( NormalizedPath subPath, StringBuilder b )
-    {
-        if( !subPath.IsEmptyPath && (_wantBarrel || FindLocalFile( "index.ts" ) != null) )
-        {
-            b.Append( "export * from './" ).Append( subPath ).AppendLine( "';" );
-        }
-        else
-        {
-            var file = _firstFile;
-            while( file != null )
-            {
-                if( file is IMinimalTypeScriptFile ts && ts.AllTypes.Any() )
-                {
-                    AddExportFile( subPath, b, file.Name.AsSpan().Slice( 0, file.Name.Length - 3 ) );
-                }
-                file = file._next;
-            }
-            var folder = _firstChild;
-            while( folder != null )
-            {
-                folder.AddExportsToBarrel( subPath.AppendPart( folder.Name ), b );
-                folder = folder._next;
-            }
-
-            static void AddExportFile( NormalizedPath subPath, StringBuilder b, ReadOnlySpan<char> fileName )
-            {
-                b.Append( "export * from './" ).Append( subPath );
-                if( !subPath.IsEmptyPath ) b.Append( '/' );
-                b.Append( fileName ).AppendLine( "';" );
-            }
-        }
-    }
-
+    /// <returns>This <see cref="Path"/>.</returns>
+    public override string ToString() => _path;
 }

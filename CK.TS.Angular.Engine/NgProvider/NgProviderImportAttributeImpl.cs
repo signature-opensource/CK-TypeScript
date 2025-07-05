@@ -8,25 +8,35 @@ using System.Linq;
 
 namespace CK.TS.Angular.Engine;
 
-public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeImplExtension
+/// <summary>
+/// Implements <see cref="NgProviderImportAttribute"/>.
+/// </summary>
+public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
+    /// <summary>
+    /// Initializes a new implementation.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
     public NgProviderImportAttributeImpl( NgProviderImportAttribute attr, Type type )
         : base( attr, type )
     {
     }
 
+    /// <summary>
+    /// Gets the attribute.
+    /// </summary>
     public new NgProviderImportAttribute Attribute => Unsafe.As<NgProviderImportAttribute>( base.Attribute );
 
-
-    protected override void OnInitialize( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, ITypeAttributesCache owner )
+    /// <inheritdoc />
+    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                 TypeScriptContext context,
+                                                 TypeScriptGroupOrPackageAttributeImpl tsPackage,
+                                                 ResPackageDescriptor d,
+                                                 ResSpaceConfiguration resourcesConfiguration )
     {
-    }
+        ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context )
-    {
-        var ckGen = context.GetAngularCodeGen().CKGenAppModule;
-
-        ITSFileImportSection imports = ckGen.File.Imports;
         if( Attribute.LibraryName == "@local/ck-gen" )
         {
             imports.ImportFromLocalCKGen( Attribute.SymbolNames );
@@ -66,8 +76,11 @@ public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeI
                                                                    TypeScript.CodeGen.DependencyKind.DevDependency,
                                                                    $"[{AttributeName}] on '{Type:C}'." );
             }
-            imports.ImportFromLibrary( (lib,subPath), Attribute.SymbolNames );
+            imports.ImportFromLibrary( (lib, subPath), Attribute.SymbolNames );
         }
         return true;
     }
 }
+
+
+

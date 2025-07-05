@@ -1,42 +1,62 @@
 using CK.Core;
 using CK.TypeScript.CodeGen;
+using Microsoft.Extensions.Primitives;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace CK.TS.Angular.Engine;
 
 class NgRoute
 {
-    readonly NgRoute? _parent;
-    readonly NgRoutedComponentAttributeImpl? _component;
+    readonly NgRoutedComponentAttributeImpl? _routedAttr;
     readonly ITSDeclaredFileType? _tsType;
     NgRoute? _firstChild;
     NgRoute? _lastChild;
     NgRoute? _nextChild;
 
-    public NgRoute( NgRoute? parent, NgRoutedComponentAttributeImpl? component, ITSDeclaredFileType? tsType )
+    public NgRoute( NgRoutedComponentAttributeImpl? component, ITSDeclaredFileType? tsType )
     {
-        Throw.DebugAssert( (parent == null) == (component == null) );
-        Throw.DebugAssert( "Only NgRouteWithRoutes may NOT be a RoutedComponent.", parent != null || this is NgRouteWithRoutes );
-        Throw.DebugAssert( component == null || tsType != null );
-        _parent = parent;
-        _component = component;
+        Throw.DebugAssert( "component != null => tsType != null", component == null || tsType != null );
+        _routedAttr = component;
         _tsType = tsType;
-        if( _parent != null )
+    }
+
+    public bool BindToTarget( IActivityMonitor monitor, Dictionary<Type, NgRoute> routes, Func<Type, Type?> typeMapper )
+    {
+        Throw.DebugAssert( _routedAttr != null );
+        var t = _routedAttr.Attribute.TargetComponent;
+        var mapped = t == typeof( AppComponent ) ? t : typeMapper( t );
+        if( mapped == null )
         {
-            if( _parent._firstChild == null )
+            monitor.Error( $"""Invalid [NgRoutedComponent] on '{_routedAttr.DecoratedType:N}': TargetComponent '{_routedAttr.Attribute.TargetComponent:C}' type cannot be resolved.""" );
+            return false;
+        }
+        if( !routes.TryGetValue( mapped, out var target ) )
+        {
+            monitor.Error( $"""Invalid [NgRoutedComponent] on '{_routedAttr.DecoratedType:N}': TargetComponent '{_routedAttr.Attribute.TargetComponent:C}' is not a component with routes.""" );
+            return false;
+        }
+        if( target != null )
+        {
+            if( target._firstChild == null )
             {
-                _parent._firstChild = this;
+                target._firstChild = this;
             }
             else
             {
-                Throw.DebugAssert( _parent._lastChild != null );
-                _parent._lastChild._nextChild = this;
+                Throw.DebugAssert( target._lastChild != null );
+                target._lastChild._nextChild = this;
             }
-            _parent._lastChild = this;
+            target._lastChild = this;
         }
+        return true;
     }
 
-    public NgRoutedComponentAttributeImpl? Component => _component;
+    public bool IsAppComponent => _tsType == null;
+
+    public bool IsRouted => _routedAttr != null;
 
     public bool HasChildren => _firstChild != null;
 
@@ -47,26 +67,28 @@ class NgRoute
             var c = _firstChild;
             while( c != null )
             {
-                Throw.DebugAssert( "Child route can only be a RoutedComponent.", c._component != null );
+                Throw.DebugAssert( "Child route can only be a RoutedComponent.", c._routedAttr != null );
                 yield return c;
-                c = _nextChild;
+
+                c = c._nextChild;
             }
         }
     }
 
-    internal void GenerateRoutes( IActivityMonitor monitor, TypeScriptFile routes )
+    internal void GenerateRoutes( IActivityMonitor monitor, TypeScriptFile routes, int childDepth )
     {
         ITSFileBodySection body = routes.Body;
         bool atLeastOne = false;
         foreach( var c in Children )
         {
-            Throw.DebugAssert( "Child route can only be a RoutedComponent.", c._component != null && c._tsType != null );
-            var comp = c._component;
+            Throw.DebugAssert( "Child route can only be a RoutedComponent.", c._routedAttr != null && c._tsType != null );
+            var comp = c._routedAttr;
             if( atLeastOne )
             {
                 body.Append( "," ).NewLine();
             }
-            body.Append( "{ path: " ).AppendSourceString( comp.Route );
+            atLeastOne = true;
+            body.Whitespace( childDepth * 2 ).Append( "{ path: " ).AppendSourceString( comp.Route );
             if( comp.Attribute.RegistrationMode == RouteRegistrationMode.None )
             {
                 routes.Imports.Import( c._tsType );
@@ -77,15 +99,36 @@ class NgRoute
                 var f = c._tsType.File;
                 body.Append( ", loadComponent: () => import( " )
                     .AppendSourceString( routes.Folder.GetRelativePathTo( f.Folder ).AppendPart( f.Name.Remove( f.Name.Length - 3 ) ) )
-                    .Append( " )" );
+                    .Append( " ).then( c => c." ).Append( comp.ComponentName ).Append( " )" );
             }
-            if( c.HasChildren && c is not NgRouteWithRoutes )
+            if( c.HasChildren )
             {
-                body.Append( ", children: [" ).NewLine();
-                c.GenerateRoutes( monitor, routes );
-                body.Append( "]" ).NewLine();
+                Throw.DebugAssert( c is NgRouteWithRoutes );
+                var routesNames = $"r{comp.ComponentName}";
+                body.Append( ", children: " ).Append( routesNames ).NewLine();
+                var r = ((NgRouteWithRoutes)c);
+                routes.Imports.ImportFromFile( r.RoutesFile, $"default {routesNames}" );
+                body.NewLine();
             }
-            body.Append( "}" );
+            body.Append( " }" );
         }
     }
+
+    public StringBuilder Write( StringBuilder b, int childDepth )
+    {
+        Throw.DebugAssert( !IsAppComponent );
+        if( childDepth > 0 ) b.Append( ' ', childDepth * 2 );
+
+        var name = _routedAttr?.FileComponentName ?? _tsType!.TypeName;
+        b.Append( "-> " ).Append( name ).AppendLine();
+        if( this is NgRouteWithRoutes r )
+        {
+            foreach( var c in r.Children )
+            {
+                c.Write( b, childDepth + 1 );
+            }
+        }
+        return b;
+    }
+
 }

@@ -1,36 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
-  <Class Name="CK.TypeScript.CodeGen.BaseFile">
-    <Position X="2" Y="0.5" Width="1.75" />
-    <Members>
-      <Field Name="_folder" Hidden="true" />
-      <Field Name="_hiddenFileName" Hidden="true" />
-      <Field Name="_name" Hidden="true" />
-      <Field Name="_next" Hidden="true" />
-      <Method Name="BaseFile" Hidden="true" />
-    </Members>
-    <TypeIdentifier>
-      <HashCode>AAAAIIAAAAAAACAEgAABAAQAAAAAQQAgAQAAAAAABAA=</HashCode>
-      <FileName>Files\BaseFile.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="CK.TypeScript.CodeGen.TextFileBase">
-    <Position X="3.25" Y="4.25" Width="1.5" />
-    <Members>
-      <Method Name="TextFileBase" Hidden="true" />
-    </Members>
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\TextFileBase.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="CK.TypeScript.CodeGen.TypeScriptFile">
-    <Position X="0.5" Y="6.25" Width="2" />
+    <Position X="4.75" Y="4.75" Width="2" />
     <Members>
       <Field Name="_body" Hidden="true" />
       <Field Name="_imports" Hidden="true" />
       <Method Name="TypeScriptFile" Hidden="true" />
     </Members>
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
     <NestedTypes>
       <Class Name="CK.TypeScript.CodeGen.TypeScriptFile.TSFileType" Collapsed="true">
         <TypeIdentifier>
@@ -45,98 +24,223 @@
         <Lollipop Position="0.2" />
       </Class>
     </NestedTypes>
-    <InheritanceLine Type="CK.TypeScript.CodeGen.TextFileBase" FixedToPoint="true">
-      <Path>
-        <Point X="4" Y="5.483" />
-        <Point X="4" Y="5.875" />
-        <Point X="2.25" Y="5.875" />
-        <Point X="2.25" Y="6.25" />
-      </Path>
-    </InheritanceLine>
+    <AssociationLine Name="AllTypesWithPart" Type="CK.TypeScript.CodeGen.ITSFileType">
+      <MemberNameLabel ManuallyPlaced="true">
+        <Position X="0.211" Y="0.06" />
+      </MemberNameLabel>
+    </AssociationLine>
+    <AssociationLine Name="CSharpTypes" Type="CK.TypeScript.CodeGen.ITSFileCSharpType">
+      <MemberNameLabel ManuallyPlaced="true">
+        <Position X="0.465" Y="0.06" />
+      </MemberNameLabel>
+    </AssociationLine>
     <TypeIdentifier>
-      <HashCode>AAAAEBAAAABggQABAAAFAAAgAAgAQAAAAAAAAAAAEAA=</HashCode>
+      <HashCode>AAAAEBAAAABggQAAAAAFAAAAAAgAQAAAAAAAAAAAEAA=</HashCode>
       <FileName>Files\TypeScriptFile.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.2" />
+    <ShowAsCollectionAssociation>
+      <Property Name="AllTypesWithPart" />
+      <Property Name="CSharpTypes" />
+    </ShowAsCollectionAssociation>
   </Class>
-  <Class Name="CK.TypeScript.CodeGen.ResourceTextFileBase">
-    <Position X="4.75" Y="6.25" Width="2" />
+  <Class Name="CK.TypeScript.CodeGen.ResourceTypeScriptFile">
+    <Position X="2.5" Y="4.75" Width="2" />
     <Members>
-      <Field Name="_content" Hidden="true" />
       <Field Name="_locator" Hidden="true" />
-      <Method Name="ResourceTextFileBase" Hidden="true" />
+      <Method Name="ResourceTypeScriptFile" Hidden="true" />
     </Members>
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAQIAgQABAAABAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\ResourceTextFileBase.cs</FileName>
+      <HashCode>AAAAAAAAAQAAgQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Files\ResourceTypeScriptFile.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="1.133" />
   </Class>
-  <Class Name="CK.TypeScript.CodeGen.ResourceUnknownFile" Collapsed="true">
-    <Position X="0.5" Y="4.25" Width="2" />
-    <InheritanceLine Type="CK.TypeScript.CodeGen.BaseFile" FixedToPoint="true">
+  <Class Name="CK.TypeScript.CodeGen.TypeScriptFolder">
+    <Position X="3" Y="0.5" Width="1.5" />
+    <Members>
+      <Field Name="_firstChild" Hidden="true" />
+      <Field Name="_firstFile" Hidden="true" />
+      <Field Name="_invalidFileNameChars" Hidden="true" />
+      <Field Name="_invalidPathChars" Hidden="true" />
+      <Field Name="_next" Hidden="true" />
+      <Field Name="_path" Hidden="true" />
+      <Field Name="_root" Hidden="true" />
+      <Field Name="_wantBarrel" Hidden="true" />
+      <Method Name="AddExportsToBarrel" Hidden="true" />
+      <Method Name="CheckCreateLocalName" Hidden="true" />
+      <Method Name="CreateLocalFolder" Hidden="true" />
+      <Method Name="DoFindFile" Hidden="true" />
+      <Method Name="EnsureBarrel" Hidden="true" />
+      <Method Name="FindBelow" Hidden="true" />
+      <Method Name="FindFile" Hidden="true" />
+      <Method Name="FindFolder" Hidden="true" />
+      <Method Name="FindLocalFile" Hidden="true" />
+      <Method Name="FindLocalFolder" Hidden="true" />
+      <Method Name="FindOrCreateFolder" Hidden="true" />
+      <Method Name="FindOrCreateLocalFolder" Hidden="true" />
+      <Method Name="FindOrCreateParentFolder" Hidden="true" />
+      <Method Name="FindOrCreateResourceFile" Hidden="true" />
+      <Method Name="FindOrCreateTypeScriptFile" Hidden="true" />
+      <Method Name="GetInvalidFileOrFolderNameError" Hidden="true" />
+      <Method Name="GetRelativePathTo" Hidden="true" />
+      <Method Name="TypeScriptFolder" Hidden="true" />
+    </Members>
+    <NestedTypes>
+      <Struct Name="CK.TypeScript.CodeGen.TypeScriptFolder.PublishContext" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>TypeScriptFolder.Publishing.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <AssociationLine Name="Root" Type="CK.TypeScript.CodeGen.TypeScriptRoot" FixedFromPoint="true" FixedToPoint="true">
       <Path>
-        <Point X="2.875" Y="3.209" />
-        <Point X="2.875" Y="3.875" />
-        <Point X="1.938" Y="3.875" />
-        <Point X="1.938" Y="4.25" />
+        <Point X="3.625" Y="0.5" />
+        <Point X="3.625" Y="0.26" />
+        <Point X="2.438" Y="0.26" />
+        <Point X="2.438" Y="0.5" />
       </Path>
-    </InheritanceLine>
+      <MemberNameLabel ManuallyPlaced="true" ManuallySized="true">
+        <Position X="-1.215" Y="0.019" Height="0.182" Width="0.695" />
+      </MemberNameLabel>
+    </AssociationLine>
     <TypeIdentifier>
-      <HashCode>AAAAAAAEAQAAAQAAAAABAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\ResourceUnknownFile.cs</FileName>
+      <HashCode>CAQAFAITRIEWEDIACUhAQEQxCAIIIAAgASAACABAAwA=</HashCode>
+      <FileName>TypeScriptFolder.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="Root" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="CK.TypeScript.CodeGen.TypeScriptRoot">
+    <Position X="0.5" Y="0.5" Width="2.25" />
+    <Members>
+      <Field Name="_displayName" Hidden="true" />
+      <Field Name="_docBuilder" Hidden="true" />
+      <Field Name="_firstFreeBuilder" Hidden="true" />
+      <Field Name="_hiddenRoot" Hidden="true" />
+      <Field Name="_libraryManager" Hidden="true" />
+      <Field Name="_memory" Hidden="true" />
+      <Field Name="_pascalCase" Hidden="true" />
+      <Field Name="_reflectTS" Hidden="true" />
+      <Field Name="_root" Hidden="true" />
+      <Field Name="_tsBuilderCount" Hidden="true" />
+      <Field Name="_tsTypes" Hidden="true" />
+      <Method Name="DoGetText" Hidden="true" />
+      <Method Name="GenerateCode" Hidden="true" />
+      <Method Name="GetTSTypeSignatureBuilder" Hidden="true" />
+      <Property Name="IResourceContainer.AllResources" Hidden="true" />
+      <Property Name="IResourceContainer.DisplayName" Hidden="true" />
+      <Method Name="IResourceContainer.GetAllResources" Hidden="true" />
+      <Method Name="IResourceContainer.GetFolder" Hidden="true" />
+      <Method Name="IResourceContainer.GetFolders" Hidden="true" />
+      <Method Name="IResourceContainer.GetLocalFilePath" Hidden="true" />
+      <Method Name="IResourceContainer.GetResource" Hidden="true" />
+      <Method Name="IResourceContainer.GetResources" Hidden="true" />
+      <Method Name="IResourceContainer.GetStream" Hidden="true" />
+      <Property Name="IResourceContainer.HasLocalFilePathSupport" Hidden="true" />
+      <Property Name="IResourceContainer.IsValid" Hidden="true" />
+      <Method Name="IResourceContainer.ReadAsText" Hidden="true" />
+      <Property Name="IResourceContainer.ResourcePrefix" Hidden="true" />
+      <Method Name="IResourceContainer.WriteStream" Hidden="true" />
+      <Method Name="IsInPool" Hidden="true" />
+      <Method Name="OnFolderCreated" Hidden="true" />
+      <Method Name="OnTypeScriptFileCreated" Hidden="true" />
+      <Method Name="Return" Hidden="true" />
+      <Method Name="Save" Hidden="true" />
+      <Method Name="ToIdentifier" Hidden="true" />
+      <Method Name="ToString" Hidden="true" />
+      <Method Name="TypeScriptRoot" Hidden="true" />
+    </Members>
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>gAJAqIIABgAQQLIMQHAEFA6BgACQQAogggFAEgCAwAA=</HashCode>
+      <FileName>TypeScriptRoot.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="CK.TypeScript.CodeGen.ResourceHtmlFile" Collapsed="true">
-    <Position X="4.5" Y="9" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\ResourceHtmlFile.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="CK.TypeScript.CodeGen.ResourceTypeScriptFile" Collapsed="true">
-    <Position X="8" Y="9" Width="2" />
-    <InheritanceLine Type="CK.TypeScript.CodeGen.ResourceTextFileBase" FixedToPoint="true">
+  <Class Name="CK.TypeScript.CodeGen.TypeScriptFileBase">
+    <Position X="4.75" Y="0.5" Width="2" />
+    <Members>
+      <Field Name="_declaredOnlyTypes" Hidden="true" />
+      <Field Name="_folder" Hidden="true" />
+      <Field Name="_hiddenFileName" Hidden="true" />
+      <Field Name="_name" Hidden="true" />
+      <Field Name="_next" Hidden="true" />
+      <Method Name="ToString" Hidden="true" />
+      <Method Name="TypeScriptFileBase" Hidden="true" />
+    </Members>
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="CK.TypeScript.CodeGen.TypeScriptFileBase.TSDeclaredType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Files\TypeScriptFileBase.TSDeclaredType.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <AssociationLine Name="Folder" Type="CK.TypeScript.CodeGen.TypeScriptFolder" FixedFromPoint="true" FixedToPoint="true">
       <Path>
-        <Point X="5.75" Y="8.319" />
-        <Point X="5.75" Y="8.625" />
-        <Point X="8.25" Y="8.625" />
-        <Point X="8.25" Y="9" />
+        <Point X="5.375" Y="0.5" />
+        <Point X="5.375" Y="0.26" />
+        <Point X="4.125" Y="0.26" />
+        <Point X="4.125" Y="0.5" />
       </Path>
-    </InheritanceLine>
+      <MemberNameLabel ManuallyPlaced="true" ManuallySized="true">
+        <Position X="-1.382" Y="0.01" Height="0.182" Width="0.753" />
+      </MemberNameLabel>
+    </AssociationLine>
+    <AssociationLine Name="AllTypes" Type="CK.TypeScript.CodeGen.ITSDeclaredFileType" FixedFromPoint="true" FixedToPoint="true">
+      <Path>
+        <Point X="6.75" Y="3.817" />
+        <Point X="7.125" Y="3.817" />
+        <Point X="7.125" Y="4.569" />
+        <Point X="8.25" Y="4.569" />
+      </Path>
+      <MemberNameLabel ManuallyPlaced="true">
+        <Position X="0.63" Y="0.694" />
+      </MemberNameLabel>
+    </AssociationLine>
     <TypeIdentifier>
-      <HashCode>AAAAEAAAAAAAAAABAAAAAAAgAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\ResourceTypeScriptFile.cs</FileName>
+      <HashCode>AAAAMAAAAAAAgCAFgAAAAAQAAAABAAAgAQBAAAAABAA=</HashCode>
+      <FileName>Files\TypeScriptFileBase.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.5" />
+    <ShowAsAssociation>
+      <Property Name="Folder" />
+    </ShowAsAssociation>
+    <ShowAsCollectionAssociation>
+      <Property Name="AllTypes" />
+    </ShowAsCollectionAssociation>
   </Class>
-  <Class Name="CK.TypeScript.CodeGen.ResourceTextFile" Collapsed="true">
-    <Position X="2.75" Y="9" Width="1.5" />
+  <Interface Name="CK.TypeScript.CodeGen.ITSFileCSharpType">
+    <Position X="8.25" Y="7.5" Width="1.75" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\ResourceTextFile.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="CK.TypeScript.CodeGen.ResourceStyleFile" Collapsed="true">
-    <Position X="6.25" Y="9" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\ResourceStyleFile.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Interface Name="CK.TypeScript.CodeGen.IResourceFile">
-    <Position X="6.5" Y="0.5" Width="1.25" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Files\IResourceFile.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>TSType\ITSFileCSharpType.cs</FileName>
     </TypeIdentifier>
   </Interface>
-  <Interface Name="CK.TypeScript.CodeGen.IMinimalTypeScriptFile">
-    <Position X="4.25" Y="0.5" Width="2" />
+  <Interface Name="CK.TypeScript.CodeGen.ITSFileType">
+    <Position X="8.25" Y="5.75" Width="1.75" />
     <TypeIdentifier>
-      <HashCode>AAAAEAAAAAAAACABAAAAAAQAAAAAAQAAAAAAAAAABAA=</HashCode>
-      <FileName>Files\IMinimalTypeScriptFile.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>TSType\ITSFileType.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.TypeScript.CodeGen.ITSDeclaredFileType">
+    <Position X="8.25" Y="4.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>TSType\ITSDeclaredFileType.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.TypeScript.CodeGen.ITSType">
+    <Position X="8.25" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAABAAAIAAAgAAAAAAgBgCAAEACAAAJAA=</HashCode>
+      <FileName>TSType\ITSType.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Font Name="Segoe UI" Size="9" />

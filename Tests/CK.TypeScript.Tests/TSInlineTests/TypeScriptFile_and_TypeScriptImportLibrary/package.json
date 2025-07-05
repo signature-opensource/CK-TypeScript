@@ -1,0 +1,27 @@
+{
+  "name": "typescriptfile_and_typescriptimportlibrary",
+  "private": true,
+  "packageManager": "yarn@4.6.0",
+  "scripts": {
+    "test": "jest",
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
+  },
+  "workspaces": [
+    "ck-gen"
+  ],
+  "devDependencies": {
+    "@local/ck-gen": "workspace:*",
+    "@stdlib/symbol-ctor": "~0.2.2",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.9",
+    "@yarnpkg/sdks": "^3.2",
+    "jest": "^29.7",
+    "jest-environment-jsdom": "^29.7",
+    "ts-jest": "^29.2.5",
+    "typescript": "=5.4.5"
+  },
+  "ckVersion": 1,
+  "peerDependencies": {
+    "@stdlib/symbol-ctor": "~0.2.2"
+  }
+}

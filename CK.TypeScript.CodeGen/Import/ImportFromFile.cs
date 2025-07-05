@@ -2,17 +2,17 @@ namespace CK.TypeScript.CodeGen;
 
 sealed class ImportFromFile : ImportFromBase
 {
-    readonly IMinimalTypeScriptFile _file;
+    readonly TypeScriptFileBase _file;
 
-    public ImportFromFile( FileImportCodePart part, IMinimalTypeScriptFile file )
+    public ImportFromFile( FileImportCodePart part, TypeScriptFileBase file )
         : base( part )
     {
         _file = file;
     }
 
-    public override IMinimalTypeScriptFile? FromTypeScriptFile => _file;
+    public override TypeScriptFileBase? FromTypeScriptFile => _file;
 
-    public IMinimalTypeScriptFile ImportedFile => _file;
+    public TypeScriptFileBase ImportedFile => _file;
 
     public void Write( ref SmarterStringBuilder b )
     {

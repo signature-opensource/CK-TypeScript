@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CK.EmbeddedResources.Assets" Version="0.26.2--0002-develop" />
+    <ProjectReference Include="..\CK.ResourceSpace\CK.ResourceSpace.csproj" />
+  </ItemGroup>
+
+</Project>

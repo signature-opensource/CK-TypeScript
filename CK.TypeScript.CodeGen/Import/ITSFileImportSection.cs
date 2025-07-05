@@ -35,7 +35,7 @@ public interface ITSFileImportSection
     /// </summary>
     /// <param name="file">The file from which symbols must be imported.</param>
     /// <param name="symbolNames">Comma separated of type or variable names to import.</param>
-    void ImportFromFile( IMinimalTypeScriptFile file, string symbolNames );
+    void ImportFromFile( TypeScriptFileBase file, string symbolNames );
 
     /// <summary>
     /// Imports one or more type or variable names from generated code files.
@@ -57,7 +57,6 @@ public interface ITSFileImportSection
     /// </summary>
     /// <param name="monitor">Required monitor since ResolveTSType is called.</param>
     /// <param name="type">The type to import.</param>
-    /// <param name="types">Optional types to import.</param>
     /// <returns>This section to enable fluent syntax.</returns>
     ITSFileImportSection EnsureImport( IActivityMonitor monitor, Type type );
 

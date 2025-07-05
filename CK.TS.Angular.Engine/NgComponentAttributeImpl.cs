@@ -1,18 +1,18 @@
 using CK.Core;
 using CK.Setup;
-using CK.TypeScript;
 using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using CK.EmbeddedResources;
 
 namespace CK.TS.Angular.Engine;
 
 /// <summary>
 /// Implements <see cref="NgModuleAttribute"/>.
 /// </summary>
-public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
+public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
     readonly string _snakeName;
 
@@ -25,7 +25,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     public NgComponentAttributeImpl( IActivityMonitor monitor, NgComponentAttribute attr, Type type )
         : base( monitor, attr, type )
     {
-        if( !typeof( NgComponent ).IsAssignableFrom( type ) )
+        if( !typeof( INgComponent ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[NgComponent] can only decorate a NgComponent: '{type:N}' is not a NgComponent." );
         }
@@ -52,7 +52,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     }
 
     /// <summary>
-    /// Gets the component name that is the C# <see cref="TypeScriptFileAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
+    /// Gets the component name that is the C# <see cref="TypeScriptGroupOrPackageAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
     /// </summary>
     public string ComponentName => DecoratedType.Name;
 
@@ -61,6 +61,9 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public string FileComponentName => _snakeName;
 
+    /// <summary>
+    /// Gets whether this is the <see cref="AppComponent"/>.
+    /// </summary>
     public bool IsAppComponent => DecoratedType == typeof( AppComponent );
 
     /// <summary>
@@ -68,37 +71,77 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
+    /// <summary>
+    /// Overridden to skip the <see cref="IsAppComponent"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool CreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
     {
-        base.OnConfigure( monitor, o );
-        if( !IsAppComponent && o.Container.Type == typeof(RootTypeScriptPackage) )
-        {
-            o.Container.Type = typeof( AppComponent );
-        }
-    }
-
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
-    {
-        var fName = _snakeName + ".component.ts";
-
-        // If we are on the AppComponent, don't try to lookup the resources (there are no resources).
+        // Skip the AppComponent.
+        // It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
         {
             return true;
         }
-        else
+        return base.CreateResPackageDescriptor( monitor, context, spaceBuilder );
+    }
+
+    /// <summary>
+    /// Overridden to handle the component "*.component.ts" file name: it must exist
+    /// and is created as a <see cref="ResourceTypeScriptFile"/> (but still published
+    /// by the resource container).
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <param name="d">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceBuilder,
+                                                          ResPackageDescriptor d )
+    {
+        Throw.DebugAssert( !IsAppComponent );
+        // Okay... This is temporary... or not.
+        // This approcah doesn't automatically support other abstractions than
+        // the public and private pages.
+        // If we need this we may here lookup for all DecoratedType's interface
+        // and select the ones that are marked with a [IsSingle] attribute (not existing yet)
+        // for instance, or enables declaration of such abstractions by any other means.
+        //
+        // This can always be done later.
+        //
+        // Note: We don't check that the same component implements both. This doesn't
+        //       make any sense and the result will be what it will be.
+        //
+        if( typeof( INgPublicPageComponent ).IsAssignableFrom( DecoratedType ) )
         {
-            if( !Resources.TryGetResource( monitor, fName, out var res ) )
+            if( !d.AddSingleMapping( monitor, typeof( INgPublicPageComponent ) ) )
             {
                 return false;
             }
-            var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-            Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-            ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-
-            return base.GenerateCode( monitor, context )
-                   && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
         }
+        if( typeof( INgPrivatePageComponent ).IsAssignableFrom( DecoratedType ) )
+        {
+            if( !d.AddSingleMapping( monitor, typeof( INgPrivatePageComponent ) ) )
+            {
+                return false;
+            }
+        }
+
+        var fName = _snakeName + ".component.ts";
+        if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
+        {
+            return false;
+        }
+        var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
+        Throw.DebugAssert( file is ResourceTypeScriptFile );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
+               && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]

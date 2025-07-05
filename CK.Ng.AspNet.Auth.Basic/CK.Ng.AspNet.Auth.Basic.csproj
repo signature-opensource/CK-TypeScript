@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\CK.Ng.AspNet.Auth\CK.Ng.AspNet.Auth.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="MSBuild/CK.Ng.AspNet.Auth.Basic.targets">
+            <Pack>true</Pack>
+            <PackagePath>buildTransitive\CK.Ng.AspNet.Auth.Basic.targets</PackagePath>
+        </Content>
+    </ItemGroup>
+
+</Project>

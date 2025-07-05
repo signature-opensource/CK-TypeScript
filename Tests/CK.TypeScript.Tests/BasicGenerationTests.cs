@@ -1,9 +1,10 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using Shouldly;
 using NUnit.Framework;
+using Shouldly;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace CK.TypeScript.Tests;
 
 public class BasicGenerationTests
 {
-    [TypeScript]
+    [TypeScriptType]
     public enum Simple
     {
         Zero,
@@ -66,7 +67,7 @@ public class BasicGenerationTests
                 TargetProjectPath = output2,
                 IntegrationMode = CKGenIntegrationMode.None
             };
-            tsB2.Types.AddRange( types.Select( t => new TypeScriptTypeConfiguration( t ) ) );
+            tsB2.Types.AddRange( types.Select( t => new KeyValuePair<Type, TypeScriptTypeAttribute?>( t, null ) ) );
             b2.AddAspect( tsB2 );
             b2.Types.Add( types );
 
@@ -87,7 +88,7 @@ public class BasicGenerationTests
     /// <summary>
     /// Folder is explicitly "TheFolder".
     /// </summary>
-    [TypeScript( Folder = "TheFolder" )]
+    [TypeScriptType( Folder = "TheFolder" )]
     public enum InAnotherFolder : byte
     {
         /// <summary>
@@ -120,7 +121,7 @@ public class BasicGenerationTests
     /// <summary>
     /// Folder is explicitly set at the root (empty string).
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public enum AtTheRootFolder : byte
     {
         /// <summary>
@@ -153,7 +154,7 @@ public class BasicGenerationTests
     /// <summary>
     /// This filename is explicitly "Folder/EnumFile.ts".
     /// </summary>
-    [TypeScript( Folder = "Folder", FileName = "EnumFile.ts" )]
+    [TypeScriptType( Folder = "Folder", FileName = "EnumFile.ts" )]
     public enum InASpecificFile : sbyte
     {
         /// <summary>
@@ -167,7 +168,7 @@ public class BasicGenerationTests
         Beta
     }
 
-    [TypeScript( Folder = "Folder", FileName = "EnumFile.ts", TypeName = "AInFile" )]
+    [TypeScriptType( Folder = "Folder", FileName = "EnumFile.ts", TypeName = "AInFile" )]
     public enum AnotherInASpecificFile : sbyte
     {
         Nop
@@ -194,7 +195,7 @@ public class BasicGenerationTests
     /// The external name of this enumeration is "Toto" and its
     /// filename is explicitly "IAmHere/EnumFile.ts".
     /// </summary>
-    [TypeScript( Folder = "IAmHere", FileName = "EnumFile.ts" )]
+    [TypeScriptType( Folder = "IAmHere", FileName = "EnumFile.ts" )]
     [ExternalName( "Toto" )]
     public enum InASpecificFileWithAnExternalName : sbyte
     {
@@ -227,7 +228,7 @@ public class BasicGenerationTests
     /// <summary>
     /// The external name of this enumeration is "Toto".
     /// </summary>
-    [TypeScript( Folder = "Folder" )]
+    [TypeScriptType( Folder = "Folder" )]
     [ExternalName( "Toto" )]
     public enum WithAnExternalName : sbyte
     {
@@ -267,7 +268,7 @@ public class BasicGenerationTests
         s.ShouldContain( "export enum Toto" );
     }
 
-    [TypeScript( Folder = "", FileName = "EnumFile.ts", TypeName = "EnumType" )]
+    [TypeScriptType( Folder = "", FileName = "EnumFile.ts", TypeName = "EnumType" )]
     [ExternalName( "ThisIsIgnoredSinceTypeNameIsDefined" )]
     public enum AtTheRootAndWithAnotherExplicitTypeName : sbyte
     {

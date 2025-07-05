@@ -1,11 +1,12 @@
 using CK.Core;
-using CK.Demo;
+using CK.MiscDemo;
 using CK.Ng.PublicSection;
 using CK.Ng.AspNet.Auth;
 using CK.Testing;
 using NUnit.Framework;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
+using CK.Ng.PublicPage;
 
 namespace CK.TS.Angular.Tests;
 
@@ -23,19 +24,24 @@ public class AngularTests
         ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
         ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-US" ) );
 
-
-        ts.CKGenBuildMode = false;
-
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ),
+                                              typeof( AppRoutedComponent ),
+                                              // CK.Ng.PublicPage.
+                                              typeof( PublicPageComponent ),
                                               // CK.Ng.AspNet.Auth folder.
                                               typeof( LoginComponent ),
                                               typeof( PasswordLostComponent ),
+                                              typeof( LogoutConfirmComponent ),
+                                              typeof( LogoutResultComponent ),
                                               typeof( SomeAuthPackage ),
                                               // CK.Ng.PublicSection
-                                              typeof( PublicSectionPackage ),
+                                              typeof( PublicSectionComponent ),
                                               typeof( PublicFooterComponent ),
-                                              typeof( PublicTopbarComponent ) );
+                                              typeof( PublicTopbarComponent ),
+                                              // CK.Ng.Zorro
+                                              typeof( CK.Ng.Zorro.TSPackage )
+                                            );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

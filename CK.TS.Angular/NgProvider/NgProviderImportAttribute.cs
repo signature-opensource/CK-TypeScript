@@ -24,7 +24,6 @@ namespace CK.TS.Angular;
 /// an <see cref="InvalidOperationException"/> is thrown.
 /// </para>
 /// </summary>
-/// <typeparam name="T">The TypeScriptPackage to which this provider belongs.</typeparam>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class NgProviderImportAttribute : ContextBoundDelegationAttribute
 {
