@@ -65,7 +65,7 @@ sealed class ResPackageDescriptorContext
             monitor.Error( $"Type '{alias:N}' cannot be mapped to '{p.FullName}' because this package is not defined by a Type." );
             return false;
         }
-        if( !alias.IsAssignableFrom( p.Type ) )
+        if( !alias.IsAssignableFrom( p.Type.Type ) )
         {
             monitor.Error( $"Type '{alias:N}' cannot be mapped to '{p.FullName}' because it is not assignable from the package's Type." );
             return false;

@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
 
 namespace CK.Core;
@@ -8,6 +9,11 @@ namespace CK.Core;
 /// </summary>
 public interface IResPackageDescriptorRegistrar
 {
+    /// <summary>
+    /// Gets the global type cache.
+    /// </summary>
+    GlobalTypeCache TypeCache { get; }
+
     /// <summary>
     /// Finds a mutable package descriptor by its full name.
     /// </summary>
@@ -53,7 +59,7 @@ public interface IResPackageDescriptorRegistrar
                                                   bool? isOptional );
 
     /// <summary>
-    /// Registers a package. It must not already exist: <paramref name="type"/> must not have been already registered.
+    /// Registers a package. It must not already exist: the <see cref="ICachedType.Type"/> must not have been already registered.
     /// <para>
     /// The <see cref="ResPackageDescriptor.DefaultTargetPath"/> is derived from the type's namespace:
     /// "The/Type/Namespace" (the dots of the namespace are replaced with a '/'.
@@ -75,7 +81,7 @@ public interface IResPackageDescriptorRegistrar
     /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  Type type,
+                                                  ICachedType type,
                                                   bool? isOptional = null,
                                                   bool ignoreLocal = false );
 
@@ -99,7 +105,7 @@ public interface IResPackageDescriptorRegistrar
     /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  Type type,
+                                                  ICachedType type,
                                                   NormalizedPath defaultTargetPath,
                                                   bool? isOptional = null, 
                                                   bool ignoreLocal = false );

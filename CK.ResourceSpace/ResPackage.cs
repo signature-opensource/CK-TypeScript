@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -184,15 +185,8 @@ public sealed partial class ResPackage
     public bool IsEventuallyLocalDependent => _requiresAggregateId.HasLocal || _childrenAggregateId.HasLocal || IsLocalPackage;
 
     /// <summary>
-    /// Gets the <see cref="FullName"/> (type name if this package is defined by a type).
+    /// Gets the <see cref="FullName"/>.
     /// </summary>
     /// <returns>The package full name.</returns>
-    public override string ToString() => ToString( _fullName, _type );
-
-    internal static string ToString( string fullName, Type? type )
-    {
-        return type != null && !fullName.EndsWith( type.Name )
-                ? $"{fullName} ({type.Name})"
-                : fullName;
-    }
+    public override string ToString() => _fullName;
 }

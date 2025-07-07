@@ -248,7 +248,7 @@ public sealed class ResSpaceDataBuilder
                                     d._idxFooter + 2,
                                     d.AfterResources,
                                     d.IsGroup,
-                                    d.Type,
+                                    d.Type?.Type,
                                     requires,
                                     children,
                                     bAll.Count );

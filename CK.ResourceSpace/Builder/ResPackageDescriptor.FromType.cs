@@ -10,8 +10,8 @@ public sealed partial class ResPackageDescriptor
     internal bool InitializeFromType( IActivityMonitor monitor, bool? isOptional )
     {
         Throw.DebugAssert( _type != null );
-        _isGroup = !typeof( IResourcePackage ).IsAssignableFrom( _type );
-        _isOptional = isOptional ?? !IsRequired( _type );
+        _isGroup = !typeof( IResourcePackage ).IsAssignableFrom( _type.Type );
+        _isOptional = isOptional ?? !IsRequired( _type.Type );
         // Detect a useless CKPackage.xml for the type: currently, there's
         // no "merge" possible: the type drives.
         var descriptor = _resources.GetResource( "CKPackage.xml" );

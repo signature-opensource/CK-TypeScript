@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ public sealed partial class ResPackageDescriptor
 {
     readonly ResPackageDescriptorContext _context;
     readonly string _fullName;
-    readonly Type? _type;
+    readonly ICachedType? _type;
     readonly NormalizedPath _defaultTargetPath;
     readonly StoreContainer _resources;
     readonly StoreContainer _afterResources;
@@ -48,7 +49,7 @@ public sealed partial class ResPackageDescriptor
 
     internal ResPackageDescriptor( ResPackageDescriptorContext context,
                                    string fullName,
-                                   Type? type,
+                                   ICachedType? type,
                                    NormalizedPath defaultTargetPath,
                                    StoreContainer resources,
                                    StoreContainer afterResources )
@@ -73,7 +74,7 @@ public sealed partial class ResPackageDescriptor
     /// <summary>
     /// Gets the type if this package is defined by a type.
     /// </summary>
-    public Type? Type => _type;
+    public ICachedType? Type => _type;
 
     /// <summary>
     /// Gets whether this is a local package: its <see cref="Resources"/> or <see cref="AfterResources"/>
@@ -266,6 +267,6 @@ public sealed partial class ResPackageDescriptor
     }
 
     /// <inheritdoc cref="ResPackage.ToString()"/>
-    public override string ToString() => ResPackage.ToString( _fullName, _type );
+    public override string ToString() => _fullName;
 
 }

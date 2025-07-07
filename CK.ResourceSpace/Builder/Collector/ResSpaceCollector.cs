@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -71,20 +72,6 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
     internal int SingleMappingCount => _coreCollector.SingleMappingCount;
 
     /// <summary>
-    /// Finds a mutable package descriptor by its full name.
-    /// </summary>
-    /// <param name="fullName">The full name.</param>
-    /// <returns>The package or null if not found.</returns>
-    public ResPackageDescriptor? FindByFullName( string fullName ) => PackageIndex.GetValueOrDefault( fullName );
-
-    /// <summary>
-    /// Finds a mutable package descriptor by its type.
-    /// </summary>
-    /// <param name="type">The type.</param>
-    /// <returns>The package or null if not found.</returns>
-    public ResPackageDescriptor? FindByType( Type type ) => PackageIndex.GetValueOrDefault( type );
-
-    /// <summary>
     /// Gets or sets the configured Code generated resource container.
     /// This can only be set if this has not been previously set (ie. this is null).
     /// See <see cref="ResSpaceConfiguration.GeneratedCodeContainer"/>.
@@ -114,6 +101,15 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
     public string LiveStatePath => _liveStatePath;
 
     /// <inheritdoc />
+    public GlobalTypeCache TypeCache => _coreCollector.TypeCache;
+
+    /// <inheritdoc />
+    public ResPackageDescriptor? FindByFullName( string fullName ) => PackageIndex.GetValueOrDefault( fullName );
+
+    /// <inheritdoc />
+    public ResPackageDescriptor? FindByType( Type type ) => PackageIndex.GetValueOrDefault( type );
+
+    /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   string fullName,
                                                   NormalizedPath defaultTargetPath,
@@ -126,7 +122,7 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
 
     /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  Type type,
+                                                  ICachedType type,
                                                   NormalizedPath defaultTargetPath,
                                                   bool? isOptional = null,
                                                   bool ignoreLocal = false )
@@ -135,9 +131,9 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
     }
 
     /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, bool)"/>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool? isOptional = null, bool ignoreLocal = false )
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, ICachedType type, bool? isOptional = null, bool ignoreLocal = false )
     {
-        var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
+        var targetPath = type.Type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
         return _coreCollector.RegisterPackage( monitor, type, targetPath, isOptional, ignoreLocal );
     }
 }

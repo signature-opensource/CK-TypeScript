@@ -21,7 +21,8 @@ public interface IResPackageDescriptorResolver
     /// <para>
     /// Nothing prevents more than one package to be registered (this may be useful in some scenario).
     /// <para>
-    /// After this call, the <paramref name="reference"/> is checked to be registered (even if this method did nothing and returns true).
+    /// After this call, the <paramref name="reference"/> is checked to actually be registered (even if this
+    /// method did nothing and returns true).
     /// </para>
     /// </para>
     /// </summary>

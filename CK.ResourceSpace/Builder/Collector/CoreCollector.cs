@@ -1,12 +1,17 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace CK.Core;
 
 sealed partial class CoreCollector : IResPackageDescriptorRegistrar
 {
+    readonly GlobalTypeCache _typeCache;
+    readonly Func<ICachedType, bool>? _allowedTypes;
+
     // Packages are indexed by their FullName, their Type if package is defined
     // by type and by their Resources Store container.
     // The IResourceContainer key is used by this builder only to check that no resource
@@ -17,6 +22,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     // sort, they may be no more optional.
     readonly List<ResPackageDescriptor> _optionalPackages;
     readonly ResPackageDescriptorContext _packageDescriptorContext;
+
     // Set by ResSpaceConfiguration.
     internal IResPackageDescriptorResolver? _packageResolver;
     internal bool _revertOrderingNames;
@@ -24,12 +30,14 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     int _localPackageCount;
     int _typedPackageCount;
 
-    public CoreCollector()
+    public CoreCollector( GlobalTypeCache typeCache, Func<ICachedType, bool>? allowedTypes )
     {
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
         _optionalPackages = new List<ResPackageDescriptor>();
         _packageDescriptorContext = new ResPackageDescriptorContext( _packageIndex );
+        _typeCache = typeCache;
+        _allowedTypes = allowedTypes;
     }
 
     public ResPackageDescriptor? FindByFullName( string fullName ) => _packageIndex.GetValueOrDefault( fullName );
@@ -50,31 +58,41 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
     }
 
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, Type type, bool? isOptional, bool ignoreLocal = false )
+    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, ICachedType type, bool? isOptional, bool ignoreLocal = false )
     {
-        var targetPath = type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
+        var targetPath = type.Type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
         return RegisterPackage( monitor, type, targetPath, isOptional, ignoreLocal );
     }
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  Type type,
+                                                  ICachedType type,
                                                   NormalizedPath defaultTargetPath,
                                                   bool? isOptional,
                                                   bool ignoreLocal )
     {
         Throw.CheckNotNullArgument( type );
-        Throw.CheckArgument( "Dynamic assembly is not supported.", type.FullName != null );
-        IResourceContainer resourceStore = type.CreateResourcesContainer( monitor, ignoreLocal: ignoreLocal );
-        IResourceContainer resourceAfterStore = type.CreateResourcesContainer( monitor, resAfter: true, ignoreLocal: ignoreLocal );
-
+        Throw.CheckArgument( type.EngineUnhandledType != EngineUnhandledType.None );
+        Throw.CheckArgument( "Type cache mismatch.", type.TypeCache == TypeCache );
+        if( _packageIndex.TryGetValue( type, out var already ) )
+        {
+            monitor.Error( $"Duplicate package registration: Type '{type.CSharpName}' is already registered as '{already}'." );
+            return null;
+        }
+        if( _allowedTypes != null && !_allowedTypes.Invoke( type ) )
+        {
+            monitor.Error( $"Type '{type.CSharpName}' cannot be registered, it doesn't belong to the allowed type set." );
+            return null;
+        }
+        IResourceContainer resourceStore = type.Type.CreateResourcesContainer( monitor, ignoreLocal: ignoreLocal );
+        IResourceContainer resourceAfterStore = type.Type.CreateResourcesContainer( monitor, resAfter: true, ignoreLocal: ignoreLocal );
         return resourceStore.IsValid && resourceAfterStore.IsValid
-               ? DoRegister( monitor, type.FullName, type, defaultTargetPath, resourceStore, resourceAfterStore, isOptional )
-               : null;
+            ? DoRegister( monitor, type.Type.FullName!, type, defaultTargetPath, resourceStore, resourceAfterStore, isOptional )
+            : null;
     }
 
     ResPackageDescriptor? DoRegister( IActivityMonitor monitor,
                                       string fullName,
-                                      Type? type,
+                                      ICachedType? type,
                                       NormalizedPath defaultTargetPath,
                                       IResourceContainer resourceStore,
                                       IResourceContainer resourceAfterStore,
@@ -87,17 +105,12 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         }
         if( _packageIndex.TryGetValue( resourceStore, out already ) )
         {
-            monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
+            monitor.Error( $"Package resources mismatch: {resourceStore} cannot be associated to '{fullName}' as it is already associated to '{already}'." );
             return null;
         }
         if( _packageIndex.TryGetValue( resourceAfterStore, out already ) )
         {
-            monitor.Error( $"Package resources mismatch: {resourceAfterStore} cannot be associated to {ResPackage.ToString( fullName, type )} as it is already associated to '{already}'." );
-            return null;
-        }
-        if( type != null && _packageIndex.TryGetValue( type, out already ) )
-        {
-            monitor.Error( $"Duplicate package registration: Type '{type:N}' is already registered as '{already}'." );
+            monitor.Error( $"Package resources mismatch: {resourceAfterStore} cannot be associated to '{fullName}' as it is already associated to '{already}'." );
             return null;
         }
 
@@ -174,6 +187,8 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     public int TypedPackageCount => _typedPackageCount;
 
     public int SingleMappingCount => _packageDescriptorContext.SingleMappingCount;
+
+    public GlobalTypeCache TypeCache => _typeCache;
 
     public bool Close( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
     {

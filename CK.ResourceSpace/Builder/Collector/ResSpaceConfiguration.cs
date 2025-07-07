@@ -1,5 +1,7 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
@@ -23,9 +25,14 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     /// <summary>
     /// Initializes a new configuration.
     /// </summary>
-    public ResSpaceConfiguration()
+    /// <param name="typeCache">The type cache that will be used.</param>
+    /// <param name="allowedTypes">
+    /// Optional type set restriction.
+    /// When false is returned by this predicate, <see cref="RegisterPackage(IActivityMonitor, Type, bool?, bool)"/> fails.
+    /// </param>
+    public ResSpaceConfiguration( GlobalTypeCache typeCache, Func<ICachedType, bool>? allowedTypes = null )
     {
-        _coreCollector = new CoreCollector();
+        _coreCollector = new CoreCollector( typeCache, allowedTypes );
     }
 
     /// <summary>
@@ -134,6 +141,9 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     }
 
     /// <inheritdoc />
+    public GlobalTypeCache TypeCache => _coreCollector.TypeCache;
+
+    /// <inheritdoc />
     public ResPackageDescriptor? FindByFullName( string fullName ) => _coreCollector.FindByFullName( fullName );
 
     /// <inheritdoc />
@@ -152,7 +162,7 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
 
     /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  Type type,
+                                                  ICachedType type,
                                                   bool? isOptional = null,
                                                   bool ignoreLocal = false )
     {
@@ -161,7 +171,7 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
 
     /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  Type type,
+                                                  ICachedType type,
                                                   NormalizedPath defaultTargetPath,
                                                   bool? isOptional = null,
                                                   bool ignoreLocal = false )

@@ -159,7 +159,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
                                                                 TypeScriptContext context,
                                                                 ResSpaceConfiguration spaceBuilder )
     {
-        var d = spaceBuilder.RegisterPackage( monitor, DecoratedType, _typeScriptFolder );
+        var d = spaceBuilder.RegisterPackage( monitor, spaceBuilder.TypeCache.Get( DecoratedType ), _typeScriptFolder );
         if( d == null ) return false;
         d.IsGroup = _isGroup;
         // Handles barrel.
