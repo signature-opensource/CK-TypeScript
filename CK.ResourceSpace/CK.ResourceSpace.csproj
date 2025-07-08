@@ -5,7 +5,7 @@
     <LangVersion>13</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization.Sliced" Version="10.0.1--0002-develop" />
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="10.0.1--0004-develop" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.EmbeddedResources" Version="0.26.2--0002-develop" />
