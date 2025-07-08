@@ -1,13 +1,15 @@
 using CK.BinarySerialization;
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
 
 namespace CK.Core;
 
 public sealed partial class ResSpace
 {
-    // Handles ResourceContainerWrapper, ResourceLocator and ResourceFolder binary serialization
-    // that are not implemented in CK.EmbeddedResources assembly to limit it only to simple serialization.
+    // Handles ICachedType that is not serializable and ResourceContainerWrapper, ResourceLocator and ResourceFolder
+    // binary serialization that are not implemented in CK.EmbeddedResources assembly to limit it only to
+    // simple serialization.
     //
     // The ResourceContainerWrapper needs to write its inner container. We use here a surrogate approach: the
     // CodeGenResourceContainer or EmptyResourceContainer is written as a CodeGenResourceContainer (only these
@@ -15,7 +17,9 @@ public sealed partial class ResSpace
     //
     // ResourceLocator and ResourceFolder are simple drivers.
     //
-
+    // ICachedType serializer writes the Type and ICachedType deserializer reads the Type and obtain the ICachedType
+    // from the GlobalTypeCache that must be registered in the deserializer context services. 
+    //
     sealed class ResourceLocatorSerializer : StaticValueTypeSerializer<ResourceLocator>
     {
         public override string DriverName => "ResourceLocator";
@@ -78,6 +82,51 @@ public sealed partial class ResSpace
         }
     }
 
+    sealed class CachedTypeResolver : ISerializerResolver, IDeserializerResolver
+    {
+        const string _driverName = "ICachedType-Family";
+
+        readonly ISerializationDriver _serializer = new CachedTypeSerializer();
+        readonly IDeserializationDriver _deserializer = new CachedTypeDeserializer();
+
+        public ISerializationDriver? TryFindDriver( BinarySerializerContext context, Type t )
+        {
+            return typeof( ICachedType ).IsAssignableFrom( t )
+                    ? _serializer
+                    : null;
+        }
+
+        public IDeserializationDriver? TryFindDriver( ref DeserializerResolverArg info )
+        {
+            return info.DriverName == _driverName
+                    ? _deserializer
+                    : null;
+        }
+
+        sealed class CachedTypeSerializer : ReferenceTypeSerializer<ICachedType>
+        {
+            public override string DriverName => _driverName;
+
+            public override int SerializationVersion => 0;
+
+            protected override void Write( IBinarySerializer s, in ICachedType o )
+            {
+                s.WriteObject( o.Type );
+                s.Writer.Write( o.IsNullable );
+            }
+        }
+
+        sealed class CachedTypeDeserializer : ReferenceTypeDeserializer<ICachedType>
+        {
+            protected override void ReadInstance( ref RefReader r )
+            {
+                var c = r.DangerousDeserializer.Context.Services.GetService<GlobalTypeCache>( throwOnNull: true );
+                var o = c.Get( r.DangerousDeserializer.ReadObject<Type>() );
+                r.SetInstance( r.Reader.ReadBoolean() ? o.NonNullable : o.Nullable );
+            }
+        }
+    }
+
     static ResSpace()
     {
         BinarySerializer.DefaultSharedContext.AddSerializationDriver( typeof( NormalizedPath ), new NormalizedPathSerializer() );
@@ -88,6 +137,10 @@ public sealed partial class ResSpace
 
         BinarySerializer.DefaultSharedContext.AddSerializationDriver( typeof( ResourceFolder ), new ResourceFolderSerializer() );
         BinaryDeserializer.DefaultSharedContext.AddDeserializerDriver( new ResourceFolderDeserializer() );
+
+        var cachedTypeResolver = new CachedTypeResolver();
+        BinarySerializer.DefaultSharedContext.AddResolver( cachedTypeResolver );
+        BinaryDeserializer.DefaultSharedContext.AddResolver( cachedTypeResolver );
 
         // This should be something like:
         // 
@@ -125,4 +178,5 @@ public sealed partial class ResSpace
             }
         }
     }
+
 }

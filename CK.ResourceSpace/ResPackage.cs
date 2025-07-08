@@ -14,7 +14,7 @@ public sealed partial class ResPackage
 {
     readonly ResSpaceData _spaceData;
     readonly string _fullName;
-    readonly Type? _type;
+    readonly ICachedType? _type;
     readonly NormalizedPath _defaultTargetPath;
     readonly ImmutableArray<ResPackage> _requires;
     readonly AggregateId _requiresAggregateId;
@@ -36,7 +36,7 @@ public sealed partial class ResPackage
                          int idxAfterResources,
                          IResourceContainer afterResources,
                          bool isGroup,
-                         Type? type,
+                         ICachedType? type,
                          ImmutableArray<ResPackage> requires,
                          ImmutableArray<ResPackage> children,
                          int index )
@@ -129,7 +129,7 @@ public sealed partial class ResPackage
     /// <summary>
     /// Gets the type if this package is defined by a type.
     /// </summary>
-    public Type? Type => _type;
+    public ICachedType? Type => _type;
 
     /// <summary>
     /// Gets whether this package is a group.

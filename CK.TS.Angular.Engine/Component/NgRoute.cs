@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using CK.TypeScript.CodeGen;
 using Microsoft.Extensions.Primitives;
 using System;
@@ -23,11 +24,10 @@ class NgRoute
         _tsType = tsType;
     }
 
-    public bool BindToTarget( IActivityMonitor monitor, Dictionary<Type, NgRoute> routes, Func<Type, Type?> typeMapper )
+    public bool BindToTarget( IActivityMonitor monitor, Dictionary<ICachedType, NgRoute> routes, Func<Type, ICachedType?> typeMapper )
     {
         Throw.DebugAssert( _routedAttr != null );
-        var t = _routedAttr.Attribute.TargetComponent;
-        var mapped = t == typeof( AppComponent ) ? t : typeMapper( t );
+        var mapped = typeMapper( _routedAttr.Attribute.TargetComponent );
         if( mapped == null )
         {
             monitor.Error( $"""Invalid [NgRoutedComponent] on '{_routedAttr.DecoratedType:N}': TargetComponent '{_routedAttr.Attribute.TargetComponent:C}' type cannot be resolved.""" );

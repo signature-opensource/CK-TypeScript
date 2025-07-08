@@ -1,3 +1,4 @@
+using CK.Engine.TypeCollector;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -6,10 +7,11 @@ namespace CK.Core;
 public sealed partial class ResPackageDescriptor
 {
     /// <summary>
-    /// Union type of a <see cref="ResPackageDescriptor"/>, <see cref="string"/> or <see cref="Type"/>
+    /// Union type of a <see cref="ResPackageDescriptor"/>, <see cref="string"/>, <see cref="Type"/> or <see cref="ICachedType"/>
     /// and optionality.
     /// <para>
-    /// Implicit conversion operators are available.
+    /// Implicit conversion operators are available except from <see cref="ICachedType"/> because
+    /// of CS0552 error: user-defined conversions to or from an interface are not allowed.
     /// </para>
     /// </summary>
     public readonly struct Ref
@@ -47,13 +49,25 @@ public sealed partial class ResPackageDescriptor
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Ref"/>.
+        /// Initializes a new <see cref="Ref"/> bound to a <see cref="Type"/>.
         /// </summary>
         /// <param name="type">The type that identifies the package.</param>
         /// <param name="optional">True for an optional dependency.</param>
         public Ref( Type type, bool optional = false )
         {
-            Throw.CheckArgument( type?.FullName != null );
+            Throw.CheckArgument( type.FullName is not null );
+            _ref = type;
+            _optional = optional;
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="Ref"/> bound to a <see cref="ICachedType"/>.
+        /// </summary>
+        /// <param name="type">The type that identifies the package.</param>
+        /// <param name="optional">True for an optional dependency.</param>
+        public Ref( ICachedType type, bool optional = false )
+        {
+            Throw.CheckArgument( type.EngineUnhandledType is EngineUnhandledType.None );
             _ref = type;
             _optional = optional;
         }
@@ -88,15 +102,23 @@ public sealed partial class ResPackageDescriptor
         public bool IsString => _ref is string;
 
         /// <summary>
-        /// Gets whether this reference is a type.
+        /// Gets this reference as a type.
+        /// If the reference is a <see cref="ResPackageDescriptor"/>,
+        /// <see cref="ResPackageDescriptor.Type"/>' type is returned.
+        /// If the reference is a <see cref="ICachedType"/>, <see cref="ICachedType.Type"/>
+        /// is returned.
         /// </summary>
-        [MemberNotNullWhen( true, nameof( AsType ) )]
-        public bool IsType => _ref is Type;
+        public Type? AsType => _ref is ResPackageDescriptor p
+                                ? p.Type?.Type
+                                : _ref is ICachedType c
+                                    ? c.Type
+                                    : _ref as Type;
 
         /// <summary>
-        /// Gets this reference as a type if <see cref="IsType"/> is true).
+        /// Gets this reference as a <see cref="ICachedType"/>. If the reference is a <see cref="ResPackageDescriptor"/>,
+        /// <see cref="ResPackageDescriptor.Type"/> is returned.  
         /// </summary>
-        public Type? AsType => _ref as Type;
+        public ICachedType? AsCachedType => _ref is ResPackageDescriptor p ? p.Type : _ref as ICachedType;
 
         /// <summary>
         /// Gets the name of this reference.
@@ -105,6 +127,7 @@ public sealed partial class ResPackageDescriptor
         {
             string s => s,
             ResPackageDescriptor p => p.FullName,
+            ICachedType t => t.Type.FullName,
             Type t => t.FullName,
             _ => null
         };

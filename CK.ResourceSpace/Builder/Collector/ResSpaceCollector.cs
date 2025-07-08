@@ -107,7 +107,7 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
     public ResPackageDescriptor? FindByFullName( string fullName ) => PackageIndex.GetValueOrDefault( fullName );
 
     /// <inheritdoc />
-    public ResPackageDescriptor? FindByType( Type type ) => PackageIndex.GetValueOrDefault( type );
+    public ResPackageDescriptor? FindByType( ICachedType type ) => PackageIndex.GetValueOrDefault( type );
 
     /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
@@ -130,10 +130,4 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
         return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, isOptional, ignoreLocal );
     }
 
-    /// <inheritdoc cref="ResSpaceConfiguration.RegisterPackage(IActivityMonitor, Type, bool)"/>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, ICachedType type, bool? isOptional = null, bool ignoreLocal = false )
-    {
-        var targetPath = type.Type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
-        return _coreCollector.RegisterPackage( monitor, type, targetPath, isOptional, ignoreLocal );
-    }
 }

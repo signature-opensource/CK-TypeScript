@@ -23,7 +23,16 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     string? _liveStatePath;
 
     /// <summary>
-    /// Initializes a new configuration.
+    /// Initializes a new configuration. A new empty <see cref="TypeCache"/> is created and
+    /// no restriction exist on types.
+    /// </summary>
+    public ResSpaceConfiguration()
+        : this( new GlobalTypeCache(), null )
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new configuration bound to a type cache and a filtered type set.
     /// </summary>
     /// <param name="typeCache">The type cache that will be used.</param>
     /// <param name="allowedTypes">
@@ -147,7 +156,7 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     public ResPackageDescriptor? FindByFullName( string fullName ) => _coreCollector.FindByFullName( fullName );
 
     /// <inheritdoc />
-    public ResPackageDescriptor? FindByType( Type type ) => _coreCollector.FindByType( type );
+    public ResPackageDescriptor? FindByType( ICachedType type ) => _coreCollector.FindByType( type );
 
     /// <inheritdoc />
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
@@ -158,15 +167,6 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
                                                   bool? isOptional )
     {
         return _coreCollector.RegisterPackage( monitor, fullName, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
-    }
-
-    /// <inheritdoc />
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  ICachedType type,
-                                                  bool? isOptional = null,
-                                                  bool ignoreLocal = false )
-    {
-        return _coreCollector.RegisterPackage( monitor, type, isOptional, ignoreLocal );
     }
 
     /// <inheritdoc />

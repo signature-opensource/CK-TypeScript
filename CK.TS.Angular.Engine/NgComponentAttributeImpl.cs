@@ -106,10 +106,6 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     {
         Throw.DebugAssert( !IsAppComponent );
 
-        if( typeof( INgPageComponent ).IsAssignableFrom( DecoratedType ) )
-        {
-
-        }
         // Okay... This is temporary... or not.
         // This approcah doesn't automatically support other abstractions than
         // the public and private pages.

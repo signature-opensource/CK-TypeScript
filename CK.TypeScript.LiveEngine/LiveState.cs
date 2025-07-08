@@ -1,5 +1,6 @@
 using CK.BinarySerialization;
 using CK.Core;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -99,15 +100,18 @@ sealed class LiveState
         return liveState;
     }
 
+
     static LiveState? Load( IActivityMonitor monitor, string liveStateFilePath )
     {
         if( !File.Exists( liveStateFilePath ) ) return null;
         try
         {
+            var context = new BinaryDeserializerContext();
+            context.Services.Add( new GlobalTypeCache() );
             using( var stream = File.OpenRead( liveStateFilePath ) )
             {
-                var r = BinaryDeserializer.Deserialize( stream, new BinaryDeserializerContext(),
-                    d => ReadLiveState( monitor, d, liveStateFilePath ) );
+
+                var r = BinaryDeserializer.Deserialize( stream, context, d => ReadLiveState( monitor, d, liveStateFilePath ) );
                 return r.GetResult(); 
             }
         }

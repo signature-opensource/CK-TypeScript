@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 
@@ -12,14 +13,16 @@ sealed class ResPackageDescriptorContext
     // Duplicate reference to the package index (held by the ResSpaceCollector)
     // to enable the ResPackageDescriptor to expose AddSingleMapping methods.
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
+    readonly GlobalTypeCache _typeCache;
     readonly HashSet<ResourceLocator> _codeHandledResources;
     int _singleMappingCount;
     bool _closed;
 
-    public ResPackageDescriptorContext( Dictionary<object, ResPackageDescriptor> packageIndex )
+    public ResPackageDescriptorContext( Dictionary<object, ResPackageDescriptor> packageIndex, GlobalTypeCache typeCache )
     {
         _codeHandledResources = new HashSet<ResourceLocator>();
         _packageIndex = packageIndex;
+        _typeCache = typeCache;
     }
 
     public bool Closed => _closed;
@@ -31,6 +34,8 @@ sealed class ResPackageDescriptorContext
     public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
 
     public int SingleMappingCount => _singleMappingCount;
+
+    public GlobalTypeCache TypeCache => _typeCache;
 
     public HashSet<ResourceLocator> Close()
     {
@@ -58,14 +63,14 @@ sealed class ResPackageDescriptorContext
         return true;
     }
 
-    internal bool AddSingleMapping( IActivityMonitor monitor, Type alias, ResPackageDescriptor p )
+    internal bool AddSingleMapping( IActivityMonitor monitor, ICachedType alias, ResPackageDescriptor p )
     {
         if( p.Type == null )
         {
             monitor.Error( $"Type '{alias:N}' cannot be mapped to '{p.FullName}' because this package is not defined by a Type." );
             return false;
         }
-        if( !alias.IsAssignableFrom( p.Type.Type ) )
+        if( !alias.Type.IsAssignableFrom( p.Type.Type ) )
         {
             monitor.Error( $"Type '{alias:N}' cannot be mapped to '{p.FullName}' because it is not assignable from the package's Type." );
             return false;

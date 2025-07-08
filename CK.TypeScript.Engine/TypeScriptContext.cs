@@ -219,7 +219,9 @@ public sealed partial class TypeScriptContext
         var typeScriptContext = this;
 
         // New approach (CK-ReaDI oriented) here to manage the resources.
-        var resSpaceConfiguration = new ResSpaceConfiguration();
+        var resSpaceConfiguration = new ResSpaceConfiguration( _codeContext.CurrentRun.ConfigurationGroup.TypeCache,
+                                                               _codeContext.CurrentRun.ConfigurationGroup.TypeSet.Contains );
+
         resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
 
         // Some GlobalCodeGenerators may generate TypeScript types that are required by package registrations:

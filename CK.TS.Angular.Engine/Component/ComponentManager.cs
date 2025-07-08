@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using CK.Setup;
 using CK.TypeScript.CodeGen;
 using System;
@@ -11,11 +12,12 @@ namespace CK.TS.Angular.Engine;
 
 sealed class ComponentManager
 {
-    readonly Dictionary<Type, NgRoute> _routes;
+    readonly Dictionary<ICachedType, NgRoute> _routes;
     readonly TypeScriptContext _context;
     readonly LibraryImport _angularCore;
     readonly Dictionary<string, ITSDeclaredFileType> _namedComponents;
     readonly TypeScriptFile _namedComponentsResolver;
+    readonly ICachedType _appComponentType;
 
     NgRouteWithRoutes _firstWithRoutes;
 
@@ -23,8 +25,9 @@ sealed class ComponentManager
     {
         _context = context;
         _angularCore = angularCore;
-        _routes = new Dictionary<Type, NgRoute>();
-        _firstWithRoutes = RegisterNgRouteWithRoutes( typeof( AppComponent ), "CK/Angular", null, null );
+        _routes = new Dictionary<ICachedType, NgRoute>();
+        _appComponentType = context.CodeContext.CurrentRun.ConfigurationGroup.TypeCache.Get( typeof( AppComponent ) );
+        _firstWithRoutes = RegisterNgRouteWithRoutes( _appComponentType, "CK/Angular", null, null );
         _namedComponents = new Dictionary<string, ITSDeclaredFileType>();
         _namedComponentsResolver = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/NamedComponentsResolver.ts" );
         _context.AfterCodeGeneration += OnAfterCodeGeneration;
@@ -32,6 +35,8 @@ sealed class ComponentManager
 
     internal bool RegisterComponent( IActivityMonitor monitor, NgComponentAttributeImpl ngComponent, ITSDeclaredFileType tsType )
     {
+        // Temporary...
+        var cachedType = _context.CodeContext.CurrentRun.ConfigurationGroup.TypeCache.Get( ngComponent.DecoratedType );
         // Named component registration.
         if( typeof( INgNamedComponent ).IsAssignableFrom( ngComponent.DecoratedType ) )
         {
@@ -50,16 +55,16 @@ sealed class ComponentManager
         var asRoutedComponent = ngComponent as NgRoutedComponentAttributeImpl;
         if( ngComponent.Attribute.HasRoutes )
         {
-            RegisterNgRouteWithRoutes( ngComponent.DecoratedType, ngComponent.TypeScriptFolder, asRoutedComponent, tsType );
+            RegisterNgRouteWithRoutes( cachedType, ngComponent.TypeScriptFolder, asRoutedComponent, tsType );
         }
         else if( asRoutedComponent != null )
         {
-            _routes.Add( ngComponent.DecoratedType, new NgRoute( asRoutedComponent, tsType ) );
+            _routes.Add( cachedType, new NgRoute( asRoutedComponent, tsType ) );
         }
         return true;
     }
 
-    NgRouteWithRoutes RegisterNgRouteWithRoutes( Type type,
+    NgRouteWithRoutes RegisterNgRouteWithRoutes( ICachedType type,
                                                  NormalizedPath folder,
                                                  NgRoutedComponentAttributeImpl? component,
                                                  ITSDeclaredFileType? tsType )
@@ -102,7 +107,7 @@ sealed class ComponentManager
 
     void GenerateRoutes( IActivityMonitor monitor )
     {
-        Throw.DebugAssert( _routes[typeof( AppComponent )].IsAppComponent );
+        Throw.DebugAssert( _routes[_appComponentType].IsAppComponent );
         Throw.DebugAssert( _routes.Values.Count( r => r.IsAppComponent ) == 1 );
 
         Throw.DebugAssert( "We can reach the ResSpaceData...", _context.ResSpaceData != null );
@@ -111,7 +116,9 @@ sealed class ComponentManager
         // that can be an abstraction (INgPublic/PrivatePageComponent).
         var typeMapper = delegate ( Type t )
         {
-            return _context.ResSpaceData.PackageIndex.GetValueOrDefault( t )?.Type;
+            return t == typeof( AppComponent )
+                    ? _appComponentType
+                    : _context.ResSpaceData.PackageIndex.GetValueOrDefault( _context.ResSpaceData.TypeCache.Get( t ) )?.Type;
         };
         bool success = true;
         foreach( var route in _routes.Values )

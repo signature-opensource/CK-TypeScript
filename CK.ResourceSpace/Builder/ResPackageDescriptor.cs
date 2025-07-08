@@ -184,7 +184,7 @@ public sealed partial class ResPackageDescriptor
     /// <summary>
     /// Adds a mapping from a type to this package descriptor:
     /// <list type="number">
-    ///     <item><see cref="Type"/> must not be null.</item>
+    ///     <item>This <see cref="Type"/> must not be null.</item>
     ///     <item>The <paramref name="alias"/> must be assignable from <see cref="Type"/>.</item>
     ///     <item>The <paramref name="alias"/> must not be already associated to a package descriptor.</item>
     /// </list>
@@ -193,7 +193,7 @@ public sealed partial class ResPackageDescriptor
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="alias">The type to map to this descriptor.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool AddSingleMapping( IActivityMonitor monitor, Type alias )
+    public bool AddSingleMapping( IActivityMonitor monitor, ICachedType alias )
     {
         Throw.CheckNotNullArgument( alias );
         if( _context.AddSingleMapping( monitor, alias, this ) )
@@ -204,6 +204,9 @@ public sealed partial class ResPackageDescriptor
         }
         return false;
     }
+
+    /// <inheritdoc cref="AddSingleMapping(IActivityMonitor, ICachedType)"/>
+    public bool AddSingleMapping( IActivityMonitor monitor, Type alias ) => AddSingleMapping( monitor, _context.TypeCache.Get( alias ) );
 
     internal IReadOnlyList<object>? SingleMappings => _singleMappings;
 

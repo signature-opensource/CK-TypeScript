@@ -12,7 +12,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     readonly GlobalTypeCache _typeCache;
     readonly Func<ICachedType, bool>? _allowedTypes;
 
-    // Packages are indexed by their FullName, their Type if package is defined
+    // Packages are indexed by their FullName, their ICachedType if package is defined
     // by type and by their Resources Store container.
     // The IResourceContainer key is used by this builder only to check that no resource
     // containers are shared by 2 packages.
@@ -35,14 +35,14 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         _packageIndex = new Dictionary<object, ResPackageDescriptor>();
         _packages = new List<ResPackageDescriptor>();
         _optionalPackages = new List<ResPackageDescriptor>();
-        _packageDescriptorContext = new ResPackageDescriptorContext( _packageIndex );
+        _packageDescriptorContext = new ResPackageDescriptorContext( _packageIndex, typeCache );
         _typeCache = typeCache;
         _allowedTypes = allowedTypes;
     }
 
     public ResPackageDescriptor? FindByFullName( string fullName ) => _packageIndex.GetValueOrDefault( fullName );
 
-    public ResPackageDescriptor? FindByType( Type type ) => _packageIndex.GetValueOrDefault( type );
+    public ResPackageDescriptor? FindByType( ICachedType type ) => _packageIndex.GetValueOrDefault( type );
 
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   string fullName,
@@ -58,12 +58,6 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         return DoRegister( monitor, fullName, null, defaultTargetPath, resourceStore, resourceAfterStore, isOptional );
     }
 
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor, ICachedType type, bool? isOptional, bool ignoreLocal = false )
-    {
-        var targetPath = type.Type.Namespace?.Replace( '.', '/' ) ?? string.Empty;
-        return RegisterPackage( monitor, type, targetPath, isOptional, ignoreLocal );
-    }
-
     public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
                                                   ICachedType type,
                                                   NormalizedPath defaultTargetPath,
@@ -71,7 +65,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
                                                   bool ignoreLocal )
     {
         Throw.CheckNotNullArgument( type );
-        Throw.CheckArgument( type.EngineUnhandledType != EngineUnhandledType.None );
+        Throw.CheckArgument( type.EngineUnhandledType == EngineUnhandledType.None );
         Throw.CheckArgument( "Type cache mismatch.", type.TypeCache == TypeCache );
         if( _packageIndex.TryGetValue( type, out var already ) )
         {

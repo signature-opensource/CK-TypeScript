@@ -26,7 +26,7 @@ public interface IResPackageDescriptorRegistrar
     /// </summary>
     /// <param name="type">The type.</param>
     /// <returns>The package or null if not found.</returns>
-    ResPackageDescriptor? FindByType( Type type );
+    ResPackageDescriptor? FindByType( ICachedType type );
 
     /// <summary>
     /// Registers a package. It must not already exist: <paramref name="fullName"/>, <paramref name="resourceStore"/>
@@ -57,33 +57,6 @@ public interface IResPackageDescriptorRegistrar
                                                   IResourceContainer resourceStore,
                                                   IResourceContainer resourceAfterStore,
                                                   bool? isOptional );
-
-    /// <summary>
-    /// Registers a package. It must not already exist: the <see cref="ICachedType.Type"/> must not have been already registered.
-    /// <para>
-    /// The <see cref="ResPackageDescriptor.DefaultTargetPath"/> is derived from the type's namespace:
-    /// "The/Type/Namespace" (the dots of the namespace are replaced with a '/'.
-    /// </para>
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="type">The type that defines the package.</param>
-    /// <param name="isOptional">
-    /// Defines the initial value of <see cref="ResPackageDescriptor.IsOptional"/>. By default, this
-    /// is driven by the existence of the <see cref="OptionalTypeAttribute">[OptionalType]</see> attribute.
-    /// </param>
-    /// <param name="ignoreLocal">
-    /// True to ignore local folder: even if the resources are in a local folder, this creates
-    /// a <see cref="AssemblyResourceContainer"/> instead of a <see cref="FileSystemResourceContainer"/>
-    /// for both <see cref="ResPackageDescriptor.Resources"/> and <see cref="ResPackageDescriptor.AfterResources"/>.
-    /// <para>
-    /// This is mainly for tests.
-    /// </para>
-    /// </param>
-    /// <returns>The package descriptor on success, null on error.</returns>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  ICachedType type,
-                                                  bool? isOptional = null,
-                                                  bool ignoreLocal = false );
 
     /// <summary>
     /// Registers a package. It must not already exist: <paramref name="type"/> must not have been already registered.

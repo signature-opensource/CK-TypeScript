@@ -1,4 +1,5 @@
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -18,7 +19,9 @@ public sealed partial class ResSpaceData
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     readonly IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
     readonly IReadOnlySet<ResourceLocator> _codeHandledResources;
+    readonly GlobalTypeCache _typeCache;
     readonly string _liveStatePath;
+
     // Last mutable code container. Duplicating it is required, because even if we inspect
     // the ResourceContainerWrapper.InnerContainer, an empty container may be a non yet
     // assigned container or a definitly assigned empty one.
@@ -37,12 +40,14 @@ public sealed partial class ResSpaceData
 
     internal ResSpaceData( IResourceContainer? generatedCodeContainer,
                            string cKWatchFolderPath,
+                           GlobalTypeCache typeCache,
                            IReadOnlyDictionary<object, ResPackage> packageIndex,
                            IReadOnlyDictionary<IResourceContainer, IResPackageResources> resourceIndex,
                            IReadOnlySet<ResourceLocator> codeHandledResources )
     {
         _generatedCodeContainer = generatedCodeContainer;
         _liveStatePath = cKWatchFolderPath;
+        _typeCache = typeCache;
         _packageIndex = packageIndex;
         _resourceIndex = resourceIndex;
         _codeHandledResources = codeHandledResources;
@@ -176,6 +181,11 @@ public sealed partial class ResSpaceData
     public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
 
     /// <summary>
+    /// Gets the type cache.
+    /// </summary>
+    public GlobalTypeCache TypeCache => _typeCache;
+
+    /// <summary>
     /// Gets the cache from wich <see cref="ResPackageDataCache{T}"/> can be built.
     /// </summary>
     public ISpaceDataCache SpaceDataCache => _resPackageDataCache;
@@ -207,5 +217,4 @@ public sealed partial class ResSpaceData
     /// Gets the watch root when <see cref="HasLiveState"/> is true. Null otherwise.
     /// </summary>
     public string? WatchRoot => _watchRoot;
-
 }

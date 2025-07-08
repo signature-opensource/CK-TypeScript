@@ -1,5 +1,6 @@
 using CK.BinarySerialization;
 using CK.EmbeddedResources;
+using CK.Engine.TypeCollector;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
@@ -22,6 +23,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         _allPackageResources = d.ReadValue<ImmutableArray<IResPackageResources>>();
         _localPackageResources = d.ReadValue<ImmutableArray<IResPackageResources>>();
         _packageIndex = d.ReadObject<IReadOnlyDictionary<object, ResPackage>>();
+        _typeCache = d.Context.Services.GetService<GlobalTypeCache>( throwOnNull: true );
         _resourceIndex = d.ReadObject<IReadOnlyDictionary<IResourceContainer, IResPackageResources>>();
         _codeHandledResources = d.ReadObject<IReadOnlySet<ResourceLocator>>();
         _codePackage = _packages[0];

@@ -1,4 +1,5 @@
 using CK.BinarySerialization;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -19,7 +20,7 @@ public sealed partial class ResPackage : ICKSlicedSerializable
     {
         var r = d.Reader;
         _fullName = r.ReadString();
-        _type = d.ReadNullableObject<Type>();
+        _type = d.ReadNullableObject<ICachedType>();
         _defaultTargetPath = r.ReadString();
         _isGroup = r.ReadBoolean();
         _index = r.ReadInt32();

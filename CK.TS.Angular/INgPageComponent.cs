@@ -13,7 +13,7 @@ namespace CK.TS.Angular;
 /// is the kind of the public page.
 /// </para>
 /// </summary>
-public interface INgPageComponent : INgComponent, INgNamedComponent 
+public interface INgPageComponent : INgComponent 
 {
 }
 

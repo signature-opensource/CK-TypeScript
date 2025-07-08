@@ -177,6 +177,7 @@ public sealed class ResSpaceDataBuilder
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
         var space = new ResSpaceData( _generatedCodeContainer,
                                       _collector.LiveStatePath,
+                                      _collector.TypeCache,
                                       packageIndex,
                                       resourceIndex,
                                       codeHandledResources );
@@ -248,7 +249,7 @@ public sealed class ResSpaceDataBuilder
                                     d._idxFooter + 2,
                                     d.AfterResources,
                                     d.IsGroup,
-                                    d.Type?.Type,
+                                    d.Type,
                                     requires,
                                     children,
                                     bAll.Count );

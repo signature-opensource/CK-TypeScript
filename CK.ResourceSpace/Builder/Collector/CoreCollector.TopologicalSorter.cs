@@ -1,3 +1,4 @@
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -168,6 +169,8 @@ sealed partial class CoreCollector
                 // This reference is not an optional one: continue with a real resolution.
             }
             var result = DoInitialResolveRef( relName, r );
+            Throw.DebugAssert( "All Type are mapped to their ICachedType (or ResPackageDescriptor) from now on.",
+                               (result.IsValid is false || r._ref is not Type) || result._ref is ICachedType or ResPackageDescriptor );
             Throw.DebugAssert( "IsOptional => IsValid. Invalid and Optional cannot exist.", !result.IsOptional || result.IsValid );
             Throw.DebugAssert( (result.IsValid && !result.IsOptional) == (result.AsPackageDescriptor?.IsOptional is false) );
             // Blindly remember the resulting referenced object.
@@ -204,6 +207,12 @@ sealed partial class CoreCollector
                         ? p
                         : Ref.Invalid;
             }
+            // Resolve Type to ICachedType.
+            if( r._ref is Type rawType )
+            {
+                r = new Ref( _collector.TypeCache.Get( rawType ), r.IsOptional );
+                Throw.DebugAssert( r.IsValid );
+            }
             if( _packageIndex.TryGetValue( r._ref, out var result ) )
             {
                 // The package is known. It is not optional, we are done
@@ -214,7 +223,7 @@ sealed partial class CoreCollector
                     return result;
                 }
                 // The package is optional, if the ref is also optional,
-                // we return the optional reference unchanged.
+                // we return the optional reference unchanged (but a Type is now a ICachedType).
                 if( r.IsOptional )
                 {
                     return r;
@@ -226,7 +235,7 @@ sealed partial class CoreCollector
                 return result;
             }
             // The package is unknown. If this is an optional
-            // reference, we return the optional reference unchanged.
+            // reference, we return the optional reference unchanged (but a Type is now a ICachedType).
             if( r.IsOptional )
             {
                 return r;
