@@ -6,6 +6,9 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using CK.EmbeddedResources;
+using System.Linq;
+using CK.Engine.TypeCollector;
+using System.Collections.Generic;
 
 namespace CK.TS.Angular.Engine;
 
@@ -106,33 +109,56 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     {
         Throw.DebugAssert( !IsAppComponent );
 
-        // Okay... This is temporary... or not.
-        // This approcah doesn't automatically support other abstractions than
-        // the public and private pages.
-        // If we need this we may here lookup for all DecoratedType's interface
-        // and select the ones that are marked with a [IsSingle] attribute (not existing yet)
-        // for instance, or enables declaration of such abstractions by any other means.
-        //
-        // This can always be done later.
-        //
-        // Note: We don't check that the same component implements both. This doesn't
-        //       make any sense and the result will be what it will be.
-        //
-        if( typeof( INgPublicPageComponent ).IsAssignableFrom( DecoratedType ) )
-        {
-            if( !d.AddSingleMapping( monitor, typeof( INgPublicPageComponent ) ) )
-            {
-                return false;
-            }
-        }
-        if( typeof( INgPrivatePageComponent ).IsAssignableFrom( DecoratedType ) )
-        {
-            if( !d.AddSingleMapping( monitor, typeof( INgPrivatePageComponent ) ) )
-            {
-                return false;
-            }
-        }
+        // Temporary
+        var typeCache = context.CodeContext.CurrentRun.ConfigurationGroup.TypeCache;
+        var ngPageComponent = typeCache.Get( typeof( INgPageComponent ) );
+        var decoratedType = typeCache.Get( DecoratedType );
 
+        // INgPageComponent is a kind of [CKAbstractType] that implies a kind of [IsSingle].
+        //
+        // Thoughts:
+        // Is a [CKAbstractSingleType] a good idea to generalize this?
+        // Is a [CKAbstractMultipleType] can replace (and generalize) [IsMultiple]?
+        // Is a pure [CKAbstract] necessarily multiple? Or this doesn't exist?
+        // Or is simply ignored?
+        // For Single cardinality, a concrete type can be [IsSingle] but a multiple concrete
+        // type is not obvious.
+        //
+        if( decoratedType.Interfaces.Contains( ngPageComponent ) )
+        {
+            // If the type directly implements INgPageComponent, there's nothing to map.
+            // 
+            if( !decoratedType.DirectInterfaces.Contains( ngPageComponent ) )
+            {
+                // What is the interface that is a INgPageComponent?
+                ICachedType? theOne = null;
+                List<string>? ambiguities = null;
+                foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngPageComponent ) ) )
+                {
+                    if( theOne == null )
+                    {
+                        theOne = i;
+                    }
+                    else
+                    {
+                        ambiguities ??= new List<string>() { theOne.CSharpName };
+                        ambiguities.Add( i.CSharpName );
+                    }
+                }
+                if( ambiguities != null )
+                {
+                    monitor.Error( $"Ambiguous INgPageComponent for '{decoratedType.CSharpName}': interfaces '{ambiguities.Concatenate("', '")}' are all INgPageComponent. Only one can exist." );
+                    return false;
+                }
+                if( theOne != null )
+                {
+                    if( !d.AddSingleMapping( monitor, theOne ) )
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
         var fName = _snakeName + ".component.ts";
         if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
