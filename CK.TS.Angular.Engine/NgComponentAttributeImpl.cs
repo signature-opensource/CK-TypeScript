@@ -111,8 +111,8 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
 
         // Temporary
         var typeCache = context.CodeContext.CurrentRun.ConfigurationGroup.TypeCache;
-        var ngPageComponent = typeCache.Get( typeof( INgPageComponent ) );
         var decoratedType = typeCache.Get( DecoratedType );
+        var ngPageComponent = typeCache.Get( typeof( INgPageComponent ) );
 
         // INgPageComponent is a kind of [CKAbstractType] that implies a kind of [IsSingle].
         //
@@ -124,51 +124,60 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         // For Single cardinality, a concrete type can be [IsSingle] but a multiple concrete
         // type is not obvious.
         //
-        if( decoratedType.Interfaces.Contains( ngPageComponent ) )
-        {
-            // If the type directly implements INgPageComponent, there's nothing to map.
-            // 
-            if( !decoratedType.DirectInterfaces.Contains( ngPageComponent ) )
-            {
-                // What is the interface that is a INgPageComponent?
-                ICachedType? theOne = null;
-                List<string>? ambiguities = null;
-                foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngPageComponent ) ) )
-                {
-                    if( theOne == null )
-                    {
-                        theOne = i;
-                    }
-                    else
-                    {
-                        ambiguities ??= new List<string>() { theOne.CSharpName };
-                        ambiguities.Add( i.CSharpName );
-                    }
-                }
-                if( ambiguities != null )
-                {
-                    monitor.Error( $"Ambiguous INgPageComponent for '{decoratedType.CSharpName}': interfaces '{ambiguities.Concatenate("', '")}' are all INgPageComponent. Only one can exist." );
-                    return false;
-                }
-                if( theOne != null )
-                {
-                    if( !d.AddSingleMapping( monitor, theOne ) )
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        bool success = HandlePageComponent( monitor, d, decoratedType, ngPageComponent, out ICachedType? pageComponent );
+
         var fName = _snakeName + ".component.ts";
         if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
         }
         var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
-        Throw.DebugAssert( file is ResourceTypeScriptFile );
         ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
+        return success
+               && base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
+
+        static bool HandlePageComponent( IActivityMonitor monitor,
+                                         ResPackageDescriptor d,
+                                         ICachedType decoratedType,
+                                         ICachedType ngPageComponent,
+                                         out ICachedType? pageComponent )
+        {
+            bool success = true;
+            pageComponent = null;
+            if( decoratedType.Interfaces.Contains( ngPageComponent ) )
+            {
+                // If the type directly implements INgPageComponent, there's nothing to map.
+                // 
+                if( !decoratedType.DirectInterfaces.Contains( ngPageComponent ) )
+                {
+                    // What is the interface that is a INgPageComponent?
+                    List<string>? ambiguities = null;
+                    foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngPageComponent ) ) )
+                    {
+                        if( pageComponent == null )
+                        {
+                            pageComponent = i;
+                        }
+                        else
+                        {
+                            ambiguities ??= new List<string>() { pageComponent.CSharpName };
+                            ambiguities.Add( i.CSharpName );
+                        }
+                    }
+                    if( ambiguities != null )
+                    {
+                        monitor.Error( $"Ambiguous INgPageComponent for '{decoratedType.CSharpName}': interfaces '{ambiguities.Concatenate( "', '" )}' are all INgPageComponent. Only one can exist." );
+                        success = false;
+                    }
+                    if( pageComponent != null && !d.AddSingleMapping( monitor, pageComponent ) )
+                    {
+                        success = false;
+                    }
+                }
+            }
+            return success;
+        }
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]
