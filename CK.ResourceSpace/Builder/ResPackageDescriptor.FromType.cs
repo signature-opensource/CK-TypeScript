@@ -21,7 +21,7 @@ public sealed partial class ResPackageDescriptor
         }
 
         bool errorSinglePackage = false;
-        foreach( var a in _type.CustomAttributes )
+        foreach( var a in _type.AttributesData )
         {
             Type aType = a.AttributeType;
             if( aType == typeof( RequiresAttribute ) )
