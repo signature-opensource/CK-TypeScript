@@ -140,7 +140,7 @@ public sealed partial class TypeScriptIntegrationContext
                            NormalizedPath workingDirectory = default )
     {
         if( workingDirectory.IsEmptyPath ) workingDirectory = _configuration.TargetProjectPath;
-        return YarnHelper.RunProcess( monitor.ParallelLogger, fileName, arguments, workingDirectory, environmentVariables );
+        return YarnHelper.RunProcess( monitor.ParallelLogger, fileName, arguments, workingDirectory, environmentVariables, out _ );
     }
 
 
@@ -459,7 +459,7 @@ public sealed partial class TypeScriptIntegrationContext
         var displayCmd = cmd.Substring( 3 ).Replace( " && ", Environment.NewLine );
         using( monitor.OpenInfo( $"Running:{Environment.NewLine}{displayCmd}" ) )
         {
-            int code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null );
+            int code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null, out _ );
             if( code != 0 )
             {
                 monitor.Error( $"Command:{Environment.NewLine}{displayCmd}{Environment.NewLine}Failed with code {code}." );

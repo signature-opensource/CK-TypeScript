@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using static CK.Core.ActivityMonitorSimpleCollector;
 
 namespace CK.Setup;
 
@@ -46,7 +47,10 @@ public static class YarnHelper
     /// <param name="command">The command to run.</param>
     /// <param name="environmentVariables">Optional environment variables to set.</param>
     /// <returns>True on success, false if yarn cannot be found or the process failed.</returns>
-    public static bool RunYarn( IActivityMonitor monitor, NormalizedPath workingDirectory, string command, Dictionary<string, string>? environmentVariables )
+    public static bool RunYarn( IActivityMonitor monitor,
+                                NormalizedPath workingDirectory,
+                                string command,
+                                Dictionary<string, string>? environmentVariables )
     {
         var yarnPath = TryFindYarn( workingDirectory, out _ );
         if( yarnPath.HasValue )
@@ -331,10 +335,38 @@ public static class YarnHelper
                                                                                         ? ""
                                                                                         : $" with {environmentVariables.Select( kv => $"'{kv.Key}': '{kv.Value}'" ).Concatenate()}")}." ) )
         {
-            int code = RunProcess( monitor.ParallelLogger, "node", $"\"{yarnPath}\" {command}", workingDirectory, environmentVariables );
+            bool retriedInstallDone = false;
+            retry:
+            int code = RunProcess( monitor.ParallelLogger,
+                                   "node", $"\"{yarnPath}\" {command}",
+                                   workingDirectory,
+                                   environmentVariables,
+                                   out bool foundInstallYarnErrorMessage );
             if( code != 0 )
             {
-                monitor.Error( $"'yarn {command}' failed with code {code}." );
+                string failedMessage = $"'yarn {command}' failed with code {code}.";
+                if( foundInstallYarnErrorMessage && !retriedInstallDone )
+                {
+                    using( monitor.OpenError( failedMessage + " Running a yarn install and retrying." ) )
+                    {
+                        code = RunProcess( monitor.ParallelLogger,
+                                           "node", $"\"{yarnPath}\" install",
+                                           workingDirectory,
+                                           environmentVariables,
+                                           out _ );
+                        if( code != 0 )
+                        {
+                            monitor.CloseGroup( "Failed." );
+                            return false;
+                        }
+                        retriedInstallDone = true;
+                        goto retry;
+                    }
+                }
+                else
+                {
+                    monitor.Error( failedMessage );
+                }
                 return false;
             }
         }
@@ -350,7 +382,8 @@ public static class YarnHelper
                                     string fileName,
                                     string arguments,
                                     string workingDirectory,
-                                    Dictionary<string, string>? environmentVariables )
+                                    Dictionary<string, string>? environmentVariables,
+                                    out bool foundInstallYarnErrorMessage )
     {
         var info = new ProcessStartInfo( fileName, arguments )
         {
@@ -365,10 +398,15 @@ public static class YarnHelper
             foreach( var kv in environmentVariables ) info.EnvironmentVariables.Add( kv.Key, kv.Value );
         }
 
+        bool localFoundInstallYarnErrorMessage = false;
         using var process = new Process { StartInfo = info };
         process.OutputDataReceived += ( sender, data ) =>
         {
-            if( data.Data != null ) logger.Trace( StdOutTag, data.Data );
+            if( data.Data != null )
+            {
+                localFoundInstallYarnErrorMessage |= data.Data.Contains( "running an install might help" );
+                logger.Trace( StdOutTag, data.Data );
+            }
         };
         process.ErrorDataReceived += ( sender, data ) =>
         {
@@ -378,6 +416,7 @@ public static class YarnHelper
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
+        foundInstallYarnErrorMessage = localFoundInstallYarnErrorMessage;
 
         return process.ExitCode;
 
