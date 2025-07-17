@@ -112,7 +112,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         // Temporary
         var typeCache = context.CodeContext.CurrentRun.ConfigurationGroup.TypeCache;
         var decoratedType = typeCache.Get( DecoratedType );
-        var ngPageComponent = typeCache.Get( typeof( INgPageComponent ) );
+        var ngSingleComponent = typeCache.Get( typeof( INgSingleComponent ) );
 
         // INgPageComponent is a kind of [CKAbstractType] that implies a kind of [IsSingle].
         //
@@ -124,7 +124,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         // For Single cardinality, a concrete type can be [IsSingle] but a multiple concrete
         // type is not obvious.
         //
-        bool success = HandlePageComponent( monitor, d, decoratedType, ngPageComponent, out ICachedType? pageComponent );
+        bool success = HandleSingleComponent( monitor, d, decoratedType, ngSingleComponent, out ICachedType? pageComponent );
 
         var fName = _snakeName + ".component.ts";
         if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
@@ -137,23 +137,23 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                && base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
 
-        static bool HandlePageComponent( IActivityMonitor monitor,
+        static bool HandleSingleComponent( IActivityMonitor monitor,
                                          ResPackageDescriptor d,
                                          ICachedType decoratedType,
-                                         ICachedType ngPageComponent,
+                                         ICachedType ngSingleComponent,
                                          out ICachedType? pageComponent )
         {
             bool success = true;
             pageComponent = null;
-            if( decoratedType.Interfaces.Contains( ngPageComponent ) )
+            if( decoratedType.Interfaces.Contains( ngSingleComponent ) )
             {
                 // If the type directly implements INgPageComponent, there's nothing to map.
                 // 
-                if( !decoratedType.DirectInterfaces.Contains( ngPageComponent ) )
+                if( !decoratedType.DirectInterfaces.Contains( ngSingleComponent ) )
                 {
                     // What is the interface that is a INgPageComponent?
                     List<string>? ambiguities = null;
-                    foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngPageComponent ) ) )
+                    foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngSingleComponent ) ) )
                     {
                         if( pageComponent == null )
                         {
