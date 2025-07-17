@@ -17,6 +17,10 @@ public class NgAspNetAuthTests
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
+        configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
+        configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
+
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();

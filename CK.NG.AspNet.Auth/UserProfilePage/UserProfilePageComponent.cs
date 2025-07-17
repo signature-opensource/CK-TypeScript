@@ -1,11 +1,6 @@
 using CK.TS.Angular;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CK.Ng.AspNet.Auth.UserProfile;
+namespace CK.Ng.AspNet.Auth.UserProfilePage;
 
 /// <summary>
 /// This component has no router-outlet (<see cref="NgComponentAttribute.HasRoutes"/> is false).

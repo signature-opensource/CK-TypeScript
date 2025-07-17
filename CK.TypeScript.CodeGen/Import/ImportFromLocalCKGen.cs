@@ -1,5 +1,4 @@
 using CK.Core;
-using System.IO;
 using System.Linq;
 
 namespace CK.TypeScript.CodeGen;

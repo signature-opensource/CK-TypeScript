@@ -62,6 +62,10 @@ public class FromScratchTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.EnsureAspect<TypeScriptAspectConfiguration>();
         var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
+        configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
+        configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
+
         ts.TargetProjectPath = root;
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 

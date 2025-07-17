@@ -2,9 +2,7 @@ using CK.Core;
 using CK.Transform.Core;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
 using System.Text;
-using System.Xml.Linq;
 
 namespace CK.TypeScript.Transform;
 

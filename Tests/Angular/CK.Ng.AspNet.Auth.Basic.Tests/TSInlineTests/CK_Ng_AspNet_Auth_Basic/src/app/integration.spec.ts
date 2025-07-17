@@ -1,5 +1,5 @@
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
-import { NgAuthService, AuthLevel } from '@local/ck-gen';
+import { NgAuthService, AuthLevel, PrivatePageComponent } from '@local/ck-gen';
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 
@@ -43,4 +43,18 @@ describe('NgAuthService integration tests', () => {
     expect(current.user.userId).toBe(0);
     expect(current.user.userName).toBe('');
   });
+
+ it('should render userName when logged in', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const ngAuthService = TestBed.inject(NgAuthService);
+    const authService = ngAuthService.authService;
+
+    await authService.basicLogin('Albert', 'success');
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h3')?.textContent).toContain('MyUserInfoBox: Albert');
+    await authService.logout();
+});
+
 });

@@ -5,7 +5,6 @@ using CK.TypeScript.CodeGen;
 using CK.TypeScript.Transform;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace CK.Setup;

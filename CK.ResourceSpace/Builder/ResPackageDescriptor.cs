@@ -1,9 +1,7 @@
 using CK.EmbeddedResources;
 using CK.Engine.TypeCollector;
-using CK.Setup;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace CK.Core;
 

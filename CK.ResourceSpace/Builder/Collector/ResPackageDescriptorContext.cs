@@ -1,6 +1,5 @@
 using CK.EmbeddedResources;
 using CK.Engine.TypeCollector;
-using System;
 using System.Collections.Generic;
 
 namespace CK.Core;

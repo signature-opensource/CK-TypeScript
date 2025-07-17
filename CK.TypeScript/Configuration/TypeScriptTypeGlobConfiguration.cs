@@ -1,6 +1,4 @@
-using CK.Core;
 using CK.TypeScript;
-using System;
 using System.Xml.Linq;
 
 namespace CK.Setup;

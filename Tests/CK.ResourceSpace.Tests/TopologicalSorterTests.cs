@@ -3,7 +3,6 @@ using CK.EmbeddedResources;
 using NUnit.Framework;
 using Shouldly;
 using System.Linq;
-using System.Runtime.InteropServices;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.ResourceSpace.Tests;

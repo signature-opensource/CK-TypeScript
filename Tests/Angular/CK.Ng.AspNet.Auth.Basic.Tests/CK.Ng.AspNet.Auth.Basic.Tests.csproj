@@ -14,4 +14,7 @@
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="MyLayout\Res\" />
+  </ItemGroup>
 </Project>
