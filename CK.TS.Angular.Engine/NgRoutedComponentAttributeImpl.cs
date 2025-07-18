@@ -27,10 +27,6 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
         {
             monitor.Error( $"[NgRoutedComponent] on '{type:C}': TargetRoutedComponent = typeof({attr.TargetComponent:C}) is not a NgComponent." );
         }
-        if( attr.HasRoutes && attr.Route == "" )
-        {
-            monitor.Error( $"[NgRoutedComponent] on '{type:C}': HasRoutes = true and Route = \"\" combination is invalid." );
-        }
     }
 
     /// <summary>

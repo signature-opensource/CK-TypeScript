@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -11,10 +11,8 @@
   <ItemGroup>
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="27.0.2--0003-develop" />
     <ProjectReference Include="..\..\..\CK.Ng.AspNet.Auth.Basic\CK.Ng.AspNet.Auth.Basic.csproj" />
+    <ProjectReference Include="..\..\..\CK.Ng.PublicPage\CK.Ng.PublicPage.csproj" />
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="MyLayout\Res\" />
   </ItemGroup>
 </Project>

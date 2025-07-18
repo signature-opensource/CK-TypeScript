@@ -3,8 +3,8 @@ using CK.TS.Angular;
 
 namespace CK.Ng.AspNet.Auth;
 
-[NgComponent( HasRoutes = true )]
+[NgRoutedComponent<AppComponent>( HasRoutes = true, Route = "" )]
 [Package<TSPackage>]
-public sealed class PrivatePageComponent : NgComponent, INgPrivatePageComponent
+public sealed class PrivatePageComponent : NgRoutedComponent, INgPrivatePageComponent
 {
 }
