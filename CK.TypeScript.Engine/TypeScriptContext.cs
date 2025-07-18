@@ -223,6 +223,7 @@ public sealed partial class TypeScriptContext
                                                                _codeContext.CurrentRun.ConfigurationGroup.TypeSet.Contains );
 
         resSpaceConfiguration.AppResourcesLocalPath = _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen-app" );
+        resSpaceConfiguration.RevertOrderingNames = _codeContext.CurrentRun.ConfigurationGroup.EngineConfiguration.RevertOrderingNames;
 
         // Some GlobalCodeGenerators may generate TypeScript types that are required by package registrations:
         // this is the case of the Angular engine that injects its AngularCodeGen instance in the awful Root.Memory

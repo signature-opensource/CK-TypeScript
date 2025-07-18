@@ -23,6 +23,7 @@ public class NgAspNetAuthTests
         configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
         configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
         configuration.FirstBinPath.Types.Add( typeof( PublicChild.PublicChildComponent ) );
+        configuration.RevertOrderingNames = true;
 
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
