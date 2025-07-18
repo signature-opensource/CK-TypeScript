@@ -1,3 +1,4 @@
+<!-- <HasNgPublicPage /> -->
 <!-- <HasNgPrivatePage /> -->
 @if( isAuthenticated() ) {
 <ck-private-page />
@@ -5,6 +6,6 @@
 <h1>Hello, {{ title }}</h1>
 
 <!-- <PrePublic revert /> -->
-<router-outlet />
+<ck-public-page />
 <!-- <PostPublic /> -->
 }
