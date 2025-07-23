@@ -86,6 +86,12 @@ public class FromScratchTests
             }
         }
 
+        // Checks that NgZorro AppStyleImport works as expected.
+        var srcStyles = File.ReadAllLines( root.Combine( "src/styles.less" ) );
+        srcStyles.ShouldContain( "@import 'ng-zorro-antd/ng-zorro-antd.less';" )
+                 .ShouldContain( "@import '../ck-gen/styles/styles.less';" );
+
+
         var builder = WebApplication.CreateSlimBuilder();
         await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map, o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
         await using var runner = TestHelper.CreateTypeScriptRunner( root, server.ServerAddress );

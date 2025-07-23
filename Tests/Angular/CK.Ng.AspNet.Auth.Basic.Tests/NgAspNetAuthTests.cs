@@ -3,6 +3,7 @@ using CK.Testing;
 using Microsoft.AspNetCore.Builder;
 using NUnit.Framework;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -28,6 +29,11 @@ public class NgAspNetAuthTests
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
+
+        // Checks that NgZorro AppStyleImport works as expected.
+        var srcStyles = File.ReadAllLines( targetProjectPath.Combine( "src/styles.less" ) );
+        srcStyles.ShouldContain( "@import 'ng-zorro-antd/ng-zorro-antd.less';" )
+                 .ShouldContain( "@import '../ck-gen/styles/styles.less';" );
 
         var builder = WebApplication.CreateSlimBuilder();
 

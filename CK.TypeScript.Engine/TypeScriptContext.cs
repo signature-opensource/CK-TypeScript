@@ -312,7 +312,9 @@ public sealed partial class TypeScriptContext
                 // is a "fake" component that is used to reference the "root router".
                 // We have no ResPackage for it, so we skip here any ResPackage not found...
                 // This is NOT ideal!
-                if( !spaceData.PackageIndex.TryGetValue( p.DecoratedType, out var resPackage ) )
+                // Temporary:
+                var cT = _codeContext.CurrentRun.ConfigurationGroup.TypeCache.Get( p.DecoratedType );
+                if( !spaceData.PackageIndex.TryGetValue( cT, out var resPackage ) )
                 {
                     return true;
                 }

@@ -175,8 +175,8 @@ public sealed partial class TypeScriptContext // Less styles support.
                                             PriorityQueue<EnsureImportLine, int>? appStylesImport )
             {
                 var ckGenStyles = new EnsureImportLine( ImportKeyword.None,
-                                                            ImportKeyword.None,
-                                                            "../ck-gen/styles/styles.less" );
+                                                        ImportKeyword.None,
+                                                        "../ck-gen/styles/styles.less" );
                 IEnumerable<EnsureImportLine> imports;
                 if( appStylesImport != null )
                 {
