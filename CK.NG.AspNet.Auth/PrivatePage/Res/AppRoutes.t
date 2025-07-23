@@ -4,5 +4,5 @@ begin
     ensure import {inject} from "@angular/core";
 
     insert ", canActivate: [() => inject( AuthService ).authenticationInfo.user.userId > 0]"
-        after last "rPrivatePageComponent";
+        after last "component: PrivatePageComponent";
 end
