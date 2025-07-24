@@ -56,7 +56,7 @@ export class UserInfoBoxComponent {
     } );
 
     logout(): void {
-        // <PreLogoutRedirection />
+        // <PreLogoutRedirection revert />
         this.#router.navigate( ['/auth/logout'] );
         // <PostLogoutRedirection />
     }
