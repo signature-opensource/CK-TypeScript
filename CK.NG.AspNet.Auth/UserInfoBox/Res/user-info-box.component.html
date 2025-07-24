@@ -1,1 +1,30 @@
+<nz-avatar
+    class="ck-user-info-box-avatar"
+    [nzSize]="actualAvatarSize()"
+    [nzText]="avatarFallback()"
+    [nzSrc]="avatarImgSrc()"
+    nz-dropdown
+    nzTrigger="click"
+    [nzDropdownMenu]="profileMenu" />
+<nz-dropdown-menu #profileMenu="nzDropdownMenu">
+    <ul nz-menu>
+        <!-- <PreUserNameDisplay revert /> -->
+        <li nz-menu-item class="ck-user-info-box-username-item">
+            <span class="ck-user-info-box-username">{{ userName() }}</span>
+        </li>
+        <!-- <PostUserNameDisplay /> -->
+        <nz-divider class="ck-user-info-box-divider"></nz-divider>
 
+        <!-- <PreUserInfoBoxNormalItems revert /> -->
+
+        <!-- <PostUserInfoBoxNormalItems /> -->
+        <nz-divider class="ck-user-info-box-divider"></nz-divider>
+
+        <!-- <PreUserInfoBoxBottomItems revert /> -->
+        <li nz-menu-item class="ck-user-info-box-menu-item logout" (click)="logout()">
+            <fa-icon class="icon" [icon]="signOutIcon"></fa-icon>
+            {{ 'CK.UserInfoBox.SignOut' | translate }}
+        </li>
+        <!-- <PostUserInfoBoxBottomItems /> -->
+    </ul>
+</nz-dropdown-menu>

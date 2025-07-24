@@ -16,10 +16,14 @@ export class LogoutComponent {
   readonly #router = inject( Router );
 
   async ngOnInit(): Promise<void> {
+    // <PreLogout />
     await this.#authService.logout();
+    // <PostLogout />
   }
 
   return(): void {
+    // <PreNavigation />
     this.#router.navigate( ['auth'] );
+    // <PostRedirection />
   }
 }
