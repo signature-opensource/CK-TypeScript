@@ -1,6 +1,6 @@
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
-import { NgAuthService, AuthLevel, PrivatePageComponent } from '@local/ck-gen';
-import { TestBed } from '@angular/core/testing';
+import { NgAuthService, AuthLevel } from '@local/ck-gen';
+import { ComponentFixtureAutoDetect, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 
 if ( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout( 30 * 60 * 1000 ); // 30 minutes
@@ -12,7 +12,7 @@ describe( 'NgAuthService integration tests', () => {
     await TestBed.configureTestingModule(
       {
         imports: [AppComponent],
-        providers: CKGenAppModule.Providers
+        providers: [...CKGenAppModule.Providers, { provide: ComponentFixtureAutoDetect, useValue: true }]
       } ).compileComponents();
 
     ngAuthService = TestBed.inject( NgAuthService );
@@ -52,12 +52,9 @@ describe( 'NgAuthService integration tests', () => {
 
     await authService.basicLogin( 'Albert', 'success' );
 
-    setTimeout( () => {
-      fixture.detectChanges();
+    await fixture.whenStable();
 
-      const compiled = fixture.nativeElement as HTMLElement;
-      expect( compiled.querySelector( 'h3' )?.textContent ).toContain( 'MyUserInfoBox: Albert' );
-    }, 50 );
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect( compiled.querySelector( 'h3' )?.textContent ).toContain( 'MyUserInfoBox: Albert' );
   } );
-
 } );
