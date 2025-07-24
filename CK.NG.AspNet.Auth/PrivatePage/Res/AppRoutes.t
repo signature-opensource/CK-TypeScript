@@ -3,6 +3,12 @@ begin
     ensure import {AuthService} from "@local/ck-gen";
     ensure import {inject} from "@angular/core";
 
-    insert ", canActivate: [() => inject( AuthService ).authenticationInfo.user.userId > 0]"
+    insert """
+
+           var authService: AuthService | null = null;
+           """
+        before single "export default";
+
+    insert ", canActivate: [() => ( authService ??= inject( AuthService ) ).authenticationInfo.user.userId > 0]"
         after last "component: PrivatePageComponent";
 end
