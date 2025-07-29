@@ -2,6 +2,9 @@ using CK.Core;
 using CK.Transform.Core;
 using Shouldly;
 using NUnit.Framework;
+using CK.Testing;
+using static CK.Testing.MonitorTestHelper;
+using System.IO;
 
 namespace CK.TypeScript.Transform.Tests;
 
@@ -91,5 +94,43 @@ public class TypeScriptParsingTests
         result.Success.ShouldBeTrue();
         result.SourceCode.Tokens.Count.ShouldBe( 1 );
         result.SourceCode.Tokens[0].TokenType.ShouldBe( expected );
+    }
+
+    [TestCase( "`${a}`", 3 )]
+    [TestCase( "`${a+b}`", 5 )]
+    [TestCase( "`${a}${b}`", 5 )]
+    [TestCase( "`${`${a}`}`", 5 )]
+    [TestCase( "`${`${a}`-`${b}`}`", 9 )]
+    public void interpolated_strings( string text, int expectedTokenCount )
+    {
+        var a = new TypeScriptAnalyzer();
+        var result = a.Parse( text );
+        result.FirstError.ShouldBeNull();
+        result.Success.ShouldBeTrue();
+        result.SourceCode.Tokens.Count.ShouldBe( expectedTokenCount );
+        result.SourceCode.Tokens[0].TokenType.ShouldBe( TokenType.GenericInterpolatedStringStart );
+        result.SourceCode.Tokens[^1].TokenType.ShouldBe( TokenType.GenericInterpolatedStringEnd );
+    }
+
+    [TestCase( @"`\${a}`" )]
+    [TestCase( @"`$\{a}`" )]
+    public void interpolated_strings_can_be_GenericString( string text )
+    {
+        var a = new TypeScriptAnalyzer();
+        var result = a.Parse( text );
+        result.FirstError.ShouldBeNull();
+        result.Success.ShouldBeTrue();
+        result.SourceCode.Tokens.Count.ShouldBe( 1 );
+        result.SourceCode.Tokens[0].TokenType.ShouldBe( TokenType.GenericString );
+    }
+
+    [TestCase( "buggy.ts" )]
+    public void parsing_Samples( string fileName )
+    {
+        var path = TestHelper.TestProjectFolder.AppendPart( "Samples" ).AppendPart( fileName );
+        var a = new TypeScriptAnalyzer();
+        var result = a.Parse( File.ReadAllText( path ) );
+        result.FirstError.ShouldBeNull();
+        result.Success.ShouldBeTrue();
     }
 }

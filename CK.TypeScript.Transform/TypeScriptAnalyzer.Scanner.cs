@@ -199,11 +199,14 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
                     if( _interpolated.TryPeek( out var depth ) && depth == _braceDepth )
                     {
                         var t = ReadInterpolatedSegment( head.Head, false );
+                        Throw.DebugAssert( t.TokenType is TokenType.GenericInterpolatedStringSegment
+                                                       or TokenType.GenericInterpolatedStringEnd
+                                                       or TokenType.ErrorUnterminatedString );
                         if( t.TokenType == TokenType.GenericInterpolatedStringEnd )
                         {
+                            _interpolated.Pop();
                             --_braceDepth;
                         }
-                        _interpolated.Pop();
                         head.AcceptToken( t.TokenType, t.Length );
                     }
                     else
@@ -272,7 +275,11 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
         {
             if( ++iS == head.Length ) return new LowLevelToken( TokenType.ErrorUnterminatedString, iS );
             var c = head[iS];
-            if( escape ) continue;
+            if( escape )
+            {
+                escape = false;
+                continue;
+            }
             if( mayBeHole && c == '{' )
             {
                 return new LowLevelToken( start
@@ -282,8 +289,8 @@ sealed partial class TypeScriptAnalyzer // LowLevelTokenize & Scanner
             if( c == '`' ) return new LowLevelToken( start
                                                         ? TokenType.GenericString
                                                         : TokenType.GenericInterpolatedStringEnd, iS + 1 );
-            escape = c == '\\';
             mayBeHole = !escape && c == '$';
+            escape = c == '\\';
         }
     }
 

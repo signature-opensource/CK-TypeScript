@@ -1,5 +1,7 @@
+using CK.Core;
 using System;
 using System.Collections.Immutable;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Transform.Core;
 
@@ -50,7 +52,15 @@ public abstract partial class Analyzer : IAnalyzer, ITokenizerHeadBehavior
         _triviaBuilder.Clear();
         /// Creates an initial head on text with this tokenizer as the ITokenizerHeadBehavior.
         TokenizerHead head = new TokenizerHead( text, this, _triviaBuilder );
-        DoParse( ref head );
+        try
+        {
+            DoParse( ref head );
+        }
+        catch( Exception ex )
+        {
+            var p = SourcePosition.GetSourcePosition( text.Span, head.RemainingTextIndex );
+            throw new CKException( $"Parse error @{p.Line},{p.Column}", ex );
+        }
         head.ExtractResult( out var code, out var inlineErrorCount );
         return new AnalyzerResult( code,
                                    head.FirstError,

@@ -12,4 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Samples\" />
+  </ItemGroup>
 </Project>
