@@ -30,7 +30,7 @@ public sealed partial class TypeScriptContext
                 using( Installer.PushSubPath( RootFolderName ) )
                 {
                     var localesBody = new StringBuilder( """
-                        export async function  loadTranslations(lang: string): Promise<{[key: string]: string}> {
+                        export async function loadTranslations(lang: string): Promise<{[key: string]: string}> {
                             switch(lang) {
 
                         """ );
@@ -67,6 +67,7 @@ public sealed partial class TypeScriptContext
                         """ );
 
                     localesBody.Append( """
+
                         export const locales: CKLocales = {
 
                         """ );
