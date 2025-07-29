@@ -23,10 +23,17 @@ import { ResponsiveDirective } from '@local/ck-gen';
     templateUrl: './authentication-page.component.html'
 } )
 export class AuthenticationPageComponent {
-    protected leftIcon = faArrowLeft;
+    // <PreDependencyInjection revert />
+    // <PostDependencyInjection />
 
+    // <PreIconsDefinition revert />
+    protected leftIcon = faArrowLeft;
+    // <PostIconsDefinition />
+
+    // <PreLocalVariables revert />
     // assets can be overridden
     displayedLogoSrc: string = 'logos/login-logo.png';
+    // <PostLocalVariables />
 
     // TODO: handle light/dark mode toggle
     //logoWhiteSrc = input<string>( 'logos/login-logo-white.png' );

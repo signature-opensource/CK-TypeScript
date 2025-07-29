@@ -18,8 +18,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
   templateUrl: './login.component.html'
 } )
 export class LoginComponent implements OnInit {
+  // <PreDependencyInjection revert />
   readonly #authService = inject( NgAuthService );
   readonly #router = inject( Router );
+  // <PostDependencyInjection />
 
   // TODO: handle light/dark mode toggle
   // logoWhiteSrc = input<string>( 'logos/login-logo-white.png' );
@@ -27,10 +29,12 @@ export class LoginComponent implements OnInit {
   // assets can be overridden
   displayedLogoSrc: string = 'logos/login-logo.png';
 
-  // <RedirectionPath />
+  // <PreLocalVariables revert />
+  // <PreRedirectionPath revert />
   redirectionPath: string = '';
-
+  // <PostRedirectionPath />
   sortedProviders: Array<string> = [];
+  // <PostLocalVariables />
 
   constructor() {
     this.#authService.authService.addOnChange( async ( auth ) => {

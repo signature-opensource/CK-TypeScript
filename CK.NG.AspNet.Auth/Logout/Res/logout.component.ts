@@ -12,8 +12,13 @@ import { NzResultModule } from 'ng-zorro-antd/result';
   templateUrl: './logout.component.html'
 } )
 export class LogoutComponent {
+  // <PreDependencyInjection revert />
   readonly #authService = inject( AuthService );
   readonly #router = inject( Router );
+  // <PostDependencyInjection />
+
+  // <PreLocalVariables revert />
+  // <PostLocalVariables />
 
   async ngOnInit(): Promise<void> {
     // <PreLogout revert />

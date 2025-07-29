@@ -1,8 +1,7 @@
 import { Component, inject, computed, input, linkedSignal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faArrowRightFromBracket } from '@fortawesome/free-solid-svg-icons';
-import { faUser } from '@fortawesome/free-regular-svg-icons';
 import { TranslateModule } from '@ngx-translate/core';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
@@ -12,18 +11,24 @@ import { NgAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/NgAuthService';
 
 @Component( {
     selector: 'ck-user-info-box',
-    imports: [RouterLink, FontAwesomeModule, TranslateModule, NzAvatarModule, NzDividerModule, NzDropDownModule],
+    imports: [FontAwesomeModule, TranslateModule, NzAvatarModule, NzDividerModule, NzDropDownModule],
     templateUrl: './user-info-box.component.html'
 } )
 export class UserInfoBoxComponent {
+    // <PreDependencyInjection revert />
     readonly #authService = inject( NgAuthService );
     readonly #router = inject( Router );
+    // <PostDependencyInjection />
 
+    // <PreInputOutput revert />
     avatarSize = input<number>( 48 );
+    // <PostInputOutput />
 
-    protected userIcon = faUser;
+    // <PreIconsDefinition revert />
     protected signOutIcon = faArrowRightFromBracket;
+    // <PostIconsDefinition />
 
+    // <PreLocalVariables revert />
     userName = linkedSignal( () => this.#authService.authenticationInfo().user.userName );
     actualAvatarSize = computed( () => {
         let result = this.avatarSize();
@@ -54,6 +59,7 @@ export class UserInfoBoxComponent {
 
         return result;
     } );
+    // <PostLocalVariables />
 
     logout(): void {
         // <PreLogoutRedirection revert />

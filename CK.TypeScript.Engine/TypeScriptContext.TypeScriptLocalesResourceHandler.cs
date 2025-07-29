@@ -50,7 +50,24 @@ public sealed partial class TypeScriptContext
                           }
                         }
 
-                        export const locales = {
+                        """ );
+
+                    localesBody.Append( """
+                        export type LocaleInfo = {
+                          name: string;
+                          nativeName: string;
+                          englishName: string;
+                          id: number;
+                        };
+
+                        export type CKLocales = {
+                          [localeCode: string]: LocaleInfo;
+                        };
+
+                        """ );
+
+                    localesBody.Append( """
+                        export const locales: CKLocales = {
 
                         """ );
 

@@ -31,22 +31,28 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     templateUrl: './basic-login-form.component.html'
 } )
 export class BasicLoginFormComponent {
+  // <PreDependencyInjection revert />
   readonly #authService = inject( AuthService );
   readonly #formBuilder = inject( FormBuilder );
   readonly #notifService = inject( CKNotificationService );
   readonly #translateService = inject( TranslateService );
+  // <PostDependencyInjection />
 
+  // <PreIconsDefinition revert />
   protected eyeIcon = faEye;
   protected eyeSlashIcon = faEyeSlash;
   protected passwordIcon = faLock;
   protected userIcon = faUser;
+  // <PostIconsDefinition />
 
+  // <PreLocalVariables revert />
   loginForm: FormGroup = this.#formBuilder.group( {
     userName: new FormControl( this.#authService.authenticationInfo.unsafeUser.userName, { nonNullable: true, validators: [Validators.required] } ),
     password: new FormControl( '', { nonNullable: true, validators: [Validators.required] } ),
     rememberMe: new FormControl( this.#authService.rememberMe, { nonNullable: true } )
   } );
   showPassword: boolean = false;
+  // <PostLocalVariables />
 
   async submit(): Promise<void> {
     if ( this.loginForm && this.loginForm.valid ) {
