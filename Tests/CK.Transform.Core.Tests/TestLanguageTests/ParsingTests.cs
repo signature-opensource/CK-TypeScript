@@ -14,6 +14,7 @@ public class ParsingTests
     {
         var a = new TestAnalyzer( useSourceSpanBraceAndBrackets: false );
         Should.Throw<CKException>( () => a.Parse( buggyTest ) )
+              .InnerException.ShouldNotBeNull()
               .Message.ShouldBe( $"""
                 Unforwarded head on error at:
                 {remainingText}
