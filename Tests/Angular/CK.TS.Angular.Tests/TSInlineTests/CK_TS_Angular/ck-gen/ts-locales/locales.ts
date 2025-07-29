@@ -1,4 +1,4 @@
-export async function  loadTranslations(lang: string): Promise<{[key: string]: string}> {
+export async function loadTranslations(lang: string): Promise<{[key: string]: string}> {
     switch(lang) {
     case 'fr': return (await import('./fr.json')).default;
     case 'en-gb': return (await import('./en-gb.json')).default;
