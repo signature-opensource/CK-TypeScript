@@ -2,6 +2,8 @@ import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { NgAuthService, AuthLevel } from '@local/ck-gen';
 import { ComponentFixtureAutoDetect, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import { provideRouter, Router } from '@angular/router';
+import { routes } from './app.routes';
 
 if ( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout( 30 * 60 * 1000 ); // 30 minutes
 
@@ -12,7 +14,7 @@ describe( 'NgAuthService integration tests', () => {
     await TestBed.configureTestingModule(
       {
         imports: [AppComponent],
-        providers: [...CKGenAppModule.Providers, { provide: ComponentFixtureAutoDetect, useValue: true }]
+        providers: [provideRouter( routes ), ...CKGenAppModule.Providers, { provide: ComponentFixtureAutoDetect, useValue: true }]
       } ).compileComponents();
 
     ngAuthService = TestBed.inject( NgAuthService );
@@ -48,10 +50,12 @@ describe( 'NgAuthService integration tests', () => {
 
   it( 'should render userName when logged in', async () => {
     const fixture = TestBed.createComponent( AppComponent );
+    const router = TestBed.inject( Router );
     const authService = ngAuthService.authService;
 
     await authService.basicLogin( 'Albert', 'success' );
 
+    router.navigate( [''] );
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;

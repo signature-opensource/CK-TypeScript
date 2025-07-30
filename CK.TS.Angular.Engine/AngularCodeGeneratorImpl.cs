@@ -486,9 +486,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         const string defaultApp = """
                         <h1>Hello, {{ title }}</h1>
 
-                        <!-- <PrePublic revert /> -->
                         <router-outlet />
-                        <!-- <PostPublic /> -->
 
                         """;
                         File.WriteAllText( filePath, defaultApp );
