@@ -358,12 +358,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
         console.log('Error while sending: ' + url, this.#currentError);
         this.setLastResult();
         const a = this.#authenticationInfo.checkExpiration();
-        if (a != this.#authenticationInfo) {
+        if (a !== this.#authenticationInfo) {
             this.#authenticationInfo = a;
             this.onNewAuthenticationInfo();
-        }
-        else {
-            this.onChange();
         }
     }
 
