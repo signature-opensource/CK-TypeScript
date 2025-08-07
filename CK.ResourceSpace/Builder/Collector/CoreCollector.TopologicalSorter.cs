@@ -498,7 +498,10 @@ sealed partial class CoreCollector
                 return context.InitializeError( p );
             }
             p._idxHeader = -2;
-            using var _ = _monitor.OpenDebug( $"Header {p}" ).ConcludeWith( () => $"Header {p} -> {p._idxHeader}" );
+
+            // Too verbose.
+            // using var _ = _monitor.OpenDebug( $"Header {p}" ).ConcludeWith( () => $"Header {p} -> {p._idxHeader}" );
+
             // No need to cleanup the groups list here: it's no more used.
             if( p._groups != null )
             {
@@ -582,7 +585,10 @@ sealed partial class CoreCollector
                 return context.InitializeError( p );
             }
             Throw.DebugAssert( p._idxFooter == -1 );
-            using var _ = _monitor.OpenDebug( $"Footer {p}" ).ConcludeWith( () => $"Footer {p} -> {p._idxFooter}" );
+
+            // Too verbose.
+            // using var _ = _monitor.OpenDebug( $"Footer {p}" ).ConcludeWith( () => $"Footer {p} -> {p._idxFooter}" );
+
             p._idxFooter = -2;
             if( p._children != null )
             {
