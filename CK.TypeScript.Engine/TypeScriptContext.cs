@@ -401,17 +401,14 @@ public sealed partial class TypeScriptContext
                 var success = true;
                 foreach( var global in globals )
                 {
-                    using( monitor.OpenTrace( $"StartCodeGeneration for '{global.GetType():N}' global TypeScript generator." ) )
+                    try
                     {
-                        try
-                        {
-                            success &= global.StartCodeGeneration( monitor, context );
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( ex );
-                            success = false;
-                        }
+                        success &= global.StartCodeGeneration( monitor, context );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( $"Error in '{global.GetType():N}' global TypeScript generator.", ex );
+                        success = false;
                     }
                 }
                 if( !success )

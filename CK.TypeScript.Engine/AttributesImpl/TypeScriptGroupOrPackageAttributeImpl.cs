@@ -167,7 +167,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         {
             var targetPath = _typeScriptFolder.AppendPart( "index.ts" );
             context.Root.Root.FindOrCreateResourceFile( barrel, targetPath );
-            monitor.Trace( $"Exported barrel '{targetPath}'." );
+            monitor.Trace( $"Manual barrel '{targetPath}' is moved to the <Code> container." );
         }
         return OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );
     }

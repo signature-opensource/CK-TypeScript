@@ -13,35 +13,130 @@ public sealed partial class TypeScriptFolder
         readonly Span<char> _pathBuffer;
         readonly ITypeScriptPublishTarget _target;
         ReadOnlySpan<char> _path;
+        int _folderDepth;
+        readonly StringBuilder? _summary;
+        readonly StringBuilder? _exportedTypesSummary;
         public readonly StringBuilder BarrelStringBuilder;
         public readonly TSTypeManager TSTypes;
 
-        internal PublishContext( Span<char> pathBuffer, ITypeScriptPublishTarget target, TSTypeManager tsTypes )
+        internal PublishContext( Span<char> pathBuffer,
+                                 ITypeScriptPublishTarget target,
+                                 TSTypeManager tsTypes,
+                                 bool withSummary )
         {
             _pathBuffer = pathBuffer;
             _target = target;
             TSTypes = tsTypes;
+            if( withSummary )
+            {
+                _summary = new StringBuilder( "Summary:" );
+                _summary.AppendLine();
+                _exportedTypesSummary = new StringBuilder();
+            }
+            else
+            {
+                _summary = null;
+            }
             BarrelStringBuilder = new StringBuilder();
         }
 
-        public void EnterFolder( string name )
+        internal void EnterFolder( string name )
         {
             name.AsSpan().CopyTo( _pathBuffer.Slice( _path.Length ) );
             int len = _path.Length + name.Length;
             _path = _pathBuffer.Slice( 0, len + 1 );
             _pathBuffer[len] = '/';
+            if( HasSummary ) AppendLinePrefix().Append( '/' ).Append( name ).AppendLine();
+            ++_folderDepth;
         }
 
-        public void LeaveFolder( string name )
+        internal void LeaveFolder( string name )
         {
             Throw.DebugAssert( _path.Length > 0 && _path.EndsWith( name + '/' ) );
             _path = _pathBuffer.Slice( 0, _path.Length - name.Length - 1 );
+            --_folderDepth;
         }
 
-        public void Publish( string name, string content )
+        internal readonly void Publish( string name, string content )
         {
             name.AsSpan().CopyTo( _pathBuffer.Slice( _path.Length ) );
             _target.Add( _pathBuffer.Slice( 0, _path.Length + name.Length ), content );
+        }
+
+        internal readonly bool HasSummary => _summary != null;
+
+        internal readonly void SummaryOnAppendIndex()
+        {
+            AppendLinePrefix().Append( "-> 'index.ts' (manual)." ).AppendLine();
+        }
+
+        internal readonly void SummaryOnPublishedResource( ResourceTypeScriptFile rFile )
+        {
+            AppendLinePrefix().Append( "-> [Res] '" ).Append( rFile.Name ).Append( "' is moved to <Code> container from " ).Append( rFile.Locator );
+            DumpCKomposableExportedTypes( rFile );
+        }
+
+        internal readonly void SummaryOnUnpublishedResource( ResourceTypeScriptFile rFile )
+        {
+            AppendLinePrefix().Append( "-> [Res] '" ).Append( rFile.Name ).Append( '\'' );
+            DumpCKomposableExportedTypes( rFile );
+        }
+
+        internal readonly void SummaryOnTypeScriptFile( TypeScriptFileBase cFile )
+        {
+            AppendLinePrefix().Append( "-> [Code] '" ).Append( cFile.Name );
+            DumpCKomposableExportedTypes( cFile );
+        }
+
+        readonly StringBuilder AppendLinePrefix()
+        {
+            Throw.DebugAssert( _summary != null );
+            return _summary.Append( ' ', 3 * _folderDepth );
+        }
+
+        readonly void DumpCKomposableExportedTypes( TypeScriptFileBase f )
+        {
+            Throw.DebugAssert( _summary != null && _exportedTypesSummary != null );
+            var e = f.AllTypes.GetEnumerator();
+            if( e.MoveNext() )
+            {
+                _exportedTypesSummary.Append( "import { " );
+
+                _summary.AppendLine();
+                AppendLinePrefix().Append( "   Exported types: " );
+                bool atLeastOne = false;
+                do
+                {
+                    if( atLeastOne )
+                    {
+                        _summary.Append( ", " );
+                        _exportedTypesSummary.Append( ", " );
+                    }
+
+                    atLeastOne = true;
+                    _summary.Append( '\'' ).Append( e.Current.TypeName ).Append( '\'' );
+
+                    _exportedTypesSummary.Append( e.Current.TypeName );
+                }
+                while( e.MoveNext() );
+
+                _exportedTypesSummary.Append( " } from '@local/ck-gen/" )
+                        .Append( f.Folder.Path ).Append( f.Name )
+                        .Append( "';" )
+                        .AppendLine();
+            }
+            else _summary.Append( " - No exported types" );
+            _summary.Append( '.' ).AppendLine();
+        }
+
+        internal readonly void EmitSummary( IActivityMonitor monitor )
+        {
+            Throw.DebugAssert(_summary != null && _exportedTypesSummary != null );
+            monitor.Info( _summary.ToString() );
+            using( monitor.OpenInfo( "Auto resolvable imports from '@local/ck-gen' are:" ) )
+            {
+                monitor.Info( _exportedTypesSummary.ToString() );
+            }
         }
     }
 
@@ -52,62 +147,76 @@ public sealed partial class TypeScriptFolder
         Throw.DebugAssert( _firstChild != null || _firstFile != null );
         var cFolder = _firstChild;
         var cFile = _firstFile;
-        using( monitor.OpenTrace( IsRoot ? "Publishing TypeScript Root folder to the Code generated container." : $"-> '/{Name}'" ) )
+        if( IsRoot )
         {
-            if( !IsRoot ) target.EnterFolder( Name );
-            bool hasBarrel = false;
-            do
+            monitor.OpenInfo( "Published TypeScript Root folder to the <Code> generated container." );
+        }
+        else
+        {
+            target.EnterFolder( Name );
+        }
+        bool hasBarrel = false;
+        do
+        {
+            // Publish files until a folder has a lexically ordered greater name including the separator!
+            while( cFile != null
+                    && (cFolder == null || cFile.Name.AsSpan().CompareTo( cFolder.NameWithSeparator, StringComparison.Ordinal ) < 0) )
             {
-                // Publish files until a folder has a lexically ordered greater name including the separator!
-                while( cFile != null
-                       && (cFolder == null || cFile.Name.AsSpan().CompareTo( cFolder.NameWithSeparator, StringComparison.Ordinal ) < 0) )
+                if( !hasBarrel && cFile.Name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) )
                 {
-                    if( !hasBarrel && cFile.Name.Equals( "index.ts", StringComparison.OrdinalIgnoreCase ) )
+                    hasBarrel = true;
+                    monitor.Warn( $"Publishing manual '{cFile.Folder.Path}index.ts' barrel file, it MUST export all relevant types from this folder and below." );
+                    if( target.HasSummary ) target.SummaryOnAppendIndex();
+                    target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
+                }
+                else if( cFile is ResourceTypeScriptFile rFile )
+                {
+                    if( rFile.IsPublishedResource )
                     {
-                        hasBarrel = true;
-                        monitor.Trace( "Publishing existing 'index.ts' barrel file." );
-                        target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
-                    }
-                    else if( cFile is TypeScriptFile )
-                    {
-                        monitor.Trace( $"-> '{cFile.Name}'." );
-                        target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
+                        if( target.HasSummary ) target.SummaryOnPublishedResource( rFile );
+                        target.Publish( rFile.Name, rFile.GetCurrentText( monitor, target.TSTypes ) );
                     }
                     else
                     {
-                        Throw.DebugAssert( cFile is ResourceTypeScriptFile );
-                        if( ((ResourceTypeScriptFile)cFile).IsPublishedResource )
-                        {
-                            monitor.Trace( $"-> '{cFile.Name}' (resource)." );
-                            target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
-                        }
-                        else
-                        {
-                            monitor.Debug( $"-> '{cFile.Name}' (Skipped resource)." );
-                        }
+                        if( target.HasSummary ) target.SummaryOnUnpublishedResource( rFile );
                     }
-                    cFile = cFile._next;
                 }
-                // Publish the folder and continue on files.
-                if( cFolder != null )
+                else
                 {
-                    cFolder.Publish( monitor, ref target );
-                    cFolder = cFolder._next;
+                    Throw.DebugAssert( cFile is TypeScriptFile );
+                    if( target.HasSummary ) target.SummaryOnTypeScriptFile( cFile );
+                    target.Publish( cFile.Name, cFile.GetCurrentText( monitor, target.TSTypes ) );
                 }
+                cFile = cFile._next;
             }
-            while( cFile != null || cFolder != null );
-            if( !IsRoot ) target.LeaveFolder( Name );
-
-            if( _wantBarrel && !hasBarrel && _hasExportedSymbol )
+            // Publish the folder and continue on files.
+            if( cFolder != null )
             {
-                var b = target.BarrelStringBuilder;
-                Throw.DebugAssert( b.Length == 0 );
-                AddExportsToBarrel( "/", b );
-                Throw.DebugAssert( "Because HasExportedSymbol.", b.Length > 0 );
-                monitor.Trace( "Publishing automatically generated 'index.ts' barrel." );
-                target.Publish( "index.ts", b.ToString() );
-                b.Clear();
+                cFolder.Publish( monitor, ref target );
+                cFolder = cFolder._next;
             }
+        }
+        while( cFile != null || cFolder != null );
+        if( !IsRoot ) target.LeaveFolder( Name );
+
+        if( _wantBarrel && !hasBarrel && _hasExportedSymbol )
+        {
+            var b = target.BarrelStringBuilder;
+            Throw.DebugAssert( b.Length == 0 );
+            AddExportsToBarrel( "/", b );
+            Throw.DebugAssert( "Because HasExportedSymbol.", b.Length > 0 );
+            monitor.Trace( "Publishing automatically generated 'index.ts' barrel." );
+            target.Publish( "index.ts", b.ToString() );
+            b.Clear();
+        }
+
+        if( IsRoot )
+        {
+            if( target.HasSummary )
+            {
+                target.EmitSummary( monitor );
+            }
+            monitor.CloseGroup();
         }
     }
 

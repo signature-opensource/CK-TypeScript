@@ -44,10 +44,12 @@ public abstract partial class TypeScriptFileBase
                 // While publishing, the existence of this 'index.ts' file is checked
                 // and automatic generation is skipped.
                 folder.EnsureBarrel();
+                // We called EnsureBarrel, SetHasExportedSymbol will incremement the file count.
                 folder.SetHasExportedSymbol();
             }
             else if( !unpublishedResourceFile )
             {
+                // This files is published. It counts.
                 folder.IncrementFileCount();
             }
             if( previous == null )
@@ -105,7 +107,7 @@ public abstract partial class TypeScriptFileBase
     }
 
     /// <summary>
-    /// Must return the full content if this file.
+    /// Must return the full content of this file.
     /// </summary>
     /// <param name="monitor">Required monitor for warnings when types from '@local/ck-gen' cannot be resolved.</param>
     /// <param name="tsTypes">The type manager required to handle imports from '@local/ck-gen'.</param>

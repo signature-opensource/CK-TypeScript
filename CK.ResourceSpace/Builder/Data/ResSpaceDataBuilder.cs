@@ -329,11 +329,17 @@ public sealed class ResSpaceDataBuilder
             bLocal.Add( appPackage );
             ++localPackageResourceCount;
         }
-        monitor.Debug( bAll.Skip( 1 )
-                           .Select( x => $"""
-                           {(x.IsLocalPackage ? "(local) " : "        " )}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string(' ', x.ToString().Length + 8)} |{c}" ))}
+        if( monitor.ShouldLogLine( LogLevel.Debug, null, out _ ) )
+        {
+            using( monitor.OpenDebug( "TypeScript packages structure:" ) )
+            {
+                monitor.Debug( bAll.Skip( 1 )
+                                   .Select( x => $"""
+                           {(x.IsLocalPackage ? "(local) " : "        ")}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string( ' ', x.ToString().Length + 8 )} |{c}" ) )}
                            """ )
-                           .Concatenate( Environment.NewLine ) );
+                                   .Concatenate( Environment.NewLine ) );
+            }
+        }
 
         Throw.DebugAssert( "Expected size reached.", packageIndex.Count == packageIndexSize );
         Throw.DebugAssert( "Expected size reached.", resourceIndex.Count == resourceIndexSize );
