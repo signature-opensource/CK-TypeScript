@@ -24,6 +24,7 @@ namespace CK.Ng.Zorro;
 
 [RegisterTypeScriptType( typeof( SimpleUserMessage ) )]
 [RegisterTypeScriptType( typeof( UserMessageLevel ) )]
+[TypeScriptFile( "date-helper.ts", "utcDateToLocal" )]
 [TypeScriptFile( "datetime.pipe.ts", "DateFormatPipe" )]
 [TypeScriptFile( "notification.service.ts", "CKNotificationService" )]
 [TypeScriptFile( "responsive.directive.ts", "ResponsiveDirective" )]
