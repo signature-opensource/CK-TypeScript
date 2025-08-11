@@ -39,13 +39,32 @@ public static partial class TSTestHelperExtensions
         /// Runs the yarn command and fails on error.
         /// </summary>
         /// <param name="yarnCommand">
-        /// When not null, specifies another yarn command that the default one specified by <see cref="CreateTypeScriptRunner"/>.
+        /// When not null, specifies another yarn command that the default one specified by <see cref="CreateTypeScriptRunner"/>
+        /// (that defaults to "test").
         /// </param>
         public void Run( string? yarnCommand = null )
         {
             yarnCommand ??= _yarnCommand;
             YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, yarnCommand, _environmentVariables )
                 .ShouldBeTrue( $"'yarn {yarnCommand}' should be sucessfull." );
+        }
+
+        /// <summary>
+        /// Build the Angular application (by calling <see cref="Run(string?)">Run( "build" )</see>) before running
+        /// the command.
+        /// <para>
+        /// This takes a long time but unfortunately, it's not because the "*.spec.ts" succeed that
+        /// everything is fine: even "src/app.component.ts" may not compile...
+        /// </para>
+        /// </summary>
+        /// <param name="yarnCommand">
+        /// When not null, specifies another yarn command that the default one specified by <see cref="CreateTypeScriptRunner"/>
+        /// (that defaults to "test").
+        /// </param>
+        public void BuildAndRun( string? yarnCommand = null )
+        {
+            Run( "build" );
+            Run( yarnCommand );
         }
 
         /// <summary>
