@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Globalization" Version="3.0.1--0007-develop" />
+    <PackageReference Include="CK.Globalization" Version="3.0.1--0008-develop" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.EmbeddedResources" Version="0.26.2--0002-develop" />
