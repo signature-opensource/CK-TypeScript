@@ -15,13 +15,13 @@ namespace CK.Ng.AspNet.Auth;
 /// </summary>
 [TypeScriptPackage]
 [Requires<CK.AspNet.Auth.TSPackage, CK.Ng.Axios.TSPackage, CK.Ng.Zorro.TSPackage>]
-[NgProviderImport( "AXIOS, provideNgAuthSupport, AuthService" )]
-[NgProviderImport( "AxiosInstance", LibraryName = "axios" )]
-[NgProviderImport( "inject", LibraryName = "@angular/core" )]
+[NgProviderImport( "inject", From = "@angular/core" )]
+[NgProviderImport( "AXIOS, AuthService" )]
+[NgProviderImport( "AxiosInstance", From = "axios" )]
+[NgProviderImport( "provideNgAuthSupport", From = "@local/ck-gen/CK/Ng/AspNet/Auth/auth-service-support" )]
 [NgProvider( "{ provide: AuthService, useFactory: () => new AuthService( inject( AXIOS ) ) }" )]
 [NgProvider( "provideNgAuthSupport()", "#Support" )]
 [TypeScriptFile( "NgAuthService.ts", "NgAuthService" )]
-[TypeScriptFile( "auth-service-support.ts", "provideNgAuthSupport" )]
 public class TSPackage : TypeScriptPackage
 {
 }
