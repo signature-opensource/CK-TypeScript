@@ -121,7 +121,7 @@ public sealed partial class TypeScriptFolder
                 while( e.MoveNext() );
 
                 _exportedTypesSummary.Append( " } from '@local/ck-gen/" )
-                        .Append( f.Folder.Path ).Append( f.Name )
+                        .Append( f.Folder.Path ).Append( f.Name.AsSpan( ..^3 ) )
                         .Append( "';" )
                         .AppendLine();
             }
