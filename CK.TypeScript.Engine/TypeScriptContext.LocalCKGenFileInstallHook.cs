@@ -63,12 +63,13 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
             // => We chose to use the EnsureImport API by extending it to support "more precise"
             //    import paths. This may be less performant than the regex approach but this
             //    is more solid.
-            using var _ = monitor.OpenTrace( $"Handling import from '@local/ck-gen' in {item.Origin}." );
             var code = tsAnalyzer.TryParse( monitor, finalText )?.SourceCode;
             if( code == null )
             {
+                monitor.Error( $"Failed to parse {item.Origin} text." );
                 return false;
             }
+            bool success = true;
             // Consider all the named imports from '@local/ck-gen'.
             // If the import is a "ipmort type {...}", we project the TypeOnly on each imported name.
             var allNamedImports = code.Spans.OfType<ImportStatement>()
@@ -79,7 +80,7 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
                                            .ToList();
             if( allNamedImports.Count > 0 )
             {
-                using( monitor.OpenTrace( $"Transforming import from '@local/ck-gen' to their declaring file for {allNamedImports.Count} types." ) )
+                using( monitor.OpenTrace( $"Transforming import from '@local/ck-gen' in {item.Origin} to their declaring file for {allNamedImports.Count} types." ) )
                 using( var editor = new SourceCodeEditor( monitor, code, tsAnalyzer ) )
                 {
                     foreach( var import in allNamedImports )
@@ -88,7 +89,8 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
                         var path = declaredFilePath( import.ExportedName );
                         if( path == null )
                         {
-                            monitor.Warn( $"Failed to find a file for type '{import.ExportedName}'. Import will remain from '@local/ck-gen'." );
+                            monitor.Error( $"Failed to find a file for type '{import.ExportedName}' in import from '@local/ck-gen'." );
+                            success = false;
                         }
                         else
                         {
@@ -97,7 +99,7 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
                             editor.SetNeedReparse();
                         }
                     }
-                    if( editor.NeedReparse )
+                    if( success && editor.NeedReparse )
                     {
                         if( !editor.Reparse() )
                         {
@@ -107,7 +109,7 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
                     }
                 }
             }
-            return true;
+            return success;
         }
 
         public override void StopInstall( IActivityMonitor monitor, bool success, IResourceSpaceItemInstaller installer )
