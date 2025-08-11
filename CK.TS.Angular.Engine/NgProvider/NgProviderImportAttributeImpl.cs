@@ -37,7 +37,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
     {
         ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 
-        if( Attribute.LibraryName == "@local/ck-gen" )
+        if( Attribute.From == "@local/ck-gen" )
         {
             imports.ImportFromLocalCKGen( Attribute.SymbolNames );
         }
@@ -46,7 +46,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
             // Note: npm packages follow a naming convention:
             // - if name starts with "@" then, it can only be: "@orgName/packageName" (ex: @angular/core)
             // - else it can only be "ng-zorro-antd" (no "/")
-            var realLibraryName = Attribute.LibraryName;
+            var realLibraryName = Attribute.From;
             var subPath = "";
             var parts = realLibraryName.Split( '/' );
             if( parts.Length > 1 )
