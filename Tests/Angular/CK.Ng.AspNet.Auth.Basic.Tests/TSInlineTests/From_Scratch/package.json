@@ -38,7 +38,7 @@
     "@angular/compiler-cli": "^19.2",
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.6.2",
-    "@types/node": "^24.2.0",
+    "@types/node": "^24.2.1",
     "@yarnpkg/sdks": "^3.2.2",
     "axios": "^1.7.7",
     "jest": "^30.0.5",
