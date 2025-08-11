@@ -11,7 +11,7 @@ namespace CK.Ng.Axios;
 [TypeScriptImportLibrary( "axios", "^1.7.7", DependencyKind.PeerDependency, ForceUse = true )]
 [TypeScriptFile( "AXIOSToken.ts", "AXIOS" )]
 [NgProviderImport( "AXIOS" )]
-[NgProviderImport( "default axios, AxiosInstance", LibraryName = "axios" )]
+[NgProviderImport( "default axios, AxiosInstance", From = "axios" )]
 [NgProvider( "{ provide: AXIOS, useValue: axios.create() }" )]
 public class TSPackage : TypeScriptPackage
 {

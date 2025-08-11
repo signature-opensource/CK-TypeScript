@@ -17,9 +17,9 @@ namespace CK.Ng.Zorro;
 [TypeScriptImportLibrary( "@fortawesome/free-solid-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
 
 
-[NgProviderImport( "fr_FR, provideNzI18n", LibraryName = "ng-zorro-antd/i18n" )]
+[NgProviderImport( "fr_FR, provideNzI18n", From = "ng-zorro-antd/i18n" )]
 [NgProvider( "provideNzI18n( fr_FR )" )]
-[NgProviderImport( "provideAnimationsAsync", LibraryName = "@angular/platform-browser/animations/async" )]
+[NgProviderImport( "provideAnimationsAsync", From = "@angular/platform-browser/animations/async" )]
 [NgProvider( "provideAnimationsAsync()" )]
 
 [RegisterTypeScriptType( typeof( SimpleUserMessage ) )]
