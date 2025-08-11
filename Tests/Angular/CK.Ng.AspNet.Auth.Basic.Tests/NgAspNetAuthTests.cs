@@ -19,11 +19,7 @@ public class NgAspNetAuthTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Path = TestHelper.BinFolder;
-        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.PublicPage" );
-        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
-        configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
-        configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
-        configuration.FirstBinPath.Types.Add( typeof( PublicChild.PublicChildComponent ) );
+        AddAssembliesAndTypes( configuration );
         configuration.RevertOrderingNames = true;
 
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
@@ -41,5 +37,14 @@ public class NgAspNetAuthTests
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, server.ServerAddress );
         await TestHelper.SuspendAsync( resume => resume );
         runner.Run();
+    }
+
+    internal static void AddAssembliesAndTypes( Setup.EngineConfiguration configuration )
+    {
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.PublicPage" );
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
+        configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
+        configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
+        configuration.FirstBinPath.Types.Add( typeof( PublicChild.PublicChildComponent ) );
     }
 }

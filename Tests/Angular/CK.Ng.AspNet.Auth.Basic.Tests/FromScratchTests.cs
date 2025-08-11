@@ -61,12 +61,12 @@ public class FromScratchTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.EnsureAspect<TypeScriptAspectConfiguration>();
-        var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
-        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
-        configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
-        configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
+        configuration.FirstBinPath.Path = TestHelper.BinFolder;
+        NgAspNetAuthTests.AddAssembliesAndTypes( configuration );
 
-        ts.TargetProjectPath = root;
+        var tsConfig = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+        tsConfig.TargetProjectPath = root;
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
         var thisAppName = root.LastPart.Replace( ' ', '_' );
