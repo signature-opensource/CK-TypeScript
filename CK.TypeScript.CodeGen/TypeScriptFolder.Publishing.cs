@@ -102,8 +102,7 @@ public sealed partial class TypeScriptFolder
             {
                 _exportedTypesSummary.Append( "import { " );
 
-                _summary.AppendLine();
-                AppendLinePrefix().Append( "   Exported types: " );
+                _summary.Append( " (" );
                 bool atLeastOne = false;
                 do
                 {
@@ -124,9 +123,10 @@ public sealed partial class TypeScriptFolder
                         .Append( f.Folder.Path ).Append( f.Name.AsSpan( ..^3 ) )
                         .Append( "';" )
                         .AppendLine();
+                _summary.Append( ')' );
             }
-            else _summary.Append( " - No exported types" );
-            _summary.Append( '.' ).AppendLine();
+            else _summary.Append( " - No exported types." );
+            _summary.AppendLine();
         }
 
         internal readonly void EmitSummary( IActivityMonitor monitor )
@@ -142,11 +142,8 @@ public sealed partial class TypeScriptFolder
 
     internal void Publish( IActivityMonitor monitor, ref PublishContext target )
     {
-        // Skips empty folder (recursively thanks to the lifted _fileCount).
-        if( _fileCount == 0 ) return;
-        Throw.DebugAssert( _firstChild != null || _firstFile != null );
-        var cFolder = _firstChild;
-        var cFile = _firstFile;
+        TypeScriptFolder? cFolder = _firstChild;
+        TypeScriptFileBase? cFile = _firstFile;
         if( IsRoot )
         {
             monitor.OpenInfo( "Published TypeScript Root folder to the <Code> generated container." );
@@ -205,7 +202,7 @@ public sealed partial class TypeScriptFolder
             Throw.DebugAssert( b.Length == 0 );
             AddExportsToBarrel( "/", b );
             Throw.DebugAssert( "Because HasExportedSymbol.", b.Length > 0 );
-            monitor.Trace( "Publishing automatically generated 'index.ts' barrel." );
+            monitor.Trace( $"Publishing automatically generated '{Path}index.ts' barrel." );
             target.Publish( "index.ts", b.ToString() );
             b.Clear();
         }
