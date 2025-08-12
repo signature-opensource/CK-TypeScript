@@ -1,4 +1,5 @@
 import { NgModule, Provider, EnvironmentProviders } from '@angular/core';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { DemoNgModule } from '../MiscDemo/demo-ng/demo-ng.module';
 import { SomeAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/SomeAuthService';
 
@@ -51,6 +52,7 @@ export class CKGenAppModule {
 
     static Providers : SourcedProviders = SourcedProviders.createFrom( [
 CKGenAppModule.s( {provide: SomeAuthService, useValue: new SomeAuthService( 'Some explicit parameter' )}, "CK.Ng.AspNet.Auth.SomeAuthPackage" ),
+CKGenAppModule.s( provideAnimationsAsync(), "CK.Ng.Zorro.TSPackage" ),
 
     ] );
 }

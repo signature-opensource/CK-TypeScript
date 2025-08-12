@@ -40,7 +40,11 @@ public class AngularTests
                                               typeof( PublicFooterComponent ),
                                               typeof( PublicTopbarComponent ),
                                               // CK.Ng.Zorro
-                                              typeof( CK.Ng.Zorro.TSPackage )
+                                              typeof( CK.Ng.Zorro.TSPackage ),
+                                              // CK.Ng.Zorro.BackOffice
+                                              typeof( CK.Ng.Zorro.BackOfficePackage ),
+                                              typeof( CK.Ng.Zorro.ActionBarComponent ),
+                                              typeof( CK.Ng.Zorro.GenericFormComponent )
                                             );
         await configuration.RunSuccessfullyAsync();
 

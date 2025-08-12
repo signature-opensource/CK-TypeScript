@@ -1,0 +1,78 @@
+@if( actions().left.length > 0 || actions().right.length > 0 ) {
+    <div class="ck-action-bar-left-buttons">
+        @if( actions().left.length > 0 ) {
+            @for( action of actions().left; track action.name ) {
+                @if( shouldShow( action ) ) {
+                    @if( action.isDanger ) {
+                        <button
+                            nz-button
+                            nzType="primary"
+                            nzDanger
+                            (click)="buttonClicked(action)"
+                            nz-tooltip
+                            [nzTooltipTitle]="tooltipTemplate"
+                            [nzTooltipTitleContext]="{ $implicit: action }"
+                            [class]="getButtonClass(action)"
+                            [disabled]="isDisabled(action)">
+                            <fa-icon class="button-icon" *ngIf="action.icon" [icon]="action.icon"></fa-icon>
+                            <span class="button-span">{{ action.displayName }}</span>
+                        </button>
+                    } @else {
+                        <button
+                            nz-button
+                            nzType="primary"
+                            (click)="buttonClicked(action)"
+                            nz-tooltip
+                            [nzTooltipTitle]="tooltipTemplate"
+                            [nzTooltipTitleContext]="{ $implicit: action }"
+                            [class]="getButtonClass(action)"
+                            [disabled]="isDisabled(action)"
+                        >
+                            <fa-icon class="button-icon" *ngIf="action.icon" [icon]="action.icon"></fa-icon>
+                            <span class="button-span">{{ action.displayName }}</span>
+                        </button>
+                    }
+                }
+            }
+        }
+    </div>
+    <div class="ck-action-bar-right-buttons">
+        @if( actions().right.length > 0 ) {
+            @for( action of actions().right; track action.name ) {
+                @if( shouldShow( action ) ) {
+                    @if( action.isDanger ) {
+                        <button
+                            nz-button
+                            nzType="primary"
+                            nzDanger
+                            (click)="buttonClicked(action)"
+                            nz-tooltip
+                            [nzTooltipTitle]="tooltipTemplate"
+                            [nzTooltipTitleContext]="{ $implicit: action }"
+                            [class]="getButtonClass(action)"
+                            [disabled]="isDisabled(action)">
+                            <fa-icon class="button-icon" *ngIf="action.icon" [icon]="action.icon"></fa-icon>
+                            <span class="button-span">{{ action.displayName }}</span>
+                        </button>
+                    } @else {
+                        <button
+                            nz-button
+                            nzType="primary"
+                            (click)="buttonClicked(action)"
+                            nz-tooltip
+                            [nzTooltipTitle]="tooltipTemplate"
+                            [nzTooltipTitleContext]="{ $implicit: action }"
+                            [class]="getButtonClass(action)"
+                            [disabled]="isDisabled(action)">
+                            <fa-icon class="button-icon" *ngIf="action.icon" [icon]="action.icon"></fa-icon>
+                            <span class="button-span">{{ action.displayName }}</span>
+                        </button>
+                    }
+                }
+            }
+        }
+    </div>
+    <ng-template #tooltipTemplate let-action>
+        <span>{{ action.displayName }}</span>
+    </ng-template>
+}

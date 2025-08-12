@@ -177,6 +177,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@angular/animations@npm:^19":
+  version: 19.2.14
+  resolution: "@angular/animations@npm:19.2.14"
+  dependencies:
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": 19.2.14
+    "@angular/core": 19.2.14
+  checksum: 10/2f012476138cca8a8695d3f9e55b40624034a1304e6f041fbb7c258a570a17aed79c575e9b480716580746d7ff849476f7df35676b1abeb55a336ec88c8db257
+  languageName: node
+  linkType: hard
+
 "@angular/build@npm:19.2.15":
   version: 19.2.15
   resolution: "@angular/build@npm:19.2.15"
@@ -2720,6 +2732,34 @@ __metadata:
   version: 0.25.5
   resolution: "@esbuild/win32-x64@npm:0.25.5"
   conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@fortawesome/angular-fontawesome@npm:^1":
+  version: 1.0.0
+  resolution: "@fortawesome/angular-fontawesome@npm:1.0.0"
+  dependencies:
+    "@fortawesome/fontawesome-svg-core": "npm:^6.7.1"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    "@angular/core": ^19.0.0
+  checksum: 10/ce4a08403ebf2705520571bc242b1c002fb7a409785e1141625e8dd192062de7b21944ee1dde46d81c45fe4ca719f1fd721f89c446d0198331af4aa8fa02918d
+  languageName: node
+  linkType: hard
+
+"@fortawesome/fontawesome-common-types@npm:6.7.2":
+  version: 6.7.2
+  resolution: "@fortawesome/fontawesome-common-types@npm:6.7.2"
+  checksum: 10/3c2e938afe6f5939bd63181faaec7b062902d9ed970c75d6becb1fd8e5ca0ed937e7d1513bd7ae545da407d0682039e50730cdb3136b58656128838ea2c58ac0
+  languageName: node
+  linkType: hard
+
+"@fortawesome/fontawesome-svg-core@npm:^6.7.1":
+  version: 6.7.2
+  resolution: "@fortawesome/fontawesome-svg-core@npm:6.7.2"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": "npm:6.7.2"
+  checksum: 10/a3767631329aaa8c1bfafc9470718628533ceb42365774cd0c121477e0f3125f3cce4c2447058deee2874829ce11aa7a3fe183b0000bad81cf5ed0449c8470ef
   languageName: node
   linkType: hard
 
@@ -6045,6 +6085,7 @@ __metadata:
   resolution: "ck-ts-angular@workspace:."
   dependencies:
     "@angular-devkit/build-angular": "npm:^19.2.14"
+    "@angular/animations": "npm:^19"
     "@angular/cli": "npm:^19.2.14"
     "@angular/common": "npm:^19.2"
     "@angular/compiler": "npm:^19.2"
@@ -6054,6 +6095,7 @@ __metadata:
     "@angular/platform-browser": "npm:^19.2"
     "@angular/platform-browser-dynamic": "npm:^19.2"
     "@angular/router": "npm:^19.2"
+    "@fortawesome/angular-fontawesome": "npm:^1"
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.15.29"
     "@yarnpkg/sdks": "npm:^3.2.2"
@@ -12734,7 +12776,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:2.8.1":
+"tslib@npm:2.8.1, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10/3e2e043d5c2316461cb54e5c7fe02c30ef6dccb3384717ca22ae5c6b5bc95232a6241df19c622d9c73b809bea33b187f6dbc73030963e29950c2141bc32a79f7

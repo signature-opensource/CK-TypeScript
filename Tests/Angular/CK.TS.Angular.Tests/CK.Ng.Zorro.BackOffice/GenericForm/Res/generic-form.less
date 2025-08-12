@@ -1,0 +1,33 @@
+.generic-form-item.horizontal {
+    display: flex;
+
+    .generic-form-label.horizontal {
+        flex: 1;
+        text-align: left;
+    }
+
+    .generic-form-control.horizontal {
+        flex: 3;
+    }
+}
+
+.generic-form-item.vertical {
+    margin-bottom: @ck-generic-form-item-vertical-bottom-margin;
+    padding-bottom: @ck-generic-form-item-vertical-bottom-padding;
+}
+
+.errors {
+    display: flex;
+    flex-direction: column;
+
+    &.general-form {
+        border: @ck-generic-form-general-errors-border;
+        padding: @ck-generic-form-general-errors-padding;
+        margin-bottom: @ck-generic-form-general-errors-bottom-margin;
+        border-radius: @ck-generic-form-general-errors-border-radius;
+    }
+
+    .form-control-error {
+        color: @ck-generic-form-error-color;
+    }
+}
