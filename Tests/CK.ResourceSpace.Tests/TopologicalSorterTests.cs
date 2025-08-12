@@ -3,6 +3,7 @@ using CK.EmbeddedResources;
 using NUnit.Framework;
 using Shouldly;
 using System.Linq;
+using System.Text.RegularExpressions;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.ResourceSpace.Tests;
@@ -313,4 +314,59 @@ public partial class TopologicalSorterTests
         }
     }
 
+    [Test]
+    public void stupid_auto_Requires_and_RequiredBy_are_silently_ignored()
+    {
+        var config = new ResSpaceConfiguration();
+        var dA = CreatePackage( config, "A" );
+        dA.Requires.Add( dA );
+        dA.RequiredBy.Add( dA );
+        var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var builder = new ResSpaceDataBuilder( collector );
+        builder.Build( TestHelper.Monitor ).ShouldNotBeNull();
+    }
+
+    [Test]
+    public void dependent_Groups_cannot_contain_the_same_item()
+    {
+        var config = new ResSpaceConfiguration();
+        var dA = CreatePackage( config, "A" );
+        dA.IsGroup = true;
+        var dB = CreatePackage( config, "B" );
+        dB.IsGroup = true;
+        var dE = CreatePackage( config, "E" );
+        dA.Requires.Add( dB );
+        dA.Children.Add( dE );
+        dB.Children.Add( dE );
+
+        var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var builder = new ResSpaceDataBuilder( collector );
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            builder.Build( TestHelper.Monitor ).ShouldBeNull();
+            logs.ShouldContain( """
+                Cyclic dependency error:
+                'A' contains 'E', 'B' contains 'E', 'A' requires 'B'
+                """ );
+        }
+    }
+
+    [Test]
+    public void item_cannot_belong_to_2_packages()
+    {
+        var config = new ResSpaceConfiguration();
+        var dA = CreatePackage( config, "A" );
+        var dB = CreatePackage( config, "B" );
+        var dE = CreatePackage( config, "E" );
+        dA.Children.Add( dE );
+        dB.Children.Add( dE );
+
+        var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var builder = new ResSpaceDataBuilder( collector );
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            builder.Build( TestHelper.Monitor ).ShouldBeNull();
+            logs.ShouldContain( "Multiple package error: 'E' is contained in 'B' and 'A' that are both Packages (and not Groups)." );
+        }
+    }
 }

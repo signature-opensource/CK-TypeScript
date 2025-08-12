@@ -87,15 +87,15 @@ sealed partial class CoreCollector
                     p.Package = InitialResolveRef( "Package", p.Package );
                     success &= p.Package.IsValid;
                 }
-                success &= InitialResolveReferences( "Requires", p._requires );
-                success &= InitialResolveReferences( "RequiredBy", p._requiredBy );
+                success &= InitialResolveReferences( "Requires", p._requires, autoRemove: p );
+                success &= InitialResolveReferences( "RequiredBy", p._requiredBy, autoRemove: p );
                 success &= InitialResolveReferences( "Groups", p._groups );
                 success &= InitialResolveReferences( "Children", p._children );
             }
             return success;
         }
 
-        bool InitialResolveReferences( string relName, List<Ref>? list )
+        bool InitialResolveReferences( string relName, List<Ref>? list, ResPackageDescriptor? autoRemove = null )
         {
             if( list == null ) return true;
             bool success = true;
@@ -106,14 +106,21 @@ sealed partial class CoreCollector
                 // been added to the list.
                 if( r.IsValid )
                 {
-                    r = InitialResolveRef( relName, r );
-                    if( r.IsValid )
+                    if( autoRemove != null && r.FullName == autoRemove.FullName )
                     {
-                        list[i] = r;
+                        list.RemoveAt( i-- );
                     }
                     else
                     {
-                        success = false;
+                        r = InitialResolveRef( relName, r );
+                        if( r.IsValid )
+                        {
+                            list[i] = r;
+                        }
+                        else
+                        {
+                            success = false;
+                        }
                     }
                 }
             }
@@ -380,7 +387,7 @@ sealed partial class CoreCollector
 
         ref struct SortContext
         {
-            public List<(ResPackageDescriptor P,Relationship R)>? CycleErrors;
+            public List<(ResPackageDescriptor P1,Relationship R, ResPackageDescriptor P2)>? CycleErrors;
             readonly HashSet<ResPackageDescriptor> _unsortedPackagesBuffer;
             readonly List<ResPackageDescriptor> _sortedPackagesBuffer;
             readonly Comparison<ResPackageDescriptor> _order;
@@ -399,14 +406,15 @@ sealed partial class CoreCollector
             internal bool InitializeError( ResPackageDescriptor p )
             {
                 Throw.DebugAssert( CycleErrors == null );
-                CycleErrors = new() { (p, Relationship.None ) };
+                CycleErrors = new();
                 return false;
             }
 
-            internal readonly bool AddError( ResPackageDescriptor p, Relationship relationship )
+            internal readonly bool AddError( ResPackageDescriptor p1, Relationship relationship, ResPackageDescriptor p2 )
             {
                 Throw.DebugAssert( CycleErrors != null );
-                CycleErrors.Add( (p,relationship) );
+                Throw.DebugAssert( relationship is not Relationship.None );
+                CycleErrors.Add( (p1,relationship,p2) );
                 return false;
             }
 
@@ -414,14 +422,14 @@ sealed partial class CoreCollector
             {
                 Throw.DebugAssert( CycleErrors != null );
                 var b = new StringBuilder();
-                CycleErrors.Reverse();
+                bool atLeastOne = false;
                 foreach( var e in CycleErrors )
                 {
-                    b.Append( '\'' ).Append( e.P.FullName ).Append( '\'' );
-                    if( e.R != Relationship.None )
-                    {
-                        b.Append( e.R switch { Relationship.Requires => " requires ", _ => " contains " } );
-                    }
+                    if( atLeastOne ) b.Append( ", " );
+                    atLeastOne = true;
+                    b.Append( '\'' ).Append( e.P1.FullName ).Append( '\'' )
+                     .Append( e.R switch { Relationship.Requires => " requires ", _ => " contains " } )
+                     .Append( '\'' ).Append( e.P2.FullName ).Append( '\'' );
                 }
                 return b.ToString();
             }
@@ -516,7 +524,7 @@ sealed partial class CoreCollector
                     {
                         if( !HandlePackageHeader( ref context, group ) )
                         {
-                            return false;
+                            return context.AddError( group, Relationship.Contains, p );
                         }
                     }
                 }
@@ -567,7 +575,7 @@ sealed partial class CoreCollector
         {
             if( !HandlePackageFooter( ref context, target ) )
             {
-                return context.AddError( p, Relationship.Requires );
+                return context.AddError( p, Relationship.Requires, target );
             }
             target._hasIncomingDeps = true;
             p._idxHeader = Math.Max( p._idxHeader, target._idxFooter + 1 );
@@ -620,7 +628,7 @@ sealed partial class CoreCollector
         {
             if( !HandlePackageFooter( ref context, child ) )
             {
-                return context.AddError( p, Relationship.Contains );
+                return context.AddError( p, Relationship.Contains, child );
             }
             child._hasIncomingDeps = true;
             p._idxFooter = Math.Max( p._idxFooter, child._idxFooter + 1 );
