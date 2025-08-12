@@ -30,7 +30,7 @@ public sealed class TypeScriptFileAttribute : ContextBoundDelegationAttribute
     /// <summary>
     /// Gets the resource file path.
     /// <para>
-    /// The resource must exist in the "Res/" or "Res[After]" folder.
+    /// The resource must exist in the "Res/" or "Res[After]/" folder.
     /// </para>
     /// </summary>
     public string ResourcePath { get; }

@@ -100,6 +100,8 @@ public abstract partial class TypeScriptFileBase
                                             string? defaultValueSource = null )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( typeName );
+        Throw.CheckArgument( "Expected single type name. Commas or semicolons are not supported.",
+                             typeName.AsSpan().ContainsAny( ',', ';' ) is false );
         var t = new TSDeclaredType( this, typeName, additionalImports, defaultValueSource );
         _declaredOnlyTypes ??= new List<ITSDeclaredFileType>();
         _declaredOnlyTypes.Add( t );

@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using CK.EmbeddedResources;
 using CK.Setup;
@@ -47,15 +48,17 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         // When no target folder is specified, we only register its TS type names and the resource "stays"
         // in its container.
         //
-        bool isPublishedByCodeContainer = Attribute.TargetFolder != null;
+        bool hasTargetFolder = Attribute.TargetFolder != null;
+        bool hasExportedTypes = Attribute.TypeNames.Length > 0;
         EmbeddedResources.ResourceLocator resource;
         NormalizedPath targetPath;
-        if( isPublishedByCodeContainer )
+        if( hasTargetFolder )
         {
             if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out resource ) )
             {
                 return false;
             }
+            // TargetFolder + Name only.
             targetPath = Attribute.TargetFolder;
             targetPath = targetPath.ResolveDots();
             targetPath = targetPath.Combine( Path.GetFileName( Attribute.ResourcePath ) );
@@ -66,15 +69,30 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
             {
                 return false;
             }
+            if( !hasExportedTypes )
+            {
+                // No TargetFolder nor TypeNames: this only check that the file exists...
+                return true;
+            }
+            // Regular case.
             targetPath = tsPackage.TypeScriptFolder.Combine( Attribute.ResourcePath );
         }
-        var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath, isPublishedByCodeContainer );
+        bool success = true;
+        var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath, hasTargetFolder );
         foreach( var tsType in Attribute.TypeNames )
         {
             if( string.IsNullOrWhiteSpace( tsType ) ) continue;
-            file.DeclareType( tsType );
+            if( tsType.AsSpan().ContainsAny( ',', ';' ) )
+            {
+                monitor.Error( $"[TypeScriptFile( \"{Attribute.ResourcePath}\", \"{tsType}\" )] on '{Type:N}': expected single type name. Commas or semicolons are not supported." );
+                success = false;
+            }
+            else
+            {
+                file.DeclareType( tsType );
+            }
         }
-        return true;
+        return success;
     }
 
 }
