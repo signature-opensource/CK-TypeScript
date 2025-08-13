@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.Reflection;
+using CK.Engine.TypeCollector;
 
 namespace CK.Core;
 
@@ -10,8 +11,8 @@ public sealed partial class ResPackageDescriptor
     internal bool InitializeFromType( IActivityMonitor monitor, bool? isOptional )
     {
         Throw.DebugAssert( _type != null );
-        _isGroup = !typeof( IResourcePackage ).IsAssignableFrom( _type.Type );
-        _isOptional = isOptional ?? !IsRequired( _type.Type );
+        _isGroup = !_type.Interfaces.Contains( _context.ResourcePackageType );
+        _isOptional = isOptional ?? !IsRequired( _type );
         // Detect a useless CKPackage.xml for the type: currently, there's
         // no "merge" possible: the type drives.
         var descriptor = _resources.GetResource( "CKPackage.xml" );
@@ -124,11 +125,10 @@ public sealed partial class ResPackageDescriptor
             }
         }
 
-        static bool IsRequired( Type type )
+        static bool IsRequired( ICachedType type )
         {
-            return type.GetCustomAttributes( inherit: false )
-                       .OfType<IOptionalResourceGroupAttribute>()
-                       .All( a => !a.IsOptional );
+            return type.RawAttributes.OfType<IOptionalResourceGroupAttribute>()
+                                     .All( a => !a.IsOptional );
         }
     }
 

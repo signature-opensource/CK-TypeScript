@@ -14,6 +14,7 @@ sealed class ResPackageDescriptorContext
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     readonly GlobalTypeCache _typeCache;
     readonly HashSet<ResourceLocator> _codeHandledResources;
+    readonly ICachedType _resourcePackageType;
     int _singleMappingCount;
     bool _closed;
 
@@ -22,6 +23,7 @@ sealed class ResPackageDescriptorContext
         _codeHandledResources = new HashSet<ResourceLocator>();
         _packageIndex = packageIndex;
         _typeCache = typeCache;
+        _resourcePackageType = typeCache.Get( typeof( IResourcePackage ) );
     }
 
     public bool Closed => _closed;
@@ -35,6 +37,8 @@ sealed class ResPackageDescriptorContext
     public int SingleMappingCount => _singleMappingCount;
 
     public GlobalTypeCache TypeCache => _typeCache;
+
+    public ICachedType ResourcePackageType => _resourcePackageType;
 
     public HashSet<ResourceLocator> Close()
     {
