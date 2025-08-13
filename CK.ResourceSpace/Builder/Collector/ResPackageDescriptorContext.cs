@@ -47,12 +47,6 @@ sealed class ResPackageDescriptorContext
         return _codeHandledResources;
     }
 
-    public void RegisterCodeHandledResources( ResourceLocator resource )
-    {
-        Throw.CheckState( !Closed );
-        _codeHandledResources.Add( resource );
-    }
-
     internal bool AddSingleMapping( IActivityMonitor monitor, string alias, ResPackageDescriptor p )
     {
         Throw.DebugAssert( !string.IsNullOrWhiteSpace( alias ) );
@@ -86,5 +80,10 @@ sealed class ResPackageDescriptorContext
         ++_singleMappingCount;
         _packageIndex.Add( alias, p );
         return true;
+    }
+
+    public void RegisterCodeHandledResources( ResourceLocator resource )
+    {
+        _codeHandledResources.Add( resource );
     }
 }

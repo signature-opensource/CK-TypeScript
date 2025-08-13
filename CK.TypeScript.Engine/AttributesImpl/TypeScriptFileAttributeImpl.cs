@@ -34,9 +34,13 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
     /// <inheritdoc/>
-    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor, TypeScriptContext context, TypeScriptGroupOrPackageAttributeImpl tsPackage, ResPackageDescriptor d, ResSpaceConfiguration spaceBuilder )
+    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+                                                             TypeScriptContext context,
+                                                             TypeScriptGroupOrPackageAttributeImpl tsPackage,
+                                                             ResPackageDescriptor d,
+                                                             ResSpaceConfiguration spaceBuilder )
     {
-        // There is currently no way to define a target path for a specific resource in reource container
+        // There is currently no way to define a target path for a specific resource in resource container
         // (resource containers have no notion of "target folder").
         // So we use the TypeScript CodeGen model for this: we transfer the resource to the code by
         // removing/hiding the resource from its container and registering the resource as a published one.
@@ -54,7 +58,7 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         NormalizedPath targetPath;
         if( hasTargetFolder )
         {
-            if( !d.RemoveExpectedCodeHandledResource( monitor, Attribute.ResourcePath, out resource ) )
+            if( !spaceBuilder.RemoveExpectedCodeHandledResource( monitor, d, Attribute.ResourcePath, out resource ) )
             {
                 return false;
             }
@@ -94,5 +98,4 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         }
         return success;
     }
-
 }

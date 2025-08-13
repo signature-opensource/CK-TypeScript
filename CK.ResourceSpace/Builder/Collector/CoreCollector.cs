@@ -145,6 +145,37 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         return p;
     }
 
+    public void RemoveCodeHandledResource( ResPackageDescriptor package, ResourceLocator resource )
+    {
+        Throw.CheckArgument( "Package/Context mismatch.", package.Context == _packageDescriptorContext );
+        Throw.CheckArgument( "Resource/Package mismatch.", resource.Container == package.Resources || resource.Container == package.AfterResources );
+        _packageDescriptorContext.RegisterCodeHandledResources( resource );
+    }
+
+    public bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor, ResPackageDescriptor package, string resourceName, out ResourceLocator resource )
+    {
+        if( !package.ResourcesInnerContainer.TryGetExpectedResource( monitor,
+                                                                       resourceName,
+                                                                       out resource,
+                                                                       otherContainers: package.AfterResourcesInnerContainer ) )
+        {
+            return false;
+        }
+        _packageDescriptorContext.RegisterCodeHandledResources( resource );
+        return true;
+    }
+
+    public bool RemoveCodeHandledResource( ResPackageDescriptor package, string resourceName, out ResourceLocator resource )
+    {
+        if( package.ResourcesInnerContainer.TryGetResource( resourceName, out resource )
+            || package.AfterResourcesInnerContainer.TryGetResource( resourceName, out resource ) )
+        {
+            _packageDescriptorContext.RegisterCodeHandledResources( resource );
+            return true;
+        }
+        return false;
+    }
+
     void RemoveDefinitelyOptional( ResPackageDescriptor p )
     {
         Throw.DebugAssert( p.IsOptional );

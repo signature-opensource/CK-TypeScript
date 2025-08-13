@@ -103,63 +103,6 @@ public sealed partial class ResPackageDescriptor
     internal IResourceContainer AfterResourcesInnerContainer => _afterResources.InnerContainer;
 
     /// <summary>
-    /// Removes a resource that must belong to <see cref="Resources"/> or <see cref="AfterResources"/>
-    /// from the stored resources (strictly speaking, the resource is "hidden").
-    /// The same resource can be removed more than once: the resource is searched in the actual container. 
-    /// <para>
-    /// This enable code generators to take control of a resource that they want to handle directly.
-    /// The resource will no more appear in the final stores and won't be handled by
-    /// <see cref="ResourceSpaceFolderHandler"/> and <see cref="ResourceSpaceFileHandler"/>.
-    /// </para>
-    /// <para>
-    /// How the removed resource is "transferred" (or not) in the <see cref="ResSpaceCollector.GeneratedCodeContainer"/>
-    /// is up to the code generators.
-    /// </para>
-    /// </summary>
-    /// <param name="resource">The resource to remove from stores.</param>
-    public void RemoveCodeHandledResource( ResourceLocator resource )
-    {
-        Throw.CheckArgument( resource.Container == Resources || resource.Container == AfterResources );
-        _context.RegisterCodeHandledResources( resource );
-    }
-
-    /// <summary>
-    /// Finds the <paramref name="resourceName"/> that must exist in <see cref="Resources"/> or <see cref="AfterResources"/>
-    /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="resourceName">The resource name to find.</param>
-    /// <param name="resource">The found resource.</param>
-    /// <returns>True on success, false if the resource cannot be found (an error is logged).</returns>
-    public bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor, string resourceName, out ResourceLocator resource )
-    {
-        if( !_resources.InnerContainer.TryGetExpectedResource( monitor, resourceName, out resource, _afterResources.InnerContainer ) )
-        {
-            return false;
-        }
-        _context.RegisterCodeHandledResources( resource );
-        return true;
-    }
-
-    /// <summary>
-    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
-    /// and calls <see cref="RemoveCodeHandledResource(ResourceLocator)"/>.
-    /// </summary>
-    /// <param name="resourceName">The resource name to find.</param>
-    /// <param name="resource">The found (and removed) resource.</param>
-    /// <returns>True if the resource has been found and removed, false otherwise.</returns>
-    public bool RemoveCodeHandledResource( string resourceName, out ResourceLocator resource )
-    {
-        if( _resources.InnerContainer.TryGetResource( resourceName, out resource )
-            || _afterResources.InnerContainer.TryGetResource( resourceName, out resource ) )
-        {
-            _context.RegisterCodeHandledResources( resource );
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
     /// Adds a mapping from a name to this package descriptor.
     /// The <paramref name="alias"/> must not be already associated to a package descriptor
     /// otherwise an error is logged and false is returned.
@@ -257,11 +200,13 @@ public sealed partial class ResPackageDescriptor
     /// </summary>
     public IList<Ref> Groups => _groups ??= new List<Ref>();
 
+    internal ResPackageDescriptorContext Context => _context;
+
     internal bool CheckContext( IActivityMonitor monitor, string relName, ResPackageDescriptorContext expected )
     {
         if( _context != expected )
         {
-            monitor.Error( $"'{relName}' relationship context mismatch. The package '{ToString()}' belongs to another collector." );
+            monitor.Error( $"'{relName}' relationship context mismatch. The package '{_fullName}' belongs to another collector." );
             return false;
         }
         return true;

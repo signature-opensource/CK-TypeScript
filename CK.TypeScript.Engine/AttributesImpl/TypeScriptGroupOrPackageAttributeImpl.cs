@@ -163,7 +163,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         if( d == null ) return false;
         d.IsGroup = _isGroup;
         // Handles barrel.
-        if( d.RemoveCodeHandledResource( "index.ts", out var barrel ) )
+        if( spaceBuilder.RemoveCodeHandledResource( d, "index.ts", out var barrel ) )
         {
             var targetPath = _typeScriptFolder.AppendPart( "index.ts" );
             context.Root.Root.FindOrCreateResourceFile( barrel, targetPath );

@@ -35,6 +35,14 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
                                                  ResPackageDescriptor d,
                                                  ResSpaceConfiguration resourcesConfiguration )
     {
+        return true;
+    }
+
+    protected override bool OnResPackageAvailable( IActivityMonitor monitor,
+                                                   TypeScriptContext context,
+                                                   TypeScriptGroupOrPackageAttributeImpl tsPackage,
+                                                   ResPackage resPackage )
+    {
         ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 
         if( Attribute.From == "@local/ck-gen" )

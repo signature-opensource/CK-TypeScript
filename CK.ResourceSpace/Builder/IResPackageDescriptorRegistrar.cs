@@ -1,10 +1,11 @@
 using CK.EmbeddedResources;
 using CK.Engine.TypeCollector;
+using System.Resources;
 
 namespace CK.Core;
 
 /// <summary>
-/// This is the only way to instantiate <see cref="ResPackageDescriptor"/>.
+/// This is the only way to create <see cref="ResPackageDescriptor"/> instances.
 /// </summary>
 public interface IResPackageDescriptorRegistrar
 {
@@ -50,12 +51,12 @@ public interface IResPackageDescriptorRegistrar
     /// is specified by the CKPackage manifest and if there is no CKPackage manifest, this is false.
     /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  string fullName,
-                                                  NormalizedPath defaultTargetPath,
-                                                  IResourceContainer resourceStore,
-                                                  IResourceContainer resourceAfterStore,
-                                                  bool? isOptional );
+    ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                           string fullName,
+                                           NormalizedPath defaultTargetPath,
+                                           IResourceContainer resourceStore,
+                                           IResourceContainer resourceAfterStore,
+                                           bool? isOptional );
 
     /// <summary>
     /// Registers a package. It must not already exist: <paramref name="type"/> must not have been already registered.
@@ -76,10 +77,50 @@ public interface IResPackageDescriptorRegistrar
     /// </para>
     /// </param>
     /// <returns>The package descriptor on success, null on error.</returns>
-    public ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
-                                                  ICachedType type,
-                                                  NormalizedPath defaultTargetPath,
-                                                  bool? isOptional = null, 
-                                                  bool ignoreLocal = false );
+    ResPackageDescriptor? RegisterPackage( IActivityMonitor monitor,
+                                           ICachedType type,
+                                           NormalizedPath defaultTargetPath,
+                                           bool? isOptional = null, 
+                                           bool ignoreLocal = false );
 
+    /// <summary>
+    /// Removes a resource that must belong to the <paramref name="package"/>'s Resources or AfterResources
+    /// from the package's resources (strictly speaking, the resource is "hidden").
+    /// The same resource can be removed more than once. 
+    /// <para>
+    /// This enable code generators to take control of a resource that they want to handle directly.
+    /// The resource will no more appear in the package's resources.
+    /// </para>
+    /// <para>
+    /// How the removed resource is "transferred" (or not) in the <see cref="ResSpaceCollector.GeneratedCodeContainer"/>
+    /// is up to the code generators.
+    /// </para>
+    /// </summary>
+    /// <param name="package">The package that contains the resource.</param>
+    /// <param name="resource">The resource to remove from stores.</param>
+    void RemoveCodeHandledResource( ResPackageDescriptor package, ResourceLocator resource );
+
+    /// <summary>
+    /// Finds the <paramref name="resourceName"/> that must exist in the <paramref name="package"/>'s Resources or AfterResources
+    /// and calls <see cref="RemoveCodeHandledResource"/> or logs an error if the resource is not found.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="package">The package that contains the resource.</param>
+    /// <param name="resourceName">The resource name to find.</param>
+    /// <param name="resource">The found resource.</param>
+    /// <returns>True on success, false if the resource cannot be found (an error is logged).</returns>
+    bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor,
+                                            ResPackageDescriptor package,
+                                            string resourceName,
+                                            out ResourceLocator resource );
+
+    /// <summary>
+    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// and calls <see cref="RemoveCodeHandledResource"/>.
+    /// </summary>
+    /// <param name="package">The package that contains the resource.</param>
+    /// <param name="resourceName">The resource name to find.</param>
+    /// <param name="resource">The found (and removed) resource.</param>
+    /// <returns>True if the resource has been found and removed, false otherwise.</returns>
+    bool RemoveCodeHandledResource( ResPackageDescriptor package, string resourceName, out ResourceLocator resource );
 }

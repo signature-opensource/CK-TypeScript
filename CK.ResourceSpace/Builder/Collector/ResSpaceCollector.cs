@@ -130,4 +130,21 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
         return _coreCollector.RegisterPackage( monitor, type, defaultTargetPath, isOptional, ignoreLocal );
     }
 
+    /// <inheritdoc />
+    public void RemoveCodeHandledResource( ResPackageDescriptor package, ResourceLocator resource )
+    {
+        _coreCollector.RemoveCodeHandledResource( package, resource );
+    }
+
+    /// <inheritdoc />
+    public bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor, ResPackageDescriptor package, string resourceName, out ResourceLocator resource )
+    {
+        return _coreCollector.RemoveExpectedCodeHandledResource( monitor, package, resourceName, out resource );
+    }
+
+    /// <inheritdoc />
+    public bool RemoveCodeHandledResource( ResPackageDescriptor package, string resourceName, out ResourceLocator resource )
+    {
+        return _coreCollector.RemoveCodeHandledResource( package, resourceName, out resource );
+    }
 }

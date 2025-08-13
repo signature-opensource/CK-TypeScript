@@ -33,6 +33,14 @@ public partial class NgProviderAttributeImpl : TypeScriptGroupOrPackageAttribute
                                                     ResPackageDescriptor d,
                                                     ResSpaceConfiguration resourcesConfiguration )
     {
+        return true;
+    }
+
+    protected override bool OnResPackageAvailable( IActivityMonitor monitor,
+                                                   TypeScriptContext context,
+                                                   TypeScriptGroupOrPackageAttributeImpl tsPackage,
+                                                   ResPackage resPackage )
+    {
         var angular = context.GetAngularCodeGen();
         var source = Type.ToCSharpName() + Attribute.SourceNameSuffix;
         angular.AddNgProvider( Attribute.ProviderCode, source );
