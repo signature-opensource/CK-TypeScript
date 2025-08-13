@@ -182,7 +182,7 @@ public class LiveTests
         var spaceBuilder = new ResSpaceBuilder( spaceData );
         var installer = new InitialFileSystemInstaller( testRootPath.AppendPart("App") );
         var localesHandler = new LocalesResourceHandler( installer,
-                                                         spaceData.SpaceDataCache,
+                                                         spaceData.CoreData.SpaceDataCache,
                                                          "locales",
                                                          new ActiveCultureSet( activeCultures.Split( ",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )
                                                                                              .Select( NormalizedCultureInfo.EnsureNormalizedCultureInfo ) ),

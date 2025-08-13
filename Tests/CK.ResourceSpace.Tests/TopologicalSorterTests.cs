@@ -34,12 +34,12 @@ public partial class TopologicalSorterTests
 
         var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
         var builder = new ResSpaceDataBuilder( collector );
-        var spaceData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var coreData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull().CoreData;
 
         if( !revertOrdering )
         {
-            spaceData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "A", "B", "C", "D", "<App>"] );
-            spaceData.AllPackageResources
+            coreData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "A", "B", "C", "D", "<App>"] );
+            coreData.AllPackageResources
                     .Select( p => p.ToString() ).ShouldBe(
                         [
                             "Before <Code>", "After <Code>",
@@ -49,8 +49,8 @@ public partial class TopologicalSorterTests
         }
         else
         {
-            spaceData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "D", "C", "B", "A", "<App>"] );
-            spaceData.AllPackageResources
+            coreData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "D", "C", "B", "A", "<App>"] );
+            coreData.AllPackageResources
                     .Select( p => p.ToString() ).ShouldBe(
                         [
                             "Before <Code>", "After <Code>",
@@ -76,10 +76,10 @@ public partial class TopologicalSorterTests
 
         var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
         var builder = new ResSpaceDataBuilder( collector );
-        var spaceData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var coreData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull().CoreData;
 
-        spaceData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "A", "B", "C", "D", "<App>"] );
-        spaceData.AllPackageResources
+        coreData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "A", "B", "C", "D", "<App>"] );
+        coreData.AllPackageResources
                 .Select( p => p.ToString() ).ShouldBe(
                     [
                         "Before <Code>", "After <Code>",
@@ -105,10 +105,10 @@ public partial class TopologicalSorterTests
 
         var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
         var builder = new ResSpaceDataBuilder( collector );
-        var spaceData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var coreData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull().CoreData;
 
-        spaceData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "B", "C", "A", "D", "<App>"] );
-        spaceData.AllPackageResources
+        coreData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "B", "C", "A", "D", "<App>"] );
+        coreData.AllPackageResources
                 .Select( p => p.ToString() ).ShouldBe(
                     [
                         "Before <Code>", "After <Code>",
@@ -136,10 +136,10 @@ public partial class TopologicalSorterTests
 
         var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
         var builder = new ResSpaceDataBuilder( collector );
-        var spaceData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var coreData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull().CoreData;
 
-        spaceData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "BinA", "CinA", "A", "EinD", "D", "<App>"] );
-        spaceData.AllPackageResources
+        coreData.Packages.Select( p => p.FullName ).ShouldBe( ["<Code>", "BinA", "CinA", "A", "EinD", "D", "<App>"] );
+        coreData.AllPackageResources
                 .Select( p => p.ToString() ).ShouldBe(
                     [
                         "Before <Code>", "After <Code>",
@@ -183,18 +183,18 @@ public partial class TopologicalSorterTests
 
         var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
         var builder = new ResSpaceDataBuilder( collector );
-        var spaceData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull();
+        var coreData = builder.Build( TestHelper.Monitor ).ShouldNotBeNull().CoreData;
 
         if( !revertOrdering )
         {
-            spaceData.Packages.Select( p => p.FullName ).ShouldBe(
+            coreData.Packages.Select( p => p.FullName ).ShouldBe(
             [
                 "<Code>",
                 "AppRoutedComponent", "DemoNgModule", "PublicPageComponent", "LoginComponent",
                 "LogoutConfirmComponent", "LogoutResultComponent", "PasswordLostComponent", "Zorro",
                 "PublicFooterComponent", "PublicTopbarComponent", "PublicSectionComponent", "SomeAuthPackage",
                 "<App>"] );
-            spaceData.AllPackageResources
+            coreData.AllPackageResources
                     .Select( p => p.ToString() ).ShouldBe( [
                         "Before <Code>",
                         "After <Code>",
@@ -225,14 +225,14 @@ public partial class TopologicalSorterTests
         }
         else
         {
-            spaceData.Packages.Select( p => p.FullName ).ShouldBe( [
+            coreData.Packages.Select( p => p.FullName ).ShouldBe( [
                         "<Code>",
                         "Zorro", "PublicPageComponent", "LoginComponent", "PasswordLostComponent", "LogoutConfirmComponent",
                         "LogoutResultComponent", "SomeAuthPackage", "PublicTopbarComponent", "PublicFooterComponent",
                         "PublicSectionComponent", "DemoNgModule", "AppRoutedComponent",
                         "<App>" ] );
 
-            spaceData.AllPackageResources
+            coreData.AllPackageResources
                     .Select( p => p.ToString() ).ShouldBe( [
                         "Before <Code>",
                         "After <Code>",
