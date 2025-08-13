@@ -6,9 +6,9 @@ using System.Linq;
 
 namespace CK.Core;
 
-sealed class SpaceDataCacheBuilder
+sealed class ResCoreDataCacheBuilder
 {
-    readonly ResSpaceData _spaceData;
+    readonly ResCoreData _spaceData;
     // Contains AggregateKey to index mapping for local and stable.
     // Only AggregateKey for more than one package is computed. The AggregateId
     // (localKeyId and StableKeyId) for single package set is the single package identifier.
@@ -27,7 +27,7 @@ sealed class SpaceDataCacheBuilder
     // and the offset of true AggregateId keys.
     readonly int _totalPackageCount;
 
-    public SpaceDataCacheBuilder( ResSpaceData spaceData,
+    public ResCoreDataCacheBuilder( ResCoreData spaceData,
                                   int descriptorPackageCount,
                                   int collectorLocalPackageCount,
                                   bool appHasLocalPath )
@@ -55,7 +55,7 @@ sealed class SpaceDataCacheBuilder
 
     public int TotalPackageCount => _totalPackageCount;
 
-    public ResSpaceData SpaceData => _spaceData;
+    public ResCoreData SpaceData => _spaceData;
 
     public IReadOnlySet<ResPackage> GetReachableClosure( IReadOnlyCollection<ResPackage> packages, out AggregateId aggregateId )
     {
@@ -132,7 +132,7 @@ sealed class SpaceDataCacheBuilder
         return id;
     }
 
-    public SpaceDataCache Build( IActivityMonitor monitor, ImmutableArray<ResPackage> packages, bool withLiveState )
+    public ResCoreDataCache Build( IActivityMonitor monitor, ImmutableArray<ResPackage> packages, bool withLiveState )
     {
         CheckInvariant();
         // Computes the stable identifiers.
@@ -188,7 +188,7 @@ sealed class SpaceDataCacheBuilder
                 }
             }
         }
-        return new SpaceDataCache( packages, _localAggregates, _stableAggregates, stableIdentifiers, impactLists );
+        return new ResCoreDataCache( packages, _localAggregates, _stableAggregates, stableIdentifiers, impactLists );
     }
 
     void AddImpact( List<IResPackageResources>?[] impactLists, ResPackage p, IResPackageResources impact )

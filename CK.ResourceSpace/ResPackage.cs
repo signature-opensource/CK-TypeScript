@@ -7,11 +7,11 @@ using System.Linq;
 namespace CK.Core;
 
 /// <summary>
-/// Immutable resource package available in a <see cref="ResSpaceData"/>.
+/// Immutable resource package available in a <see cref="ResCoreData"/>.
 /// </summary>
 public sealed partial class ResPackage
 {
-    readonly ResSpaceData _spaceData;
+    readonly ResCoreData _spaceData;
     readonly string _fullName;
     readonly ICachedType? _type;
     readonly NormalizedPath _defaultTargetPath;
@@ -27,7 +27,7 @@ public sealed partial class ResPackage
     readonly int _index;
     readonly bool _isGroup;
 
-    internal ResPackage( SpaceDataCacheBuilder dataCacheBuilder,
+    internal ResPackage( ResCoreDataCacheBuilder dataCacheBuilder,
                          string fullName,
                          NormalizedPath defaultTargetPath,
                          int idxBeforeResources,
@@ -42,6 +42,26 @@ public sealed partial class ResPackage
     {
         Throw.DebugAssert( "The <Code> package is the first one.", (index == 0) == (fullName == "<Code>") );
         Throw.DebugAssert( "The <App> package is the last one.", (index == dataCacheBuilder.TotalPackageCount - 1) == (fullName == "<App>") );
+
+        Throw.DebugAssert( "The <Code> BeforeResources is empty by design.",
+                           idxBeforeResources != 0
+                           || (beforeResources is EmptyResourceContainer emptyCode && emptyCode.IsDisabled) );
+        Throw.DebugAssert( "The <Code> AfterResources can be any IResourceContainer (if it has been set before ResSpaceDataBuilder.Build) or a ResourceContainerWrapper.",
+                           idxAfterResources != 1
+                           || beforeResources is IResourceContainer );
+
+        Throw.DebugAssert( "Regular packages Before/AfterResources are StoreContainer.",
+                           (fullName == "<Code>" || fullName == "<App>")
+                           || (beforeResources is StoreContainer && afterResources is StoreContainer) );
+
+        Throw.DebugAssert( "The <App> BeforeResources is a EmptyResourceContainer or a FileSystemResourceContainer.",
+                           idxBeforeResources != (dataCacheBuilder.TotalPackageCount * 2) - 2
+                           || (beforeResources is EmptyResourceContainer emptyAppBefore && emptyAppBefore.IsDisabled)
+                           || beforeResources is FileSystemResourceContainer );
+        Throw.DebugAssert( "The <App> AfterResources is empty by design.",
+                           idxAfterResources != (dataCacheBuilder.TotalPackageCount * 2) - 1
+                           || (afterResources is EmptyResourceContainer emptyAppAfter && emptyAppAfter.IsDisabled) );
+
         _fullName = fullName;
         _defaultTargetPath = defaultTargetPath;
         _isGroup = isGroup;
@@ -94,9 +114,9 @@ public sealed partial class ResPackage
     internal (AggregateId RequiresAggregateId, AggregateId ChildrenAggregateId) GetAggregateIdentifiers() => (_requiresAggregateId, _childrenAggregateId);
 
     /// <summary>
-    /// Gets the <see cref="ResSpaceData"/> that contains this package.
+    /// Gets the <see cref="ResCoreData"/> that contains this package.
     /// </summary>
-    public ResSpaceData SpaceData => _spaceData;
+    public ResCoreData SpaceData => _spaceData;
 
     /// <summary>
     /// Gets this package full name. When built from a type, this is the type's full name.
@@ -136,7 +156,7 @@ public sealed partial class ResPackage
     public bool IsGroup => _isGroup;
 
     /// <summary>
-    /// Gets the index in the <see cref="ResSpaceData.Packages"/>.
+    /// Gets the index in the <see cref="ResCoreData.Packages"/>.
     /// </summary>
     public int Index => _index;
 

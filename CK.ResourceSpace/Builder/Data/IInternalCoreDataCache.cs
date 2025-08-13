@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 namespace CK.Core;
 
-interface IInternalSpaceDataCache : ISpaceDataCache
+interface IInternalCoreDataCache : ICoreDataCache
 {
     int StableAggregateCacheLength { get; }
     int LocalAggregateCacheLength { get; }
@@ -27,7 +27,7 @@ interface IInternalSpaceDataCache : ISpaceDataCache
     ReadOnlySpan<int> GetLocalAggregate( int trueAggregateId );
 
     /// <summary>
-    /// Empty when <see cref="ResSpaceData.WatchRoot"/> is null: this is for the Live state only.
+    /// Empty when <see cref="ResCoreData.WatchRoot"/> is null: this is for the Live state only.
     /// <para>
     /// <see cref="ResPackageDataCache{T}"/> uses this to save the data associated
     /// to all the stable packages so Live doesn't need to load not local assemblies

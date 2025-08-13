@@ -25,12 +25,12 @@ public sealed partial class ResSpace
     /// </summary>
     public static readonly byte CurrentVersion = 0;
 
-    readonly ResSpaceData _data;
+    readonly ResCoreData _data;
     readonly ImmutableArray<ResourceSpaceFolderHandler> _folderHandlers;
     readonly ImmutableArray<ResourceSpaceFileHandler> _fileHandlers;
     readonly ResourceSpaceFileHandler.FolderExclusion _folderExclusion;
     
-    internal ResSpace( ResSpaceData data,
+    internal ResSpace( ResCoreData data,
                        ImmutableArray<ResourceSpaceFolderHandler> folderHandlers,
                        ImmutableArray<ResourceSpaceFileHandler> fileHandlers )
     {
@@ -43,7 +43,7 @@ public sealed partial class ResSpace
     /// <summary>
     /// Gets the resources data.
     /// </summary>
-    public ResSpaceData Data => _data;
+    public ResCoreData Data => _data;
 
     /// <summary>
     /// Gets the successfully initialized <see cref="ResourceSpaceFolderHandler"/>.

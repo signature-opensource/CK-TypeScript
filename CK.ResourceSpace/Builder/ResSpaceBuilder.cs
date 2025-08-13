@@ -10,7 +10,7 @@ namespace CK.Core;
 /// <summary>
 /// Handles <see cref="ResSpaceData"/> and enables <see cref="ResourceSpaceFolderHandler"/>
 /// and <see cref="ResourceSpaceFileHandler"/> to be registered in order to produce a
-/// final <see cref="ResSpaceData"/>.
+/// final <see cref="ResSpace"/>.
 /// </summary>
 public sealed class ResSpaceBuilder
 {
@@ -30,9 +30,9 @@ public sealed class ResSpaceBuilder
     }
 
     /// <summary>
-    /// Gets the <see cref="ResSpaceData"/>.
+    /// Gets the <see cref="ResCoreData"/>.
     /// </summary>
-    public ResSpaceData SpaceData => _spaceData;
+    public ResCoreData SpaceData => _spaceData.CoreData;
 
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
@@ -116,14 +116,36 @@ public sealed class ResSpaceBuilder
         var codeGen = _spaceData.GeneratedCodeContainer;
         if( codeGen == null )
         {
+            // Late GeneratedCodeContainer assignment: a ResourceContainerWrapper (around an EmptyResourceContainer)
+            // has been created.
+            Throw.DebugAssert( _spaceData.CoreData.CodePackage.AfterResources.Resources is ResourceContainerWrapper );
+
             // Definitly assigns the code generated container. This is a no-op
             // for the ResourceContainerWrapper.InnerContainer (assigned to itself)
             // but this "publish" the wrapped empty container in the _generatedCodeContainer
-            // space data field.
+            // core data field.
             // This "closes" the possibilty to re-assign it.
-            _spaceData.GeneratedCodeContainer = _spaceData.CodePackage.AfterResources.Resources;
+            var r = (ResourceContainerWrapper)_spaceData.CoreData.CodePackage.AfterResources.Resources;
+            _spaceData.GeneratedCodeContainer = r;
+            // For coherency, if the code container is a CodeGenResourceContainer (which is often the case),
+            // we close it just like we close any packages CodeGenResourceContainer.
+            if( r.InnerContainer is CodeGenResourceContainer c ) c.Close();
         }
-        var space = new ResSpace( _spaceData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
+        else
+        {
+            // If the assigned container is a CodeGenResourceContainer, close it also.
+            if( codeGen is CodeGenResourceContainer c )
+            {
+                c.Close();
+            }
+        }
+        // Closes any CodeGenResourceContainer that may appear in regular packages.
+        // Foreach casting: regular packages have StoreContainer resources and we skip the <Code> and <App> before/after. 
+        foreach( StoreContainer resources in _spaceData.CoreData.AllPackageResources.Take( 2..^2 ).Select( r => r.Resources ) )
+        {
+            if( resources.InnerContainer is CodeGenResourceContainer c ) c.Close();
+        }
+        var space = new ResSpace( _spaceData.CoreData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
         return space.Initialize( monitor )
                 ? space
                 : null;

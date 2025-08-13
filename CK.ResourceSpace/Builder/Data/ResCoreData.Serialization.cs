@@ -8,7 +8,7 @@ using System.ComponentModel;
 namespace CK.Core;
 
 [SerializationVersion(0)]
-public sealed partial class ResSpaceData : ICKSlicedSerializable
+public sealed partial class ResCoreData : ICKSlicedSerializable
 {
     /// <summary>
     /// Deserialization constructor.
@@ -16,7 +16,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
     /// <param name="d">The deserializer.</param>
     /// <param name="info">The type info.</param>
     [EditorBrowsable( EditorBrowsableState.Never )]
-    public ResSpaceData( IBinaryDeserializer d, ITypeReadInfo info )
+    public ResCoreData( IBinaryDeserializer d, ITypeReadInfo info )
     {
         _localPackages = d.ReadValue<ImmutableArray<ResPackage>>();
         _packages = d.ReadValue<ImmutableArray<ResPackage>>();
@@ -41,7 +41,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
     /// <param name="s">The serializer to use.</param>
     /// <param name="o">The space data to serialize.</param>
     [EditorBrowsable( EditorBrowsableState.Never )]
-    public static void Write( IBinarySerializer s, in ResSpaceData o )
+    public static void Write( IBinarySerializer s, in ResCoreData o )
     {
         s.WriteValue( o._localPackages );
         s.WriteValue( o._packages );
@@ -52,7 +52,7 @@ public sealed partial class ResSpaceData : ICKSlicedSerializable
         s.WriteObject( o._codeHandledResources );
 
         ICKBinaryWriter w = s.Writer;
-        ((SpaceDataCache)o._resPackageDataCache).Write( w );
+        ((ResCoreDataCache)o._resPackageDataCache).Write( w );
         w.WriteNullableString( o._watchRoot );
         w.Write( o._liveStatePath );
     }

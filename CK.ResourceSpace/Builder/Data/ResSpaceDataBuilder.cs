@@ -66,7 +66,7 @@ public sealed class ResSpaceDataBuilder
         // All packages that require no other package require it.
         // Note: We could choose the BeforeResources to hold the code generated container, this wouldn't
         //       change anything but this choice is settled now.
-        static ResPackage CreateCodePackage( SpaceDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
+        static ResPackage CreateCodePackage( ResCoreDataCacheBuilder dataCacheBuilder, IResourceContainer? generatedCodeContainer )
         {
             var noHeadRes = new EmptyResourceContainer( "<Code>", isDisabled: true );
             var codeContainer = generatedCodeContainer
@@ -104,7 +104,7 @@ public sealed class ResSpaceDataBuilder
         //
         // It is initialized below after the others (once we know its requirements) and the indexes.
         static ResPackage CreateAppPackage( ref string? appLocalPath,
-                                            SpaceDataCacheBuilder dataCacheBuilder,
+                                            ResCoreDataCacheBuilder dataCacheBuilder,
                                             ImmutableArray<ResPackage> appRequires,
                                             int index )
         {
@@ -112,6 +112,7 @@ public sealed class ResSpaceDataBuilder
             if( appLocalPath != null )
             {
                 appResStore = new FileSystemResourceContainer( appLocalPath, "<App>" );
+                // Use the path normalization.
                 appLocalPath = appResStore.ResourcePrefix;
             }
             else
@@ -174,7 +175,7 @@ public sealed class ResSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
-        var space = new ResSpaceData( _generatedCodeContainer,
+        var space = new ResCoreData( _generatedCodeContainer,
                                       _collector.LiveStatePath,
                                       _collector.TypeCache,
                                       packageIndex,
@@ -182,7 +183,7 @@ public sealed class ResSpaceDataBuilder
                                       codeHandledResources );
 
         // Initialize the SpaceDataCacheBuilder. It carries the space data to the ResPackage constructors.
-        var dataCacheBuilder = new SpaceDataCacheBuilder( space,
+        var dataCacheBuilder = new ResCoreDataCacheBuilder( space,
                                                           descriptorPackageCount,
                                                           _collector.LocalPackageCount,
                                                           appLocalPath != null );
@@ -380,7 +381,7 @@ public sealed class ResSpaceDataBuilder
         Throw.DebugAssert( "Packages have both resources either stable or local (except the AppPackage.AfterResources that is empty by design).",
                            packages.All( p => p.IsLocalPackage == (p.Resources.LocalPath != null)
                                               && (p == space.AppPackage || p.IsLocalPackage == (p.AfterResources.LocalPath != null) ) ) );
-        return space;
+        return new ResSpaceData( space, codeHandledResources );
     }
 
     static string CommonParentPath( string path1, string path2 )

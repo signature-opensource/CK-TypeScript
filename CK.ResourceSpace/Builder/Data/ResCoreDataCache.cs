@@ -10,7 +10,7 @@ namespace CK.Core;
 /// This is written in the Live state and read back by the <see cref="LiveSpaceDataCache"/>.
 /// </para>
 /// </summary>
-sealed class SpaceDataCache : IInternalSpaceDataCache
+sealed class ResCoreDataCache : IInternalCoreDataCache
 {
     readonly ImmutableArray<ResPackage> _packages;
     readonly List<AggregateKey> _localAggregates;
@@ -18,11 +18,11 @@ sealed class SpaceDataCache : IInternalSpaceDataCache
     readonly IReadOnlyCollection<int> _stableIdentifiers;
     readonly IReadOnlyList<IReadOnlyCollection<IResPackageResources>?> _impacts;
 
-    internal SpaceDataCache( ImmutableArray<ResPackage> packages,
-                             List<AggregateKey> localAggregates,
-                             List<AggregateKey> stableAggregates,
-                             IReadOnlyCollection<int>? stableIdentifiers,
-                             IReadOnlyList<IReadOnlyCollection<IResPackageResources>?>? impacts )
+    internal ResCoreDataCache( ImmutableArray<ResPackage> packages,
+                               List<AggregateKey> localAggregates,
+                               List<AggregateKey> stableAggregates,
+                               IReadOnlyCollection<int>? stableIdentifiers,
+                               IReadOnlyList<IReadOnlyCollection<IResPackageResources>?>? impacts )
     {
         _packages = packages;
         _localAggregates = localAggregates;
@@ -31,7 +31,7 @@ sealed class SpaceDataCache : IInternalSpaceDataCache
         _impacts = impacts ?? [];
     }
 
-    void ISpaceDataCache.LocalImplementationOnly() { }
+    void ICoreDataCache.LocalImplementationOnly() { }
 
     public void Write( ICKBinaryWriter w )
     {
@@ -99,7 +99,7 @@ sealed class SpaceDataCache : IInternalSpaceDataCache
         return _localAggregates[trueAggregateId].PackageIndexes;
     }
 
-    ReadOnlySpan<IResPackageResources> IInternalSpaceDataCache.GetImpacts( ResPackage p )
+    ReadOnlySpan<IResPackageResources> IInternalCoreDataCache.GetImpacts( ResPackage p )
     {
         // This is called only on the LiveSpaceDataCache.
         throw new NotSupportedException( "Never called." );
