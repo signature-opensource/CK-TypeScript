@@ -67,19 +67,23 @@ public abstract class TypeScriptGroupOrPackageAttributeImplExtension : IAttribut
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The TypeScript context.</param>
     /// <param name="tsPackage">The package attribute.</param>
-    /// <param name="d">The package to configure.</param>
-    /// <param name="resourcesConfiguration">The package's configuration.</param>
+    /// <param name="spaceConfiguration">The space configuration.</param>
+    /// <param name="package">The package to configure.</param>
     /// <returns>Must return true on success, false on error (errors must be logged).</returns>
-    internal protected abstract bool OnConfiguredDescriptor( IActivityMonitor monitor,
+    internal protected virtual bool OnConfiguredDescriptor( IActivityMonitor monitor,
                                                              TypeScriptContext context,
                                                              TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                             ResPackageDescriptor d,
-                                                             ResSpaceConfiguration resourcesConfiguration );
+                                                             ResSpaceConfiguration spaceConfiguration,
+                                                             ResPackageDescriptor package )
+    {
+        return true;
+    }
 
     internal protected virtual bool OnResPackageAvailable( IActivityMonitor monitor,
                                                            TypeScriptContext context,
                                                            TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                           ResPackage resPackage )
+                                                           ResSpaceData spaceData,
+                                                           ResPackage package )
     {
         return true;
     }
@@ -87,8 +91,8 @@ public abstract class TypeScriptGroupOrPackageAttributeImplExtension : IAttribut
     internal protected virtual bool OnResSpaceAvailable( IActivityMonitor monitor,
                                                          TypeScriptContext context,
                                                          TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                         ResPackage resPackage,
-                                                         ResSpace resSpace )
+                                                         ResSpace space,
+                                                         ResPackage package )
     {
         return true;
     }

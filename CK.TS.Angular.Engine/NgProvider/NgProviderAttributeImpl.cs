@@ -26,20 +26,11 @@ public partial class NgProviderAttributeImpl : TypeScriptGroupOrPackageAttribute
     /// </summary>
     public new NgProviderAttribute Attribute => Unsafe.As<NgProviderAttribute>( base.Attribute );
 
-    /// <inheritdoc />
-    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
-                                                    TypeScriptContext context,
-                                                    TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                    ResPackageDescriptor d,
-                                                    ResSpaceConfiguration resourcesConfiguration )
-    {
-        return true;
-    }
-
     protected override bool OnResPackageAvailable( IActivityMonitor monitor,
                                                    TypeScriptContext context,
                                                    TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                   ResPackage resPackage )
+                                                   ResSpaceData spaceData,
+                                                   ResPackage package )
     {
         var angular = context.GetAngularCodeGen();
         var source = Type.ToCSharpName() + Attribute.SourceNameSuffix;

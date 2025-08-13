@@ -25,24 +25,15 @@ public partial class AppStyleImportAttributeImpl : TypeScriptGroupOrPackageAttri
     /// </summary>
     public new AppStyleImportAttribute Attribute => Unsafe.As<AppStyleImportAttribute>( base.Attribute );
 
-    /// <inheritdoc />
-    internal protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
-                                                             TypeScriptContext context,
-                                                             TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                             ResPackageDescriptor d,
-                                                             ResSpaceConfiguration resourcesConfiguration )
-    {
-        return true;
-    }
-
     internal protected override bool OnResPackageAvailable( IActivityMonitor monitor,
                                                             TypeScriptContext context,
                                                             TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                            ResPackage resPackage )
+                                                            ResSpaceData spaceData,
+                                                            ResPackage package )
     {
         context.AddAppStyle( Attribute.AfterContent
-                                ? resPackage.AfterResources.Index
-                                : resPackage.Resources.Index,
+                                ? package.AfterResources.Index
+                                : package.Resources.Index,
                              Attribute.ImportPath );
         return true;
     }

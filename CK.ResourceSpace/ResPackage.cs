@@ -11,7 +11,7 @@ namespace CK.Core;
 /// </summary>
 public sealed partial class ResPackage
 {
-    readonly ResCoreData _spaceData;
+    readonly ResCoreData _coreData;
     readonly string _fullName;
     readonly ICachedType? _type;
     readonly NormalizedPath _defaultTargetPath;
@@ -54,9 +54,10 @@ public sealed partial class ResPackage
                            (fullName == "<Code>" || fullName == "<App>")
                            || (beforeResources is StoreContainer && afterResources is StoreContainer) );
 
-        Throw.DebugAssert( "The <App> BeforeResources is a EmptyResourceContainer or a FileSystemResourceContainer.",
+        Throw.DebugAssert( "The <App> BeforeResources is a FileSystemResourceContainer or a EmptyResourceContainer (not disabled by design, " +
+                            "it is disabled because there's no FileSystemResourceContainer).",
                            idxBeforeResources != (dataCacheBuilder.TotalPackageCount * 2) - 2
-                           || (beforeResources is EmptyResourceContainer emptyAppBefore && emptyAppBefore.IsDisabled)
+                           || (beforeResources is EmptyResourceContainer emptyAppBefore && !emptyAppBefore.IsDisabled)
                            || beforeResources is FileSystemResourceContainer );
         Throw.DebugAssert( "The <App> AfterResources is empty by design.",
                            idxAfterResources != (dataCacheBuilder.TotalPackageCount * 2) - 1
@@ -69,7 +70,7 @@ public sealed partial class ResPackage
         _requires = requires;
         _children = children;
         _type = type;
-        _spaceData = dataCacheBuilder.SpaceData;
+        _coreData = dataCacheBuilder.SpaceData;
         // Initializes the resources.
         _resources = new ResBefore( this, beforeResources, idxBeforeResources );
         _afterResources = new ResAfter( this, afterResources, idxAfterResources );
@@ -116,7 +117,7 @@ public sealed partial class ResPackage
     /// <summary>
     /// Gets the <see cref="ResCoreData"/> that contains this package.
     /// </summary>
-    public ResCoreData SpaceData => _spaceData;
+    public ResCoreData CoreData => _coreData;
 
     /// <summary>
     /// Gets this package full name. When built from a type, this is the type's full name.
@@ -159,6 +160,16 @@ public sealed partial class ResPackage
     /// Gets the index in the <see cref="ResCoreData.Packages"/>.
     /// </summary>
     public int Index => _index;
+
+    /// <summary>
+    /// Gets whether this is the &lt;Code&gt; package (the first <see cref="ResCoreData.Packages"/>).
+    /// </summary>
+    public bool IsCodePackage => _index == 0;
+
+    /// <summary>
+    /// Gets whether this is the &lt;App&gt; package (the last <see cref="ResCoreData.Packages"/>).
+    /// </summary>
+    public bool IsAppPackage => _index == _coreData._packages.Length - 1;
 
     /// <summary>
     /// Gets the direct set of packages that this package requires.

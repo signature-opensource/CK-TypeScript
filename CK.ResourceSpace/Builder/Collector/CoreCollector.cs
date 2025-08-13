@@ -154,6 +154,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
 
     public bool RemoveExpectedCodeHandledResource( IActivityMonitor monitor, ResPackageDescriptor package, string resourceName, out ResourceLocator resource )
     {
+        Throw.CheckArgument( "Package/Context mismatch.", package.Context == _packageDescriptorContext );
         if( !package.ResourcesInnerContainer.TryGetExpectedResource( monitor,
                                                                        resourceName,
                                                                        out resource,
@@ -167,6 +168,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
 
     public bool RemoveCodeHandledResource( ResPackageDescriptor package, string resourceName, out ResourceLocator resource )
     {
+        Throw.CheckArgument( "Package/Context mismatch.", package.Context == _packageDescriptorContext );
         if( package.ResourcesInnerContainer.TryGetResource( resourceName, out resource )
             || package.AfterResourcesInnerContainer.TryGetResource( resourceName, out resource ) )
         {

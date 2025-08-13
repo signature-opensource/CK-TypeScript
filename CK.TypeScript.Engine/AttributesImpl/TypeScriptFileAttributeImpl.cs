@@ -34,11 +34,11 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
     public new TypeScriptFileAttribute Attribute => Unsafe.As<TypeScriptFileAttribute>( base.Attribute );
 
     /// <inheritdoc/>
-    protected internal override bool OnConfiguredDescriptor( IActivityMonitor monitor,
+    protected internal override bool OnResPackageAvailable( IActivityMonitor monitor,
                                                              TypeScriptContext context,
                                                              TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                             ResPackageDescriptor d,
-                                                             ResSpaceConfiguration spaceBuilder )
+                                                             ResSpaceData spaceData,
+                                                             ResPackage package )
     {
         // There is currently no way to define a target path for a specific resource in resource container
         // (resource containers have no notion of "target folder").
@@ -58,7 +58,7 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         NormalizedPath targetPath;
         if( hasTargetFolder )
         {
-            if( !spaceBuilder.RemoveExpectedCodeHandledResource( monitor, d, Attribute.ResourcePath, out resource ) )
+            if( !spaceData.RemoveExpectedCodeHandledResource( monitor, package, Attribute.ResourcePath, out resource ) )
             {
                 return false;
             }
@@ -69,7 +69,10 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         }
         else
         {
-            if( !d.Resources.TryGetExpectedResource( monitor, Attribute.ResourcePath, out resource, d.AfterResources ) )
+            if( !package.Resources.Resources.TryGetExpectedResource( monitor,
+                                                                     Attribute.ResourcePath,
+                                                                     out resource,
+                                                                     package.AfterResources.Resources ) )
             {
                 return false;
             }

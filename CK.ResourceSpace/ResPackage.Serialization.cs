@@ -25,7 +25,7 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         _index = r.ReadInt32();
         _requires = d.ReadValue<ImmutableArray<ResPackage>>();
         _children = d.ReadValue<ImmutableArray<ResPackage>>();
-        _spaceData = d.ReadObject<ResCoreData>();
+        _coreData = d.ReadObject<ResCoreData>();
         _resources = d.ReadObject<ResBefore>();
         _afterResources = d.ReadObject<ResAfter>();
 
@@ -68,7 +68,7 @@ public sealed partial class ResPackage : ICKSlicedSerializable
         w.Write( o._index );
         s.WriteValue( o._requires );
         s.WriteValue( o._children );
-        s.WriteObject( o._spaceData );
+        s.WriteObject( o._coreData );
 
         s.WriteObject( o._resources );
         s.WriteObject( o._afterResources );

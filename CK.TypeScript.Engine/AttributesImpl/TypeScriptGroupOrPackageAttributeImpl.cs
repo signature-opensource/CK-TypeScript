@@ -132,7 +132,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
                         monitor.Error( $"[RegisterTypeScriptType] on '{_owner.Type:N}' overrides current '{r.Type:C}' configuration." );
                         overrideError = true;
                         // We MAY handle override here.
-                        // But, first, it means that this must occur once the ResPackage are available (ResourceSpaceDataBuilder
+                        // But, first, it means that this must occur once the ResPackage are available (ResSpaceDataBuilder
                         // has done the topological sort of the ResPackageDescriptor).
                         // And... Is this a good idea?
                         // 
@@ -162,19 +162,12 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         var d = spaceBuilder.RegisterPackage( monitor, spaceBuilder.TypeCache.Get( DecoratedType ), _typeScriptFolder );
         if( d == null ) return false;
         d.IsGroup = _isGroup;
-        // Handles barrel.
-        if( spaceBuilder.RemoveCodeHandledResource( d, "index.ts", out var barrel ) )
-        {
-            var targetPath = _typeScriptFolder.AppendPart( "index.ts" );
-            context.Root.Root.FindOrCreateResourceFile( barrel, targetPath );
-            monitor.Trace( $"Manual barrel '{targetPath}' is moved to the <Code> container." );
-        }
         return OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );
     }
 
     /// <summary>
     /// Called by <see cref="CreateResPackageDescriptor(IActivityMonitor, TypeScriptContext, ResSpaceConfiguration)"/>.
-    /// Calls all <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnConfiguredDescriptor(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResPackageDescriptor, ResSpaceConfiguration)"/>.
+    /// Calls all <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnConfiguredDescriptor(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResSpaceConfiguration, ResPackageDescriptor)"/>.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
@@ -189,29 +182,34 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         bool success = true;
         foreach( var e in _extensions )
         {
-            success &= e.OnConfiguredDescriptor( monitor, context, this, d, spaceBuilder );
+            success &= e.OnConfiguredDescriptor( monitor, context, this, spaceBuilder, d );
         }
         return success;
     }
 
     /// <summary>
-    /// a [ReaDI] method called when the <see cref="ResPackage"/> is available.
-    /// <para>
-    /// At this level, dispatches the call to <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnResPackageAvailable(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResPackage)"/>.
-    /// </para>
+    /// Handles the "index.ts" barrel file if it exists.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
-    /// <param name="resPackage">The associated ResPackage.</param>
+    /// <param name="package">The associated ResPackage.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
     internal protected virtual bool OnResPackageAvailable( IActivityMonitor monitor,
                                                            TypeScriptContext context,
-                                                           ResPackage resPackage )
+                                                           ResSpaceData spaceData,
+                                                           ResPackage package )
     {
+        // Handles barrel.
+        if( spaceData.RemoveCodeHandledResource( package, "index.ts", out var barrel ) )
+        {
+            var targetPath = _typeScriptFolder.AppendPart( "index.ts" );
+            context.Root.Root.FindOrCreateResourceFile( barrel, targetPath );
+            monitor.Trace( $"Manual barrel '{targetPath}' is moved to the <Code> container." );
+        }
         bool success = true;
         foreach( var e in _extensions )
         {
-            success &= e.OnResPackageAvailable( monitor, context, this, resPackage );
+            success &= e.OnResPackageAvailable( monitor, context, this, spaceData, package );
         }
         return success;
     }
@@ -219,7 +217,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
     /// <summary>
     /// a [ReaDI] method called when the final <see cref="ResSpace"/> is available.
     /// <para>
-    /// At this level, dispatches the call to <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnResSpaceAvailable(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResPackage, ResSpace)"/>.
+    /// At this level, dispatches the call to <see cref="TypeScriptGroupOrPackageAttributeImplExtension.OnResSpaceAvailable(IActivityMonitor, TypeScriptContext, TypeScriptGroupOrPackageAttributeImpl, ResSpace, ResPackage)"/>.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -235,7 +233,7 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
         bool success = true;
         foreach( var e in _extensions )
         {
-            success &= e.OnResSpaceAvailable( monitor, context, this, resPackage, resSpace );
+            success &= e.OnResSpaceAvailable( monitor, context, this, resSpace, resPackage );
         }
         return success;
     }

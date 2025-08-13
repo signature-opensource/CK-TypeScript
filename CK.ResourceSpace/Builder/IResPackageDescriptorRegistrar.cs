@@ -86,7 +86,7 @@ public interface IResPackageDescriptorRegistrar
     /// <summary>
     /// Removes a resource that must belong to the <paramref name="package"/>'s Resources or AfterResources
     /// from the package's resources (strictly speaking, the resource is "hidden").
-    /// The same resource can be removed more than once. 
+    /// The same resource can be removed more than once.
     /// <para>
     /// This enable code generators to take control of a resource that they want to handle directly.
     /// The resource will no more appear in the package's resources.
@@ -95,6 +95,12 @@ public interface IResPackageDescriptorRegistrar
     /// How the removed resource is "transferred" (or not) in the <see cref="ResSpaceCollector.GeneratedCodeContainer"/>
     /// is up to the code generators.
     /// </para>
+    /// <para>
+    /// Care should be taken if the package is optional (when <see cref="ResPackageDescriptor.IsOptional"/> is true):
+    /// decisions such as transfering the resource to the &lt;Code&gt; container will be problematic if the
+    /// package is not eventually required. When packages are optional, it is better to handle the resources on the
+    /// <see cref="ResSpaceData"/> in which optional packages don't appear.
+    /// </para>
     /// </summary>
     /// <param name="package">The package that contains the resource.</param>
     /// <param name="resource">The resource to remove from stores.</param>
@@ -102,7 +108,8 @@ public interface IResPackageDescriptorRegistrar
 
     /// <summary>
     /// Finds the <paramref name="resourceName"/> that must exist in the <paramref name="package"/>'s Resources or AfterResources
-    /// and calls <see cref="RemoveCodeHandledResource"/> or logs an error if the resource is not found.
+    /// and calls <see cref="RemoveCodeHandledResource(ResPackageDescriptor, ResourceLocator)"/> or logs an error if the
+    /// resource is not found.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="package">The package that contains the resource.</param>
@@ -116,7 +123,7 @@ public interface IResPackageDescriptorRegistrar
 
     /// <summary>
     /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
-    /// and calls <see cref="RemoveCodeHandledResource"/>.
+    /// and calls <see cref="RemoveCodeHandledResource(ResPackageDescriptor, ResourceLocator)"/> if the resource is found.
     /// </summary>
     /// <param name="package">The package that contains the resource.</param>
     /// <param name="resourceName">The resource name to find.</param>

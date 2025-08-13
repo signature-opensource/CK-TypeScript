@@ -93,19 +93,18 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     }
 
     /// <summary>
-    /// Overridden to handle the component "*.component.ts" file name: it must exist
-    /// and is created as a <see cref="ResourceTypeScriptFile"/> (but still published
-    /// by the resource container).
+    /// Overridden to handle discovery and mapping of a possible <see cref="NgSingleAbstractComponentAttribute"/>
+    /// interface.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="context">The context.</param>
-    /// <param name="spaceBuilder">The resource space builder.</param>
-    /// <param name="d">The package descriptor for this package.</param>
+    /// <param name="spaceConfiguration">The space configuration.</param>
+    /// <param name="package">The package descriptor for this package.</param>
     /// <returns>True on success, false on error.</returns>
     protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
                                                           TypeScriptContext context,
-                                                          ResSpaceConfiguration spaceBuilder,
-                                                          ResPackageDescriptor d )
+                                                          ResSpaceConfiguration spaceConfiguration,
+                                                          ResPackageDescriptor package )
     {
         Throw.DebugAssert( !IsAppComponent );
 
@@ -114,28 +113,8 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         var decoratedType = typeCache.Get( DecoratedType );
         var ngSingleComponent = typeCache.Get( typeof( INgSingleComponent ) );
 
-        // INgPageComponent is a kind of [CKAbstractType] that implies a kind of [IsSingle].
-        //
-        // Thoughts:
-        // Is a [CKAbstractSingleType] a good idea to generalize this?
-        // Is a [CKAbstractMultipleType] can replace (and generalize) [IsMultiple]?
-        // Is a pure [CKAbstract] necessarily multiple? Or this doesn't exist?
-        // Or is simply ignored?
-        // For Single cardinality, a concrete type can be [IsSingle] but a multiple concrete
-        // type is not obvious.
-        //
-        bool success = HandleSingleComponent( monitor, d, decoratedType, ngSingleComponent, out ICachedType? pageComponent );
-
-        var fName = _snakeName + ".component.ts";
-        if( !d.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
-        {
-            return false;
-        }
-        var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
-        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-        return success
-               && base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d )
-               && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
+        return HandleSingleComponent( monitor, package, decoratedType, ngSingleComponent, out ICachedType? pageComponent )
+               && base.OnCreateResPackageDescriptor( monitor, context, spaceConfiguration, package );
 
         static bool HandleSingleComponent( IActivityMonitor monitor,
                                          ResPackageDescriptor d,
@@ -147,11 +126,11 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
             pageComponent = null;
             if( decoratedType.Interfaces.Contains( ngSingleComponent ) )
             {
-                // If the type directly implements INgPageComponent, there's nothing to map.
+                // If the type directly implements INgSingleComponent, there's nothing to map.
                 // 
                 if( !decoratedType.DirectInterfaces.Contains( ngSingleComponent ) )
                 {
-                    // What is the interface that is a INgPageComponent?
+                    // What is the interface that is a INgSingleComponent?
                     List<string>? ambiguities = null;
                     foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngSingleComponent ) ) )
                     {
@@ -167,7 +146,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                     }
                     if( ambiguities != null )
                     {
-                        monitor.Error( $"Ambiguous INgPageComponent for '{decoratedType.CSharpName}': interfaces '{ambiguities.Concatenate( "', '" )}' are all INgPageComponent. Only one can exist." );
+                        monitor.Error( $"Ambiguous INgSingleComponent for '{decoratedType.CSharpName}': interfaces '{ambiguities.Concatenate( "', '" )}' are all INgPageComponent. Only one can exist." );
                         success = false;
                     }
                     if( pageComponent != null && !d.AddSingleMapping( monitor, pageComponent ) )
@@ -178,6 +157,34 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
             }
             return success;
         }
+    }
+
+
+    /// <summary>
+    /// Overridden to handle the component "*.component.ts" file name: it must exist
+    /// and is created as a <see cref="ResourceTypeScriptFile"/> (but still published
+    /// by the resource container).
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceData">The space data.</param>
+    /// <param name="package">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool OnResPackageAvailable( IActivityMonitor monitor,
+                                                   TypeScriptContext context,
+                                                   ResSpaceData spaceData,
+                                                   ResPackage package )
+    {
+        Throw.DebugAssert( !IsAppComponent );
+        var fName = _snakeName + ".component.ts";
+        if( !package.Resources.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
+        {
+            return false;
+        }
+        var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
+        return base.OnResPackageAvailable( monitor, context, spaceData, package )
+               && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]

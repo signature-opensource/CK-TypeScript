@@ -42,7 +42,7 @@ public sealed partial class ResPackage
 
         public bool IsCodeResources => false;
 
-        public bool IsAppResources => _data._package.FullName == "<App>";
+        public bool IsAppResources => _data._package.IsAppPackage;
 
         public IResourceContainer Resources => _data._resources;
 

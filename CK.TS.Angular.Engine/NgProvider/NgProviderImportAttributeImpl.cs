@@ -28,20 +28,11 @@ public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAtt
     /// </summary>
     public new NgProviderImportAttribute Attribute => Unsafe.As<NgProviderImportAttribute>( base.Attribute );
 
-    /// <inheritdoc />
-    protected override bool OnConfiguredDescriptor( IActivityMonitor monitor,
-                                                 TypeScriptContext context,
-                                                 TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                 ResPackageDescriptor d,
-                                                 ResSpaceConfiguration resourcesConfiguration )
-    {
-        return true;
-    }
-
     protected override bool OnResPackageAvailable( IActivityMonitor monitor,
                                                    TypeScriptContext context,
                                                    TypeScriptGroupOrPackageAttributeImpl tsPackage,
-                                                   ResPackage resPackage )
+                                                   ResSpaceData spaceData,
+                                                   ResPackage package )
     {
         ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 

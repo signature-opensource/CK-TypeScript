@@ -282,6 +282,30 @@ public sealed partial class TypeScriptContext
         var spaceData = dataSpaceBuilder.Build( monitor );
         if( spaceData == null ) return false;
 
+
+        // With CK-ReaDI, the ResPackage that comes from a ResPackageDescriptor created by an
+        // object (here the TypeScriptGroupOrPackageAttributeImpl) should be in the "TypeScope"
+        // (or "OriginatorScope") of the object: the object can have [ReaDI] methods that accept
+        // a ResPackage that will be called when its ResPackage appears.
+        // We simulate this here with the "OnResPackageAvailable" method.
+        using( monitor.OpenInfo( $"Calling OnResPackageAvailable on {_initializer.Packages.Count} packages." ) )
+        {
+            success &= SafePackageCall( monitor, _initializer.Packages, ( monitor, p ) =>
+            {
+                // Currently, Angular support comes with the AppComponent : NgComponent that
+                // is a "fake" component that is used to reference the "root router".
+                // We have no ResPackage for it, so we skip here any ResPackage not found...
+                // This is NOT ideal!
+                // Temporary:
+                var cT = _codeContext.CurrentRun.ConfigurationGroup.TypeCache.Get( p.DecoratedType );
+                if( !spaceData.CoreData.PackageIndex.TryGetValue( cT, out var package ) )
+                {
+                    return true;
+                }
+                return p.OnResPackageAvailable( monitor, this, spaceData, package );
+            } );
+        }
+
         // This is the last step that generates all the TypeScriptFiles that must be generated (runs all
         // the deferred Implementors).
         // This raises events and closes Type registration (generates the code for all ITSFileCSharpType, running
@@ -299,36 +323,13 @@ public sealed partial class TypeScriptContext
             return false;
         }
 
-        // With CK-ReaDI, the ResPackage that comes from a ResPackageDescriptor created by an
-        // object (here the TypeScriptGroupOrPackageAttributeImpl) should be in the "TypeScope"
-        // (or "OriginatorScope") of the object: the object can have [ReaDI] methods that accept
-        // a ResPackage that will be called when its ResPackage appears.
-        // We simulate this here with the "OnResPackageAvailable" method.
-        using( monitor.OpenInfo( $"Calling OnResPackageAvailable on {_initializer.Packages.Count} packages." ) )
-        {
-            success &= SafePackageCall( monitor, _initializer.Packages, ( monitor, p ) =>
-            {
-                // Currently, Angular support comes with the AppComponent : NgComponent that
-                // is a "fake" component that is used to reference the "root router".
-                // We have no ResPackage for it, so we skip here any ResPackage not found...
-                // This is NOT ideal!
-                // Temporary:
-                var cT = _codeContext.CurrentRun.ConfigurationGroup.TypeCache.Get( p.DecoratedType );
-                if( !spaceData.CoreData.PackageIndex.TryGetValue( cT, out var resPackage ) )
-                {
-                    return true;
-                }
-                return p.OnResPackageAvailable( monitor, this, resPackage );
-            } );
-        }
-
         // On the ResourceSpaceBuilder, resource handlers can now be registered before building the
         // final ResourceSpace.
 
         var installer = new InitialFileSystemInstaller( _binPathConfiguration.TargetProjectPath.AppendPart( "ck-gen" ) );
         var spaceBuilder = new ResSpaceBuilder( spaceData );
         // Last chance to publish the TypeScript files in a GeneratedCodeContainer and
-        // assign it to the resource space.
+        // assign it to the resource space through the ResSpaceBuilder.
         var codeTarget = new CodeGenResourceContainerTarget();
         if( !_tsRoot.Publish( monitor, codeTarget ) )
         {

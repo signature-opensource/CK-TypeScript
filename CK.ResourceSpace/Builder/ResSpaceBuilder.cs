@@ -107,7 +107,7 @@ public sealed class ResSpaceBuilder
     }
 
     /// <summary>
-    /// Tries to build the <see cref="ResSpace"/>. 
+    /// Tries to build the <see cref="ResSpace"/> from the <see cref="ResSpaceData"/>. 
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>The space on success, null otherwise.</returns>
@@ -145,6 +145,7 @@ public sealed class ResSpaceBuilder
         {
             if( resources.InnerContainer is CodeGenResourceContainer c ) c.Close();
         }
+        _spaceData.Close();
         var space = new ResSpace( _spaceData.CoreData, _folderHandlers.ToImmutableArray(), _fileHandlers.ToImmutableArray() );
         return space.Initialize( monitor )
                 ? space
