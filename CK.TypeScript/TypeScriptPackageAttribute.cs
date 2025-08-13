@@ -27,7 +27,7 @@ namespace CK.TypeScript;
 /// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
-public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbeddedResourceTypeAttribute
+public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbeddedResourceTypeAttribute, IOptionalResourceGroupAttribute
 {
     /// <summary>
     /// Initializes a new <see cref="TypeScriptPackageAttribute"/>.
@@ -65,4 +65,15 @@ public class TypeScriptPackageAttribute : ContextBoundDelegationAttribute, IEmbe
     /// See <see cref="CallerFilePathAttribute"/>.
     /// </summary>
     public string? CallerFilePath { get; }
+
+    /// <summary>
+    /// Gets or sets whether this package is optional.
+    /// Defaults to false: a package that belongs to the set of registered types is required by default.
+    /// <para>
+    /// When this is true and no other packages has a <see cref="RequiresAttribute{T}"/>, <see cref="RequiredByAttribute{T}"/>,
+    /// <see cref="GroupsAttribute{T}"/>, <see cref="ChildrenAttribute{T}"/> or <see cref="PackageAttribute{T}"/> that targets it,
+    /// this package is not handled and won't appear in the final "ck-gen/" folder.
+    /// </para>
+    /// </summary>
+    public bool IsOptional { get; set; }
 }
