@@ -84,7 +84,7 @@ public sealed partial class TypeScriptFolder
 
         internal readonly void SummaryOnTypeScriptFile( TypeScriptFileBase cFile )
         {
-            AppendLinePrefix().Append( "-> [Code] '" ).Append( cFile.Name );
+            AppendLinePrefix().Append( "-> [Code] '" ).Append( cFile.Name ).Append( '\'' );;
             DumpCKomposableExportedTypes( cFile );
         }
 
