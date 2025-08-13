@@ -36,11 +36,41 @@ sealed partial class CoreCollector
             if( InitialResolve() )
             {
                 // Still optional packages can now be removed from the index.
-                foreach( var p in _collector._optionalPackages )
+                if( _collector._optionalPackages.Count > 0 )
                 {
-                    if( p.IsOptional )
+                    int removedCount = 0;
+                    foreach( var p in _collector._optionalPackages )
                     {
-                        _collector.RemoveDefinitelyOptional( p );
+                        if( p.IsOptional )
+                        {
+                            removedCount++;
+                            _collector.RemoveDefinitelyOptional( p );
+                        }
+                    }
+                    if( _monitor.ShouldLogLine( LogLevel.Info, null, out var tags ) )
+                    {
+                        var b = new StringBuilder( "Optional packages:" ).AppendLine();
+                        if( removedCount == 0 )
+                        {
+                            b.Append( "All " ).Append( _collector._optionalPackages.Count )
+                             .Append( " optional packages are no more optional:" ).AppendLine()
+                             .AppendJoin( ", ", _collector._optionalPackages.Select( p => p.FullName ) );
+                        }
+                        else if( removedCount == _collector._optionalPackages.Count )
+                        {
+                            b.Append( "All " ).Append( removedCount )
+                             .Append( " optional packages are eventually optional and will be ignored:" ).AppendLine()
+                             .AppendJoin( ", ", _collector._optionalPackages.Select( p => p.FullName ) );
+                        }
+                        else
+                        {
+                            b.Append( "Out of " ).Append( _collector._optionalPackages.Count ).Append( " optional packages, " )
+                             .Append( removedCount ).Append( " are eventually optional and will be ignored:" ).AppendLine()
+                             .AppendJoin( ", ", _collector._optionalPackages.Where( p => p.IsOptional ).Select( p => p.FullName ) ).AppendLine()
+                             .Append( "Packages " ).AppendJoin( ", ", _collector._optionalPackages.Where( p => !p.IsOptional ).Select( p => p.FullName ) )
+                             .Append( " are no more optional." );
+                        }
+                        _monitor.UnfilteredLog( LogLevel.Info|LogLevel.IsFiltered, tags, b.ToString(), null );
                     }
                 }
                 // Second step: normalize the relationships to only have to deal with Requires and Children/Groups.
@@ -53,10 +83,8 @@ sealed partial class CoreCollector
                     // Third step: Projects the Children to their corresponding Groups.
                     // This fails if a Groups contains more than one package that is not a Group (but a Package).
 
-                    // The initial package list and all requires and children
-                    // are sorted by FullName to guaranty determinism.
-                    // Reverting the names enables to discover missing topological constraints
-                    // in the graph.
+                    // The initial package list and all requires and children are sorted by FullName to guaranty determinism.
+                    // Reverting the names enables to discover missing topological constraints in the graph.
                     Comparison<ResPackageDescriptor> order = _collector._revertOrderingNames
                                                                 ? ( x, y ) => y.FullName.CompareTo( x.FullName )
                                                                 : ( x, y ) => x.FullName.CompareTo( y.FullName );
@@ -218,6 +246,8 @@ sealed partial class CoreCollector
                 r = new Ref( _collector.TypeCache.Get( rawType ), r.IsOptional );
                 Throw.DebugAssert( r.IsValid );
             }
+            // Mapping from FullName or ICachedType to the package: this is were
+            // SingleMapping is resolved.
             if( _packageIndex.TryGetValue( r._ref, out var result ) )
             {
                 // The package is known. It is not optional, we are done
@@ -265,8 +295,8 @@ sealed partial class CoreCollector
                 if( result.IsOptional )
                 {
                     _collector.SetNoMoreOptionalPackage( result );
-                    return result;
                 }
+                return result;
             }
             _monitor.Error( $"No configured PackageResolver. The reference '{r}' is not registered." );
             return Ref.Invalid;
