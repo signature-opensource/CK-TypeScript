@@ -24,7 +24,7 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// <param name="packageDataCache">The package data cache.</param>
     /// <param name="rootFolderName">The folder name (typically "assets", "ts-assets", etc.).</param>
     public AssetsResourceHandler( IResourceSpaceItemInstaller? installer,
-                                  ISpaceDataCache packageDataCache,
+                                  ICoreDataCache packageDataCache,
                                   string rootFolderName )
         : base( installer, rootFolderName )
     {
@@ -34,7 +34,7 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     /// <summary>
     /// Gets the cache instance to which this data handler is bound.
     /// </summary>
-    public ISpaceDataCache ResPackageDataCache => _cache.SpaceCache;
+    public ICoreDataCache ResPackageDataCache => _cache.SpaceCache;
 
     /// <summary>
     /// Gets the final assets that have been successfully initialized.
@@ -43,13 +43,13 @@ public partial class AssetsResourceHandler : ResourceSpaceFolderHandler
     public FinalResourceAssetSet? FinalAssets => _finalAssets;
 
     /// <inheritdoc />
-    protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData )
+    protected override bool Initialize( IActivityMonitor monitor, ResCoreData spaceData )
     {
         _finalAssets = GetUnambiguousFinalAssets( monitor, spaceData );
         return _finalAssets != null;
     }
 
-    FinalResourceAssetSet? GetUnambiguousFinalAssets( IActivityMonitor monitor, ResSpaceData spaceData )
+    FinalResourceAssetSet? GetUnambiguousFinalAssets( IActivityMonitor monitor, ResCoreData spaceData )
     {
         FinalResourceAssetSet? r = _cache.Obtain( monitor, spaceData.AppPackage );
         if( r != null )

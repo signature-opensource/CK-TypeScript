@@ -7,7 +7,7 @@ sealed class AssetCache : ResPackageDataCache<FinalResourceAssetSet>
 {
     readonly string _rootFolderName;
 
-    public AssetCache( ISpaceDataCache cache, string rootFolderName )
+    public AssetCache( ICoreDataCache cache, string rootFolderName )
         : base( cache )
     {
         _rootFolderName = rootFolderName;

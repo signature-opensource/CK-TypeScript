@@ -8,7 +8,7 @@ namespace CK.Core;
 /// <summary>
 /// SpaceDataCache implementation in the Live world.
 /// </summary>
-sealed class LiveSpaceDataCache : IInternalSpaceDataCache
+sealed class LiveSpaceDataCache : IInternalCoreDataCache
 {
     readonly ImmutableArray<ResPackage> _packages;
     readonly ImmutableArray<ImmutableArray<int>> _localAggregates;
@@ -83,7 +83,7 @@ sealed class LiveSpaceDataCache : IInternalSpaceDataCache
         }
     }
 
-    void ISpaceDataCache.LocalImplementationOnly() { }
+    void ICoreDataCache.LocalImplementationOnly() { }
 
     public int StableAggregateCacheLength => _stableAggregates.Length;
 

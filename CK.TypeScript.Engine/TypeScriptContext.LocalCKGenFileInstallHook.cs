@@ -132,7 +132,7 @@ public sealed partial class TypeScriptContext // '@local/ck-gen' processor.
         }
 
         public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
-                                                                        ResSpaceData spaceData,
+                                                                        ResCoreData spaceData,
                                                                         IBinaryDeserializer d )
         {
             int tsLanguageIndex = d.Reader.ReadInt32();

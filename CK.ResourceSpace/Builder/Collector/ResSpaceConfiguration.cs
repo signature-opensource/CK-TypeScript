@@ -50,7 +50,7 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     /// <see cref="ResSpaceData.GeneratedCodeContainer"/> or (last chance) with <see cref="ResSpaceBuilder.GeneratedCodeContainer"/>.
     /// <para>
     /// This possibly late assignation of the code generated container enables code generator to be able to generate code
-    /// based on the topologically ordered <see cref="ResSpaceData.Packages"/>. Not all code generators require this:
+    /// based on the topologically ordered <see cref="ResCoreData.Packages"/>. Not all code generators require this:
     /// some can assign the code from this initial configuration. 
     /// </para>
     /// </summary>
@@ -67,7 +67,7 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
 
     /// <summary>
     /// Gets or sets the path of the "&lt;App&gt;" tail package application local resources 
-    /// (the <see cref="ResSpaceData.AppPackage"/>'s <see cref="ResPackage.Resources"/>' <see cref="IResPackageResources.LocalPath"/>).
+    /// (the <see cref="ResCoreData.AppPackage"/>'s <see cref="ResPackage.Resources"/>' <see cref="IResPackageResources.LocalPath"/>).
     /// When let to null, an empty container is used.
     /// <para>
     /// When not null, this path is fully qualified and ends with <see cref="Path.DirectorySeparatorChar"/>

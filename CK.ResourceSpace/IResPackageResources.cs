@@ -14,12 +14,12 @@ public interface IResPackageResources
     bool IsAfter { get; }
 
     /// <summary>
-    /// Gets the index of this package resources in the <see cref="ResSpaceData.AllPackageResources"/>.
+    /// Gets the index of this package resources in the <see cref="ResCoreData.AllPackageResources"/>.
     /// </summary>
     int Index { get; }
 
     /// <summary>
-    /// Gets the index of this package resources in the <see cref="ResSpaceData.LocalPackageResources"/>
+    /// Gets the index of this package resources in the <see cref="ResCoreData.LocalPackageResources"/>
     /// if this <see cref="LocalPath"/> is not null, -1 otherwise.
     /// </summary>
     int LocalIndex { get; }

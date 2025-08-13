@@ -14,7 +14,7 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
     /// </summary>
     public bool DisableLiveUpdate => Installer is not FileSystemInstaller;
 
-    bool ILiveResourceSpaceHandler.WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
+    bool ILiveResourceSpaceHandler.WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResCoreData spaceData )
     {
         Throw.DebugAssert( "Otherwise LiveState would have been disabled.", Installer is FileSystemInstaller );
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
@@ -29,7 +29,7 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
     /// <param name="spaceData">The deserialized resource space data.</param>
     /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <returns>The live updater on success, null on error. Errors are logged.</returns>
-    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
+    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResCoreData spaceData, IBinaryDeserializer d )
     {
         var targetInstallPath = d.Reader.ReadString();
         var rootFolderName = d.Reader.ReadString();
@@ -46,10 +46,10 @@ public partial class AssetsResourceHandler : ILiveResourceSpaceHandler
     {
         readonly AssetsResourceHandler _handler;
         readonly FileSystemInstaller _installer;
-        readonly ResSpaceData _data;
+        readonly ResCoreData _data;
         bool _hasChanged;
 
-        public LiveUpdater( AssetsResourceHandler handler, FileSystemInstaller installer, ResSpaceData data )
+        public LiveUpdater( AssetsResourceHandler handler, FileSystemInstaller installer, ResCoreData data )
         {
             _handler = handler;
             _installer = installer;

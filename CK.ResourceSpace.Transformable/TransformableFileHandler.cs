@@ -43,7 +43,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     /// <param name="spaceData">The resource space data.</param>
     /// <param name="folderFilter">The filter to use.</param>
     /// <returns>True on success, false on error.</returns>
-    protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData, FolderExclusion folderFilter )
+    protected override bool Initialize( IActivityMonitor monitor, ResCoreData spaceData, FolderExclusion folderFilter )
     {
         bool success = true;
         var environment = new TransformEnvironment( spaceData, _transformerHost, _externalItemResolver );

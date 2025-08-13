@@ -40,7 +40,7 @@ public abstract class ResourceSpaceFolderHandler : IResourceSpaceHandler
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="spaceData">The space data to consider.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
-    internal protected abstract bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData );
+    internal protected abstract bool Initialize( IActivityMonitor monitor, ResCoreData spaceData );
 
     /// <summary>
     /// Called by <see cref="ResSpace.Install(IActivityMonitor)"/> (even if <see cref="Installer"/> is null).

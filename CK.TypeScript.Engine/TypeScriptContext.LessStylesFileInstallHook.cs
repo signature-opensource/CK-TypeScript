@@ -241,7 +241,7 @@ public sealed partial class TypeScriptContext // Less styles support.
         }
 
         public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
-                                                                        ResSpaceData spaceData,
+                                                                        ResCoreData spaceData,
                                                                         IBinaryDeserializer d )
         {
             int lessLanguageIndex = d.Reader.ReadInt32();
@@ -264,7 +264,7 @@ public sealed partial class TypeScriptContext // Less styles support.
             readonly ITransformInstallableItem?[] _primaryLessFiles;
             bool _rebuildAll;
 
-            public LiveHook( ResSpaceData spaceData,
+            public LiveHook( ResCoreData spaceData,
                              int lessLanguageIndex,
                              ITransformInstallableItem?[] primaryLessFiles )
             {

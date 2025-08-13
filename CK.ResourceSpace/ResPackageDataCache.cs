@@ -13,7 +13,7 @@ namespace CK.Core;
 /// </typeparam>
 public abstract class ResPackageDataCache<T> where T : class
 {
-    readonly IInternalSpaceDataCache _cache;
+    readonly IInternalCoreDataCache _cache;
     readonly T?[] _data;
     readonly T?[] _stableAggregateCache;
     readonly T?[] _localAggregateCache;
@@ -21,10 +21,10 @@ public abstract class ResPackageDataCache<T> where T : class
     /// <summary>
     /// Initializes a new empty ResPackageDataCache.
     /// </summary>
-    /// <param name="cache">The required cache provided by the <see cref="ResSpaceData.SpaceDataCache"/>.</param>
-    protected ResPackageDataCache( ISpaceDataCache cache )
+    /// <param name="cache">The required cache provided by the <see cref="ResCoreData.SpaceDataCache"/>.</param>
+    protected ResPackageDataCache( ICoreDataCache cache )
     {
-        var c = (IInternalSpaceDataCache)cache;
+        var c = (IInternalCoreDataCache)cache;
         _cache = c;
         _data = new T[c.Packages.Length];
         _stableAggregateCache = new T[c.StableAggregateCacheLength];
@@ -34,7 +34,7 @@ public abstract class ResPackageDataCache<T> where T : class
     /// <summary>
     /// Gets the cache instance to which this data handler is bound.
     /// </summary>
-    public ISpaceDataCache SpaceCache => _cache;
+    public ICoreDataCache SpaceCache => _cache;
 
     /// <summary>
     /// Gets the data associated to a <see cref="ResPackage"/>.
@@ -210,7 +210,7 @@ public abstract class ResPackageDataCache<T> where T : class
     /// </summary>
     /// <param name="stableData">
     /// Stable data obtained by <see cref="GetStableData()"/>. Except the size of the array, no checks are done:
-    /// the data must correspond to the same <see cref="ISpaceDataCache"/> (or to a deserialized instance).
+    /// the data must correspond to the same <see cref="ICoreDataCache"/> (or to a deserialized instance).
     /// </param>
     public void SetStableData( ImmutableArray<T> stableData )
     {

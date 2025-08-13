@@ -68,14 +68,14 @@ public class FileSystemInstaller : ILiveResourceSpaceItemInstaller
     }
 
     /// <summary>
-    /// Checks that if <see cref="ResSpaceData.WatchRoot"/> is not null, the <see cref="TargetPath"/>
-    /// is independent of <see cref="ResSpaceData.LiveStatePath"/> and the "&lt;App&gt;" resources folder
+    /// Checks that if <see cref="ResCoreData.WatchRoot"/> is not null, the <see cref="TargetPath"/>
+    /// is independent of <see cref="ResCoreData.LiveStatePath"/> and the "&lt;App&gt;" resources folder
     /// (not above not below them).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="data">The resource space.</param>
     /// <returns>True on success, false on error.</returns>
-    protected bool CheckLiveStateCoherency( IActivityMonitor monitor, ResSpaceData data )
+    protected bool CheckLiveStateCoherency( IActivityMonitor monitor, ResCoreData data )
     {
         if( data.WatchRoot != null )
         {

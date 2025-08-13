@@ -10,7 +10,7 @@ namespace CK.Core;
 public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
 {
     static Type[] _installHookReadParameters = [ typeof( IActivityMonitor ),
-                                                 typeof( ResSpaceData ),
+                                                 typeof( ResCoreData ),
                                                  typeof( IBinaryDeserializer ) ];
 
     /// <summary>
@@ -31,7 +31,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     /// <param name="s">The serializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <param name="spaceData">The resource space that has been serialized.</param>
     /// <returns>True on success, false on error. Errorrs must be logged.</returns>
-    public bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
+    public bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResCoreData spaceData )
     {
         Throw.DebugAssert( "Otherwise LiveState would have been disabled.", Installer is FileSystemInstaller );
         Throw.DebugAssert( "Environment is null only during deserialization.", _environment != null );
@@ -77,7 +77,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     /// <param name="spaceData">The deserialized resource space data.</param>
     /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <returns>The live updater on success, null on error. Errors are logged.</returns>
-    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
+    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResCoreData spaceData, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
 
@@ -98,7 +98,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         return new LiveState( environment, installHooks, installer );
 
         static bool ReadInstallHooks( IActivityMonitor monitor,
-                                      ResSpaceData spaceData,
+                                      ResCoreData spaceData,
                                       IBinaryDeserializer d,
                                       ImmutableArray<ITransformableFileInstallHook>.Builder hooksBuilder )
         {

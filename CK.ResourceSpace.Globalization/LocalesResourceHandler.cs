@@ -57,7 +57,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <param name="activeCultures">The required active cultures.</param>
     /// <param name="installOption">How the final locale files must be generated.</param>
     public LocalesResourceHandler( IResourceSpaceItemInstaller? installer,
-                                   ISpaceDataCache packageDataCache,
+                                   ICoreDataCache packageDataCache,
                                    string rootFolderName,
                                    ActiveCultureSet activeCultures,
                                    InstallOption installOption )
@@ -70,7 +70,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <summary>
     /// Gets the cache instance to which this data handler is bound.
     /// </summary>
-    public ISpaceDataCache ResPackageDataCache => _cache.SpaceCache;
+    public ICoreDataCache ResPackageDataCache => _cache.SpaceCache;
 
     /// <summary>
     /// Gets the final assets that have been successfully initialized.
@@ -82,7 +82,7 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// Gets whether this is empty: there is only the "en" <see cref="ActiveCultureSet.Root"/> default active culture
     /// and there is no translation at all for this root.
     /// <para>
-    /// This is always empty until <see cref="Initialize(IActivityMonitor, ResSpaceData)"/> is called.
+    /// This is always empty until <see cref="Initialize(IActivityMonitor, ResCoreData)"/> is called.
     /// </para>
     /// </summary>
     public bool IsEmpty => _cache.ActiveCultures.Count == 1 && _finalTranslations?.Translations.Count == 0;
@@ -93,13 +93,13 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="spaceData">The resource data.</param>
     /// <returns>True if the FinalTranslations can be successfully computed and that no ambiguous resources exist.</returns>
-    protected override bool Initialize( IActivityMonitor monitor, ResSpaceData spaceData )
+    protected override bool Initialize( IActivityMonitor monitor, ResCoreData spaceData )
     {
         _finalTranslations = GetUnambiguousFinalTranslations( monitor, spaceData );
         return _finalTranslations != null;
     }
 
-    FinalTranslationSet? GetUnambiguousFinalTranslations( IActivityMonitor monitor, ResSpaceData spaceData )
+    FinalTranslationSet? GetUnambiguousFinalTranslations( IActivityMonitor monitor, ResCoreData spaceData )
     {
         FinalTranslationSet? r = _cache.Obtain( monitor, spaceData.AppPackage );
         if( r != null )

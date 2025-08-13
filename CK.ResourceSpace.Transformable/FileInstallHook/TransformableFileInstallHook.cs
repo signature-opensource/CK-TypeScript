@@ -11,9 +11,9 @@ namespace CK.Core;
 public abstract class TransformableFileInstallHook : ITransformableFileInstallHook
 {
     TransformerHost? _transformerHost;
-    ResSpaceData? _data;
+    ResCoreData? _data;
 
-    internal void Initialize( ResSpaceData data, TransformerHost host )
+    internal void Initialize( ResCoreData data, TransformerHost host )
     {
         _data = data;
         _transformerHost = host;
@@ -31,7 +31,7 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
     /// <see cref="IsInitialized"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
     /// </summary>
-    protected ResSpaceData? SpaceData
+    protected ResCoreData? SpaceData
     {
         get
         {
@@ -70,10 +70,10 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
 
     /// <summary>
     /// Gets whether <see cref="WriteLiveState(IBinarySerializer)"/> must be called.
-    /// Defaults to true: by default if <see cref="ResSpaceData.HasLiveState"/> is true, a hook must be able
+    /// Defaults to true: by default if <see cref="ResCoreData.HasLiveState"/> is true, a hook must be able
     /// to restore a Live <see cref="ITransformableFileInstallHook"/>.
     /// <para>
-    /// This is never called when <see cref="ResSpaceData.HasLiveState"/> is false.
+    /// This is never called when <see cref="ResCoreData.HasLiveState"/> is false.
     /// </para>
     /// </summary>
     /// <returns></returns>
@@ -81,7 +81,7 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
 
     /// <summary>
     /// Writes the live state in the primary live state file.
-    /// This is called when <see cref="ResSpaceData.HasLiveState"/> and <see cref="ShouldWriteLiveState"/> are both true.
+    /// This is called when <see cref="ResCoreData.HasLiveState"/> and <see cref="ShouldWriteLiveState"/> are both true.
     /// <para>
     /// A public static method with the following signature must be defined:
     /// <code>

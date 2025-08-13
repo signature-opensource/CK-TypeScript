@@ -34,7 +34,7 @@ sealed partial class TransformEnvironment
     readonly IExternalTransformableItemResolver? _externalItemResolver;
     List<ExternalItem>? _externalItems;
 
-    internal TransformEnvironment( ResSpaceData spaceData,
+    internal TransformEnvironment( ResCoreData spaceData,
                                    TransformerHost transformerHost,
                                    IExternalTransformableItemResolver? externalItemResolver )
     {

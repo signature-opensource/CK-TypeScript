@@ -13,7 +13,7 @@ namespace CK.Core;
 /// in any order.
 /// <para>
 /// This is the input of the <see cref="ResSpaceDataBuilder"/> that topologically sorts
-/// the descriptors to produce the immutable <see cref="ResSpaceData.Packages"/>.
+/// the descriptors to produce the immutable <see cref="ResCoreData.Packages"/>.
 /// </para>
 /// </summary>
 public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
@@ -45,7 +45,7 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
     }
 
     /// <summary>
-    /// Gets the package index. <see cref="FindByFullName(string)"/> or <see cref="FindByType(Type)"/>
+    /// Gets the package index. <see cref="FindByFullName(string)"/> or <see cref="FindByType(ICachedType)"/>
     /// should be used to find a package descriptor.
     /// </summary>
     public IReadOnlyDictionary<object, ResPackageDescriptor> PackageIndex => _coreCollector.PackageIndex;
@@ -54,7 +54,7 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
     /// Gets the package descriptors.
     /// <para>
     /// This doesn't contain the "&lt;Code&gt;" and "&lt;App&gt;" packages: the <see cref="ResSpaceDataBuilder"/>
-    /// generates them in the <see cref="ResSpaceData"/>.
+    /// generates them in the <see cref="ResCoreData"/>.
     /// </para>
     /// </summary>
     public IReadOnlyCollection<ResPackageDescriptor> Packages => _coreCollector.Packages;

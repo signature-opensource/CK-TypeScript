@@ -31,9 +31,9 @@ sealed partial class StableItemOrInputTracker
     // This array contains an entry for local IResPackageResources (=> ResSpaceData.LocalPackageResources).
     // The HashSet contains a changed ILocalInput or the full path string of a new file candidate.
     readonly HashSet<object>?[] _localChanges;
-    readonly ResSpaceData _spaceData;
+    readonly ResCoreData _spaceData;
 
-    internal StableItemOrInputTracker( ResSpaceData spaceData )
+    internal StableItemOrInputTracker( ResCoreData spaceData )
     {
         _spaceData = spaceData;
         _o = new object?[_spaceData.AllPackageResources.Length];

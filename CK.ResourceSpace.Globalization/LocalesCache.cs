@@ -8,7 +8,7 @@ sealed class LocalesCache : ResPackageDataCache<FinalTranslationSet>
     readonly ActiveCultureSet _activeCultures;
     readonly string _rootFolderName;
 
-    public LocalesCache( ISpaceDataCache cache, ActiveCultureSet activeCultures, string rootFolderName )
+    public LocalesCache( ICoreDataCache cache, ActiveCultureSet activeCultures, string rootFolderName )
         : base( cache )
     {
         _activeCultures = activeCultures;

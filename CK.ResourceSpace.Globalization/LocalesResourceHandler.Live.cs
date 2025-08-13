@@ -20,7 +20,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
 
     /// <summary>
     /// Writes the live state in the primary live state file and into auxiliary files in
-    /// the <see cref="ResSpaceData.LiveStatePath"/>.
+    /// the <see cref="ResCoreData.LiveStatePath"/>.
     /// <para>
     /// This can be overridden (and a static <see cref="ReadLiveState"/> must always be implemented).
     /// </para>
@@ -29,7 +29,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
     /// <param name="s">The serializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <param name="spaceData">The resource space that has been serialized.</param>
     /// <returns>True on success, false on error. Errors must be logged.</returns>
-    public virtual bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResSpaceData spaceData )
+    public virtual bool WriteLiveState( IActivityMonitor monitor, IBinarySerializer s, ResCoreData spaceData )
     {
         Throw.DebugAssert( "Otherwise LiveState would have been disabled.", Installer is FileSystemInstaller );
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
@@ -53,7 +53,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
         }
         return true;
 
-        static void WriteSerializedData( ICKBinaryWriter w, ResSpaceData spaceData, FinalTranslationSet.SerializedData d )
+        static void WriteSerializedData( ICKBinaryWriter w, ResCoreData spaceData, FinalTranslationSet.SerializedData d )
         {
             WriteTranslations( w, spaceData, d.Translations, d.IsAmbiguous );
             w.WriteNonNegativeSmallInt32( d.SubSets.Length );
@@ -63,7 +63,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
             }
 
             static void WriteTranslations( ICKBinaryWriter w,
-                                           ResSpaceData spaceData,
+                                           ResCoreData spaceData,
                                            IReadOnlyDictionary<string, FinalTranslationValue>? translations,
                                            bool isAmbiguous )
             {
@@ -82,7 +82,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
                     w.Write( isAmbiguous );
                 }
 
-                static void WriteFinalTranslationValue( ICKBinaryWriter w, ResSpaceData spaceData, FinalTranslationValue v, bool withAmbiguities )
+                static void WriteFinalTranslationValue( ICKBinaryWriter w, ResCoreData spaceData, FinalTranslationValue v, bool withAmbiguities )
                 {
                     w.WriteNonNegativeSmallInt32( spaceData.GetPackageResources( v.Origin ).Index );
                     w.Write( v.Origin.FullResourceName );
@@ -117,7 +117,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
     /// <param name="spaceData">The deserialized resource space data.</param>
     /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
     /// <returns>The live updater on success, null on error. Errors are logged.</returns>
-    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
+    public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResCoreData spaceData, IBinaryDeserializer d )
     {
         var targetInstallPath = d.Reader.ReadString();
         var cultures = d.Reader.ReadString().Split( ',' ).Select( NormalizedCultureInfo.EnsureNormalizedCultureInfo );
@@ -138,12 +138,12 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
     {
         readonly LocalesResourceHandler _handler;
         readonly FileSystemInstaller _installer;
-        readonly ResSpaceData _data;
+        readonly ResCoreData _data;
         readonly string[] _activeNames;
         int _stableCount;
         bool _hasChanged;
 
-        public LiveUpdater( LocalesResourceHandler handler, FileSystemInstaller installer, ResSpaceData data, int stableCount )
+        public LiveUpdater( LocalesResourceHandler handler, FileSystemInstaller installer, ResCoreData data, int stableCount )
         {
             _handler = handler;
             _installer = installer;
@@ -239,7 +239,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
                 }
                 return new FinalTranslationSet.SerializedData( _handler._cache.ActiveCultures, translations, subsets, isAmbiguous );
 
-                static (IReadOnlyDictionary<string, FinalTranslationValue>?,bool) ReadTranslations( ICKBinaryReader r, ResSpaceData spaceData )
+                static (IReadOnlyDictionary<string, FinalTranslationValue>?,bool) ReadTranslations( ICKBinaryReader r, ResCoreData spaceData )
                 {
                     int count = r.ReadSmallInt32();
                     if( count == -1 )
@@ -257,7 +257,7 @@ public partial class LocalesResourceHandler : ILiveResourceSpaceHandler
                     }
                     return (result, r.ReadBoolean());
 
-                    static FinalTranslationValue ReadFinalTranslationValue( ICKBinaryReader r, ResSpaceData spaceData, bool withAmbiguities )
+                    static FinalTranslationValue ReadFinalTranslationValue( ICKBinaryReader r, ResCoreData spaceData, bool withAmbiguities )
                     {
                         int idxPackageResources = r.ReadNonNegativeSmallInt32();
                         var resourcesContainer = spaceData.AllPackageResources[idxPackageResources].Resources;

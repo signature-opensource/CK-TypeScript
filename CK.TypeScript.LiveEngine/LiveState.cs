@@ -14,13 +14,13 @@ namespace CK.TypeScript.LiveEngine;
 
 sealed class LiveState
 {
-    readonly ResSpaceData _spaceData;
+    readonly ResCoreData _spaceData;
     readonly ImmutableArray<ILiveUpdater> _updaters;
     readonly string _ckGenAppPath;
     readonly string _watchRoot;
     HashSet<string>? _codeHandledFiles;
 
-    internal LiveState( ResSpaceData spaceData, ImmutableArray<ILiveUpdater> updaters )
+    internal LiveState( ResCoreData spaceData, ImmutableArray<ILiveUpdater> updaters )
     {
         // Are we internal (DebugAssert) or public (CheckArgument) here?
         // Consider that this may be called out of control.
@@ -32,7 +32,7 @@ sealed class LiveState
         _watchRoot = spaceData.WatchRoot;
     }
 
-    public ResSpaceData SpaceData => _spaceData;
+    public ResCoreData SpaceData => _spaceData;
 
     public string CKGenAppPath => _ckGenAppPath;
 
@@ -130,7 +130,7 @@ sealed class LiveState
                 monitor.Error( $"Invalid version '{v}', expected '{ResSpace.CurrentVersion}'." );
                 return null;
             }
-            var spaceData = d.ReadObject<ResSpaceData>();
+            var spaceData = d.ReadObject<ResCoreData>();
             if( !liveStateFilePath.Equals( spaceData.LiveStatePath + ResSpace.LiveStateFileName, StringComparison.OrdinalIgnoreCase ) )
             {
                 monitor.Error( $"Invalid paths. LiveState loaded from '{liveStateFilePath}' is from '{spaceData.LiveStatePath}'." );

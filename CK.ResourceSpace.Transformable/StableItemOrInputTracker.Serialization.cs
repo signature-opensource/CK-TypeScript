@@ -5,7 +5,7 @@ namespace CK.Core;
 
 sealed partial class StableItemOrInputTracker
 {
-    public StableItemOrInputTracker( ResSpaceData spaceData, IBinaryDeserializer d )
+    public StableItemOrInputTracker( ResCoreData spaceData, IBinaryDeserializer d )
     {
         _spaceData = spaceData;
         _o = d.ReadObject<object?[]>();

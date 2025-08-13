@@ -48,7 +48,7 @@ public sealed partial class TypeScriptContext
     {
         readonly StringBuilder _builder;
 
-        public LocalBuilder( ResSpaceData spaceData )
+        public LocalBuilder( ResCoreData spaceData )
         {
             _builder = new StringBuilder( $"""
                     {_commonHeader}
@@ -204,7 +204,7 @@ public sealed partial class TypeScriptContext
         }
 
         public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
-                                                                        ResSpaceData spaceData,
+                                                                        ResCoreData spaceData,
                                                                         IBinaryDeserializer d )
         {
             int lessLanguageIndex = d.Reader.ReadInt32();
@@ -225,13 +225,13 @@ public sealed partial class TypeScriptContext
 
         sealed class LiveHook : ILiveTransformableFileInstallHook
         {
-            readonly ResSpaceData _spaceData;
+            readonly ResCoreData _spaceData;
             readonly int _lessLanguageIndex;
             readonly ITransformInstallableItem?[] _primaryVariableFiles;
             readonly string?[] _finalTexts;
             bool _rebuildAll;
 
-            public LiveHook( ResSpaceData spaceData,
+            public LiveHook( ResCoreData spaceData,
                              int lessLanguageIndex,
                              ITransformInstallableItem?[] primaryVariableFiles,
                              string?[] finalTexts )

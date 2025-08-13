@@ -9,7 +9,7 @@ public sealed partial class TypeScriptContext
     sealed class TypeScriptLocalesResourceHandler : LocalesResourceHandler
     {
         public TypeScriptLocalesResourceHandler( IResourceSpaceItemInstaller? installer,
-                                                 ISpaceDataCache packageDataCache,
+                                                 ICoreDataCache packageDataCache,
                                                  ActiveCultureSet activeCultures,
                                                  bool sortKeys )
             : base( installer,
@@ -94,14 +94,14 @@ public sealed partial class TypeScriptContext
         }
 
         /// <summary>
-        /// Direct relay to <see cref="LocalesResourceHandler.ReadLiveState(IActivityMonitor, ResSpaceData, IBinaryDeserializer)"/>:
+        /// Direct relay to <see cref="LocalesResourceHandler.ReadLiveState(IActivityMonitor, ResCoreData, IBinaryDeserializer)"/>:
         /// there is no specific live behavior since adding or removing an active culture cannot be done dynamically.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="spaceData">The deserialized resource space data.</param>
         /// <param name="d">The deserializer for the primary <see cref="ResSpace.LiveStateFileName"/>.</param>
         /// <returns>The live updater on success, null on error. Errors are logged.</returns>
-        public static new ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d )
+        public static new ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResCoreData spaceData, IBinaryDeserializer d )
         {
             return LocalesResourceHandler.ReadLiveState( monitor, spaceData, d );
         }

@@ -28,7 +28,7 @@ public sealed partial class TypeScriptContext
     readonly PocoCodeGenerator _pocoGenerator;
 
     // Dirty trick used to expose the SpaceData when available. 
-    ResSpaceData? _spaceData;
+    ResCoreData? _spaceData;
 
     internal TypeScriptContext( ICodeGenerationContext codeCtx,
                                 TypeScriptBinPathAspectConfiguration tsBinPathConfig,
@@ -200,7 +200,7 @@ public sealed partial class TypeScriptContext
     /// <summary>
     /// Exposes the space data computed by Run. Ugly.
     /// </summary>
-    public ResSpaceData? ResSpaceData => _spaceData;
+    public ResCoreData? ResSpaceData => _spaceData;
 
     internal bool Run( IActivityMonitor monitor )
     {
@@ -291,7 +291,7 @@ public sealed partial class TypeScriptContext
         // the type mapping that is now available on the ResSpaceData.
         // This is ugly but we expose it on this TypeScriptContext...
 
-        _spaceData = spaceData;
+        _spaceData = spaceData.CoreData;
 
         if( !success || !_tsRoot.GenerateCode( monitor ) )
         {
@@ -314,7 +314,7 @@ public sealed partial class TypeScriptContext
                 // This is NOT ideal!
                 // Temporary:
                 var cT = _codeContext.CurrentRun.ConfigurationGroup.TypeCache.Get( p.DecoratedType );
-                if( !spaceData.PackageIndex.TryGetValue( cT, out var resPackage ) )
+                if( !spaceData.CoreData.PackageIndex.TryGetValue( cT, out var resPackage ) )
                 {
                     return true;
                 }
@@ -339,12 +339,12 @@ public sealed partial class TypeScriptContext
 
 
         success &= spaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer,
-                                                                                     spaceData.SpaceDataCache,
+                                                                                     spaceData.CoreData.SpaceDataCache,
                                                                                      "ts-assets" ) );
         success &= spaceBuilder.RegisterHandler( monitor, new TypeScriptLocalesResourceHandler( installer,
-                                                                                                spaceData.SpaceDataCache,
+                                                                                                spaceData.CoreData.SpaceDataCache,
                                                                                                 typeScriptContext.ActiveCultures,
-                                                                                                sortKeys: spaceData.HasLiveState ) );
+                                                                                                sortKeys: spaceData.CoreData.HasLiveState ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var externalItemResolver = _integrationContext != null
                                     ? new ExternalItemResolver( _integrationContext.CKGenFolder, _integrationContext.SrcFolderPath )
@@ -381,7 +381,7 @@ public sealed partial class TypeScriptContext
                 // is a "fake" component that is used to reference the "root router".
                 // We have no ResPackage for it, so we skip here any ResPackage not found...
                 // This is NOT ideal!
-                if( !spaceData.PackageIndex.TryGetValue( p.DecoratedType, out var resPackage ) )
+                if( !spaceData.CoreData.PackageIndex.TryGetValue( p.DecoratedType, out var resPackage ) )
                 {
                     return true;
                 }

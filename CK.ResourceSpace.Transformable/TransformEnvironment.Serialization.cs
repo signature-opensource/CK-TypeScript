@@ -6,7 +6,7 @@ namespace CK.Core;
 
 sealed partial class TransformEnvironment
 {
-    public TransformEnvironment( ResSpaceData spaceData, TransformerHost transformerHost, IBinaryDeserializer d )
+    public TransformEnvironment( ResCoreData spaceData, TransformerHost transformerHost, IBinaryDeserializer d )
     {
         _transformerHost = transformerHost;
         _items = d.ReadObject<Dictionary<NormalizedPath, TransformableItem>>();
