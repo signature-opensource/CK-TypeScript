@@ -62,7 +62,7 @@ public class FromScratchTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.EnsureAspect<TypeScriptAspectConfiguration>();
         configuration.FirstBinPath.Path = TestHelper.BinFolder;
-        NgAspNetAuthTests.AddAssembliesAndTypes( configuration );
+        NgAspNetAuthBasicTests.AddAssembliesAndTypes( configuration );
 
         var tsConfig = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         tsConfig.TargetProjectPath = root;

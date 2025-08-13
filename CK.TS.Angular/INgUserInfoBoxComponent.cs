@@ -1,9 +1,10 @@
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Category interface for the user info box that display the authenticated user
+/// Category interface for the user info box that displays the authenticated user
 /// avatar and personal menu.
 /// </summary>
-public interface INgUserInfoBoxComponent : INgComponent, INgSingleComponent
+[NgSingleAbstractComponent( "user-info-box" )]
+public interface INgUserInfoBoxComponent : INgComponent
 {
 }

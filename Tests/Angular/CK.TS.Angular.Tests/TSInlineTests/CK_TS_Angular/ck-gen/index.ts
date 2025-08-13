@@ -14,5 +14,3 @@ export * from './CK/Ng/PublicSection/public-section/SomeFolder/some-file';
 export * from './CK/Ng/PublicSection/public-topbar/public-topbar.component';
 export * from './CK/Ng/Zorro/action-bar/action-bar.component';
 export * from './CK/Ng/Zorro/action-bar/action-bar.model';
-export * from './CK/Ng/Zorro/generic-form/generic-form.component';
-export * from './CK/Ng/Zorro/generic-form/generic-form.model';

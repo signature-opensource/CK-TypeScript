@@ -7,6 +7,7 @@ namespace CK.TS.Angular;
 /// Implementations must have a true <see cref="NgComponentAttribute.HasRoutes"/>.
 /// </para>
 /// </summary>
-public interface INgPrivatePageComponent : INgComponent, INgSingleComponent
+[NgSingleAbstractComponent( "private-page" )]
+public interface INgPrivatePageComponent : INgComponent
 {
 }

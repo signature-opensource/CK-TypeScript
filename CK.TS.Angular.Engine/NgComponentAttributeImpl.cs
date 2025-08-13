@@ -60,7 +60,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     public string ComponentName => DecoratedType.Name;
 
     /// <summary>
-    /// Gets the component name (snake-case) without "Component" suffix.
+    /// Gets the component name (snake-case) without "component" suffix.
     /// </summary>
     public string FileComponentName => _snakeName;
 
@@ -107,55 +107,65 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                                                           ResPackageDescriptor package )
     {
         Throw.DebugAssert( !IsAppComponent );
-
         // Temporary
-        var typeCache = context.CodeContext.CurrentRun.ConfigurationGroup.TypeCache;
-        var decoratedType = typeCache.Get( DecoratedType );
-        var ngSingleComponent = typeCache.Get( typeof( INgSingleComponent ) );
+        Throw.DebugAssert( package.Type != null && package.Type.Type == DecoratedType );
 
-        return HandleSingleComponent( monitor, package, decoratedType, ngSingleComponent, out ICachedType? pageComponent )
-               && base.OnCreateResPackageDescriptor( monitor, context, spaceConfiguration, package );
-
-        static bool HandleSingleComponent( IActivityMonitor monitor,
-                                         ResPackageDescriptor d,
-                                         ICachedType decoratedType,
-                                         ICachedType ngSingleComponent,
-                                         out ICachedType? pageComponent )
+        if( !FindSingleAbstract( monitor, package, out var singleInterface, out var expectedComponentName ) )
         {
-            bool success = true;
-            pageComponent = null;
-            if( decoratedType.Interfaces.Contains( ngSingleComponent ) )
+            return false;
+        }
+        if( singleInterface != null )
+        {
+            Throw.DebugAssert( !string.IsNullOrWhiteSpace( expectedComponentName ) );
+            if( expectedComponentName != _snakeName )
             {
-                // If the type directly implements INgSingleComponent, there's nothing to map.
-                // 
-                if( !decoratedType.DirectInterfaces.Contains( ngSingleComponent ) )
+                monitor.Error( $"""
+                    Invalid single Angular abstract component. '{package.Type}' is a '{singleInterface}'.
+                    Its component name must be '{expectedComponentName}', not '{_snakeName}'.
+                    """ );
+                return false;
+            }
+            if( !package.AddSingleMapping( monitor, singleInterface ) )
+            {
+                return false;
+            }
+        }
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceConfiguration, package );
+
+        static bool FindSingleAbstract( IActivityMonitor monitor,
+                                        ResPackageDescriptor package,
+                                        out ICachedType? singleInterface,
+                                        out string? expectedComponentName )
+        {
+            Throw.DebugAssert( package.Type != null );
+
+            expectedComponentName = null;
+            singleInterface = null;
+            var attrType = typeof( NgSingleAbstractComponentAttribute );
+            foreach( var i in package.Type.Interfaces )
+            {
+                var attr = i.AttributesData.FirstOrDefault( a => a.AttributeType == attrType );
+                if( attr != null ) 
                 {
-                    // What is the interface that is a INgSingleComponent?
-                    List<string>? ambiguities = null;
-                    foreach( var i in decoratedType.Interfaces.Where( i => i.DirectInterfaces.Contains( ngSingleComponent ) ) )
+                    if( singleInterface != null )
                     {
-                        if( pageComponent == null )
-                        {
-                            pageComponent = i;
-                        }
-                        else
-                        {
-                            ambiguities ??= new List<string>() { pageComponent.CSharpName };
-                            ambiguities.Add( i.CSharpName );
-                        }
+                        var multiple = package.Type.Interfaces
+                                                   .Where( i => i.AttributesData.Any( a => a.AttributeType == attrType ) )
+                                                   .Select( c => c.ToString() )
+                                                   .Concatenate( "', '" );
+                        monitor.Error( $"Type '{package.Type}' implements multiple single Angular abstract component: '{multiple}'." );
+                        return false;
                     }
-                    if( ambiguities != null )
+                    singleInterface = i;
+                    expectedComponentName = (string?)attr.ConstructorArguments[0].Value;
+                    if( string.IsNullOrWhiteSpace( expectedComponentName ) )
                     {
-                        monitor.Error( $"Ambiguous INgSingleComponent for '{decoratedType.CSharpName}': interfaces '{ambiguities.Concatenate( "', '" )}' are all INgPageComponent. Only one can exist." );
-                        success = false;
-                    }
-                    if( pageComponent != null && !d.AddSingleMapping( monitor, pageComponent ) )
-                    {
-                        success = false;
+                        monitor.Error( $"Invalid empty component name in [NgSingleAbstractComponent()] on '{i}'." );
+                        return false;
                     }
                 }
             }
-            return success;
+            return true;
         }
     }
 

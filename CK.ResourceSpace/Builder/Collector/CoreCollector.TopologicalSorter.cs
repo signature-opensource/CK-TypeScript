@@ -192,7 +192,7 @@ sealed partial class CoreCollector
                     // If the cached package is still optional: returns the optional ref to it.
                     return new Ref( p, p.IsOptional );
                 }
-                Throw.DebugAssert( already is string or Type );
+                Throw.DebugAssert( already is string or Type or ICachedType );
                 // The cached result is the one of an optional reference that has not been resolved.
                 if( r.IsOptional )
                 {

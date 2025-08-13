@@ -4,7 +4,7 @@ using CK.TypeScript;
 
 namespace CK.Ng.Zorro;
 
-[NgComponent]
+[NgComponent( IsOptional = true )]
 [Package<BackOfficePackage>]
 [TypeScriptFile( "action-bar.model.ts", "ActionBarContent", "ActionBarAction" )]
 public sealed class ActionBarComponent : NgComponent

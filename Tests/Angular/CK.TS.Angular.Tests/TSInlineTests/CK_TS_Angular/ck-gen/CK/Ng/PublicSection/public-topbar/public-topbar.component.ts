@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { ActionBarContent, ActionBarAction } from '@local/ck-gen/CK/Ng/Zorro/action-bar/action-bar.model';
+// The PublicTopBarComponent requires the optional Zorro.ActionBar so it becomes no more optional.
 
 @Component({
     selector: 'ck-public-topbar',

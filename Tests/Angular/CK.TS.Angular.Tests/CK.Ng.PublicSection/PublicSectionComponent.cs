@@ -14,6 +14,15 @@ namespace CK.Ng.PublicSection;
 
 [TypeScriptFile( "SomeFolder/some-file.ts", "SomeSymbol" )]
 [TypeScriptFile( "SomeFolder/some-other-file.ts", "SomeOtherSymbol", TargetFolder = "CK/Ng/PublicSection/public-section" )]
+
+//
+// Only an Optional requires.
+// No one actually requires it, the GenericFormComponent is still optional: it doesn't appear in
+// the final ck-gen.
+// The transformer "generic-form.t" doesn't break the run because the still optional package is found
+// and it is simply ignored.
+//
+[OptionalRequires<CK.Ng.Zorro.GenericFormComponent>]
 public sealed class PublicSectionComponent : NgComponent, INgNamedComponent // Testing the CK/Angular/NamedComponentResolver.ts
 {
 }

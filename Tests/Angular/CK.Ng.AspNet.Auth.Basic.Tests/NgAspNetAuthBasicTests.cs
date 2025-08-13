@@ -10,7 +10,7 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.Ng.AspNet.Auth.Basic.Tests;
 
 [TestFixture]
-public class NgAspNetAuthTests
+public class NgAspNetAuthBasicTests
 {
     [Test]
     public async Task CK_Ng_AspNet_Auth_Basic_Async()
