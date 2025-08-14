@@ -6,12 +6,13 @@ namespace CK.Core;
 
 sealed partial class TransformEnvironment
 {
-    public TransformEnvironment( ResCoreData spaceData, TransformerHost transformerHost, IBinaryDeserializer d )
+    public TransformEnvironment( ResCoreData coreData, TransformerHost transformerHost, IBinaryDeserializer d )
     {
+        _coreData = coreData;
         _transformerHost = transformerHost;
         _items = d.ReadObject<Dictionary<NormalizedPath, TransformableItem>>();
         _transformFunctions = d.ReadObject<Dictionary<string, TFunction>>();
-        _tracker = new StableItemOrInputTracker( spaceData, d );
+        _tracker = new StableItemOrInputTracker( coreData, d );
         _functionSourceCollector = d.ReadObject<List<FunctionSource>>();
         _unboundFunctions = new HashSet<TFunction>();
     }

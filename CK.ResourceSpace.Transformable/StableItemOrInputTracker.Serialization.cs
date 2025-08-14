@@ -7,7 +7,7 @@ sealed partial class StableItemOrInputTracker
 {
     public StableItemOrInputTracker( ResCoreData spaceData, IBinaryDeserializer d )
     {
-        _spaceData = spaceData;
+        _coreData = spaceData;
         _o = d.ReadObject<object?[]>();
         _localChanges = new HashSet<object>?[spaceData.LocalPackageResources.Length];
     }

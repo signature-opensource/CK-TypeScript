@@ -9,6 +9,7 @@ namespace CK.Core;
 
 sealed partial class TransformEnvironment
 {
+    readonly ResCoreData _coreData;
     readonly TransformerHost _transformerHost;
 
     // Required to detect duplicate resources mapping to the same target path.
@@ -34,15 +35,16 @@ sealed partial class TransformEnvironment
     readonly IExternalTransformableItemResolver? _externalItemResolver;
     List<ExternalItem>? _externalItems;
 
-    internal TransformEnvironment( ResCoreData spaceData,
+    internal TransformEnvironment( ResCoreData coreData,
                                    TransformerHost transformerHost,
                                    IExternalTransformableItemResolver? externalItemResolver )
     {
+        _coreData = coreData;
         _transformerHost = transformerHost;
         _externalItemResolver = externalItemResolver;
         _items = new Dictionary<NormalizedPath, TransformableItem>();
         _transformFunctions = new Dictionary<string, TFunction>();
-        _tracker = new StableItemOrInputTracker( spaceData );
+        _tracker = new StableItemOrInputTracker( coreData );
         _functionSourceCollector = new List<FunctionSource>();
     }
 

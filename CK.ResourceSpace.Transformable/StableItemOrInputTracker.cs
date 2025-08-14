@@ -31,12 +31,12 @@ sealed partial class StableItemOrInputTracker
     // This array contains an entry for local IResPackageResources (=> ResSpaceData.LocalPackageResources).
     // The HashSet contains a changed ILocalInput or the full path string of a new file candidate.
     readonly HashSet<object>?[] _localChanges;
-    readonly ResCoreData _spaceData;
+    readonly ResCoreData _coreData;
 
     internal StableItemOrInputTracker( ResCoreData spaceData )
     {
-        _spaceData = spaceData;
-        _o = new object?[_spaceData.AllPackageResources.Length];
+        _coreData = spaceData;
+        _o = new object?[_coreData.AllPackageResources.Length];
         _localChanges = new HashSet<object>?[spaceData.LocalPackageResources.Length];
     }
 
@@ -166,7 +166,7 @@ sealed partial class StableItemOrInputTracker
             HashSet<object>? set = _localChanges[iLocalResource];
             if( set != null && set.Count > 0 )
             {
-                var resources = _spaceData.LocalPackageResources[iLocalResource];
+                var resources = _coreData.LocalPackageResources[iLocalResource];
                 foreach( var c in set )
                 {
                     if( c is string fullPath )
@@ -278,7 +278,7 @@ sealed partial class StableItemOrInputTracker
     {
         for( int i = 0; i < _o.Length; i++ )
         {
-            var expectedResources = _spaceData.AllPackageResources[i];
+            var expectedResources = _coreData.AllPackageResources[i];
             var o = _o[i];
             if( o is ILocalInput input )
             {
