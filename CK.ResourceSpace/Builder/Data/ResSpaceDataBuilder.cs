@@ -175,12 +175,17 @@ public sealed class ResSpaceDataBuilder
         var resourceIndex = new Dictionary<IResourceContainer, IResPackageResources>( resourceIndexSize );
 
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
+        var excludedOptionalResourcePaths = finalOptionalPackages.SelectMany( p => p.ResourcesInnerContainer
+                                                                                    .AllResources
+                                                                                    .Select( r => r.ResourceName ) )
+                                                                 .ToImmutableArray();
         var space = new ResCoreData( _generatedCodeContainer,
                                       _collector.LiveStatePath,
                                       _collector.TypeCache,
                                       packageIndex,
                                       resourceIndex,
-                                      codeHandledResources );
+                                      codeHandledResources,
+                                      excludedOptionalResourcePaths );
 
         // Initialize the SpaceDataCacheBuilder. It carries the space data to the ResPackage constructors.
         var dataCacheBuilder = new ResCoreDataCacheBuilder( space,
