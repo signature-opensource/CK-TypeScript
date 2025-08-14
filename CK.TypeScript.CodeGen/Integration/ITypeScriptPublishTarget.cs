@@ -9,7 +9,7 @@ namespace CK.TypeScript.CodeGen;
 public interface ITypeScriptPublishTarget
 {
     /// <summary>
-    /// Called before the publication. <see cref="TypeScriptFolder.FileCount"/> can be used to
+    /// Called before the publication. <see cref="TypeScriptFolder.PublishedFileCount"/> can be used to
     /// prepare this target.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>

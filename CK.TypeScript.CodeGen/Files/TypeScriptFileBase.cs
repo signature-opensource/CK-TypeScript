@@ -50,7 +50,7 @@ public abstract partial class TypeScriptFileBase
             else if( !unpublishedResourceFile )
             {
                 // This files is published. It counts.
-                folder.IncrementFileCount();
+                folder.IncrementPublishedFileCount();
             }
             if( previous == null )
             {

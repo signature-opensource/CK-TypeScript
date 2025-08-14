@@ -19,7 +19,7 @@ public sealed partial class TypeScriptFolder
     readonly string _path;
     readonly string _name;
     internal TypeScriptFileBase? _firstFile;
-    int _fileCount;
+    int _publishedFileCount;
     bool _wantBarrel;
     bool _hasExportedSymbol;
 
@@ -111,7 +111,7 @@ public sealed partial class TypeScriptFolder
         if( !_wantBarrel )
         {
             _wantBarrel = true;
-            if( _hasExportedSymbol ) IncrementFileCount();
+            if( _hasExportedSymbol ) IncrementPublishedFileCount();
         }
     }
 
@@ -126,22 +126,28 @@ public sealed partial class TypeScriptFolder
         {
             _hasExportedSymbol = true;
             _parent?.SetHasExportedSymbol();
-            if( _wantBarrel ) IncrementFileCount();
+            if( _wantBarrel ) IncrementPublishedFileCount();
         }
     }
 
-    internal void IncrementFileCount()
+    internal void IncrementPublishedFileCount()
     {
-        ++_fileCount;
-        _parent?.IncrementFileCount();
+        ++_publishedFileCount;
+        _parent?.IncrementPublishedFileCount();
     }
 
     /// <summary>
     /// Gets the total number of files that this folder will publish.
     /// This can differ from the <see cref="AllFilesRecursive"/> count because of the 'index.ts'
-    /// barrel management and that <see cref="ResourceTypeScriptFile"/> are not published.
+    /// barrel management and that <see cref="ResourceTypeScriptFile"/> are not necessarily published.
+    /// This maintains the sum of:
+    /// <list type="bullet">
+    ///     <item>The number of <see cref="TypeScriptFile"/> below.</item>
+    ///     <item>The number of ResourceTypeScriptFile that have <see cref="ResourceTypeScriptFile.IsPublishedResource"/> below.</item>
+    ///     <item>+1 if both <see cref="HasBarrel"/> and <see cref="HasExportedSymbol"/> are true.</item>
+    /// </list>
     /// </summary>
-    public int FileCount => _fileCount;
+    public int PublishedFileCount => _publishedFileCount;
 
     TypeScriptFolder FindOrCreateLocalFolder( string name )
     {

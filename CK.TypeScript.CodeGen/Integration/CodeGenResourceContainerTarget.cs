@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.EmbeddedResources;
 using System;
 
@@ -23,7 +23,7 @@ public sealed class CodeGenResourceContainerTarget : ITypeScriptPublishTarget
 
     bool ITypeScriptPublishTarget.Open( IActivityMonitor monitor, TypeScriptRoot root )
     {
-        int count = root.Root.FileCount;
+        int count = root.Root.PublishedFileCount;
         if( count == 0 )
         {
             monitor.OpenWarn( $"No TypeScript files to generate. Creating an empty container for {_resultDisplayName}." );
