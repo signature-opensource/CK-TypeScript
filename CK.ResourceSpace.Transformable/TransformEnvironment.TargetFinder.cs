@@ -112,52 +112,12 @@ sealed partial class TransformEnvironment // TargetFinder
             }
             return true;
         }
-        result = FindTransformableItemsInReachableResources( monitor, source, f, expectedPath, isNamePrefix, name );
-        return result != null;
-    }
-
-    static bool MatchName( bool isNamePrefix,
-                           ReadOnlySpan<char> name,
-                           ReadOnlySpan<char> candidateName )
-    {
-        if( isNamePrefix )
+        if( FindTransformableItemsInReachableResources( monitor, source, f, expectedPath, isNamePrefix, name, out var item ) )
         {
-            // There cannot be a name equals to namePrefix: the items are filtered by their
-            // extensions: if they are here, their name has one of the extensions of the language.
-            // So we only handle candidate names longer than the name with an expected following '.'.
-            if( candidateName.Length > name.Length
-                && candidateName[name.Length] == '.'
-                && candidateName.StartsWith( name, StringComparison.Ordinal ) )
-            {
-                return true;
-            }
-        }
-        else if( candidateName.Equals( name, StringComparison.Ordinal ) )
-        {
+            result = item;
             return true;
         }
-        return false;
-    }
-
-    static bool MatchExpectedPath( string candidatePath, ReadOnlySpan<char> expectedPath, ReadOnlySpan<char> name )
-    {
-        // There may be no path at all if the item is mapped to the root.
-        // We decrement the length by 1 to skip the latest / separator.
-        var pathLen = candidatePath.Length - name.Length - 1;
-        if( pathLen == expectedPath.Length
-              && expectedPath.Equals( candidatePath.AsSpan( 0, pathLen ), StringComparison.Ordinal ) )
-        {
-            return true;
-        }
-        if( pathLen > expectedPath.Length )
-        {
-            var cPath = candidatePath.AsSpan( 0, pathLen );
-            if( cPath[pathLen - expectedPath.Length - 1] == '/'
-                && cPath.EndsWith( expectedPath, StringComparison.Ordinal ) )
-            {
-                return true;
-            }
-        }
+        result = null;
         return false;
     }
 
@@ -199,14 +159,76 @@ sealed partial class TransformEnvironment // TargetFinder
         isNamePrefix = ext.Length == 0;
     }
 
-    TransformableItem? FindTransformableItemsInReachableResources( IActivityMonitor monitor,
-                                                                   FunctionSource source,
-                                                                   TransformerFunction f,
-                                                                   ReadOnlySpan<char> expectedPath,
-                                                                   bool isNamePrefix,
-                                                                   ReadOnlySpan<char> name )
+    static bool MatchCandidatePath( ReadOnlySpan<char> expectedPath,
+                                    bool isNamePrefix,
+                                    ReadOnlySpan<char> name,
+                                    ReadOnlySpan<char> candidatePath )
     {
-        TransformableItem? best = null;
+        ReadOnlySpan<char> candidateName;
+        int eoDir = candidatePath.LastIndexOf( '/' );
+        candidateName = eoDir >= 0 ? candidatePath.Slice( eoDir + 1 ) : candidatePath;
+        if( MatchName( isNamePrefix, name, candidateName ) )
+        {
+            if( expectedPath.Length == 0 ) return true;
+            if( eoDir > 0 )
+            {
+                candidatePath = candidatePath.Slice( 0, eoDir );
+                return MatchExpectedPath( candidatePath, expectedPath );
+            }
+        }
+        return false;
+
+        static bool MatchName( bool isNamePrefix,
+                               ReadOnlySpan<char> name,
+                               ReadOnlySpan<char> candidateName )
+        {
+            if( isNamePrefix )
+            {
+                // There cannot be a name equals to namePrefix: the items are filtered by their
+                // extensions: if they are here, their name has one of the extensions of the language.
+                // So we only handle candidate names longer than the name with an expected following '.'.
+                if( candidateName.Length > name.Length
+                    && candidateName[name.Length] == '.'
+                    && candidateName.StartsWith( name, StringComparison.Ordinal ) )
+                {
+                    return true;
+                }
+            }
+            else if( candidateName.Equals( name, StringComparison.Ordinal ) )
+            {
+                return true;
+            }
+            return false;
+        }
+
+        static bool MatchExpectedPath( ReadOnlySpan<char> candidatePath, ReadOnlySpan<char> expectedPath )
+        {
+            if( candidatePath.Length == expectedPath.Length
+                  && expectedPath.Equals( candidatePath, StringComparison.Ordinal ) )
+            {
+                return true;
+            }
+            if( candidatePath.Length > expectedPath.Length )
+            {
+                if( candidatePath[candidatePath.Length - expectedPath.Length - 1] == '/'
+                    && candidatePath.EndsWith( expectedPath, StringComparison.Ordinal ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    bool FindTransformableItemsInReachableResources( IActivityMonitor monitor,
+                                                     FunctionSource source,
+                                                     TransformerFunction f,
+                                                     ReadOnlySpan<char> expectedPath,
+                                                     bool isNamePrefix,
+                                                     ReadOnlySpan<char> name,
+                                                     out TransformableItem? result )
+    {
+        result = null;
         List<TransformableItem>? ambiguities = null;
         foreach( var p in source.Resources.Reachables )
         {
@@ -227,30 +249,43 @@ sealed partial class TransformEnvironment // TargetFinder
                 //
                 //   This doesn't handle "ambient hints" (and it seems not easy to honor them) like an
                 //   ambient sql schema that will find a "CK.sUserRead.sql" item from a "sUserRead" target
-                //   name. This is where an external (optional) strategy can handle this. 
+                //   name. This is where an external (optional) strategy MAY handle this but it may not be a great idea:
+                //   the detection of "non error" on eventurally optional package must work in the same way as if
+                //   the package is not optional: any meta data (of the package) should not be used (or we'll
+                //   have to marshall all the optional PackageDescriptor or at leats its Type so that attributes can
+                //   be used... but what about data on the EngineAttributeImpl? Or worse, if the package is "manifest based"?
                 //
-                var candidateName = candidate.TargetPath.LastPart.AsSpan();
-                if( MatchName( isNamePrefix, name, candidateName ) )
+                //   So it appears that pure name matching is a good thing: the eventually optional packages simply have to
+                //   transmit their resource paths.
+                //
+                if( MatchCandidatePath( expectedPath, isNamePrefix, name, candidate.TargetPath.Path ) )
                 {
-                    // Name matches, we must now handle the expectedPath.
-                    if( expectedPath.Length == 0
-                        || MatchExpectedPath( candidate.TargetPath.Path, expectedPath, name ) )
+                    if( result == null )
                     {
-                        if( best == null )
-                        {
-                            best = candidate;
-                        }
-                        else
-                        {
-                            ambiguities ??= new List<TransformableItem>();
-                            ambiguities.Add( candidate );
-                        }
+                        result = candidate;
+                    }
+                    else
+                    {
+                        ambiguities ??= new List<TransformableItem>();
+                        ambiguities.Add( candidate );
                     }
                 }
             }
         }
-        if( best == null || ambiguities != null )
+        if( result == null || ambiguities != null )
         {
+            if( ambiguities == null )
+            {
+                Throw.DebugAssert( result == null );
+                foreach( var p in _coreData.ExcludedOptionalResourcePaths )
+                {
+                    if( MatchCandidatePath( expectedPath, isNamePrefix, name, p ) )
+                    {
+                        monitor.Trace( $"Ignoring {source.Origin} transformer as it targets an eventually optional packages." );
+                        return true;
+                    }
+                }
+            }
             using( monitor.OpenError( $"""
                             Unable to find the target for {source.Origin} transformer:
                             {f.Text}
@@ -265,11 +300,11 @@ sealed partial class TransformEnvironment // TargetFinder
                                 {ambiguities.Select( i => i.TargetPath.Path ).Concatenate( Environment.NewLine )}
                                 """ );
 
-                    best = null;
+                    result = null;
                 }
             }
         }
-        return best;
+        return result != null;
     }
 
 }
