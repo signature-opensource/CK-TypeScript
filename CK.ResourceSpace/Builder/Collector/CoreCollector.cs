@@ -17,7 +17,8 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
     readonly Dictionary<object, ResPackageDescriptor> _packageIndex;
     readonly List<ResPackageDescriptor> _packages;
     // Contains the package initially optional. After the topological
-    // sort, they may be no more optional.
+    // sort, they may be no more optional: the TopologicalSorter.Run() 
+    // removes the eventually non optional packages from this list.
     readonly List<ResPackageDescriptor> _optionalPackages;
     readonly ResPackageDescriptorContext _packageDescriptorContext;
 
@@ -178,6 +179,18 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         return false;
     }
 
+    public IReadOnlyDictionary<object, ResPackageDescriptor> PackageIndex => _packageIndex;
+
+    public IReadOnlyCollection<ResPackageDescriptor> Packages => _packages;
+
+    public int LocalPackageCount => _localPackageCount;
+
+    public int TypedPackageCount => _typedPackageCount;
+
+    public int SingleMappingCount => _packageDescriptorContext.SingleMappingCount;
+
+    public GlobalTypeCache TypeCache => _typeCache;
+
     void RemoveDefinitelyOptional( ResPackageDescriptor p )
     {
         Throw.DebugAssert( p.IsOptional );
@@ -203,22 +216,14 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         _packages.Add( p );
     }
 
-    public IReadOnlyDictionary<object, ResPackageDescriptor> PackageIndex => _packageIndex;
-
-    public IReadOnlyCollection<ResPackageDescriptor> Packages => _packages;
-
-    public int LocalPackageCount => _localPackageCount;
-
-    public int TypedPackageCount => _typedPackageCount;
-
-    public int SingleMappingCount => _packageDescriptorContext.SingleMappingCount;
-
-    public GlobalTypeCache TypeCache => _typeCache;
-
-    public bool Close( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
+    public bool Close( IActivityMonitor monitor,
+                       out HashSet<ResourceLocator> codeHandledResources,
+                       out IReadOnlyList<ResPackageDescriptor> finalOptionalPackages )
     {
-        codeHandledResources = _packageDescriptorContext.Close();
         var sorter = new TopologicalSorter( monitor, this );
-        return sorter.Run();
+        var success = sorter.Run();
+        finalOptionalPackages = _optionalPackages;
+        codeHandledResources = _packageDescriptorContext.Close();
+        return success;
     }
 }

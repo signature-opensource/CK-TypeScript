@@ -39,9 +39,11 @@ public sealed class ResSpaceCollector : IResPackageDescriptorRegistrar
         _liveStatePath = liveStatePath;
     }
 
-    internal bool CloseRegistrations( IActivityMonitor monitor, out HashSet<ResourceLocator> codeHandledResources )
+    internal bool CloseRegistrations( IActivityMonitor monitor,
+                                      out HashSet<ResourceLocator> codeHandledResources,
+                                      out IReadOnlyList<ResPackageDescriptor> finalOptionalPackages )
     {
-        return _coreCollector.Close( monitor, out codeHandledResources );
+        return _coreCollector.Close( monitor, out codeHandledResources, out finalOptionalPackages );
     }
 
     /// <summary>

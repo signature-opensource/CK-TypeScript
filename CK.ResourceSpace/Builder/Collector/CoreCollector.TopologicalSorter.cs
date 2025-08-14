@@ -36,43 +36,7 @@ sealed partial class CoreCollector
             if( InitialResolve() )
             {
                 // Still optional packages can now be removed from the index.
-                if( _collector._optionalPackages.Count > 0 )
-                {
-                    int removedCount = 0;
-                    foreach( var p in _collector._optionalPackages )
-                    {
-                        if( p.IsOptional )
-                        {
-                            removedCount++;
-                            _collector.RemoveDefinitelyOptional( p );
-                        }
-                    }
-                    if( _monitor.ShouldLogLine( LogLevel.Info, null, out var tags ) )
-                    {
-                        var b = new StringBuilder( "Optional packages:" ).AppendLine();
-                        if( removedCount == 0 )
-                        {
-                            b.Append( "All " ).Append( _collector._optionalPackages.Count )
-                             .Append( " optional packages are no more optional:" ).AppendLine()
-                             .AppendJoin( ", ", _collector._optionalPackages.Select( p => p.FullName ) );
-                        }
-                        else if( removedCount == _collector._optionalPackages.Count )
-                        {
-                            b.Append( "All " ).Append( removedCount )
-                             .Append( " optional packages are eventually optional and will be ignored:" ).AppendLine()
-                             .AppendJoin( ", ", _collector._optionalPackages.Select( p => p.FullName ) );
-                        }
-                        else
-                        {
-                            b.Append( "Out of " ).Append( _collector._optionalPackages.Count ).Append( " optional packages, " )
-                             .Append( removedCount ).Append( " are eventually optional and will be ignored:" ).AppendLine()
-                             .AppendJoin( ", ", _collector._optionalPackages.Where( p => p.IsOptional ).Select( p => p.FullName ) ).AppendLine()
-                             .Append( "Packages " ).AppendJoin( ", ", _collector._optionalPackages.Where( p => !p.IsOptional ).Select( p => p.FullName ) )
-                             .Append( " are no more optional." );
-                        }
-                        _monitor.UnfilteredLog( LogLevel.Info|LogLevel.IsFiltered, tags, b.ToString(), null );
-                    }
-                }
+                HandleOptionalPackages();
                 // Second step: normalize the relationships to only have to deal with Requires and Children/Groups.
                 //      - Transfer any RequiredBy to corresponding Requires
                 //      - Transfer Package as a Children of its corresponding package.
@@ -101,7 +65,67 @@ sealed partial class CoreCollector
             return false;
         }
 
-    
+        void HandleOptionalPackages()
+        {
+            var l = _collector._optionalPackages;
+            int totalCount = l.Count;
+            if( totalCount > 0 )
+            {
+                int removedCount = 0;
+                foreach( var p in l )
+                {
+                    if( p.IsOptional )
+                    {
+                        removedCount++;
+                        _collector.RemoveDefinitelyOptional( p );
+                    }
+                }
+                if( _monitor.ShouldLogLine( LogLevel.Info, null, out var tags ) )
+                {
+                    var b = new StringBuilder( "Optional packages:" ).AppendLine();
+                    if( removedCount == 0 )
+                    {
+                        b.Append( "All " ).Append( totalCount )
+                         .Append( " optional packages are no more optional:" ).AppendLine()
+                         .AppendJoin( ", ", l.Select( p => p.FullName ) );
+                    }
+                    else if( removedCount == totalCount )
+                    {
+                        b.Append( "All " ).Append( removedCount )
+                         .Append( " optional packages are eventually optional and will be ignored:" ).AppendLine()
+                         .AppendJoin( ", ", l.Select( p => p.FullName ) );
+                    }
+                    else
+                    {
+                        b.Append( "Out of " ).Append( totalCount ).Append( " optional packages, " )
+                         .Append( removedCount ).Append( " are eventually optional and will be ignored:" ).AppendLine()
+                         .AppendJoin( ", ", l.Where( p => p.IsOptional ).Select( p => p.FullName ) ).AppendLine()
+                         .Append( "Packages " ).AppendJoin( ", ", l.Where( p => !p.IsOptional ).Select( p => p.FullName ) )
+                         .Append( " are no more optional." );
+                    }
+                    _monitor.UnfilteredLog( LogLevel.Info | LogLevel.IsFiltered, tags, b.ToString(), null );
+                }
+                if( removedCount > 0 )
+                {
+                    if( removedCount == totalCount )
+                    {
+                        l.Clear();
+                    }
+                    else
+                    {
+                        for( int i = 0; i < l.Count; i++ )
+                        {
+                            if( !l[i].IsOptional )
+                            {
+                                l.RemoveAt( i-- );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
         #region First step: initial resolution of references.
         bool InitialResolve()
         {

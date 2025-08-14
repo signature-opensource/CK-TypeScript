@@ -112,6 +112,7 @@ public sealed partial class ResPackageDescriptor
     /// <returns>True on success, false on error.</returns>
     public bool AddSingleMapping( IActivityMonitor monitor, string alias )
     {
+        ThrowOnClosedContext();
         Throw.CheckNotNullOrWhiteSpaceArgument( alias );
         if( _context.AddSingleMapping( monitor, alias, this ) )
         {
@@ -136,6 +137,7 @@ public sealed partial class ResPackageDescriptor
     /// <returns>True on success, false on error.</returns>
     public bool AddSingleMapping( IActivityMonitor monitor, ICachedType alias )
     {
+        ThrowOnClosedContext();
         Throw.CheckNotNullArgument( alias );
         if( _context.AddSingleMapping( monitor, alias, this ) )
         {
@@ -163,7 +165,15 @@ public sealed partial class ResPackageDescriptor
     /// type doesn't support <see cref="IResourcePackage"/>.
     /// </para>
     /// </summary>
-    public bool IsGroup { get => _isGroup; set => _isGroup = value; }
+    public bool IsGroup
+    {
+        get => _isGroup;
+        set
+        {
+            ThrowOnClosedContext();
+            _isGroup = value;
+        }
+    }
 
     /// <summary>
     /// Gets or sets a <see cref="Ref"/> to the package that owns this one.
@@ -176,7 +186,15 @@ public sealed partial class ResPackageDescriptor
     /// be false otherwise this will be an error.
     /// </para>
     /// </summary>
-    public Ref Package { get => _package; set => _package = value; }
+    public Ref Package
+    {
+        get => _package;
+        set
+        {
+            ThrowOnClosedContext();
+            _package = value;
+        }
+    }
 
     /// <summary>
     /// Gets a mutable list of requirements that can be optional references.
@@ -211,6 +229,9 @@ public sealed partial class ResPackageDescriptor
         }
         return true;
     }
+
+
+    void ThrowOnClosedContext() => Throw.CheckState( "ResSpaceDataBuilder.Build() has been called.", Context.Closed is false );
 
     /// <inheritdoc cref="ResPackage.ToString()"/>
     public override string ToString() => _fullName;

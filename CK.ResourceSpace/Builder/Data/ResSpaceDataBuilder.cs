@@ -53,7 +53,7 @@ public sealed class ResSpaceDataBuilder
     /// <returns>The space data on success, null otherwise.</returns>
     public ResSpaceData? Build( IActivityMonitor monitor )
     {
-        if( !_collector.CloseRegistrations( monitor, out var codeHandledResources ) )
+        if( !_collector.CloseRegistrations( monitor, out var codeHandledResources, out var finalOptionalPackages ) )
         {
             return null;
         }
@@ -381,7 +381,7 @@ public sealed class ResSpaceDataBuilder
         Throw.DebugAssert( "Packages have both resources either stable or local (except the AppPackage.AfterResources that is empty by design).",
                            packages.All( p => p.IsLocalPackage == (p.Resources.LocalPath != null)
                                               && (p == space.AppPackage || p.IsLocalPackage == (p.AfterResources.LocalPath != null) ) ) );
-        return new ResSpaceData( space, codeHandledResources );
+        return new ResSpaceData( space, codeHandledResources, finalOptionalPackages );
     }
 
     static string CommonParentPath( string path1, string path2 )

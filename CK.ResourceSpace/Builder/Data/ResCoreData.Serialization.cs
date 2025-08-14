@@ -26,6 +26,7 @@ public sealed partial class ResCoreData : ICKSlicedSerializable
         _typeCache = d.Context.Services.GetService<GlobalTypeCache>( throwOnNull: true );
         _resourceIndex = d.ReadObject<IReadOnlyDictionary<IResourceContainer, IResPackageResources>>();
         _codeHandledResources = d.ReadObject<IReadOnlySet<ResourceLocator>>();
+        _excludedOptionalResourcePaths = d.ReadValue<ImmutableArray<string>>();
         _codePackage = _packages[0];
         _appPackage = _packages[^1];
 
@@ -50,6 +51,7 @@ public sealed partial class ResCoreData : ICKSlicedSerializable
         s.WriteObject( o._packageIndex );
         s.WriteObject( o._resourceIndex );
         s.WriteObject( o._codeHandledResources );
+        s.WriteValue( o._excludedOptionalResourcePaths );
 
         ICKBinaryWriter w = s.Writer;
         ((ResCoreDataCache)o._resPackageDataCache).Write( w );

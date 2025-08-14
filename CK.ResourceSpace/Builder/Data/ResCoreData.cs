@@ -18,10 +18,11 @@ public sealed partial class ResCoreData
 {
     readonly IReadOnlyDictionary<object, ResPackage> _packageIndex;
     readonly IReadOnlyDictionary<IResourceContainer, IResPackageResources> _resourceIndex;
-    // Readonly resource mask here: ResSpaceData has a HashSet refererence on it.
+    // Readonly "hidden" resources here: ResSpaceData has a HashSet refererence on it.
     readonly IReadOnlySet<ResourceLocator> _codeHandledResources;
     readonly GlobalTypeCache _typeCache;
     readonly string _liveStatePath;
+    readonly ImmutableArray<string> _excludedOptionalResourcePaths;
 
     // Last mutable code container (settable through ResSpaceData).
     // Duplicating it is required, because even if we inspect the ResourceContainerWrapper.InnerContainer,
@@ -40,11 +41,12 @@ public sealed partial class ResCoreData
     internal string? _watchRoot;
 
     internal ResCoreData( IResourceContainer? generatedCodeContainer,
-                           string cKWatchFolderPath,
-                           GlobalTypeCache typeCache,
-                           IReadOnlyDictionary<object, ResPackage> packageIndex,
-                           IReadOnlyDictionary<IResourceContainer, IResPackageResources> resourceIndex,
-                           IReadOnlySet<ResourceLocator> codeHandledResources )
+                          string cKWatchFolderPath,
+                          GlobalTypeCache typeCache,
+                          IReadOnlyDictionary<object, ResPackage> packageIndex,
+                          IReadOnlyDictionary<IResourceContainer, IResPackageResources> resourceIndex,
+                          IReadOnlySet<ResourceLocator> codeHandledResources,
+                          ImmutableArray<string> excludedOptionalResourcePaths )
     {
         _generatedCodeContainer = generatedCodeContainer;
         _liveStatePath = cKWatchFolderPath;
@@ -52,6 +54,7 @@ public sealed partial class ResCoreData
         _packageIndex = packageIndex;
         _resourceIndex = resourceIndex;
         _codeHandledResources = codeHandledResources;
+        _excludedOptionalResourcePaths = excludedOptionalResourcePaths;
     }
 
     /// <summary>
@@ -123,7 +126,8 @@ public sealed partial class ResCoreData
     }
 
     /// <summary>
-    /// Gets the <see cref="IResPackageResources"/> from a <see cref="ResourceLocator"/> or throws an <see cref="System.ArgumentException"/>.
+    /// Gets the <see cref="IResPackageResources"/> from a <see cref="ResourceLocator"/> or
+    /// throws an <see cref="System.ArgumentException"/>.
     /// </summary>
     /// <param name="locator">The resource.</param>
     /// <returns>The corresponding package resources.</returns>
@@ -156,6 +160,12 @@ public sealed partial class ResCoreData
     /// <see cref="ResPackage.AfterResources"/>.
     /// </summary>
     public IReadOnlySet<ResourceLocator> CodeHandledResources => _codeHandledResources;
+
+    /// <summary>
+    /// Gets the <see cref="ResourceLocator.ResourceName"/> where path separators are normalized to '/'
+    /// of all the <see cref="ResSpaceData.FinalOptionalPackages"/>.
+    /// </summary>
+    public ImmutableArray<string> ExcludedOptionalResourcePaths => _excludedOptionalResourcePaths;
 
     /// <summary>
     /// Gets the type cache.

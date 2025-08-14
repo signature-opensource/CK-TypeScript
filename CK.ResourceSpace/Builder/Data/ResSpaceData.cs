@@ -18,18 +18,28 @@ namespace CK.Core;
 public sealed class ResSpaceData
 {
     readonly ResCoreData _coreData;
+    readonly IReadOnlyList<ResPackageDescriptor> _finalOptionalPackages;
     HashSet<ResourceLocator>? _codeHandledResources;
 
-    internal ResSpaceData( ResCoreData data, HashSet<ResourceLocator> codeHandledResources )
+    internal ResSpaceData( ResCoreData data,
+                           HashSet<ResourceLocator> codeHandledResources,
+                           IReadOnlyList<ResPackageDescriptor> finalOptionalPackages )
     {
         _coreData = data;
         _codeHandledResources = codeHandledResources;
+        _finalOptionalPackages = finalOptionalPackages;
     }
 
     /// <summary>
     /// Gets the core data that contains the <see cref="ResPackage"/>.
     /// </summary>
     public ResCoreData CoreData => _coreData;
+
+    /// <summary>
+    /// Gets the <see cref="ResPackageDescriptor"/> that are eventually optional:
+    /// no <see cref="ResPackage"/> has been created for them.
+    /// </summary>
+    public IReadOnlyList<ResPackageDescriptor> FinalOptionalPackages => _finalOptionalPackages;
 
     /// <summary>
     /// Gets or sets the configured Code generated resource container.
@@ -61,7 +71,7 @@ public sealed class ResSpaceData
         _codeHandledResources = null;
     }
 
-    [MemberNotNull(nameof(_codeHandledResources))]
+    [MemberNotNull( nameof( _codeHandledResources ) )]
     void ThrowOnClosed()
     {
         Throw.CheckState( "ResSpaceBuilder.Build() has been called.", _codeHandledResources != null );
