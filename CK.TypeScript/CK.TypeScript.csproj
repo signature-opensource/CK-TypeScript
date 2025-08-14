@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json" Version="30.0.1--0020-develop" />
+    <PackageReference Include="CK.Poco.Exc.Json" Version="30.0.1--0021-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
