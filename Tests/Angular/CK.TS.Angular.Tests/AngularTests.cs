@@ -40,7 +40,7 @@ public class AngularTests
                                               typeof( PublicFooterComponent ),
                                               typeof( PublicTopbarComponent ),
                                               // CK.Ng.Zorro
-                                              typeof( CK.Ng.Zorro.TSPackage ),
+                                              typeof( CK.Ng.Zorro.ZorroPackage ),
                                               // CK.Ng.Zorro.BackOffice
                                               typeof( CK.Ng.Zorro.BackOfficePackage ),
                                               typeof( CK.Ng.Zorro.ActionBarComponent ),

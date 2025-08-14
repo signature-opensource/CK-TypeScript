@@ -5,7 +5,7 @@ using CK.TypeScript;
 namespace CK.Ng.PublicSection;
 
 [NgComponent]
-[Requires<Zorro.TSPackage>]
+[Requires<Zorro.ZorroPackage>]
 //
 // You can also define the Package (or Group) children like this instead of
 // using [Package<...>] or [Group<...>].

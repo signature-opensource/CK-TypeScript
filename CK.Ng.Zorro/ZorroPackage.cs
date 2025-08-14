@@ -31,6 +31,6 @@ namespace CK.Ng.Zorro;
 
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]
 [Requires<CK.Ng.Localization.TSPackage>]
-public class TSPackage : TypeScriptPackage
+public class ZorroPackage : TypeScriptPackage
 {
 }
