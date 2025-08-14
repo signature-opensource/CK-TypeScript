@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.EmbeddedResources.Abstractions" Version="0.26.2--0002-develop" />
+    <PackageReference Include="CK.EmbeddedResources.Abstractions" Version="1.0.0-a00-00-0003-develop" />
   </ItemGroup>
-
 </Project>
