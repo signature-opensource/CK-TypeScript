@@ -153,5 +153,7 @@ sealed class StoreContainer : IResourceContainer, ICKSlicedSerializable
         _container.WriteStream( resource, target );
     }
 
+    public string GetNormalizedName( ReadOnlySpan<char> resourceOrFolderName ) => _container.GetNormalizedName( resourceOrFolderName );
+
     public override string ToString() => _container.ToString();
 }

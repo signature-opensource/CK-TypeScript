@@ -52,7 +52,7 @@ export class CKGenAppModule {
 
     static Providers : SourcedProviders = SourcedProviders.createFrom( [
 CKGenAppModule.s( {provide: SomeAuthService, useValue: new SomeAuthService( 'Some explicit parameter' )}, "CK.Ng.AspNet.Auth.SomeAuthPackage" ),
-CKGenAppModule.s( provideAnimationsAsync(), "CK.Ng.Zorro.TSPackage" ),
+CKGenAppModule.s( provideAnimationsAsync(), "CK.Ng.Zorro.ZorroPackage" ),
 
     ] );
 }

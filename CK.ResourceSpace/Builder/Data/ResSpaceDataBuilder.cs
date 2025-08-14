@@ -177,7 +177,7 @@ public sealed class ResSpaceDataBuilder
         // Initialize the ResourceSpaceData instance on our mutable packageIndex.
         var excludedOptionalResourcePaths = finalOptionalPackages.SelectMany( p => p.ResourcesInnerContainer
                                                                                     .AllResources
-                                                                                    .Select( r => r.ResourceName ) )
+                                                                                    .Select( r => r.GetNormalizedResourceName() ) )
                                                                  .ToImmutableArray();
         var space = new ResCoreData( _generatedCodeContainer,
                                       _collector.LiveStatePath,
