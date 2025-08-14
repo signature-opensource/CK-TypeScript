@@ -13,7 +13,9 @@ namespace CK.Ng.PublicSection;
 [Children<PublicTopbarComponent, PublicFooterComponent>]
 
 [TypeScriptFile( "SomeFolder/some-file.ts", "SomeSymbol" )]
+#pragma warning disable CS0618 // Type or member is obsolete
 [TypeScriptFile( "SomeFolder/some-other-file.ts", "SomeOtherSymbol", TargetFolder = "CK/Ng/PublicSection/public-section" )]
+#pragma warning restore CS0618 // Type or member is obsolete
 
 //
 // Only an Optional requires.

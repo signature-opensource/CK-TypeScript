@@ -45,6 +45,19 @@ sealed class LiveState
     /// <param name="changed">The changed event.</param>
     public void OnChange( IActivityMonitor monitor, PathChangedEvent changed )
     {
+        // Is this "Code Handled" filter useful?
+        // It depends on HOW the resource has been "handled".
+        // For TypeScript, currently, the only code handled resources are the resources
+        // that has been moved to another target path with [TypeScriptFile( TargetFolder = "" )],
+        // so the original resource path does't exist: this filters out appearing resources that
+        // are useless because moved somewhere else. But this is because we use the TypeSriptContext.Root
+        // to handle the move of a resource... We may miss an explicit "ResourceMapping" that would be
+        // a Dictionary<ResouceLocator,NormalizedPath> to support resource relocation.
+        // But the general case (and the initial motivation) is that a code handled resource is a
+        // resource for the code, like a configuration, a meta model, etc. that is "consumed" by code
+        // and generates what it has to generate.
+        // So this perfectly fits the "general case" as such resources cannot be re-processed in the Live
+        // context.
         if( _codeHandledFiles == null )
         {
             _codeHandledFiles = new HashSet<string>( _spaceData.CodeHandledResources

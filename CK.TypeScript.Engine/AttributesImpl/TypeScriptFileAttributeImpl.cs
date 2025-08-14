@@ -52,12 +52,33 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
         // When no target folder is specified, we only register its TS type names and the resource "stays"
         // in its container.
         //
+        // It seems that we miss an explicit "ResourceMapping" that would be a Dictionary<ResouceLocator,NormalizedPath>
+        // to support resource relocation...  But what about the resource in the StoreContainer? Does it appear or is it
+        // "hidden" like a code handled one?
+        // If it doesn't, it will be missed by all lookup in package's Reachables' resources. And it should definitly not.
+        // If it does, all accesses to "target folder" MUST systematically apply the "ResourceMapping" relocator... and
+        // that's a little bit dangerous.
+        //
+        // A third option would be that package's StoreContainer are NOT IResourceContainer but containers
+        // of (ResourceLocator,TargetPath). This would be a mess: this absolutely doesn't apply to <Code> and
+        // <App> packages, breaking the uniform model.
+        //
+        // A fourth option would be that each and every ResourceLocator has an optional TargetPath. This introduces yet
+        // another complexity in the model, impacts performances and make some IResourceContainer implementations
+        // really complex because ResourceLocators would have to be cached to remmember their TargetPath.
+        //
+        // Eventually, the true question is: is this TargetFolder relocation useful?
+        // I think (14th of Aug, 2025) that we're lack hindsight on this.
+        // So, we [Obsolete] warning the TargetFolder and emits a ToBeInvestigated wanring if it is used...
+
+#pragma warning disable CS0618 // Type or member is obsolete
         bool hasTargetFolder = Attribute.TargetFolder != null;
         bool hasExportedTypes = Attribute.TypeNames.Length > 0;
         EmbeddedResources.ResourceLocator resource;
         NormalizedPath targetPath;
         if( hasTargetFolder )
         {
+            monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, $"Type '{Type:N}' uses [TypeScriptFile] with TargetFolder = \"{Attribute.TargetFolder}\". Rationales should be mailed to 'olivier.spinelli@signature.one'." );
             if( !spaceData.RemoveExpectedCodeHandledResource( monitor, package, Attribute.ResourcePath, out resource ) )
             {
                 return false;
@@ -84,6 +105,7 @@ public sealed class TypeScriptFileAttributeImpl : TypeScriptGroupOrPackageAttrib
             // Regular case.
             targetPath = tsPackage.TypeScriptFolder.Combine( Attribute.ResourcePath );
         }
+#pragma warning restore CS0618 // Type or member is obsolete
         bool success = true;
         var file = context.Root.Root.FindOrCreateResourceFile( resource, targetPath, hasTargetFolder );
         foreach( var tsType in Attribute.TypeNames )

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace CK.TypeScript.Tests.TypeScriptFileAttr;
 

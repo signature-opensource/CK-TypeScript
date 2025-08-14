@@ -50,8 +50,9 @@ public sealed class TypeScriptFileAttribute : ContextBoundDelegationAttribute
     /// When this is specified (not null or empty string), the resource file is copied to the specified path with
     /// its file name only, intermediate folders are ignored.
     /// In this case, the resource is logically moved to the &lt;App&gt; code container and hidden from its origin "Res/"
-    /// or "Res[AFter]" resource container.
+    /// or "Res[AFter]/" resource container.
     /// </para>
     /// </summary>
+    [Obsolete( "This is a 'questionable' feature. If you use it, please e-mails the rationales to 'olivier.spinelli@signature.one'" )]
     public string? TargetFolder { get; set; }
 }
