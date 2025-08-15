@@ -41,7 +41,7 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
         var basePath = c.BasePath;
         if( !basePath.IsRooted ) Throw.InvalidOperationException( $"EngineConfiguration.BasePath '{basePath}' must be rooted." );
 
-        var allBinPathConfigurations = c.BinPaths.SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() )
+        var allBinPathConfigurations = c.BinPaths.SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? [] )
                                         .ToList();
         for( int i = 0; i < allBinPathConfigurations.Count; i++ )
         {
@@ -226,6 +226,50 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
         var configs = binPath.ConfigurationGroup.SimilarConfigurations
                                     .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
                                                         ?? [] );
+
+        // All this initialization stuff must be deeply refactored to only use the new EngineAttribute model (instead of
+        // the old IAttributeContextBound/ContextBoundDelegationAttribute/ITypeAttributesCache).
+        //
+        // This is not an easy task, for instance RegisterTypeScriptTypeAttribute specializes RegisterPocoTypeAttribute defined in CK.StObj.Model.
+        // But before waiting for a new "perfect" core, we can try a first baby-step that is to focus on TypesScriptGroup/Package.
+        //
+        // The TypeScriptGroupAttribute and TypeScriptPackageAttribute must no more be ContextBoundDelegationAttribute but EnginAttribute.
+        // They must be discovered from the binPath.ConfigurationGroup.TypeSet that is the seed (and no more from the ITypeAttributesCache).
+
+        // Once this first refactor done, we may handle the "Type selector" issue that is the TypeScriptBinPathConfiguration.Types configuration
+        // that defines the TypeScriptTypes and the IPoco type set.
+        // Today, TypeScriptBinPathConfiguration.Types associates a Type to a nullable TypeScriptTypeAttribute. When nul, it means
+        // "consider this type". We need more here: the fact that a Type that is an optional TypeScriptGroup/Package can be specified
+        // to be required. A rather fundamental enum should be defined: RegistrationTypeKind { Regular, Optional, Required, Excluded }
+        // (values are ordered here). Excluded is here again a "soft exclusion": the type will not appear in the set of types to process
+        // (strong exclusion should use "Forbidden" term).
+        // The TypeScriptBinPathConfiguration.Types should be a Dictionary<Type,(RegistrationTypeKind,TypeScriptTypeAttribute?)>. Not fancy
+        // but may be better that creating a specialized TypeScriptTypeAttribute (Xml read/write will extract the RegistrationKind Xml attribute
+        // from the same Xml Element).
+        // This new RegistrationTypeKind applies to the TypeScriptGroup/Package. For IPoco, this is less obvious but for external types
+        // (the C# types that must be associated to a TSCodeGenerator) this may apply.
+        //
+        // This future Dictionary<Type,(RegistrationTypeKind,TypeScriptTypeAttribute?)> should handle "Type globbing"...
+        // The idea is that we should be able to write:
+        //   <Type Name="*, CK.IO.Actor" ... /> => All types from CK.IO.Actor dll.
+        //   <Type Name="CK.IO.*, SomeDll" ... /> Types in the namespace CK.IO in SomeDll dll.
+        // Should we allow * in the assembly name? May be. And the '*' assembly? May be not!
+        // (the '?' should be supported for the sake of coherency even if it will be barely used...)
+        //
+        // Such types will be intersected by the binPath.ConfigurationGroup.TypeSet. This "type selector" is a generic pattern.
+        // It should be implemented in the GlobalTypeCache:
+        // GlobalTypeCache.GetGlobbedTypes( ReadOnlySpan<char> pattern, IReadOnlySet<ICachedType>? allowed ) => IEnumerable<ICachedType>
+        //
+        // (Note: being able to provide the allowed types to this method is for performance: result will be filtered early instead of
+        // having futher intersect. Moreover, when providing no restricting set, what is the behavior? Should this implicitely
+        // applies to the current cached types - as if GlobalTypeCache : IReadOnlySet<ICachedType> - or should this acts as a "load cache"?)
+        //
+        // One last issue will be to handle the RegistrationTypeKind and TypeScriptTypeAttribute merging.
+        // For RegistrationTypeKind, this should be easy: the values are ordered, the strongest wins.
+        // For TypeScriptTypeAttribute this is far more problematic. Let's say that a glob pattern forbids any TypeScriptTypeAttribute.
+        //
+
+
         // Avoid creating one immutable lib per BinPath.
         // cachedKey is the last one.
         TypeScriptAspectConfiguration? cachedKey = null;
