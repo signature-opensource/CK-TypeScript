@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faEye, faEyeSlash, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import { AuthService, CKNotificationService } from '@local/ck-gen';
+import { AuthService, NotificationService } from '@local/ck-gen';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
@@ -34,7 +34,7 @@ export class BasicLoginFormComponent {
   // <PreDependencyInjection revert />
   readonly #authService = inject( AuthService );
   readonly #formBuilder = inject( FormBuilder );
-  readonly #notifService = inject( CKNotificationService );
+  readonly #notifService = inject( NotificationService );
   readonly #translateService = inject( TranslateService );
   // <PostDependencyInjection />
 
