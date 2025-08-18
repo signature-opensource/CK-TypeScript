@@ -9,7 +9,7 @@ import { SimpleUserMessage } from '../../Core/SimpleUserMessage';
 @Injectable( {
   providedIn: 'root'
 } )
-export class CKNotificationService {
+export class NotificationService {
   #message = inject( NzMessageService );
   #notif = inject( NzNotificationService );
   #translateService = inject( TranslateService );

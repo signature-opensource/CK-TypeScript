@@ -26,7 +26,7 @@ namespace CK.Ng.Zorro;
 [RegisterTypeScriptType( typeof( UserMessageLevel ) )]
 [TypeScriptFile( "date-helper.ts", "utcDateToLocal" )]
 [TypeScriptFile( "datetime.pipe.ts", "DateFormatPipe" )]
-[TypeScriptFile( "notification.service.ts", "CKNotificationService" )]
+[TypeScriptFile( "notification.service.ts", "NotificationService" )]
 [TypeScriptFile( "responsive.directive.ts", "ResponsiveDirective" )]
 
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]
