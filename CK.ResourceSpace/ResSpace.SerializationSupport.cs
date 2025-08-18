@@ -112,7 +112,6 @@ public sealed partial class ResSpace
             protected override void Write( IBinarySerializer s, in ICachedType o )
             {
                 s.WriteObject( o.Type );
-                s.Writer.Write( o.IsNullable );
             }
         }
 
@@ -122,7 +121,7 @@ public sealed partial class ResSpace
             {
                 var c = r.DangerousDeserializer.Context.Services.GetService<GlobalTypeCache>( throwOnNull: true );
                 var o = c.Get( r.DangerousDeserializer.ReadObject<Type>() );
-                r.SetInstance( r.Reader.ReadBoolean() ? o.NonNullable : o.Nullable );
+                r.SetInstance( o );
             }
         }
     }
