@@ -12,20 +12,20 @@ namespace CK.TypeScript.Tests.TypeScriptFileAttr;
 
 [TypeScriptPackage]
 [TypeScriptFile( "IAmHere.ts", typeName: "IAmHere", TargetFolder = "" )]
-[TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@stdlib/utils-native-class", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
+[TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@stdlib/utils-native-class", ">=0.0.0-0", DependencyKind.Dependency )]
 [TypeScriptFile( "Some.private.ts" )]
 public sealed class Embedded : TypeScriptPackage { }
 
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "tslib", "2.7.0", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@stdlib/number-ctor", "~0.1.0", DependencyKind.DevDependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@stdlib/symbol-ctor", "*", DependencyKind.PeerDependency, ForceUse = true )]
+[TypeScriptImportLibrary( "tslib", "2.7.0", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@stdlib/number-ctor", "~0.1.0", DependencyKind.DevDependency )]
+[TypeScriptImportLibrary( "@stdlib/symbol-ctor", "*", DependencyKind.PeerDependency )]
 [TypeScriptFile( "IAmAlsoHere.ts", "IAmAlsoHere", "IWantToBeHereToo", TargetFolder = "" )]
 public sealed class OtherEmbedded : TypeScriptPackage { }
 
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "axios", "*", DependencyKind.Dependency, ForceUse = true )]
+[TypeScriptImportLibrary( "axios", "*", DependencyKind.Dependency )]
 [TypeScriptFile( "HttpCrisEndpoint.ts", "HttpCrisEndpoint", TargetFolder = "" )]
 public sealed class WithAxios : TypeScriptPackage { }
 

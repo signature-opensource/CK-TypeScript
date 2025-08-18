@@ -18,13 +18,13 @@ public class MultipleTypeScriptTests
     }
 
     [TypeScriptPackage]
-    [TypeScriptImportLibrary( "axios", ">=0.0.0-0", DependencyKind.Dependency, ForceUse = true )]
+    [TypeScriptImportLibrary( "axios", ">=0.0.0-0", DependencyKind.Dependency )]
     public sealed class BringAxiosPackageAsDependency : TypeScriptPackage
     {
     }
 
     [TypeScriptPackage]
-    [TypeScriptImportLibrary( "rxjs", ">=0.0.0-0", DependencyKind.PeerDependency, ForceUse = true )]
+    [TypeScriptImportLibrary( "rxjs", ">=0.0.0-0", DependencyKind.PeerDependency )]
     public sealed class BringRxJSPackageAsPeerDependency : TypeScriptPackage
     {
     }

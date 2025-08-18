@@ -24,6 +24,7 @@ sealed class ImportFromLocalCKGen : ImportFromBase
         }
         else
         {
+            Throw.DebugAssert( monitor != null );
             var resolved = ImportedNames.GroupBy( i => tsTypes.FindByTypeName( i.ExportedName ) as ITSDeclaredFileType );
             foreach( var i in resolved )
             {

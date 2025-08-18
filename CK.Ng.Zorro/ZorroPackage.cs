@@ -5,16 +5,16 @@ using CK.TypeScript;
 namespace CK.Ng.Zorro;
 
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "ng-zorro-antd", "^19", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "luxon", "^3", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@types/luxon", "^3", DependencyKind.DevDependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@angular/cdk", "^19", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@angular/animations", "^19", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@fortawesome/angular-fontawesome", "^1", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@fortawesome/fontawesome-svg-core", "^6", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@fortawesome/free-brands-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@fortawesome/free-regular-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
-[TypeScriptImportLibrary( "@fortawesome/free-solid-svg-icons", "^6", DependencyKind.Dependency, ForceUse = true )]
+[TypeScriptImportLibrary( "ng-zorro-antd", "^19", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "luxon", "^3", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@types/luxon", "^3", DependencyKind.DevDependency )]
+[TypeScriptImportLibrary( "@angular/cdk", "^19", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@angular/animations", "^19", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@fortawesome/angular-fontawesome", "^1", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@fortawesome/fontawesome-svg-core", "^6", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@fortawesome/free-brands-svg-icons", "^6", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@fortawesome/free-regular-svg-icons", "^6", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@fortawesome/free-solid-svg-icons", "^6", DependencyKind.Dependency )]
 
 
 [NgProviderImport( "fr_FR, provideNzI18n", From = "ng-zorro-antd/i18n" )]
