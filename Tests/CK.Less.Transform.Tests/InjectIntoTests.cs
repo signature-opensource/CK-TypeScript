@@ -39,6 +39,40 @@ public class InjectIntoTests
 
         """
         )]
+    [TestCase( "n°2",
+        """
+        ck-public-page {
+            width: 100%;
+            height: 100%;
+
+            //<CKPublicPage />
+        }
+        """,
+        """"
+        create <less> transformer
+        begin
+          inject """
+                 background-image: url("/images/background.jpg");
+                 background-size: cover;
+                 background-position: 70% 50%;
+                 display: inline-block;
+                 """ into <CKPublicPage>;
+        end
+        """",
+        """
+        ck-public-page {
+            width: 100%;
+            height: 100%;
+
+            //<CKPublicPage >
+            background-image: url("/images/background.jpg");
+            background-size: cover;
+            background-position: 70% 50%;
+            display: inline-block;
+            //</CKPublicPage>
+        }
+        """
+        )]
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new LessLanguage() );

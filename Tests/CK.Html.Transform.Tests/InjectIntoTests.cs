@@ -134,6 +134,32 @@ public class InjectIntoTests
         <!--</HERE>-->
         """
         )]
+    [TestCase( "n°6",
+        """
+        <router-outlet />
+        """,
+        """"
+        create <html> transformer
+        begin
+            insert """
+                   <div>
+                   <button nz-button nzType="primary" routerLink="/auth">
+                                  {{ 'Button.GoToLogin' | translate }}
+                   </button>
+                   </div>
+ 
+                   """ before "<router-outlet />";
+        end
+        """",
+        """
+        <div>
+        <button nz-button nzType="primary" routerLink="/auth">
+                       {{ 'Button.GoToLogin' | translate }}
+        </button>
+        </div>
+        <router-outlet />
+        """
+        )]
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new HtmlLanguage() );
