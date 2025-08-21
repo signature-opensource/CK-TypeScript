@@ -134,12 +134,58 @@ sealed class ComponentManager
             var r = _firstWithRoutes;
             do
             {
-                if( !r.IsAppComponent ) r.Write( bLog, 1 );
-                r.GenerateRoutes( monitor, 0 );
+                if( !r.IsAppComponent )
+                {
+                    r.Write( bLog, 1 );
+                    r.GenerateRoutes( monitor, 0 );
+                }
+                else
+                {
+                    GenerateCKAngularRoutes( monitor, r );
+                }
                 r = r._nextWithRoutes;
             }
             while( r != null );
             monitor.Info( bLog.ToString() );
         }
     }
+
+    void GenerateCKAngularRoutes( IActivityMonitor monitor, NgRouteWithRoutes r )
+    {
+        r.RoutesFile.Body.Append( """
+                import { inject } from "@angular/core";
+                import { DefaultUrlSerializer, Route, Router } from '@angular/router';
+
+                let router: Router | null = null;
+                let urlSerializer: DefaultUrlSerializer | null = null;
+
+                export default [
+
+                """ );
+        r.GenerateRoutes( monitor, r.RoutesFile, 0, out var atLeastOne );
+        if( atLeastOne )
+        {
+            r.RoutesFile.Body.Append( """
+                ,
+                {
+                  path: '**',
+                  redirectTo: () =>
+                  {
+                      router ??= inject( Router );
+                      const currentRoute = router.getCurrentNavigation()?.initialUrl;
+                      const targetUrl = router.parseUrl( '/' );
+                      targetUrl.queryParams[ 'notFound' ] = currentRoute
+                            ? (urlSerializer ??= new DefaultUrlSerializer()).serialize(currentRoute)
+                            : undefined;
+                      return targetUrl;
+                   }
+                }
+                """ );
+        }
+        r.RoutesFile.Body.Append( """
+
+                ] as Route[];
+                """ );
+    }
+
 }

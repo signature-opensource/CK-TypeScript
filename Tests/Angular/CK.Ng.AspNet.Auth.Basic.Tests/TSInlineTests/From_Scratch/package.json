@@ -39,7 +39,7 @@
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.6.2",
     "@types/node": "^24.3.0",
-    "@yarnpkg/sdks": "^3.2.2",
+    "@yarnpkg/sdks": "^3.2.3",
     "axios": "^1.7.7",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",

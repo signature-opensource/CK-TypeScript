@@ -23,15 +23,18 @@ sealed class NgRouteWithRoutes : NgRoute
 
     internal void GenerateRoutes( IActivityMonitor monitor, int childDepth )
     {
+        // We don't type the export default as Route[] for subordinated routes.ts.
         _routes.Body.Append( """
+                // import { Route } from '@angular/router';
+
                 export default [
 
                 """ );
-        GenerateRoutes( monitor, _routes, childDepth );
+        GenerateRoutes( monitor, _routes, childDepth, out _ );
         _routes.Body.Append( """
 
-                ];
+                ]; // as Route[];
                 """ );
-
     }
+
 }

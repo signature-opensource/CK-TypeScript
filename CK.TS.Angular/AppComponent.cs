@@ -4,7 +4,7 @@ namespace CK.TS.Angular;
 /// Models the Angular application component.
 /// <para>
 /// This component is not in the /ck-gen folder: it exists by design and has .html, .less and .ts files
-/// that are out of our scope.
+/// that are out of our scope (but can be transformed by transformers that explicitly target it using a "on" clause).
 /// </para>
 /// </summary>
 [NgComponent( NgComponentAttribute.BaseActualAttributeTypeAssemblyQualifiedName,

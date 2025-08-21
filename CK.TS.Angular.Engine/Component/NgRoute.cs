@@ -75,10 +75,10 @@ class NgRoute
         }
     }
 
-    internal void GenerateRoutes( IActivityMonitor monitor, TypeScriptFile routes, int childDepth )
+    internal void GenerateRoutes( IActivityMonitor monitor, TypeScriptFile routes, int childDepth, out bool atLeastOne )
     {
         ITSFileBodySection body = routes.Body;
-        bool atLeastOne = false;
+        atLeastOne = false;
         foreach( var c in Children )
         {
             Throw.DebugAssert( "Child route can only be a RoutedComponent.", c._routedAttr != null && c._tsType != null );
