@@ -7,9 +7,9 @@ namespace CK.Ng.Zorro;
 /// Minimal implementation of the real CK.Ng.Zorro.ZorroPackage. 
 /// </summary>
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "ng-zorro-antd", "^19", DependencyKind.Dependency )]
-[TypeScriptImportLibrary( "@fortawesome/angular-fontawesome", "^1", DependencyKind.Dependency )]
-[TypeScriptImportLibrary( "@angular/animations", "^19", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "ng-zorro-antd", "^20", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@fortawesome/angular-fontawesome", "^3", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "@angular/animations", "^20", DependencyKind.Dependency )]
 [NgProviderImport( "provideAnimationsAsync", From = "@angular/platform-browser/animations/async" )]
 [NgProvider( "provideAnimationsAsync()" )]
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]

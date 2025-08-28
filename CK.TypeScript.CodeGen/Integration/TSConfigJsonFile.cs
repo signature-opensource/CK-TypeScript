@@ -34,10 +34,10 @@ public sealed class TSConfigJsonFile
     public const bool DefaultDeclarationMap = false;
     public const bool DefaultESModuleInterop = true;
     public const bool DefaultSourceMap = false;
+    public const bool DefaultResolveJsonModule = true;
 
     public const string DefaultTarget = "es2022";
     public const string DefaultModule = "NodeNext";
-    public const string DefaultModuleResolution = "NodeNext";
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
     JsonFile _file;
@@ -63,6 +63,7 @@ public sealed class TSConfigJsonFile
     bool _declarationMap;
     bool _esModuleInterop;
     bool _sourceMap;
+    bool _resolveJsonModule;
 
     TSConfigJsonFile( JsonFile f )
     {
@@ -81,7 +82,7 @@ public sealed class TSConfigJsonFile
         _sourceMap = DefaultSourceMap;
         _target = DefaultTarget;
         _module = DefaultModule;
-        _moduleResolution = DefaultModuleResolution;
+        _resolveJsonModule = DefaultResolveJsonModule;
     }
 
     /// <summary>
@@ -175,6 +176,7 @@ public sealed class TSConfigJsonFile
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "declarationMap", out var declarationMap );
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "esModuleInterop", out var esModuleInterop );
         success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "sourceMap", out var sourceMap );
+        success &= _file.GetNonNullJsonBoolean( compilerOptions, monitor, "resolveJsonModule", out var resolveJsonModule );
 
         success &= _file.GetNonNullJsonString( compilerOptions, monitor, "target", out var target );
         success &= _file.GetNonNullJsonString( compilerOptions, monitor, "module", out var module );
@@ -203,12 +205,12 @@ public sealed class TSConfigJsonFile
 
         _target = target ?? DefaultTarget;
         _module = module ?? DefaultModule;
-        _moduleResolution = moduleResolution ?? DefaultModuleResolution;
 
         _compilerOptions = compilerOptions;
         _baseUrl = baseUrl;
         _coPaths = paths;
         _coTypes = coTypes;
+        _resolveJsonModule = resolveJsonModule ?? DefaultResolveJsonModule;
         return true;
     }
 
@@ -430,7 +432,8 @@ public sealed class TSConfigJsonFile
 
         _compilerOptions["target"] = _target;
         _compilerOptions["module"] = _module;
-        _compilerOptions["moduleResolution"] = _moduleResolution;
+
+        _compilerOptions["resolveJsonModule"] = _resolveJsonModule;
     }
 
 

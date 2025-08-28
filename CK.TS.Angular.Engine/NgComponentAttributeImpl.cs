@@ -171,7 +171,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
 
 
     /// <summary>
-    /// Overridden to handle the component "*.component.ts" file name: it must exist
+    /// Overridden to handle the component "*.ts" file name: it must exist
     /// and is created as a <see cref="ResourceTypeScriptFile"/> (but still published
     /// by the resource container).
     /// </summary>
@@ -186,7 +186,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                                                    ResPackage package )
     {
         Throw.DebugAssert( !IsAppComponent );
-        var fName = _snakeName + ".component.ts";
+        var fName = _snakeName + ".ts";
         if( !package.Resources.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;

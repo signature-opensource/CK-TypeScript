@@ -18,10 +18,9 @@
     "sourceMap": false,
     "target": "es2022",
     "module": "NodeNext",
-    "moduleResolution": "NodeNext"
+    "resolveJsonModule": true
   },
   "include": [
-    "src/**/*.spec.ts",
-    "src/**/*.d.ts"
+    "src/**/*.ts"
   ]
 }

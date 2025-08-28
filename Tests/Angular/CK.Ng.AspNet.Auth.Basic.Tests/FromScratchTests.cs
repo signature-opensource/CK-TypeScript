@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using NUnit.Framework;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -78,6 +79,7 @@ public class FromScratchTests
         {
             var persistentAppFolder = TestHelper.TestProjectFolder.Combine( "TSInlineTests/CK_Ng_AspNet_Auth_Basic/src/app" );
             var targetAppFolder = root.Combine( "src/app" );
+
             foreach( var specFile in Directory.EnumerateFiles( persistentAppFolder, "*.spec.ts" ) )
             {
                 var text = File.ReadAllText( specFile );
@@ -97,8 +99,8 @@ public class FromScratchTests
         await using var runner = TestHelper.CreateTypeScriptRunner( root, server.ServerAddress );
         await TestHelper.SuspendAsync( resume => resume );
         runner.Run();
-        // It's not because the "src/app.component.spec.ts" succeeds that
-        // build is successful: even "src/app.component.ts" may not compile...
+        // It's not because the "src/app.spec.ts" succeeds that
+        // build is successful: even "src/app.ts" may not compile...
         runner.Run( "build" );
     }
 }

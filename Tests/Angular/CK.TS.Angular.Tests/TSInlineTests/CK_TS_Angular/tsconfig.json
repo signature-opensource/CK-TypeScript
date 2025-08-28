@@ -26,7 +26,8 @@
       "@local/ck-gen/*": [
         "./ck-gen/*"
       ]
-    }
+    },
+    "resolveJsonModule": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

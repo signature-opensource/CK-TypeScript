@@ -21,7 +21,7 @@ namespace CK.TS.Angular.Engine;
 /// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 {
-    const string _defaultAngularCliVersion = "^19";
+    const string _defaultAngularCliVersion = "^20";
     const string _conflictFolderName = "_ckConflict_";
 
     ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
@@ -175,6 +175,19 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 if( File.Exists( angularJsonPath ) )
                 {
                     monitor.Info( "Found existing 'angular.json' file." );
+
+                    // TODO: Update angular deps if needed
+
+                    // Read package.json to retrieve @angular/core version.
+                    // Check if it matches _defaultAngularCliVersion
+                    // Maybe only upgrade if current installed version is inferior to _defaultAngularCliVersion
+                    // do apply _defaultAngularCliVersion on @angular/* packages.
+                    // yarn ng update ng-zorro-antd
+                    // yarn ng update @angular/cli@^20 @angular/core@^20 ng-zorro-antd@^20 --allow-dirty --migrate-only
+                    // Note: @angular/cli requires nodejs >= v22.12 (note: v22.18 works with PnP, versions below don't)
+
+                    // choco install nodejs version="22.18.0"
+
                     return true;
                 }
                 return CreateAngularApp( monitor, context );
@@ -234,8 +247,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                && UpdateNewPackageJson( monitor, newFolderPath, targetPackageJson, out IList<PackageDependency> savedLatestDependencies, out var newPackageJson )
                                // We remove the "src/styles.less" file because we have already created it. 
                                && DeleteStylesLess( monitor, newFolderPath )
-                               && TransformAppComponent( monitor, newFolderPath.Combine( "src/app/app.component.ts" ) )
-                               && TransformAppComponentSpec( monitor, newFolderPath.Combine( "src/app/app.component.spec.ts" ) )
+                               && TransformAppComponent( monitor, newFolderPath.Combine( "src/app/app.ts" ) )
+                               && TransformAppComponentSpec( monitor, newFolderPath.Combine( "src/app/app.spec.ts" ) )
                                && TransformAppComponentConfig( monitor, newFolderPath.Combine( "src/app/app.config.ts" ) )
                                && TransformAppComponentRoutes( monitor, newFolderPath.Combine( "src/app/app.routes.ts" ) )
                                && CleanupAppComponentHtml( monitor, newFolderPath )
@@ -379,7 +392,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     static bool TransformAppComponentSpec( IActivityMonitor monitor, NormalizedPath appFilePath )
                     {
-                        var _ = monitor.OpenInfo( "Adding appConfig providers to TestBed in 'src/app/app.component.spec.ts'." );
+                        var _ = monitor.OpenInfo( "Adding appConfig providers to TestBed in 'src/app/app.spec.ts'." );
                         var host = new TransformerHost( new TypeScriptLanguage() );
                         var f = host.TryParseFunction( monitor, """"
                             create <ts> transformer
@@ -482,16 +495,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     static bool CleanupAppComponentHtml( IActivityMonitor monitor, NormalizedPath newFolderPath )
                     {
-                        NormalizedPath filePath = newFolderPath.Combine( "src/app/app.component.html" );
+                        NormalizedPath filePath = newFolderPath.Combine( "src/app/app.html" );
                         const string defaultApp = """
-                        <h1>Hello, {{ title }}</h1>
+                        <h1>Hello, {{ title() }}</h1>
 
                         <router-outlet />
 
                         """;
                         File.WriteAllText( filePath, defaultApp );
                         monitor.Trace( $"""
-                                   File 'app.component.html' is:
+                                   File 'app.html' is:
                                    {defaultApp}
                                    """ );
                         return true;
@@ -758,7 +771,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         }
                     }
                 }
-
             }
         }
 
@@ -770,10 +782,15 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
         {
-            // Adds the jest-preset-angular "14.5.4" if not alreay here.
+            // Adds @angular/platform-browser-dynamic as dev dependency if not already here (jest requirement).
+            e.AddOrUpdateTargetProjectDependency( "@angular/platform-browser-dynamic",
+                                                  new SVersionBound( SVersion.Create( 20, 2, 2 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                  DependencyKind.Dependency );
+
+            // Adds the jest-preset-angular "15.0.0" if not alreay here.
             e.AddOrUpdateTargetProjectDependency( "jest-preset-angular",
-                                                    new SVersionBound( SVersion.Create( 14, 5, 4 ), SVersionLock.LockMajor, PackageQuality.Stable ),
-                                                    DependencyKind.DevDependency );
+                                                  new SVersionBound( SVersion.Create( 15, 0, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                  DependencyKind.DevDependency );
             e.JestSetup = new AngularJestSetupHandler( e.IntegrationContext );
         }
 
@@ -805,7 +822,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
 #pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'
     }
-
 }
 
 

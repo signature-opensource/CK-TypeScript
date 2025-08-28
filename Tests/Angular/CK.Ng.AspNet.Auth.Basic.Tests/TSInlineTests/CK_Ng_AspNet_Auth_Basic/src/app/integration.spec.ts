@@ -1,7 +1,7 @@
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { NgAuthService, AuthLevel } from '@local/ck-gen';
 import { ComponentFixtureAutoDetect, TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import { App } from './app';
 import { provideRouter, Router } from '@angular/router';
 import { routes } from './app.routes';
 
@@ -13,7 +13,7 @@ describe( 'NgAuthService integration tests', () => {
   beforeEach( async () => {
     await TestBed.configureTestingModule(
       {
-        imports: [AppComponent],
+        imports: [App],
         providers: [provideRouter( routes ), ...CKGenAppModule.Providers, { provide: ComponentFixtureAutoDetect, useValue: true }]
       } ).compileComponents();
 
@@ -49,7 +49,7 @@ describe( 'NgAuthService integration tests', () => {
   } );
 
   it( 'should render userName when logged in', async () => {
-    const fixture = TestBed.createComponent( AppComponent );
+    const fixture = TestBed.createComponent( App );
     const router = TestBed.inject( Router );
     const authService = ngAuthService.authService;
 

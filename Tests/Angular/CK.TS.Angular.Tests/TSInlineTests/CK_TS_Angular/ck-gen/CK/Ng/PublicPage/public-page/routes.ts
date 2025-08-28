@@ -1,4 +1,4 @@
-import { LoginComponent } from '../../AspNet/Auth/login/login.component';
+import { LoginComponent } from '../../AspNet/Auth/login/login';
 import rLoginComponent from '../../AspNet/Auth/login/routes';
 
 // import { Route } from '@angular/router';

@@ -1,5 +1,5 @@
-import { AppRoutedComponent } from '../MiscDemo/app-routed/app-routed.component';
-import { PublicPageComponent } from '../Ng/PublicPage/public-page/public-page.component';
+import { AppRoutedComponent } from '../MiscDemo/app-routed/app-routed';
+import { PublicPageComponent } from '../Ng/PublicPage/public-page/public-page';
 import rPublicPageComponent from '../Ng/PublicPage/public-page/routes';
 
 import { inject } from "@angular/core";

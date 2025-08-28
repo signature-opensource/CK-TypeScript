@@ -6,7 +6,7 @@ namespace CK.Ng.Zorro;
 
 [NgComponent( IsOptional = true )]
 [Package<BackOfficePackage>]
-[TypeScriptFile( "action-bar.model.ts", "ActionBarContent", "ActionBarAction" )]
+[TypeScriptFile( "action-bar-model.ts", "ActionBarContent", "ActionBarAction" )]
 public sealed class ActionBarComponent : NgComponent
 {
 }
