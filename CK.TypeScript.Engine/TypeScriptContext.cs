@@ -214,7 +214,6 @@ public sealed partial class TypeScriptContext
         }
 
         _tsRoot.TSTypes.RegisterStandardTypes( monitor );
-        bool success = true;
 
         var typeScriptContext = this;
 
@@ -235,8 +234,11 @@ public sealed partial class TypeScriptContext
         // parameters... And if the same object wants to generate code in the TypeScriptContext based on the topologically ordered
         // set of packages, another method with (IActivityMonitor, TypeScriptContext, ResourceSpaceData) can be written.
         //
-        success = StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext );
-
+        if( !StartGlobalCodeGeneration( monitor, _initializer.GlobalCodeGenerators, typeScriptContext ) )
+        {
+            return false;
+        }
+        bool success = true;
         // ResPackageDescriptor can be registered on the initial ResSpaceConfiguration (but also on the
         // following ResSpaceCollector). By registering our discovered TypeScriptPackage here, we maximize
         // the possibilities for other participants to use them.
