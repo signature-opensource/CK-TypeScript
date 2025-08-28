@@ -1,5 +1,7 @@
 version: build{build}
 image: Visual Studio 2022
+install:
+  - ps: Install-Product node 22.18 x64
 clone_folder: C:\CKli-World\CK-Crs-Projects\CK-TypeScript
 environment:
   CODECAKEBUILDER_SECRET_KEY:
