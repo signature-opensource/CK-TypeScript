@@ -5,7 +5,7 @@ environment:
   CODECAKEBUILDER_SECRET_KEY:
     secure: 8VAzdXgUQaJyFoU3WLf2iPFV/8zPDm9qV4TfOpx8/rg=
 install:
-  - ps: Install-Product node 22
+  - ps: Install-Product node 22.18.0
 test_script:
   - node --version
   - npm --version
