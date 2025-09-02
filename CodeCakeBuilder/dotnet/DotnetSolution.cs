@@ -113,6 +113,8 @@ public partial class DotnetSolution : ICIWorkflow
                 new DotNetBuildSettings().AddVersionArguments( _globalInfo.BuildInfo, s =>
                 {
                     s.Configuration = _globalInfo.BuildInfo.BuildConfiguration;
+                    s.MSBuildSettings.ConsoleLoggerSettings.ConsoleColorType = MSBuildConsoleColorType.Disabled;
+                    s.MSBuildSettings.DetailedSummary = false;
                 } ) );
         }
     }
