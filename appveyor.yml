@@ -3,6 +3,7 @@ image: Ubuntu2204
 clone_folder: /usr/CKli-World/CK-Crs-Projects/CK-TypeScript
 environment:
   MSBUILDTERMINALLOGGER: off
+  YARN_ENABLE_IMMUTABLE_INSTALLS: false
   CODECAKEBUILDER_SECRET_KEY:
     secure: 8VAzdXgUQaJyFoU3WLf2iPFV/8zPDm9qV4TfOpx8/rg=
 test_script:
