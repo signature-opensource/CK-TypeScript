@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using DependencyKind = CK.TypeScript.CodeGen.DependencyKind;
 
@@ -359,12 +360,12 @@ public sealed partial class TypeScriptIntegrationContext
         if( _shouldAlignYarnSdkVersion )
         {
             canSkipRun = false;
-            finalCommand.Append( "/C yarn add -D @yarnpkg/sdks && yarn sdks vscode" );
+            finalCommand.Append( "yarn add -D @yarnpkg/sdks && yarn sdks vscode" );
             _shouldAlignYarnSdkVersion = false;
         }
         else
         {
-            finalCommand.Append( "/C yarn install" );
+            finalCommand.Append( "yarn install" );
             if( !YarnHelper.HasInstallStateGZ( _configuration.TargetProjectPath ) )
             {
                 monitor.Trace( $"No '.yarn/install-state.gz' found. 'yarn install' will be done. " );
@@ -459,7 +460,15 @@ public sealed partial class TypeScriptIntegrationContext
         var displayCmd = cmd.Substring( 3 ).Replace( " && ", Environment.NewLine );
         using( monitor.OpenInfo( $"Running:{Environment.NewLine}{displayCmd}" ) )
         {
-            int code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", cmd, targetProjectPath, null, out _ );
+            int code;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", "/C " + cmd, targetProjectPath, null, out _ );
+            }
+            else
+            {
+                code = YarnHelper.RunProcess( monitor.ParallelLogger, "/bin/bash", "-c \"" + cmd + "\"", targetProjectPath, null, out _ );
+            }
             if( code != 0 )
             {
                 monitor.Error( $"Command:{Environment.NewLine}{displayCmd}{Environment.NewLine}Failed with code {code}." );
