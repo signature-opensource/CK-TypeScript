@@ -19,7 +19,7 @@ on_finish:
     ForEach-Object {
         $filePath = $_.FullName;
         $fileName = $_.FullName.Replace('/', '_').Replace('\', '_').Replace(':', '');
-        $fileName = $fileName.Substring($fileName.IndexOf("_Tests_") + 7)
+        $fileName = $fileName.Substring($fileName.IndexOf("_Tests_") + 7).Replace("_Logs_Text_", "-");
         Push-AppveyorArtifact $_.FullName -FileName $fileName
     }
 
