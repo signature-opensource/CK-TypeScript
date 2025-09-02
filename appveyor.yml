@@ -20,7 +20,5 @@ on_finish:
                 Push-AppveyorArtifact $_.FullName -FileName $_.FullName.Replace('/', '_').Replace('\', '_').Replace(':', '')
             }
           Write-Host "Logs uploaded."
-init:
-- git config --global core.autocrlf true
 build_script:
 - dotnet run --project CodeCakeBuilder -nointeraction
