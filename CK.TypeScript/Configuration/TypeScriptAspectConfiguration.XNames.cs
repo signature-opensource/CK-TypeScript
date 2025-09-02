@@ -45,6 +45,11 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xActiveCultures = XNamespace.None + "ActiveCultures";
 
     /// <summary>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.DefaultCulture"/> attribute name.
+    /// </summary>
+    public static readonly XName xDefaultCulture = XNamespace.None + "DefaultCultures";
+
+    /// <summary>
     /// The <see cref="TypeScriptBinPathAspectConfiguration.EnableTSProjectReferences"/> attribute name.
     /// </summary>
     public static readonly XName xEnableTSProjectReferences = XNamespace.None + "EnableTSProjectReferences";

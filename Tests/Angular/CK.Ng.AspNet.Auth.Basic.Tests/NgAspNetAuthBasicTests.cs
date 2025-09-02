@@ -23,7 +23,7 @@ public class NgAspNetAuthBasicTests
         configuration.RevertOrderingNames = true;
 
         var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
-        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
+        tsConfig.DefaultCulture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
         // Checks that NgZorro AppStyleImport works as expected.

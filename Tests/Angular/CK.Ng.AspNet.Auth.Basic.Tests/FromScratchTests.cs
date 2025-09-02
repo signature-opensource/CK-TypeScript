@@ -67,7 +67,7 @@ public class FromScratchTests
 
         var tsConfig = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         tsConfig.TargetProjectPath = root;
-        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
+        tsConfig.DefaultCulture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
         var thisAppName = root.LastPart.Replace( ' ', '_' );

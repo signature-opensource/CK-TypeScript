@@ -16,6 +16,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 {
     NormalizedPath _targetProjectPath;
     NormalizedPath _targetCKGenPath;
+    NormalizedCultureInfo _defaultCulture;
 
     /// <summary>
     /// Initializes a new empty configuration.
@@ -28,6 +29,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         GlobTypes = new List<TypeScriptTypeGlobConfiguration>();
         ExcludedTypes = new HashSet<Type>();
 
+        _defaultCulture = NormalizedCultureInfo.CodeDefault;
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
         GitIgnoreCKGenFolder = true;
@@ -83,14 +85,33 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// <summary>
     /// Gets a mutable set of cultures that should be handled by the generated TypeScript code.
     /// <para>
-    /// It is useless to register the "en" culture as it is always implicitly added and parent cultures
-    /// are automatically added (adding "fr-FR" adds "fr").
+    /// It is useless to register the "en" culture (the <see cref="NormalizedCultureInfo.CodeDefault"/>) as it is always implicitly
+    /// added and parent cultures are automatically added (adding "fr-FR" adds "fr").
     /// </para>
     /// <para>
     /// In configuration files, this is expressed as a comma separated string of BCP47 culture names.
     /// </para>
     /// </summary>
     public HashSet<NormalizedCultureInfo> ActiveCultures { get; }
+
+    /// <summary>
+    /// Gets or sets the default culture.
+    /// <para>
+    /// Defauts to the "en" culture (the <see cref="NormalizedCultureInfo.CodeDefault"/>).
+    /// </para>
+    /// <para>
+    /// It is automatically added to the <see cref="ActiveCultures"/>.
+    /// </para>
+    /// </summary>
+    public NormalizedCultureInfo DefaultCulture
+    {
+        get => _defaultCulture;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            _defaultCulture = value;
+        }
+    }
 
     /// <summary>
     /// Gets the explicit types to register with an optional <see cref="TypeScriptTypeAttribute"/> that
@@ -220,6 +241,10 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         AutoInstallJest = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallJest ) ?? true;
         EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
 
+        DefaultCulture = NormalizedCultureInfo.CodeDefault;
+        var defaultCulture = (string?)e.Attribute( TypeScriptAspectConfiguration.xDefaultCulture );
+        if( defaultCulture != null ) DefaultCulture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( defaultCulture );
+
         ActiveCultures.Clear();
         var cultures = (string?)e.Attribute( TypeScriptAspectConfiguration.xActiveCultures );
         if( cultures != null )
@@ -324,6 +349,9 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                 ? new XAttribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences, true )
                 : null,
                new XAttribute( TypeScriptAspectConfiguration.xActiveCultures, ActiveCultures.Select( c => c.Culture.Name ).Concatenate( ", " ) ),
+               DefaultCulture != NormalizedCultureInfo.CodeDefault
+                    ? new XAttribute( TypeScriptAspectConfiguration.xDefaultCulture, DefaultCulture.Name )
+                    : null,
                new XElement( EngineConfiguration.xTypes,
                                 Types.Select( kv => new XElement( EngineConfiguration.xType,
                                                             kv.Value?.ToXmlAttributes(),

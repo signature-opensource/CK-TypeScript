@@ -57,6 +57,8 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
                 var normalizedBarrels = ts.Barrels.Select( NormalizeFolderPath ).ToList();
                 ts.Barrels.Clear();
                 ts.Barrels.AddRange( normalizedBarrels );
+                // Ensures that the DefaultCulture appears in the ActiveCultures.
+                ts.ActiveCultures.Add( ts.DefaultCulture );
             }
         }
         return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
