@@ -1,6 +1,6 @@
 version: build{build}
 image: Ubuntu2204
-clone_folder: C:\CKli-World\CK-Crs-Projects\CK-TypeScript
+clone_folder: /usr/CKli-World/CK-Crs-Projects/CK-TypeScript
 environment:
   CODECAKEBUILDER_SECRET_KEY:
     secure: 8VAzdXgUQaJyFoU3WLf2iPFV/8zPDm9qV4TfOpx8/rg=
