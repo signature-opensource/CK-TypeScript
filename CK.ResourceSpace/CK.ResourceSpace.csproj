@@ -5,11 +5,11 @@
     <LangVersion>13</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization.Sliced" Version="10.0.1--0021-develop" />
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="10.0.1--0023-develop" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.EmbeddedResources" Version="1.0.0-a00-00-0007-develop" />
-    <PackageReference Include="CK.Engine.TypeCollector" Version="30.0.1--0036-develop" />
+    <PackageReference Include="CK.EmbeddedResources" Version="1.0.0-a00-00-0009-develop" />
+    <PackageReference Include="CK.Engine.TypeCollector" Version="30.0.1--0038-develop" />
     <ProjectReference Include="..\CK.ResourceSpace.Abstractions\CK.ResourceSpace.Abstractions.csproj" />
   </ItemGroup>
 </Project>
