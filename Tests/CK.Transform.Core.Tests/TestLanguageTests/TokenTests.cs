@@ -237,6 +237,8 @@ public class TokenTests
                 /* c
                      */ token
                """, 3, 10 )]
+    [TestCase( "n°5W", "// some comments...\r\n /* c\r\n      */ token", 3, 10 )]
+    [TestCase( "n°5U", "// some comments...\n /* c\n      */ token", 3, 10 )]
     [TestCase( "n°6", """
                // some comments...
                 /* c

@@ -143,8 +143,7 @@ public class Token
             idx = span.LastIndexOf( '\n' );
             if( idx >= 0 )
             {
-                if( idx > 0 && span[idx - 1] == '\r' ) ++idx;
-                column += span.Length - idx;
+                column += span.Length - idx - 1;
                 return column;
             }
             // No luck.
@@ -162,8 +161,7 @@ public class Token
             idx = span.LastIndexOf( '\n' );
             if( idx >= 0 )
             {
-                if( idx > 0 && span[idx - 1] == '\r' ) ++idx;
-                column += span.Length - idx;
+                column += span.Length - idx - 1;
             }
         }
         return column;
@@ -210,8 +208,7 @@ public class Token
             idx = span.LastIndexOf( '\n' );
             if( idx >= 0 )
             {
-                column += span.Length - idx;
-                if( idx > 0 && span[idx - 1] == '\r' ) --column;
+                column += span.Length - idx - 1;
                 knownColum = true;
                 line += 1 + span.Slice( 0, idx ).Count( '\n' );
             }
@@ -236,8 +233,7 @@ public class Token
                     idx = span.LastIndexOf( '\n' );
                     if( idx >= 0 )
                     {
-                        column += span.Length - idx;
-                        if( idx > 0 && span[idx - 1] == '\r' ) --column;
+                        column += span.Length - idx - 1;
                         knownColum = true;
                         ++line;
                         span = span.Slice( 0, idx );
