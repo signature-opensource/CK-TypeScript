@@ -28,12 +28,7 @@ public class TSTests
         var builder = WebApplication.CreateSlimBuilder();
 
         await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map,
-                                                                                             o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ),
-                                                                                             configureApplication: app =>
-                                                                                             {
-                                                                                                 ((WebApplication)app).Urls.Clear();
-                                                                                                 ((WebApplication)app).Urls.Add("http://127.0.0.1:0");
-                                                                                             });
+                                                                                             o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, server.ServerAddress );
         await TestHelper.SuspendAsync( resume => resume );
         runner.Run();
@@ -61,12 +56,7 @@ public class TSTests
             var builder = WebApplication.CreateSlimBuilder();
 
             await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map,
-                                                                                                 o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ),
-                                                                                                 configureApplication: app =>
-                                                                                                 {
-                                                                                                     ((WebApplication)app).Urls.Clear();
-                                                                                                     ((WebApplication)app).Urls.Add( "http://127.0.0.1:0" );
-                                                                                                 } );
+                                                                                                 o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
             await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, server.ServerAddress );
             await TestHelper.SuspendAsync( resume => resume );
             runner.Run();
