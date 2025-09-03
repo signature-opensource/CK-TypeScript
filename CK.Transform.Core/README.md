@@ -16,10 +16,10 @@ via `TokenError` that carries an error token type (negative integer), an error m
 and the location of the error.
 
 ## CR and CRLF handling
-Only '\r' (Unix) and '\r\n' (Windows) are handled ('\r' alone should not be used!).
+Only '\n' (Unix) and '\r\n' (Windows) are handled ('\r' alone should not be used!).
 There is no normalization and normalization is useless.
 
-1. Tokens (leading and trailing trivias) and RawString transparently handle both '\r' and '\r\n' end of line characters.
+1. Tokens (leading and trailing trivias) and RawString transparently handle both '\n' and '\r\n' end of line characters.
 2. When a transformer injects a new line, it uses `Environment.NewLine`: the
 result of a transformation can contain both end of line characters and can be safely transformed again (because of 1).
 
