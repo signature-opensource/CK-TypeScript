@@ -15,6 +15,18 @@ Exceptions should not be used for the control flow (they remain exceptional): er
 via `TokenError` that carries an error token type (negative integer), an error message
 and the location of the error.
 
+## CR and CRLF handling
+Only '\r' (Unix) and '\r\n' (Windows) are handled ('\r' alone should not be used!).
+There is no normalization and normalization is useless.
+
+1. Tokens (leading and trailing trivias) and RawString transparently handle both '\r' and '\r\n' end of line characters.
+2. When a transformer injects a new line, it uses `Environment.NewLine`: the
+result of a transformation can contain both end of line characters and can be safely transformed again (because of 1).
+
+This design is the most efficient regardless of the platform: the inputs (the source and the code of the transfomers)
+don't have to be normalized. If outputs need to be normalized (because other participants require normalized end of lines),
+this is not the concern of this library.
+
 ## The basics: Tokens & Trivias
 
 ## The Analyzer abstraction
@@ -22,7 +34,7 @@ and the location of the error.
 ## Error handling: inlined errors
 The collected tokens can contain `TokenError` that is a specialized `Token`.
 This behavior is simple to implement and understand. This enables any analyzer to be
-"fault tolearant" but analyze can also be stopped on the first error.
+"fault tolearant" but analyze can also stop on the first error.
 
 
 

@@ -107,15 +107,21 @@ public class TransformerParsingTests
     public void TryParseFunctions_test( string text, int count )
     {
         var h = new TransformerHost();
-        var f = h.TryParseFunctions( TestHelper.Monitor, text );
-        if( count < 0 )
+        ParseAndCheckTransformerCount( h, text, count );
+        ParseAndCheckTransformerCount( h, TransformerHostExtensions.RevertLineEndings( text ), count );
+
+        static void ParseAndCheckTransformerCount( TransformerHost h, string text, int count )
         {
-            Throw.CheckState( f == null );
-        }
-        else
-        {
-            Throw.CheckState( f != null );
-            f.Count.ShouldBe( count );
+            var f = h.TryParseFunctions( TestHelper.Monitor, text );
+            if( count < 0 )
+            {
+                Throw.CheckState( f == null );
+            }
+            else
+            {
+                Throw.CheckState( f != null );
+                f.Count.ShouldBe( count );
+            }
         }
     }
 

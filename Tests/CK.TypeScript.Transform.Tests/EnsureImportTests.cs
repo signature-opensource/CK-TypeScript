@@ -251,9 +251,7 @@ public class EnsureImportTests
     public void merging_imports( string nTest, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        h.ApplyAndCheck( source, transformer, result );
     }
 
     [TestCase( "n°1",
@@ -273,7 +271,7 @@ public class EnsureImportTests
     )]
     [TestCase( "n°2",
     """
-        import { Some, Other, Orphan } from '@local/ck-gen';
+        import { Some, Other } from '@local/ck-gen';
 
         some code;
         """,
@@ -285,7 +283,6 @@ public class EnsureImportTests
         end
         """",
         """
-        import { Orphan } from '@local/ck-gen';
         import { Some, Other } from '@local/ck-gen/Better';
         
         some code;
@@ -355,9 +352,7 @@ public class EnsureImportTests
     public void allowing_more_precise_import_path( string nTest, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        h.ApplyAndCheck( source, transformer, result );
     }
 
 }

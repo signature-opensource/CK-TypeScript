@@ -76,11 +76,7 @@ public class InjectIntoTests
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new LessLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer );
-        Throw.DebugAssert( function != null );
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function );
-        Throw.DebugAssert( sourceCode != null );
-        sourceCode.ToString().ShouldBe( result );
+        h.ApplyAndCheck( source, transformer, result );
     }
 
 }

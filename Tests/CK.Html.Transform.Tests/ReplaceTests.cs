@@ -34,9 +34,7 @@ public class ReplaceTests
     public void replace( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new HtmlLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        h.ApplyAndCheck( source, transformer, result );
     }
 
 }

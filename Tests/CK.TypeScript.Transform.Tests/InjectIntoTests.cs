@@ -1,6 +1,8 @@
+using CK.Core;
 using CK.Transform.Core;
 using NUnit.Framework;
 using Shouldly;
+using System;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TypeScript.Transform.Tests;
@@ -119,9 +121,7 @@ public class InjectIntoTests
     public void first_injection_ever( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        h.ApplyAndCheck( source, transformer, result );
     }
 
     [TestCase( "n°1",
@@ -162,9 +162,7 @@ public class InjectIntoTests
     public void injection_in_multiple_classes( string title, string source, string transformer, string result )
     {
         var h = new TransformerHost( new TypeScriptLanguage() );
-        var function = h.TryParseFunction( TestHelper.Monitor, transformer ).ShouldNotBeNull();
-        var sourceCode = h.Transform( TestHelper.Monitor, source, function ).ShouldNotBeNull();
-        sourceCode.ToString().ShouldBe( result );
+        h.ApplyAndCheck( source, transformer, result );
     }
 
 }

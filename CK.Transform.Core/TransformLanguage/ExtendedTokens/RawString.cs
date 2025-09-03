@@ -235,8 +235,9 @@ public sealed class RawString : Token
                     head.AppendError( $"Invalid multi-line raw string: there must be no character after the opening {head.Head.Slice( 0, quoteCount )} characters.", tokenLength );
                     return null;
                 }
-                multiLine = multiLine.Slice( idxFirstEndOfLine + 1 );
             }
+            // Skip the leading \n or \r\n.
+            multiLine = multiLine.Slice( idxFirstEndOfLine + 1 );
             int idxLastEndOfLine = multiLine.LastIndexOf( '\n' );
             if( idxLastEndOfLine < 0 )
             {

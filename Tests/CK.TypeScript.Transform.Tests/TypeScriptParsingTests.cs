@@ -1,10 +1,12 @@
 using CK.Core;
-using CK.Transform.Core;
-using Shouldly;
-using NUnit.Framework;
 using CK.Testing;
-using static CK.Testing.MonitorTestHelper;
+using CK.Transform.Core;
+using NUnit.Framework;
+using Shouldly;
 using System.IO;
+using System.Linq;
+using static CK.Testing.MonitorTestHelper;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CK.TypeScript.Transform.Tests;
 
@@ -122,6 +124,27 @@ public class TypeScriptParsingTests
         result.Success.ShouldBeTrue();
         result.SourceCode.Tokens.Count.ShouldBe( 1 );
         result.SourceCode.Tokens[0].TokenType.ShouldBe( TokenType.GenericString );
+    }
+
+    [TestCase( "\r\nA\r\n\r\nB\r\n\r\nC\r\n" )]
+    [TestCase( "\nA\n\nB\n\nC\n" )]
+    [TestCase( "\nA\r\n\nB\n\r\nC\r\n" )]
+    [TestCase( "\r\nA\n\r\nB\r\n\nC\n" )]
+    public void parsing_newlines( string text )
+    {
+        var a = new TypeScriptAnalyzer();
+        var result = a.Parse( text );
+        result.FirstError.ShouldBeNull();
+        result.Success.ShouldBeTrue();
+        result.SourceCode.Tokens.Count.ShouldBe( 3 );
+
+        var leadings = result.SourceCode.Tokens.Select( t => t.LeadingTrivias ).ToList();
+        leadings.All( t => t.Length == 1 ).ShouldBeTrue();
+        leadings.All( t => t[0].IsWhitespace && (t[0].Content.ToString() == "\r\n" || t[0].Content.ToString() == "\n") ).ShouldBeTrue();
+
+        var trailings = result.SourceCode.Tokens.Select( t => t.TrailingTrivias ).ToList();
+        trailings.All( t => t.Length == 1 ).ShouldBeTrue();
+        trailings.All( t => t[0].IsWhitespace && (t[0].Content.ToString() == "\r\n" || t[0].Content.ToString() == "\n") ).ShouldBeTrue();
     }
 
     [TestCase( "buggy.ts" )]

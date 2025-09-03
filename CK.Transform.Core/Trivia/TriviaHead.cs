@@ -157,7 +157,7 @@ public ref struct TriviaHead
         {
             bool eol = false;
             int iS = 0;
-            while( ++iS != _head.Length && char.IsWhiteSpace( _head[iS] ) )
+            do
             {
                 if( _head[iS] == '\n' )
                 {
@@ -166,6 +166,8 @@ public ref struct TriviaHead
                     break;
                 }
             }
+            while( ++iS != _head.Length && char.IsWhiteSpace( _head[iS] ) );
+
             Accept( TokenType.Whitespace, iS );
             if( eol || IsEndOfInput ) return;
         }

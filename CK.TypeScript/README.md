@@ -4,8 +4,9 @@ This assembly introduces the [TypeScriptAspectConfiguration](TypeScriptAspectCon
 BinPath specific [TypeScriptBinPathAspectConfiguration](TypeScriptBinPathAspectConfiguration.cs).
 
 
-[TypeScriptAttribute](TypeScriptAttribute.cs) can decorate any C# type to optionnaly specify its generated TypeScript type name,
-target file and folder but this is not required as engines can generate TypeScript code for any kind of C# object the way they want.
+[TypeScriptTypeAttribute](TypeScriptTypeAttribute.cs) can decorate any C# type to optionnaly specify its generated
+TypeScript type name, target file and folder but this is not required as engines can generate TypeScript code for
+any kind of C# object the way they want.
 
 Specialized [TypeScriptPackage](TypeScriptPackage.cs) are used to define TypeScript resources that can be `.ts` files or any
 other kind of files (`.less`, `.html`, `.png`, etc.). TypeScript packages, unlike Sql packages, are not
@@ -14,9 +15,9 @@ meant to expose methods or any kind of API. They are "resource packages", their 
 package: the most often used ones are `[Requires<T1,...Tn>]`, `[RequiredBy<T1,...Tn>]` that define the requirements and `Package<TOwner>`
 that defines the ownership. The `[Children]` and `[Groups]` attributes can also be used. 
 
-Resources are in "Res/" and "Res[After]" folders. They don't need to be declared on the C# side.
+Resources are in "Res/" and "Res[After]/" folders. They don't need to be declared on the C# side.
 The [TypeScriptFilesAttribute](TypeScriptFilesAttribute.cs) can be used to declare TypeScript type/symbol name that
-are exported by a resource file or to change the target folder of the resource.
+are exported by a resource file.
 
 The [TypeScriptImportLibraryAttribute](TypeScriptImportLibraryAttribute.cs) is used to declare dependencies on npm packages.
 
