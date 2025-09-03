@@ -93,6 +93,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
             _ckGenAppModule = context.Root.Root.FindOrCreateTypeScriptFile( "CK/Angular/CKGenAppModule.ts" );
             _ckGenAppModule.Imports.ImportFromLibrary( _angularCore, "NgModule, Provider, EnvironmentProviders" );
+            _ckGenAppModule.Body.Append( "import { LocaleProvider } from '@local/ck-gen/ts-locales/locales';" ).NewLine();
             _ckGenAppModule.Body.Append( """
                 
                 export type SourcedProvider = (EnvironmentProviders | Provider) & {source: string};
@@ -150,6 +151,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     }
 
                     static Providers : SourcedProviders = SourcedProviders.createFrom( [
+                      CKGenAppModule.s( LocaleProvider, "CK.TS.Angular" ),
 
                 """ )
                 .InsertPart( out _providerPart )

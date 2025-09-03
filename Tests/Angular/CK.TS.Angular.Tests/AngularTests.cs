@@ -22,7 +22,6 @@ public class AngularTests
         var ts = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
         ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
-        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-US" ) );
 
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( typeof( DemoNgModule ),
@@ -40,12 +39,35 @@ public class AngularTests
                                               typeof( PublicFooterComponent ),
                                               typeof( PublicTopbarComponent ),
                                               // CK.Ng.Zorro
-                                              typeof( CK.Ng.Zorro.ZorroPackage ),
+                                              typeof( CK.Ng.Zorro.ZorroTestPackage ),
                                               // CK.Ng.Zorro.BackOffice
                                               typeof( CK.Ng.Zorro.BackOfficePackage ),
                                               typeof( CK.Ng.Zorro.ActionBarComponent ),
                                               typeof( CK.Ng.Zorro.GenericFormComponent )
                                             );
+        await configuration.RunSuccessfullyAsync();
+
+        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
+        await TestHelper.SuspendAsync( resume => resume );
+        runner.Run();
+    }
+
+    [Test]
+    [Explicit]
+    public async Task CK_TS_Angular_with_Ng_Localization_Async()
+    {
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
+
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Path = TestHelper.BinFolder;
+
+        var ts = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "nl-BE" ) );
+
+        configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.Localization" );
         await configuration.RunSuccessfullyAsync();
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );

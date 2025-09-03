@@ -349,7 +349,8 @@ public sealed partial class TypeScriptContext
                                                                                                 spaceData.CoreData,
                                                                                                 typeScriptContext.ActiveCultures,
                                                                                                 typeScriptContext.BinPathConfiguration.DefaultCulture,
-                                                                                                sortKeys: spaceData.CoreData.HasLiveState ) );
+                                                                                                sortKeys: spaceData.CoreData.HasLiveState,
+                                                                                                _codeContext.CurrentRun.ConfigurationGroup.EngineMap!.Features ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var externalItemResolver = _integrationContext != null
                                     ? new ExternalItemResolver( _integrationContext.CKGenFolder, _integrationContext.SrcFolderPath )

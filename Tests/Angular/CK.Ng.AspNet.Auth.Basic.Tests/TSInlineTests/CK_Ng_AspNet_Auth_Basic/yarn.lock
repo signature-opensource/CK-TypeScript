@@ -212,14 +212,14 @@ __metadata:
   linkType: hard
 
 "@angular/animations@npm:^20":
-  version: 20.2.2
-  resolution: "@angular/animations@npm:20.2.2"
+  version: 20.2.3
+  resolution: "@angular/animations@npm:20.2.3"
   dependencies:
     tslib: "npm:^2.3.0"
   peerDependencies:
-    "@angular/common": 20.2.2
-    "@angular/core": 20.2.2
-  checksum: 10/f7b185862a600069d99f75f48f37d8f09e803cd693c0d5c06833705a8dcd75d73cddc5b8510a4ac4a7c2e92313e1bfae166e6728baf2d95816e03c206435c381
+    "@angular/common": 20.2.3
+    "@angular/core": 20.2.3
+  checksum: 10/25f751bea91269bd1eb7d640c19e86e3b17866d76e83432b61ab1ffec38ac60a75e909e7d54b8d7666dac1cd77756c65b3257865d87f28baf0e7181c9a788cd8
   languageName: node
   linkType: hard
 

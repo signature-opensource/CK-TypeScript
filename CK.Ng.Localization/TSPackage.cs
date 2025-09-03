@@ -13,7 +13,8 @@ namespace CK.Ng.Localization;
 [TypeScriptFile( "TranslationsLoader.ts", "CKTranslationsLoader" )]
 [NgProviderImport( "provideTranslateService, TranslateLoader", From = "@ngx-translate/core" )]
 [NgProviderImport( "CKTranslationsLoader", From = "@local/ck-gen" )]
-[NgProvider( "provideTranslateService( { fallbackLang: 'en', lang: 'fr', loader: { provide: TranslateLoader, useClass: CKTranslationsLoader } })" )]
+[NgProviderImport( "DEFAULT_LOCALE_INFO", From = "@local/ck-gen/ts-locales/locales" )]
+[NgProvider( "provideTranslateService( { fallbackLang: DEFAULT_LOCALE_INFO.ngxTranslate, lang: DEFAULT_LOCALE_INFO.ngxTranslate, loader: { provide: TranslateLoader, useClass: CKTranslationsLoader } })" )]
 public class TSPackage : TypeScriptPackage
 {
 }
