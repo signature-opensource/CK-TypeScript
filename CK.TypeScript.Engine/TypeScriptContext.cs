@@ -344,10 +344,13 @@ public sealed partial class TypeScriptContext
         success &= spaceBuilder.RegisterHandler( monitor, new AssetsResourceHandler( installer,
                                                                                      spaceData.CoreData.SpaceDataCache,
                                                                                      "ts-assets" ) );
+        
         success &= spaceBuilder.RegisterHandler( monitor, new TypeScriptLocalesResourceHandler( installer,
                                                                                                 spaceData.CoreData.SpaceDataCache,
                                                                                                 typeScriptContext.ActiveCultures,
-                                                                                                sortKeys: spaceData.CoreData.HasLiveState ) );
+                                                                                                typeScriptContext.BinPathConfiguration.DefaultCulture,
+                                                                                                sortKeys: spaceData.CoreData.HasLiveState,
+                                                                                                _codeContext.CurrentRun.ConfigurationGroup.EngineMap!.Features ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var externalItemResolver = _integrationContext != null
                                     ? new ExternalItemResolver( _integrationContext.CKGenFolder, _integrationContext.SrcFolderPath )

@@ -1,5 +1,7 @@
 using CK.BinarySerialization;
 using CK.Core;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CK.Setup;
@@ -8,10 +10,15 @@ public sealed partial class TypeScriptContext
 {
     sealed class TypeScriptLocalesResourceHandler : LocalesResourceHandler
     {
+        readonly NormalizedCultureInfo _defaultCulture;
+        readonly IReadOnlyCollection<VFeature> _features;
+
         public TypeScriptLocalesResourceHandler( IResourceSpaceItemInstaller? installer,
                                                  ICoreDataCache packageDataCache,
                                                  ActiveCultureSet activeCultures,
-                                                 bool sortKeys )
+                                                 NormalizedCultureInfo defaultCulture,
+                                                 bool sortKeys,
+                                                 IReadOnlyCollection<VFeature> features )
             : base( installer,
                     packageDataCache,
                     "ts-locales",
@@ -20,6 +27,8 @@ public sealed partial class TypeScriptContext
                                     ? InstallOption.Full | InstallOption.WithSortedKeys
                                     : InstallOption.Full )
         {
+            _defaultCulture = defaultCulture;
+            _features = features;
         }
 
         protected override bool Install( IActivityMonitor monitor )
@@ -29,6 +38,9 @@ public sealed partial class TypeScriptContext
             {
                 using( Installer.PushSubPath( RootFolderName ) )
                 {
+                    bool hasNgLocalization = _features.Any( f => f.Name == "CK.Ng.Localization" );
+                    bool hasNgZorro = _features.Any( f => f.Name == "CK.Ng.Zorro" );
+
                     var localesBody = new StringBuilder( """
                         export async function loadTranslations(lang: string): Promise<{[key: string]: string}> {
                             switch(lang) {
@@ -36,7 +48,7 @@ public sealed partial class TypeScriptContext
                         """ );
                     foreach( var c in ActiveCultures.AllActiveCultures )
                     {
-                        if( !c.Culture.IsDefault )
+                        if( c.Culture != _defaultCulture )
                         {
                             localesBody.Append( "    case '" ).Append( c.Culture.Name ).Append( "': " )
                                         .Append( "return (await import('./" )
@@ -45,8 +57,8 @@ public sealed partial class TypeScriptContext
                                         .AppendLine();
                         }
                     }
-                    localesBody.Append( """
-                            default: return (await import('./en.json')).default;
+                    localesBody.Append( $$"""
+                            default: return (await import('./{{_defaultCulture.Name}}.json')).default;
                           }
                         }
 
