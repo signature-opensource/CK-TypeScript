@@ -5,6 +5,7 @@ using Shouldly;
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
@@ -56,6 +57,8 @@ public class LiveTests
                                                  LocalFileSupport localFileSupport,
                                                  CancellationToken testCancellation )
     {
+        Assume.That( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "FileSystemWatcher on Unix has to be tested." );
+
         var name = $"{scenario}-{install}[{activeCultures}]";
         var testRootPath = TestHelper.TestProjectFolder.AppendPart( name );
         ResSpace space = Install( testRootPath, activeCultures, install, localFileSupport );
