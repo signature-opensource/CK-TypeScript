@@ -10,25 +10,24 @@ public sealed partial class TypeScriptContext
 {
     sealed class TypeScriptLocalesResourceHandler : LocalesResourceHandler
     {
+        readonly ResCoreData _resCoreData;
         readonly NormalizedCultureInfo _defaultCulture;
-        readonly IReadOnlyCollection<VFeature> _features;
 
         public TypeScriptLocalesResourceHandler( IResourceSpaceItemInstaller? installer,
-                                                 ICoreDataCache packageDataCache,
+                                                 ResCoreData resCoreData,
                                                  ActiveCultureSet activeCultures,
                                                  NormalizedCultureInfo defaultCulture,
-                                                 bool sortKeys,
-                                                 IReadOnlyCollection<VFeature> features )
+                                                 bool sortKeys )
             : base( installer,
-                    packageDataCache,
+                    resCoreData.SpaceDataCache,
                     "ts-locales",
                     activeCultures,
                     installOption: sortKeys
                                     ? InstallOption.Full | InstallOption.WithSortedKeys
                                     : InstallOption.Full )
         {
+            _resCoreData = resCoreData;
             _defaultCulture = defaultCulture;
-            _features = features;
         }
 
         protected override bool Install( IActivityMonitor monitor )
@@ -38,8 +37,9 @@ public sealed partial class TypeScriptContext
             {
                 using( Installer.PushSubPath( RootFolderName ) )
                 {
-                    bool hasNgLocalization = _features.Any( f => f.Name == "CK.Ng.Localization" );
-                    bool hasNgZorro = _features.Any( f => f.Name == "CK.Ng.Zorro" );
+                    bool hasAngular = _resCoreData.PackageIndex.ContainsKey( "CK.TS.Angular" );
+                    bool hasNgLocalization = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Localization" );
+                    bool hasNgZorro = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Zorro" );
 
                     var localesBody = new StringBuilder( """
                         export async function loadTranslations(lang: string): Promise<{[key: string]: string}> {

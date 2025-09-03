@@ -346,11 +346,10 @@ public sealed partial class TypeScriptContext
                                                                                      "ts-assets" ) );
         
         success &= spaceBuilder.RegisterHandler( monitor, new TypeScriptLocalesResourceHandler( installer,
-                                                                                                spaceData.CoreData.SpaceDataCache,
+                                                                                                spaceData.CoreData,
                                                                                                 typeScriptContext.ActiveCultures,
                                                                                                 typeScriptContext.BinPathConfiguration.DefaultCulture,
-                                                                                                sortKeys: spaceData.CoreData.HasLiveState,
-                                                                                                _codeContext.CurrentRun.ConfigurationGroup.EngineMap!.Features ) );
+                                                                                                sortKeys: spaceData.CoreData.HasLiveState ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var externalItemResolver = _integrationContext != null
                                     ? new ExternalItemResolver( _integrationContext.CKGenFolder, _integrationContext.SrcFolderPath )
