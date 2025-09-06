@@ -51,7 +51,6 @@ public sealed class TSConfigJsonFile
     // These are compiler options.
     string _target;
     string _module;
-    string _moduleResolution;
     bool _strict;
     bool _noImplicitOverride;
     bool _noPropertyAccessFromIndexSignature;
@@ -399,21 +398,6 @@ public sealed class TSConfigJsonFile
             _module = value;
         }
     }
-
-    /// <summary>
-    /// See https://stackoverflow.com/a/71473145/190380.
-    /// Defaults to <see cref="DefaultModuleResolution"/>.
-    /// </summary>
-    public string CompileOptionsModuleResolution
-    {
-        get => _moduleResolution;
-        set
-        {
-            Throw.CheckNotNullOrWhiteSpaceArgument( value );
-            _moduleResolution = value;
-        }
-    }
-
 
     void UpdateSimpleCompilerOptions()
     {
