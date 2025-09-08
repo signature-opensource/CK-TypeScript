@@ -131,6 +131,7 @@ sealed partial class CoreCollector
         {
             bool success = true;
             var packages = _collector._packages;
+            // Uses a for loop because the packages list can grow.
             for( int i = 0; i < packages.Count; i++ )
             {
                 var p = packages[i];
@@ -257,7 +258,10 @@ sealed partial class CoreCollector
                 // is not) and check that there's no context mismatch.
                 if( !r.IsOptional && p.IsOptional )
                 {
-                    _collector.SetNoMoreOptionalPackage( p );
+                    if( !_collector.SetNoMoreOptionalPackage( _monitor, p ) )
+                    {
+                        return Ref.Invalid;
+                    }
                 }
                 // On success, returns a non optional reference.
                 return p.CheckContext( _monitor, relName, _collector._packageDescriptorContext )
@@ -290,8 +294,9 @@ sealed partial class CoreCollector
                 // This is a non optional ref to an optional package:
                 // We promote the package: it is no more optional and
                 // we return the resolved package.
-                _collector.SetNoMoreOptionalPackage( result );
-                return result;
+                return _collector.SetNoMoreOptionalPackage( _monitor, result )
+                        ? result
+                        : Ref.Invalid;
             }
             // The package is unknown. If this is an optional
             // reference, we return the optional reference unchanged (but a Type is now a ICachedType).
@@ -315,12 +320,10 @@ sealed partial class CoreCollector
                     _monitor.Error( $"PackageResolver failed to register the reference '{r}'." );
                     return Ref.Invalid;
                 }
-                // Silently fix a stupid optional registration by the PackageResolver.
-                if( result.IsOptional )
-                {
-                    _collector.SetNoMoreOptionalPackage( result );
-                }
-                return result;
+                // Fix a stupid optional registration by the PackageResolver.
+                return !result.IsOptional || _collector.SetNoMoreOptionalPackage( _monitor, result )
+                        ? result
+                        : Ref.Invalid;
             }
             _monitor.Error( $"No configured PackageResolver. The reference '{r}' is not registered." );
             return Ref.Invalid;

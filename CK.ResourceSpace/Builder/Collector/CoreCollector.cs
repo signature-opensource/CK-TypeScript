@@ -129,7 +129,7 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
             _packages.Add( p );
         }
         // Whether the package is optional or not, we index it.
-        // An optional package will be removed it is still optional after the
+        // An optional package will be removed if it is still optional after the
         // topological sort (RemoveDefinitelyOptional below).
         if( p.IsLocalPackage )
         {
@@ -208,22 +208,66 @@ sealed partial class CoreCollector : IResPackageDescriptorRegistrar
         }
     }
 
-    void SetNoMoreOptionalPackage( ResPackageDescriptor p )
+    bool SetNoMoreOptionalPackage( IActivityMonitor monitor, ResPackageDescriptor p )
     {
         Throw.DebugAssert( p.IsOptional );
         Throw.DebugAssert( !_packages.Contains( p ) );
         p._isOptional = false;
         _packages.Add( p );
+        return EnsureAlsoRegistrations( monitor, p );
     }
 
     public bool Close( IActivityMonitor monitor,
                        out HashSet<ResourceLocator> codeHandledResources,
                        out IReadOnlyList<ResPackageDescriptor> finalOptionalPackages )
     {
-        var sorter = new TopologicalSorter( monitor, this );
-        var success = sorter.Run();
+        bool success = true;
+        // First, we must handle the AlsoRegisterTypes of non optional packages
+        // that are not already regsitered.
+        // We do this here (in the Close) to let regular registrations "win" over registrations from
+        // the AlsoRegisterTypes.
+        foreach( ResPackageDescriptor p in _packages )
+        {
+            success &= EnsureAlsoRegistrations( monitor, p );
+        }
+        if( success )
+        {
+            var sorter = new TopologicalSorter( monitor, this );
+            success = sorter.Run();
+        }
+        // Satisfy the out parameters even on failure.
         finalOptionalPackages = _optionalPackages;
         codeHandledResources = _packageDescriptorContext.Close();
+        return success;
+    }
+
+    bool EnsureAlsoRegistrations( IActivityMonitor monitor, ResPackageDescriptor p )
+    {
+        Throw.DebugAssert( !p.IsOptional );
+        // Skips manifest based packages. We will see if manifests also define "also register types"
+        // when we actually support manifests. 
+        bool success = true;
+        if( p.Type != null )
+        {
+            foreach( var also in p.Type.AlsoRegisterTypes )
+            {
+                if( _packageIndex.TryGetValue( also, out var already ) )
+                {
+                    // If the also registered package is optional, it is no more optional.
+                    if( already.IsOptional )
+                    {
+                        success &= SetNoMoreOptionalPackage( monitor, already );
+                        monitor.Debug( $"{(already.IsGroup ? "Group" : "Package")} '{also}' is no more optional because of [AlsoRegisterType<{also.Name}>] on '{p.Type}'." );
+                    }
+                }
+                else
+                {
+                    // The also registered type is not yet known: we must register it.
+                    monitor.Debug( $"Also registering '{also}' because of [AlsoRegisterType<{also.Name}>] on '{p.Type}'." );
+                    success &= this.RegisterPackage( monitor, also, isOptional: false ) != null;
+                }
+            }
+        }
         return success;
     }
 }
