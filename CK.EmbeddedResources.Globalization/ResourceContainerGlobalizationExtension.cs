@@ -128,7 +128,7 @@ public static class ResourceContainerGlobalizationExtension
             }
             else
             {
-                var c = NormalizedCultureInfo.FindNormalizedCultureInfo( cName );
+                var c = ExtendedCultureInfo.All.FindNormalizedCultureInfo( cName );
                 if( c == null || !activeCultures.TryGet( c, out ActiveCulture? aC ) )
                 {
                     monitor.Warn( $"Ignoring translation file for '{cName}' as it doesn't appear in the active cultures." );
