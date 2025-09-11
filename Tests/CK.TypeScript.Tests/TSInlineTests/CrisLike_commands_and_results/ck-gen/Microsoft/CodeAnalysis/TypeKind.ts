@@ -13,5 +13,6 @@ Struct = 10,
 Structure = 10,
 TypeParameter = 11,
 Submission = 12,
-FunctionPointer = 13
+FunctionPointer = 13,
+Extension = 14
 }

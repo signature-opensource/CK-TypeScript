@@ -12,7 +12,7 @@ namespace CK.Core;
 /// <para>
 /// Serialization of cultures cannot be straightforward: depending on the context, we may want to
 /// <see cref="NormalizedCultureInfo.EnsureNormalizedCultureInfo(string)"/> or, more safely, to only
-/// <see cref="NormalizedCultureInfo.FindNormalizedCultureInfo(string)"/>.
+/// <see cref="AllCultureSnapshot.FindNormalizedCultureInfo(string)"/> on <see cref="ExtendedCultureInfo.All"/>.
 /// For this <see cref="ActiveCultureSet"/>, the only really interesting serialization is the one that
 /// preserves the <see cref="ActiveCulture.Index"/>: this must use a <c>EnsureNormalizedCultureInfo</c>
 /// call to restore the state.

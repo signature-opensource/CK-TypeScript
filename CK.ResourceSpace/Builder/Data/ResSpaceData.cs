@@ -136,7 +136,7 @@ public sealed class ResSpaceData
     }
 
     /// <summary>
-    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="ResPackage.Resources"/> or <see cref="ResPackage.AfterResources"/>
     /// and calls <see cref="RemoveCodeHandledResource(ResPackage, ResourceLocator)"/> if the resource is found.
     /// </summary>
     /// <param name="package">The package that contains the resource.</param>

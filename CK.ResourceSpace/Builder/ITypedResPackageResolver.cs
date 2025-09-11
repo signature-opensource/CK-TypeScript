@@ -13,8 +13,14 @@ public interface IResPackageDescriptorResolver
     ///     <item><see cref="ResPackageDescriptor.Ref.IsOptional"/> is false.</item>
     ///     <item><see cref="ResPackageDescriptor.Ref.AsPackageDescriptor"/> is null.</item>
     ///     <item><see cref="ResPackageDescriptor.Ref.IsValid"/> is true.</item>
-    ///     <item><see cref="ResPackageDescriptor.Ref.IsType"/> may be true: a type bound package must be registered.</item>
-    ///     <item><see cref="ResPackageDescriptor.Ref.FullName"/> is never null: it is the type's full name or a named package must be registered.</item>
+    ///     <item>
+    ///         <see cref="ResPackageDescriptor.Ref.AsType"/> or <see cref="ResPackageDescriptor.Ref.AsCachedType"/> can be not null:
+    ///         a type bound package must be registered.
+    ///     </item>
+    ///     <item>
+    ///         <see cref="ResPackageDescriptor.Ref.FullName"/> is never null: it is the type's full name or the named package
+    ///         that must be registered.
+    ///     </item>
     /// </list>
     /// <para>
     /// Nothing prevents more than one package to be registered (this may be useful in some scenario).

@@ -4,6 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Transform.Core;
 
+/// <summary>
+/// Insert statement: <c>insert "..." [after|before] [*|<see cref="LocationMatcher"/>];</c>
+/// or <c>insert [after|before] [*|<see cref="LocationMatcher"/>] "...";</c>.
+/// </summary>
 public sealed class InsertStatement : TransformStatement
 {
     bool _isBefore;

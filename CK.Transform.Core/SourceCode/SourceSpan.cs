@@ -57,6 +57,9 @@ public abstract partial class SourceSpan
         }
     }
 
+    /// <summary>
+    /// Gets all the spans (depth first traversal).
+    /// </summary>
     public IEnumerable<SourceSpan> AllSpans
     {
         get
@@ -74,15 +77,14 @@ public abstract partial class SourceSpan
 
     /// <summary>
     /// Checks whether this span is valid. At this level, it must not be <see cref="IsDetached"/>
-    /// and all children's <see cref="SourceSpanChildren.CheckValidChildren()"/> must return true.
+    /// and all children's <see cref="CheckValidChildren()"/> must return true.
     /// <para>
     /// This is often specialized to implement checks on <see cref="Children"/>, <see cref="Parent"/>
     /// or siblings. Specializations must call this base method.
     /// </para>
     /// <para>
     /// Overrides typically specify [MemberNotNullWhen( true, ...)] with required properties of the structure.
-    /// This has been designed to be used in <see cref="Throw.DebugAssert(bool, string?, string?, int)"/>:
-    /// spans must always be valid, see <see cref="Bind"/>.
+    /// This has been designed to be used in <see cref="Throw.DebugAssert(bool, string?, string?, int)"/>: spans must always be valid.
     /// </para>
     /// </summary>
     /// <returns>True if this span is valid.</returns>
@@ -136,12 +138,9 @@ public abstract partial class SourceSpan
     }
 
     /// <summary>
-    /// Detaches this span from the <see cref="Root"/>.
+    /// Detaches this span from the root.
     /// </summary>
-    /// <param name="withChildren">
-    /// True to also detach the <see cref="Children"/> instead of lifting them
-    /// as children of this <see cref="Parent"/>.
-    /// </param>
+    /// <param name="mode">See <see cref="DetachMode"/>.</param>
     public void Detach( DetachMode mode )
     {
         if( _parent == null ) return;

@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
-    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Release/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "private": true,
   "dependencies": {
@@ -17,7 +17,7 @@
     "@angular/core": "^20",
     "@angular/forms": "^20",
     "@angular/platform-browser": "^20",
-    "@angular/platform-browser-dynamic": "^20.2.2",
+    "@angular/platform-browser-dynamic": "^20.3",
     "@angular/router": "^20",
     "@fortawesome/angular-fontawesome": "^3",
     "ng-zorro-antd": "^20",
@@ -37,6 +37,7 @@
     "jest-environment-jsdom": "^30.1.1",
     "jest-preset-angular": "^15",
     "jest-util": "^30.0.5",
+    "less": "^4.4.1",
     "ts-jest": "^29.4.1",
     "typescript": "~5.9.2"
   },

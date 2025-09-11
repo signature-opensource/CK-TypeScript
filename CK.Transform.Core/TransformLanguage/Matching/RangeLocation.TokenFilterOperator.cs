@@ -6,6 +6,7 @@ namespace CK.Transform.Core;
 
 public sealed partial class RangeLocation : ITokenFilterOperator
 {
+    /// <inheritdoc />
     public void Activate( Action<ITokenFilterOperator> collector )
     {
         Throw.DebugAssert( CheckValid() );
@@ -154,6 +155,7 @@ public sealed partial class RangeLocation : ITokenFilterOperator
         public override string ToString() => "after";
     }
 
+    /// <inheritdoc />
     public StringBuilder Describe( StringBuilder b, bool parsable )
     {
         if( !parsable ) b.Append( "RangeLocation[ " );

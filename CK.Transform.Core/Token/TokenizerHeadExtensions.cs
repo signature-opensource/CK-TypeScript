@@ -1,4 +1,5 @@
 using CK.Core;
+using System.Runtime.CompilerServices;
 
 namespace CK.Transform.Core;
 
@@ -11,6 +12,8 @@ public static class TokenizerHeadExtensions
     /// Adds a span. This throws if the span is already attached to a root or
     /// if it intersects an already added existing span.
     /// </summary>
+    /// <typeparam name="T">Type of the span to add.</typeparam>
+    /// <param name="head">This head.</param>
     /// <param name="newOne">The span to add.</param>
     /// <returns>The <paramref name="newOne"/> span.</returns>
     public static T AddSpan<T>( this ref TokenizerHead head, T newOne ) where T : SourceSpan

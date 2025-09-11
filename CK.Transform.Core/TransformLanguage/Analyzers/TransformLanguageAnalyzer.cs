@@ -267,6 +267,10 @@ public class TransformLanguageAnalyzer : TargetLanguageAnalyzer, ITopLevelAnalyz
         };
     }
 
+    /// <summary>
+    /// Handles "" and {} <see cref="RawString"/> tokens.
+    /// </summary>
+    /// <param name="head">The head./param>
     protected override void ParseStandardMatchPattern( ref TokenizerHead head )
     {
         while( head.EndOfInput == null )

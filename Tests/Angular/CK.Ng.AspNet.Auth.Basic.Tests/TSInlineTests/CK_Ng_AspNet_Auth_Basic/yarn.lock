@@ -423,17 +423,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/platform-browser-dynamic@npm:^20.2.2":
-  version: 20.2.2
-  resolution: "@angular/platform-browser-dynamic@npm:20.2.2"
+"@angular/platform-browser-dynamic@npm:^20.3":
+  version: 20.3.0
+  resolution: "@angular/platform-browser-dynamic@npm:20.3.0"
   dependencies:
     tslib: "npm:^2.3.0"
   peerDependencies:
-    "@angular/common": 20.2.2
-    "@angular/compiler": 20.2.2
-    "@angular/core": 20.2.2
-    "@angular/platform-browser": 20.2.2
-  checksum: 10/6866ae69f7e7bb94cb5253f4934ccc6f0b554f1e0fecbd57f9618b00eb6c272078617bb0e9e2dc32ecefacf37d4ba9f4658865778cee4c6cd07c7c7b5f8d119d
+    "@angular/common": 20.3.0
+    "@angular/compiler": 20.3.0
+    "@angular/core": 20.3.0
+    "@angular/platform-browser": 20.3.0
+  checksum: 10/9a6c69a09f80eb0abb163cc716acafac86ebd7126c9fd4829dee3371ad85b8d7af5bfa8d1d12bcb47058e9e3a5d47b761c9fcffcb8be6e5133821de81c2171bc
   languageName: node
   linkType: hard
 
@@ -4619,7 +4619,7 @@ __metadata:
     "@angular/core": "npm:^20"
     "@angular/forms": "npm:^20"
     "@angular/platform-browser": "npm:^20"
-    "@angular/platform-browser-dynamic": "npm:^20.2.2"
+    "@angular/platform-browser-dynamic": "npm:^20.3"
     "@angular/router": "npm:^20"
     "@fortawesome/angular-fontawesome": "npm:^3"
     "@fortawesome/fontawesome-svg-core": "npm:^7"
@@ -4636,7 +4636,7 @@ __metadata:
     jest-environment-jsdom: "npm:^30.1.1"
     jest-preset-angular: "npm:^15"
     jest-util: "npm:^30.0.5"
-    less: "npm:^4.2"
+    less: "npm:^4.4.1"
     luxon: "npm:^3.5"
     ng-zorro-antd: "npm:^20"
     rxjs: "npm:~7.8"
@@ -6623,7 +6623,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"less@npm:^4.2":
+"less@npm:^4.4.1":
   version: 4.4.1
   resolution: "less@npm:4.4.1"
   dependencies:

@@ -21,6 +21,10 @@ public readonly record struct TokenMatch( int EachIndex, int MatchIndex, TokenSp
     public bool IsEmpty => Span.IsEmpty;
 }
 
+
+/// <summary>
+/// Provides extensions to <see cref="TokenMatch"/> related types.
+/// </summary>
 public static class TokenMatchExtensions
 {
     /// <summary>

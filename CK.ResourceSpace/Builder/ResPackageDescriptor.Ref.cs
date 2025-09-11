@@ -132,9 +132,11 @@ public sealed partial class ResPackageDescriptor
             _ => null
         };
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public static implicit operator Ref( string fullName ) => new Ref( fullName );
         public static implicit operator Ref( ResPackageDescriptor package ) => new Ref( package );
         public static implicit operator Ref( Type type ) => new Ref( type );
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
         /// Overridden to return the <see cref="FullName"/> or the empty string if <see cref="IsValid"/> is false.

@@ -15,7 +15,7 @@ public interface ITokenScanner
     /// <summary>
     /// Returns the next token.
     /// </summary>
-    /// <param name="text">The tokenizer head.</param>
+    /// <param name="head">The tokenizer head.</param>
     /// <returns>The token (can be an error or the <see cref="TokenizerHead.EndOfInput"/> token).</returns>
     Token GetNextToken( ref TokenizerHead head );
 }

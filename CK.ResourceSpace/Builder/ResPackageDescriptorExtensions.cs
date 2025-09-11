@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace CK.Core;
 
+/// <summary>
+/// Provides extensions on <see cref="ResPackageDescriptor"/> related types.
+/// </summary>
 public static class ResPackageDescriptorExtensions
 {
     /// <summary>

@@ -504,7 +504,6 @@ public ref struct TokenizerHead
     /// <see cref="EndOfInput"/> must be null otherwise an <see cref="InvalidOperationException"/> is thrown.
     /// </para>
     /// </summary>
-    /// <param name="type">The token type to create. Defaults to <see cref="LowLevelTokenType"/>.</param>
     /// <returns>The token.</returns>
     [MemberNotNull( nameof( LastToken ) )]
     public Token AcceptLowLevelTokenOrNone()

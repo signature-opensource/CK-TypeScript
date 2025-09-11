@@ -16,11 +16,12 @@ public static class IResPackageDescriptorRegistrarExtensions
     /// "The/Type/Namespace" (the dots of the namespace are replaced with a '/'.
     /// </para>
     /// </summary>
+    /// <param name="r">This registrar.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The type that defines the package.</param>
     /// <param name="isOptional">
     /// Defines the initial value of <see cref="ResPackageDescriptor.IsOptional"/>. By default, this
-    /// is driven by the existence of the <see cref="OptionalTypeAttribute">[OptionalType]</see> attribute.
+    /// is driven by the existence and value of the <see cref="IOptionalResourceGroupAttribute" /> attributes.
     /// </param>
     /// <param name="ignoreLocal">
     /// True to ignore local folder: even if the resources are in a local folder, this creates

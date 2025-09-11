@@ -36,7 +36,7 @@ public sealed class ResSpaceConfiguration : IResPackageDescriptorRegistrar
     /// <param name="typeCache">The type cache that will be used.</param>
     /// <param name="allowedTypes">
     /// Optional type set restriction.
-    /// When false is returned by this predicate, <see cref="RegisterPackage(IActivityMonitor, Type, bool?, bool)"/> fails.
+    /// When false is returned by this predicate, <see cref="RegisterPackage(IActivityMonitor, ICachedType, NormalizedPath, bool?, bool)"/> fails.
     /// </param>
     public ResSpaceConfiguration( GlobalTypeCache typeCache, Func<ICachedType, bool>? allowedTypes = null )
     {

@@ -50,7 +50,7 @@ public abstract partial class Analyzer : IAnalyzer, ITokenizerHeadBehavior
     {
         _handleWhiteSpaceTrivias = _defaultWhiteSpaceTrivias;
         _triviaBuilder.Clear();
-        /// Creates an initial head on text with this tokenizer as the ITokenizerHeadBehavior.
+        // Creates an initial head on text with this tokenizer as the ITokenizerHeadBehavior.
         TokenizerHead head = new TokenizerHead( text, this, _triviaBuilder );
         try
         {

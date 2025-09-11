@@ -66,7 +66,7 @@ public interface IResPackageDescriptorRegistrar
     /// <param name="defaultTargetPath">The default target path associated to the package's resources.</param>
     /// <param name="isOptional">
     /// Defines the initial value of <see cref="ResPackageDescriptor.IsOptional"/>. By default, this
-    /// is driven by the existence of the <see cref="OptionalTypeAttribute">[OptionalType]</see> attribute.
+    /// is driven by the existence and value of the <see cref="IOptionalResourceGroupAttribute.IsOptional" /> attributes.
     /// </param>
     /// <param name="ignoreLocal">
     /// True to ignore local folder: even if the resources are in a local folder, this creates
@@ -122,7 +122,7 @@ public interface IResPackageDescriptorRegistrar
                                             out ResourceLocator resource );
 
     /// <summary>
-    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="Resources"/> or <see cref="AfterResources"/>
+    /// Finds the <paramref name="resourceName"/> that may exist in <see cref="ResPackage.Resources"/> or <see cref="ResPackage.AfterResources"/>
     /// and calls <see cref="RemoveCodeHandledResource(ResPackageDescriptor, ResourceLocator)"/> if the resource is found.
     /// </summary>
     /// <param name="package">The package that contains the resource.</param>

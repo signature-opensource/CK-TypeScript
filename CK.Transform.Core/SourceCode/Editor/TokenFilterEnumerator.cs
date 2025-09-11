@@ -41,10 +41,10 @@ public struct TokenFilterEnumerator : ITokenFilterEnumerator
     /// <inheritdoc cref="ITokenFilterEnumerator.NextEach"/>
     public bool NextEach( bool skipEmpty ) => _impl.NextEach( skipEmpty );
 
-    /// <inheritdoc cref="ITokenFilterEnumerator.NextMatch"/>
+    /// <inheritdoc cref="ITokenFilterEnumerator.NextMatch()"/>
     public bool NextMatch() => _impl.NextMatch();
 
-    /// <inheritdoc cref="ITokenFilterEnumerator.NextMatch"/>
+    /// <inheritdoc cref="ITokenFilterEnumerator.NextMatch(out SourceToken, out SourceToken, out int)"/>
     public bool NextMatch( out SourceToken first, out SourceToken last, out int count )
         => _impl.NextMatch( out first, out last, out count );
 
