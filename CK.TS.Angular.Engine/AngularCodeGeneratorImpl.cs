@@ -784,10 +784,15 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
         {
-            // Adds @angular/platform-browser-dynamic as dev dependency if not already here (jest requirement).
+            // Adds @angular/platform-browser-dynamic as regular dependency if not already here (jest requirement).
             e.AddOrUpdateTargetProjectDependency( "@angular/platform-browser-dynamic",
-                                                  new SVersionBound( SVersion.Create( 20, 2, 2 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                  new SVersionBound( SVersion.Create( 20, 3, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
                                                   DependencyKind.Dependency );
+
+            // Workaround: https://github.com/angular/angular-cli/issues/30503
+            e.AddOrUpdateTargetProjectDependency( "less",
+                                                  new SVersionBound( SVersion.Create( 4, 4, 1 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                  DependencyKind.DevDependency );
 
             // Adds the jest-preset-angular "15.0.0" if not alreay here.
             e.AddOrUpdateTargetProjectDependency( "jest-preset-angular",
