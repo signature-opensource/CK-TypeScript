@@ -11,9 +11,9 @@ namespace CK.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
 /// <summary>
 /// The Engine part.
 /// </summary>
-public class EmptyTypeScriptAttributeImpl : TypeScriptAttributeImpl, ITSCodeGeneratorType
+public class EmptyTypeScriptTypeAttributeImpl : TypeScriptTypeAttributeImpl, ITSCodeGeneratorType
 {
-    public EmptyTypeScriptAttributeImpl( TypeScriptAttribute a, Type t )
+    public EmptyTypeScriptTypeAttributeImpl( TypeScriptTypeAttribute a, Type t )
         : base( a, t )
     {
     }

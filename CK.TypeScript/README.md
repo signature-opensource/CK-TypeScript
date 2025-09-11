@@ -4,24 +4,27 @@ This assembly introduces the [TypeScriptAspectConfiguration](TypeScriptAspectCon
 BinPath specific [TypeScriptBinPathAspectConfiguration](TypeScriptBinPathAspectConfiguration.cs).
 
 
-[TypeScriptAttribute](TypeScriptAttribute.cs) can decorate any C# type to optionnaly specify its generated TypeScript type name,
-target file and folder but this is not required as engines can generate TypeScript code for any kind of C# object the way they want.
+[TypeScriptTypeAttribute](TypeScriptTypeAttribute.cs) can decorate any C# type to optionnaly specify its generated
+TypeScript type name, target file and folder but this is not required as engines can generate TypeScript code for
+any kind of C# object the way they want.
 
 Specialized [TypeScriptPackage](TypeScriptPackage.cs) are used to define TypeScript resources that can be `.ts` files or any
-other kind of files (`.less`, `.html`, `.png`, etc.). TypeScript packages are `IRealObject` but unlike Sql packages they are not
-meant to expose methods or any kind of API: their sole purpose is to group resources so that transformers can be ordered based
-on the real objects dependency topology.
+other kind of files (`.less`, `.html`, `.png`, etc.). TypeScript packages, unlike Sql packages, are not
+meant to expose methods or any kind of API. They are "resource packages", their sole purpose is to contain resources
+(and transformers) and to define the dependency topology thanks to the set of attributes defined in CK.ResourceSpace.Abstractions
+package: the most often used ones are `[Requires<T1,...Tn>]`, `[RequiredBy<T1,...Tn>]` that define the requirements and `Package<TOwner>`
+that defines the ownership. The `[Children]` and `[Groups]` attributes can also be used. 
 
-Resources are declared with the [TypeScriptResourceFilesAttribute](TypeScriptResourceFilesAttribute.cs) that declares multiple
-files with any extension at once from a folder and [TypeScriptFileAttribute](TypeScriptFileAttribute.cs) that declare a single
-`.ts` file and its optionnal exported TypeScript type names.
+Resources are in "Res/" and "Res[After]/" folders. They don't need to be declared on the C# side.
+The [TypeScriptFilesAttribute](TypeScriptFilesAttribute.cs) can be used to declare TypeScript type/symbol name that
+are exported by a resource file.
 
 The [TypeScriptImportLibraryAttribute](TypeScriptImportLibraryAttribute.cs) is used to declare dependencies on npm packages.
 
-This is enough to drive the generation: the heavy stuff is in the [CK.StObj.TypeScript.Engine](..\CK.StObj.TypeScript.Engine).
+This is enough to drive the generation: the heavy stuff is in the [CK.TypeScript.Engine](..\CK.TypeScript.Engine).
 
-Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath: Poco compliant types
-can be generated with or without serialization support.
+Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath:
+Poco compliant types can be generated with or without serialization support.
 
 ## Basic types & Code Generator
 

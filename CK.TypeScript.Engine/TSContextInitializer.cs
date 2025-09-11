@@ -17,7 +17,7 @@ sealed class TSContextInitializer
     readonly IPocoTypeSet _typeScriptExchangeableSet;
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
-    readonly ImmutableArray<TypeScriptPackageAttributeImpl> _packages;
+    readonly IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> _packages;
     readonly IDictionary<object, object?>? _rootMemory;
 
     /// <summary>
@@ -31,9 +31,9 @@ sealed class TSContextInitializer
     public ImmutableArray<ITSCodeGenerator> GlobalCodeGenerators => _globals;
 
     /// <summary>
-    /// Gets the global TypeScript generators.
+    /// Gets the TypeScriptGroupOrPackageAttributeImpl.
     /// </summary>
-    public ImmutableArray<TypeScriptPackageAttributeImpl> Packages => _packages;
+    public IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages => _packages;
 
     /// <summary>
     /// Gets the set of Poco compliant types that must be handled in TypeScript.
@@ -67,9 +67,9 @@ sealed class TSContextInitializer
                                                                  regTypes,
                                                                  genBinPath.EngineMap.AllTypesAttributesCache.Values,
                                                                  allExchangeableSet,
-                                                                 out var globalFactories )
+                                                                 out var globalFactories,
+                                                                 out var packages )
             && InitializeIntegrationContext( monitor, binPathConfiguration, libVersionsConfig, out var integrationContext )
-            && CollectTypeScriptPackages( monitor, genBinPath, out var packages )
             && InitializeGlobalGeneratorsAndPackages( monitor,
                                                       binPathConfiguration,
                                                       integrationContext,
@@ -106,7 +106,13 @@ sealed class TSContextInitializer
                 monitor.Info( $"No exchangeable Poco types will be considered because TypeFilterName is \"None\"." );
                 tsExchangeable = emptyExchangeableSet;
             }
-            return new TSContextInitializer( regTypes, globals, tsExchangeable, integrationContext, libVersionsConfig, packages, rootMemory );
+            return new TSContextInitializer( regTypes,
+                                             globals,
+                                             tsExchangeable,
+                                             integrationContext,
+                                             libVersionsConfig,
+                                             packages,
+                                             rootMemory );
         }
         return null;
     }
@@ -116,7 +122,7 @@ sealed class TSContextInitializer
                           IPocoTypeSet s,
                           TypeScriptIntegrationContext? integrationContext,
                           ImmutableDictionary<string, SVersionBound> libVersionsConfig,
-                          ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                          IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
                           IDictionary<object, object?>? rootMemory )
     {
         _registeredTypes = r;
@@ -135,59 +141,32 @@ sealed class TSContextInitializer
                                                 out Dictionary<Type, RegisteredType> registeredTypes )
     {
         registeredTypes = new Dictionary<Type, RegisteredType>();
-        using( monitor.OpenInfo( $"Building TypeScriptAttribute for {binPathConfiguration.Types.Count} Type configurations." ) )
+        using( monitor.OpenInfo( $"Building TypeScriptAttribute for {binPathConfiguration.Types.Count + binPathConfiguration.GlobTypes.Count + binPathConfiguration.ExcludedTypes.Count} Type configurations." ) )
         {
             bool success = true;
-            foreach( TypeScriptTypeConfiguration c in binPathConfiguration.Types )
+            foreach( var (type, attr) in binPathConfiguration.Types )
             {
-                Type? t = FindType( allExchangeableSet.TypeSystem.PocoDirectory, c.Type );
-                if( t == null )
+                // If the configured type is a PocoType, then it MUST belong to the exchangeable set of types.
+                // If the configured type is a not a PocoType, we consider it as a simple C# type (that must
+                // eventually be handled by a TypeScript code generator).
+                var pocoType = allExchangeableSet.TypeSystem.FindByType( type );
+                if( pocoType != null )
                 {
-                    monitor.Error( $"Unable to resolve type '{c.Type}' in TypeScriptAspectConfiguration:{Environment.NewLine}{c.ToXml()}" );
-                    success = false;
-                }
-                else
-                {
-                    var attr = c.ToAttribute( monitor, typeName => FindType( allExchangeableSet.TypeSystem.PocoDirectory, typeName ) );
-                    if( attr == null ) success = false;
-                    else
+                    pocoType = pocoType.NonNullable;
+                    if( !allExchangeableSet.Contains( pocoType ) )
                     {
-                        // If the configured type is a PocoType, then it MUST belong to the exchangeable set of types.
-                        // If the configured type is a not a PocoType, we consider it as a simple C# type.
-                        var pT = allExchangeableSet.TypeSystem.FindByType( t );
-                        if( pT == null )
-                        {
-                            monitor.Warn( $"Type '{t:N}' is not registered in PocoTypeSystem." );
-                        }
-                        else
-                        {
-                            pT = pT.NonNullable;
-                            if( !allExchangeableSet.Contains( pT ) )
-                            {
-                                // If it is a IPocoType, then it must be exchangeable.
-                                // This is an error since it appears in the configuration.
-                                monitor.Error( $"Poco type '{pT}' is not exchangeable in TypeScriptAspectConfiguration:{Environment.NewLine}{c.ToXml()}" );
-                                success = false;
-                            }
-                        }
-                        if( success )
-                        {
-                            registeredTypes.Add( t, new RegisteredType( null, pT, attr ) );
-                        }
+                        // If it is a IPocoType, then it must be exchangeable.
+                        // This is an error since it appears in the configuration.
+                        monitor.Error( $"Registered Poco type '{pocoType}' is not exchangeable." );
+                        success = false;
                     }
+                }
+                if( success )
+                {
+                    registeredTypes.Add( type, new RegisteredType( null, pocoType, attr ) );
                 }
             }
             return success;
-        }
-
-        static Type? FindType( IPocoDirectory pocoDirectory, string typeName )
-        {
-            var t = SimpleTypeFinder.WeakResolver( typeName, false );
-            if( t == null && pocoDirectory.NamedFamilies.TryGetValue( typeName, out var rootInfo ) )
-            {
-                t = rootInfo.PrimaryInterface.PocoInterface;
-            }
-            return t;
         }
     }
 
@@ -196,35 +175,50 @@ sealed class TSContextInitializer
                                                                   Dictionary<Type, RegisteredType> registeredTypes,
                                                                   IEnumerable<ITypeAttributesCache> attributes,
                                                                   IPocoTypeSet allExchangeableSet,
-                                                                  out List<ITSCodeGeneratorFactory> globals )
+                                                                  out List<ITSCodeGeneratorFactory> globals,
+                                                                  out List<TypeScriptGroupOrPackageAttributeImpl> packages )
     {
         globals = new List<ITSCodeGeneratorFactory>();
-        using( monitor.OpenInfo( "Analyzing types with [TypeScript] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
+        packages = new List<TypeScriptGroupOrPackageAttributeImpl>();
+        using( monitor.OpenInfo( "Analyzing types with [TypeScript], [TypeScriptGroup/Package] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
         {
             // These variables are reused per type.
-            TypeScriptAttributeImpl? tsAttrImpl;
-            List<ITSCodeGeneratorType> generators = new List<ITSCodeGeneratorType>();
+            TypeScriptTypeAttributeImpl? tsAttrImpl;
+            var generators = new List<ITSCodeGeneratorType>();
 
             bool success = true;
             foreach( ITypeAttributesCache attributeCache in attributes )
             {
                 tsAttrImpl = null;
                 generators.Clear();
+                int typeScriptPackageAttrCount = 0;
 
                 foreach( var m in attributeCache.GetTypeCustomAttributes<ITSCodeGeneratorAutoDiscovery>() )
                 {
-                    if( m is ITSCodeGeneratorFactory g )
-                    {
-                        globals.Add( g );
-                    }
-                    if( m is TypeScriptAttributeImpl a )
+                    if( m is TypeScriptTypeAttributeImpl a )
                     {
                         if( tsAttrImpl != null )
                         {
-                            monitor.Error( $"Multiple TypeScriptAttribute decorates '{attributeCache.Type}'." );
+                            monitor.Error( $"Multiple TypeScriptAttribute decorate '{attributeCache.Type:N}'." );
                             success = false;
                         }
                         tsAttrImpl = a;
+                    }
+                    else if( m is TypeScriptGroupOrPackageAttributeImpl p )
+                    {
+                        if( ++typeScriptPackageAttrCount == 2 )
+                        {
+                            monitor.Error( $"""
+                                    TypeScript package '{attributeCache.Type:N}' is decorated with more than one [TypeScriptPackage] or specialized attribute:
+                                    [{attributeCache.GetTypeCustomAttributes<TypeScriptGroupOrPackageAttributeImpl>().Select( a => a.Attribute.GetType().Name ).Concatenate( "], [" )}]
+                                    """ );
+                            success = false;
+                        }
+                        packages.Add( p );
+                    }
+                    if( m is ITSCodeGeneratorFactory g )
+                    {
+                        globals.Add( g );
                     }
                     if( m is ITSCodeGeneratorType tG )
                     {
@@ -237,22 +231,23 @@ sealed class TSContextInitializer
                     // Did this type appear in the configuration?
                     // If yes, the configuration must override the values from the code.
                     RegisteredType reg = registeredTypes.GetValueOrDefault( attributeCache.Type );
-                    TypeScriptAttribute? configuredAttr = reg.Attribute;
-                    TypeScriptAttribute? a = tsAttrImpl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
+                    TypeScriptTypeAttribute? configuredAttr = reg.Attribute;
+                    TypeScriptTypeAttribute? a = tsAttrImpl?.Attribute.ApplyOverride( configuredAttr ) ?? configuredAttr;
                     IPocoType? pocoType = reg.PocoType;
                     // If the type is configured then its configuredAttr is not null: the work on whether it is
                     // a IPocoType has been done by step 1.
                     // But if the type was not in the configuration (it has only a [TypeScript] or has a ITSGeneratorType attribute),
                     // then we check whether it is a IPocoType or not.
-                    // If it is, we associate its IPocoType only it it belongs to the exhangeable set.
+                    // If it is, we associate its IPocoType only it it belongs to the exchangeable set.
                     // If it doesn't belong to the exchangeable set, we have to decide if:
-                    // - We accept it: by setting the RegType.PocoType, we will add it to the final TypeScript Poco set... This is not possible: the 
-                    //   TypeScript Poco set will no more be a subset of the Poco exchangeable set. This breaks an invariant and we cannot anymore reason
-                    //   about the System.
-                    // - We raise an error: a PocoType that has been marked as NonExchangeable and has a [TypeScript] or has a ITSGeneratorType attribute
-                    //   is invalid and breaks the system.
+                    // - We accept it: by setting the RegType.PocoType, we will add it to the final TypeScript Poco set...
+                    // This is not possible: the TypeScript Poco set will no more be a subset of the Poco exchangeable set.
+                    // This breaks an invariant and we cannot anymore reason about the System.
+                    // - We raise an error: a PocoType that has been marked as NonExchangeable and has a [TypeScript] or has
+                    //   a ITSGeneratorType attribute is invalid and breaks the system.
                     // - Or we don't assign the RegType.PocoType and let the type be a simple C# type. If a TSCodeGenerator can handle it, then
-                    //   everything is fine but the PocoCodeGenerator will simply ignore it. If no code generator handle it, this will be an error.
+                    //   everything is fine but the PocoCodeGenerator will simply ignore it.
+                    //   If no code generator handle it, this will be an error.
                     //
                     // The last option is definitely the best. This leaves room for edge cases and keeps the TypeScript Poco set logically sound.
                     //
@@ -312,7 +307,7 @@ sealed class TSContextInitializer
         readonly Dictionary<Type, RegisteredType> _regTypes;
         readonly IPocoJsonSerializationServiceEngine? _jsonSerialization;
         readonly IPocoTypeSet _allExchangeableSet;
-        readonly ImmutableArray<TypeScriptPackageAttributeImpl> _packages;
+        readonly IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> _packages;
         Dictionary<object,object?>? _rootMemory;
 
         public Initializer( TypeScriptBinPathAspectConfiguration binPathConfiguration,
@@ -320,7 +315,7 @@ sealed class TSContextInitializer
                             Dictionary<Type, RegisteredType> regTypes,
                             IPocoJsonSerializationServiceEngine? jsonSerialization,
                             IPocoTypeSet allExchangeableSet,
-                            ImmutableArray<TypeScriptPackageAttributeImpl> packages )
+                            IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages )
         {
             _binPathConfiguration = binPathConfiguration;
             _integrationContext = integrationContext;
@@ -342,7 +337,7 @@ sealed class TSContextInitializer
 
         public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
 
-        public ImmutableArray<TypeScriptPackageAttributeImpl> Packages => _packages;
+        public IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages => _packages;
 
         // Lazy instantiation of the RootMemory.
         internal Dictionary<object, object?>? RootMemory => _rootMemory;
@@ -352,7 +347,7 @@ sealed class TSContextInitializer
         public bool EnsureRegister( IActivityMonitor monitor,
                                     Type t,
                                     bool mustBePocoType,
-                                    Func<TypeScriptAttribute?, TypeScriptAttribute?>? attributeConfigurator = null )
+                                    Func<TypeScriptTypeAttribute?, TypeScriptTypeAttribute?>? attributeConfigurator = null )
         {
             // If the type is already registered, applies the attributeConfigurator and updates the registration.
             if( _regTypes.TryGetValue( t, out RegisteredType regType ) )
@@ -388,55 +383,19 @@ sealed class TSContextInitializer
     }
 
     // Step 4.
-    static bool CollectTypeScriptPackages( IActivityMonitor monitor, IGeneratedBinPath genBinPath, out ImmutableArray<TypeScriptPackageAttributeImpl> packages )
-    {
-        var bPackages = ImmutableArray.CreateBuilder<TypeScriptPackageAttributeImpl>();
-        bool success = true;
-        foreach( var p in genBinPath.EngineMap.StObjs.OrderedAfterContentStObjs.Where( o => typeof( TypeScriptPackage ).IsAssignableFrom( o.ClassType ) ) )
-        {
-            var a = p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>();
-            TypeScriptPackageAttributeImpl? package;
-            var e = a.GetEnumerator();
-            if( !e.MoveNext() )
-            {
-                monitor.Error( $"TypeScript package '{p.ClassType:N}' miss a [TypeScriptPackage] or specialized attribute." );
-                success = false;
-            }
-            else
-            {
-                package = e.Current;
-                if( e.MoveNext() )
-                {
-                    monitor.Error( $"""
-                                    TypeScript package '{p.ClassType:N}' is decorated with more than one [TypeScriptPackage] or specialized attribute:
-                                    {p.Attributes.GetTypeCustomAttributes<TypeScriptPackageAttributeImpl>().Select( a => a.GetType().Name ).Concatenate()}
-                                    """ );
-                    success = false;
-                }
-                else
-                {
-                    bPackages.Add( package );
-                }
-            }
-        }
-        packages = bPackages.DrainToImmutable();
-        return success;
-    }
-
-    // Step 5.
     static bool InitializeGlobalGeneratorsAndPackages( IActivityMonitor monitor,
                                                        TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                                        TypeScriptIntegrationContext? integrationContext,
                                                        Dictionary<Type, RegisteredType> regTypes,
                                                        IPocoTypeSet allExchangeableSet,
                                                        IPocoJsonSerializationServiceEngine? jsonSerialization,
-                                                       ImmutableArray<TypeScriptPackageAttributeImpl> packages,
+                                                       List<TypeScriptGroupOrPackageAttributeImpl> packages,
                                                        List<ITSCodeGeneratorFactory> globalFactories,
                                                        out ImmutableArray<ITSCodeGenerator> globals,
                                                        out IDictionary<object,object?>? rootMemory )
     {
         var i = new Initializer( binPathConfiguration, integrationContext, regTypes, jsonSerialization, allExchangeableSet, packages );
-        using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators, initializing {packages.Length} TypeScript packages." ) )
+        using( monitor.OpenInfo( $"Creating the {globalFactories.Count} global {nameof( ITSCodeGenerator )} TypeScript generators, initializing {packages.Count} TypeScript packages." ) )
         {
             bool success = true;
             var b = ImmutableArray.CreateBuilder<ITSCodeGenerator>( globalFactories.Count );
@@ -456,7 +415,7 @@ sealed class TSContextInitializer
             {
                 foreach( var p in packages )
                 {
-                    success &= p.InitializeTypeScriptPackage( monitor, i );
+                    success &= p.HandleRegisterTypeScriptTypeAttributes( monitor, i );
                 }
                 if( success )
                 {

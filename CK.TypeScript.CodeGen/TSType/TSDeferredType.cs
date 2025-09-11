@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.IO;
 
 namespace CK.TypeScript.CodeGen;
 
@@ -13,24 +14,26 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
     readonly ITSKeyedCodePart _part;
     readonly Type _type;
     readonly TypeScriptFile _file;
+    string? _importPath;
     string? _defaultValueSource;
     readonly bool _hasError;
 
     internal TSDeferredType( TSTypeManager typeManager,
-                              Type t,
-                              string typeName,
-                              TypeScriptFile file,
-                              string? defaultValue,
-                              TSValueWriter? tryWriteValue,
-                              TSCodeGenerator? codeGenerator,
-                              string partCloser,
-                              bool hasError )
+                             Type t,
+                             string typeName,
+                             TypeScriptFile file,
+                             string? defaultValue,
+                             TSValueWriter? tryWriteValue,
+                             TSCodeGenerator? codeGenerator,
+                             string partCloser,
+                             bool hasError )
         : base( typeManager, typeName )
     {
         Throw.DebugAssert( t != null );
         Throw.DebugAssert( file != null );
         _type = t;
         _file = file;
+        file.Folder.SetHasExportedSymbol();
         _tryWriteValue = tryWriteValue;
         _codeGenerator = codeGenerator;
         _defaultValueSource = defaultValue;
@@ -40,11 +43,13 @@ sealed class TSDeferredType : TSType, ITSFileCSharpType
 
     public Type Type => _type;
 
-    IMinimalTypeScriptFile ITSDeclaredFileType.File => _file;
+    TypeScriptFileBase ITSDeclaredFileType.File => _file;
 
     public override TypeScriptFile File => _file;
 
     public override string? DefaultValueSource => _defaultValueSource;
+
+    public string ImportPath => _importPath ??= _file.Folder.Path + Path.GetFileNameWithoutExtension( _file.Name );
 
     internal void SetDefaultValueSource( string? v ) => _defaultValueSource = v;
 

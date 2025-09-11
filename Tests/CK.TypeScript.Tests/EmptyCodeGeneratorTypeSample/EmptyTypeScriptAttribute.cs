@@ -5,16 +5,16 @@ using System;
 namespace CK.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
 
 /// <summary>
-/// This specializes the base <see cref="TypeScriptAttribute"/> to generate an empty TS type.
+/// This specializes the base <see cref="TypeScriptTypeAttribute"/> to generate an empty TS type.
 /// This is easy to implement since we don't need to manage type imports and code generation
 /// propagation.
 /// When applied to an enum, this preempts the default code generation: the enum will be empty!
 /// </summary>
 [AttributeUsage( AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum )]
-public class EmptyTypeScriptAttribute : TypeScriptAttribute
+public class EmptyTypeScriptAttribute : TypeScriptTypeAttribute
 {
     public EmptyTypeScriptAttribute()
-        : base( "CK.TypeScript.Tests.EmptyCodeGeneratorTypeSample.EmptyTypeScriptAttributeImpl, CK.TypeScript.Tests" )
+        : base( "CK.TypeScript.Tests.EmptyCodeGeneratorTypeSample.EmptyTypeScriptTypeAttributeImpl, CK.TypeScript.Tests" )
     {
     }
 }

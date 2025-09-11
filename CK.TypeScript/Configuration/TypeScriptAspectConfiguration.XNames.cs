@@ -40,24 +40,14 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xAutoInstallJest = XNamespace.None + "AutoInstallJest";
 
     /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.CKGenBuildMode"/> attribute name.
-    /// </summary>
-    public static readonly XName xCKGenBuildMode = XNamespace.None + "CKGenBuildMode";
-
-    /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.UseSrcFolder"/> attribute name.
-    /// </summary>
-    public static readonly XName xUseSrcFolder = XNamespace.None + "UseSrcFolder";
-
-    /// <summary>
-    /// The <see cref="TypeScriptBinPathAspectConfiguration.ModuleSystem"/> attribute name.
-    /// </summary>
-    public static readonly XName xModuleSystem = XNamespace.None + "ModuleSystem";
-
-    /// <summary>
     /// The <see cref="TypeScriptBinPathAspectConfiguration.ActiveCultures"/> attribute name.
     /// </summary>
     public static readonly XName xActiveCultures = XNamespace.None + "ActiveCultures";
+
+    /// <summary>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.DefaultCulture"/> attribute name.
+    /// </summary>
+    public static readonly XName xDefaultCulture = XNamespace.None + "DefaultCultures";
 
     /// <summary>
     /// The <see cref="TypeScriptBinPathAspectConfiguration.EnableTSProjectReferences"/> attribute name.
@@ -95,27 +85,27 @@ public sealed partial class TypeScriptAspectConfiguration
     public static readonly XName xTargetProjectPath = XNamespace.None + "TargetProjectPath";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.TypeName"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.TypeName"/>.
     /// </summary>
     public static readonly XName xTypeName = XNamespace.None + "TypeName";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.Folder"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.Folder"/>.
     /// </summary>
     public static readonly XName xFolder = XNamespace.None + "Folder";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.FileName"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.FileName"/>.
     /// </summary>
     public static readonly XName xFileName = XNamespace.None + "FileName";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFileAs"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.SameFileAs"/>.
     /// </summary>
     public static readonly XName xSameFileAs = XNamespace.None + "SameFileAs";
 
     /// <summary>
-    /// The attribute name of <see cref="TypeScriptTypeConfiguration.SameFolderAs"/>.
+    /// The attribute name of <see cref="TypeScriptTypeAttribute2.SameFolderAs"/>.
     /// </summary>
     public static readonly XName xSameFolderAs = XNamespace.None + "SameFolderAs";
 

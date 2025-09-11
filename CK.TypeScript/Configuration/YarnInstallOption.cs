@@ -1,7 +1,7 @@
 namespace CK.Setup;
 
 /// <summary>
-/// <see cref="TypeScriptBinPathAspectConfiguration.YarnInstall"/> possible values.
+/// <see cref="TypeScriptBinPathAspectConfiguration.InstallYarn"/> possible values.
 /// </summary>
 public enum YarnInstallOption
 {

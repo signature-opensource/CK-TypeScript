@@ -6,7 +6,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// This command requires authentication and is device dependent.
 /// It returns an optional object as its result.
 /// </summary>
-[TypeScript( Folder = "Cmd/Some" )]
+[TypeScriptType( Folder = "Cmd/Some" )]
 public interface IWithObjectCommand : ICommandAuthDeviceId, ICommand<object?>
 {
     /// <summary>
@@ -18,7 +18,7 @@ public interface IWithObjectCommand : ICommandAuthDeviceId, ICommand<object?>
 /// <summary>
 /// Secondary definition that makes <see cref="IWithObjectCommand"/> return a string (instead of object).
 /// </summary>
-[TypeScript( Folder = "Cmd/Some" )]
+[TypeScriptType( Folder = "Cmd/Some" )]
 public interface IWithObjectSpecializedAsStringCommand : IWithObjectCommand, ICommand<string>
 {
     /// <summary>

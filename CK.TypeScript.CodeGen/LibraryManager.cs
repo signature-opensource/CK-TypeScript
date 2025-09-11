@@ -17,7 +17,7 @@ public sealed class LibraryManager
     /// Default "@types/luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
     /// overrides this default.
     /// </summary>
-    public const string LuxonTypesVersion = "^3.4.2";
+    public const string LuxonTypesVersion = "^3.6.2";
 
     /// <summary>
     /// Default "luxon" package version. A configured version (in <see cref="LibraryVersionConfiguration"/>)
@@ -86,11 +86,26 @@ public sealed class LibraryManager
     /// Gets the configured versions for external npm packages. These configurations take precedence over the
     /// library versions declared by code via <see cref="RegisterLibrary(IActivityMonitor, string, string?, DependencyKind, string?, LibraryImport[])"/>.
     /// <para>
-    /// These configurations are ignored for libraries that are not used by the code (no <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>
+    /// These configurations are ignored for libraries that are not used by the code (no <see cref="ITSFileImportSection.ImportFromLibrary(LibraryImport, string)"/>
     /// are made).
     /// </para>
     /// </summary>
     public IReadOnlyDictionary<string, SVersionBound> LibraryVersionConfiguration => _libVersionsConfig;
+
+    /// <summary>
+    /// Creates a <see cref="DependencyCollection"/> from this <see cref="LibraryImports"/>.
+    /// By default only <see cref="LibraryImport.IsUsed"/> corresponding package is exported.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="usedDependenciesOnly">False to export all the libraries including the ones that are not used.</param>
+    /// <returns>The dependencies or null on error.</returns>
+    public DependencyCollection? ExportDependencyCollection( IActivityMonitor monitor, bool usedDependenciesOnly = true )
+    {
+        var dependencies = new DependencyCollection( _ignoreVersionsBound );
+        return dependencies.AddOrUpdate( monitor, _libraries.Values.Where( i => !usedDependenciesOnly || i.IsUsed ).Select( i => i.PackageDependency ) )
+                ? dependencies
+                : null;
+    }
 
     /// <summary>
     /// Creates a <see cref="PackageDependency"/> under control of the <paramref name="libVersionsConfig"/>.

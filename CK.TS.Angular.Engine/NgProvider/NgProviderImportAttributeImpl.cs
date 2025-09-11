@@ -8,26 +8,35 @@ using System.Linq;
 
 namespace CK.TS.Angular.Engine;
 
-public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeImplExtension
+/// <summary>
+/// Implements <see cref="NgProviderImportAttribute"/>.
+/// </summary>
+public partial class NgProviderImportAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {
+    /// <summary>
+    /// Initializes a new implementation.
+    /// </summary>
+    /// <param name="attr">The attribute.</param>
+    /// <param name="type">The decorated type.</param>
     public NgProviderImportAttributeImpl( NgProviderImportAttribute attr, Type type )
         : base( attr, type )
     {
     }
 
+    /// <summary>
+    /// Gets the attribute.
+    /// </summary>
     public new NgProviderImportAttribute Attribute => Unsafe.As<NgProviderImportAttribute>( base.Attribute );
 
-
-    protected override void OnInitialize( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, ITypeAttributesCache owner )
+    protected override bool OnResPackageAvailable( IActivityMonitor monitor,
+                                                   TypeScriptContext context,
+                                                   TypeScriptGroupOrPackageAttributeImpl tsPackage,
+                                                   ResSpaceData spaceData,
+                                                   ResPackage package )
     {
-    }
+        ITSFileImportSection imports = context.GetAngularCodeGen().CKGenAppModuleImports;
 
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptPackageAttributeImpl tsPackage, TypeScriptContext context )
-    {
-        var ckGen = context.GetAngularCodeGen().CKGenAppModule;
-
-        ITSFileImportSection imports = ckGen.File.Imports;
-        if( Attribute.LibraryName == "@local/ck-gen" )
+        if( Attribute.From == "@local/ck-gen" )
         {
             imports.ImportFromLocalCKGen( Attribute.SymbolNames );
         }
@@ -36,7 +45,7 @@ public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeI
             // Note: npm packages follow a naming convention:
             // - if name starts with "@" then, it can only be: "@orgName/packageName" (ex: @angular/core)
             // - else it can only be "ng-zorro-antd" (no "/")
-            var realLibraryName = Attribute.LibraryName;
+            var realLibraryName = Attribute.From;
             var subPath = "";
             var parts = realLibraryName.Split( '/' );
             if( parts.Length > 1 )
@@ -66,8 +75,11 @@ public partial class NgProviderImportAttributeImpl : TypeScriptPackageAttributeI
                                                                    TypeScript.CodeGen.DependencyKind.DevDependency,
                                                                    $"[{AttributeName}] on '{Type:C}'." );
             }
-            imports.ImportFromLibrary( (lib,subPath), Attribute.SymbolNames );
+            imports.ImportFromLibrary( (lib, subPath), Attribute.SymbolNames );
         }
         return true;
     }
 }
+
+
+

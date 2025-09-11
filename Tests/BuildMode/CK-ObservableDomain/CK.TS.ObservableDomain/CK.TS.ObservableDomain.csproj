@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="**\*.ts">
-      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\CK-TS-JsonGraphSerializer\CK.TS.JsonGraphSerializer\CK.TS.JsonGraphSerializer.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\CK-TS-JsonGraphSerializer\CK.TS.JsonGraphSerializer\CK.TS.JsonGraphSerializer.csproj" />
+    </ItemGroup>
+    
 </Project>

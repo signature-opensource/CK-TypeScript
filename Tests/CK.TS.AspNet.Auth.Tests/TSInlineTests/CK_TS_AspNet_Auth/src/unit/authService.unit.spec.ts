@@ -39,7 +39,7 @@ describe('AuthService', function () {
     }
 
     beforeAll(function () {
-        authService = new AuthService( axiosInstance, { identityEndPoint: {} } );
+        authService = new AuthService( axiosInstance, { identityEndPoint: "http://no-backend" } );
 
         requestInterceptorId = axiosInstance.interceptors.request.use((config) => {
             return config;
@@ -294,7 +294,7 @@ describe('AuthService', function () {
                 .withRefreshable(true)
                 .build();
             await authService.basicLogin('', '');
-
+     
             expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).toBe(true);

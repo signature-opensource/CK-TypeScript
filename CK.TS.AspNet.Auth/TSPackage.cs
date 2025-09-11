@@ -7,8 +7,9 @@ namespace CK.AspNet.Auth;
 /// Client authentication package.
 /// </summary>
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "axios", "^1.7.7", DependencyKind.PeerDependency, ForceUse = true )]
-[RegisterTypeScriptType( typeof( AuthLevel ) )]
+[TypeScriptImportLibrary( "axios", "^1.7.7", DependencyKind.PeerDependency )]
+[RegisterTypeScriptType( typeof( AuthLevel ), Folder = "CK/AspNet/Auth" )]
+[TypeScriptFile("AuthService.ts", "AuthService" )]
 public class TSPackage : TypeScriptPackage
 {
 }

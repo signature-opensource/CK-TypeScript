@@ -89,7 +89,7 @@ partial class PocoCodeGenerator
         }
 
         /// <summary>
-        /// Gets whether [tuple, syntax] iw used instead of {"tuple": "syntax"}.
+        /// Gets whether [tuple, syntax] is used instead of {"tuple": "syntax"}.
         /// This is true only for anonymous records where all fields are <see cref="IRecordPocoField.IsUnnamed"/>.
         /// </summary>
         public bool UseTupleSyntax => _useTupleSyntax;

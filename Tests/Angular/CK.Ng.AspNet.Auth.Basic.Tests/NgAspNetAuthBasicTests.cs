@@ -1,0 +1,59 @@
+using CK.Core;
+using CK.Testing;
+using Microsoft.AspNetCore.Builder;
+using NUnit.Framework;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using static CK.Testing.MonitorTestHelper;
+
+namespace CK.Ng.AspNet.Auth.Basic.Tests;
+
+[TestFixture]
+public class NgAspNetAuthBasicTests
+{
+    [Test]
+    public async Task CK_Ng_AspNet_Auth_Basic_Async()
+    {
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
+
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Path = TestHelper.BinFolder;
+        AddAssembliesAndTypes( configuration );
+        configuration.RevertOrderingNames = true;
+
+        var tsConfig = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
+        tsConfig.DefaultCulture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr-CA" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "de-DE" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "es" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "it" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "zh" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "nl-NL" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "nl-BE" ) );
+        tsConfig.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
+        var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
+
+        // Checks that NgZorro AppStyleImport works as expected.
+        var srcStyles = File.ReadAllLines( targetProjectPath.Combine( "src/styles.less" ) );
+        srcStyles.ShouldContain( "@import 'ng-zorro-antd/ng-zorro-antd.less';" )
+                 .ShouldContain( "@import '../ck-gen/styles/styles.less';" );
+
+        var builder = WebApplication.CreateSlimBuilder();
+
+        await using var server = await builder.CreateRunningAspNetAuthenticationServerAsync( map,
+                                                                                             o => o.SlidingExpirationTime = TimeSpan.FromMinutes( 10 ) );
+        await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, server.ServerAddress );
+        await TestHelper.SuspendAsync( resume => resume );
+        runner.Run();
+    }
+
+    internal static void AddAssembliesAndTypes( Setup.EngineConfiguration configuration )
+    {
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.PublicPage" );
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.AspNet.Auth.Basic" );
+        configuration.FirstBinPath.Types.Add( typeof( MyUserInfoBox.MyUserInfoBoxPackage ) );
+        configuration.FirstBinPath.Types.Add( typeof( MyLayout.MyLayoutPackage ) );
+        configuration.FirstBinPath.Types.Add( typeof( PublicChild.PublicChildComponent ) );
+    }
+}

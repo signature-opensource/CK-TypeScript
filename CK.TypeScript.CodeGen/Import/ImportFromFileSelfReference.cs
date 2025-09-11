@@ -9,9 +9,9 @@ namespace CK.TypeScript.CodeGen;
 /// </summary>
 sealed class ImportFromFileSelfReference : ITSImportLine
 {
-    readonly IMinimalTypeScriptFile _self;
+    readonly TypeScriptFileBase _self;
 
-    public ImportFromFileSelfReference( IMinimalTypeScriptFile self )
+    public ImportFromFileSelfReference( TypeScriptFileBase self )
     {
         _self = self;
     }
@@ -20,7 +20,7 @@ sealed class ImportFromFileSelfReference : ITSImportLine
 
     public LibraryImport? FromLibrary => null;
 
-    public IMinimalTypeScriptFile? FromTypeScriptFile => _self;
+    public TypeScriptFileBase? FromTypeScriptFile => _self;
 
     public string? DefaultImportSymbol => null;
 

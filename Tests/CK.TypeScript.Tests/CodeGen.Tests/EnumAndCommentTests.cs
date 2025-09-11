@@ -1,12 +1,11 @@
 using CK.Core;
 using CK.Testing;
 using CK.TypeScript.CodeGen;
-using Shouldly;
 using NUnit.Framework;
+using Shouldly;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Text;
 using static CK.Testing.MonitorTestHelper;
 
@@ -15,14 +14,13 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.TypeScript.Tests;
 
-
 [TestFixture]
 public class EnumAndCommentTests
 {
     /// <summary>
     /// Commented enumeration.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public enum CommentedEnum
     {
         /// <summary>
@@ -85,9 +83,8 @@ public class EnumAndCommentTests
 
         ctx.TSTypes.ResolveTSType( TestHelper.Monitor, typeof( CommentedEnum ) );
         ctx.GenerateCode( TestHelper.Monitor );
-        ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, targetProjectPath ) );
-
-        var s = File.ReadAllText( targetProjectPath.Combine( "CK/TypeScript/Tests/CommentedEnum.ts" ) );
+        var f = ctx.Root.FindFile( "CK/TypeScript/Tests/CommentedEnum.ts".AsSpan() );
+        var s = f.ShouldNotBeNull().GetCurrentText( TestHelper.Monitor, ctx.TSTypes );
 
         s.ShouldContain( "Commented enumeration." );
 
@@ -111,7 +108,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// An interface with comment.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface ICommented
     {
         /// <summary>
@@ -144,10 +141,9 @@ public class EnumAndCommentTests
 
         var f = ctx.Root.FindOrCreateTypeScriptFile( "ICommented.ts" );
         GenerateMembersDocumentation( f, typeof( ICommented ), "interface ICommented" );
-        ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, targetProjectPath ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( targetProjectPath.AppendPart( f.Name ) ).ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "An interface with comment." );
 
@@ -169,7 +165,7 @@ public class EnumAndCommentTests
     /// </summary>
     /// <typeparam name="T1">The FIRST generic type!</typeparam>
     /// <typeparam name="T2">The SECOND generic type!</typeparam>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IGeneric<T1, T2>
     {
         /// <summary>
@@ -201,10 +197,9 @@ public class EnumAndCommentTests
 
         var f = ctx.Root.FindOrCreateTypeScriptFile( "IGeneric.ts" );
         GenerateMembersDocumentation( f, typeof( IGeneric<,> ), "interface IGeneric<T1,T2>" );
-        ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "Generic interface." );
         s.ShouldContain( "@typeParam T1 The FIRST generic type!" );
@@ -229,7 +224,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// Class doc.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public class FullClass
     {
         /// <summary>
@@ -275,10 +270,9 @@ public class EnumAndCommentTests
 
         var f = ctx.Root.FindOrCreateTypeScriptFile( "FullClass.ts" );
         GenerateMembersDocumentation( f, typeof( FullClass ), "class FullClass" );
-        ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
 
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "Class doc." );
         s.ShouldContain( "Constructor doc." );
@@ -291,7 +285,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// WithCodeReference doc.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public class WithCodeReference
     {
         /// <summary>
@@ -348,10 +342,9 @@ public class EnumAndCommentTests
 
         var f = ctx.Root.FindOrCreateTypeScriptFile( "WithCodeReference.ts" );
         GenerateMembersDocumentation( f, typeof( WithCodeReference ), "class WithCodeReference" );
-        ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
-
+        
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "WithCodeReference doc." );
         s.ShouldContain( "Initializes a new WithCodeReference instance (seealso is treated like see)." );
@@ -368,7 +361,7 @@ public class EnumAndCommentTests
     /// <summary>
     /// A buggy reference: <see cref="TypeNotFound"/>.
     /// </summary>
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public class BuggyReference
     {
     }
@@ -385,10 +378,9 @@ public class EnumAndCommentTests
 
         var f = ctx.Root.FindOrCreateTypeScriptFile( "BuggyReference.ts" );
         GenerateMembersDocumentation( f, typeof( BuggyReference ), "class BuggyReference" );
-        ctx.Save( TestHelper.Monitor, new TypeScriptFileSaveStrategy( ctx, output ) );
-
+        
         var s = f.Body.ToString();
-        File.ReadAllText( output.AppendPart( f.Name ) ).ShouldBe( s );
+        f.GetCurrentText( TestHelper.Monitor, ctx.TSTypes ).ShouldBe( s );
 
         s.ShouldContain( "A buggy reference: ~~!:TypeNotFound~~." );
     }

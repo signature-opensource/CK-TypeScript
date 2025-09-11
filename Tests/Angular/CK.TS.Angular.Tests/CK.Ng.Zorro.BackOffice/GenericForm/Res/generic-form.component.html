@@ -1,0 +1,84 @@
+@if (form() && formData) {
+    @if (form()!.errors) {
+<div class="errors general-form">
+    @for (errKey of getGeneralFormErrorKeys(); track errKey) {
+    <span class="form-control-error">{{ getGeneralFormErrorMessage(errKey) }}</span>
+    }
+</div>
+    }
+<form nz-form [formGroup]="form()!" [nzLayout]="formLayout()">
+    <ng-container *ngFor="let controlName of form()!.controls | keyvalue: originalOrder">
+        @if (isVisible(formData.formControls[controlName.key])) {
+        <nz-form-item [class]="formLayout() === 'horizontal' ? 'generic-form-item horizontal' : 'generic-form-item vertical'">
+            <nz-form-label [class]="formLayout() === 'horizontal' ? 'generic-form-label horizontal' : 'generic-form-item vertical'"
+                           [nzRequired]="formData.formControls[controlName.key].required">
+                {{ formData.formControls[controlName.key].label }}
+            </nz-form-label>
+            <nz-form-control [class]="formLayout() === 'horizontal' ? 'generic-form-control horizontal' : 'generic-form-item vertical'">
+                <input *ngIf="formData.formControls[controlName.key].type === 'text'"
+                       nz-input
+                       [autocomplete]="formData.formControls[controlName.key].autocomplete ?? 'off'"
+                       [formControlName]="controlName.key"
+                       [placeholder]="formData.formControls[controlName.key].placeholder" />
+
+                @if (formData.formControls[controlName.key].type === 'password') {
+                <input style="visibility: hidden" autocomplete="username" type="text" />
+                <input *ngIf="formData.formControls[controlName.key].type === 'password'"
+                       nz-input
+                       autocomplete="new-password"
+                       [formControlName]="controlName.key"
+                       type="password"
+                       [placeholder]="formData.formControls[controlName.key].placeholder" />
+                }
+
+                <input *ngIf="formData.formControls[controlName.key].type === 'number'"
+                       nz-input
+                       [formControlName]="controlName.key"
+                       type="number"
+                       [placeholder]="formData.formControls[controlName.key].placeholder" />
+
+                <nz-date-picker [nzShowTime]="formData.formControls[controlName.key].dateFormat?.includes('HH:mm')"
+                                *ngIf="formData.formControls[controlName.key].type === 'date'"
+                                [formControlName]="controlName.key"
+                                [nzFormat]="formData.formControls[controlName.key].dateFormat ?? 'dd-MM-yyyy'"
+                                [nzPlaceHolder]="formData.formControls[controlName.key].placeholder">
+                </nz-date-picker>
+
+                <label *ngIf="formData.formControls[controlName.key].type === 'checkbox'" nz-checkbox>
+                    <input type="checkbox" [formControlName]="controlName.key" /> {{ formData.formControls[controlName.key].label }}
+                </label>
+
+                <nz-select *ngIf="formData.formControls[controlName.key].type === 'select'"
+                           [formControlName]="controlName.key"
+                           [nzPlaceHolder]="formData.formControls[controlName.key].placeholder">
+                    @if (!formData.formControls[controlName.key].selectOptionTemplate) {
+                    <nz-option *ngFor="let option of formData.formControls[controlName.key].options" [nzValue]="option.value" [nzLabel]="option.label">
+                    </nz-option>
+                    } @else {
+                    <nz-option *ngFor="let option of formData.formControls[controlName.key].options"
+                               nzCustomContent
+                               [nzValue]="option.value"
+                               [nzLabel]="option.label">
+                        <ng-container *ngTemplateOutlet="formData.formControls[controlName.key].selectOptionTemplate!; context: { $implicit: option }">
+                        </ng-container>
+                    </nz-option>
+                    }
+                </nz-select>
+
+                @if (getFormControl(controlName.key).errors && (form()!.dirty || form()!.touched)) {
+                <div class="errors">
+                    @if (form()!.get(controlName.key)!.dirty || form()!.get(controlName.key)!.touched) {
+                    @for (err of getErrorMessageKeys(controlName.key); track err) {
+                    <span class="form-control-error">
+                        {{ formData.formControls[controlName.key].errorMessages[err] }}
+                    </span>
+                    }
+                    }
+                </div>
+                }
+            </nz-form-control>
+        </nz-form-item>
+        }
+    </ng-container>
+</form>
+}

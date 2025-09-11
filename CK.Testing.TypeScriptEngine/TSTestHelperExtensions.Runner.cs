@@ -10,7 +10,7 @@ namespace CK.Testing;
 public static partial class TSTestHelperExtensions
 {
     /// <summary>
-    /// Disposable runner created by <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, Dictionary{string, string}?, string)"/>.
+    /// Disposable runner created by <see cref="CreateTypeScriptRunner(IMonitorTestHelper, NormalizedPath, string?, Dictionary{string, string}?, string)"/>.
     /// </summary>
     public sealed class Runner : IAsyncDisposable
     {
@@ -18,15 +18,15 @@ public static partial class TSTestHelperExtensions
         readonly NormalizedPath _targetProjectPath;
         readonly Dictionary<string, string>? _environmentVariables;
         readonly string _yarnCommand;
-        readonly Action? _jestDispose;
+        readonly Action<IActivityMonitor>? _jestDispose;
         bool _isDisposed;
         List<object>? _onDisposeList;
 
         internal Runner( IMonitorTestHelper helper,
-                               NormalizedPath targetProjectPath,
-                               Dictionary<string, string>? environmentVariables,
-                               string yarnCommand,
-                               Action? jestDispose )
+                         NormalizedPath targetProjectPath,
+                         Dictionary<string, string>? environmentVariables,
+                         string yarnCommand,
+                         Action<IActivityMonitor>? jestDispose )
         {
             _helper = helper;
             _targetProjectPath = targetProjectPath;
@@ -38,10 +38,33 @@ public static partial class TSTestHelperExtensions
         /// <summary>
         /// Runs the yarn command and fails on error.
         /// </summary>
-        public void Run()
+        /// <param name="yarnCommand">
+        /// When not null, specifies another yarn command that the default one specified by <see cref="CreateTypeScriptRunner"/>
+        /// (that defaults to "test").
+        /// </param>
+        public void Run( string? yarnCommand = null )
         {
-            YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, _yarnCommand, _environmentVariables )
-                .ShouldBeTrue( $"'yarn {_yarnCommand}' should be sucessfull." );
+            yarnCommand ??= _yarnCommand;
+            YarnHelper.RunYarn( _helper.Monitor, _targetProjectPath, yarnCommand, _environmentVariables )
+                .ShouldBeTrue( $"'yarn {yarnCommand}' should be sucessfull." );
+        }
+
+        /// <summary>
+        /// Build the Angular application (by calling <see cref="Run(string?)">Run( "build" )</see>) before running
+        /// the command.
+        /// <para>
+        /// This takes a long time but unfortunately, it's not because the "*.spec.ts" succeed that
+        /// everything is fine: even "src/app.component.ts" may not compile...
+        /// </para>
+        /// </summary>
+        /// <param name="yarnCommand">
+        /// When not null, specifies another yarn command that the default one specified by <see cref="CreateTypeScriptRunner"/>
+        /// (that defaults to "test").
+        /// </param>
+        public void BuildAndRun( string? yarnCommand = null )
+        {
+            Run( "build" );
+            Run( yarnCommand );
         }
 
         /// <summary>
@@ -86,7 +109,7 @@ public static partial class TSTestHelperExtensions
             if( !_isDisposed )
             {
                 _isDisposed = true;
-                _jestDispose?.Invoke();
+                _jestDispose?.Invoke( _helper.Monitor );
                 if( _onDisposeList != null )
                 {
                     foreach( var o in _onDisposeList )

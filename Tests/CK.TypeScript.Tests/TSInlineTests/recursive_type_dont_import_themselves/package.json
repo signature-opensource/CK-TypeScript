@@ -1,13 +1,20 @@
 {
   "name": "recursive_type_dont_import_themselves",
   "private": true,
-  "packageManager": "yarn@4.6.0",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Release/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "devDependencies": {
-    "@yarnpkg/sdks": "^3.2.1",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.9",
+    "@yarnpkg/sdks": "^3.2",
+    "jest": "^29.7",
+    "jest-environment-jsdom": "^29.7",
+    "jest-util": "^30.0.2",
+    "ts-jest": "^29.2.5",
     "typescript": "=5.4.5"
   },
-  "ckVersion": 1
+  "ckVersion": 1,
+  "packageManager": "yarn@4.8.1"
 }

@@ -5,5 +5,5 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// </summary>
 /// <param name="Value">The data value.</param>
 /// <param name="Name">The data name.</param>
-[TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
+[TypeScriptType( SameFolderAs = typeof( ICommandAbs ) )]
 public record struct NamedRecord( int Value, string Name );

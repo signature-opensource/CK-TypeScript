@@ -12,7 +12,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// "concrete properties", they would impose the type.
 /// </para>
 /// </summary>
-[TypeScript( Folder = "Cmd/Abstract" )]
+[TypeScriptType( Folder = "Cmd/Abstract" )]
 public interface ICommandAbs : ICommandPart
 {
     /// <summary>
@@ -45,7 +45,7 @@ public interface ICommandAbs : ICommandPart
 /// the empty collection is the default value.
 /// </para>
 /// </summary>
-[TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
+[TypeScriptType( SameFolderAs = typeof( ICommandAbs ) )]
 public interface ICommandAbsWithNullableKey : ICommandPart
 {
     /// <summary>
@@ -73,7 +73,7 @@ public interface ICommandAbsWithNullableKey : ICommandPart
 /// Specializes the <see cref="ICommandAbs"/> to return an object.
 /// </summary>
 [CKTypeDefiner]
-[TypeScript( SameFolderAs = typeof( ICommandAbs ) )]
+[TypeScriptType( SameFolderAs = typeof( ICommandAbs ) )]
 public interface ICommandAbsWithResult : ICommandAbs, ICommand<object>
 {
 }

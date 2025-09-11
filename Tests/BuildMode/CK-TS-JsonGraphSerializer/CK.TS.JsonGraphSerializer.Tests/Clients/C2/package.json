@@ -1,0 +1,28 @@
+{
+  "name": "c2",
+  "private": true,
+  "packageManager": "yarn@4.8.1",
+  "scripts": {
+    "test": "jest",
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Release/net8.0/CK.TypeScript.LiveEngine.dll\""
+  },
+  "devDependencies": {
+    "@types/jest": "^30",
+    "@types/luxon": "=3.6.2",
+    "@types/node": "^24.3",
+    "@yarnpkg/sdks": "^3.2.3",
+    "jest": "^30.1.1",
+    "jest-environment-jsdom": "^30.1.1",
+    "jest-util": "^30.0.5",
+    "rxjs": "^7.8.2",
+    "ts-jest": "^29.1.4",
+    "typescript": "~5.9.2"
+  },
+  "ckVersion": 1,
+  "dependencies": {
+    "axios": "^1.8.4"
+  },
+  "peerDependencies": {
+    "rxjs": "^7.8.2"
+  }
+}

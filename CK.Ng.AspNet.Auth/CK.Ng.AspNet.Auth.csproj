@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\CK.Ng.Axios\CK.Ng.Axios.csproj" />
+        <ProjectReference Include="..\CK.Ng.Zorro\CK.Ng.Zorro.csproj" />
+        <ProjectReference Include="..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
+    </ItemGroup>
+
+</Project>

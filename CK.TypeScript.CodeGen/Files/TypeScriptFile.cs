@@ -1,7 +1,6 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -21,21 +20,20 @@ namespace CK.TypeScript.CodeGen;
 /// </list>
 /// </para>
 /// </summary>
-public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
+public sealed class TypeScriptFile : TypeScriptFileBase
 {
     readonly FileBodyCodePart _body;
     internal readonly FileImportCodePart _imports;
-    TypeDeclarationImpl _declared;
 
-    internal TypeScriptFile( TypeScriptFolder folder, string name )
-        : base( folder, name )
+    internal TypeScriptFile( TypeScriptFolder folder, string name, TypeScriptFileBase? previous )
+        : base( folder, name, previous, unpublishedResourceFile: false )
     {
         _imports = new FileImportCodePart( this );
         _body = new FileBodyCodePart( this );
     }
 
     internal TypeScriptFile( TypeScriptRoot r )
-        : this( r.Root, _hiddenFileName )
+        : this( r.Root, _hiddenFileName, null )
     {
     }
 
@@ -57,26 +55,17 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     public ITSCodePart CreateDetachedPart() => new RawCodePart( this, String.Empty );
 
     /// <summary>
-    /// Always false: the content of a TypeScriptFile is in memory (the <see cref="Imports"/> and the <see cref="Body"/>).
-    /// Use <see cref="GetCurrentText()"/> to retrieve the content.
-    /// </summary>
-    public override bool HasStream => false;
-
-    /// <inheritdoc />
-    public override Stream GetStream() => Throw.InvalidOperationException<Stream>();
-
-    /// <inheritdoc />
-    public override void WriteStream( Stream target ) => Throw.InvalidOperationException<Stream>();
-
-    /// <summary>
     /// Overridden to compute and returns the concatenated <see cref="Imports"/> and <see cref="Body"/>.
     /// </summary>
+    /// <param name="monitor">Required monitor for warnings when types from '@local/ck-gen' cannot be resolved.</param>
+    /// <param name="tsTypes">The type manager required to handle imports from '@local/ck-gen'.</param>
     /// <returns>The full file content.</returns>
-    public override string GetCurrentText()
+    public sealed override string GetCurrentText( IActivityMonitor monitor, TSTypeManager tsTypes )
     {
+        Throw.CheckNotNullArgument( tsTypes );
         var b = new StringBuilder();
         SmarterStringBuilder sB = new SmarterStringBuilder( b );
-        _imports.Build( ref sB );
+        _imports.Build( ref sB, monitor, tsTypes );
         if( b.Length > 0 ) b.Append( Environment.NewLine );
         // closeScope parameter is ignored here (a body has no closer).
         _body.Build( b, false );
@@ -86,7 +75,7 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     /// <summary>
     /// Gets the all the TypeScript types that are defined in this <see cref="TypeScriptFile"/>.
     /// </summary>
-    public IEnumerable<ITSDeclaredFileType> AllTypes => _declared.AllTypes.Concat( AllTypesWithPart );
+    public override IEnumerable<ITSDeclaredFileType> AllTypes => base.AllTypes.Concat( AllTypesWithPart );
 
     /// <summary>
     /// Gets the all the TypeScript types that have a <see cref="ITSFileType.TypePart"/> defined
@@ -102,24 +91,6 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     public IEnumerable<ITSFileCSharpType> CSharpTypes => _body.Parts.OfType<ITSKeyedCodePart>()
                                                                     .Select( p => p.Key as ITSFileCSharpType )
                                                                     .Where( k => k != null )!;
-
-    /// <summary>
-    /// Declares only a <see cref="ITSDeclaredFileType"/> in this file: the <paramref name="typeName"/> is implemented
-    /// in this file but not in a specific <see cref="ITSCodePart"/>.
-    /// <para>
-    /// The <paramref name="typeName"/> must not already exist in the <see cref="TSTypeManager"/>.
-    /// </para>
-    /// </summary>
-    /// <param name="typeName">The TypeScript type name.</param>
-    /// <param name="additionalImports">The required imports. Null when using this type requires only this file.</param>
-    /// <param name="defaultValueSource">The type default value if any.</param>
-    /// <returns>A TS type in this file (but with no associated <see cref="ITSCodePart"/>).</returns>
-    public ITSDeclaredFileType DeclareType( string typeName,
-                                            Action<ITSFileImportSection>? additionalImports = null,
-                                            string? defaultValueSource = null )
-    {
-        return _declared.DeclareType( this, typeName, additionalImports, defaultValueSource );
-    }
 
     /// <summary>
     /// Creates a <see cref="ITSFileType"/> in this file. This TS type is not bound to a C# type.
@@ -165,7 +136,7 @@ public sealed class TypeScriptFile : TextFileBase, IMinimalTypeScriptFile
     // Extends TSDeclaredType: a TypePart exists.
     // We always have the File and the TypePart and we use the KeyedTypePart with this as a key
     // to handle these types registration.
-    class TSFileType : TypeDeclarationImpl.TSDeclaredType, ITSFileType
+    class TSFileType : TSDeclaredType, ITSFileType
     {
         public readonly ITSKeyedCodePart Part;
 

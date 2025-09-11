@@ -11,9 +11,14 @@ namespace CK.TS.Angular.Engine;
 public interface IAngularContext
 {
     /// <summary>
-    /// Gets the 'CK/Angular/CKGenAppModule.ts' file.
+    /// Gets the 'CK/Angular/CKGenAppModule.ts' import section.
+    /// <para>
+    /// The file itself is not exposed because it has no reason to be altered
+    /// and no type must be created in it (the CKGenAppModule.ts officially exports
+    /// no types because it doesn't appear in the root barrel 'index.ts'). 
+    /// </para>
     /// </summary>
-    ITSFileType CKGenAppModule { get; }
+    ITSFileImportSection CKGenAppModuleImports { get; }
 
     /// <summary>
     /// Gets the '@angular/core' library.

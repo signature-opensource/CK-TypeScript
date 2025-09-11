@@ -4,7 +4,7 @@ using System;
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Imports anything required by a <see cref="NgProviderAttribute"/>.
+/// Imports anything required by one or more <see cref="NgProviderAttribute"/>.
 /// <para>
 /// Symbols can be aliased. Note that "UserInfo as Info, User, UserInfo" is valid: the "UserInfo"
 /// is available as "Info" but also as "UserInfo".
@@ -12,7 +12,7 @@ namespace CK.TS.Angular;
 /// <para>
 /// To import the default export from the module, prefix the default name with "default " (order doesn't matter):
 /// <code>
-/// [NgProviderImport( "AxiosInstance, default axios", LibraryName = "axios" )]
+/// [NgProviderImport( "AxiosInstance, default axios", From = "axios" )]
 /// </code>
 /// Generates the following import:
 /// <code>
@@ -24,7 +24,6 @@ namespace CK.TS.Angular;
 /// an <see cref="InvalidOperationException"/> is thrown.
 /// </para>
 /// </summary>
-/// <typeparam name="T">The TypeScriptPackage to which this provider belongs.</typeparam>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class NgProviderImportAttribute : ContextBoundDelegationAttribute
 {
@@ -35,7 +34,7 @@ public sealed class NgProviderImportAttribute : ContextBoundDelegationAttribute
     public NgProviderImportAttribute( string symbolNames )
         : base( "CK.TS.Angular.Engine.NgProviderImportAttributeImpl, CK.TS.Angular.Engine" )
     {
-        LibraryName = "@local/ck-gen";
+        From = "@local/ck-gen";
         SymbolNames = symbolNames;
     }
 
@@ -43,7 +42,7 @@ public sealed class NgProviderImportAttribute : ContextBoundDelegationAttribute
     /// Gets or sets the library name (like "axios").
     /// Defaults to "@local/ck-gen".
     /// </summary>
-    public string LibraryName { get; set; }
+    public string From { get; set; }
 
     /// <summary>
     /// Gets the type or variable names to import.

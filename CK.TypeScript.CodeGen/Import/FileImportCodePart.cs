@@ -24,19 +24,18 @@ sealed class FileImportCodePart : ITSFileImportSection
 
     internal TypeScriptFile File => _file;
 
-
     public void ImportFromLibrary( LibraryImport library, string symbolNames ) => DoEnsure( library, "" ).Add( symbolNames );
 
     public void ImportFromLibrary( (LibraryImport Library, string SubPath) source, string symbolNames ) => DoEnsure( source.Library, source.SubPath ).Add( symbolNames );
 
-    public ITSImportLine EnsureFile( IMinimalTypeScriptFile file )
+    public ITSImportLine EnsureFile( TypeScriptFileBase file )
     {
         return _file == file
                 ? (_importFromFileSelfReference ??= new ImportFromFileSelfReference( _file ))
                 : DoEnsure( file );
     }
 
-    public void ImportFromFile( IMinimalTypeScriptFile file, string symbolNames ) => EnsureFile( file ).Add( symbolNames );
+    public void ImportFromFile( TypeScriptFileBase file, string symbolNames ) => EnsureFile( file ).Add( symbolNames );
 
     ImportFromLibrary DoEnsure( LibraryImport library, string subPath )
     {
@@ -61,7 +60,7 @@ sealed class FileImportCodePart : ITSFileImportSection
         return line;
     }
 
-    ImportFromFile DoEnsure( IMinimalTypeScriptFile file )
+    ImportFromFile DoEnsure( TypeScriptFileBase file )
     {
         Throw.CheckNotNullArgument( file );
         _importsFromFiles ??= new List<ImportFromFile>();
@@ -102,10 +101,6 @@ sealed class FileImportCodePart : ITSFileImportSection
         return this;
     }
 
-    public bool HasImports => (_importsFromLibs != null && _importsFromLibs.Count != 0)
-                              || (_importsFromFiles != null && _importsFromFiles.Count != 0)
-                              || (_importFromLocalCKGen != null && _importFromLocalCKGen.Count != 0);
-
     public IEnumerable<string> ImportedLibraryNames => _importsFromLibs?.Select( l => l.Library.Name ) ?? ImmutableArray<string>.Empty;
 
     internal void ClearImports()
@@ -141,7 +136,7 @@ sealed class FileImportCodePart : ITSFileImportSection
             switch( owner )
             {
                 case ValueTuple<LibraryImport, string> lib: DoEnsure( lib.Item1, lib.Item2 ).SetSnapshot( defSymbol, name ); break;
-                case IMinimalTypeScriptFile file: DoEnsure( file ).SetSnapshot( defSymbol, name ); break;
+                case TypeScriptFileBase file: DoEnsure( file ).SetSnapshot( defSymbol, name ); break;
                 default:
                     Throw.DebugAssert( owner is null );
                     _importFromLocalCKGen ??= new ImportFromLocalCKGen( this );
@@ -151,35 +146,32 @@ sealed class FileImportCodePart : ITSFileImportSection
         }
     }
 
-    internal void Build( ref SmarterStringBuilder b )
+    internal void Build( ref SmarterStringBuilder b, IActivityMonitor? monitor, TSTypeManager? tsTypes )
     {
-        if( HasImports )
+        if( _importsFromLibs != null )
         {
-            if( _importsFromLibs != null )
+            foreach( var lib in _importsFromLibs )
             {
-                foreach( var lib in _importsFromLibs )
-                {
-                    lib.Write( ref b  );
-                }
+                lib.Write( ref b  );
             }
-            if( _importsFromFiles != null )
+        }
+        if( _importsFromFiles != null )
+        {
+            foreach( var f in _importsFromFiles )
             {
-                foreach( var f in _importsFromFiles )
-                {
-                    f.Write( ref b );
-                }
+                f.Write( ref b );
             }
-            if( _importFromLocalCKGen != null )
-            {
-                _importFromLocalCKGen.Write( ref b );
-            }
+        }
+        if( _importFromLocalCKGen != null )
+        {
+            _importFromLocalCKGen.Write( ref b, monitor, tsTypes );
         }
     }
 
     public override string ToString()
     {
         var b = new SmarterStringBuilder( new StringBuilder() );
-        Build( ref b );
+        Build( ref b, null, null );
         if( b.Length > 0 ) b.Append( Environment.NewLine );
         return b.ToString();
     }

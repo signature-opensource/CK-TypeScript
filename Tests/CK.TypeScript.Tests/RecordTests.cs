@@ -1,7 +1,6 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace CK.TypeScript.Tests;
 [TestFixture]
 public class RecordTests
 {
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IValueTuplePoco1 : IPoco
     {
         // Anonymous record with no name at all: TypeScript [tuple] syntax.
@@ -25,7 +24,7 @@ public class RecordTests
         // => public power: [Number, String, String?, Guid?] = [0, ""]
     }
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IValueTuplePoco2 : IPoco
     {
         // TypeScript [tuple] syntax with nullables:
@@ -40,14 +39,14 @@ public class RecordTests
         // => public readonly power: [Number, String|undefined, String, NormalizedCultureInfo?, Number?] = [0, undefined, ""]
     }
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IValueTuplePoco3 : IPoco
     {
         ref (int, string, NormalizedCultureInfo, double) Power { get; }
         // => public readonly power: [Number, String, NormalizedCultureInfo, Number] = [0, "", NormalizedCultureInfo.codeDefault, 0]
     }
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IValueTupleWithNamePoco1 : IPoco
     {
         // When fields have name: {object} syntax.
@@ -55,7 +54,7 @@ public class RecordTests
         // => public readonly power: {age: Number, userId: String, firstName?: String, lastName?: Guid} = {age: 0, userId: ""}
     }
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IValueTupleWithNamePoco2 : IPoco
     {
         // When at least one field has name: {object} syntax.
@@ -64,7 +63,7 @@ public class RecordTests
         // => public readonly power: {item1: Number, name: String, item3?: String, anotherName?: Guid} = {item1: 0, name: ""}
     }
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IValueTupleWithNamePoco3 : IPoco
     {
         // {object} syntax with leading nullable (optional) fields is fine.
@@ -159,38 +158,38 @@ public class RecordTests
             """ );
     }
 
-    [TypeScript( SameFolderAs = typeof( IRecordPoco1 ) )]
+    [TypeScriptType( SameFolderAs = typeof( IRecordPoco1 ) )]
     public record struct Rec1( int Age,
                                string Name,
                                string? AltName,
                                Guid? Key );
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IRecordPoco1 : IPoco
     {
         ref Rec1 R1 { get; }
     }
 
-    [TypeScript( SameFileAs = typeof( IRecordPoco2 ) )]
+    [TypeScriptType( SameFileAs = typeof( IRecordPoco2 ) )]
     public record struct Rec2( int Age,
                                string Name = "Aurélien",
                                string? AltName = "Barrau",
                                Guid? Key = null );
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IRecordPoco2 : IPoco
     {
         ref Rec2 R2 { get; }
     }
 
 
-    [TypeScript( SameFolderAs = typeof( IRecordPoco3 ) )]
+    [TypeScriptType( SameFolderAs = typeof( IRecordPoco3 ) )]
     public record struct Rec3( Guid? Key = null,
                                string? AltName = "Barrau",
                                string Name = "Aurélien",
                                int Age = 40 );
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IRecordPoco3 : IPoco
     {
         ref Rec3 R3 { get; }
@@ -269,10 +268,10 @@ public class RecordTests
 
     }
 
-    [TypeScript( SameFolderAs = typeof( IRecTryPoco ) )]
+    [TypeScriptType( SameFolderAs = typeof( IRecTryPoco ) )]
     public record struct RecTry( string Name, List<RecTry> Others );
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IRecTryPoco : IPoco
     {
         IList<RecTry> R1 { get; }
@@ -300,10 +299,10 @@ public class RecordTests
 
     // The only way to have a non defaultable field in the Poco world is a reference
     // to an abstract type. And the only abstract type is a IAbstractPoco.
-    [TypeScript( SameFolderAs = typeof( IRecWithNonNullDefaultPoco ) )]
+    [TypeScriptType( SameFolderAs = typeof( IRecWithNonNullDefaultPoco ) )]
     public record struct RecWithNonNullDefault( double? Nullable, IPoco IMustExist, string Name, int Age = 42 );
 
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IRecWithNonNullDefaultPoco : IPoco
     {
         IList<RecWithNonNullDefault> R1 { get; }
@@ -332,7 +331,6 @@ public class RecordTests
     static void CheckFile( string targetProjectPath, string name, string expected )
     {
         File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", name ) )
-            .ReplaceLineEndings()
-            .ShouldContain( expected.ReplaceLineEndings() );
+            .ShouldContain( expected );
     }
 }

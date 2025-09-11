@@ -48,7 +48,7 @@ public sealed class LibraryImport
     public IReadOnlyCollection<LibraryImport> ImpliedDependencies => _impliedDependencies;
 
     /// <summary>
-    /// Gets or sets whether this library is actually used: <see cref="ITSFileImportSection.EnsureImportFromLibrary(LibraryImport, string, string[])"/>
+    /// Gets or sets whether this library is actually used: <see cref="ITSFileImportSection.ImportFromLibrary(LibraryImport, string)"/>
     /// sets it to true.
     /// <para>
     /// This trims the libraries: a library can be registered but none of its types

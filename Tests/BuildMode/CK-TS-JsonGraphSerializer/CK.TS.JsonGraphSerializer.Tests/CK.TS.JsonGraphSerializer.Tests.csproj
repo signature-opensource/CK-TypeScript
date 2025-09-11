@@ -4,15 +4,15 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Nunit" Version="13.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="CK.Testing.Nunit" Version="14.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\CK.TS.JsonGraphSerializer\CK.TS.JsonGraphSerializer.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Clients\Inline\ck-gen\CK\Core\" />
+    <Folder Include="Clients\C1\ck-gen\" />
   </ItemGroup>
 </Project>

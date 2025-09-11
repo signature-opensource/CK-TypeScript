@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.Nunit" Version="14.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="28.0.0" />
+    <ProjectReference Include="..\..\..\CK.Ng.AspNet.Auth.Basic\CK.Ng.AspNet.Auth.Basic.csproj" />
+    <ProjectReference Include="..\..\..\CK.Ng.PublicPage\CK.Ng.PublicPage.csproj" />
+    <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
+    <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
+  </ItemGroup>
+</Project>

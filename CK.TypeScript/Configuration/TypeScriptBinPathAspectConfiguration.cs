@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.TypeScript;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,18 +16,22 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 {
     NormalizedPath _targetProjectPath;
     NormalizedPath _targetCKGenPath;
-    bool _useSrcFolder;
+    NormalizedCultureInfo _defaultCulture;
 
     /// <summary>
     /// Initializes a new empty configuration.
     /// </summary>
     public TypeScriptBinPathAspectConfiguration()
     {
-        Barrels = new HashSet<NormalizedPath>();
-        Types = new List<TypeScriptTypeConfiguration>();
+        Barrels = new HashSet<string>();
+
+        Types = new Dictionary<Type, TypeScriptTypeAttribute?>();
+        GlobTypes = new List<TypeScriptTypeGlobConfiguration>();
+        ExcludedTypes = new HashSet<Type>();
+
+        _defaultCulture = NormalizedCultureInfo.CodeDefault;
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
         TypeFilterName = "TypeScript";
-        ModuleSystem = TSModuleSystem.Default;
         GitIgnoreCKGenFolder = true;
         AutoInstallJest = true;
     }
@@ -63,7 +68,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     }
 
     /// <summary>
-    /// Gets the '/ck-gen/src' or '/ck-gen' whether <see cref="UseSrcFolder"/> is true or false.
+    /// Gets the '/ck-gen' path.
     /// </summary>
     public NormalizedPath TargetCKGenPath
     {
@@ -72,35 +77,16 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             if( _targetCKGenPath.IsEmptyPath )
             {
                 _targetCKGenPath = _targetProjectPath.AppendPart( "ck-gen" );
-                if( _useSrcFolder ) _targetCKGenPath = _targetCKGenPath.AppendPart( "src" );
             }
             return _targetCKGenPath;
         }
     }
 
     /// <summary>
-    /// Gets or sets whether the generated files will be in '/ck-gen/src' instead of '/ck-gen'.
-    /// <para>
-    /// Defaults to false. Automatically sets to true when <see cref="IntegrationMode"/> is <see cref="CKGenIntegrationMode.NpmPackage"/>.
-    /// </para>
-    /// </summary>
-    public bool UseSrcFolder
-    {
-        get => _useSrcFolder;
-        set
-        {
-            if( _useSrcFolder != value )
-            {
-                _targetCKGenPath = default;
-                _useSrcFolder = value;
-            }
-        }
-    }
-
-    /// <summary>
     /// Gets a mutable set of cultures that should be handled by the generated TypeScript code.
     /// <para>
-    /// It is useless to register the "en" culture as it is always implicitly added.
+    /// It is useless to register the "en" culture (the <see cref="NormalizedCultureInfo.CodeDefault"/>) as it is always implicitly
+    /// added and parent cultures are automatically added (adding "fr-FR" adds "fr").
     /// </para>
     /// <para>
     /// In configuration files, this is expressed as a comma separated string of BCP47 culture names.
@@ -109,9 +95,49 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public HashSet<NormalizedCultureInfo> ActiveCultures { get; }
 
     /// <summary>
-    /// Gets the list of <see cref="TypeScriptTypeConfiguration"/>.
+    /// Gets or sets the default culture.
+    /// <para>
+    /// Defauts to the "en" culture (the <see cref="NormalizedCultureInfo.CodeDefault"/>).
+    /// </para>
+    /// <para>
+    /// It is automatically added to the <see cref="ActiveCultures"/>.
+    /// </para>
     /// </summary>
-    public List<TypeScriptTypeConfiguration> Types { get; }
+    public NormalizedCultureInfo DefaultCulture
+    {
+        get => _defaultCulture;
+        set
+        {
+            Throw.CheckNotNullArgument( value );
+            _defaultCulture = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the explicit types to register with an optional <see cref="TypeScriptTypeAttribute"/> that
+    /// overrides the one defined in code if it exists.
+    /// <para>
+    /// Poco must be registered here or in <see cref="GlobTypes"/> for their TypeScript code to be generated
+    /// (unless they are decorated with a [<see cref="TypeScriptTypeAttribute">TypeScriptType</see>].
+    /// </para>
+    /// Other types registered here must be handled by a TypeScript code generator.
+    /// <para>
+    /// <see cref="TypeScriptGroup"/> or <see cref="TypeScriptPackage"/> MUST NOT be registered here.
+    /// They are handled automatically.
+    /// </para>
+    /// </summary>
+    public Dictionary<Type,TypeScriptTypeAttribute?> Types { get; }
+
+    /// <summary>
+    /// Gets the list of <see cref="TypeScriptTypeGlobConfiguration"/>.
+    /// </summary>
+    public List<TypeScriptTypeGlobConfiguration> GlobTypes { get; }
+
+    /// <summary>
+    /// Gets the set of excluded types. When a type appears in this set, it is always
+    /// ignored even if it appears in <see cref="Types"/> or <see cref="GlobTypes"/>.
+    /// </summary>
+    public HashSet<Type> ExcludedTypes { get; }
 
     /// <summary>
     /// Gets or sets the name of this TypeScript configuration that is the <see cref="ExchangeableRuntimeFilter.Name"/>
@@ -131,17 +157,11 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 
     /// <summary>
     /// Gets or sets how the /ck-gen generated sources are integrated in the <see cref="TargetProjectPath"/>.
-    /// </summary>
-    public CKGenIntegrationMode IntegrationMode { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether we are building a package. In this mode, the target <see cref="TargetCKGenPath"/> is protected: when a file
-    /// doesn't match the result of the generation the file is not overwritten instead a ".G.ext" is written and an error is raised.
     /// <para>
-    /// Defaults to false.
+    /// Defaults to <see cref="CKGenIntegrationMode.Inline"/>.
     /// </para>
     /// </summary>
-    public bool CKGenBuildMode { get; set; }
+    public CKGenIntegrationMode IntegrationMode { get; set; }
 
     /// <summary>
     /// Gets or sets the TypeScript version to install when TypeScript is not installed in "<see cref="TargetProjectPath"/>",
@@ -151,20 +171,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </para>
     /// </summary>
     public string? DefaultTypeScriptVersion { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether yarn will be automatically installed (from an embedded resource in the engine)
-    /// if not found in <see cref="TargetProjectPath"/> or above.
-    /// <para>
-    /// if no yarn can be found in <see cref="TargetProjectPath"/> or above and this is set to false, no TypeScript build will
-    /// be done (as if <see cref="IntegrationMode"/> was set to <see cref="CKGenIntegrationMode.None"/>).
-    /// </para>
-    /// <para>
-    /// Defaults to false.
-    /// </para>
-    /// </summary>
-    [Obsolete( "Use InstallYarn = None/AutoInstall/AutoUpgrade", true )]
-    public bool AutoInstallYarn { get; set; }
 
     /// <summary>
     /// Gets or sets whether Yarn must be installed or upgraded.
@@ -189,12 +195,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public bool GitIgnoreCKGenFolder { get; set; }
 
     /// <summary>
-    /// Choose the <see cref="TSModuleSystem"/>.
-    /// Defaults to <see cref="TSModuleSystem.Default"/>.
-    /// </summary>
-    public TSModuleSystem ModuleSystem { get; set; }
-
-    /// <summary>
     /// True to add <c>"composite": true</c> to the /ck-gen/tsconfig.json.
     /// <para>
     /// It is up to the developper to ensure that a <c>"references": [ { "path": "./ck-gen" } ]</c> exists in
@@ -202,7 +202,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// See https://www.typescriptlang.org/docs/handbook/project-references.html.
     /// </para>
     /// <para>
-    /// Unforunately, this is currently not supported by Jest.
+    /// Unfortunately, this is currently not supported by Jest nor by Angular (see <see cref="CKGenIntegrationMode"/>).
     /// </para>
     /// </summary>
     public bool EnableTSProjectReferences { get; set; }
@@ -214,7 +214,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// A barrel is systematically generated at the root OutputPath level. This allows sub folders to also have barrels.
     /// </para>
     /// </summary>
-    public HashSet<NormalizedPath> Barrels { get; }
+    public HashSet<string> Barrels { get; }
 
     /// <inheritdoc />
     protected override void InitializeOnlyThisFrom( XElement e )
@@ -223,7 +223,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         Barrels.Clear();
         Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
                                                 .Elements( TypeScriptAspectConfiguration.xBarrel )
-                                                    .Select( c => new NormalizedPath( (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) ) );
+                                                    .Select( c => (string?)c.Attribute( EngineConfiguration.xPath ) ?? c.Value ) );
         DefaultTypeScriptVersion = (string?)e.Attribute( TypeScriptAspectConfiguration.xDefaultTypeScriptVersion );
 
         var tsIntegrationMode = (string?)e.Attribute( TypeScriptAspectConfiguration.xIntegrationMode );
@@ -239,12 +239,11 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         GitIgnoreCKGenFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder ) ?? true;
 
         AutoInstallJest = (bool?)e.Attribute( TypeScriptAspectConfiguration.xAutoInstallJest ) ?? true;
-
-        CKGenBuildMode = (bool?)e.Attribute( TypeScriptAspectConfiguration.xCKGenBuildMode ) ?? false;
-        UseSrcFolder = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseSrcFolder ) ?? false;
-        var tsModuleSystem = (string?)e.Attribute( TypeScriptAspectConfiguration.xModuleSystem );
-        ModuleSystem = tsModuleSystem == null ? TSModuleSystem.Default : Enum.Parse<TSModuleSystem>( tsModuleSystem, ignoreCase: true );
         EnableTSProjectReferences = (bool?)e.Attribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences ) ?? false;
+
+        DefaultCulture = NormalizedCultureInfo.CodeDefault;
+        var defaultCulture = (string?)e.Attribute( TypeScriptAspectConfiguration.xDefaultCulture );
+        if( defaultCulture != null ) DefaultCulture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( defaultCulture );
 
         ActiveCultures.Clear();
         var cultures = (string?)e.Attribute( TypeScriptAspectConfiguration.xActiveCultures );
@@ -256,11 +255,72 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
             }
         }
 
+        // Starts with ExcludedTypes: if an excluded type appears in Types, this will throw because
+        // it is a bad configuration.
+        ExcludedTypes.Clear();
+        ExcludedTypes.AddRange(
+            e.Elements( EngineConfiguration.xExcludedTypes )
+             .Elements( EngineConfiguration.xType )
+             .Select( e => SimpleTypeFinder.WeakResolver( (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value, throwOnError: true )! ) );
         Types.Clear();
-        Types.AddRange( e.Elements( EngineConfiguration.xTypes )
-                           .Elements( EngineConfiguration.xType )
-                           .Select( e => new TypeScriptTypeConfiguration( e ) ) );
+        GlobTypes.Clear();
+        FillTypesAndGlobTypes( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ) );
+
         TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
+    }
+
+    void FillTypesAndGlobTypes( IEnumerable<XElement> typeElements )
+    {
+        foreach( XElement e in typeElements )
+        {
+            var tName = (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value;
+            if( string.IsNullOrWhiteSpace( tName ) )
+            {
+                Throw.XmlException( $"""
+                    Invalid assembly qualified type name in:
+                    {e}
+                    Attribute {EngineConfiguration.xName.LocalName}="Namespace.TypeName, SomeAssembly" is missing.
+                    The type name can also appear as the element value: <Type>Namespace.TypeName, SomeAssembly</Type>
+                    """ );
+            }
+            if( tName.Contains( '*' ) )
+            {
+                GlobTypes.Add( new TypeScriptTypeGlobConfiguration( tName, TypeScriptTypeAttribute.ReadFrom( e ) ) );
+            }
+            else
+            {
+                Type type;
+                try
+                {
+                    type = SimpleTypeFinder.WeakResolver( tName, throwOnError: true )!;
+                }
+                catch( Exception ex )
+                {
+                    Throw.XmlException( $"""
+                                Unable to resolve type name for:
+                                {e}
+                                """, ex );
+                    return;
+                }
+                if( ExcludedTypes.Contains( type ) )
+                {
+                    Throw.XmlException( $"""
+                            Configuration error in <Types>:
+                            {e}
+                            Type '{type.ToCSharpName()}' is declared in the <ExcludedTypes>. 
+                            """ );
+                }
+                if( Types.ContainsKey( type ) )
+                {
+                    Throw.XmlException( $"""
+                            Duplicate type name in <Types>:
+                            {e}
+                            Type '{type.ToCSharpName()}' is already registered. 
+                            """ );
+                }
+                Types.Add( type, TypeScriptTypeAttribute.ReadFrom( e ) );
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -285,20 +345,21 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                GitIgnoreCKGenFolder is false
                 ? new XAttribute( TypeScriptAspectConfiguration.xGitIgnoreCKGenFolder, false )
                 : null,
-               CKGenBuildMode
-                ? new XAttribute( TypeScriptAspectConfiguration.xCKGenBuildMode, true )
-                : null,
-               UseSrcFolder
-                ? new XAttribute( TypeScriptAspectConfiguration.xUseSrcFolder, true )
-                : null,
-               ModuleSystem != TSModuleSystem.Default
-                ? new XAttribute( TypeScriptAspectConfiguration.xModuleSystem, ModuleSystem.ToString() )
-                : null,
                EnableTSProjectReferences
                 ? new XAttribute( TypeScriptAspectConfiguration.xEnableTSProjectReferences, true )
                 : null,
                new XAttribute( TypeScriptAspectConfiguration.xActiveCultures, ActiveCultures.Select( c => c.Culture.Name ).Concatenate( ", " ) ),
-               new XElement( EngineConfiguration.xTypes, Types.Select( t => t.ToXml() ) )
+               DefaultCulture != NormalizedCultureInfo.CodeDefault
+                    ? new XAttribute( TypeScriptAspectConfiguration.xDefaultCulture, DefaultCulture.Name )
+                    : null,
+               new XElement( EngineConfiguration.xTypes,
+                                Types.Select( kv => new XElement( EngineConfiguration.xType,
+                                                            kv.Value?.ToXmlAttributes(),
+                                                            kv.Key.GetWeakAssemblyQualifiedName() ) )
+                                .Concat( GlobTypes.Select( g => g.ToXml() ) )
+                           ),
+               new XElement( EngineConfiguration.xExcludedTypes,
+                             ExcludedTypes.Select( TypeExtensions.GetWeakAssemblyQualifiedName ) )
             );
     }
 }

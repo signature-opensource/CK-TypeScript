@@ -1,13 +1,16 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.TypeScript;
 
-
+/// <summary>
+/// Captures TypeScript type possible decorations.
+/// </summary>
 public interface ITypeScriptTypeDecorationAttribute
 {
     /// <summary>
     /// Gets or sets an optional sub folder that will contain the TypeScript generated code.
-    /// There must be no leading '/' or '\': the path is relative to the TypeScript output path of each <see cref="BinPathConfiguration"/>.
+    /// There must be no leading '/' or '\': the path is relative to the TypeScript output path of each BinPath.
     /// <para>
     /// This folder cannot be set to a non null path if <see cref="SameFolderAs"/> or <see cref="SameFileAs"/> is set to a non null type.
     /// </para>
@@ -29,8 +32,8 @@ public interface ITypeScriptTypeDecorationAttribute
 
     /// <summary>
     /// Gets or sets another type which defines the final <see cref="Folder"/> and <see cref="FileName"/>.
-    /// Both Folder and FileName MUST be null otherwise an <see cref="InvalidOperationException"/> is raised (conversely, Folder and FileName can
-    /// be set to non null values only if this SameFileAs is null).
+    /// Both Folder and FileName MUST be null otherwise an <see cref="InvalidOperationException"/> is raised (conversely,
+    /// Folder and FileName can be set to non null values only if this SameFileAs is null).
     /// </summary>
     Type? SameFileAs { get; set; }
 
@@ -46,8 +49,7 @@ public interface ITypeScriptTypeDecorationAttribute
 
     /// <summary>
     /// Gets or sets the TypeScript type name to use for this type.
-    /// This takes precedence over the <see cref="ExternalNameAttribute"/> that itself
-    /// takes precedence over the <see cref="MemberInfo.Name"/> of the type.
     /// </summary>
+    [DisallowNull]
     string? TypeName { get; set; }
 }

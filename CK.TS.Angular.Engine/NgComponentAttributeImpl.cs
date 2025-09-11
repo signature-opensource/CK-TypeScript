@@ -1,18 +1,21 @@
 using CK.Core;
 using CK.Setup;
-using CK.TypeScript;
 using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using CK.EmbeddedResources;
+using System.Linq;
+using CK.Engine.TypeCollector;
+using System.Collections.Generic;
 
 namespace CK.TS.Angular.Engine;
 
 /// <summary>
 /// Implements <see cref="NgModuleAttribute"/>.
 /// </summary>
-public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
+public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
     readonly string _snakeName;
 
@@ -25,7 +28,7 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     public NgComponentAttributeImpl( IActivityMonitor monitor, NgComponentAttribute attr, Type type )
         : base( monitor, attr, type )
     {
-        if( !typeof( NgComponent ).IsAssignableFrom( type ) )
+        if( !typeof( INgComponent ).IsAssignableFrom( type ) )
         {
             monitor.Error( $"[NgComponent] can only decorate a NgComponent: '{type:N}' is not a NgComponent." );
         }
@@ -52,15 +55,18 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     }
 
     /// <summary>
-    /// Gets the component name that is the C# <see cref="TypeScriptFileAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
+    /// Gets the component name that is the C# <see cref="TypeScriptGroupOrPackageAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
     /// </summary>
     public string ComponentName => DecoratedType.Name;
 
     /// <summary>
-    /// Gets the component name (snake-case) without "Component" suffix.
+    /// Gets the component name (snake-case) without "component" suffix.
     /// </summary>
     public string FileComponentName => _snakeName;
 
+    /// <summary>
+    /// Gets whether this is the <see cref="AppComponent"/>.
+    /// </summary>
     public bool IsAppComponent => DecoratedType == typeof( AppComponent );
 
     /// <summary>
@@ -68,37 +74,127 @@ public partial class NgComponentAttributeImpl : TypeScriptPackageAttributeImpl
     /// </summary>
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
 
-    protected override void OnConfigure( IActivityMonitor monitor, IStObjMutableItem o )
+    /// <summary>
+    /// Overridden to skip the <see cref="IsAppComponent"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceBuilder">The resource space builder.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool CreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
     {
-        base.OnConfigure( monitor, o );
-        if( !IsAppComponent && o.Container.Type == typeof(RootTypeScriptPackage) )
-        {
-            o.Container.Type = typeof( AppComponent );
-        }
-    }
-
-    protected override bool GenerateCode( IActivityMonitor monitor, TypeScriptContext context )
-    {
-        var fName = _snakeName + ".component.ts";
-
-        // If we are on the AppComponent, don't try to lookup the resources (there are no resources).
+        // Skip the AppComponent.
+        // It has no resources, we don't create a ResPackage for it.
         if( IsAppComponent )
         {
             return true;
         }
-        else
+        return base.CreateResPackageDescriptor( monitor, context, spaceBuilder );
+    }
+
+    /// <summary>
+    /// Overridden to handle discovery and mapping of a possible <see cref="NgSingleAbstractComponentAttribute"/>
+    /// interface.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceConfiguration">The space configuration.</param>
+    /// <param name="package">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
+                                                          TypeScriptContext context,
+                                                          ResSpaceConfiguration spaceConfiguration,
+                                                          ResPackageDescriptor package )
+    {
+        Throw.DebugAssert( !IsAppComponent );
+        // Temporary
+        Throw.DebugAssert( package.Type != null && package.Type.Type == DecoratedType );
+
+        if( !FindSingleAbstract( monitor, package, out var singleInterface, out var expectedComponentName ) )
         {
-            if( !Resources.TryGetResource( monitor, fName, out var res ) )
+            return false;
+        }
+        if( singleInterface != null )
+        {
+            Throw.DebugAssert( !string.IsNullOrWhiteSpace( expectedComponentName ) );
+            if( expectedComponentName != _snakeName )
+            {
+                monitor.Error( $"""
+                    Invalid single Angular abstract component. '{package.Type}' is a '{singleInterface}'.
+                    Its component name must be '{expectedComponentName}', not '{_snakeName}'.
+                    """ );
+                return false;
+            }
+            if( !package.AddSingleMapping( monitor, singleInterface ) )
             {
                 return false;
             }
-            var file = context.Root.Root.CreateResourceFile( in res, TypeScriptFolder.AppendPart( fName ) );
-            Throw.DebugAssert( ".ts extension has been checked by Initialize.", file is ResourceTypeScriptFile );
-            ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
-
-            return base.GenerateCode( monitor, context )
-                   && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
         }
+        return base.OnCreateResPackageDescriptor( monitor, context, spaceConfiguration, package );
+
+        static bool FindSingleAbstract( IActivityMonitor monitor,
+                                        ResPackageDescriptor package,
+                                        out ICachedType? singleInterface,
+                                        out string? expectedComponentName )
+        {
+            Throw.DebugAssert( package.Type != null );
+
+            expectedComponentName = null;
+            singleInterface = null;
+            var attrType = typeof( NgSingleAbstractComponentAttribute );
+            foreach( var i in package.Type.Interfaces )
+            {
+                var attr = i.AttributesData.FirstOrDefault( a => a.AttributeType == attrType );
+                if( attr != null ) 
+                {
+                    if( singleInterface != null )
+                    {
+                        var multiple = package.Type.Interfaces
+                                                   .Where( i => i.AttributesData.Any( a => a.AttributeType == attrType ) )
+                                                   .Select( c => c.ToString() )
+                                                   .Concatenate( "', '" );
+                        monitor.Error( $"Type '{package.Type}' implements multiple single Angular abstract component: '{multiple}'." );
+                        return false;
+                    }
+                    singleInterface = i;
+                    expectedComponentName = (string?)attr.ConstructorArguments[0].Value;
+                    if( string.IsNullOrWhiteSpace( expectedComponentName ) )
+                    {
+                        monitor.Error( $"Invalid empty component name in [NgSingleAbstractComponent()] on '{i}'." );
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+
+    /// <summary>
+    /// Overridden to handle the component "*.ts" file name: it must exist
+    /// and is created as a <see cref="ResourceTypeScriptFile"/> (but still published
+    /// by the resource container).
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="spaceData">The space data.</param>
+    /// <param name="package">The package descriptor for this package.</param>
+    /// <returns>True on success, false on error.</returns>
+    protected override bool OnResPackageAvailable( IActivityMonitor monitor,
+                                                   TypeScriptContext context,
+                                                   ResSpaceData spaceData,
+                                                   ResPackage package )
+    {
+        Throw.DebugAssert( !IsAppComponent );
+        var fName = _snakeName + ".ts";
+        if( !package.Resources.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
+        {
+            return false;
+        }
+        var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
+        return base.OnResPackageAvailable( monitor, context, spaceData, package )
+               && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
 
     [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]

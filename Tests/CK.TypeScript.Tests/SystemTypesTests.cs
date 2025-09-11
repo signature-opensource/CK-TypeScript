@@ -15,7 +15,7 @@ namespace CK.TypeScript.Tests;
 [TestFixture]
 public class SystemTypesTests
 {
-    [TypeScript( Folder = "" )]
+    [TypeScriptType( Folder = "" )]
     public interface IWithDateAndGuid : IPoco
     {
         DateTime D { get; set; }

@@ -1,25 +1,24 @@
-using CK.TypeScript;
-using System;
 using System.Runtime.CompilerServices;
 
 namespace CK.TS.Angular;
 
 /// <summary>
-/// Required attribute for <see cref="NgRoutedComponent"/>.
+/// Required attribute for <see cref="NgRoutedComponent"/> with a strongly
+/// typed <see cref="NgRoutedComponentAttribute.TargetComponent"/>.
+/// <para>
+/// This makes <typeparamref name="T"/> a requirement for the decorated type:
+/// <c>[Requires&lt;T&gt;]</c> is implied.
+/// </para>
 /// </summary>
-public class NgRoutedComponentAttribute<T> : NgRoutedComponentAttribute where T : TypeScriptPackage
+/// <typeparam name="T">The target component.</typeparam>
+public class NgRoutedComponentAttribute<T> : NgRoutedComponentAttribute where T : INgComponent
 {
     /// <summary>
-    /// Initializes a new <see cref="NgRoutedComponentAttribute"/>.
+    /// Initializes a new <see cref="NgComponentAttribute"/>.
     /// </summary>
-    /// <param name="targetRoutedComponent">The routed component under which this component must appear.</param>
-    /// <param name="callerFilePath">Automatically set by the Roslyn compiler and used to compute the associated embedded resource folder.</param>
-    public NgRoutedComponentAttribute( Type targetRoutedComponent,
-                                       [CallerFilePath] string? callerFilePath = null )
-        : base( targetRoutedComponent, callerFilePath )
+    /// <param name="callerFilePath">The caller path.</param>
+    public NgRoutedComponentAttribute( [CallerFilePath] string? callerFilePath = null )
+        : base( typeof( T ), callerFilePath )
     {
     }
-
-    /// <inheritdoc />
-    public override Type? Package => typeof( T );
 }

@@ -10,27 +10,31 @@ sealed class NgRouteWithRoutes : NgRoute
     internal NgRouteWithRoutes? _nextWithRoutes;
 
     public NgRouteWithRoutes( TypeScriptFile routeFile,
-                              NgRoute? parent,
                               NgRoutedComponentAttributeImpl? component,
                               ITSDeclaredFileType? tsType,
                               NgRouteWithRoutes? nextWithRoutes )
-        : base( parent, component, tsType )
+        : base( component, tsType )
     {
         _routes = routeFile;
         _nextWithRoutes = nextWithRoutes;
     }
 
-    internal void GenerateRoutes( IActivityMonitor monitor )
+    public TypeScriptFile RoutesFile => _routes;
+
+    internal void GenerateRoutes( IActivityMonitor monitor, int childDepth )
     {
+        // We don't type the export default as Route[] for subordinated routes.ts.
         _routes.Body.Append( """
+                // import { Route } from '@angular/router';
+
                 export default [
 
                 """ );
-        GenerateRoutes( monitor, _routes );
+        GenerateRoutes( monitor, _routes, childDepth, out _ );
         _routes.Body.Append( """
 
-                ];
+                ]; // as Route[];
                 """ );
-
     }
+
 }

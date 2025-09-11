@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CK.TypeScript.LiveEngine": {
+      "commandName": "Project",
+      "commandLineArgs": "--debug-launch"
+    }
+  }
+}

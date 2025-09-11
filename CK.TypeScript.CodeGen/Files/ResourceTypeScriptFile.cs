@@ -1,29 +1,42 @@
 using CK.Core;
-using System;
-using System.Collections.Generic;
+using CK.EmbeddedResources;
 
 namespace CK.TypeScript.CodeGen;
 
 /// <summary>
-/// <see cref="BaseFile.Extension"/> is ".ts".
+/// A TypeScript file that belongs to a resource container.
+/// <see cref="ITSDeclaredFileType"/> can be declared for it (so it can be resolved) but the
+/// source text is not under control of the code generator.
 /// </summary>
-public sealed class ResourceTypeScriptFile : ResourceTextFileBase, IMinimalTypeScriptFile
+public sealed class ResourceTypeScriptFile : TypeScriptFileBase
 {
-    TypeDeclarationImpl _declared;
+    readonly ResourceLocator _locator;
+    readonly bool _isPublishedResource;
 
-    internal ResourceTypeScriptFile( TypeScriptFolder folder, string name, in ResourceLocator locator )
-        : base( folder, name, in locator )
+    internal ResourceTypeScriptFile( TypeScriptFolder folder,
+                                     string name,
+                                     ResourceLocator locator,
+                                     TypeScriptFileBase? previous,
+                                     bool isPublishedResource )
+        : base( folder, name, previous, !isPublishedResource )
     {
+        _locator = locator;
+        _isPublishedResource = isPublishedResource;
     }
 
-    /// <inheritdoc />
-    public IEnumerable<ITSDeclaredFileType> AllTypes => _declared.AllTypes;
+    /// <summary>
+    /// Gets the resource.
+    /// </summary>
+    public ResourceLocator Locator => _locator;
+
+    /// <summary>
+    /// Gets whether this resource must be published in the Code Generated Container.
+    /// See <see cref="ITypeScriptPublishTarget"/>.
+    /// </summary>
+    public bool IsPublishedResource => _isPublishedResource;
 
     /// <inheritdoc />
-    public ITSDeclaredFileType DeclareType( string typeName, Action<ITSFileImportSection>? additionalImports = null, string? defaultValueSource = null )
-    {
-        return _declared.DeclareType( this, typeName, additionalImports, defaultValueSource );
-    }
+    public override string GetCurrentText( IActivityMonitor monitor, TSTypeManager tSTypes ) => _locator.ReadAsText();
 }
 
 

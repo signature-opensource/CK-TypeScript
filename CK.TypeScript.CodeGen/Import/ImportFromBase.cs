@@ -21,7 +21,7 @@ abstract class ImportFromBase : ITSImportLine
 
     public virtual LibraryImport? FromLibrary => null;
 
-    public virtual IMinimalTypeScriptFile? FromTypeScriptFile => null;
+    public virtual TypeScriptFileBase? FromTypeScriptFile => null;
 
     public string? DefaultImportSymbol => _defaultImportSymbol;
 
@@ -34,6 +34,10 @@ abstract class ImportFromBase : ITSImportLine
         {
             if( n.StartsWith( "default " ) )
             {
+                if( FromLocalCkGen )
+                {
+                    Throw.InvalidOperationException( $"'@local/ck-gen' barrel doesn't support default import. Symbols: '{symbolNames}'." );
+                }
                 var newDef = n.Substring( 8 );
                 SetDefaultImportSymbol( newDef );
             }
@@ -42,7 +46,7 @@ abstract class ImportFromBase : ITSImportLine
                 int idx = n.IndexOf( " as " );
                 TSImportedName name = idx >= 0
                                         ? new TSImportedName( n.Substring( 0, idx ).TrimEnd(), n.Substring( idx + 4 ).TrimStart() )
-                                        : new TSImportedName( n );
+                                        : new TSImportedName( n, null );
                 AddImportedName( name );
             }
         }
@@ -61,7 +65,7 @@ abstract class ImportFromBase : ITSImportLine
         if( _defaultImportSymbol != null && symbolName != _defaultImportSymbol )
         {
             Throw.InvalidOperationException( $"""
-                          Conflicting import of the default export in '{File.Folder.Path}/{File.Name}'.
+                          Conflicting import of the default export in '{File.Folder.Path}{File.Name}'.
                           Symbol '{_defaultImportSymbol}' is already defined, importing '{symbolName}' is not posssible.
                           """ );
         }
@@ -100,18 +104,22 @@ abstract class ImportFromBase : ITSImportLine
         }
         if( hasNames )
         {
-            b.Builder.Append( "{ " );
-            hasNames = false;
-            foreach( var n in _importedNames )
-            {
-                if( hasNames ) b.Builder.Append( ", " );
-                hasNames = true;
-                if( n.HasAlias ) b.Builder.Append( n.SourceName ).Append( " as " ).Append( n.LocalName );
-                else b.Builder.Append( n.SourceName );
-            }
-            b.Builder.Append( " }" );
+            WriteImportedNamesInBraces( b, _importedNames );
         }
         return true;
     }
 
+    protected static void WriteImportedNamesInBraces( SmarterStringBuilder b, IEnumerable<TSImportedName> importedNames )
+    {
+        bool atLeastOne = false;
+        b.Builder.Append( "{ " );
+        foreach( var n in importedNames )
+        {
+            if( atLeastOne ) b.Builder.Append( ", " );
+            atLeastOne = true;
+            b.Builder.Append( n.ExportedName );
+            if( n.IsAliased ) b.Builder.Append( " as " ).Append( n.ImportedName );
+        }
+        b.Builder.Append( " }" );
+    }
 }

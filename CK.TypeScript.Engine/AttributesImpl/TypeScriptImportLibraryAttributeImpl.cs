@@ -38,7 +38,7 @@ public sealed class TypeScriptImportLibraryAttributeImpl : ITSCodeGeneratorFacto
                                                                (CK.TypeScript.CodeGen.DependencyKind)_attr.DependencyKind,
                                                                definitionSource: _target.ToCSharpName() );
         if( lib == null ) return false;
-        lib.IsUsed = _attr.ForceUse;
+        lib.IsUsed = true;
         return true;
     }
 

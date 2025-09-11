@@ -4,12 +4,7 @@
     <RootNamespace>CK.AspNet.Auth</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="**\*.ts">
-      <LogicalName>ck@$([System.String]::new('%(RelativeDir)').Replace('\','/'))%(FileName)%(Extension)</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="27.0.0" />
+    <PackageReference Include="CK.AspNet.Auth" Version="28.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />

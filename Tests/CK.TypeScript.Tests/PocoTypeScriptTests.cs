@@ -26,7 +26,7 @@ public class PocoTypeScriptTests
     /// IPoco are not automatically exported.
     /// Using the [TypeScript] attribute declares the type.
     /// </summary>
-    [TypeScript]
+    [TypeScriptType]
     public interface IGeneratedByDefault : IPoco
     {
         INotGeneratedByDefault Some { get; set; }

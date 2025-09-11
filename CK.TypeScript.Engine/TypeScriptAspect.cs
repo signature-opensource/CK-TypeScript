@@ -11,9 +11,8 @@ namespace CK.Setup;
 /// <summary>
 /// Aspect that drives TypeScript code generation. Handles (and initialized) by the <see cref="TypeScriptAspectConfiguration"/>.
 /// </summary>
-public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
+public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinalization
 {
-    readonly TypeScriptAspectConfiguration _tsConfig;
     // This enables deferring the TypeScript generation at the final step of CS code generation.
     // A first part must run during the CS code generation to be able to register PocoTypeSet.
     // But TypeScript generation itself is not CS code generation and by deferring the TS we allow
@@ -32,7 +31,6 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
     /// <param name="config">The aspect configuration.</param>
     public TypeScriptAspect( TypeScriptAspectConfiguration config )
     {
-        _tsConfig = config;
         _deferedSave = config.DeferFileSave ? new List<TypeScriptContext>() : null;
         _runContexts = new List<TypeScriptContext>();
     }
@@ -43,18 +41,24 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
         var basePath = c.BasePath;
         if( !basePath.IsRooted ) Throw.InvalidOperationException( $"EngineConfiguration.BasePath '{basePath}' must be rooted." );
 
-        var allBinPathConfigurations = c.BinPaths.SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? Enumerable.Empty<TypeScriptBinPathAspectConfiguration>() )
+        var allBinPathConfigurations = c.BinPaths.SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations ?? [] )
                                         .ToList();
         for( int i = 0; i < allBinPathConfigurations.Count; i++ )
         {
             TypeScriptBinPathAspectConfiguration ts = allBinPathConfigurations[i];
+
             if( !KeepValidTargetProjectPath( monitor, basePath, ts ) )
             {
                 allBinPathConfigurations.RemoveAt( i-- );
             }
             else
             {
-                CompleteActiveCultureSet( ts );
+                // Ugly... Should we implement a NormalizedFolderPath?
+                var normalizedBarrels = ts.Barrels.Select( NormalizeFolderPath ).ToList();
+                ts.Barrels.Clear();
+                ts.Barrels.AddRange( normalizedBarrels );
+                // Ensures that the DefaultCulture appears in the ActiveCultures.
+                ts.ActiveCultures.Add( ts.DefaultCulture );
             }
         }
         return CheckPathOrTypeScriptSetDuplicate( monitor, allBinPathConfigurations );
@@ -148,35 +152,23 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             return success;
         }
 
-        static void CompleteActiveCultureSet( TypeScriptBinPathAspectConfiguration ts )
+        static string NormalizeFolderPath( string p )
         {
-            ts.ActiveCultures.Add( NormalizedCultureInfo.CodeDefault );
-            List<NormalizedCultureInfo>? missing = null;
-            foreach( var culture in ts.ActiveCultures )
+            if( p.Length > 0 )
             {
-                foreach( var parent in culture.Fallbacks )
+                p = p.Replace( '\\', '/' );
+                if( p[0] == '/' )
                 {
-                    if( !ts.ActiveCultures.Contains( parent ) )
-                    {
-                        missing ??= new List<NormalizedCultureInfo>();
-                        missing.Add( parent );
-                    }
+                    if( p.Length == 1 ) return string.Empty;
+                    p = p.Substring( 1, p.Length - 1 );
                 }
+                if( p[^1] == '/' ) return p;
+                return p + '/';
             }
-            if( missing != null )
-            {
-                foreach( var m in missing )
-                {
-                    ts.ActiveCultures.Add( m );
-                    foreach( var f in m.Fallbacks )
-                    {
-                        ts.ActiveCultures.Add( f );
-                    }
-                }
-            }
+            return p;
         }
-    }
 
+    }
 
     bool IStObjEngineAspect.OnSkippedRun( IActivityMonitor monitor ) => true;
 
@@ -236,6 +228,50 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
         var configs = binPath.ConfigurationGroup.SimilarConfigurations
                                     .SelectMany( c => c.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
                                                         ?? [] );
+
+        // All this initialization stuff must be deeply refactored to only use the new EngineAttribute model (instead of
+        // the old IAttributeContextBound/ContextBoundDelegationAttribute/ITypeAttributesCache).
+        //
+        // This is not an easy task, for instance RegisterTypeScriptTypeAttribute specializes RegisterPocoTypeAttribute defined in CK.StObj.Model.
+        // But before waiting for a new "perfect" core, we can try a first baby-step that is to focus on TypesScriptGroup/Package.
+        //
+        // The TypeScriptGroupAttribute and TypeScriptPackageAttribute must no more be ContextBoundDelegationAttribute but EnginAttribute.
+        // They must be discovered from the binPath.ConfigurationGroup.TypeSet that is the seed (and no more from the ITypeAttributesCache).
+
+        // Once this first refactor done, we may handle the "Type selector" issue that is the TypeScriptBinPathConfiguration.Types configuration
+        // that defines the TypeScriptTypes and the IPoco type set.
+        // Today, TypeScriptBinPathConfiguration.Types associates a Type to a nullable TypeScriptTypeAttribute. When nul, it means
+        // "consider this type". We need more here: the fact that a Type that is an optional TypeScriptGroup/Package can be specified
+        // to be required. A rather fundamental enum should be defined: RegistrationTypeKind { Regular, Optional, Required, Excluded }
+        // (values are ordered here). Excluded is here again a "soft exclusion": the type will not appear in the set of types to process
+        // (strong exclusion should use "Forbidden" term).
+        // The TypeScriptBinPathConfiguration.Types should be a Dictionary<Type,(RegistrationTypeKind,TypeScriptTypeAttribute?)>. Not fancy
+        // but may be better that creating a specialized TypeScriptTypeAttribute (Xml read/write will extract the RegistrationKind Xml attribute
+        // from the same Xml Element).
+        // This new RegistrationTypeKind applies to the TypeScriptGroup/Package. For IPoco, this is less obvious but for external types
+        // (the C# types that must be associated to a TSCodeGenerator) this may apply.
+        //
+        // This future Dictionary<Type,(RegistrationTypeKind,TypeScriptTypeAttribute?)> should handle "Type globbing"...
+        // The idea is that we should be able to write:
+        //   <Type Name="*, CK.IO.Actor" ... /> => All types from CK.IO.Actor dll.
+        //   <Type Name="CK.IO.*, SomeDll" ... /> Types in the namespace CK.IO in SomeDll dll.
+        // Should we allow * in the assembly name? May be. And the '*' assembly? May be not!
+        // (the '?' should be supported for the sake of coherency even if it will be barely used...)
+        //
+        // Such types will be intersected by the binPath.ConfigurationGroup.TypeSet. This "type selector" is a generic pattern.
+        // It should be implemented in the GlobalTypeCache:
+        // GlobalTypeCache.GetGlobbedTypes( ReadOnlySpan<char> pattern, IReadOnlySet<ICachedType>? allowed ) => IEnumerable<ICachedType>
+        //
+        // (Note: being able to provide the allowed types to this method is for performance: result will be filtered early instead of
+        // having futher intersect. Moreover, when providing no restricting set, what is the behavior? Should this implicitely
+        // applies to the current cached types - as if GlobalTypeCache : IReadOnlySet<ICachedType> - or should this acts as a "load cache"?)
+        //
+        // One last issue will be to handle the RegistrationTypeKind and TypeScriptTypeAttribute merging.
+        // For RegistrationTypeKind, this should be easy: the values are ordered, the strongest wins.
+        // For TypeScriptTypeAttribute this is far more problematic. Let's say that a glob pattern forbids any TypeScriptTypeAttribute.
+        //
+
+
         // Avoid creating one immutable lib per BinPath.
         // cachedKey is the last one.
         TypeScriptAspectConfiguration? cachedKey = null;
@@ -273,7 +309,7 @@ public class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWithFinaliza
             {
                 // If Json serialization is available, let's get the name map for them.
                 // It the sets differ, build a dedicated name map for it (Note: this cannot be a subset of the names
-                // beacause of anonymous record names that expose their fields).
+                // because of anonymous record names that expose their fields).
                 if( initializer.TypeScriptExchangeableSet.SameContentAs( typeSystem.SetManager.AllExchangeable ) )
                 {
                     exchangeableNames = jsonSerialization.SerializableLayer.SerializableNames;

@@ -3,10 +3,6 @@ import { Signal, signal, WritableSignal } from '@angular/core';
 /**
  * This service requires an explicit parameter: it cannot be Injectable,
  * we need a Provider to instantiate it.
- *
- * The DemoNgModule handles this registration thanks to the [NgProviderImport] and
- * [NgProvider] attributes.
- * 
  */
 export class SomeAuthService {
 

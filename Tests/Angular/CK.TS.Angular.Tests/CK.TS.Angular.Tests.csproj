@@ -4,21 +4,23 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Nunit" Version="13.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="CK.Testing.Nunit" Version="14.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
   </ItemGroup>
-  <!--
-    Project references don't propagate build (transitive or not) NuGet files.
-    We need to reference them explicitly.        
-    -->
-  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.props" />
-  <Import Project="../../../CK.EmbeddedResources.Abstractions/MSBuild/CK.EmbeddedResources.Abstractions.targets" />
   <ItemGroup>
     <EmbeddedResource Remove="TSInlineTests/**" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\CK.Ng.Localization\CK.Ng.Localization.csproj" />
+    <ProjectReference Include="..\..\..\CK.Ng.PublicPage\CK.Ng.PublicPage.csproj" />
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="CK.Ng.AspNet.Auth\PasswordLost\Res[After]\" />
+    <Folder Include="CK.Ng.PublicSection\Res\SomeFolder\" />
+    <Folder Include="CK.Ng.Zorro\Res\" />
+    <Folder Include="TSInlineTests\" />
   </ItemGroup>
 </Project>

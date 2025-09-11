@@ -1,7 +1,6 @@
 using CK.Setup;
 using CK.TypeScript.Tests.EmptyCodeGeneratorTypeSample;
 using CK.Testing;
-using Shouldly;
 using NUnit.Framework;
 using System;
 using System.IO;

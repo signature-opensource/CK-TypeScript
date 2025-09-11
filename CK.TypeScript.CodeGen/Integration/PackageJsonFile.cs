@@ -375,7 +375,16 @@ public sealed class PackageJsonFile
             }
             root["devDependencies"] = deps[0];
             root["dependencies"] = deps[1];
-            root["peerDependencies"] = deps[2];
+            // Yarn doesn't write the "peerDependencies" when it is empty.
+            // We do the same here to avoid commit pollution.
+            if( deps[2].Count == 0 )
+            {
+                root.AsObject().Remove( "peerDependencies" );
+            }
+            else
+            {
+                root["peerDependencies"] = deps[2];
+            }
         }
     }
 

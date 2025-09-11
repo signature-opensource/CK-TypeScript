@@ -125,7 +125,12 @@ public sealed partial class TSTypeManager
     public ITSType? FindByTypeName( string typeName ) => _types.GetValueOrDefault( typeName );
 
     /// <summary>
-    /// Registers a new mapping from C# type to <see cref="ITSType"/> mapping.
+    /// Gets all the <see cref="ITSDeclaredFileType"/>.
+    /// </summary>
+    public IEnumerable<ITSDeclaredFileType> DeclaredTypes => _allTypes.OfType<ITSDeclaredFileType>();
+
+    /// <summary>
+    /// Registers a new mapping from C# type to <see cref="ITSType"/>.
     /// This throws a <see cref="ArgumentException"/> if the key is already mapped.
     /// <para>
     /// It is often easier to use <see cref="TypeScriptFolder.FindOrCreateTypeScriptFile(NormalizedPath)"/> and then
@@ -326,7 +331,7 @@ public sealed partial class TSTypeManager
             var defName = e.TypeName != e.DefaultTypeName
                             ? $" (using explicit type name '{e.TypeName}' instead of default '{e.DefaultTypeName}')"
                             : null;
-            monitor.Trace( $"Type '{t:C}' will be generated in '{folder.Path}/{file.Name}'{defName}." );
+            monitor.Trace( $"Type '{t:C}' will be generated in '{folder.Path}{file.Name}'{defName}." );
         }
         if( t.IsEnum )
         {

@@ -1,0 +1,21 @@
+<ng-container *appResponsive="'(max-width: 1024px)'">
+    <img [src]="displayedLogoSrc" class="ck-login-logo" priority alt />
+</ng-container>
+
+<div class="ck-login-welcome">
+    <span class="header">{{ 'Login.Welcome' | translate }}</span>
+    <span class="sub">{{ 'Login.HeaderSubTitle' | translate }}</span>
+</div>
+
+<div class="ck-login-providers">
+    @for ( p of sortedProviders; track p ) {
+        @if ( p === 'Basic' ) {
+            <!-- <BasicLogin /> -->
+        } @else {
+            <button nz-button nzType="default" class="ck-login-provider-btn" (click)="loginWithProvider( p )">
+                <img class="ck-login-provider-logo" [src]="getProviderLogoSrc( p )" />
+                <span class="ck-login-provider">{{ 'Login.ExternalProvider.ButtonLabel' | translate }} {{ getProviderName(p) }}</span>
+            </button>
+        }
+    }
+</div>

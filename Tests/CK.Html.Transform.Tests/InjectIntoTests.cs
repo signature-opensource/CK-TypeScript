@@ -1,0 +1,168 @@
+using CK.Transform.Core;
+using NUnit.Framework;
+using Shouldly;
+using static CK.Testing.MonitorTestHelper;
+
+namespace CK.Html.Transform.Tests;
+
+[TestFixture]
+public class InjectIntoTests
+{
+    [TestCase( "n°1",
+        """
+        some html... 
+        <hr>
+        <div>
+            <!--<FirstInjectionPointEver/>-->
+        </div>
+        ...text.
+        """,
+        """"
+        create <html> transformer
+        begin
+            inject """
+
+                   First injection ever...
+
+                   """ into <FirstInjectionPointEver>;
+        end
+        """",
+        """
+        some html... 
+        <hr>
+        <div>
+            <!--<FirstInjectionPointEver>-->
+            First injection ever...
+            <!--</FirstInjectionPointEver>-->
+        </div>
+        ...text.
+        """
+        )]
+    [TestCase( "n°2",
+        """
+        <!--<FirstInjectionPointEver>-->
+        <!--</FirstInjectionPointEver>-->
+        TEXT
+        """,
+        """"
+        create <html> transformer
+        begin
+            inject """
+                   Injection n°1...
+        
+                   """ into <FirstInjectionPointEver>;
+            inject """
+                   Injection n°2...
+        
+                   """ into <FirstInjectionPointEver>;
+                end
+        """",
+        """
+        <!--<FirstInjectionPointEver>-->
+        Injection n°1...
+        Injection n°2...
+        <!--</FirstInjectionPointEver>-->
+        TEXT
+        """
+        )]
+    [TestCase( "n°3",
+        """
+        TEXT
+        <!--<FirstInjectionPointEver revert />-->
+        """,
+        """"
+        create <html> transformer
+        begin
+            inject """
+                   Injection n°1...
+        
+                   """ into <FirstInjectionPointEver>;
+            inject """
+                   Injection n°2...
+        
+                   """ into <FirstInjectionPointEver>;
+                end
+        """",
+        """
+        TEXT
+        <!--<FirstInjectionPointEver revert>-->Injection n°2...
+        Injection n°1...
+        <!--</FirstInjectionPointEver>-->
+        """
+        )]
+    [TestCase( "n°4",
+        """
+        TEXT
+        <!-- <HERE />-->
+        """,
+        """"
+        create <html> transformer
+        begin
+            inject """
+
+                   <fa-icon [icon]="ytIcon" class="icon" />
+        
+                   """ into <HERE>;
+        end
+        """",
+        """
+        TEXT
+        <!--<HERE >-->
+        <fa-icon [icon]="ytIcon" class="icon" />
+        <!--</HERE>-->
+        """
+        )]
+    [TestCase( "n°5",
+        """
+        TEXT
+        <!-- <HERE />-->
+        """,
+        """"
+        create <html> transformer
+        begin
+            inject """
+
+                   <fa-icon [icon]="ytIcon" class="icon" ></fa-icon>
+        
+                   """ into <HERE>;
+        end
+        """",
+        """
+        TEXT
+        <!--<HERE >-->
+        <fa-icon [icon]="ytIcon" class="icon" ></fa-icon>
+        <!--</HERE>-->
+        """
+        )]
+    [TestCase( "n°6",
+        """
+        <router-outlet />
+        """,
+        """"
+        create <html> transformer
+        begin
+            insert """
+                   <div>
+                   <button nz-button nzType="primary" routerLink="/auth">
+                                  {{ 'Button.GoToLogin' | translate }}
+                   </button>
+                   </div>
+ 
+                   """ before "<router-outlet />";
+        end
+        """",
+        """
+        <div>
+        <button nz-button nzType="primary" routerLink="/auth">
+                       {{ 'Button.GoToLogin' | translate }}
+        </button>
+        </div>
+        <router-outlet />
+        """
+        )]
+    public void first_injection_ever( string title, string source, string transformer, string result )
+    {
+        var h = new TransformerHost( new HtmlLanguage() );
+        h.ApplyAndCheck( source, transformer, result );
+    }
+}

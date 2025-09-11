@@ -5,7 +5,7 @@ namespace CK.TypeScript.Tests.CrisLike;
 /// <summary>
 /// Simple command.
 /// </summary>
-[TypeScript( Folder = "Cmd/Some" )]
+[TypeScriptType( Folder = "Cmd/Some" )]
 public interface ISimpleCommand : ICommand
 {
     /// <summary>

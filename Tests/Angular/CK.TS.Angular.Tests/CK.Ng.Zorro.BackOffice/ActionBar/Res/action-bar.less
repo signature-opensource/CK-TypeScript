@@ -1,0 +1,36 @@
+.ck-backoffice-action-bar {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ck-action-bar-left-buttons {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    font-weight: @font-weight-bold;
+    text-decoration: dashed;
+}
+
+.ck-action-bar-right-buttons {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.ck-backoffice-action-bar-button {
+    display: flex;
+    align-items: center;
+
+    .button-span {
+        @media (max-width: @screen-md-max) {
+            display: none;
+        }
+    }
+
+    .button-icon {
+        margin-right: @ck-action-bar-button-icon-right-margin;
+    }
+}

@@ -50,13 +50,4 @@ public sealed class TypeScriptImportLibraryAttribute : ContextBoundDelegationAtt
     /// of the packgage.json the dependency should appear.
     /// </summary>
     public DependencyKind DependencyKind { get; }
-
-    /// <summary>
-    /// Gets or sets whether the library should be considered even if no type are imported from it.
-    /// <para>
-    /// Default to false: by default for a library to appear in the /ck-gen/package.json, it must be used (and this is
-    /// fine for almost all scenario).
-    /// </para>
-    /// </summary>
-    public bool ForceUse { get; set; }
 }
