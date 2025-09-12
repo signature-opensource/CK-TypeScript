@@ -4,7 +4,7 @@
     <RootNamespace>CK.AspNet.Auth</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="28.0.0" />
+    <PackageReference Include="CK.AspNet.Auth" Version="28.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
