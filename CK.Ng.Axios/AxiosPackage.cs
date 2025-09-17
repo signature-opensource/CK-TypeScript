@@ -13,6 +13,6 @@ namespace CK.Ng.Axios;
 [NgProviderImport( "AXIOS" )]
 [NgProviderImport( "default axios, AxiosInstance", From = "axios" )]
 [NgProvider( "{ provide: AXIOS, useValue: axios.create() }" )]
-public class TSPackage : TypeScriptPackage
+public class AxiosPackage : TypeScriptPackage
 {
 }

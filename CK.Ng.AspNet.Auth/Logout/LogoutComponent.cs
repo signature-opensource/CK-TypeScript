@@ -4,7 +4,7 @@ using CK.TS.Angular;
 namespace CK.Ng.AspNet.Auth;
 
 [NgRoutedComponent<AuthenticationPageComponent>( RegistrationMode = RouteRegistrationMode.Lazy )]
-[Package<TSPackage>]
+[Package<AspNetAuthPackage>]
 public sealed class LogoutComponent : NgRoutedComponent
 {
 }
