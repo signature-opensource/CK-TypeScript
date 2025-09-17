@@ -1,10 +1,11 @@
 using CK.Core;
+using CK.Ng.Zorro;
 using CK.TypeScript;
 
 namespace CK.Ng.AspNet.Auth.Basic;
 
 [TypeScriptPackage]
-[Requires<AspNetAuthPackage, CK.Ng.Zorro.ZorroPackage>]
+[Requires<AspNetAuthPackage, ZorroPackage>]
 public class AspNetAuthBasicPackage : TypeScriptPackage
 {
 }
