@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
-    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Release/net8.0/CK.TypeScript.LiveEngine.dll\""
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\""
   },
   "prettier": {
     "printWidth": 100,
@@ -45,19 +45,19 @@
     "zone.js": "~0.15"
   },
   "devDependencies": {
-    "@angular/build": "^20.3",
-    "@angular/cli": "^20.3",
+    "@angular/build": "^20.3.1",
+    "@angular/cli": "^20.3.1",
     "@angular/compiler-cli": "^20.3",
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.6.2",
-    "@types/node": "^24.3.1",
+    "@types/node": "^24.5.1",
     "axios": "^1.7.7",
     "jest": "^30.1.3",
     "jest-environment-jsdom": "^30.1.2",
     "jest-preset-angular": "^15",
     "jest-util": "^30.0.5",
     "less": "^4.4.1",
-    "ts-jest": "^29.4.1",
+    "ts-jest": "^29.4.2",
     "typescript": "~5.9.2"
   },
   "ckVersion": 1,
