@@ -9,7 +9,7 @@ import { SomeAuthService } from '../SomeAuthService';
     templateUrl: './login.html',
     styleUrl: './login.less'
 })
-export class LoginComponent {
+export class Login {
 
     readonly authService = inject(SomeAuthService);
 

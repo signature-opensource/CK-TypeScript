@@ -19,7 +19,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
     ],
     templateUrl: './login.html'
 })
-export class LoginComponent implements OnInit {
+export class Login implements OnInit {
     // <PreDependencyInjection revert />
     readonly #authService = inject(NgAuthService);
     readonly #router = inject(Router);

@@ -14,7 +14,7 @@ import { NgAuthService } from '@local/ck-gen/CK/Ng/AspNet/Auth/NgAuthService';
     imports: [FontAwesomeModule, TranslateModule, NzAvatarModule, NzDividerModule, NzDropDownModule],
     templateUrl: './user-info-box.html'
 } )
-export class UserInfoBoxComponent {
+export class UserInfoBox {
     // <PreDependencyInjection revert />
     readonly #authService = inject( NgAuthService );
     readonly #router = inject( Router );

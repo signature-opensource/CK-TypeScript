@@ -21,7 +21,7 @@ import { ResponsiveDirective } from '@local/ck-gen';
     ],
     templateUrl: './authentication-page.html'
 } )
-export class AuthenticationPageComponent {
+export class AuthenticationPage {
     // <PreDependencyInjection revert />
     readonly #route = inject(ActivatedRoute);
     // <PostDependencyInjection />

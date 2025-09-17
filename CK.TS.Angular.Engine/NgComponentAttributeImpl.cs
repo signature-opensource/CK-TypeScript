@@ -18,6 +18,7 @@ namespace CK.TS.Angular.Engine;
 public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
     readonly string _snakeName;
+    readonly string _typeScriptName;
 
     /// <summary>
     /// Initializes a new <see cref="NgComponentAttributeImpl"/>.
@@ -32,11 +33,11 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         {
             monitor.Error( $"[NgComponent] can only decorate a NgComponent: '{type:N}' is not a NgComponent." );
         }
-        _snakeName = CheckComponentName( monitor, type, "Component" );
+        (_snakeName, _typeScriptName) = CheckComponentName( monitor, type, "Component" );
         SetTypeScriptFolder( TypeScriptFolder.AppendPart( _snakeName ) );
     }
 
-    internal static string CheckComponentName( IActivityMonitor monitor, Type type, string kind )
+    internal static (string Snake, string TypeScript) CheckComponentName( IActivityMonitor monitor, Type type, string kind )
     {
         if( !type.IsSealed )
         {
@@ -51,13 +52,8 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         {
             n = n.Substring( 0, n.Length - kind.Length );
         }
-        return ToSnakeCase().Replace( n, "$1-$2" ).ToLowerInvariant();
+        return (ToSnakeCase().Replace( n, "$1-$2" ).ToLowerInvariant(), n);
     }
-
-    /// <summary>
-    /// Gets the component name that is the C# <see cref="TypeScriptGroupOrPackageAttributeImpl.DecoratedType"/> name (with the "Component" suffix).
-    /// </summary>
-    public string ComponentName => DecoratedType.Name;
 
     /// <summary>
     /// Gets the component name (snake-case) without "component" suffix.
@@ -73,6 +69,11 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     /// Gets the attribute.
     /// </summary>
     public new NgComponentAttribute Attribute => Unsafe.As<NgComponentAttribute>( base.Attribute );
+
+    /// <summary>
+    /// Gets the typescript type name (without "Component" suffix).
+    /// </summary>
+    public string TypeScriptName => _typeScriptName;
 
     /// <summary>
     /// Overridden to skip the <see cref="IsAppComponent"/>.
@@ -192,7 +193,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
             return false;
         }
         var file = context.Root.Root.FindOrCreateResourceFile( res, TypeScriptFolder.AppendPart( fName ) );
-        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( ComponentName );
+        ITSDeclaredFileType tsType = Unsafe.As<ResourceTypeScriptFile>( file ).DeclareType( TypeScriptName );
         return base.OnResPackageAvailable( monitor, context, spaceData, package )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }

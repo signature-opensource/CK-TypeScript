@@ -11,7 +11,7 @@ import { NzResultModule } from 'ng-zorro-antd/result';
   imports: [NzButtonModule, NzResultModule, TranslateModule],
   templateUrl: './logout.html'
 } )
-export class LogoutComponent {
+export class Logout {
   // <PreDependencyInjection revert />
   readonly #authService = inject( AuthService );
   readonly #router = inject( Router );

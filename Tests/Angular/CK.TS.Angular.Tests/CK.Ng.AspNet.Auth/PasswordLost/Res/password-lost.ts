@@ -8,6 +8,6 @@ import { RouterLink } from '@angular/router';
     templateUrl: './password-lost.html',
     styleUrl: './password-lost.less'
 })
-export class PasswordLostComponent {
+export class PasswordLost {
 
 }

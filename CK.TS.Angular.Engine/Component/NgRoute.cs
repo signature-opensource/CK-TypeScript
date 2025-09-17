@@ -92,19 +92,19 @@ class NgRoute
             if( comp.Attribute.RegistrationMode == RouteRegistrationMode.None )
             {
                 routes.Imports.Import( c._tsType );
-                body.Append( ", component: " ).Append( comp.ComponentName );
+                body.Append( ", component: " ).Append( comp.TypeScriptName );
             }
             else
             {
                 var f = c._tsType.File;
                 body.Append( ", loadComponent: () => import( " )
                     .AppendSourceString( routes.Folder.GetRelativePathTo( f.Folder ).AppendPart( f.Name.Remove( f.Name.Length - 3 ) ) )
-                    .Append( " ).then( c => c." ).Append( comp.ComponentName ).Append( " )" );
+                    .Append( " ).then( c => c." ).Append( comp.TypeScriptName ).Append( " )" );
             }
             if( c.HasChildren )
             {
                 Throw.DebugAssert( c is NgRouteWithRoutes );
-                var routesNames = $"r{comp.ComponentName}";
+                var routesNames = $"r{comp.TypeScriptName}";
                 body.Append( ", children: " ).Append( routesNames ).NewLine();
                 var r = ((NgRouteWithRoutes)c);
                 routes.Imports.ImportFromFile( r.RoutesFile, $"default {routesNames}" );

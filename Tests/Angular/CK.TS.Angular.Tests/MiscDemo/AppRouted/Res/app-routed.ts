@@ -8,6 +8,6 @@ import { RouterOutlet } from '@angular/router';
     templateUrl: './app-routed.html',
     styleUrl: './app-routed.less'
 })
-export class AppRoutedComponent {
+export class AppRouted {
 
 }

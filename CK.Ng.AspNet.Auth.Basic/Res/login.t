@@ -9,11 +9,11 @@ end
 
 create <ts> transformer
 begin
-    ensure import { BasicLoginFormComponent } from '../Basic/basic-login-form/basic-login-form';
+    ensure import { BasicLoginForm } from '../Basic/basic-login-form/basic-login-form';
 
     in after "@Component" 
         in first {^braces}
             in after "imports:"
                 in first {^[]}
-                    replace "TranslateModule" with "TranslateModule, BasicLoginFormComponent";
+                    replace "TranslateModule" with "TranslateModule, BasicLoginForm";
 end

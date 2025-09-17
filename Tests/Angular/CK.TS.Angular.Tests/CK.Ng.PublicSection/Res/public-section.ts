@@ -7,5 +7,5 @@ import { Component } from '@angular/core';
     templateUrl: './public-section.html',
     styleUrl: './public-section.less'
 })
-export class PublicSectionComponent {
+export class PublicSection {
 }
