@@ -14,7 +14,7 @@ namespace CK.Ng.AspNet.Auth;
 /// </para>
 /// </summary>
 [TypeScriptPackage]
-[Requires<CK.AspNet.Auth.TSPackage, CK.Ng.Axios.AxiosPackage, CK.Ng.Zorro.ZorroPackage>]
+[Requires<CK.AspNet.Auth.AspNetAuthPackage, CK.Ng.Axios.AxiosPackage, CK.Ng.Zorro.ZorroPackage>]
 [NgProviderImport( "inject", From = "@angular/core" )]
 [NgProviderImport( "AXIOS, AuthService" )]
 [NgProviderImport( "AxiosInstance", From = "axios" )]

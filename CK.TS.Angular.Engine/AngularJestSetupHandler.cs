@@ -126,6 +126,7 @@ sealed class AngularJestSetupHandler : TypeScriptIntegrationContext.JestSetupHan
             monitor.Info( "Replacing 'jasmine' with 'jest' in tsconfig.spec.json file." );
             specConfig.CompilerOptionsTypes.Remove( "jasmine" );
             specConfig.CompilerOptionsTypes.Add( "jest" );
+            specConfig.CompilerOptionsTypes.Add( "node" );
             specConfig.Save();
         }
     }
