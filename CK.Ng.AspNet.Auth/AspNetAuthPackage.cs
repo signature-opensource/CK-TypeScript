@@ -17,7 +17,6 @@ namespace CK.Ng.AspNet.Auth;
 [Requires<CK.AspNet.Auth.AspNetAuthPackage, CK.Ng.Axios.AxiosPackage, CK.Ng.Zorro.ZorroPackage>]
 [NgProviderImport( "inject", From = "@angular/core" )]
 [NgProviderImport( "AXIOS, AuthService" )]
-[NgProviderImport( "AxiosInstance", From = "axios" )]
 [NgProviderImport( "provideNgAuthSupport", From = "@local/ck-gen/CK/Ng/AspNet/Auth/auth-service-support" )]
 [NgProvider( "{ provide: AuthService, useFactory: () => new AuthService( inject( AXIOS ) ) }" )]
 [NgProvider( "provideNgAuthSupport()", "#Support" )]
