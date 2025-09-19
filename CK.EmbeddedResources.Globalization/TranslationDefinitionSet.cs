@@ -62,7 +62,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     /// </summary>
     public FinalTranslationSet? ToInitialFinalSet( IActivityMonitor monitor )
     {
-        var rootTranslations = CreateInitialTranslations( monitor, this );
+        var rootTranslations = CreateFinalTranslations( monitor, this, isInitialSet: true );
         bool success = rootTranslations != null;
         var subSets = new IFinalTranslationSet[_subDefs.Length];
         for( int i = 1; i < subSets.Length; ++i )
@@ -70,7 +70,7 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
             var def = _subDefs[i];
             if( def != null )
             {
-                var translations = CreateInitialTranslations( monitor, def );
+                var translations = CreateFinalTranslations( monitor, def, isInitialSet: true );
                 if( translations != null )
                 {
                     subSets[i] = new FinalTranslationSet.SubSet( def.Culture, translations, isAmbiguous: false );
@@ -87,19 +87,23 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
 
     }
 
-    static Dictionary<string, FinalTranslationValue>? CreateInitialTranslations( IActivityMonitor monitor,
-                                                                                 ITranslationDefinitionSet definition )
+    static Dictionary<string, FinalTranslationValue>? CreateFinalTranslations( IActivityMonitor monitor,
+                                                                               ITranslationDefinitionSet definition,
+                                                                               bool isInitialSet )
     {
-        var buggyOverrides = definition.Translations.Where( kv => kv.Value.Override is ResourceOverrideKind.Regular );
-        if( buggyOverrides.Any() )
+        if( isInitialSet )
         {
-            monitor.Error( $"""
+            var buggyOverrides = definition.Translations.Where( kv => kv.Value.Override is ResourceOverrideKind.Regular );
+            if( buggyOverrides.Any() )
+            {
+                monitor.Error( $"""
                     Invalid initial set of translation definitions {definition.Origin}.
                     No translation can be defined as regular override ("O:"). Only optional ("O?" - that will be skipped) and always ("O!:" - that will be kept) are allowed.
                     The following resources are regular override definitions:
                     {buggyOverrides.Select( kv => kv.Key ).Concatenate()}
                     """ );
-            return null;
+                return null;
+            }
         }
         var result = new Dictionary<string, FinalTranslationValue>( definition.Translations.Count );
         foreach( var (key, def) in definition.Translations )
@@ -122,61 +126,50 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="baseSet">The base set to consider.</param>
+    /// <param name="baseFinalSet">The base set to consider.</param>
     /// <returns>A final set or null on error.</returns>
-    public FinalTranslationSet? Combine( IActivityMonitor monitor, FinalTranslationSet baseSet )
+    public FinalTranslationSet? Combine( IActivityMonitor monitor, FinalTranslationSet baseFinalSet )
     {
-        Throw.CheckArgument( baseSet.Culture == Culture );
-        var (rootTranslations, isAmbiguous) = CombineTranslations( monitor, this, baseSet, isRoot: true );
+        Throw.CheckArgument( baseFinalSet.Culture == Culture );
+        var (rootTranslations, isAmbiguous) = CombineTranslations( monitor, this, baseFinalSet, isRoot: true );
         bool success = rootTranslations != null;
 
-        var clonedChanged = false;
-        var cloned = baseSet.CloneSubSets();
-        for( int i = 1; i < cloned.Length; ++i )
+        IFinalTranslationSet[]? cloned = null;
+        for( int i = 1; i < baseFinalSet._subSets.Length; ++i )
         {
-            var clonedSet = cloned[i];
+            var baseSet = baseFinalSet._subSets[i];
             var def = _subDefs[i];
             if( def == null )
             {
-                if( clonedSet != null )
+                if( baseSet != null )
                 {
-                    isAmbiguous |= clonedSet.IsAmbiguous;
+                    isAmbiguous |= baseSet.IsAmbiguous;
                 }
             }
             else
             {
-                if( clonedSet == null )
+                // If the baseFinalSet has no definition for this specific culture, we must use
+                // the closest culture that has a set defined.
+                baseSet ??= baseFinalSet.FindTranslationSetOrParent( def.Culture );
+                // We can now combine our definitions with the base set.
+                var (t, a) = CombineTranslations( monitor, def, baseSet, isRoot: false );
+                success &= t != null;
+                if( success && (t != baseSet.Translations || a != baseSet.IsAmbiguous) )
                 {
-                    var t = CreateInitialTranslations( monitor, def );
-                    success &= t != null;
-                    if( success )
-                    {
-                        Throw.DebugAssert( t != null );
-                        clonedChanged = true;
-                        cloned[i] = new FinalTranslationSet.SubSet( def.Culture, t, isAmbiguous: false );
-                    }
-                }
-                else
-                {
-                    var (t, a) = CombineTranslations( monitor, def, baseSet.RawAt( i )!, isRoot: false );
-                    success &= t != null;
-                    if( success )
-                    {
-                        Throw.DebugAssert( t != null );
-                        clonedChanged = true;
-                        cloned[i] = new FinalTranslationSet.SubSet( def.Culture, t, a );
-                        isAmbiguous |= a;
-                    }
+                    Throw.DebugAssert( t != null );
+                    cloned ??= baseFinalSet.CloneSubSets();
+                    cloned[i] = new FinalTranslationSet.SubSet( def.Culture, t, a );
+                    isAmbiguous |= a;
                 }
             }
         }
         if( success )
         {
-            if( !clonedChanged && rootTranslations == baseSet.Translations )
+            if( cloned == null && rootTranslations == baseFinalSet.Translations )
             {
-                return baseSet;
+                return baseFinalSet;
             }
-            return new FinalTranslationSet( _activeCultures, rootTranslations, cloned, isAmbiguous );
+            return new FinalTranslationSet( _activeCultures, rootTranslations, cloned ?? baseFinalSet.CloneSubSets(), isAmbiguous );
         }
         return null;
     }
@@ -199,10 +192,10 @@ public sealed partial class TranslationDefinitionSet : ITranslationDefinitionSet
                 bool fromInheritance = false;
                 if( !newOne.TryGetValue( key, out var exists ) )
                 {
-                    var p = baseSet.Parent;
+                    var p = baseSet.ClosestParent;
                     while( p != null && !p.Translations.TryGetValue( key, out exists ) )
                     {
-                        p = p.Parent;
+                        p = p.ClosestParent;
                     }
                     fromInheritance = true;
                 }

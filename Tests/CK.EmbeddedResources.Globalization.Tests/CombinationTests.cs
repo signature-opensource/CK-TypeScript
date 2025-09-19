@@ -72,7 +72,7 @@ public class CombinationTests
 
         var agg = f1.Aggregate( f2 );
         var fr = agg.FindTranslationSet( C.Fr ).ShouldNotBeNull();
-        fr.IsAmbiguous.ShouldBeFalse( "Ambiguity is not hierachical." );
+        fr.IsAmbiguous.ShouldBeFalse( "Ambiguity is not hierarchical." );
         fr.Children.ShouldBeEmpty( "Translation sets without translations are not instantiated" );
 
         var frFRA1 = agg.FindTranslationSet( C.FrFRA1 ).ShouldNotBeNull();
@@ -98,13 +98,13 @@ public class CombinationTests
             t.Text.ShouldBe( "It's Yo!" );
         }
 
-        // Resoltion by a regular folder. The 'default.jsonc' must exist, even if it can be empty because
+        // Resolution by a regular folder. The 'default.jsonc' must exist, even if it can be empty because
         // overrides are not actual definitions!
         {
             var pOverride = new CodeGenResourceContainer( "SomeP" );
             pOverride.AddText( "locales/default.jsonc", "{}" );
             pOverride.AddText( "locales/fr-FR-A1.jsonc", """{ "O:Msg": "It's Yo!" }""" );
-            pOverride.LoadTranslations( TestHelper.Monitor, C.ActiveCultures, out var defOverride, "locales", isOverrideFolder: true ).ShouldBeTrue();
+            pOverride.LoadTranslations( TestHelper.Monitor, C.ActiveCultures, out var defOverride, "locales", isOverrideFolder: false ).ShouldBeTrue();
             var fOverride = defOverride.ShouldNotBeNull().Combine( TestHelper.Monitor, agg ).ShouldNotBeNull();
             fOverride.IsAmbiguous.ShouldBeFalse();
             var frFRA1Fixed = fOverride.FindTranslationSet( C.FrFRA1 ).ShouldNotBeNull();
@@ -136,13 +136,11 @@ public class CombinationTests
 
         var fLeft = f1.Aggregate( f2 ).Aggregate( f3 ).Aggregate( f4 ).Aggregate( f5 ).Aggregate( f6 ).Aggregate( f7 );
         fLeft.IsAmbiguous.ShouldBeFalse();
-        fLeft.Parent.ShouldBeNull();
         fLeft.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
         fLeft.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7"], ignoreOrder: true );
 
         var fRight = f7.Aggregate( f6 ).Aggregate( f5 ).Aggregate( f4 ).Aggregate( f3 ).Aggregate( f2 ).Aggregate( f1 );
         fRight.IsAmbiguous.ShouldBeFalse();
-        fRight.Parent.ShouldBeNull();
         fRight.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
         fRight.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7",], ignoreOrder: true );
 
@@ -195,7 +193,6 @@ public class CombinationTests
             var f7 = p7.Combine( TestHelper.Monitor, f6 ).ShouldNotBeNull();
 
             f7.IsAmbiguous.ShouldBeFalse();
-            f7.Parent.ShouldBeNull();
             f7.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
             f7.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7"], ignoreOrder: true );
         }
@@ -210,7 +207,6 @@ public class CombinationTests
             var f1 = p1.Combine( TestHelper.Monitor, f2 ).ShouldNotBeNull();
 
             f1.IsAmbiguous.ShouldBeFalse();
-            f1.Parent.ShouldBeNull();
             f1.Translations.Keys.ShouldBe( ["K1", "K2", "K3", "K4", "K5", "K7",], ignoreOrder: true );
             f1.Children.Single().Translations.Keys.ShouldBe( ["K1", "K3", "K5", "K7"], ignoreOrder: true );
         }
@@ -228,4 +224,34 @@ public class CombinationTests
         return translations;
     }
 
+    [Test]
+    public void Override_in_specific_culture_doesnt_require_root_definition()
+    {
+        var zorro = new CodeGenResourceContainer( "Zorro" );
+        zorro.AddText( "locales/default.jsonc", """{ "Button.Confirm": "Confirm" }""" );
+        zorro.AddText( "locales/fr.jsonc", """{ "Button.Confirm": "Confirmer" }""" );
+        zorro.LoadTranslations( TestHelper.Monitor, C.ActiveCultures, out var zorroDefinition, "locales" ).ShouldBeTrue();
+        var zorroSet = zorroDefinition.ShouldNotBeNull().ToInitialFinalSet( TestHelper.Monitor ).ShouldNotBeNull();
+
+        // Without Component:
+        {
+            zorroSet.FindTranslationSet( C.FrFR ).ShouldBeNull();
+            var s = zorroSet.FindTranslationSetOrParent( C.FrFR ).ShouldNotBeNull();
+            s.Translations["Button.Confirm"].Text.ShouldBe( "Confirmer" );
+        }
+
+        var component = new CodeGenResourceContainer( "Component" );
+        component.AddText( "locales/default.jsonc", """{ }""" );
+        component.AddText( "locales/fr-fr.jsonc", """{ "O:Button.Confirm": "Confirmer !" }""" );
+        component.LoadTranslations( TestHelper.Monitor, C.ActiveCultures, out var componentDefinition, "locales" ).ShouldBeTrue();
+        var componentSet = componentDefinition.ShouldNotBeNull().Combine( TestHelper.Monitor, zorroSet ).ShouldNotBeNull();
+
+        // With Component:
+        {
+            var s = componentSet.FindTranslationSet( C.FrFR ).ShouldNotBeNull();
+            s.Translations["Button.Confirm"].Text.ShouldBe( "Confirmer !" );
+            s.ClosestParent.ShouldNotBeNull().Culture.Culture.Name.ShouldBe( "fr" );
+            s.ClosestParent.Translations["Button.Confirm"].Text.ShouldBe( "Confirmer" );
+        }
+    }
 }

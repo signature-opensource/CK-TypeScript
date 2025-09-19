@@ -120,7 +120,7 @@ public static class ResourceContainerGlobalizationExtension
                 success = false;
                 continue;
             }
-            var cName = Path.GetFileNameWithoutExtension( o.FullResourceName.AsSpan().ToString() );
+            var cName = Path.GetFileNameWithoutExtension( o.FullResourceName );
             if( !NormalizedCultureInfo.IsValidCultureName( cName ) )
             {
                 monitor.Error( $"Invalid '{o}'. Name '{cName}' is not a BCP47 compliant culture name." );
@@ -168,8 +168,8 @@ public static class ResourceContainerGlobalizationExtension
                 {
                     // When a key overrides an entry, it overrides a key defined in another component.
                     // The fact that "fr-FR" overrides the "Super.EvenBetter.Text" key does NOT mean that
-                    // this key must also be defined as an override in the "default.json" file: it has to be defined
-                    // in the final merged set by a lower-level component. Override handling is done by the FinalSet,
+                    // this key must also be defined as an override in the "default.jsonc" file: it has to be defined
+                    // in the final merged set by a lower-level component. Override handling is done by the FinalTranslationSet,
                     // not here.
                     if( kv.Value.Override == ResourceOverrideKind.None && !root.Translations.ContainsKey( kv.Key ) )
                     {

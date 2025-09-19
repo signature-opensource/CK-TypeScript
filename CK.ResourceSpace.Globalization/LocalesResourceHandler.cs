@@ -196,21 +196,12 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         {
             foreach( var c in final.Culture.ActiveCultures.AllActiveCultures )
             {
-                var set = final.FindTranslationSet( c );
-                var translations = set == null
-                                    ? null
-                                    : rootPropagated
+                var set = final.FindTranslationSetOrParent( c );
+                var translations = rootPropagated
                                         ? set.RootPropagatedTranslations
                                         : set.Translations;
                 var fPath = $"{c.Culture.Name}.json";
-                if( translations == null )
-                {
-                    target.Write( fPath, "{}" );
-                }
-                else
-                {
-                    WriteJson( target, fPath, translations, sortKeys );
-                }
+                WriteJson( target, fPath, translations, sortKeys );
             }
         }
 
