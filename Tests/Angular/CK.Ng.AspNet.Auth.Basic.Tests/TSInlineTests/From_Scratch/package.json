@@ -45,8 +45,8 @@
     "zone.js": "~0.15"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.2",
-    "@angular/cli": "^20.3.2",
+    "@angular/build": "^20.3.3",
+    "@angular/cli": "^20.3.3",
     "@angular/compiler-cli": "^20.3",
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.6.2",
@@ -57,7 +57,7 @@
     "jest-preset-angular": "^15",
     "jest-util": "^30.0.5",
     "less": "^4.4.1",
-    "ts-jest": "^29.4.3",
+    "ts-jest": "^29.4.4",
     "typescript": "~5.9.2"
   },
   "ckVersion": 1,
