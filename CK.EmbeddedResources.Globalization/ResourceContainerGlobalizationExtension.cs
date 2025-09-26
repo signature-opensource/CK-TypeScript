@@ -278,7 +278,7 @@ public static class ResourceContainerGlobalizationExtension
                             {
                                 Throw.InvalidDataException( $"Invalid parent property name \"{fullPropertyName}\": When defining a subordinated object, the parent key must not be an override." );
                             }
-                            ReadObject( ref r, context, origin, isOverrideFolder, target, parentPath + propertyName + '.' );
+                            ReadObject( ref r, context, origin, isOverrideFolder, target, propertyName + '.' );
                         }
                         else
                         {
