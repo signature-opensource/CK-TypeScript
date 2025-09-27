@@ -13,7 +13,7 @@ begin
            canMatch: [() => (authService ??= inject( AuthService )).authenticationInfo.user.userId > 0]
 
            """
-        after last "component: PrivatePageComponent";
+        after last "component: PrivatePage";
 
     replace last "targetUrl = router.parseUrl( '/' );" with "targetUrl = router.parseUrl( '/auth' );";
     replace last "targetUrl.queryParams[ 'notFound' ] = currentRoute" with "targetUrl.queryParams[ 'redirectTo' ] = currentRoute";

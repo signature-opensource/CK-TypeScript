@@ -28,18 +28,21 @@ public sealed partial class FinalTranslationSet // SubSets
             _culture = culture;
         }
 
+        void IFinalTranslationSet.LocalImplementationOnly() { }
+
         public IReadOnlyDictionary<string, FinalTranslationValue> Translations => _translations;
 
         public bool IsAmbiguous => _isAmbiguous;
 
         public ActiveCulture Culture => _culture;
 
-        public IFinalTranslationSet Parent
+        public IFinalTranslationSet ClosestParent
         {
             get
             {
                 Throw.DebugAssert( _root != null );
-                return _root._subSets[_culture.Parent!.Index]!;
+                Throw.DebugAssert( "We are NOT on the root ActiveCulture.", _culture.Parent != null );
+                return _root.DoFindTranslationSetOrParent( _culture.Parent );
             }
         }
 
@@ -60,17 +63,17 @@ public sealed partial class FinalTranslationSet // SubSets
                 // - No allocation for the direct children of the root.
                 // - A single HashSet hidden by closure for deeper children.
                 IEnumerable<KeyValuePair<string, FinalTranslationValue>> source = _translations;
-                var parent = Parent;
+                var parent = ClosestParent;
                 source = source.Concat( parent.Translations.Where( kv => !_translations.ContainsKey( kv.Key ) ) );
                 // More than one level?
-                var grandParent = parent.Parent;
+                var grandParent = parent.ClosestParent;
                 if( grandParent != null )
                 {
                     var dedup = new HashSet<string>( _translations.Keys.Concat( parent.Translations.Keys ) );
                     do
                     {
                         source = source.Concat( grandParent.Translations.Where( kv => dedup.Add( kv.Key ) ) );
-                        grandParent = grandParent.Parent;
+                        grandParent = grandParent.ClosestParent;
                     }
                     while( grandParent != null );
                 }

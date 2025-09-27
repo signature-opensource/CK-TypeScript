@@ -17,12 +17,6 @@ describe( 'App', () => {
     expect( app ).toBeTruthy();
   } );
 
-  it( `should have the 'CK_Ng_AspNet_Auth_Basic' title`, () => {
-    const fixture = TestBed.createComponent( App );
-    const app = fixture.componentInstance;
-    expect( app.title() ).toEqual( 'CK_Ng_AspNet_Auth_Basic' );
-  } );
-
   it( 'should render title', () => {
     const fixture = TestBed.createComponent( App );
     fixture.detectChanges();

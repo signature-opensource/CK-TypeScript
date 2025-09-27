@@ -50,5 +50,4 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
         }
         return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );
     }
-
 }

@@ -172,7 +172,7 @@ sealed class ComponentManager
                   redirectTo: () =>
                   {
                       router ??= inject( Router );
-                      const currentRoute = router.getCurrentNavigation()?.initialUrl;
+                      const currentRoute = router.currentNavigation()?.initialUrl;
                       const targetUrl = router.parseUrl( '/' );
                       targetUrl.queryParams[ 'notFound' ] = currentRoute
                             ? (urlSerializer ??= new DefaultUrlSerializer()).serialize(currentRoute)

@@ -6,5 +6,5 @@ import { RouterOutlet } from '@angular/router';
     imports: [RouterOutlet],
     templateUrl: './public-page.html'
 })
-export class PublicPageComponent {
+export class PublicPage {
 }

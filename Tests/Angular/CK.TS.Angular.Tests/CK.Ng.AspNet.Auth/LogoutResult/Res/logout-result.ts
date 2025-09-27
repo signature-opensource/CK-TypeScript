@@ -8,6 +8,6 @@ import { RouterLink } from '@angular/router';
     templateUrl: './logout-result.html',
     styleUrl: './logout-result.less'
 })
-export class LogoutResultComponent {
+export class LogoutResult {
 
 }

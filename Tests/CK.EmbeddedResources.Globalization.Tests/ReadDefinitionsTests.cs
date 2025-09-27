@@ -53,4 +53,28 @@ public class ReadDefinitionsTests
         frCA.Translations["Msg"].Override.ShouldBe( ResourceOverrideKind.None );
         frCA.Translations["Msg"].Text.ShouldBe( "Bon matin" );
     }
+
+    [Test]
+    public void sub_object_reads()
+    {
+        var p = new CodeGenResourceContainer( "P" );
+
+        p.AddText( "locales/default.jsonc", """
+            {
+                "Msg": "Hello",
+                "Top": {
+                    "Messages": {
+                        "One": "1",
+                        "Two": "2"
+                    }
+                }
+            }
+            """ );
+
+        p.LoadTranslations( TestHelper.Monitor, C.ActiveCultures, out var set, "locales" ).ShouldBeTrue();
+        set.ShouldNotBeNull();
+        set.Translations["Msg"].Text.ShouldBe( "Hello" );
+        set.Translations["Top.Messages.One"].Text.ShouldBe( "1" );
+        set.Translations["Top.Messages.Two"].Text.ShouldBe( "2" );
+    }
 }

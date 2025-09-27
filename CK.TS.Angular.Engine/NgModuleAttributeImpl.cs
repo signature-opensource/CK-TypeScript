@@ -28,7 +28,7 @@ public class NgModuleAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
         {
             monitor.Error( $"[NgModule] can only decorate a NgModule: '{type:N}' is not a NgModule." );
         }
-        _snakeName = NgComponentAttributeImpl.CheckComponentName( monitor, type, "Module" );
+        (_snakeName, _) = NgComponentAttributeImpl.CheckComponentName( monitor, type, "Module" );
         SetTypeScriptFolder( TypeScriptFolder.AppendPart( _snakeName ) );
     }
 

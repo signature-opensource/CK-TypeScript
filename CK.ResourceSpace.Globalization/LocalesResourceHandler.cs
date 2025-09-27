@@ -140,11 +140,8 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
             monitor.Warn( $"No installer associated to '{ToString()}'. Skipped." );
             return true;
         }
-        if( IsEmpty )
-        {
-            monitor.Warn( $"No '{RootFolderName}' folders found. Skipped." );
-            return true;
-        }
+        // We don't skip here if IsEmpty is true: we want the translations files
+        // to be available (empty) so the structure is here.
         Throw.CheckState( _finalTranslations != null );
         using( Installer.PushSubPath( RootFolderName ) )
         {
@@ -196,21 +193,12 @@ public partial class LocalesResourceHandler : ResourceSpaceFolderHandler
         {
             foreach( var c in final.Culture.ActiveCultures.AllActiveCultures )
             {
-                var set = final.FindTranslationSet( c );
-                var translations = set == null
-                                    ? null
-                                    : rootPropagated
+                var set = final.FindTranslationSetOrParent( c );
+                var translations = rootPropagated
                                         ? set.RootPropagatedTranslations
                                         : set.Translations;
                 var fPath = $"{c.Culture.Name}.json";
-                if( translations == null )
-                {
-                    target.Write( fPath, "{}" );
-                }
-                else
-                {
-                    WriteJson( target, fPath, translations, sortKeys );
-                }
+                WriteJson( target, fPath, translations, sortKeys );
             }
         }
 

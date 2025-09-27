@@ -8,6 +8,6 @@ import { RouterOutlet } from '@angular/router';
     templateUrl: './logout-confirm.html',
     styleUrl: './logout-confirm.less'
 })
-export class LogoutConfirmComponent {
+export class LogoutConfirm {
 
 }

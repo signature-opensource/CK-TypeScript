@@ -5,5 +5,5 @@ import { Component } from '@angular/core';
     imports: [],
     templateUrl: './public-child.html'
 })
-export class PublicChildComponent {
+export class PublicChild {
 }

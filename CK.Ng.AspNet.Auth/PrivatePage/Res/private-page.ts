@@ -6,7 +6,7 @@ import { RouterOutlet } from '@angular/router';
     imports: [RouterOutlet],
     templateUrl: './private-page.html'
 })
-export class PrivatePageComponent {
+export class PrivatePage {
     // <PreDependencyInjection revert />
     // <PostDependencyInjection />
 

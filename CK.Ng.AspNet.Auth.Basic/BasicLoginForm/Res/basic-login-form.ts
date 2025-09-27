@@ -30,7 +30,7 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
   ],
     templateUrl: './basic-login-form.html'
 } )
-export class BasicLoginFormComponent {
+export class BasicLoginForm {
   // <PreDependencyInjection revert />
   readonly #authService = inject( AuthService );
   readonly #formBuilder = inject( FormBuilder );

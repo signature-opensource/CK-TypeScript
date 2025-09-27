@@ -18,7 +18,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
 {
     readonly IReadOnlyDictionary<string, FinalTranslationValue> _translations;
     readonly ActiveCultureSet _activeCultures;
-    readonly IFinalTranslationSet?[] _subSets;
+    internal readonly IFinalTranslationSet?[] _subSets;
     readonly bool _isAmbiguous;
 
     internal FinalTranslationSet( ActiveCultureSet activeCultures,
@@ -42,7 +42,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
         }
     }
 
-    internal IFinalTranslationSet? RawAt( int index ) => _subSets[index];
+    void IFinalTranslationSet.LocalImplementationOnly() { }
 
     /// <summary>
     /// Initializes a new empty final translation set.
@@ -63,7 +63,7 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
     public ActiveCulture Culture => _activeCultures.Root;
 
     /// <inheritdoc />
-    public IFinalTranslationSet? Parent => null;
+    public IFinalTranslationSet? ClosestParent => null;
 
     /// <inheritdoc />
     public IEnumerable<IFinalTranslationSet> Children => _activeCultures.Root.Children.Select( c => _subSets[c.Index] ).Where( s => s != null )!;
@@ -90,27 +90,65 @@ public sealed partial class FinalTranslationSet : IFinalTranslationSet
 
     /// <summary>
     /// Finds the translation set for an active culture.
-    /// It may be null if it has never been required to hold any transalations.
+    /// It is null if it has no translation.
     /// </summary>
-    /// <param name="c">The active culture. Must be from the same set as this <see cref="Culture"/>.</param>
+    /// <param name="c">The active culture. Must be from the same set as this active <see cref="Culture"/>.</param>
     /// <returns>The set or null if its creation was useless.</returns>
-    public IFinalTranslationSet? FindTranslationSet( ActiveCulture c )
+    public IFinalTranslationSet? FindTranslationSet( ActiveCulture c  )
     {
         Throw.CheckArgument( c.ActiveCultures == _activeCultures );
         return _subSets[c.Index];
     }
 
     /// <summary>
+    /// Finds the translation set for an active culture, locating the first non null set associated
+    /// to the <see cref="ActiveCulture.Parent"/> chain.
+    /// </summary>
+    /// <param name="c">The active culture. Must be from the same set as this active <see cref="Culture"/>.</param>
+    /// <returns>The set or a parent set.</returns>
+    public IFinalTranslationSet FindTranslationSetOrParent( ActiveCulture c  )
+    {
+        Throw.CheckArgument( c.ActiveCultures == _activeCultures );
+        return DoFindTranslationSetOrParent( c );
+    }
+
+    IFinalTranslationSet DoFindTranslationSetOrParent( ActiveCulture c )
+    {
+        Throw.DebugAssert( c.ActiveCultures == _activeCultures );
+        var s = _subSets[c.Index];
+        while( s == null )
+        {
+            Throw.DebugAssert( "Since the _subSets[0] is necessarily defined.", c.Parent != null );
+            c = c.Parent;
+            s = _subSets[c.Index];
+        }
+        return s;
+    }
+
+    /// <summary>
     /// Finds the translation set for a culture.
     /// It is null if this culture doesn't belong to this set of active cultures or
-    /// if it has never been required to hold any transalations.
+    /// if it has no translation.
     /// </summary>
-    /// <param name="c">The active culture. Must be from the same set as this <see cref="Culture"/>.</param>
+    /// <param name="c">The active culture. Must be from the same set as this active <see cref="Culture"/>.</param>
     /// <returns>The set or null if its creation was useless.</returns>
     public IFinalTranslationSet? FindTranslationSet( NormalizedCultureInfo c )
     {
         var aC = _activeCultures.Get( c );
         return aC != null ? _subSets[aC.Index] : null;
+    }
+
+    /// <summary>
+    /// Finds the translation set for a culture or the first non null set associated
+    /// to the <see cref="ActiveCulture.Parent"/> chain.
+    /// It is null if this culture doesn't belong to this set of active cultures.
+    /// </summary>
+    /// <param name="c">The active culture. Must be from the same set as this active <see cref="Culture"/>.</param>
+    /// <returns>The set or null if its creation was useless.</returns>
+    public IFinalTranslationSet? FindTranslationSetOrParent( NormalizedCultureInfo c )
+    {
+        var aC = _activeCultures.Get( c );
+        return aC != null ? DoFindTranslationSetOrParent( aC ) : null;
     }
 
     /// <summary>

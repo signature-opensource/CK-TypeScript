@@ -12,7 +12,7 @@ import { ActionBarContent, ActionBarAction } from '@local/ck-gen';     //==> @lo
     templateUrl: './public-topbar.html',
     styleUrl: './public-topbar.less'
 })
-export class PublicTopbarComponent {
+export class PublicTopbar {
 
     // <TestPoint/>
 }

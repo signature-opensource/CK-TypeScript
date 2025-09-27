@@ -11,7 +11,7 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     templateUrl: './action-bar.html',
     imports: [CommonModule, FormsModule, FontAwesomeModule, NzButtonModule, NzToolTipModule]
 })
-export class ActionBarComponent<T> {
+export class ActionBar<T> {
     @HostBinding('class') class = 'ck-backoffice-action-bar';
 
     actions = input<ActionBarContent<T>>({ left: [], right: [] });

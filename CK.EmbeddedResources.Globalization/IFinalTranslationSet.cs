@@ -9,6 +9,8 @@ namespace CK.EmbeddedResources;
 /// </summary>
 public interface IFinalTranslationSet
 {
+    internal void LocalImplementationOnly();
+
     /// <summary>
     /// Gets the translations.
     /// </summary>
@@ -31,19 +33,24 @@ public interface IFinalTranslationSet
     bool IsAmbiguous { get; }
 
     /// <summary>
-    /// Gets the parent translation set (less specific culture).
+    /// Gets the closest parent translation set (less specific culture) that has at least one translation.
+    /// This is null for the root <see cref="FinalTranslationSet"/>.
     /// </summary>
-    IFinalTranslationSet? Parent { get; }
+    IFinalTranslationSet? ClosestParent { get; }
 
     /// <summary>
     /// Gets the children translations (more specific culture translations) that have at least one
-    /// translations (translation sets without translations are not instantiated).
+    /// translations.
+    /// <para>
+    /// Caution: this doesn't reflect the <see cref="ActiveCulture.Children"/>. A <see cref="ActiveCultureSet"/>
+    /// is a compact tree, this one is not. Translation sets without translations are not instantiated.
+    /// </para>
     /// </summary>
     IEnumerable<IFinalTranslationSet> Children { get; }
 
     /// <summary>
     /// Returns translations from these <see cref="Translations"/> and any other
-    /// translations from <see cref="Parent"/> up to the <see cref="ActiveCultureSet.Root"/>.
+    /// translations from <see cref="DirectParent"/> up to the <see cref="ActiveCultureSet.Root"/>.
     /// </summary>
     IEnumerable<KeyValuePair<string, FinalTranslationValue>> RootPropagatedTranslations { get; }
 }

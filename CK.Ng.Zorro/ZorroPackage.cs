@@ -28,7 +28,7 @@ namespace CK.Ng.Zorro;
 [TypeScriptFile( "responsive.directive.ts", "ResponsiveDirective" )]
 
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]
-[Requires<CK.Ng.Localization.TSPackage>]
+[Requires<CK.Ng.Localization.LocalizationPackage>]
 public class ZorroPackage : TypeScriptPackage
 {
 }

@@ -86,7 +86,7 @@ public sealed partial class TypeScriptContext
                         localesBody.Append( "import { inject, Injectable, LOCALE_ID, Provider, signal } from '@angular/core';" ).AppendLine();
                     }
 
-                    bool hasNgLocalization = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Localization.TSPackage" );
+                    bool hasNgLocalization = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Localization.LocalizationPackage" );
                     if( hasNgLocalization )
                     {
                         localesBody.AppendLine( "import { TranslateService } from '@ngx-translate/core';" );

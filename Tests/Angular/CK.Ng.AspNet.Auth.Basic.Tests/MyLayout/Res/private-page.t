@@ -1,12 +1,12 @@
 create <ts> transformer
 begin
-    ensure import { UserInfoBoxComponent } from '@local/ck-gen';
+    ensure import { UserInfoBox } from '@local/ck-gen';
  
     in after "@Component" 
         in first {^braces}
             in after "imports:"
                 in first {^[]}
-                    replace "RouterOutlet" with "RouterOutlet, UserInfoBoxComponent";
+                    replace "RouterOutlet" with "RouterOutlet, UserInfoBox";
 end
 
 create <html> transformer
