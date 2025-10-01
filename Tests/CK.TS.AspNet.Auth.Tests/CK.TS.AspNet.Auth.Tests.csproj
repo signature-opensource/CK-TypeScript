@@ -10,7 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- These will be package references. -->
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="28.0.3--0001-develop" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="28.0.3--0002-develop" />
     <ProjectReference Include="..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
