@@ -303,8 +303,8 @@ __metadata:
   linkType: hard
 
 "@angular/cdk@npm:^20, @angular/cdk@npm:^20.0.0":
-  version: 20.2.5
-  resolution: "@angular/cdk@npm:20.2.5"
+  version: 20.2.7
+  resolution: "@angular/cdk@npm:20.2.7"
   dependencies:
     parse5: "npm:^8.0.0"
     tslib: "npm:^2.3.0"
@@ -312,7 +312,7 @@ __metadata:
     "@angular/common": ^20.0.0 || ^21.0.0
     "@angular/core": ^20.0.0 || ^21.0.0
     rxjs: ^6.5.3 || ^7.4.0
-  checksum: 10/156f7a8db7d47d0daf66ee00fad8c596adcf05734ddf406f7b73561266df7b05ffeec9a376fce05119437334a3dc618fdaa20e45c5081d25b811f4a4b8987fa9
+  checksum: 10/9d45253ee8c6445542679b1a33ffce8c5d05d7b3983f66c291be69c183bf7d047a1dbe4253542fc26c963080a0c379791beb38bff8236cdaa1b3ad9f16aa94a0
   languageName: node
   linkType: hard
 
@@ -1393,46 +1393,46 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fortawesome/fontawesome-common-types@npm:7.0.1":
-  version: 7.0.1
-  resolution: "@fortawesome/fontawesome-common-types@npm:7.0.1"
-  checksum: 10/ccafda78e2809d14104852ab0426f420e9c4931c0b6a1f235f97af2a555b91c63ec4a5b2c7b0daa96f081a30199211df0b11cb6ca1efc575552f664f0706683c
+"@fortawesome/fontawesome-common-types@npm:7.1.0":
+  version: 7.1.0
+  resolution: "@fortawesome/fontawesome-common-types@npm:7.1.0"
+  checksum: 10/cf13595f54a7cb3e1e123032a2b34b939bacac300db25faa972da391b1bba7129beb1f929d6866a4b2aa28ac75b20a10a2b1a04e977c0948eceb5ff4c888663e
   languageName: node
   linkType: hard
 
 "@fortawesome/fontawesome-svg-core@npm:^7, @fortawesome/fontawesome-svg-core@npm:^7.0.0":
-  version: 7.0.1
-  resolution: "@fortawesome/fontawesome-svg-core@npm:7.0.1"
+  version: 7.1.0
+  resolution: "@fortawesome/fontawesome-svg-core@npm:7.1.0"
   dependencies:
-    "@fortawesome/fontawesome-common-types": "npm:7.0.1"
-  checksum: 10/1920dc9777c5c071eddd3d319c27463709677e892d1541756bba65e7e78f1e30541f2f6a62ac26f338e6047b16e1c279661559c41c21f144b642232002b88c23
+    "@fortawesome/fontawesome-common-types": "npm:7.1.0"
+  checksum: 10/a6137c120d2009df445e72e07e1b9fba923847fc7a3d2429a216fb09ee444aaf7904d9e89c90a1aea47876381437041e42837bb2c4f5a1c758f1424218157bb8
   languageName: node
   linkType: hard
 
 "@fortawesome/free-brands-svg-icons@npm:^7":
-  version: 7.0.1
-  resolution: "@fortawesome/free-brands-svg-icons@npm:7.0.1"
+  version: 7.1.0
+  resolution: "@fortawesome/free-brands-svg-icons@npm:7.1.0"
   dependencies:
-    "@fortawesome/fontawesome-common-types": "npm:7.0.1"
-  checksum: 10/43890977cde79f34eb28aed289d5c0183926d071369c0b5536678080e76425ac7901d653bc38a2022f6f2bcaa261942a1c93df1f9d3f4b12758dab12f5da3de0
+    "@fortawesome/fontawesome-common-types": "npm:7.1.0"
+  checksum: 10/6ae62d071a827bdacaa5f8c2d3e19a745db8c966ab3c79703cf22b241affd04f75cc9d6778496dd4ae2ac4e17888d3d6c8b7823c849cf1357cdddfb6b0abf88f
   languageName: node
   linkType: hard
 
 "@fortawesome/free-regular-svg-icons@npm:^7":
-  version: 7.0.1
-  resolution: "@fortawesome/free-regular-svg-icons@npm:7.0.1"
+  version: 7.1.0
+  resolution: "@fortawesome/free-regular-svg-icons@npm:7.1.0"
   dependencies:
-    "@fortawesome/fontawesome-common-types": "npm:7.0.1"
-  checksum: 10/c66e997d4560313cb7f5ff298358487a6dffb51b7de905d836f31f0ccd474d64e01a8d79e5a1ecb754c4fe0b30f8beaa151cdbf20c408d127dedc0f250d6f01a
+    "@fortawesome/fontawesome-common-types": "npm:7.1.0"
+  checksum: 10/12b6101077d3dd3531cd04b16f8b5104eada6a886f77482b8ccf10744bd369d2a92f1dda34b386d46709cdda8eed2dc55f9d200780404897be334baa57e97397
   languageName: node
   linkType: hard
 
 "@fortawesome/free-solid-svg-icons@npm:^7":
-  version: 7.0.1
-  resolution: "@fortawesome/free-solid-svg-icons@npm:7.0.1"
+  version: 7.1.0
+  resolution: "@fortawesome/free-solid-svg-icons@npm:7.1.0"
   dependencies:
-    "@fortawesome/fontawesome-common-types": "npm:7.0.1"
-  checksum: 10/2413995a465171b0f5ea2c075398a2e0881f4992dc7f7592de82e266db728bef6777ff7c32197b7ad195d6f086bc5e2a30a2204103088401b355079eb38012f5
+    "@fortawesome/fontawesome-common-types": "npm:7.1.0"
+  checksum: 10/302548ff3fd45272eb927c87c26d555cebfecdbd0744177f24a47b1743eb73f10c6e8017fc9e2eab560851e4a396a2a2be07b1e75e8c7fe7215c1d7629133f02
   languageName: node
   linkType: hard
 
@@ -3173,12 +3173,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^24.6.1":
-  version: 24.6.1
-  resolution: "@types/node@npm:24.6.1"
+"@types/node@npm:*, @types/node@npm:^24.6.2":
+  version: 24.6.2
+  resolution: "@types/node@npm:24.6.2"
   dependencies:
     undici-types: "npm:~7.13.0"
-  checksum: 10/d841af01cc6a618a5a5aa3f7de6dd7fc2e7e37efee5f603ea1a7c3fceae6b7afc615b2ae483f84b060389735b61aa936e09684e12b4414da46ac66f9b784bcba
+  checksum: 10/8d1e64b37abdafd3da295394235ad5357509ac0b47e6991d36b1eecacd7ad830ada60ca71b7b3598b6c8b519361fb70aab691888c378ff25e69dba5690afcc22
   languageName: node
   linkType: hard
 
@@ -4903,7 +4903,7 @@ __metadata:
     "@ngx-translate/core": "npm:^17"
     "@types/jest": "npm:^30.0.0"
     "@types/luxon": "npm:^3.6.2"
-    "@types/node": "npm:^24.6.1"
+    "@types/node": "npm:^24.6.2"
     axios: "npm:^1.7.7"
     jest: "npm:^30.2.0"
     jest-environment-jsdom: "npm:^30.2.0"
