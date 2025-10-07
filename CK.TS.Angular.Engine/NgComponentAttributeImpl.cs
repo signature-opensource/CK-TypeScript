@@ -4,11 +4,9 @@ using CK.TypeScript.Engine;
 using CK.TypeScript.CodeGen;
 using System;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using CK.EmbeddedResources;
 using System.Linq;
 using CK.Engine.TypeCollector;
-using System.Collections.Generic;
 
 namespace CK.TS.Angular.Engine;
 
@@ -17,7 +15,7 @@ namespace CK.TS.Angular.Engine;
 /// </summary>
 public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttributeImpl
 {
-    readonly string _snakeName;
+    readonly string _kebabName;
     readonly string _typeScriptName;
 
     /// <summary>
@@ -33,11 +31,11 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         {
             monitor.Error( $"[NgComponent] can only decorate a NgComponent: '{type:N}' is not a NgComponent." );
         }
-        (_snakeName, _typeScriptName) = CheckComponentName( monitor, type, "Component" );
-        SetTypeScriptFolder( TypeScriptFolder.AppendPart( _snakeName ) );
+        (_kebabName, _typeScriptName) = CheckComponentName( monitor, type, "Component" );
+        SetTypeScriptFolder( TypeScriptFolder.AppendPart( _kebabName ) );
     }
 
-    internal static (string Snake, string TypeScript) CheckComponentName( IActivityMonitor monitor, Type type, string kind )
+    internal static (string Kebab, string TypeScript) CheckComponentName( IActivityMonitor monitor, Type type, string kind )
     {
         if( !type.IsSealed )
         {
@@ -52,13 +50,13 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         {
             n = n.Substring( 0, n.Length - kind.Length );
         }
-        return (ToSnakeCase().Replace( n, "$1-$2" ).ToLowerInvariant(), n);
+        return (System.Text.Json.JsonNamingPolicy.KebabCaseLower.ConvertName( n ), n);
     }
 
     /// <summary>
-    /// Gets the component name (snake-case) without "component" suffix.
+    /// Gets the component name (kebab-case) without "component" suffix.
     /// </summary>
-    public string FileComponentName => _snakeName;
+    public string FileComponentName => _kebabName;
 
     /// <summary>
     /// Gets whether this is the <see cref="AppComponent"/>.
@@ -118,11 +116,11 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         if( singleInterface != null )
         {
             Throw.DebugAssert( !string.IsNullOrWhiteSpace( expectedComponentName ) );
-            if( expectedComponentName != _snakeName )
+            if( expectedComponentName != _kebabName )
             {
                 monitor.Error( $"""
                     Invalid single Angular abstract component. '{package.Type}' is a '{singleInterface}'.
-                    Its component name must be '{expectedComponentName}', not '{_snakeName}'.
+                    Its component name must be '{_kebabName}', not '{expectedComponentName}'.
                     """ );
                 return false;
             }
@@ -187,7 +185,7 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                                                    ResPackage package )
     {
         Throw.DebugAssert( !IsAppComponent );
-        var fName = _snakeName + ".ts";
+        var fName = _kebabName + ".ts";
         if( !package.Resources.Resources.TryGetExpectedResource( monitor, fName, out var res ) )
         {
             return false;
@@ -197,7 +195,4 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
         return base.OnResPackageAvailable( monitor, context, spaceData, package )
                && context.GetAngularCodeGen().ComponentManager.RegisterComponent( monitor, this, tsType );
     }
-
-    [GeneratedRegex( "([a-z])([A-Z])", RegexOptions.CultureInvariant )]
-    private static partial Regex ToSnakeCase();
 }
