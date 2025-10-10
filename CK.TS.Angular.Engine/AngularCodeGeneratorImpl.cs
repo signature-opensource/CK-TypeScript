@@ -293,7 +293,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             }
                             if( !context.IntegrationContext.RunYarn(
                                             monitor,
-                                            $"ng new {newFolderPath.LastPart} --style=less --package-manager=yarn --interactive=false --standalone=true --skip-install=true --skip-git=true",
+                                            $"ng new {newFolderPath.LastPart} --style=less --package-manager=yarn --interactive=false --standalone=true --skip-install=true --skip-git=true --zoneless=true",
                                             workingDirectory: tempFolderPath ) )
                             {
                                 return false;
