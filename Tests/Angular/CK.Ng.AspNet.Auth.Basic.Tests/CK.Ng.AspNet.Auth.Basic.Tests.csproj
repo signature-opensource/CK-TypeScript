@@ -9,10 +9,13 @@
     <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="29.0.0" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="29.0.1" />
     <ProjectReference Include="..\..\..\CK.Ng.AspNet.Auth.Basic\CK.Ng.AspNet.Auth.Basic.csproj" />
     <ProjectReference Include="..\..\..\CK.Ng.PublicPage\CK.Ng.PublicPage.csproj" />
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSInlineTests\From_Scratch\" />
   </ItemGroup>
 </Project>

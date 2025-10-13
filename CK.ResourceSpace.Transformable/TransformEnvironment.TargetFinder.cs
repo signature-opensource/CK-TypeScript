@@ -302,6 +302,15 @@ sealed partial class TransformEnvironment // TargetFinder
 
                     result = null;
                 }
+                else
+                {
+                    var reachableItems = source.Resources.Reachables.SelectMany( p => _tracker.GetItems( p, f.Language.Index ) );
+                    monitor.Error( $"""
+                                Reachable transformable items (in language {f.Language.LanguageName}) are:
+                                {reachableItems.Select( i => i.TargetPath.Path ).Concatenate( Environment.NewLine )}
+                                """ );
+
+                }
             }
         }
         return result != null;

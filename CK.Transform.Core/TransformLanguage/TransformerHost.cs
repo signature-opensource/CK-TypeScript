@@ -255,6 +255,20 @@ public sealed partial class TransformerHost
     }
 
     /// <summary>
+    /// Parses a <paramref name="transformer"/> and applies it to a <paramref name="text"/>.
+    /// </summary>
+    /// <param name="monitor">The monitor that will receive logs and errors.</param>
+    /// <param name="text">The text to transform.</param>
+    /// <param name="transformers">The transformers source code.</param>
+    /// <returns>The transformed result on success and null if an error occurred.</returns>
+    public SourceCode? Transform( IActivityMonitor monitor, string text, string transformer )
+    {
+        var f = TryParseFunction( monitor, transformer );
+        if( f == null ) return null;
+        return Transform( monitor, text.AsMemory(), [f], idempotenceCheck: false );
+    }
+
+    /// <summary>
     /// Applies a sequence of transformers to an initial <paramref name="text"/>.
     /// </summary>
     /// <param name="monitor">The monitor that will receive logs and errors.</param>
