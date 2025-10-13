@@ -339,9 +339,10 @@ public sealed class ResSpaceDataBuilder
         {
             using( monitor.OpenDebug( "TypeScript packages structure:" ) )
             {
-                monitor.Debug( bAll.Skip( 1 )
-                                   .Select( x => $"""
-                           {(x.IsLocalPackage ? "(local) " : "        ")}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string( ' ', x.ToString().Length + 8 )} |{c}" ) )}
+                monitor.Debug(
+                    bAll.Skip( 1 )
+                        .Select( x => $"""
+                           {(x.IsLocalPackage ? "(local) " : "        ")}{x} => {x.Requires.Select( r => r.ToString() ).Concatenate()}{string.Concat( x.Children.Select( c => $"{Environment.NewLine}{new string( ' ', 16 )} |{c}" ) )}
                            """ )
                                    .Concatenate( Environment.NewLine ) );
             }
