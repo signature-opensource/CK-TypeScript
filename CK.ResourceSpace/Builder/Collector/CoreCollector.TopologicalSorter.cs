@@ -463,7 +463,7 @@ sealed partial class CoreCollector
             internal bool InitializeError( ResPackageDescriptor p )
             {
                 Throw.DebugAssert( CycleErrors == null );
-                CycleErrors = new();
+                CycleErrors = [];
                 return false;
             }
 

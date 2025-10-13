@@ -8,7 +8,4 @@ import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
   templateUrl: './app.html',
   styleUrl: './app.less'
 })
-export class App {
-  protected readonly title = signal('From_Scratch');
-}
-
+export class App { }

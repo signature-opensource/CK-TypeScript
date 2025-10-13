@@ -70,24 +70,6 @@ public class FromScratchTests
         tsConfig.DefaultCulture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
-        var thisAppName = root.LastPart.Replace( ' ', '_' );
-        using( TestHelper.Monitor.OpenInfo( $"""
-            Copying '*.spec.ts' from 'TSInlineTests/CK_Ng_AspNet_Auth_Basic/src/app' to this 'src/app' folder.
-            Replacing "CK_Ng_AspNet_Auth_Basic" by "{thisAppName}" in tests.            
-            """ ) )
-            
-        {
-            var persistentAppFolder = TestHelper.TestProjectFolder.Combine( "TSInlineTests/CK_Ng_AspNet_Auth_Basic/src/app" );
-            var targetAppFolder = root.Combine( "src/app" );
-
-            foreach( var specFile in Directory.EnumerateFiles( persistentAppFolder, "*.spec.ts" ) )
-            {
-                var text = File.ReadAllText( specFile );
-                text = text.Replace( "CK_Ng_AspNet_Auth_Basic", thisAppName );
-                File.WriteAllText( targetAppFolder.AppendPart( Path.GetFileName( specFile ) ), text );
-            }
-        }
-
         // Checks that NgZorro AppStyleImport works as expected.
         var srcStyles = File.ReadAllLines( root.Combine( "src/styles.less" ) );
         srcStyles.ShouldContain( "@import 'ng-zorro-antd/ng-zorro-antd.less';" )

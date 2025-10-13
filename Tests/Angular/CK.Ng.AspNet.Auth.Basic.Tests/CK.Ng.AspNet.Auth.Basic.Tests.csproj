@@ -15,4 +15,7 @@
     <ProjectReference Include="..\..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
     <ProjectReference Include="..\..\..\CK.TS.Angular.Engine\CK.TS.Angular.Engine.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSInlineTests\From_Scratch\" />
+  </ItemGroup>
 </Project>

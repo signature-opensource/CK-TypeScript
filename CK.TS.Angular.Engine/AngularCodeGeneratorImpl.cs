@@ -348,55 +348,38 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
                     static bool TransformAppComponent( IActivityMonitor monitor, NormalizedPath appFilePath )
                     {
-                        var app = File.ReadAllText( appFilePath );
-                        using( monitor.OpenInfo( "Transforming file 'src/app/component.ts'." ) )
+                        var _ = monitor.OpenInfo( "Transforming file 'src/app.ts'." );
+                        var code = new TransformerHost( new TypeScriptLanguage() ).Transform( monitor,
+                                                                                              File.ReadAllText( appFilePath ),
+                                                                                              """"
+                            create <ts> transformer
+                            begin
+                                ensure import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
+                            
+                                in after "@Component" 
+                                    in first {^braces}
+                                        in after "imports:"
+                                            in first {^[]}
+                                                replace "RouterOutlet" with "RouterOutlet, CKGenAppModule";
+                                in single {class}
+                                    in first {braces}
+                                    replace * with "{ }";
+                            end
+                            """" );
+                        if( code != null )
                         {
-                            var importLine = "import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';";
-                            bool success = AddCKGenAppModuleInImports( monitor, ref app );
-                            return AddImportAndConclude( monitor,
-                                                         appFilePath,
-                                                         success,
-                                                         ref app,
-                                                         importLine );
+                            File.WriteAllText( appFilePath, code.ToString() );
+                            return true;
                         }
-
-                        static bool AddCKGenAppModuleInImports( IActivityMonitor monitor, ref string app )
-                        {
-                            int idx = app.IndexOf( "imports: [" );
-                            if( idx > 0 )
-                            {
-                                idx = app.IndexOf( "RouterOutlet", idx );
-                                if( idx > 0 )
-                                {
-                                    Throw.DebugAssert( "RouterOutlet".Length == 12 );
-                                    int idxEnd = idx + 12;
-                                    while( app[idxEnd] != ',' && app[idxEnd] != ']' && idxEnd < app.Length ) ++idxEnd;
-                                    if( idxEnd < app.Length )
-                                    {
-                                        if( app[idxEnd] == ',' )
-                                        {
-                                            app = app.Insert( idxEnd, " CKGenAppModule," );
-                                        }
-                                        else
-                                        {
-                                            Throw.DebugAssert( app[idxEnd] == ']' );
-                                            app = app.Insert( idx + 12, ", CKGenAppModule" );
-                                        }
-                                        monitor.Info( "Added 'CKGenAppModule' in @Component imports." );
-                                        return true;
-                                    }
-                                }
-                            }
-                            monitor.Warn( "Unable to find an 'imports: [ ... RouterOutlet ...]' substring." );
-                            return false;
-                        }
+                        return false;
                     }
 
                     static bool TransformAppComponentSpec( IActivityMonitor monitor, NormalizedPath appFilePath )
                     {
                         var _ = monitor.OpenInfo( "Adding appConfig providers to TestBed in 'src/app/app.spec.ts'." );
-                        var host = new TransformerHost( new TypeScriptLanguage() );
-                        var f = host.TryParseFunction( monitor, """"
+                        var code = new TransformerHost( new TypeScriptLanguage() ).Transform( monitor,
+                                                                                              File.ReadAllText( appFilePath ),
+                                                                                              """"
                             create <ts> transformer
                             begin
                                 ensure import { appConfig } from './app.config';
@@ -405,21 +388,21 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                         insert """
                                                      // Added by CK.TS.AngularEngine: DI is fully configured and available in tests.
                                                      providers: appConfig.providers,
-
+                            
                                                """
                                             before "imports:";
+                                in after last "it"
+                                   replace * with "nomore";
+                                reparse;
+                                replace "itnomore" with "} );"
                             end
                             """" );
-                        if( f != null )
+                        if( code != null )
                         {
-                            var app = File.ReadAllText( appFilePath );
-                            var code = host.Transform( monitor, app, f );
-                            if( code != null )
-                            {
-                                File.WriteAllText( appFilePath, code.ToString() );
-                            }
+                            File.WriteAllText( appFilePath, code.ToString() );
+                            return true;
                         }
-                        return true;
+                        return false;
                     }
 
                     static bool TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
@@ -499,8 +482,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     {
                         NormalizedPath filePath = newFolderPath.Combine( "src/app/app.html" );
                         const string defaultApp = """
-                        <h1>Hello, {{ title() }}</h1>
-
                         <router-outlet />
 
                         """;
