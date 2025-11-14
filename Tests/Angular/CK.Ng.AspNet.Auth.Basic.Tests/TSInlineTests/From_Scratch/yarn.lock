@@ -303,8 +303,8 @@ __metadata:
   linkType: hard
 
 "@angular/cdk@npm:^20, @angular/cdk@npm:^20.0.0":
-  version: 20.2.12
-  resolution: "@angular/cdk@npm:20.2.12"
+  version: 20.2.13
+  resolution: "@angular/cdk@npm:20.2.13"
   dependencies:
     parse5: "npm:^8.0.0"
     tslib: "npm:^2.3.0"
@@ -312,7 +312,7 @@ __metadata:
     "@angular/common": ^20.0.0 || ^21.0.0
     "@angular/core": ^20.0.0 || ^21.0.0
     rxjs: ^6.5.3 || ^7.4.0
-  checksum: 10/25d39b60f0e2bbf295ff5cbe7abfb693c05a21ed60125ba98b6362bf4c7052ad1b0e1b2861f15fb782ecea6b0e48d4d138a92da61d5f94272b85ff0598112d4a
+  checksum: 10/152adb8c7ff7a7613b5d21d427f12fb1e49d5486c75de56ded6ac5c82a5911c6b3f31ad1e5e192a8ea504d1162ffea0d910e5e136dd126445491e445fdcb3226
   languageName: node
   linkType: hard
 
@@ -999,21 +999,21 @@ __metadata:
   linkType: hard
 
 "@emnapi/core@npm:^1.4.3":
-  version: 1.7.0
-  resolution: "@emnapi/core@npm:1.7.0"
+  version: 1.7.1
+  resolution: "@emnapi/core@npm:1.7.1"
   dependencies:
     "@emnapi/wasi-threads": "npm:1.1.0"
     tslib: "npm:^2.4.0"
-  checksum: 10/43bb6fd7419b9589fe8190a09fce84e52c04cef171bcb1c411c278fb5380c4a76081776e5094f42c220deaf49e2e41905de5569209790ffee9b8efa59c987829
+  checksum: 10/260841f6dd2a7823a964d9de6da3a5e6f565dac8d21a5bd8f6215b87c45c22a4dc371b9ad877961579ee3cca8a76e55e3dd033ae29cba1998999cda6d794bdab
   languageName: node
   linkType: hard
 
 "@emnapi/runtime@npm:^1.4.3":
-  version: 1.7.0
-  resolution: "@emnapi/runtime@npm:1.7.0"
+  version: 1.7.1
+  resolution: "@emnapi/runtime@npm:1.7.1"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 10/4dc726eb42fe2c7777fd32090f3e5e006c630e1a732538139caa18daf586e883e81c562cd69b0622db16e76bb572a2dde30711494edcee4a34059b62f5f46267
+  checksum: 10/6fc83f938e3c70e32e84c1fbe5cab6cb9340b8107cee4048384ad5b8f2998a06502b4bed342acaf6e44f473f2c14c4ab1e3fd5083bd7823fc63abfca9eff0175
   languageName: node
   linkType: hard
 
@@ -4826,9 +4826,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.249":
-  version: 1.5.250
-  resolution: "electron-to-chromium@npm:1.5.250"
-  checksum: 10/3b24c08939c2bbefa0316e0d8a437d863f8724dd53e84603f89d7a9c5a8bc099f46d7f019e57afd1e925a57350f5b04279724b3ef03da496112bb91fcdd5956b
+  version: 1.5.252
+  resolution: "electron-to-chromium@npm:1.5.252"
+  checksum: 10/86727dc45512b062cdf017ce9bba4dabd90f23fbd4e5db0d5d5e62ad00d7f526a90256acfc2288ed9c29c57963858c1aeb420c93e1fbbfa3aad3ed8799196c46
   languageName: node
   linkType: hard
 
@@ -5590,7 +5590,7 @@ __metadata:
     jest-util: "npm:^30.2.0"
     less: "npm:^4.4.1"
     luxon: "npm:^3.5"
-    ng-zorro-antd: "npm:^20"
+    ng-zorro-antd: "npm:~20.3"
     rxjs: "npm:~7.8"
     ts-jest: "npm:^29.4.5"
     tslib: "npm:^2.3"
@@ -7557,9 +7557,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ng-zorro-antd@npm:^20":
-  version: 20.4.0
-  resolution: "ng-zorro-antd@npm:20.4.0"
+"ng-zorro-antd@npm:~20.3":
+  version: 20.3.1
+  resolution: "ng-zorro-antd@npm:20.3.1"
   dependencies:
     "@angular/cdk": "npm:^20.0.0"
     "@ant-design/icons-angular": "npm:^20.0.0"
@@ -7573,7 +7573,7 @@ __metadata:
     "@angular/forms": ^20.0.0
     "@angular/platform-browser": ^20.0.0
     "@angular/router": ^20.0.0
-  checksum: 10/d6cc20aab15480f6bcdb3172c243acd06a6118710276fbd6117d4b673edd649b83657f8d8885976f6e4d92910bc7661921259038be86be41802d385465560662
+  checksum: 10/9842b037509f2cef787340ab13cc12403ce7f7c7090e83ded7ff8e4fd08e21d5db22458f3db732ef3a201bea1004805dbf1d2fe8d7c08a8b755cf8b170555446
   languageName: node
   linkType: hard
 
