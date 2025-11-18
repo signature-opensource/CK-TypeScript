@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.EmbeddedResources.Assets" Version="1.0.2" />
+    <PackageReference Include="CK.EmbeddedResources.Assets" Version="1.0.3--0001-develop" />
     <ProjectReference Include="..\CK.ResourceSpace\CK.ResourceSpace.csproj" />
   </ItemGroup>
 </Project>
