@@ -9,6 +9,6 @@
     <ProjectReference Include="..\CK.Transform.Core\CK.Transform.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization.Sliced" Version="12.1.1" />
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="12.1.2--0001-develop" />
   </ItemGroup>
 </Project>
