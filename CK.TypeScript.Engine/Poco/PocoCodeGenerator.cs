@@ -607,7 +607,7 @@ sealed partial class PocoCodeGenerator : ITSPocoCodeGenerator
                 {
                     var f = fields[i];
                     if( i == 0 ) ctorParametersPart.NewLine();
-                    else ctorParametersPart.Append( ", " ).NewLine();
+                    else ctorParametersPart.Append( "," ).NewLine();
                     f.WriteCtorFieldDefinition( ctorParametersPart );
                 }
             }
