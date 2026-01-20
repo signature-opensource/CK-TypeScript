@@ -102,7 +102,7 @@ public class CommandLikeTests
 
         /// <summary>
         /// Gets or sets a command that returns a string.
-        /// Since NO such command exist, 
+        /// Since NO such command exist,
         /// </summary>
         ICommand<string>? ThereIsNoSuchCommand { get; set; }
     }
@@ -215,7 +215,7 @@ public class CommandLikeTests
             /**
              * The data index.
              **/
-            public index: number = 0, 
+            public index: number = 0,
             /**
              * A great name for the data.
              **/
