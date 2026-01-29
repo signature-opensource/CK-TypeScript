@@ -5,7 +5,7 @@ using CK.TypeScript;
 namespace CK.Ng.Zorro;
 
 [TypeScriptPackage]
-[TypeScriptImportLibrary( "ng-zorro-antd", "~20.3", DependencyKind.Dependency )]
+[TypeScriptImportLibrary( "ng-zorro-antd", "^20", DependencyKind.Dependency )]
 [TypeScriptImportLibrary( "luxon", "^3", DependencyKind.Dependency )]
 [TypeScriptImportLibrary( "@types/luxon", "^3", DependencyKind.DevDependency )]
 [TypeScriptImportLibrary( "@angular/cdk", "^20", DependencyKind.Dependency )]

@@ -220,15 +220,15 @@ public class RecordTests
 
             export class Rec1 {
             public constructor(
-            public age: number = 0, 
-            public name: string = "", 
-            public altName?: string, 
+            public age: number = 0,
+            public name: string = "",
+            public altName?: string,
             public key?: Guid)
             {
             }
             readonly _brand!: {"4":any};
             }
-            
+
             """ );
 
         CheckFile( targetProjectPath,
@@ -251,18 +251,18 @@ public class RecordTests
         CheckFile( targetProjectPath,
             "RecordPoco2.ts",
             """
-            public age: number = 0, 
-            public name: string = "Aurélien", 
-            public altName: string|undefined = "Barrau", 
+            public age: number = 0,
+            public name: string = "Aurélien",
+            public altName: string|undefined = "Barrau",
             public key?: Guid
             """ );
 
         CheckFile( targetProjectPath,
             "Rec3.ts",
             """
-            public name: string = "Aurélien", 
-            public age: number = 40, 
-            public altName: string|undefined = "Barrau", 
+            public name: string = "Aurélien",
+            public age: number = 40,
+            public altName: string|undefined = "Barrau",
             public key?: Guid
             """ );
 
@@ -291,7 +291,7 @@ public class RecordTests
         CheckFile( targetProjectPath,
            "RecTry.ts",
            """
-           public name: string = "", 
+           public name: string = "",
            public others: Array<RecTry> = []
            """ );
 
@@ -321,16 +321,16 @@ public class RecordTests
         CheckFile( targetProjectPath,
           "RecWithNonNullDefault.ts",
           """
-          public iMustExist: IPoco, 
-          public name: string = "", 
-          public age: number = 42, 
+          public iMustExist: IPoco,
+          public name: string = "",
+          public age: number = 42,
           public nullable?: number
           """ );
     }
 
     static void CheckFile( string targetProjectPath, string name, string expected )
     {
-        File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", name ) )
-            .ShouldContain( expected );
+        File.ReadAllText( Path.Combine( targetProjectPath, "ck-gen", name ) ).ReplaceLineEndings()
+            .ShouldContain( expected.ReplaceLineEndings() );
     }
 }

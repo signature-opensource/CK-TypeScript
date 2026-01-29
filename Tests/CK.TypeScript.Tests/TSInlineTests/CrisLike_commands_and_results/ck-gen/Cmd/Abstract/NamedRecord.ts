@@ -8,7 +8,7 @@ public constructor(
 /**
  * The data value.
  **/
-public value: number = 0, 
+public value: number = 0,
 /**
  * The data name.
  **/
