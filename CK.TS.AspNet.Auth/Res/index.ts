@@ -1,6 +1,8 @@
-export * from './authService.model.public';
-export * from './authService.model.extension';
-export * from './AuthService';
-export * from './PopupDescriptor';
 export * from './type-system';
-export * from './AuthLevel';
+export {AuthService} from './AuthService';
+export type {IAuthenticationInfo, IUserInfo, IUserSchemeInfo} from './IAuthenticationInfo';
+export type {IAuthServiceConfiguration, IEndPoint} from './IAuthServiceConfiguration';
+export type {ILastResult, IWebFrontAuthError, IResponseError, ILoginError} from './ILastResult';
+export {PopupDescriptor, type Collector} from './PopupDescriptor';
+export {SchemeUsageStatus} from './SchemeUsageStatus'
+export {AuthLevel} from './AuthLevel';

@@ -1,8 +1,8 @@
 import { IUserInfoType, StdKeyType } from './type-system.model';
-import { IUserInfo, IUserSchemeInfo, SchemeUsageStatus } from '../authService.model.public';
+import { IUserInfo, IUserSchemeInfo } from '../IAuthenticationInfo';
 import { StdUserInfo } from './StdUserInfo';
 import { StdUserSchemeInfo } from './StdUserSchemeInfo';
-import { IResponseScheme } from '../authService.model.private';
+import {SchemeUsageStatus} from '../SchemeUsageStatus';
 
 export class StdUserInfoType implements IUserInfoType<IUserInfo> {
 
@@ -19,7 +19,7 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
      * the given object o is false-ish.
      * @param o Any object that must be shaped like a T.
      * @param availableSchemes
-     * The optional list of available schemes that are used to update the user's scheme's state (Unused/Active/Deprecated). 
+     * The optional list of available schemes that are used to update the user's scheme's state (Unused/Active/Deprecated).
      * When unspecified (null or undefined), all user schemes' status are Active.
      * When empty, we consider that no schemes are actually available: all user schemes' status are Deprecated.
      */
@@ -27,8 +27,8 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
         if( !o ) { return null; }
 
         function create( r: {[index: string]: any}, schemeNames: Set<string>|null ) : StdUserSchemeInfo {
-            return new StdUserSchemeInfo( r['name'], r['lastUsed'], schemeNames === null || schemeNames.delete( r['name'] ) 
-                                                                    ? SchemeUsageStatus.Active 
+            return new StdUserSchemeInfo( r['name'], r['lastUsed'], schemeNames === null || schemeNames.delete( r['name'] )
+                                                                    ? SchemeUsageStatus.Active
                                                                     : SchemeUsageStatus.Deprecated );
         }
 
@@ -41,7 +41,7 @@ export class StdUserInfoType implements IUserInfoType<IUserInfo> {
         const jsonSchemes = o[ StdKeyType.schemes ] as {[index: string]: any}[];
         jsonSchemes.forEach( p => schemes.push( create( p, schemeNames ) ) );
         if( schemeNames ) schemeNames.forEach( s => schemes.push( new StdUserSchemeInfo( s, new Date(0), SchemeUsageStatus.Unused ) ) );
-        return new StdUserInfo( userId, userName, schemes );       
+        return new StdUserInfo( userId, userName, schemes );
     }
 
     protected createAnonymous(): IUserInfo {

@@ -1,8 +1,8 @@
-import { IAuthenticationInfo, IUserInfo, IUserSchemeInfo } from '../authService.model.public';
+import { IAuthenticationInfo, IUserInfo, IUserSchemeInfo } from '../IAuthenticationInfo';
 
 /** Defines the immutable contract of an authentication info implementation. */
 export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthenticationInfo<T> {
-   
+
      /**
      * Checks current expiration dates and returns this StdAuthenticationInfo or an updated one if changed.
      * @param utcNow The date to consider to challenge current expires and criticalExpires properties.
@@ -56,7 +56,7 @@ export interface IAuthenticationInfoImpl<T extends IUserInfo> extends IAuthentic
 }
 
 /** Defines a type system that exposes a type manager for IUserInfo and for IAuthenticationInfo. */
-export interface IAuthenticationInfoTypeSystem<T extends IUserInfo> {   
+export interface IAuthenticationInfoTypeSystem<T extends IUserInfo> {
     readonly userInfo: IUserInfoType<T>;
     readonly authenticationInfo: IAuthenticationInfoType<T>;
 }
@@ -88,11 +88,11 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
      * @param auth The authentication information to serialize as a server response.
      */
     toServerResponse( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object;
-    
+
     /**
      * Saves the authentication info and currently available schemes into the local storage.
      * @param storage Storage API to use.
-     * @param endPoint The authentication end point. Informations are stored relatively to this end point. 
+     * @param endPoint The authentication end point. Informations are stored relatively to this end point.
      * @param auth The authentication info to save. Null to remove current authentication information.
      * @param schemes Optional available schemes to save. By default, any existing persisted schemes are left as-is.
      */
@@ -101,7 +101,7 @@ export interface IAuthenticationInfoType<T extends IUserInfo> {
     /**
      * Returns the authentication and available schemes previously saved by saveToLocalStorage.
      * @param storage Storage API to use.
-     * @param endPoint The authentication end point. Informations are stored relatively to this end point. 
+     * @param endPoint The authentication end point. Informations are stored relatively to this end point.
      * @param availableSchemes
      * The optional list of available schemes that are used to update the users' scheme's state (Unused/Active/Deprecated).
      * When specified (not null nor undefined), this parameter takes precedence over the schemes persisted in the local storage (if any).

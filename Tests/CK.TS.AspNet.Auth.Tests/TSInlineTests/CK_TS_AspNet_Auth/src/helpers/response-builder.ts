@@ -1,23 +1,15 @@
-import { IResponseInfo, IWebFrontAuthResponse, IResponseUserInfo } from "@local/ck-gen/CK/AspNet/Auth/index.private";
-
-interface ILoginFailure {
-    loginFailureCode: number;
-    loginFailureReason: string;
-}
-
-interface IError {
-    errorId: string;
-    errorText: string;
-}
+import { IResponseInfo, IResponseUserInfo } from "@local/ck-gen/CK/AspNet/Auth/IWebFrontAuthResponse";
+import { IWebFrontAuthResponse } from "@local/ck-gen/CK/AspNet/Auth/IWebFrontAuthResponse";
+import { ILoginError, IResponseError } from "@local/ck-gen/CK/AspNet/Auth/ILastResult";
 
 export default class ResponseBuilder {
 
     private _info?: IResponseInfo;
     private _token?: string;
     private _refreshable?: boolean;
-    private _error?: IError;
+    private _error?: IResponseError;
     private _schemes?: string[];
-    private _loginFailure?: ILoginFailure;
+    private _loginFailure?: ILoginError;
     private _version?: string;
 
     public withInfo(info: IResponseInfo): ResponseBuilder {
@@ -71,7 +63,7 @@ export default class ResponseBuilder {
         return this;
     }
 
-    public withError(error: IError): ResponseBuilder {
+    public withError(error: IResponseError): ResponseBuilder {
         if (this._loginFailure) {
             throw new Error('Both error and login should not exist at the same time.');
         }
@@ -80,7 +72,7 @@ export default class ResponseBuilder {
         return this;
     }
 
-    public withLoginFailure(loginFailure: ILoginFailure): ResponseBuilder {
+    public withLoginFailure(loginFailure: ILoginError): ResponseBuilder {
         if (this._error) {
             throw new Error('Both error and login should not exist at the same time.');
         }

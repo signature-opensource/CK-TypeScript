@@ -10,6 +10,7 @@ namespace CK.AspNet.Auth;
 [TypeScriptImportLibrary( "axios", "^1.7.7", DependencyKind.PeerDependency )]
 [RegisterTypeScriptType( typeof( AuthLevel ), Folder = "CK/AspNet/Auth" )]
 [TypeScriptFile( "AuthService.ts", "AuthService" )]
+[TypeScriptFile( "IAuthServiceConfiguration.ts", "IAuthServiceConfiguration", "IEndPoint" )]
 public class AspNetAuthPackage : TypeScriptPackage
 {
 }

@@ -1,4 +1,5 @@
-import { IUserSchemeInfo, SchemeUsageStatus } from '../authService.model.public';
+import { IUserSchemeInfo } from '../IAuthenticationInfo';
+import {SchemeUsageStatus} from '../SchemeUsageStatus';
 
 export class StdUserSchemeInfo implements IUserSchemeInfo {
 

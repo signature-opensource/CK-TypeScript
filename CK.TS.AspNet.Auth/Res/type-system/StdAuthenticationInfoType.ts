@@ -1,7 +1,7 @@
 import { IAuthenticationInfoType, IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl, StdKeyType } from './type-system.model';
-import { IUserInfo } from '../authService.model.public';
+import { IUserInfo } from '../IAuthenticationInfo';
 import { StdAuthenticationInfo } from './StdAuthenticationInfo';
-import { IResponseInfo, IResponseScheme } from '../authService.model.private';
+import { IResponseInfo, IResponseScheme } from '../IWebFrontAuthResponse';
 
 export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserInfo> {
 
@@ -34,7 +34,7 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
      * @param availableSchemes The optional list of available schemes. When empty, all user schemes' status is Active.
      */
     public fromServerResponse(o: {[index:string]: any}, availableSchemes?: ReadonlyArray<string>): IAuthenticationInfoImpl<IUserInfo>|null {
-        if (!o) return null; 
+        if (!o) return null;
         const user = this._typeSystem.userInfo.fromServerResponse(o[StdKeyType.user], availableSchemes);
         // ActualUser may be null here.
         const actualUser = this._typeSystem.userInfo.fromServerResponse(o[StdKeyType.actualUser], availableSchemes);
@@ -51,20 +51,20 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
     /**
      * Returns the authentication and available schemes previously saved by saveToLocalStorage.
      * @param storage Storage API to use.
-     * @param endPoint The authentication end point. Informations are stored relatively to this end point. 
+     * @param endPoint The authentication end point. Informations are stored relatively to this end point.
      * @param availableSchemes
      * The optional list of available schemes that are used to update the users' scheme's state (Unused/Active/Deprecated).
      * When specified (not null nor undefined), this parameter takes precedence over the schemes persisted in the local storage (if any).
-     * @returns A valid (AuthLevel.Unsafe) authentication info or null and the schemes. 
+     * @returns A valid (AuthLevel.Unsafe) authentication info or null and the schemes.
      */
     public loadFromLocalStorage( storage: Storage,
                                  endPoint: string,
                                  availableSchemes? : ReadonlyArray<string> ) : [IAuthenticationInfoImpl<IUserInfo>|null,ReadonlyArray<string>] {
         const schemesS = storage.getItem( '$AuthSchemes$'+endPoint );
-        const schemes = (availableSchemes === null || availableSchemes === undefined) 
+        const schemes = (availableSchemes === null || availableSchemes === undefined)
                             ? (schemesS ? JSON.parse( schemesS ) : null)
                             : availableSchemes;
-        
+
         const authInfoS = storage.getItem( '$AuthInfo$'+endPoint );
         if( authInfoS ) {
             let auth = this.fromServerResponse( JSON.parse(authInfoS), schemes );
@@ -79,11 +79,11 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
      * @param auth The authentication information to serialize as a response server.
      */
     public toServerResponse( auth: IAuthenticationInfoImpl<IUserInfo> ) : Object {
-        const o : IResponseInfo = 
-        { 
-            user: { 
-                name: auth.unsafeUser.userName, 
-                id: auth.unsafeUser.userId, 
+        const o : IResponseInfo =
+        {
+            user: {
+                name: auth.unsafeUser.userName,
+                id: auth.unsafeUser.userId,
                 schemes: auth.unsafeUser.schemes.map( function( s ) { return { name: s.name, lastUsed: s.lastUsed }; } ) },
             exp: auth.expires,
             cexp: auth.criticalExpires,
@@ -91,9 +91,9 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
         };
         if( auth.isImpersonated ) {
             o.actualUser = {
-                name: auth.unsafeActualUser.userName, 
-                id: auth.unsafeActualUser.userId, 
-                schemes: auth.unsafeActualUser.schemes.map( function( s ) { return { name: s.name, lastUsed: s.lastUsed }; 
+                name: auth.unsafeActualUser.userName,
+                id: auth.unsafeActualUser.userId,
+                schemes: auth.unsafeActualUser.schemes.map( function( s ) { return { name: s.name, lastUsed: s.lastUsed };
                 } )
             }
         }
@@ -103,13 +103,13 @@ export class StdAuthenticationInfoType implements IAuthenticationInfoType<IUserI
     /**
      * Saves the authentication info and currently available schemes into the local storage.
      * @param storage Storage API to use.
-     * @param endPoint The authentication end point. Informations are stored relatively to this end point. 
+     * @param endPoint The authentication end point. Informations are stored relatively to this end point.
      * @param auth The authentication info to save. Null to remove current authentication information.
      * @param schemes Optional available schemes to save. By default, any existing persisted schemes are left as-is.
      */
-    public saveToLocalStorage( storage: Storage, 
-                               endPoint: string, 
-                               auth: IAuthenticationInfoImpl<IUserInfo>|null, 
+    public saveToLocalStorage( storage: Storage,
+                               endPoint: string,
+                               auth: IAuthenticationInfoImpl<IUserInfo>|null,
                                schemes?: ReadonlyArray<string> ) {
         if( schemes ) storage.setItem( '$AuthSchemes$'+endPoint, JSON.stringify( schemes ) );
         if( !auth )

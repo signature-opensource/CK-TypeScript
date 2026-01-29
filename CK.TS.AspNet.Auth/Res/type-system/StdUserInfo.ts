@@ -1,4 +1,4 @@
-import { IUserSchemeInfo, IUserInfo } from '../authService.model.public';
+import { IUserSchemeInfo, IUserInfo } from '../IAuthenticationInfo';
 
 export class StdUserInfo implements IUserInfo {
 
@@ -13,9 +13,9 @@ export class StdUserInfo implements IUserInfo {
 
     /** Gets the user name. This is the empty string for the Anonymous user. */
     public get userName(): string { return this._userName; }
-    
-    /** 
-     * Gets the authentication schemes that this user has used to authenticate so far, where the first one in the list 
+
+    /**
+     * Gets the authentication schemes that this user has used to authenticate so far, where the first one in the list
      * is the current one (this array is sorted on descending @see IUserSchemeInfo.lastUsed dates).
      * This is empty for Anonymous user.
      */
@@ -27,7 +27,7 @@ export class StdUserInfo implements IUserInfo {
         if( (this._userName.length === 0) !== (userId === 0) ) {
             throw new Error( `${this._userName} is empty if and only ${this._userId} is 0.`);
         }
-        this._schemes = schemes 
+        this._schemes = schemes
                             ? [ ...schemes ].sort( (a, b) => b.lastUsed.getUTCMilliseconds() - a.lastUsed.getUTCMilliseconds() )
                             : StdUserInfo.emptySchemes;
     }

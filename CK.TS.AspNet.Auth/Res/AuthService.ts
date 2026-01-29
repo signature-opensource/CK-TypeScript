@@ -1,11 +1,10 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
 import { AuthLevel } from './AuthLevel';
-
-import { IWebFrontAuthResponse, AuthServiceConfiguration } from './index.private';
-import { IAuthenticationInfo, IUserInfo, IAuthServiceConfiguration, IWebFrontAuthError, ILastResult } from './authService.model.public';
-import { WebFrontAuthError } from './authService.model.extension';
-import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system/type-system.model';
-import { StdAuthenticationTypeSystem } from './type-system/StdAuthenticationTypeSystem';
+import { AuthServiceConfiguration, IAuthServiceConfiguration } from './IAuthServiceConfiguration';
+import { IAuthenticationInfo, IUserInfo } from './IAuthenticationInfo';
+import { WebFrontAuthError, IWebFrontAuthError, ILastResult } from './ILastResult';
+import { IWebFrontAuthResponse } from './IWebFrontAuthResponse';
+import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl, StdAuthenticationTypeSystem } from './type-system/';
 import { PopupDescriptor } from './PopupDescriptor';
 
 export class AuthService<T extends IUserInfo = IUserInfo> {
@@ -52,9 +51,9 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     /** Gets whether this AuthService is closed: no method should be called anymore. */
     public get isClosed(): boolean { return this.#closed; }
 
-    /** 
-     * A promise resolved when this AuthService has been initialized: refresh has been called at least once. 
-     * This is awaitable and should be used when initialization is handled by out-of-reach code. 
+    /**
+     * A promise resolved when this AuthService has been initialized: refresh has been called at least once.
+     * This is awaitable and should be used when initialization is handled by out-of-reach code.
      * This doesn't capture the potential error: the error is for the refresh caller and this {@link authenticationInfo}
      * is anonymous (and {@link lastResult} can be used if needed).
      */
@@ -538,7 +537,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
     /**
     * Starts an inline login with the provided scheme. Local context is lost since the process will go through one or more pages
     * before redirecting to the provided return url.
-    * @param provider The authentication scheme to use.
+    * @param scheme The authentication scheme to use.
     * @param returnUrl The final return url. Must starts with one of the configured AllowedReturnUrls.
     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
@@ -562,7 +561,7 @@ export class AuthService<T extends IUserInfo = IUserInfo> {
 
     /**
     * Starts a login process in a popup window: this is the preferred way to do.
-    * @param provider The authentication scheme to use.
+    * @param scheme The authentication scheme to use.
     * @param rememberMe False to avoid any memorization (a session cookie is used). When undefined, the current rememberMe value is used.
     * @param impersonateActualUser True to impersonate the current actual user if any. Defaults to false.
     * @param serverData Optional Server data is sent to the backend: the backend can use it to drive its behavior

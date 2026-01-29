@@ -1,4 +1,24 @@
-import { IAuthServiceConfiguration, IEndPoint } from './authService.model.public';
+﻿/** Describes the AuthService configuration. */
+export interface IAuthServiceConfiguration {
+    /** Gets the endpoint to use. Can simply be the url of the server (prefixed with
+     *  the protocol 'http://' or 'https://').
+     */
+    readonly identityEndPoint?: IEndPoint|string;
+    /** False to disable local storage (this defaults to true).
+     * Current authentication is stored and restored (at Unsafe level)
+     * if server cannot be initially reached. */
+    readonly useLocalStorage?: boolean;
+}
+
+/** Defines the server address. */
+export interface IEndPoint {
+    /** Gets the host name. Can be an ip address. */
+    readonly hostname?: string;
+    /** Gets the port. Can be undefined if standard port is used (440 for https, 80 for http). */
+    readonly port?: number;
+    /** Gets whether http should be used instead of https. Obviously defaults to false. */
+    readonly disableSsl?: boolean;
+}
 
 export class AuthServiceConfiguration {
     readonly #identityServerEndPoint: string;
@@ -71,5 +91,4 @@ export class AuthServiceConfiguration {
         }
         return storage;
     }
-
 }

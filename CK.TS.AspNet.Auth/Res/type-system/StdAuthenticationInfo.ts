@@ -1,4 +1,4 @@
-import { IUserInfo } from '../authService.model.public';
+import { IUserInfo } from '../IAuthenticationInfo';
 import { AuthLevel } from '../AuthLevel';
 import { IAuthenticationInfoTypeSystem, IAuthenticationInfoImpl } from './type-system.model';
 
@@ -15,51 +15,51 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     private readonly _level: AuthLevel;
     private readonly _deviceId: string;
 
-    /** 
-     * Gets the user information as long as the @see level is @see AuthLevel.Normal or @see AuthLevel.Critical. 
-     * When @see AuthLevel.None or @see AuthLevel.Unsafe, this is the Anonymous user information. 
+    /**
+     * Gets the user information as long as the @see level is @see AuthLevel.Normal or @see AuthLevel.Critical.
+     * When @see AuthLevel.None or @see AuthLevel.Unsafe, this is the Anonymous user information.
      * */
     public get user(): IUserInfo { return this._level !== AuthLevel.Unsafe ? this._user : this._typeSystem.userInfo.anonymous }
-    
+
     /** Gets the user information, regardless of the @see level. */
     public get unsafeUser(): IUserInfo { return this._user; }
-    
-    /** 
-     * Gets the actual user information as long as the @see level is @see AuthLevel.Normal or @see AuthLevel.Critical. 
-     * When @see AuthLevel.None or @see AuthLevel.Unsafe, this is the Anonymous user information. 
+
+    /**
+     * Gets the actual user information as long as the @see level is @see AuthLevel.Normal or @see AuthLevel.Critical.
+     * When @see AuthLevel.None or @see AuthLevel.Unsafe, this is the Anonymous user information.
      * This actual user is not the same as this user if @see isImpersonated is true.
     */
     public get actualUser(): IUserInfo { return this._level !== AuthLevel.Unsafe ? this._actualUser : this._typeSystem.userInfo.anonymous }
-   
-    /** 
-     * Gets the unsafe actual user information regardless of the @see level.  
+
+    /**
+     * Gets the unsafe actual user information regardless of the @see level.
      * This actual user is not the same as this user if @see isImpersonated is true.
     */
     public get unsafeActualUser(): IUserInfo { return this._actualUser; }
 
-    /** 
-     * Gets the expiration date. This is undefined if this information has already expired. 
+    /**
+     * Gets the expiration date. This is undefined if this information has already expired.
      * This expires is guaranteed to be after (or equal to) criticalExpires.
     */
     public get expires(): Date|undefined { return this._expires; }
 
-    /** 
-     * Gets the critical expiration date. 
-     * This is undefined if this information has no critical expiration date, ie. when level is not AuthLevel.Critical. 
+    /**
+     * Gets the critical expiration date.
+     * This is undefined if this information has no critical expiration date, ie. when level is not AuthLevel.Critical.
      * When defined, this criticalExpires is guaranteed to be before (or equal to) expires.
      */
     public get criticalExpires(): Date|undefined { return this._criticalExpires; }
 
-        
-    /** 
-     * Gets the device identifier. 
+
+    /**
+     * Gets the device identifier.
      * The empty string is the default (unset, unknown) device identifier.
      */
     public get deviceId(): string { return this._deviceId; }
 
-    /** 
+    /**
      * Gets whether an impersonation is active here: @see unsafeUser is not the same as the @see unsafeActualUser.
-     * Note that @see user and @see actualUser may be both the Anonymous user if @see level is @see AuthLevel.None 
+     * Note that @see user and @see actualUser may be both the Anonymous user if @see level is @see AuthLevel.None
      * or @see AuthLevel.Unsafe.
      */
     public get isImpersonated(): boolean { return this._user !== this._actualUser; }
@@ -68,7 +68,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     public get level(): AuthLevel { return this._level; }
 
     /**
-     * Initializes a new StdAuthenticationInfo. 
+     * Initializes a new StdAuthenticationInfo.
      * Note that expiration dates are checked against the utcNow parameter so that @see level is
      * automatically computed.
      * @param typeSystem Required type system.
@@ -135,11 +135,11 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     public checkExpiration(utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         utcNow = utcNow || new Date(Date.now());
         let level = this._level;
-        if (level < AuthLevel.Normal 
+        if (level < AuthLevel.Normal
             || (level === AuthLevel.Critical && this._criticalExpires!.getTime() > utcNow.getTime())) {
             return this;
         }
-        // level is necessarily greater or equal to Normal. 
+        // level is necessarily greater or equal to Normal.
         if (this._expires!.getTime() > utcNow.getTime()) {
             if (level === AuthLevel.Normal) { return this; }
             return this.create(this._actualUser, this._user, this._expires, undefined, this._deviceId, utcNow);
@@ -172,7 +172,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
      */
     public setCriticalExpires(criticalExpires?: Date, utcNow?: Date): IAuthenticationInfoImpl<IUserInfo> {
         if (this.areDateEquals(criticalExpires, this._criticalExpires)) return this.checkExpiration(utcNow);
-        
+
         let newExpires: Date|undefined = this._expires;
         if (criticalExpires && (!newExpires || newExpires.getTime() < criticalExpires.getTime())) {
             newExpires = criticalExpires;
@@ -221,7 +221,7 @@ export class StdAuthenticationInfo implements IAuthenticationInfoImpl<IUserInfo>
     }
 
    /**
-     * Creates a new StdAuthenticationInfo bound to the same IAuthenticationInfoTypeSystem<T>. 
+     * Creates a new StdAuthenticationInfo bound to the same IAuthenticationInfoTypeSystem<T>.
      * Note that expiration dates are checked against the utcNow parameter so that level is
      * automatically computed.
      * @param actualUser Actual user information. May be null: resolves to the user parameter or the Anonymous user.

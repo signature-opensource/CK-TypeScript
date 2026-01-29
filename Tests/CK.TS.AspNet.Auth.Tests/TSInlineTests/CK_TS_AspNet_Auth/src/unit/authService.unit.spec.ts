@@ -1,7 +1,8 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
-import { AuthService, IAuthenticationInfo, AuthLevel, IUserInfo, SchemeUsageStatus, WebFrontAuthError } from '@local/ck-gen';
-import { IWebFrontAuthResponse } from '@local/ck-gen/CK/AspNet/Auth/index.private';
+import { AuthService, IAuthenticationInfo, AuthLevel, IUserInfo, SchemeUsageStatus } from '@local/ck-gen';
+import { WebFrontAuthError } from '@local/ck-gen/CK/AspNet/Auth/ILastResult';
+import { IWebFrontAuthResponse } from '@local/ck-gen/CK/AspNet/Auth/IWebFrontAuthResponse';
 import { areSchemesEquals, areUserInfoEquals } from '../helpers/test-helpers';
 import ResponseBuilder from '../helpers/response-builder';
 
@@ -294,7 +295,7 @@ describe('AuthService', function () {
                 .withRefreshable(true)
                 .build();
             await authService.basicLogin('', '');
-     
+
             expect(areUserInfoEquals(authService.authenticationInfo.user, loginInfo)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.unsafeUser, loginInfo)).toBe(true);
             expect(areUserInfoEquals(authService.authenticationInfo.actualUser, loginInfo)).toBe(true);
