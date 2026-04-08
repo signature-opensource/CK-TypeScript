@@ -41,8 +41,8 @@ export class Login implements OnInit {
     // <PostLocalVariables />
 
     constructor() {
-        this.#authService.authService.addOnChange(async (auth) => {
-            if (auth.authenticationInfo.user.userId !== 0) {
+        effect(() => {
+            if (this.#authService.authenticationInfo().user.userId !== 0) {
                 this.#router.navigate([this.redirectionPath]);
             }
         });
