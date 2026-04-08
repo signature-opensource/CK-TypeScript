@@ -1,9 +1,6 @@
 <Project>
 
-  <Target Name="AddPreserveCKNgAspNetAuthBasicGeneratedFile"
-          BeforeTargets="BeforeCompile;CoreCompile"
-          Inputs="$(MSBuildAllProjects)"
-          Outputs="$(IntermediateOutputPath)CK.Ng.AspNet.Auth.Basic.AutoAttributes.g.cs">
+  <Target Name="AddPreserveCKNgAspNetAuthBasicGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)CK.Ng.AspNet.Auth.Basic.AutoAttributes.g.cs">
     <PropertyGroup>
       <GeneratedFilePath>$(IntermediateOutputPath)CK.Ng.AspNet.Auth.Basic.AutoAttributes.g.cs</GeneratedFilePath>
     </PropertyGroup>
@@ -11,10 +8,7 @@
       <Compile Include="$(GeneratedFilePath)" />
       <FileWrites Include="$(GeneratedFilePath)" />
     </ItemGroup>
-    <WriteLinesToFile Lines="[assembly: CK.Setup.PreserveAssemblyReferenceAttribute(typeof(CK.Ng.AspNet.Auth.Basic.AspNetAuthBasicPackage))]"
-                      File="$(GeneratedFilePath)"
-                      WriteOnlyWhenDifferent="true"
-                      Overwrite="true" />
+    <WriteLinesToFile Lines="[assembly: CK.Setup.PreserveAssemblyReferenceAttribute(typeof(CK.Ng.AspNet.Auth.Basic.AspNetAuthBasicPackage))]" File="$(GeneratedFilePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
   </Target>
 
 </Project>
