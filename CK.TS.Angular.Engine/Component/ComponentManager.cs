@@ -93,7 +93,7 @@ sealed class ComponentManager
         foreach( var (name, type) in _namedComponents )
         {
             b.Append( "    case " ).AppendSourceString( name )
-                .Append( ": return import( '../../" ).AppendSourceString( type.ImportPath )
+                .Append( ": return import( '../../" ).Append( type.ImportPath )
                 .Append( "' ).then( c => c." )
                 .Append( type.TypeName ).Append( " );" ).NewLine();
         }
