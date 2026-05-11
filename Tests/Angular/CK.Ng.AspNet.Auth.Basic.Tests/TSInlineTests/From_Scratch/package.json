@@ -44,8 +44,8 @@
     "tslib": "^2.3"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.23",
-    "@angular/cli": "^20.3.23",
+    "@angular/build": "^20.3.25",
+    "@angular/cli": "^20.3.25",
     "@angular/compiler-cli": "^20.3",
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.6.2",
