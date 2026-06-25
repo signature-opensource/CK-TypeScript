@@ -16,7 +16,7 @@ export type CKLocales = {
 };
 
 export const locales: CKLocales = {
-  "en": { name: 'en', "nativeName": 'English', "englishName": 'English', "id": 221277614 },
+  "en": { name: 'en', "nativeName": 'English', "englishName": 'English', "id": 221272233 },
 }
 
 export const DEFAULT_LOCALE_INFO = locales['en'];

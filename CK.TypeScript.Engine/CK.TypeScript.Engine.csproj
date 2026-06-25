@@ -11,7 +11,6 @@
       
     <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
     <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
-    <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
     <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
     <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
     <ProjectReference Include="..\CK.TypeScript.CodeGen\CK.TypeScript.CodeGen.csproj" />
