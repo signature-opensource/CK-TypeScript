@@ -23,7 +23,6 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/CK.EmbeddedResources.Globalization.Tests/CK.EmbeddedResources.Globalization.Tests.csproj" />
     <Project Path="Tests/CK.ResourceSpace.Globalization.Tests/CK.ResourceSpace.Globalization.Tests.csproj" />
-    <Project Path="Tests/CK.ResourceSpace.Tests/CK.ResourceSpace.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.Auth.Tests/CK.TS.AspNet.Auth.Tests.csproj" />
     <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
   </Folder>
@@ -48,10 +47,8 @@
   <Project Path="CK.Ng.Localization/CK.Ng.Localization.csproj" />
   <Project Path="CK.Ng.PublicPage/CK.Ng.PublicPage.csproj" />
   <Project Path="CK.Ng.Zorro/CK.Ng.Zorro.csproj" />
-  <Project Path="CK.ResourceSpace.Assets/CK.ResourceSpace.Assets.csproj" />
   <Project Path="CK.ResourceSpace.Globalization/CK.ResourceSpace.Globalization.csproj" />
   <Project Path="CK.ResourceSpace.Transformable/CK.ResourceSpace.Transformable.csproj" />
-  <Project Path="CK.ResourceSpace/CK.ResourceSpace.csproj" />
   <Project Path="CK.Testing.TypeScriptEngine/CK.Testing.TypeScriptEngine.csproj" />
   <Project Path="CK.TS.Angular.Engine/CK.TS.Angular.Engine.csproj" />
   <Project Path="CK.TS.Angular/CK.TS.Angular.csproj" />

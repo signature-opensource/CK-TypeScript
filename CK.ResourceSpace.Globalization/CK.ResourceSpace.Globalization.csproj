@@ -7,7 +7,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CK.EmbeddedResources.Globalization\CK.EmbeddedResources.Globalization.csproj" />
-        <ProjectReference Include="..\CK.ResourceSpace\CK.ResourceSpace.csproj" />
     </ItemGroup>
 
 </Project>
