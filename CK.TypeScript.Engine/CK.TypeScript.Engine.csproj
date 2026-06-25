@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>13</LangVersion>
@@ -8,8 +8,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="33.0.1" />
-    <PackageReference Include="CK.ResourceSpace.Assets" Version="0.32.0--ci.2" />
-    <PackageReference Include="CK.ResourceSpace.Globalization" Version="0.0.0-0" />
+    <PackageReference Include="CK.ResourceSpace.Assets" Version="0.32.0--ci.4" />
+    <PackageReference Include="CK.ResourceSpace.Globalization" Version="0.32.0--ci.4" />
       
     <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
     <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
