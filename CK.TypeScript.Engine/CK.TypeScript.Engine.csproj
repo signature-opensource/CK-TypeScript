@@ -9,9 +9,10 @@
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="33.0.1" />
     <PackageReference Include="CK.ResourceSpace.Assets" Version="0.32.0--ci.2" />
+    <PackageReference Include="CK.ResourceSpace.Globalization" Version="0.0.0-0" />
+      
     <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />
     <ProjectReference Include="..\CK.Less.Transform\CK.Less.Transform.csproj" />
-    <ProjectReference Include="..\CK.ResourceSpace.Globalization\CK.ResourceSpace.Globalization.csproj" />
     <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
     <ProjectReference Include="..\CK.TypeScript.Transform\CK.TypeScript.Transform.csproj" />
     <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />

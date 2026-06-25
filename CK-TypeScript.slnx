@@ -21,7 +21,6 @@
     <File Path="NuGet.config" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="Tests/CK.EmbeddedResources.Globalization.Tests/CK.EmbeddedResources.Globalization.Tests.csproj" />
     <Project Path="Tests/CK.ResourceSpace.Globalization.Tests/CK.ResourceSpace.Globalization.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.Auth.Tests/CK.TS.AspNet.Auth.Tests.csproj" />
     <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
@@ -39,7 +38,6 @@
     <Project Path="Tests/BuildMode/CK-TS-JsonGraphSerializer/CK.TS.JsonGraphSerializer.Tests/CK.TS.JsonGraphSerializer.Tests.csproj" />
     <Project Path="Tests/BuildMode/CK-TS-JsonGraphSerializer/CK.TS.JsonGraphSerializer/CK.TS.JsonGraphSerializer.csproj" />
   </Folder>
-  <Project Path="CK.EmbeddedResources.Globalization/CK.EmbeddedResources.Globalization.csproj" />
   <Project Path="CK.IO.Core/CK.IO.Core.csproj" />
   <Project Path="CK.Ng.AspNet.Auth.Basic/CK.Ng.AspNet.Auth.Basic.csproj" />
   <Project Path="CK.Ng.AspNet.Auth/CK.Ng.AspNet.Auth.csproj" />
@@ -47,7 +45,6 @@
   <Project Path="CK.Ng.Localization/CK.Ng.Localization.csproj" />
   <Project Path="CK.Ng.PublicPage/CK.Ng.PublicPage.csproj" />
   <Project Path="CK.Ng.Zorro/CK.Ng.Zorro.csproj" />
-  <Project Path="CK.ResourceSpace.Globalization/CK.ResourceSpace.Globalization.csproj" />
   <Project Path="CK.ResourceSpace.Transformable/CK.ResourceSpace.Transformable.csproj" />
   <Project Path="CK.Testing.TypeScriptEngine/CK.Testing.TypeScriptEngine.csproj" />
   <Project Path="CK.TS.Angular.Engine/CK.TS.Angular.Engine.csproj" />

@@ -8,7 +8,6 @@
     <PackageReference Include="CSemVer" Version="13.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CK.ResourceSpace.Globalization\CK.ResourceSpace.Globalization.csproj" />
     <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
   </ItemGroup>
   <ItemGroup>
