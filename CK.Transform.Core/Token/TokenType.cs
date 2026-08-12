@@ -3,7 +3,7 @@ using System;
 namespace CK.Transform.Core;
 
 /// <summary>
-/// Type of token that can be extended to support othrogonal classes.
+/// Type of token that can be extended to support orthogonal classes.
 /// <see cref="TokenTypeExtensions.ReserveTokenClass(int, string)"/>.
 /// <para>
 /// This <see cref="TokenType"/> extends the byte <see cref="BasicTokenType"/>.
