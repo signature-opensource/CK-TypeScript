@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.AppIdentity.Hosting" Version="0.14.1" />
-    <PackageReference Include="CK.Testing.AspNetServer" Version="21.0.1" />
+    <PackageReference Include="CK.Testing.AspNetServer" Version="21.0.2--ci.1" />
     <PackageReference Include="CK.Testing.StObjEngine" Version="33.0.2--ci.1" />
     <PackageReference Include="CK.Testing.Nunit" Version="15.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
