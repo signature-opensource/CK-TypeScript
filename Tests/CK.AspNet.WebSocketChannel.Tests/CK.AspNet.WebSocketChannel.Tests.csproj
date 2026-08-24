@@ -13,5 +13,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.AspNet.WebSocketChannel\CK.AspNet.WebSocketChannel.csproj" />
+    <ProjectReference Include="..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSInlineTests\" />
   </ItemGroup>
 </Project>

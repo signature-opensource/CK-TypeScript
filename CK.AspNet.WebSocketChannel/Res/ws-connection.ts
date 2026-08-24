@@ -94,9 +94,22 @@ export class WSConnection {
   /**
    * Registers the handler of one topic. One handler per topic: registering again replaces the previous
    * one, which is what lets a feature call this on every reconnection without accumulating.
+   * <para>
+   * When a connection is already established, {@link WSTopicHandler.onConnected} is called right away.
+   * Without this a feature registering on a live connection would hear nothing until the next
+   * reconnection, and would have to catch that case up by hand - a trap nobody should have to know
+   * about, since onConnected is where a feature negotiates.
+   * </para>
    */
   addHandler( topic: string, handler: WSTopicHandler ): void {
     this.#handlers.set( topic, handler );
+    if ( this.#connectionId !== undefined ) {
+      try {
+        handler.onConnected?.( this.#connectionId );
+      } catch ( e ) {
+        console.error( `WSConnection: onConnected of topic '${topic}' threw.`, e );
+      }
+    }
   }
 
   /**
