@@ -34,6 +34,27 @@ export interface WSTopicHandler {
 const RECONNECT_MIN_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
 
+// The two frames a server can send. They are narrowed by these guards rather than described by a type
+// annotation on the parse result: JSON.parse returns any, so an annotation would state a hope and check
+// nothing - it lets a null or a number through, and the first property access throws. Taking the parse
+// result as unknown is what makes the compiler require these.
+//
+// Only the envelope is guarded, not the payload: the envelope is shared and decides where the bytes go,
+// so a malformed one must not reach a handler. What is inside belongs to one feature and degrades on
+// its own.
+
+/** The handshake: the first frame of a connection, and the only one carrying no topic. */
+function isNegotiation( o: unknown ): o is { connectionId: string } {
+  return typeof o === 'object' && o !== null
+    && typeof ( o as { connectionId?: unknown } ).connectionId === 'string';
+}
+
+/** An application frame: a topic to route on, and a payload this class never interprets. */
+function isEnvelope( o: unknown ): o is { topic: string; message: unknown } {
+  return typeof o === 'object' && o !== null
+    && typeof ( o as { topic?: unknown } ).topic === 'string';
+}
+
 /**
  * The one WebSocket connection of the application.
  *
@@ -146,28 +167,34 @@ export class WSConnection {
     }
     this.#socket = socket;
     socket.onmessage = event => this.#onMessageEvent( socket, event );
-    // onerror is always followed by onclose: reconnection is handled there only, so a single failure
-    // cannot schedule two attempts.
-    socket.onerror = () => console.warn( 'WSConnection: socket error.' );
+    // Same staleness guard as the other two handlers: an error on a socket already replaced would
+    // otherwise be reported as if it were the current channel. Nothing else here - onerror is always
+    // followed by onclose, and reconnection is handled there only, so that a single failure cannot
+    // schedule two attempts.
+    socket.onerror = () => {
+      if ( socket !== this.#socket ) return;
+      console.warn( 'WSConnection: socket error.' );
+    };
     socket.onclose = event => this.#onCloseEvent( socket, event );
   }
 
   #onMessageEvent( socket: WebSocket, event: MessageEvent ): void {
     // A late message from a socket already replaced by a reconnection must be ignored.
     if ( socket !== this.#socket ) return;
-    let data: { connectionId?: string; topic?: string; message?: unknown };
+    let data: unknown;
     try {
       data = JSON.parse( event.data );
     } catch ( e ) {
       console.error( 'WSConnection: unparseable message.', e );
       return;
     }
-    // The negotiation is the first message of a connection, and the only one without a topic.
-    if ( this.#connectionId === undefined && typeof data.connectionId === 'string' ) {
+    // The negotiation is the first frame of a connection: once we have an identifier, anything that
+    // looks like one again is stale and falls through to the warning below.
+    if ( this.#connectionId === undefined && isNegotiation( data ) ) {
       this.#onNegotiated( data.connectionId );
       return;
     }
-    if ( typeof data.topic !== 'string' ) {
+    if ( !isEnvelope( data ) ) {
       console.warn( 'WSConnection: message without a topic, ignored.' );
       return;
     }
