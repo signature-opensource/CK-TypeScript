@@ -23,7 +23,7 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/CK.ResourceSpace.Globalization.Tests/CK.ResourceSpace.Globalization.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.Auth.Tests/CK.TS.AspNet.Auth.Tests.csproj" />
-    <Project Path="Tests/CK.AspNet.WebSocketChannel.Tests/CK.AspNet.WebSocketChannel.Tests.csproj" />
+    <Project Path="Tests/CK.TS.AspNet.WebSocketChannel.Tests/CK.TS.AspNet.WebSocketChannel.Tests.csproj" />
   <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/Angular/">
@@ -45,7 +45,7 @@
   <Project Path="CK.Ng.Axios/CK.Ng.Axios.csproj" />
   <Project Path="CK.Ng.Localization/CK.Ng.Localization.csproj" />
   <Project Path="CK.Ng.PublicPage/CK.Ng.PublicPage.csproj" />
-  <Project Path="CK.Ng.WebSocketChannel/CK.Ng.WebSocketChannel.csproj" />
+  <Project Path="CK.Ng.AspNet.WebSocketChannel/CK.Ng.AspNet.WebSocketChannel.csproj" />
   <Project Path="CK.Ng.Zorro/CK.Ng.Zorro.csproj" />
   <Project Path="CK.ResourceSpace.Transformable/CK.ResourceSpace.Transformable.csproj" />
   <Project Path="CK.Testing.TypeScriptEngine/CK.Testing.TypeScriptEngine.csproj" />
@@ -55,6 +55,6 @@
   <Project Path="CK.TypeScript.CodeGen/CK.TypeScript.CodeGen.csproj" />
   <Project Path="CK.TypeScript.Engine/CK.TypeScript.Engine.csproj" />
   <Project Path="CK.TypeScript.LiveEngine/CK.TypeScript.LiveEngine.csproj" />
-  <Project Path="CK.AspNet.WebSocketChannel/CK.AspNet.WebSocketChannel.csproj" />
+  <Project Path="CK.TS.AspNet.WebSocketChannel/CK.TS.AspNet.WebSocketChannel.csproj" />
   <Project Path="CK.TypeScript/CK.TypeScript.csproj" />
 </Solution>

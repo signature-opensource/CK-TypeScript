@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.AspNet.WebSocketChannel.Tests;
+namespace CK.TS.AspNet.WebSocketChannel.Tests;
 
 /// <summary>
 /// Runs the jest tests of <c>WSConnection</c>.
@@ -24,7 +24,7 @@ public class WSConnectionTSTests
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
 
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
-        engineConfig.FirstBinPath.Assemblies.Add( "CK.AspNet.WebSocketChannel" );
+        engineConfig.FirstBinPath.Assemblies.Add( "CK.TS.AspNet.WebSocketChannel" );
         engineConfig.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
         await engineConfig.RunSuccessfullyAsync();
 

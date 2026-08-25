@@ -3,7 +3,7 @@ using CK.Core;
 using CK.TS.Angular;
 using CK.TypeScript;
 
-namespace CK.Ng.WebSocketChannel;
+namespace CK.Ng.AspNet.WebSocketChannel;
 
 /// <summary>
 /// Provides the one <c>WSConnection</c> of the application and opens it during the bootstrap, so that
@@ -18,7 +18,7 @@ namespace CK.Ng.WebSocketChannel;
 [TypeScriptFile( "WS_CONNECTION_URLToken.ts", "WS_CONNECTION_URL" )]
 [NgProviderImport( "inject", From = "@angular/core" )]
 [NgProviderImport( "WSConnection, WS_CONNECTION_URL" )]
-[NgProviderImport( "provideWSConnectionSupport", From = "@local/ck-gen/CK/Ng/WebSocketChannel/ws-connection-support" )]
+[NgProviderImport( "provideWSConnectionSupport", From = "@local/ck-gen/CK/Ng/AspNet/WebSocketChannel/ws-connection-support" )]
 [NgProvider( "{ provide: WSConnection, useFactory: () => new WSConnection( inject( WS_CONNECTION_URL, { optional: true } ) ?? '/ws' ) }" )]
 [NgProvider( "provideWSConnectionSupport()", "#Support" )]
 public class NgWebSocketChannelPackage : TypeScriptPackage
