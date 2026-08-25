@@ -94,12 +94,16 @@ export class WSConnection {
   /**
    * Registers the handler of one topic. One handler per topic: registering again replaces the previous
    * one, which is what lets a feature call this on every reconnection without accumulating.
-   * <para>
-   * When a connection is already established, {@link WSTopicHandler.onConnected} is called right away.
-   * Without this a feature registering on a live connection would hear nothing until the next
-   * reconnection, and would have to catch that case up by hand - a trap nobody should have to know
-   * about, since onConnected is where a feature negotiates.
-   * </para>
+   *
+   * Topics live in one flat namespace shared by every feature on this socket, and replacing is silent -
+   * it has to be, since a feature cannot be told apart from itself re-registering. So a topic must be
+   * globally unique: **name it after your package**. Anything shorter eventually collides with someone else, and a
+   * collision shows up as another feature's payloads arriving at your handler.
+   *
+   * When a connection is already established, onConnected is called right away. Without this a feature
+   * registering on a live connection would hear nothing until the next reconnection, and would have to
+   * catch that case up by hand - a trap nobody should have to know about, since onConnected is where a
+   * feature negotiates.
    */
   addHandler( topic: string, handler: WSTopicHandler ): void {
     this.#handlers.set( topic, handler );
