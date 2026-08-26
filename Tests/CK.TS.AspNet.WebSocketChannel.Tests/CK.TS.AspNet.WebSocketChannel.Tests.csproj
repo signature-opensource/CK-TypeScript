@@ -4,16 +4,16 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="CK.Testing.StObjEngine" Version="33.0.2--ci.1" />
     <PackageReference Include="CK.Testing.Nunit" Version="15.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
   </ItemGroup>
   <ItemGroup>
-    <!-- These will be package references. -->
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="30.0.2--ci.7" />
+    <ProjectReference Include="..\..\CK.TS.AspNet.WebSocketChannel\CK.TS.AspNet.WebSocketChannel.csproj" />
     <ProjectReference Include="..\..\CK.Testing.TypeScriptEngine\CK.Testing.TypeScriptEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\CK.TS.AspNet.Auth\CK.TS.AspNet.Auth.csproj" />
+    <Folder Include="TSInlineTests\" />
   </ItemGroup>
 </Project>
