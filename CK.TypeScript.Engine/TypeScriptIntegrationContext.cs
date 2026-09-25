@@ -360,6 +360,14 @@ public sealed partial class TypeScriptIntegrationContext
         if( _shouldAlignYarnSdkVersion )
         {
             canSkipRun = false;
+            // Temporary workaround: @yarnpkg/core@4.9.2 (required by @yarnpkg/sdks@3.3.1 through "^4.9.1") has been published
+            // with a "got": "patch:got@npm%3A11.8.2#~/.yarn/patches/..." dependency that references a patch file of the Yarn
+            // repository itself: resolution fails with ENOENT in any project without a yarn.lock.
+            // To be removed once a fixed @yarnpkg/core is published (the pin remains in the projects generated meanwhile).
+            if( _targetPackageJson.EnsureResolution( "@yarnpkg/core", "4.9.1" ) )
+            {
+                monitor.Warn( "Pinning '@yarnpkg/core' to '4.9.1' in package.json \"resolutions\": version 4.9.2 is broken." );
+            }
             finalCommand.Append( "yarn add -D @yarnpkg/sdks && yarn sdks vscode" );
             _shouldAlignYarnSdkVersion = false;
         }

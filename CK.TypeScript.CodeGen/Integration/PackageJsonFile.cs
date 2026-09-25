@@ -343,6 +343,24 @@ public sealed class PackageJsonFile
     public int CKVersion { get => _ckVersion; set => _ckVersion = value; }
 
     /// <summary>
+    /// Ensures that a Yarn "resolutions" entry exists for <paramref name="packageName"/>.
+    /// An existing entry for this package is never changed: the user's choice wins.
+    /// </summary>
+    /// <param name="packageName">The package name (or Yarn resolution pattern).</param>
+    /// <param name="version">The version to use.</param>
+    /// <returns>True if the resolution has been added, false if it already exists.</returns>
+    public bool EnsureResolution( string packageName, string version )
+    {
+        Throw.CheckNotNullOrWhiteSpaceArgument( packageName );
+        Throw.CheckNotNullOrWhiteSpaceArgument( version );
+        if( _file.Root["resolutions"] is not JsonObject resolutions )
+        {
+            _file.Root["resolutions"] = resolutions = new JsonObject();
+        }
+        return resolutions.TryAdd( packageName, version );
+    }
+
+    /// <summary>
     /// Updates the inner <see cref="JsonFile.Root"/>.
     /// </summary>
     /// <param name="peerDependenciesAsDevDependencies">
