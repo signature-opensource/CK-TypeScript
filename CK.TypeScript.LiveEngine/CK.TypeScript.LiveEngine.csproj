@@ -6,8 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CSemVer" Version="13.0.0" />
-    <PackageReference Include="CK.ResourceSpace.Assets" Version="1.0.0--ci.2" />
-    <PackageReference Include="CK.ResourceSpace.Globalization" Version="1.0.0--ci.2" />
+    <PackageReference Include="CK.ResourceSpace.Assets" Version="1.0.0" />
+    <PackageReference Include="CK.ResourceSpace.Globalization" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />

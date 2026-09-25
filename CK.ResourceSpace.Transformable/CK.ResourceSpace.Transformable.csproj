@@ -8,7 +8,7 @@
     <ProjectReference Include="..\CK.Transform.Core\CK.Transform.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization.Sliced" Version="14.0.0--ci.2" />
-    <PackageReference Include="CK.ResourceSpace" Version="1.0.0--ci.2" />
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="14.0.0" />
+    <PackageReference Include="CK.ResourceSpace" Version="1.0.0" />
   </ItemGroup>
 </Project>
