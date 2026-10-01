@@ -118,15 +118,31 @@ public class LiveTests
                                                         }
                                                         """ ) );
 
-            const int waitMs = 300;
-            using( TestHelper.Monitor.OpenInfo( $"Waiting {waitMs} ms." ) )
-            {
-                await Task.Delay( waitMs );
-            }
-            var changed = File.ReadAllText( enFinalPath );
-            changed.ShouldContain( $$"""
+            // The live runner is asynchronous (FileSystemWatcher + debounce): under load (parallel
+            // builds), a fixed delay is not enough. Polls the final file until it is updated or timeout.
+            var expected = $$"""
                     "Public.Title": "{{changeString}}"
-                    """ );
+                    """;
+            const int pollMs = 50;
+            const int timeoutMs = 5000;
+            string? changed = null;
+            using( TestHelper.Monitor.OpenInfo( $"Waiting for '{enFinalPath}' to be updated (at most {timeoutMs} ms)." ) )
+            {
+                for( int elapsed = 0; elapsed < timeoutMs; elapsed += pollMs )
+                {
+                    await Task.Delay( pollMs );
+                    try
+                    {
+                        changed = File.ReadAllText( enFinalPath );
+                        if( changed.Contains( expected ) ) break;
+                    }
+                    catch( IOException )
+                    {
+                        // The file is being written: retry.
+                    }
+                }
+            }
+            changed.ShouldNotBeNull().ShouldContain( expected );
         }
     }
 
