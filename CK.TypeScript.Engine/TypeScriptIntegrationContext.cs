@@ -408,6 +408,7 @@ public sealed partial class TypeScriptIntegrationContext
         {
             return false;
         }
+        YarnHelper.EnsureYarnSdksGitAttributes( monitor, _configuration.TargetProjectPath );
         ReloadAndUpdateLatestDependencies( monitor, _targetPackageJson, manualPeerDeps );
         _lastInstalledTargetPackageJsonContent = _targetPackageJson.WriteAsString();
         return true;
