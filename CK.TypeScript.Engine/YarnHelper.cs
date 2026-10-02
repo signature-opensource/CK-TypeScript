@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace CK.Setup;
 
@@ -320,6 +322,44 @@ public static class YarnHelper
             aboveCount++;
         }
         return default;
+    }
+
+    /// <summary>
+    /// Acquires a machine-wide lock on the root folder of a yarn installation (the folder that contains
+    /// ".yarn/releases"). Two "yarn install" processes that write the same package in the shared ".yarn/cache"
+    /// can fail on Windows (orphan "*.zip-&lt;hash&gt;.tmp" files). The lock makes the installs on one yarn root
+    /// run one after the other.
+    /// <para>
+    /// The lock is a named <see cref="Mutex"/>: it must be released on the thread that acquired it.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="yarnPath">The path of the yarn runtime (".yarn/releases/yarn-x.y.z.cjs").</param>
+    /// <returns>A disposable that releases the lock.</returns>
+    internal static IDisposable AcquireYarnRootLock( IActivityMonitor monitor, NormalizedPath yarnPath )
+    {
+        if( yarnPath.Parts.Count < 4 ) return Util.EmptyDisposable;
+        var yarnRoot = yarnPath.RemoveLastPart( 3 );
+        var hash = Convert.ToHexString( SHA1.HashData( Encoding.UTF8.GetBytes( yarnRoot.Path.ToUpperInvariant() ) ) );
+        var mutex = new Mutex( false, $"CK.TypeScript.YarnRoot.{hash}" );
+        try
+        {
+            if( !mutex.WaitOne( 0 ) )
+            {
+                monitor.Info( $"Waiting for another yarn install on '{yarnRoot}'." );
+                if( !mutex.WaitOne( TimeSpan.FromMinutes( 10 ) ) )
+                {
+                    monitor.Warn( $"Timeout on the yarn root lock of '{yarnRoot}'. Continuing without it." );
+                    mutex.Dispose();
+                    return Util.EmptyDisposable;
+                }
+            }
+        }
+        catch( AbandonedMutexException )
+        {
+            // The previous owner exited without a release: this thread owns the mutex now.
+        }
+        return Util.CreateDisposableAction( () => { mutex.ReleaseMutex(); mutex.Dispose(); } );
     }
 
     internal static bool DoRunYarn( IActivityMonitor monitor,

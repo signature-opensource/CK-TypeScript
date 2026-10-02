@@ -404,7 +404,13 @@ public sealed partial class TypeScriptIntegrationContext
         {
             _targetPackageJson.Save();
         }
-        if( !RunSavePackageJsonFinalCommand( monitor, finalCommand, _configuration.TargetProjectPath ) )
+        bool success;
+        // The installs of parallel test processes share the ".yarn/cache" of the yarn root.
+        using( YarnHelper.AcquireYarnRootLock( monitor, _yarnPath ) )
+        {
+            success = RunSavePackageJsonFinalCommand( monitor, finalCommand, _configuration.TargetProjectPath );
+        }
+        if( !success )
         {
             return false;
         }
