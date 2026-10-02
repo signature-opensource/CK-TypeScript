@@ -128,18 +128,16 @@ public static class YarnHelper
             }
             else
             {
-                var gitRoot = targetProjectPath.PathsToFirstPart( null, [".git"] ).FirstOrDefault( p => Directory.Exists( p ) );
-                if( gitRoot.IsEmptyPath )
+                // The repository root is the folder of the git working tree. In a git worktree, it is
+                // the worktree folder, not the main checkout: each worktree has its own shared yarn.
+                if( !LocalDevSolution.TryFindSolutionFolder( targetProjectPath, out var yarnRootPath, out _, out _ ) )
                 {
                     monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
                     yarnPath = AutoInstall( monitor, targetProjectPath, yarnPath );
                 }
                 else
                 {
-                    Throw.DebugAssert( gitRoot.LastPart == ".git" );
-                    monitor.Info( $"Git root found: '{gitRoot}'. Setting up a shared .yarn cache." );
-                    aboveCount = targetProjectPath.Parts.Count - gitRoot.Parts.Count + 1;
-                    var yarnRootPath = targetProjectPath.RemoveLastPart( aboveCount );
+                    monitor.Info( $"Git root found: '{yarnRootPath}'. Setting up a shared .yarn cache." );
                     monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{yarnRootPath}'." );
                     yarnPath = AutoInstall( monitor, yarnRootPath, yarnPath );
                 }
