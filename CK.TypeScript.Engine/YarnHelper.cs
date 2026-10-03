@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace CK.Setup;
 
@@ -86,6 +88,21 @@ public static class YarnHelper
         return SVersion.Create( packageJson.Version.Major, packageJson.Version.Minor, packageJson.Version.Patch );
     }
 
+    // Yarn writes the .yarn/sdks files with LF, except integrations.yml that uses CRLF. A repository-wide
+    // "eol=crlf" checks them all out with CRLF: the size recorded in the index then differs from the
+    // regenerated file and git reports them as modified even if their content is unchanged.
+    // The rules below align the checkout with what Yarn writes.
+    // The file itself is outside the "sdks/**" pattern: it is written with CRLF like any other text file.
+    internal static void EnsureYarnSdksGitAttributes( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+    {
+        var yarnPath = targetProjectPath.AppendPart( ".yarn" );
+        if( !Directory.Exists( yarnPath.AppendPart( "sdks" ) ) ) return;
+        var gitAttributes = yarnPath.AppendPart( ".gitattributes" );
+        if( File.Exists( gitAttributes ) ) return;
+        monitor.Info( $"Creating '{gitAttributes}' to check out the Yarn sdks files with LF line endings." );
+        File.WriteAllText( gitAttributes, "# Yarn generates the sdks files with LF line endings, except integrations.yml.\r\nsdks/** text eol=lf\r\nsdks/integrations.yml text eol=crlf\r\n" );
+    }
+
     internal static NormalizedPath? EnsureYarnInstallAndGetPath( IActivityMonitor monitor,
                                                                  NormalizedPath targetProjectPath,
                                                                  YarnInstallOption option,
@@ -128,18 +145,16 @@ public static class YarnHelper
             }
             else
             {
-                var gitRoot = targetProjectPath.PathsToFirstPart( null, [".git"] ).FirstOrDefault( p => Directory.Exists( p ) );
-                if( gitRoot.IsEmptyPath )
+                // The repository root is the folder of the git working tree. In a git worktree, it is
+                // the worktree folder, not the main checkout: each worktree has its own shared yarn.
+                if( !LocalDevSolution.TryFindSolutionFolder( targetProjectPath, out var yarnRootPath, out _, out _ ) )
                 {
                     monitor.Warn( $"No '.git' found above to setup a shared yarn. Auto installing yarn in target '{targetProjectPath}'." );
                     yarnPath = AutoInstall( monitor, targetProjectPath, yarnPath );
                 }
                 else
                 {
-                    Throw.DebugAssert( gitRoot.LastPart == ".git" );
-                    monitor.Info( $"Git root found: '{gitRoot}'. Setting up a shared .yarn cache." );
-                    aboveCount = targetProjectPath.Parts.Count - gitRoot.Parts.Count + 1;
-                    var yarnRootPath = targetProjectPath.RemoveLastPart( aboveCount );
+                    monitor.Info( $"Git root found: '{yarnRootPath}'. Setting up a shared .yarn cache." );
                     monitor.Info( $"No yarn found, we will add our own {_autoYarnPath} in '{yarnRootPath}'." );
                     yarnPath = AutoInstall( monitor, yarnRootPath, yarnPath );
                 }
@@ -192,6 +207,7 @@ public static class YarnHelper
                               # Yarn - Not using Zero-Install (.yarn/cache and .pnp.* are not commited).
                               .pnp.*
                               .yarn/*
+                              !.yarn/.gitattributes
                               !.yarn/patches
                               !.yarn/plugins
                               !.yarn/releases
@@ -322,6 +338,44 @@ public static class YarnHelper
             aboveCount++;
         }
         return default;
+    }
+
+    /// <summary>
+    /// Acquires a machine-wide lock on the root folder of a yarn installation (the folder that contains
+    /// ".yarn/releases"). Two "yarn install" processes that write the same package in the shared ".yarn/cache"
+    /// can fail on Windows (orphan "*.zip-&lt;hash&gt;.tmp" files). The lock makes the installs on one yarn root
+    /// run one after the other.
+    /// <para>
+    /// The lock is a named <see cref="Mutex"/>: it must be released on the thread that acquired it.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="yarnPath">The path of the yarn runtime (".yarn/releases/yarn-x.y.z.cjs").</param>
+    /// <returns>A disposable that releases the lock.</returns>
+    internal static IDisposable AcquireYarnRootLock( IActivityMonitor monitor, NormalizedPath yarnPath )
+    {
+        if( yarnPath.Parts.Count < 4 ) return Util.EmptyDisposable;
+        var yarnRoot = yarnPath.RemoveLastPart( 3 );
+        var hash = Convert.ToHexString( SHA1.HashData( Encoding.UTF8.GetBytes( yarnRoot.Path.ToUpperInvariant() ) ) );
+        var mutex = new Mutex( false, $"CK.TypeScript.YarnRoot.{hash}" );
+        try
+        {
+            if( !mutex.WaitOne( 0 ) )
+            {
+                monitor.Info( $"Waiting for another yarn install on '{yarnRoot}'." );
+                if( !mutex.WaitOne( TimeSpan.FromMinutes( 10 ) ) )
+                {
+                    monitor.Warn( $"Timeout on the yarn root lock of '{yarnRoot}'. Continuing without it." );
+                    mutex.Dispose();
+                    return Util.EmptyDisposable;
+                }
+            }
+        }
+        catch( AbandonedMutexException )
+        {
+            // The previous owner exited without a release: this thread owns the mutex now.
+        }
+        return Util.CreateDisposableAction( () => { mutex.ReleaseMutex(); mutex.Dispose(); } );
     }
 
     internal static bool DoRunYarn( IActivityMonitor monitor,

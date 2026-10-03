@@ -3,12 +3,12 @@
   "private": true,
   "packageManager": "yarn@4.8.1",
   "scripts": {
-    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\"",
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net10.0/CK.TypeScript.LiveEngine.dll\"",
     "test": "jest"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "@types/node": "^26.3.0",
+    "@types/jest": "^30",
+    "@types/node": "^26.3",
     "@yarnpkg/sdks": "^3.3.1",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
