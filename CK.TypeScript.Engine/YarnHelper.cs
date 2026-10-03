@@ -88,6 +88,21 @@ public static class YarnHelper
         return SVersion.Create( packageJson.Version.Major, packageJson.Version.Minor, packageJson.Version.Patch );
     }
 
+    // Yarn writes the .yarn/sdks files with LF, except integrations.yml that uses CRLF. A repository-wide
+    // "eol=crlf" checks them all out with CRLF: the size recorded in the index then differs from the
+    // regenerated file and git reports them as modified even if their content is unchanged.
+    // The rules below align the checkout with what Yarn writes.
+    // The file itself is outside the "sdks/**" pattern: it is written with CRLF like any other text file.
+    internal static void EnsureYarnSdksGitAttributes( IActivityMonitor monitor, NormalizedPath targetProjectPath )
+    {
+        var yarnPath = targetProjectPath.AppendPart( ".yarn" );
+        if( !Directory.Exists( yarnPath.AppendPart( "sdks" ) ) ) return;
+        var gitAttributes = yarnPath.AppendPart( ".gitattributes" );
+        if( File.Exists( gitAttributes ) ) return;
+        monitor.Info( $"Creating '{gitAttributes}' to check out the Yarn sdks files with LF line endings." );
+        File.WriteAllText( gitAttributes, "# Yarn generates the sdks files with LF line endings, except integrations.yml.\r\nsdks/** text eol=lf\r\nsdks/integrations.yml text eol=crlf\r\n" );
+    }
+
     internal static NormalizedPath? EnsureYarnInstallAndGetPath( IActivityMonitor monitor,
                                                                  NormalizedPath targetProjectPath,
                                                                  YarnInstallOption option,
@@ -192,6 +207,7 @@ public static class YarnHelper
                               # Yarn - Not using Zero-Install (.yarn/cache and .pnp.* are not commited).
                               .pnp.*
                               .yarn/*
+                              !.yarn/.gitattributes
                               !.yarn/patches
                               !.yarn/plugins
                               !.yarn/releases
