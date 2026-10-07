@@ -14,7 +14,7 @@ namespace CK.Testing;
 public static partial class TSTestHelperExtensions
 {
     /// <summary>
-    /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSGeneratedOnly/<paramref name="testName"/>" path
+    /// Gets "<see cref="IMonitorTestHelper.TestProjectFolder"/>/TSGeneratedOnly/<paramref name="testName"/>" path
     /// for tests that only need to generate the "/ck-gen" folder without building it (no TypeScript tooling).
     /// <para>
     /// A .gitignore file with "*" is automatically generated in this folder.
@@ -48,7 +48,7 @@ public static partial class TSTestHelperExtensions
     }
 
     /// <summary>
-    /// Gets "<see cref="IBasicTestHelper.TestProjectFolder"/>/TSInlineTests/<paramref name="testName"/>" path
+    /// Gets "<see cref="IMonitorTestHelper.TestProjectFolder"/>/TSInlineTests/<paramref name="testName"/>" path
     /// for real tests. Yarn is installed, VSCode support is setup, a script "test" command is
     /// available and a "src/sample.spec.ts" file is ready to be used.
     /// <para>
@@ -59,14 +59,14 @@ public static partial class TSTestHelperExtensions
     /// <param name="this">This helper.</param>
     /// <param name="testName">The current test name.</param>
     /// <returns>The NpmPackageTests test path.</returns>
-    public static NormalizedPath GetTypeScriptInlineTargetProjectPath( this IBasicTestHelper @this, [CallerMemberName] string? testName = null )
+    public static NormalizedPath GetTypeScriptInlineTargetProjectPath( this IMonitorTestHelper @this, [CallerMemberName] string? testName = null )
     {
         var p = GetPath( @this, "TSInlineTests", testName );
         MigrateAny( @this, testName, p, "TSBuildOnly", "TSGeneratedOnly" );
         return p;
     }
 
-    static void MigrateAny( IBasicTestHelper @this, string? testName, NormalizedPath p, params string[] others )
+    static void MigrateAny( IMonitorTestHelper @this, string? testName, NormalizedPath p, params string[] others )
     {
         foreach( var o in others )
         {
@@ -77,7 +77,7 @@ public static partial class TSTestHelperExtensions
         }
     }
 
-    static NormalizedPath GetPath( IBasicTestHelper @this, string type, string? testName ) => @this.TestProjectFolder.AppendPart( type ).AppendPart( RemoveAsyncSuffix( testName ) );
+    static NormalizedPath GetPath( IMonitorTestHelper @this, string type, string? testName ) => @this.TestProjectFolder.AppendPart( type ).AppendPart( RemoveAsyncSuffix( testName ) );
 
     static bool MoveDirectory( NormalizedPath old, NormalizedPath p )
     {
@@ -138,7 +138,7 @@ public static partial class TSTestHelperExtensions
     /// <param name="targetProjectPath">
     /// The test target project path. Should be obtained by:
     /// <list type="bullet">
-    ///     <item><see cref="GetTypeScriptInlineTargetProjectPath(IBasicTestHelper, string?)">TestHelper.GetTypeScriptInlineTargetProjectPath()</see></item>
+    ///     <item><see cref="GetTypeScriptInlineTargetProjectPath(IMonitorTestHelper, string?)">TestHelper.GetTypeScriptInlineTargetProjectPath()</see></item>
     /// </list>
     /// </param>
     /// <param name="serverAddress">Optional server address that will replace the default "http://localhost".</param>
