@@ -6,6 +6,6 @@
     <PackageReference Include="CSemVer" Version="13.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.EmbeddedResources" Version="4.0.1-0.nunit-5.0.ci.1" />
+    <PackageReference Include="CK.EmbeddedResources" Version="4.0.1" />
   </ItemGroup>
 </Project>
