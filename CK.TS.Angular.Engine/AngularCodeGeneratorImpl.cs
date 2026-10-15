@@ -21,7 +21,7 @@ namespace CK.TS.Angular.Engine;
 /// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 {
-    const string _defaultAngularCliVersion = "^20";
+    const string _defaultAngularCliVersion = "^22";
     const string _conflictFolderName = "_ckConflict_";
 
     ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
@@ -185,7 +185,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     // Maybe only upgrade if current installed version is inferior to _defaultAngularCliVersion
                     // do apply _defaultAngularCliVersion on @angular/* packages.
                     // yarn ng update ng-zorro-antd
-                    // yarn ng update @angular/cli@^20 @angular/core@^20 ng-zorro-antd@^20 --allow-dirty --migrate-only
+                    // yarn ng update @angular/cli@^22 @angular/core@^22 ng-zorro-antd@^22 --allow-dirty --migrate-only
                     // Note: @angular/cli requires nodejs >= v22.12 (note: v22.18 works with PnP, versions below don't)
 
                     // choco install nodejs version="22.18.0"
@@ -765,9 +765,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
         {
-            // Adds @angular/platform-browser-dynamic as regular dependency if not already here (jest requirement).
-            e.AddOrUpdateTargetProjectDependency( "@angular/platform-browser-dynamic",
-                                                  new SVersionBound( SVersion.Create( 20, 3, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+            // Adds @angular/platform-browser as regular dependency if not already here (jest requirement).
+            e.AddOrUpdateTargetProjectDependency( "@angular/platform-browser",
+                                                  new SVersionBound( SVersion.Create( 22, 0, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
                                                   DependencyKind.Dependency );
 
             // Workaround: https://github.com/angular/angular-cli/issues/30503
@@ -777,7 +777,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
             // Adds the jest-preset-angular "15.0.0" if not alreay here.
             e.AddOrUpdateTargetProjectDependency( "jest-preset-angular",
-                                                  new SVersionBound( SVersion.Create( 15, 0, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                  new SVersionBound( SVersion.Create( 17, 0, 1 ), SVersionLock.LockMajor, PackageQuality.Stable ),
                                                   DependencyKind.DevDependency );
             e.JestSetup = new AngularJestSetupHandler( e.IntegrationContext );
         }
