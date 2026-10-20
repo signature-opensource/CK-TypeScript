@@ -7,6 +7,9 @@
     <EmbeddedResource Include="../.yarn/releases/yarn-4.8.1.cjs" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="CK.TypeScript.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="34.0.1--ci.1" />
       
     <ProjectReference Include="..\CK.Html.Transform\CK.Html.Transform.csproj" />

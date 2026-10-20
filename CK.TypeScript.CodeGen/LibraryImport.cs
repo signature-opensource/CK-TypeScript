@@ -31,6 +31,12 @@ public sealed class LibraryImport
     public string Name => _packageDependency.Name;
 
     /// <summary>
+    /// Gets the source that settled the <see cref="Version"/>: <see cref="PackageDependency.ConfigurationSourceName"/> when the version
+    /// is configured, otherwise the registrant (the decorated type name for a <c>[TypeScriptImportLibrary]</c> attribute).
+    /// </summary>
+    public string DefinitionSource => _packageDependency.DefinitionSource;
+
+    /// <summary>
     /// Version of the package, which will be used in the package.json.
     /// This version can be settled by the configuration. See <see cref="LibraryManager.LibraryVersionConfiguration"/>.
     /// </summary>

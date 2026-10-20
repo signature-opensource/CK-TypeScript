@@ -144,6 +144,54 @@ public sealed partial class TypeScriptIntegrationContext
         return YarnHelper.RunProcess( monitor.ParallelLogger, fileName, arguments, workingDirectory, environmentVariables, out _ );
     }
 
+    /// <summary>
+    /// Result of <see cref="RunYarnProcess"/>.
+    /// </summary>
+    /// <param name="ExitCode">
+    /// The process exit code. When <paramref name="TimedOut"/> is true, it does not come from the process:
+    /// it is the code of the kill, or -1 when the killed process has not ended.
+    /// </param>
+    /// <param name="TimedOut">True when the process was still running at the timeout and its process tree has been killed.</param>
+    public readonly record struct ProcessResult( int ExitCode, bool TimedOut );
+
+    /// <summary>
+    /// Calls Yarn with the provided <paramref name="command"/> and leaves the handling of a failure to the caller:
+    /// unlike <see cref="RunYarn"/>, nothing is retried and no error is logged. The output is logged at the Trace level.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="command">The command to run.</param>
+    /// <param name="environmentVariables">
+    /// Optional environment variables that override the inherited ones. A null value removes the variable.
+    /// </param>
+    /// <param name="workingDirectory">Optional working directory. Defaults to <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/>.</param>
+    /// <param name="outputLines">Optional list that receives the standard output and error lines.</param>
+    /// <param name="timeout">
+    /// Optional timeout. When the process still runs after it, its process tree is killed and <see cref="ProcessResult.TimedOut"/> is true.
+    /// A positive timeout also bounds the wait for the end of the output to a few seconds after the process ends: lines written
+    /// later by a process outside the tree are dropped and a warning is logged. Zero or negative (the default) means no limit.
+    /// </param>
+    /// <returns>The exit code and whether the timeout has been reached.</returns>
+    public ProcessResult RunYarnProcess( IActivityMonitor monitor,
+                                         string command,
+                                         Dictionary<string, string?>? environmentVariables = null,
+                                         NormalizedPath workingDirectory = default,
+                                         List<string>? outputLines = null,
+                                         TimeSpan timeout = default )
+    {
+        if( workingDirectory.IsEmptyPath ) workingDirectory = _configuration.TargetProjectPath;
+        using( monitor.OpenTrace( $"Running 'yarn {command}' in '{workingDirectory}'." ) )
+        {
+            var (exitCode, timedOut) = YarnHelper.RunProcess( monitor.ParallelLogger,
+                                                              "node", $"\"{_yarnPath}\" {command}",
+                                                              workingDirectory,
+                                                              environmentVariables,
+                                                              outputLines,
+                                                              timeout,
+                                                              out _ );
+            return new ProcessResult( exitCode, timedOut );
+        }
+    }
+
 
     /// <summary>
     /// Raised before the integration step when <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/> is
