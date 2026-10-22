@@ -21,7 +21,7 @@ namespace CK.TS.Angular.Engine;
 /// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 {
-    const string _defaultAngularCliVersion = "^22";
+    internal const string DefaultAngularCliVersion = "^22";
     const string _conflictFolderName = "_ckConflict_";
 
     ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
@@ -181,9 +181,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                     // TODO: Update angular deps if needed
 
                     // Read package.json to retrieve @angular/core version.
-                    // Check if it matches _defaultAngularCliVersion
-                    // Maybe only upgrade if current installed version is inferior to _defaultAngularCliVersion
-                    // do apply _defaultAngularCliVersion on @angular/* packages.
+                    // Check if it matches DefaultAngularCliVersion
+                    // Maybe only upgrade if current installed version is inferior to DefaultAngularCliVersion
+                    // do apply DefaultAngularCliVersion on @angular/* packages.
                     // yarn ng update ng-zorro-antd
                     // yarn ng update @angular/cli@^22 @angular/core@^22 ng-zorro-antd@^22 --allow-dirty --migrate-only
                     // Note: @angular/cli requires nodejs >= v22.12 (note: v22.18 works with PnP, versions below don't)
@@ -272,10 +272,10 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             Directory.CreateDirectory( tempFolderPath );
                             if( !context.IntegrationContext.ConfiguredLibraries.TryGetValue( "@angular/cli", out var angularCliVersion ) )
                             {
-                                var parseResult = SVersionBound.NpmTryParse( _defaultAngularCliVersion );
+                                var parseResult = SVersionBound.NpmTryParse( DefaultAngularCliVersion );
                                 Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", parseResult.IsValid && parseResult.Result != SVersionBound.All );
                                 angularCliVersion = parseResult.Result;
-                                monitor.Info( $"Using @angular/cli default version '{_defaultAngularCliVersion}'." );
+                                monitor.Info( $"Using @angular/cli default version '{DefaultAngularCliVersion}'." );
                             }
                             else
                             {
