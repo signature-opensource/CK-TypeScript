@@ -124,7 +124,8 @@ public class YarnHelperRunProcessTests
         if( IsRunning( processId ) )
         {
             using var process = Process.GetProcessById( processId );
-            process.Kill();
+            // The id may have been reused by an unrelated process.
+            if( process.ProcessName == "node" ) process.Kill();
         }
     }
 

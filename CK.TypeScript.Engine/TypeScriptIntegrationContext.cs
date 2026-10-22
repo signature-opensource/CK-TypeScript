@@ -149,7 +149,8 @@ public sealed partial class TypeScriptIntegrationContext
     /// </summary>
     /// <param name="ExitCode">
     /// The process exit code. When <paramref name="TimedOut"/> is true, it does not come from the process:
-    /// it is the code of the kill, or -1 when the killed process has not ended.
+    /// it is the code of the kill, or -1 when the killed process has not ended. Its value then depends on the
+    /// platform and carries no meaning, so callers test <paramref name="TimedOut"/> first.
     /// </param>
     /// <param name="TimedOut">True when the process was still running at the timeout and its process tree has been killed.</param>
     public readonly record struct ProcessResult( int ExitCode, bool TimedOut );
