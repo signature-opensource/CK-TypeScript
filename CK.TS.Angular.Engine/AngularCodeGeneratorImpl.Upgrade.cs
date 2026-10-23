@@ -1,11 +1,14 @@
 using CK.Core;
 using CK.Setup;
+using CK.TypeScript.CodeGen;
 using CSemVer;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CK.TS.Angular.Engine;
 
@@ -32,6 +35,26 @@ public partial class AngularCodeGeneratorImpl
     internal sealed partial class AngularCodeGen
     {
         static readonly SVersionBound _defaultAngularCliBound = SVersionBound.NpmTryParse( DefaultAngularCliVersion ).Result;
+
+        // The definition source of the dependencies the upgrade writes: a reload reads them back as the app's own.
+        const string _upgradeSource = "Angular upgrade";
+
+        // Strict PnP: an inherited YARN_PNP_MODE must not apply.
+        static readonly Dictionary<string, string?> _strictEnvironment = new() { ["YARN_PNP_MODE"] = null };
+
+        // Only an install that writes .pnp.cjs applies the PnP mode: this one runs right before the migrations.
+        static readonly Dictionary<string, string?> _looseEnvironment = new() { ["YARN_PNP_MODE"] = "loose" };
+
+        // An inherited NG_FORCE_TTY=1 would make the optional migrations prompt block on stdin. Without YARN_PNP_MODE,
+        // the install that ng update runs itself is strict.
+        static readonly Dictionary<string, string?> _ngEnvironment = new()
+        {
+            ["NG_DISABLE_VERSION_CHECK"] = "1",
+            ["NG_FORCE_TTY"] = "0",
+            ["NO_COLOR"] = "1",
+            ["FORCE_COLOR"] = null,
+            ["YARN_PNP_MODE"] = null
+        };
 
         AngularUpgradeRun? _upgradeRun;
 
@@ -155,7 +178,7 @@ public partial class AngularCodeGeneratorImpl
             }
             Throw.DebugAssert( "The first safety condition checks the path.", hasPath );
             var steps = AngularUpgradePlanner.Plan( fromMajor, targetMajor, appDependencies, declaredBounds );
-            RunUpgrade( monitor, integrationContext, appPath, fromMajor, steps, packageManager );
+            RunUpgrade( monitor, integrationContext, appPath, fromMajor, steps, declaredLibraries, packageManager );
         }
 
         void RunUpgrade( IActivityMonitor monitor,
@@ -163,9 +186,251 @@ public partial class AngularCodeGeneratorImpl
                          NormalizedPath appPath,
                          int fromMajor,
                          IReadOnlyList<AngularUpgradeStep> steps,
+                         IReadOnlyList<DeclaredLibrary> declaredLibraries,
                          string? packageManager )
         {
+            var stopwatch = Stopwatch.StartNew();
+            int toMajor = steps[^1].ToMajor;
+            // Read before the first write: the manual commands of a failure message start from the restored app.
+            var manualCommands = AngularUpgradePlanner.RenderManualCommands( steps, ReadInstalledVersions( appPath, steps ) );
+            using( monitor.OpenInfo( $"Upgrading the Angular app '{appPath}' from Angular {fromMajor} to {toMajor}. Do not edit the files of this folder, and do not run another build on this app, until the builder finishes." ) )
+            {
+                new AngularUpgradeMarker( fromMajor, DateTime.UtcNow ).Write( appPath );
+                var optionalMigrations = new List<(string Package, string Name)>();
+                var packagesWithoutMigrations = new List<string>();
+                foreach( var step in steps )
+                {
+                    using( monitor.OpenInfo( $"Angular {step.FromMajor} to {step.ToMajor}." ) )
+                    {
+                        StepFailure? failed;
+                        try
+                        {
+                            failed = RunStep( monitor, integrationContext, appPath, step, packageManager, optionalMigrations, packagesWithoutMigrations );
+                        }
+                        catch( Exception ex )
+                        {
+                            // An exception leaves the app half-upgraded exactly as a failed command does: same undo, same message.
+                            monitor.Warn( $"The step Angular {step.FromMajor} to {step.ToMajor} threw an exception.", ex );
+                            failed = new StepFailure( "", default, null, $"An exception stopped the step: {ex.Message}" );
+                        }
+                        if( failed != null )
+                        {
+                            ReportStepFailure( monitor, integrationContext, appPath, fromMajor, step, failed, declaredLibraries, manualCommands );
+                            return;
+                        }
+                    }
+                }
+                _upgradeRun = new AngularUpgradeRun( appPath, fromMajor, toMajor, steps, optionalMigrations, packagesWithoutMigrations, stopwatch.Elapsed );
+            }
         }
+
+        /// <summary>
+        /// A failure of an upgrade step.
+        /// </summary>
+        /// <param name="Command">The yarn command that failed, without the <c>yarn </c> prefix, or empty when no command failed.</param>
+        /// <param name="Result">The process result.</param>
+        /// <param name="Failure">The classified failure, or null when the failure is not a command's.</param>
+        /// <param name="Found">What was found when the failure alone does not describe it, or null.</param>
+        internal sealed record StepFailure( string Command, TypeScriptIntegrationContext.ProcessResult Result, UpgradeFailure? Failure, string? Found = null );
+
+        // Runs one step on a model that matches the files. Returns null on success.
+        static StepFailure? RunStep( IActivityMonitor monitor,
+                                     TypeScriptIntegrationContext integrationContext,
+                                     NormalizedPath appPath,
+                                     AngularUpgradeStep step,
+                                     string? packageManager,
+                                     List<(string Package, string Name)> optionalMigrations,
+                                     List<string> packagesWithoutMigrations )
+        {
+            var packageJson = integrationContext.TargetPackageJson;
+            foreach( var (name, version, kind) in step.PreUpdateBounds )
+            {
+                packageJson.Dependencies.AddOrReplace( new PackageDependency( name, version, kind, _upgradeSource ), cloneAddedDependency: false );
+            }
+            packageJson.Save();
+            var failed = RunClassified( monitor, integrationContext, appPath, "install", _strictEnvironment, UpgradeCommandKind.YarnInstall );
+            if( failed != null )
+            {
+                return failed;
+            }
+            var yarnLockPath = appPath.AppendPart( "yarn.lock" );
+            var yarnLock = File.Exists( yarnLockPath ) ? File.ReadAllText( yarnLockPath ) : null;
+            var fromVersions = step.Packages.ToDictionary( p => p.Name, p => YarnLockReader.GetFromVersion( monitor, yarnLock, p.Name, p.FromMajor ).ToString() );
+
+            // Under PnP, the package command is expected to crash in its migration phase: the migrations run below.
+            var packageCommand = RunCommand( monitor, integrationContext, appPath, step.PackageCommand, _ngEnvironment, out var packageOutput );
+            var packageFailure = UpgradeFailureClassifier.Classify( UpgradeCommandKind.PackageCommand, packageCommand.ExitCode, packageCommand.TimedOut, packageOutput );
+            // Fails even at major N: a registry that hung this command would hang the dedupe and installs that follow.
+            if( packageFailure.Kind == UpgradeFailureKind.Timeout )
+            {
+                return new StepFailure( step.PackageCommand, packageCommand, packageFailure );
+            }
+            if( packageFailure.Kind == UpgradeFailureKind.InstallInsideNgUpdate )
+            {
+                // ng update hides yarn's output: yarn's own install says what failed.
+                failed = RunClassified( monitor, integrationContext, appPath, "install", _strictEnvironment, UpgradeCommandKind.YarnInstall );
+                if( failed != null )
+                {
+                    return failed;
+                }
+            }
+            if( !ReloadAppFiles( monitor, integrationContext, packageManager ) )
+            {
+                return new StepFailure( step.PackageCommand, packageCommand, packageFailure, $"The package.json or tsconfig.json of '{appPath}' cannot be read after the command (see the errors above)." );
+            }
+            int? reached = AngularUpgradePlanner.GetAppMajor( GetAppDependencies( packageJson ) );
+            if( reached != step.ToMajor )
+            {
+                if( packageFailure.Kind == UpgradeFailureKind.None )
+                {
+                    packageFailure = new UpgradeFailure( UpgradeFailureKind.Generic, LastLines( packageOutput ), [], null, null );
+                }
+                var core = packageJson.Dependencies.TryGetValue( "@angular/core", out var c ) ? $"'{c.NpmVersionRange}'" : "missing";
+                return new StepFailure( step.PackageCommand, packageCommand, packageFailure, $"Afterwards, @angular/core in package.json is {core}, not Angular {step.ToMajor}." );
+            }
+            failed = RunClassified( monitor, integrationContext, appPath, "dedupe", _strictEnvironment, UpgradeCommandKind.YarnInstall )
+                     ?? RunClassified( monitor, integrationContext, appPath, "install", _looseEnvironment, UpgradeCommandKind.YarnInstall );
+            if( failed != null )
+            {
+                return failed;
+            }
+            foreach( var package in AngularUpgradePlanner.GetMigrationOrder( step ) )
+            {
+                var command = step.MigrationCommand( package, fromVersions[package.Name] );
+                var result = RunCommand( monitor, integrationContext, appPath, command, _ngEnvironment, out var output );
+                var failure = UpgradeFailureClassifier.Classify( UpgradeCommandKind.Migration, result.ExitCode, result.TimedOut, output );
+                if( failure.Kind == UpgradeFailureKind.NoMigrations )
+                {
+                    packagesWithoutMigrations.Add( package.Name );
+                }
+                else if( failure.Kind != UpgradeFailureKind.None )
+                {
+                    return new StepFailure( command, result, failure );
+                }
+                foreach( var line in output )
+                {
+                    var m = OptionalMigrationRegex().Match( AnsiRegex().Replace( line, "" ) );
+                    if( m.Success )
+                    {
+                        optionalMigrations.Add( (m.Groups[1].Value, m.Groups[2].Value) );
+                    }
+                }
+            }
+            // The migrations may edit package.json and tsconfig.json: the next step and the integration start from the files.
+            if( !ReloadAppFiles( monitor, integrationContext, packageManager ) )
+            {
+                return new StepFailure( "", default, null, $"The package.json or tsconfig.json of '{appPath}' cannot be read after the migrations (see the errors above)." );
+            }
+            if( step.ReplacedPackages.Count > 0 )
+            {
+                ReplacePackages( monitor, packageJson, step );
+            }
+            return null;
+        }
+
+        // A replacement takes the @angular/core range (^N.0.0 when it is missing) and the kind of the replaced package.
+        // The next install updates yarn.lock.
+        static void ReplacePackages( IActivityMonitor monitor, PackageJsonFile packageJson, AngularUpgradeStep step )
+        {
+            var core = packageJson.Dependencies.TryGetValue( "@angular/core", out var c )
+                        ? c.Version
+                        : new SVersionBound( SVersion.Create( step.ToMajor, 0, 0 ), SVersionLock.LockMajor, PackageQuality.Stable );
+            foreach( var (package, replacement) in step.ReplacedPackages )
+            {
+                if( packageJson.Dependencies.TryGetValue( package, out var replaced ) )
+                {
+                    packageJson.Dependencies.Remove( package );
+                    if( !packageJson.Dependencies.ContainsKey( replacement ) )
+                    {
+                        packageJson.Dependencies.AddOrReplace( new PackageDependency( replacement, core, replaced.DependencyKind, _upgradeSource ), cloneAddedDependency: false );
+                    }
+                    monitor.Info( $"Replaced '{package}' by '{replacement}' in package.json: Angular {step.ToMajor} replaces it." );
+                }
+            }
+            packageJson.Save();
+        }
+
+        static StepFailure? RunClassified( IActivityMonitor monitor,
+                                           TypeScriptIntegrationContext integrationContext,
+                                           NormalizedPath appPath,
+                                           string command,
+                                           Dictionary<string, string?> environment,
+                                           UpgradeCommandKind kind )
+        {
+            var result = RunCommand( monitor, integrationContext, appPath, command, environment, out var output );
+            var failure = UpgradeFailureClassifier.Classify( kind, result.ExitCode, result.TimedOut, output );
+            return failure.Kind == UpgradeFailureKind.None ? null : new StepFailure( command, result, failure );
+        }
+
+        static TypeScriptIntegrationContext.ProcessResult RunCommand( IActivityMonitor monitor,
+                                                                      TypeScriptIntegrationContext integrationContext,
+                                                                      NormalizedPath appPath,
+                                                                      string command,
+                                                                      Dictionary<string, string?> environment,
+                                                                      out List<string> output )
+        {
+            monitor.Info( $"Running 'yarn {command}'." );
+            output = new List<string>();
+            return integrationContext.RunYarnProcess( monitor, command, environment, appPath, output, UpgradeFailureClassifier.CommandTimeout );
+        }
+
+        // The "doing" and "found" parts of a step failure message.
+        internal static (string Doing, string Found) DescribeStepFailure( NormalizedPath appPath,
+                                                                          AngularUpgradeStep step,
+                                                                          StepFailure failed,
+                                                                          IReadOnlyList<DeclaredLibrary> declaredLibraries )
+        {
+            var updated = step.Packages.Select( p => p.Name ).ToHashSet();
+            var hint = failed.Failure != null
+                        ? UpgradeFailureClassifier.DescribeHint( failed.Failure,
+                                                                 step.ToMajor,
+                                                                 updated,
+                                                                 name => declaredLibraries.FirstOrDefault( l => l.Name == name )?.Source )
+                        : "";
+            var doing = failed.Command.Length > 0
+                            ? $"Upgrading the Angular app '{appPath}', step Angular {step.FromMajor} to {step.ToMajor}: running 'yarn {failed.Command}'."
+                            : $"Upgrading the Angular app '{appPath}', step Angular {step.FromMajor} to {step.ToMajor}.";
+            var exit = failed.Command.Length == 0 || failed.Result.TimedOut
+                            ? ""
+                            : $"'yarn {failed.Command}' ended with exit code {failed.Result.ExitCode}. ";
+            var found = failed.Found != null ? $"{exit}{failed.Found} {hint}" : $"{exit}{hint}";
+            return (doing, found);
+        }
+
+        static void ReportStepFailure( IActivityMonitor monitor,
+                                       TypeScriptIntegrationContext integrationContext,
+                                       NormalizedPath appPath,
+                                       int fromMajor,
+                                       AngularUpgradeStep step,
+                                       StepFailure failed,
+                                       IReadOnlyList<DeclaredLibrary> declaredLibraries,
+                                       string manualCommands )
+        {
+            var stashMessage = CreateStashMessage( appPath );
+            var undo = UndoUpgrade( monitor, integrationContext, appPath, stashMessage, out bool stashCreated );
+            var (doing, found) = DescribeStepFailure( appPath, step, failed, declaredLibraries );
+            var rerun = $"rerun the builder: it upgrades the app again from Angular {fromMajor}.";
+            var byHand = $"Or upgrade the app by hand with these commands, then rerun the builder:{Environment.NewLine}{manualCommands}";
+            IReadOnlyList<string> nextActions = undo == AngularUndoOutcome.NotRestored
+                                                    ? [$"Run the commands above in the app folder, fix what is described above, then {rerun}", byHand]
+                                                    : [$"Fix what is described above, then {rerun}", byHand];
+            monitor.Error( AngularUpgradeFailureMessage.Render( doing,
+                                                                found.TrimEnd(),
+                                                                appPath,
+                                                                stashMessage,
+                                                                undo,
+                                                                stashCreated,
+                                                                IsRootGitIgnoreUntracked( appPath ),
+                                                                nextActions ) );
+        }
+
+        static List<string> LastLines( List<string> output ) => output.Skip( Math.Max( 0, output.Count - 30 ) ).Select( l => AnsiRegex().Replace( l, "" ) ).ToList();
+
+        [GeneratedRegex( @"\x1b\[[0-9;]*m" )]
+        private static partial Regex AnsiRegex();
+
+        [GeneratedRegex( @"^\s*ng update (\S+) --name (\S+)\s*$" )]
+        private static partial Regex OptionalMigrationRegex();
 
         // Undoes the upgrade an in-progress marker reports. Returns false when the run must stop: an error has been logged.
         static bool RecoverPreviousUpgrade( IActivityMonitor monitor,

@@ -15,7 +15,7 @@ namespace CK.TS.Angular.Tests;
 
 /// <summary>
 /// The guards of the Angular upgrade, run by the engine on a copy of the Angular 20 snapshot. Every test stops
-/// before the first upgrade command: none of them runs <c>ng update</c>.
+/// before the first <c>ng update</c>.
 /// </summary>
 [TestFixture]
 public class AngularUpgradeEngineTests
@@ -159,6 +159,56 @@ public class AngularUpgradeEngineTests
         run.Errors.ShouldContain( e => e.Text.Contains( "could not be undone" ) && e.Text.Contains( "\":(exclude).gitignore\"" ) );
     }
 
+    [Test]
+    public async Task failed_step_is_undone_Async()
+    {
+        Assume.That( ContinuousIntegrationDetector.Detect( Environment.GetEnvironmentVariable ), Is.Null, "On CI, the safety check refuses the upgrade." );
+        var app = AngularUpgradeSnapshot.Prepare();
+        var packageJson = File.ReadAllText( app.AppendPart( "package.json" ) );
+        // The first step sets jest-preset-angular ^17.0.1, absent from yarn.lock: resolving it needs the registry.
+        var run = await RunEngineOfflineAsync( app );
+
+        run.Status.ShouldBe( RunStatus.Failed );
+        run.Errors.ShouldContain( e => e.Text.Contains( "20 to 21" )
+                                       && e.Text.Contains( "'yarn install'" )
+                                       && e.Text.Contains( "exit code 1" )
+                                       && e.Text.Contains( "been restored" )
+                                       && !e.Text.Contains( "not been restored" )
+                                       && e.Text.Contains( "ck-angular-upgrade undo" ) );
+        File.ReadAllText( app.AppendPart( "package.json" ) ).ReplaceLineEndings().ShouldBe( packageJson.ReplaceLineEndings() );
+        File.Exists( app.AppendPart( AngularUpgradeMarker.FileName ) ).ShouldBeFalse();
+        AngularGitHelper.GetDirtyFiles( TestHelper.Monitor, app ).ShouldBeEmpty();
+        Git( app, "stash show --include-untracked --name-only stash@{0}" ).ShouldContain( "package.json" );
+        // The executor stops at the failed step: a second step would undo again and leave a second stash.
+        Git( app, "stash list" ).Count.ShouldBe( 1 );
+    }
+
+    [Test]
+    public async Task throwing_step_is_undone_Async()
+    {
+        Assume.That( ContinuousIntegrationDetector.Detect( Environment.GetEnvironmentVariable ), Is.Null, "On CI, the safety check refuses the upgrade." );
+        var app = AngularUpgradeSnapshot.Prepare();
+        // The step saves package.json first: a read-only file makes the save throw.
+        var packageJsonPath = app.AppendPart( "package.json" );
+        File.SetAttributes( packageJsonPath, FileAttributes.ReadOnly );
+        EngineRun run;
+        try
+        {
+            run = await RunEngineOfflineAsync( app );
+        }
+        finally
+        {
+            File.SetAttributes( packageJsonPath, FileAttributes.Normal );
+        }
+
+        run.Status.ShouldBe( RunStatus.Failed );
+        run.Errors.ShouldContain( e => e.Text.Contains( "step Angular 20 to 21" )
+                                       && System.Text.RegularExpressions.Regex.IsMatch( e.Text, @"An exception stopped the step: [^\r\n]*package\.json" )
+                                       && e.Text.Contains( "Next actions" ) );
+        run.Errors.ShouldNotContain( e => e.Text.Contains( "While raising AfterCodeGeneration" ) );
+        File.Exists( app.AppendPart( AngularUpgradeMarker.FileName ) ).ShouldBeFalse();
+    }
+
     /// <summary>
     /// What a test reads from an engine run.
     /// </summary>
@@ -179,6 +229,21 @@ public class AngularUpgradeEngineTests
         {
             var result = await configuration.RunAsync();
             return new EngineRun( result?.Status ?? RunStatus.Failed, texts.ToList(), errors.ToList() );
+        }
+    }
+
+    // Yarn cannot reach the registry: whatever the step has to resolve beyond yarn.lock and the cache fails.
+    static async Task<EngineRun> RunEngineOfflineAsync( NormalizedPath app )
+    {
+        var previous = Environment.GetEnvironmentVariable( "YARN_ENABLE_NETWORK" );
+        Environment.SetEnvironmentVariable( "YARN_ENABLE_NETWORK", "0" );
+        try
+        {
+            return await RunEngineAsync( app );
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable( "YARN_ENABLE_NETWORK", previous );
         }
     }
 
