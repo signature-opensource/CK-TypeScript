@@ -197,7 +197,7 @@ internal static class AngularUpgradePlanner
         return b.ToString();
     }
 
-    static IEnumerable<AngularUpgradePackage> GetMigrationOrder( AngularUpgradeStep step )
+    internal static IEnumerable<AngularUpgradePackage> GetMigrationOrder( AngularUpgradeStep step )
     {
         return step.Packages.Where( p => p.Name == "@angular/cli" )
                             .Concat( step.Packages.Where( p => p.Name == "@angular/core" ) )

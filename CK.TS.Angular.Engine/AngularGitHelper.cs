@@ -11,7 +11,8 @@ namespace CK.TS.Angular.Engine;
 
 /// <summary>
 /// The git commands of an Angular upgrade: the check that the app folder has no uncommitted change, and the undo.
-/// Both skip the paths the integration writes before the check (<c>ck-gen</c>, <c>.yarn</c>, <c>.yarnrc.yml</c>).
+/// Both skip the paths the integration writes before the check (<c>ck-gen</c>, <c>.yarn</c>, <c>.yarnrc.yml</c>), and the
+/// undo also skips the <see cref="AngularUpgradeMarker"/> file.
 /// </summary>
 internal static class AngularGitHelper
 {
@@ -168,21 +169,47 @@ internal static class AngularGitHelper
     }
 
     /// <summary>
-    /// Moves the changes of <paramref name="folder"/>, untracked files included, into a new stash. An untracked
-    /// <c>.gitignore</c> directly in the folder stays in place, as <see cref="GetDirtyFiles"/> does not see it.
+    /// Gets the arguments of the <c>git stash push</c> of the undo, run in the app folder: the one place they are built,
+    /// for <see cref="StashUndo"/> and for the commands a failure message gives. They exclude the paths the
+    /// integration writes before the check, the <see cref="AngularUpgradeMarker"/> file, and the root
+    /// <c>.gitignore</c> when <paramref name="excludeRootGitIgnore"/>.
+    /// </summary>
+    /// <param name="message">The stash message.</param>
+    /// <param name="excludeRootGitIgnore">Whether the <c>.gitignore</c> directly in the folder is untracked.</param>
+    /// <returns>The arguments, without the leading <c>git</c>.</returns>
+    internal static string StashPushArguments( string message, bool excludeRootGitIgnore )
+    {
+        // A marker restored by 'git stash pop' would make the next build undo the developer's work again.
+        var arguments = $"stash push --include-untracked -m \"{message}\" -- . {_excludes} \":(exclude){AngularUpgradeMarker.FileName}\"";
+        if( excludeRootGitIgnore )
+        {
+            arguments += " \":(exclude).gitignore\"";
+        }
+        return arguments;
+    }
+
+    /// <summary>
+    /// Moves the changes of <paramref name="folder"/>, untracked files included, into a new stash, with the arguments of
+    /// <see cref="StashPushArguments"/>. The <see cref="AngularUpgradeMarker"/> file stays in place, and so does an
+    /// untracked <c>.gitignore</c> directly in the folder, as <see cref="GetDirtyFiles"/> does not see it.
     /// </summary>
     /// <param name="monitor">The monitor.</param>
     /// <param name="folder">The app folder.</param>
     /// <param name="message">The stash message.</param>
+    /// <param name="stashCreated">
+    /// Whether a stash has been created. False when nothing matches, for instance when the marker is the only change:
+    /// the folder is then as it was.
+    /// </param>
     /// <returns>
     /// False (an error is logged) when git failed or did not answer within <see cref="GitTimeout"/>. True without
-    /// creating a stash when nothing matches; a real undo always has the untracked marker to stash.
+    /// creating a stash when nothing matches.
     /// </returns>
-    internal static bool StashUndo( IActivityMonitor monitor, NormalizedPath folder, string message )
+    internal static bool StashUndo( IActivityMonitor monitor, NormalizedPath folder, string message, out bool stashCreated )
     {
+        stashCreated = false;
         try
         {
-            var excludes = _excludes;
+            bool excludeRootGitIgnore = false;
             if( File.Exists( folder.AppendPart( ".gitignore" ) ) )
             {
                 var tracked = Run( folder, "ls-files -- .gitignore", GitTimeout );
@@ -190,19 +217,43 @@ internal static class AngularGitHelper
                 {
                     return false;
                 }
-                if( tracked.Output.All( string.IsNullOrWhiteSpace ) )
-                {
-                    excludes += " \":(exclude).gitignore\"";
-                }
+                excludeRootGitIgnore = tracked.Output.All( string.IsNullOrWhiteSpace );
             }
-            var stash = Run( folder, $"stash push --include-untracked -m \"{message}\" -- . {excludes}", GitTimeout );
-            return Succeeded( monitor, folder, "stash push", stash, LogLevel.Error );
+            var before = GetStashCount( monitor, folder );
+            if( before < 0 )
+            {
+                return false;
+            }
+            var stash = Run( folder, StashPushArguments( message, excludeRootGitIgnore ), GitTimeout );
+            if( !Succeeded( monitor, folder, "stash push", stash, LogLevel.Error ) )
+            {
+                return false;
+            }
+            // Git's "No local changes to save" is translated, and two identical stashes can share a commit:
+            // the count of stash entries changes only when a stash is created.
+            var after = GetStashCount( monitor, folder );
+            if( after < 0 )
+            {
+                return false;
+            }
+            stashCreated = after > before;
+            return true;
         }
         catch( Exception ex )
         {
             monitor.Error( $"Unable to run git in '{folder}'.", ex );
             return false;
         }
+    }
+
+    // The number of stash entries, or -1 (an error is logged) when git failed. Only hash lines count: the output also
+    // holds the error output, where git may print warnings.
+    static int GetStashCount( IActivityMonitor monitor, NormalizedPath folder )
+    {
+        var list = Run( folder, "stash list --format=%H", GitTimeout );
+        return Succeeded( monitor, folder, "stash list", list, LogLevel.Error )
+                ? list.Output.Select( l => l.Trim() ).Count( l => l.Length >= 40 && l.All( Uri.IsHexDigit ) )
+                : -1;
     }
 
     static bool Succeeded( IActivityMonitor monitor,

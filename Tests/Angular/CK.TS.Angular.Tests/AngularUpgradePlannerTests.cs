@@ -70,6 +70,15 @@ public class AngularUpgradePlannerTests
         step.MigrationCommand( core, "21.2.27" ).ShouldBe( "ng update @angular/core --migrate-only --from 21.2.27 --to 22 --allow-dirty" );
     }
 
+    [Test]
+    public void cli_migrates_before_core_in_a_step()
+    {
+        var step = AngularUpgradePlanner.Plan( 20, 22, _zorroApp20, _declared22 )[0];
+        step.Packages.Select( p => p.Name ).Take( 2 ).ShouldBe( ["@angular/core", "@angular/cli"] );
+
+        AngularUpgradePlanner.GetMigrationOrder( step ).Select( p => p.Name ).Take( 2 ).ShouldBe( ["@angular/cli", "@angular/core"] );
+    }
+
     [TestCase( "^20" )]
     [TestCase( "~20.3.0" )]
     [TestCase( "20.3.4" )]

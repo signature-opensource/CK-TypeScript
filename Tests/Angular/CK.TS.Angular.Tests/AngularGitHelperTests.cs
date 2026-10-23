@@ -157,8 +157,9 @@ public class AngularGitHelperTests
         Directory.CreateDirectory( Path.Combine( _app, "src" ) );
         File.WriteAllText( Path.Combine( _app, "src", "new.ts" ), "export {}" );
 
-        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z" ).ShouldBeTrue();
+        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z", out var stashCreated ).ShouldBeTrue();
 
+        stashCreated.ShouldBeTrue();
         File.ReadAllText( Path.Combine( _app, "package.json" ) ).ShouldBe( "{}" );
         File.Exists( Path.Combine( _app, "src", "new.ts" ) ).ShouldBeFalse();
         GitOutput( "stash list" ).ShouldContain( "ck-angular-upgrade undo App 2026-10-23T10:00:00Z" );
@@ -173,7 +174,7 @@ public class AngularGitHelperTests
         File.WriteAllText( Path.Combine( _app, "package.json" ), """{"name":"app"}""" );
         File.WriteAllText( Path.Combine( _app, "ck-gen", "gen.ts" ), "export {}" );
 
-        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z" ).ShouldBeTrue();
+        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z", out _ ).ShouldBeTrue();
 
         File.ReadAllText( Path.Combine( _app, "ck-gen", "gen.ts" ) ).ShouldBe( "export {}" );
     }
@@ -184,10 +185,39 @@ public class AngularGitHelperTests
         File.WriteAllText( Path.Combine( _app, ".gitignore" ), ".pnp.cjs" );
         File.WriteAllText( Path.Combine( _app, "package.json" ), """{"name":"app"}""" );
 
-        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z" ).ShouldBeTrue();
+        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z", out _ ).ShouldBeTrue();
 
         File.ReadAllText( Path.Combine( _app, ".gitignore" ) ).ShouldBe( ".pnp.cjs" );
         File.ReadAllText( Path.Combine( _app, "package.json" ) ).ShouldBe( "{}" );
+    }
+
+    [Test]
+    public void stash_undo_leaves_the_upgrade_marker_out_of_the_stash()
+    {
+        File.WriteAllText( Path.Combine( _app, AngularUpgradeMarker.FileName ), "fromMajor=20" );
+        File.WriteAllText( Path.Combine( _app, "work.ts" ), "export {}" );
+
+        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z", out _ ).ShouldBeTrue();
+
+        File.Exists( Path.Combine( _app, AngularUpgradeMarker.FileName ) ).ShouldBeTrue();
+        File.Exists( Path.Combine( _app, "work.ts" ) ).ShouldBeFalse();
+        var stashed = GitOutput( "stash show --include-untracked --name-only stash@{0}" );
+        stashed.ShouldContain( "App/work.ts" );
+        stashed.ShouldNotContain( AngularUpgradeMarker.FileName );
+    }
+
+    [Test]
+    public void stash_undo_with_only_the_marker_to_leave_creates_no_stash()
+    {
+        File.WriteAllText( Path.Combine( _app, "package.json" ), """{"name":"earlier"}""" );
+        Git( "-c user.name=ck -c user.email=ck@localhost stash push -q -m earlier" );
+        File.WriteAllText( Path.Combine( _app, AngularUpgradeMarker.FileName ), "fromMajor=20" );
+
+        AngularGitHelper.StashUndo( TestHelper.Monitor, _app, "ck-angular-upgrade undo App 2026-10-23T10:00:00Z", out var stashCreated ).ShouldBeTrue();
+
+        stashCreated.ShouldBeFalse();
+        GitOutput( "stash list" ).ShouldNotContain( "ck-angular-upgrade undo" );
+        File.Exists( Path.Combine( _app, AngularUpgradeMarker.FileName ) ).ShouldBeTrue();
     }
 
     [Test]
