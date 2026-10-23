@@ -96,7 +96,7 @@ internal static class AngularUpgradePlanner
             packages.AddRange( _sameMajorLibraries.Where( appDependencies.ContainsKey ).Select( name => new AngularUpgradePackage( name, to - 1, to ) ) );
             if( to == targetMajor )
             {
-                packages.AddRange( GetLastStepLibraries( appMajor, appDependencies, declaredLibraries ) );
+                packages.AddRange( GetLastStepLibraries( appDependencies, declaredLibraries ) );
             }
             steps.Add( new AngularUpgradeStep( to - 1,
                                                to,
@@ -113,12 +113,10 @@ internal static class AngularUpgradePlanner
     /// library, and declared with a major above the app's major of that library. Same-major minor gaps and libraries
     /// where the app is ahead are left to the package.json merge.
     /// </summary>
-    /// <param name="appMajor">The app's Angular major. The selection compares each library's own majors and does not use it.</param>
     /// <param name="appDependencies">The app's dependencies.</param>
     /// <param name="declaredLibraries">The CK-declared library bounds.</param>
     /// <returns>The libraries, ordered by name.</returns>
-    internal static IReadOnlyList<AngularUpgradePackage> GetLastStepLibraries( int appMajor,
-                                                                               IReadOnlyDictionary<string, SVersionBound> appDependencies,
+    internal static IReadOnlyList<AngularUpgradePackage> GetLastStepLibraries( IReadOnlyDictionary<string, SVersionBound> appDependencies,
                                                                                IReadOnlyDictionary<string, SVersionBound> declaredLibraries )
     {
         var result = new List<AngularUpgradePackage>();
@@ -171,11 +169,14 @@ internal static class AngularUpgradePlanner
                 }
                 b.AppendLine( "yarn install" );
             }
+            b.AppendLine( "# This may crash in its migration phase (Cannot find module '@angular-devkit/core')." );
+            b.AppendLine( $"# Carry on when package.json shows @angular/core at major {step.ToMajor}." );
             b.AppendLine( "yarn " + step.PackageCommand );
             b.AppendLine( "yarn dedupe" );
             // The migrations load schematics packages that a strict PnP install does not expose to them.
             b.AppendLine( "$env:YARN_PNP_MODE = \"loose\"" );
             b.AppendLine( "yarn install" );
+            b.AppendLine( "# A package without migrations exits 1 with \"Package does not provide migrations.\": this is harmless." );
             foreach( var package in GetMigrationOrder( step ) )
             {
                 bool updatedBefore = steps.Take( i ).Any( s => s.Packages.Any( p => p.Name == package.Name ) );

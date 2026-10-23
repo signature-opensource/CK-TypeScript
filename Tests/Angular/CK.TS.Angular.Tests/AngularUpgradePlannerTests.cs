@@ -177,6 +177,21 @@ public class AngularUpgradePlannerTests
     }
 
     [Test]
+    public void manual_commands_say_which_failures_to_carry_on_after()
+    {
+        var steps = AngularUpgradePlanner.Plan( 20, 22, _zorroApp20, _declared22 );
+        var text = AngularUpgradePlanner.RenderManualCommands( steps, new Dictionary<string, SVersion>() );
+        var lines = text.Split( '\n' ).Select( l => l.TrimEnd( '\r' ) ).ToList();
+
+        int packageCommand = lines.FindLastIndex( l => l.StartsWith( "yarn ng update " ) && !l.Contains( "--migrate-only" ) );
+        lines[packageCommand - 1].ShouldBe( "# Carry on when package.json shows @angular/core at major 22." );
+        lines[packageCommand - 2].ShouldContain( "Cannot find module '@angular-devkit/core'" );
+
+        int firstMigration = lines.FindIndex( packageCommand, l => l.Contains( "--migrate-only" ) );
+        lines[firstMigration - 1].ShouldContain( "\"Package does not provide migrations.\": this is harmless." );
+    }
+
+    [Test]
     public void manual_commands_skip_bounds_and_replacements_the_app_does_not_have()
     {
         var app = D( ("@angular/core", "^20.3.0"), ("@angular/cli", "^20.3.0") );
