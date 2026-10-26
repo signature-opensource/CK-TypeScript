@@ -168,6 +168,25 @@ public class AngularUpgradeReportTests
     }
 
     [Test]
+    public void typescript_errors_warn_that_template_errors_can_follow()
+    {
+        // @angular/compiler-cli 22.2.3 defaultGatherDiagnostics: template diagnostics run only after error-free earlier stages.
+        const string warning = "the Angular compiler does not check the templates";
+        var withTs = AngularUpgradeReport.RenderCompileFailure( _app,
+                                                                ["src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'.",
+                                                                 "src/app/b.ts:1:1 - error NG2009: Component selector is invalid."],
+                                                                [],
+                                                                _guide );
+        var templatesOnly = AngularUpgradeReport.RenderCompileFailure( _app,
+                                                                       ["src/app/c.html:2:2 - error NG8002: Can't bind to 'x' since it isn't a known property of 'div'."],
+                                                                       [],
+                                                                       _guide );
+
+        withTs.ShouldContain( warning );
+        templatesOnly.ShouldNotContain( warning );
+    }
+
+    [Test]
     public void compile_check_that_gives_no_answer_did_not_run()
     {
         string[] output = ["Compiling the app.", "Error: Cannot find module 'typescript'."];

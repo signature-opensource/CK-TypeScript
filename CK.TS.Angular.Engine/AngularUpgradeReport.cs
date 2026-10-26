@@ -150,6 +150,11 @@ internal static partial class AngularUpgradeReport
         {
             b.AppendLine( $"And {Plural( errors.Count - _maxErrorLines, "more error" )}: run the command in the app folder to see them all." );
         }
+        // ngc type-checks the templates only when no earlier stage reported an error, and every TS error is from one.
+        if( errors.Any( e => e.Contains( "error TS", StringComparison.Ordinal ) ) )
+        {
+            b.AppendLine( "While TypeScript errors (TS codes) remain, the Angular compiler does not check the templates: more errors (NG codes) can show once these are fixed." );
+        }
         b.AppendLine( $"The app folder '{appPath}' stays upgraded: the upgrade is not undone, fixing the app code is up to you." );
         b.AppendLine( "Next actions:" );
         b.AppendLine( $"1. Fix these errors before committing: a rerun of the builder passes without this check, which runs only after an upgrade. Run 'yarn {CompileCheckCommand}' in the app folder to check again." );
