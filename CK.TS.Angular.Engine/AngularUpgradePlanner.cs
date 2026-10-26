@@ -72,8 +72,8 @@ internal static class AngularUpgradePlanner
     /// <summary>
     /// The members of the <c>packageGroup</c> that <c>@angular/core</c> declares in its <c>ng-update</c> metadata (Angular 21
     /// and 22), without <c>@angular/core</c> itself and without <c>@angular/animations</c> and <c>@angular/platform-browser-dynamic</c>:
-    /// every release of these two is deprecated, and the CLI refuses a command line range that only matches deprecated
-    /// releases. The group update of <c>@angular/common</c> still moves them to the step's major.
+    /// every release of these two is deprecated, and CLI 21 refuses a command line range that only matches deprecated
+    /// releases (CLI 22 falls back to them). The group update of <c>@angular/common</c> still moves them to the step's major.
     /// </summary>
     static readonly string[] _pinnedCoreGroup = ["@angular/common", "@angular/compiler", "@angular/compiler-cli",
                                                  "@angular/elements", "@angular/forms", "@angular/language-service",

@@ -272,6 +272,8 @@ public class AngularGitHelperTests
             if( process.ProcessName == "node" )
             {
                 process.Kill();
+                // Kill returns before the process is gone, and the child's working directory is the folder TearDown deletes.
+                process.WaitForExit();
             }
         }
     }
