@@ -308,12 +308,12 @@ public class AngularUpgradeEngineTests
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( app );
         configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
         configuration.FirstBinPath.Types.Add( types );
-        // Ordinary engine entries name every configured type: CollectTexts keeps only the last 100 texts by default.
-        using( TestHelper.Monitor.CollectTexts( out var texts, 100_000 ) )
+        // A run logs thousands of entries, and CollectTexts keeps the last 100 texts whatever its capacity argument.
+        using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Debug, 100_000 ) )
         using( TestHelper.Monitor.CollectEntries( out var errors, LogLevelFilter.Error, 1_000 ) )
         {
             var result = await configuration.RunAsync();
-            return new EngineRun( result?.Status ?? RunStatus.Failed, texts.ToList(), errors.ToList() );
+            return new EngineRun( result?.Status ?? RunStatus.Failed, entries.Select( e => e.Text ).ToList(), errors.ToList() );
         }
     }
 
