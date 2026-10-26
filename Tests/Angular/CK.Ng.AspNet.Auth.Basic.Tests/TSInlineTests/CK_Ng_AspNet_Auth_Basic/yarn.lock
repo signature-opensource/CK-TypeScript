@@ -59,17 +59,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/animations@npm:^22.2.3":
-  version: 22.2.3
-  resolution: "@angular/animations@npm:22.2.3"
-  dependencies:
-    tslib: "npm:^2.3.0"
-  peerDependencies:
-    "@angular/core": 22.2.3
-  checksum: 10/4f4b21443a95e08adbce5c9190e8571886899eafa7c10dbd662e70cc2d9e6a3422026defd55997875d67fe416fef47273fd36c77f4b2eefe9234e3d90e15c8ee
-  languageName: node
-  linkType: hard
-
 "@angular/build@npm:^22.2.4":
   version: 22.2.4
   resolution: "@angular/build@npm:22.2.4"
@@ -4252,7 +4241,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "demo@workspace:."
   dependencies:
-    "@angular/animations": "npm:^22.2.3"
     "@angular/build": "npm:^22.2.4"
     "@angular/cdk": "npm:^22.2.4"
     "@angular/cli": "npm:^22.2.4"
