@@ -283,7 +283,7 @@ public partial class AngularCodeGeneratorImpl
             {
                 if( packageFailure.Kind == UpgradeFailureKind.None )
                 {
-                    packageFailure = new UpgradeFailure( UpgradeFailureKind.Generic, LastLines( packageOutput ), [], null, null );
+                    packageFailure = new UpgradeFailure( UpgradeFailureKind.Generic, AngularUpgradeReport.LastLines( packageOutput ), [], null, null );
                 }
                 var core = packageJson.Dependencies.TryGetValue( "@angular/core", out var c ) ? $"'{c.NpmVersionRange}'" : "missing";
                 return new StepFailure( step.PackageCommand, packageCommand, packageFailure, $"Afterwards, @angular/core in package.json is {core}, not Angular {step.ToMajor}." );
@@ -309,7 +309,7 @@ public partial class AngularCodeGeneratorImpl
                 }
                 foreach( var line in output )
                 {
-                    var m = OptionalMigrationRegex().Match( AnsiRegex().Replace( line, "" ) );
+                    var m = OptionalMigrationRegex().Match( AngularUpgradeReport.AnsiRegex().Replace( line, "" ) );
                     if( m.Success )
                     {
                         optionalMigrations.Add( (m.Groups[1].Value, m.Groups[2].Value) );
@@ -423,11 +423,6 @@ public partial class AngularCodeGeneratorImpl
                                                                 IsRootGitIgnoreUntracked( appPath ),
                                                                 nextActions ) );
         }
-
-        static List<string> LastLines( List<string> output ) => output.Skip( Math.Max( 0, output.Count - 30 ) ).Select( l => AnsiRegex().Replace( l, "" ) ).ToList();
-
-        [GeneratedRegex( @"\x1b\[[0-9;]*m" )]
-        private static partial Regex AnsiRegex();
 
         [GeneratedRegex( @"^\s*ng update (\S+) --name (\S+)\s*$" )]
         private static partial Regex OptionalMigrationRegex();
