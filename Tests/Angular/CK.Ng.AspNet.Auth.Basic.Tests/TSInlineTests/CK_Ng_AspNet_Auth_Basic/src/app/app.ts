@@ -1,6 +1,6 @@
 import { RouterOutlet } from '@angular/router';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
-import { Component, inject, LOCALE_ID, signal } from '@angular/core';
+import { Component, inject, LOCALE_ID, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { locales, LocaleService } from '@local/ck-gen/ts-locales/locales';
 
@@ -8,6 +8,7 @@ import { locales, LocaleService } from '@local/ck-gen/ts-locales/locales';
   selector: 'app-root',
   imports: [RouterOutlet, CommonModule, CKGenAppModule],
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.less'
 } )
 export class App {

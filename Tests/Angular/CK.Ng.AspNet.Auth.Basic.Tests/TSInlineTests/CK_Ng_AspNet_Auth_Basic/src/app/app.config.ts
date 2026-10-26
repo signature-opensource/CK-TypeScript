@@ -4,6 +4,8 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideNzDateFnsAdapter } from 'ng-zorro-antd/core/time';
+
 
 export const appConfig: ApplicationConfig = {
   providers:
@@ -11,7 +13,7 @@ export const appConfig: ApplicationConfig = {
       provideZoneChangeDetection( { eventCoalescing: true } ),
       provideRouter( routes ),
       provideAnimationsAsync(),
-      ...CKGenAppModule.Providers
+      ...CKGenAppModule.Providers, provideNzDateFnsAdapter()
     ]
 };
 
