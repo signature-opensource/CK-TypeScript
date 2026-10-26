@@ -10,7 +10,6 @@ namespace CK.Ng.Zorro;
 [TypeScriptImportLibrary( "@angular/cdk", "^22", DependencyKind.Dependency )]
 [TypeScriptImportLibrary( "@fortawesome/angular-fontawesome", "^5", DependencyKind.Dependency )]
 [TypeScriptImportLibrary( "@fortawesome/fontawesome-svg-core", "^7", DependencyKind.Dependency )]
-[TypeScriptImportLibrary( "@angular/animations", "^22", DependencyKind.Dependency )]
 [AppStyleImport( "ng-zorro-antd/ng-zorro-antd.less" )]
 public class ZorroTestPackage : TypeScriptPackage
 {

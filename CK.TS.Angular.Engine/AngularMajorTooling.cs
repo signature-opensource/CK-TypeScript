@@ -68,7 +68,7 @@ internal sealed record AngularMajorTooling( int Major,
                                      [("@angular/platform-browser-dynamic", "@angular/platform-browser")],
                                      [new AngularUpgradeHint( "ng-zorro-antd 22 renames NzToolTipModule to NzTooltipModule: update the imports.", MatchFragment: "NzToolTipModule" ),
                                       new AngularUpgradeHint( "ng-zorro-antd 22 renames NzDropDownModule to NzDropdownModule: update the imports.", MatchFragment: "NzDropDownModule" ),
-                                      new AngularUpgradeHint( "@angular/animations is deprecated in Angular 22." ),
+                                      new AngularUpgradeHint( "@angular/animations is deprecated in Angular 22 and ng-zorro-antd 22 no longer uses it: remove provideAnimationsAsync() and the @angular/animations dependency, unless the app's own components still use trigger()." ),
                                       new AngularUpgradeHint( "The change-detection-eager and strict-templates-default migrations touch many files." )] )
         };
         return rows.ToDictionary( r => r.Major );
