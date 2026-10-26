@@ -21,7 +21,10 @@ namespace CK.TS.Angular.Engine;
 /// <param name="Steps">The steps done.</param>
 /// <param name="OptionalMigrations">The optional migrations the migration commands listed and did not run.</param>
 /// <param name="PackagesWithoutMigrations">The packages whose migration command found no migration.</param>
-/// <param name="Elapsed">The time the upgrade took.</param>
+/// <param name="Elapsed">
+/// The time from the marker write to the end of the last step. The summary shows the whole run instead: it replaces
+/// this value with the time to the end of the compile check.
+/// </param>
 internal sealed record AngularUpgradeRun( NormalizedPath AppPath,
                                           int FromMajor,
                                           int ToMajor,
@@ -57,6 +60,9 @@ public partial class AngularCodeGeneratorImpl
         };
 
         AngularUpgradeRun? _upgradeRun;
+
+        // The Stopwatch timestamp of the start of the upgrade: the summary's elapsed time ends after the compile check.
+        long _upgradeStarted;
 
         /// <summary>
         /// Gets the Angular major of the engine: the major of <see cref="DefaultAngularCliVersion"/>.
@@ -124,6 +130,49 @@ public partial class AngularCodeGeneratorImpl
             return outcome;
         }
 
+        /// <summary>
+        /// Runs an undo and its report. An exception is logged as one short error instead of the report:
+        /// <see cref="UndoUpgrade"/> throws after the stash when the <c>yarn install</c> process cannot run or the marker
+        /// cannot be deleted, and the marker left in place makes the next run finish the undo.
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="integrationFailed">
+        /// True when the undo follows an integration that failed after a successful upgrade, false when it follows a
+        /// failed step: the error's lead says which.
+        /// </param>
+        /// <param name="undoAndReport">The undo and the report of the failure.</param>
+        internal static void GuardUndo( IActivityMonitor monitor, bool integrationFailed, Action undoAndReport )
+        {
+            try
+            {
+                undoAndReport();
+            }
+            catch( Exception ex )
+            {
+                var lead = integrationFailed ? "The integration failed after the upgrade" : "The upgrade failed";
+                monitor.Error( $"{lead} and its undo stopped: {ex.Message.TrimEnd( '.' )}. Rerun the builder: it finishes the undo.", ex );
+            }
+        }
+
+        /// <summary>
+        /// Deletes the <see cref="AngularUpgradeMarker"/> once the compile check has given its result, or failed to give
+        /// one. A deletion that throws is logged as an error that names the file to delete by hand, since the next build
+        /// would undo this upgrade.
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="appPath">The app folder.</param>
+        internal static void DeleteMarkerAfterCheck( IActivityMonitor monitor, NormalizedPath appPath )
+        {
+            try
+            {
+                AngularUpgradeMarker.Delete( appPath );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"Delete '{appPath.AppendPart( AngularUpgradeMarker.FileName )}' by hand before the next build, or it undoes this upgrade: {ex.Message.TrimEnd( '.' )}.", ex );
+            }
+        }
+
         void OnAfterCodeGeneration( object? sender, EventMonitoredArgs e )
         {
             Throw.DebugAssert( sender is TypeScriptContext );
@@ -189,13 +238,13 @@ public partial class AngularCodeGeneratorImpl
                          IReadOnlyList<DeclaredLibrary> declaredLibraries,
                          string? packageManager )
         {
-            var stopwatch = Stopwatch.StartNew();
             int toMajor = steps[^1].ToMajor;
             // Read before the first write: the manual commands of a failure message start from the restored app.
             var manualCommands = AngularUpgradePlanner.RenderManualCommands( steps, ReadInstalledVersions( appPath, steps ) );
             using( monitor.OpenInfo( $"Upgrading the Angular app '{appPath}' from Angular {fromMajor} to {toMajor}. Do not edit the files of this folder, and do not run another build on this app, until the builder finishes." ) )
             {
                 new AngularUpgradeMarker( fromMajor, DateTime.UtcNow ).Write( appPath );
+                _upgradeStarted = Stopwatch.GetTimestamp();
                 var optionalMigrations = new List<(string Package, string Name)>();
                 var packagesWithoutMigrations = new List<string>();
                 foreach( var step in steps )
@@ -215,12 +264,83 @@ public partial class AngularCodeGeneratorImpl
                         }
                         if( failed != null )
                         {
-                            ReportStepFailure( monitor, integrationContext, appPath, fromMajor, step, failed, declaredLibraries, manualCommands );
+                            GuardUndo( monitor, integrationFailed: false, () => ReportStepFailure( monitor, integrationContext, appPath, fromMajor, step, failed, declaredLibraries, manualCommands ) );
                             return;
                         }
                     }
                 }
-                _upgradeRun = new AngularUpgradeRun( appPath, fromMajor, toMajor, steps, optionalMigrations, packagesWithoutMigrations, stopwatch.Elapsed );
+                _upgradeRun = new AngularUpgradeRun( appPath, fromMajor, toMajor, steps, optionalMigrations, packagesWithoutMigrations, Stopwatch.GetElapsedTime( _upgradeStarted ) );
+            }
+        }
+
+        // On a run that upgraded the app: the undo when the integration failed, otherwise the compile check, the
+        // marker deletion and the summary. The check needs the integrated ck-gen and installed packages.
+        void OnAfterIntegrationUpgrade( TypeScriptIntegrationContext.AfterEventArgs e )
+        {
+            var run = _upgradeRun;
+            if( run == null )
+            {
+                return;
+            }
+            _upgradeRun = null;
+            var monitor = e.Monitor;
+            var integrationContext = e.IntegrationContext;
+            var appPath = run.AppPath;
+            if( !e.Success )
+            {
+                GuardUndo( monitor, integrationFailed: true, () =>
+                {
+                    var stashMessage = CreateStashMessage( appPath );
+                    var undo = UndoUpgrade( monitor, integrationContext, appPath, stashMessage, out bool stashCreated );
+                    monitor.Error( AngularUpgradeReport.RenderIntegrationFailure( appPath,
+                                                                                  run.FromMajor,
+                                                                                  run.ToMajor,
+                                                                                  stashMessage,
+                                                                                  undo,
+                                                                                  stashCreated,
+                                                                                  IsRootGitIgnoreUntracked( appPath ) ) );
+                } );
+                return;
+            }
+            CompileCheckResult compileCheck;
+            List<string> output = [];
+            try
+            {
+                var result = RunCommand( monitor, integrationContext, appPath, AngularUpgradeReport.CompileCheckCommand, _ngEnvironment, out output );
+                compileCheck = AngularUpgradeReport.EvaluateCompileCheck( result.ExitCode, result.TimedOut, output );
+            }
+            catch( Exception ex )
+            {
+                // RunYarnProcess throws when the process cannot start, or when a timed-out one cannot be killed: the
+                // check gave no answer, which never reads as a pass, and the lines it printed before are kept.
+                monitor.Warn( $"'yarn {AngularUpgradeReport.CompileCheckCommand}' threw in '{appPath}'.", ex );
+                // The output readers of a process that could not be killed may still be adding lines.
+                List<string> lastLines;
+                lock( output ) lastLines = AngularUpgradeReport.LastLines( output );
+                compileCheck = new CompileCheckResult( CompileCheckOutcome.DidNotRun, [], ex.Message.TrimEnd( '.' ), lastLines );
+            }
+            var elapsed = Stopwatch.GetElapsedTime( _upgradeStarted );
+            // Deleted before the status: the marker is not a change of the upgrade.
+            DeleteMarkerAfterCheck( monitor, appPath );
+            var changedFiles = AngularGitHelper.GetDirtyFiles( monitor, appPath );
+            // After GetDirtyFiles: an unknown file list refers to its warning above.
+            using( monitor.OpenWarn( $"Summary of the Angular upgrade of '{appPath}'." ) )
+            {
+                monitor.Warn( AngularUpgradeReport.RenderSummary( run with { Elapsed = elapsed },
+                                                                  changedFiles,
+                                                                  compileCheck,
+                                                                  CreateStashMessage( appPath ),
+                                                                  IsRootGitIgnoreUntracked( appPath ) ) );
+            }
+            var guideLink = AngularUpgradeReport.GuideLink( run.FromMajor, run.ToMajor );
+            if( compileCheck.Outcome == CompileCheckOutcome.Errors )
+            {
+                var hints = run.Steps.SelectMany( s => s.Tooling.Hints ).ToList();
+                monitor.Error( AngularUpgradeReport.RenderCompileFailure( appPath, compileCheck.Errors, hints, guideLink ) );
+            }
+            else if( compileCheck.Outcome == CompileCheckOutcome.DidNotRun )
+            {
+                monitor.Error( AngularUpgradeReport.RenderCompileCheckNotRun( appPath, AngularUpgradeReport.CompileCheckCommand, compileCheck, guideLink ) );
             }
         }
 

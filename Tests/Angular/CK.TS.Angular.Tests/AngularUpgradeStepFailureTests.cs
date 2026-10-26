@@ -3,8 +3,12 @@ using CK.TS.Angular.Engine;
 using NUnit.Framework;
 using Shouldly;
 using CSemVer;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using static CK.Testing.MonitorTestHelper;
 using static CK.TS.Angular.Engine.AngularCodeGeneratorImpl.AngularCodeGen;
 
 namespace CK.TS.Angular.Tests;
@@ -58,5 +62,45 @@ public class AngularUpgradeStepFailureTests
 
         doing.ShouldNotContain( "running" );
         found.TrimEnd().ShouldBe( "An exception stopped the step: disk full" );
+    }
+
+    [TestCase( false, "The upgrade failed and its undo stopped: The file is locked. Rerun the builder: it finishes the undo." )]
+    [TestCase( true, "The integration failed after the upgrade and its undo stopped: The file is locked. Rerun the builder: it finishes the undo." )]
+    public void undo_that_throws_logs_one_short_error( bool integrationFailed, string expected )
+    {
+        var exception = new IOException( "The file is locked." );
+        using( TestHelper.Monitor.CollectEntries( out var errors, LogLevelFilter.Error ) )
+        {
+            GuardUndo( TestHelper.Monitor, integrationFailed, () => throw exception );
+
+            errors.Select( e => e.Text ).ShouldBe( [expected] );
+            errors[0].Exception.ShouldBeSameAs( exception );
+        }
+    }
+
+    [Test]
+    public void locked_marker_after_the_check_names_the_file_to_delete()
+    {
+        Assume.That( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "Only Windows refuses to delete an open file." );
+        NormalizedPath app = Path.Combine( Path.GetTempPath(), "ck-angular-marker-" + Guid.NewGuid().ToString( "N" ) );
+        Directory.CreateDirectory( app );
+        try
+        {
+            var marker = app.AppendPart( AngularUpgradeMarker.FileName );
+            File.WriteAllText( marker, "fromMajor=20" );
+            using( File.Open( marker, FileMode.Open, FileAccess.Read, FileShare.None ) )
+            using( TestHelper.Monitor.CollectEntries( out var errors, LogLevelFilter.Error ) )
+            {
+                DeleteMarkerAfterCheck( TestHelper.Monitor, app );
+
+                errors.Count.ShouldBe( 1 );
+                errors[0].Text.ShouldStartWith( $"Delete '{marker}' by hand before the next build, or it undoes this upgrade: " );
+                errors[0].Exception.ShouldBeOfType<IOException>();
+            }
+        }
+        finally
+        {
+            Directory.Delete( app, recursive: true );
+        }
     }
 }

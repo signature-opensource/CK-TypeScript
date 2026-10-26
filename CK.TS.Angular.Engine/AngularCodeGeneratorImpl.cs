@@ -763,6 +763,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnAfterIntegration( object? sender, TypeScriptIntegrationContext.AfterEventArgs e )
         {
+            OnAfterIntegrationUpgrade( e );
             // Awful implementations.
             // Waiting for transformers.
             TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ) );
