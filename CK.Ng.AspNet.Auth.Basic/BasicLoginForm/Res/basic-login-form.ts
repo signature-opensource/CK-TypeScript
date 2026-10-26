@@ -11,7 +11,7 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 @Component( {
   selector: 'ck-basic-login-form',
@@ -26,7 +26,7 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     NzDividerModule,
     NzFormModule,
     NzInputModule,
-    NzToolTipModule
+    NzTooltipModule
   ],
     templateUrl: './basic-login-form.html'
 } )
