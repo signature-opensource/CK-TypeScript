@@ -4,7 +4,7 @@
     <LangVersion>13</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../.yarn/releases/yarn-4.8.1.cjs" />
+    <EmbeddedResource Include="../.yarn/releases/yarn-4.18.1.cjs" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="CK.TypeScript.Tests" />

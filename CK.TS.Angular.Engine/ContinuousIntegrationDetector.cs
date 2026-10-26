@@ -4,7 +4,7 @@ using System.Linq;
 namespace CK.TS.Angular.Engine;
 
 /// <summary>
-/// Detects a CI run with the signals of Yarn 4.8.1's <c>isCI</c>, which is also the default of its
+/// Detects a CI run with the signals of Yarn 4.18.1's <c>isCI</c>, which is also the default of its
 /// <c>enableImmutableInstalls</c> setting: by default, Yarn refuses to change the lockfile in a run detected here.
 /// </summary>
 internal static class ContinuousIntegrationDetector
@@ -30,8 +30,8 @@ internal static class ContinuousIntegrationDetector
                                                   "RUN_ID"];
 
     /// <summary>
-    /// The vendor table of the ci-info copy in <c>.yarn/releases/yarn-4.8.1.cjs</c> (module <c>YV</c>, read by
-    /// module <c>ag</c>), in its order, generated from that file. Its <c>pr</c> fields only tell a pull request
+    /// The vendor table of the ci-info copy in <c>.yarn/releases/yarn-4.18.1.cjs</c> (module <c>cue</c>, read by
+    /// module <c>ly</c>), in its order, generated from that file. Its <c>pr</c> fields only tell a pull request
     /// build and are left out.
     /// </summary>
     static readonly Vendor[] _vendors =

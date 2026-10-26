@@ -110,7 +110,7 @@ public class AngularGitHelperTests
         File.WriteAllText( Path.Combine( _root, "other.txt" ), "y" );
         File.WriteAllText( Path.Combine( _app, "ck-gen", "gen.ts" ), "export {}" );
         Directory.CreateDirectory( Path.Combine( _app, ".yarn", "releases" ) );
-        File.WriteAllText( Path.Combine( _app, ".yarn", "releases", "yarn-4.8.1.cjs" ), "//" );
+        File.WriteAllText( Path.Combine( _app, ".yarn", "releases", "yarn-4.18.1.cjs" ), "//" );
         File.WriteAllText( Path.Combine( _app, ".yarnrc.yml" ), "nodeLinker: pnp" );
 
         AngularGitHelper.GetDirtyFiles( TestHelper.Monitor, _app ).ShouldBeEmpty();

@@ -143,7 +143,7 @@ public class AngularUpgradeEngineTests
     {
         Assume.That( ContinuousIntegrationDetector.Detect( Environment.GetEnvironmentVariable ), Is.Null, "On CI, the safety check refuses the upgrade." );
         var app = AngularUpgradeSnapshot.Prepare();
-        // The engine runs the repository's yarn 4.8.1 and sets it in memory: the committed file names another one.
+        // The engine runs the repository's yarn and sets it in memory: the committed file names another one.
         var path = app.AppendPart( "package.json" );
         var text = File.ReadAllText( path );
         text.ShouldContain( "\"packageManager\": \"yarn@4.8.1\"" );
@@ -156,7 +156,7 @@ public class AngularUpgradeEngineTests
 
         run.Status.ShouldBe( RunStatus.Failed );
         run.Errors.ShouldContain( e => e.Text.Contains( "20 to 21" ) && e.Text.Contains( "'yarn install'" ) );
-        Git( app, "show stash@{0}:package.json" ).ShouldContain( l => l.Contains( "\"packageManager\": \"yarn@4.8.1\"" ) );
+        Git( app, "show stash@{0}:package.json" ).ShouldContain( l => l.Contains( $"\"packageManager\": \"yarn@{YarnHelper.AutomaticYarnVersion}\"" ) );
     }
 
     [Test]
