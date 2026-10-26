@@ -67,6 +67,7 @@ internal sealed record AngularMajorTooling( int Major,
                                      [B( "^22.22.3" ), B( "^24.15.0" ), B( ">=26.0.0" )],
                                      [("@angular/platform-browser-dynamic", "@angular/platform-browser")],
                                      [new AngularUpgradeHint( "ng-zorro-antd 22 renames NzToolTipModule to NzTooltipModule: update the imports.", MatchFragment: "NzToolTipModule" ),
+                                      new AngularUpgradeHint( "ng-zorro-antd 22 renames NzDropDownModule to NzDropdownModule: update the imports.", MatchFragment: "NzDropDownModule" ),
                                       new AngularUpgradeHint( "@angular/animations is deprecated in Angular 22." ),
                                       new AngularUpgradeHint( "The change-detection-eager and strict-templates-default migrations touch many files." )] )
         };
