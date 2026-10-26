@@ -232,6 +232,68 @@ public class AngularUpgradeEngineTests
         File.Exists( app.AppendPart( AngularUpgradeMarker.FileName ) ).ShouldBeFalse();
     }
 
+    // Needs Node 24 and the npm registry, and takes minutes: run by hand.
+    [Test]
+    [Explicit]
+    public async Task Upgrade_from_Angular_20_snapshot_Async()
+    {
+        Assume.That( ContinuousIntegrationDetector.Detect( Environment.GetEnvironmentVariable ), Is.Null, "On CI, the safety check refuses the upgrade." );
+        var app = AngularUpgradeSnapshot.Prepare();
+        var configuration = CreateFullAppConfiguration( app );
+        // CollectTexts keeps the last 100 texts whatever its capacity argument: CollectEntries honours it.
+        using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info, 100_000 ) )
+        {
+            await configuration.RunSuccessfullyAsync();
+            var texts = entries.Select( e => e.Text ).ToList();
+
+            var packageJson = File.ReadAllText( app.AppendPart( "package.json" ) );
+            packageJson.ShouldMatch( "\"@angular/core\": \"[~^]?22" );
+            packageJson.ShouldContain( "\"jest-preset-angular\": \"^17.0.1\"" );
+            packageJson.ShouldNotContain( "@angular/platform-browser-dynamic" );
+            File.Exists( app.AppendPart( AngularUpgradeMarker.FileName ) ).ShouldBeFalse();
+            texts.ShouldContain( t => t.Contains( "Upgrading the Angular app '" ) );
+            texts.ShouldContain( t => t.Contains( "upgraded from Angular 20 to 22" ) );
+            texts.ShouldContain( t => t.Contains( AngularUpgradeReport.GuideLink( 20, 22 ) ) );
+        }
+
+        await using( var runner = TestHelper.CreateTypeScriptRunner( app ) )
+        {
+            runner.Run();
+        }
+
+        using( TestHelper.Monitor.CollectEntries( out var entries2, LogLevelFilter.Info, 100_000 ) )
+        {
+            await CreateFullAppConfiguration( app ).RunSuccessfullyAsync();
+            entries2.ShouldNotContain( e => e.Text.Contains( "Upgrading the Angular app '" ) );
+        }
+    }
+
+    // The configuration of AngularTests.CK_TS_Angular_Async, on the given app.
+    static EngineConfiguration CreateFullAppConfiguration( NormalizedPath app )
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        var ts = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( app );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" ) );
+        ts.ActiveCultures.Add( NormalizedCultureInfo.EnsureNormalizedCultureInfo( "en-GB" ) );
+        configuration.FirstBinPath.Assemblies.Add( "CK.TS.Angular" );
+        configuration.FirstBinPath.Types.Add( typeof( CK.MiscDemo.DemoNgModule ),
+                                              typeof( CK.MiscDemo.AppRoutedComponent ),
+                                              typeof( CK.Ng.PublicPage.PublicPageComponent ),
+                                              typeof( CK.Ng.AspNet.Auth.LoginComponent ),
+                                              typeof( CK.Ng.AspNet.Auth.PasswordLostComponent ),
+                                              typeof( CK.Ng.AspNet.Auth.LogoutConfirmComponent ),
+                                              typeof( CK.Ng.AspNet.Auth.LogoutResultComponent ),
+                                              typeof( CK.Ng.AspNet.Auth.SomeAuthPackage ),
+                                              typeof( CK.Ng.PublicSection.PublicSectionComponent ),
+                                              typeof( CK.Ng.PublicSection.PublicFooterComponent ),
+                                              typeof( CK.Ng.PublicSection.PublicTopbarComponent ),
+                                              typeof( CK.Ng.Zorro.ZorroTestPackage ),
+                                              typeof( CK.Ng.Zorro.BackOfficePackage ),
+                                              typeof( CK.Ng.Zorro.ActionBarComponent ),
+                                              typeof( CK.Ng.Zorro.GenericFormComponent ) );
+        return configuration;
+    }
+
     /// <summary>
     /// What a test reads from an engine run.
     /// </summary>
