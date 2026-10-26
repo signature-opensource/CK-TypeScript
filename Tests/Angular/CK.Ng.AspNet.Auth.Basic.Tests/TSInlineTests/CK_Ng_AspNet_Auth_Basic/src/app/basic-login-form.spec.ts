@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { provideTranslateService } from '@ngx-translate/core';
 import { AuthService, NotificationService } from '@local/ck-gen';
 import { BasicLoginForm } from '@local/ck-gen/CK/Ng/AspNet/Auth/Basic/basic-login-form/basic-login-form';
@@ -57,8 +56,7 @@ describe( 'BasicLoginForm', () => {
   it( 'logs in with the trimmed user name, the password and remember me', async () => {
     await type( 'username', '  Albert ' );
     await type( 'current-password', ' secret ' );
-    // A DOM click would run the ng-zorro wave, which needs the getPropertyValue that the jest-setup.ts getComputedStyle stub lacks.
-    fixture.debugElement.query( By.css( 'button.login-form-button' ) ).triggerEventHandler( 'click' );
+    loginButton().click();
     await fixture.whenStable();
     expect( basicLogin ).toHaveBeenCalledWith( 'Albert', ' secret ', true );
   } );
