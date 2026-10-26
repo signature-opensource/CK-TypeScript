@@ -110,7 +110,8 @@ internal static partial class AngularUpgradeReport
     /// <summary>
     /// Renders the message of a compile check that reported errors, in four parts: the check that ran, the error count
     /// and the first 50 error lines grouped by file (in the order files first appear, each matching hint on the line
-    /// after its error), the app folder state (upgraded, not undone) and the next actions.
+    /// after its error, a file under <c>ck-gen</c> said to be fixed in its CK package), the app folder state (upgraded,
+    /// not undone) and the next actions.
     /// </summary>
     /// <param name="appPath">The app folder.</param>
     /// <param name="errors">The errors, from <see cref="GetCompileErrors"/>.</param>
@@ -133,7 +134,11 @@ internal static partial class AngularUpgradeReport
             if( errorFile != file )
             {
                 file = errorFile;
-                b.AppendLine( file.Length > 0 ? $"{file}:" : "Errors without a file:" );
+                b.AppendLine( file.Length == 0
+                                ? "Errors without a file:"
+                                : ("/" + file.Replace( '\\', '/' )).Contains( "/ck-gen/", StringComparison.Ordinal )
+                                    ? $"{file} (generated from a CK package: fix it in that package, the next build overwrites this copy):"
+                                    : $"{file}:" );
             }
             b.AppendLine( $"  {error}" );
             foreach( var hint in hints.Where( h => Matches( h, error ) ) )

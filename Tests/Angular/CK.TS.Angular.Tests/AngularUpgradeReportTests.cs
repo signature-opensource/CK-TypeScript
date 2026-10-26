@@ -146,6 +146,18 @@ public class AngularUpgradeReportTests
     }
 
     [Test]
+    public void generated_file_is_said_to_come_from_a_ck_package()
+    {
+        string[] errors = ["ck-gen/CK/Ng/Zorro/action-bar/action-bar.ts:4:10 - error TS2724: has no exported member named 'NzToolTipModule'.",
+                           "src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'."];
+
+        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide ) );
+
+        lines.Single( l => l.StartsWith( "ck-gen/CK/Ng/Zorro/action-bar/action-bar.ts" ) ).ShouldContain( "fix it in that package" );
+        lines.Single( l => l.StartsWith( "src/app/a.ts" ) ).ShouldNotContain( "package" );
+    }
+
+    [Test]
     public void compile_failure_message_says_a_rerun_passes_without_the_check()
     {
         var text = AngularUpgradeReport.RenderCompileFailure( _app, ["src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'."], [], _guide );
