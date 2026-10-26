@@ -191,8 +191,13 @@ internal static partial class UpgradeFailureClassifier
                 var m = PeerLineRegex().Match( raw[i] );
                 if( m.Success )
                 {
-                    peers.Add( new PeerConflict( m.Groups[1].Value, m.Groups[2].Value, m.Groups[3].Value, m.Groups[4].Value ) );
-                    peerLines.Add( lines[i] );
+                    // The CLI prints some conflicts twice, the second time with "(extended)" or a final period.
+                    var conflict = new PeerConflict( m.Groups[1].Value, m.Groups[2].Value, m.Groups[3].Value, m.Groups[4].Value );
+                    if( !peers.Contains( conflict ) )
+                    {
+                        peers.Add( conflict );
+                        peerLines.Add( lines[i] );
+                    }
                 }
             }
             // A summary without a parsable conflict line names nothing to fix: the generic last lines say more.
@@ -468,15 +473,36 @@ internal static partial class UpgradeFailureClassifier
                                Func<string, string?> findDeclarer )
     {
         b.Append( "ng update refused incompatible peer dependencies; nothing was written by this command." );
+        var angularMajors = peers.Where( p => IsAngular( p.Peer ) )
+                                 .Select( p => GetMajor( p.WouldInstall ) )
+                                 .OfType<int>()
+                                 .Distinct()
+                                 .Order()
+                                 .ToList();
+        // A split Angular group explains every conflict: blaming each package would send the developer the wrong way.
+        bool split = angularMajors.Count > 1;
+        if( split )
+        {
+            b.AppendLine().Append( $"ng update would install Angular packages from majors {string.Join( " and ", angularMajors )}: a peer range of a package pulled part of the @angular/core group to the next major. This is a defect of the upgrade tooling: report it to CK, and upgrade by hand with the manual commands meanwhile." );
+        }
         foreach( var p in peers )
         {
-            b.AppendLine().Append( $"'{p.Package}' needs '{p.Peer}' {p.Range}, and {p.WouldInstall} would be installed. " );
+            b.AppendLine().Append( $"'{p.Package}' needs '{p.Peer}' {p.Range}, and {p.WouldInstall} would be installed." );
+            if( split )
+            {
+                continue;
+            }
+            b.Append( ' ' );
             // The CLI checks the peers of the packages it updates and the installed packages that peer on them, so one
             // side is updated: the other one blocks. When both are, the requested release of Package does.
             bool peerBlocks = IsUpdated( p.Package ) && !IsUpdated( p.Peer );
             var culprit = peerBlocks ? p.Peer : p.Package;
             var declarer = findDeclarer( culprit );
-            if( declarer == PackageDependency.ConfigurationSourceName )
+            if( IsAngular( culprit ) )
+            {
+                b.Append( $"'{culprit}' is an Angular package the upgrade moves to Angular {stepToMajor} itself: report it to CK, and upgrade by hand with the manual commands meanwhile." );
+            }
+            else if( declarer == PackageDependency.ConfigurationSourceName )
             {
                 b.Append( $"'{culprit}' is set by the LibraryVersions entry '{culprit}': update or remove that entry, or stay on the previous CK major." );
             }
@@ -500,7 +526,15 @@ internal static partial class UpgradeFailureClassifier
         }
 
         // The CLI updates the whole @angular/core package group, which the step's package command does not list.
-        bool IsUpdated( string name ) => updatedPackages.Contains( name ) || name.StartsWith( "@angular/", StringComparison.Ordinal );
+        bool IsUpdated( string name ) => updatedPackages.Contains( name ) || IsAngular( name );
+
+        static bool IsAngular( string name ) => name.StartsWith( "@angular/", StringComparison.Ordinal );
+
+        static int? GetMajor( string version )
+        {
+            int dot = version.IndexOf( '.' );
+            return int.TryParse( dot < 0 ? version : version.Substring( 0, dot ), out var major ) ? major : null;
+        }
     }
 
     static void AppendDescriptors( StringBuilder b, IReadOnlyList<string> details )

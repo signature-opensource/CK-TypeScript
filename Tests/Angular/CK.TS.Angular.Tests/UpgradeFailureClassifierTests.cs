@@ -366,4 +366,50 @@ public class UpgradeFailureClassifierTests
         hint.ShouldContain( "set 'zone.js' in the app's package.json to a version in ~0.15.0" );
         hint.ShouldNotContain( "set '@angular/core'" );
     }
+
+    // Task 9 first run (CLI 21 at the step to 21): @angular/cdk@21 peers on ^21 || ^22 and pulled part of the group to 22.
+    static readonly string[] _splitGroupRefusal =
+    [
+        "                  Package \"@angular/build\" has an incompatible peer dependency to \"typescript\" (requires \">=5.9 <6.0\", would install \"6.0.3\")",
+        "                  Package \"@angular/animations\" has an incompatible peer dependency to \"@angular/core\" (requires \"22.2.3\", would install \"21.2.25\")",
+        "                  Package \"@angular/core\" has an incompatible peer dependency to \"@angular/compiler\" (requires \"21.2.25\", would install \"22.2.3\")",
+        "                  Package \"ng-zorro-antd\" has an incompatible peer dependency to \"@angular/forms\" (requires \"^21.0.0\", would install \"22.2.3\")",
+        "                  Package \"@angular/build\" has an incompatible peer dependency to \"typescript\" (requires \">=5.9 <6.0\", would install \"6.0.3\").",
+        "                  Package \"@angular/animations\" has an incompatible peer dependency to \"@angular/core\" (requires \"22.2.3\" (extended), would install \"21.2.25\").",
+        "✖ Migration failed: Incompatible peer dependencies found."
+    ];
+
+    [Test]
+    public void a_conflict_printed_twice_is_listed_once()
+    {
+        var failure = Classify( UpgradeCommandKind.PackageCommand, 1, _splitGroupRefusal );
+        failure.Peers.Count.ShouldBe( 4 );
+        var hint = UpgradeFailureClassifier.DescribeHint( failure, 21, _updated22, _ => null );
+        hint.Split( "'@angular/animations' needs" ).Length.ShouldBe( 2 );
+    }
+
+    [Test]
+    public void a_split_angular_group_is_reported_as_a_tooling_defect_without_blaming_packages()
+    {
+        var failure = Classify( UpgradeCommandKind.PackageCommand, 1, _splitGroupRefusal );
+        var hint = UpgradeFailureClassifier.DescribeHint( failure, 21, _updated22, _ => "CK.Ng.Zorro.ZorroPackage" );
+        hint.ShouldContain( "ng update would install Angular packages from majors 21 and 22" );
+        hint.ShouldContain( "'ng-zorro-antd' needs '@angular/forms' ^21.0.0, and 22.2.3 would be installed." );
+        hint.ShouldNotContain( "CK package" );
+        hint.ShouldNotContain( "To fix" );
+    }
+
+    [Test]
+    public void an_angular_package_as_culprit_is_neither_blamed_on_its_declarer_nor_set_by_hand()
+    {
+        // The engine registers @angular/core itself, so its declarer is a source file path, not a CK package.
+        var failure = Classify( UpgradeCommandKind.PackageCommand,
+                                1,
+                                "    Package \"@angular/core\" has an incompatible peer dependency to \"@angular/compiler\" (requires \"22.2.3\", would install \"22.1.0\")",
+                                "✖ Migration failed: Incompatible peer dependencies found." );
+        var hint = Hint( failure, @"D:\src\CK.TS.Angular.Engine\AngularCodeGeneratorImpl.cs" );
+        hint.ShouldContain( "'@angular/core' is an Angular package the upgrade moves to Angular 22 itself" );
+        hint.ShouldNotContain( "AngularCodeGeneratorImpl.cs" );
+        hint.ShouldNotContain( "To fix" );
+    }
 }
