@@ -12,7 +12,7 @@ namespace CK.TS.Angular.Tests;
 public class AngularUpgradeSnapshotTests
 {
     [Test]
-    public void prepared_snapshot_is_a_clean_repository_even_when_prepared_again()
+    public void prepared_again_is_clean()
     {
         var first = AngularUpgradeSnapshot.Prepare();
         File.WriteAllText( first.AppendPart( "stray.ts" ), "export {}" );

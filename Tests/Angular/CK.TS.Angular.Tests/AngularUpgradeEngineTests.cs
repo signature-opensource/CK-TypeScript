@@ -131,9 +131,32 @@ public class AngularUpgradeEngineTests
                                        && e.Text.Contains( "ck-angular-upgrade undo" )
                                        && e.Text.Contains( "yarn install" )
                                        && e.Text.Contains( $"Remove-Item {AngularUpgradeMarker.FileName}" ) );
+        // The copy's .gitignore is committed: the printed stash command must not leave its changes out.
+        run.Errors.ShouldNotContain( e => e.Text.Contains( "\":(exclude).gitignore\"" ) );
         File.Exists( app.AppendPart( AngularUpgradeMarker.FileName ) ).ShouldBeTrue();
         File.Exists( app.Combine( "src/app/half.ts" ) ).ShouldBeTrue();
         Git( app, "stash list" ).ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task recovery_keeps_package_manager_Async()
+    {
+        Assume.That( ContinuousIntegrationDetector.Detect( Environment.GetEnvironmentVariable ), Is.Null, "On CI, the safety check refuses the upgrade." );
+        var app = AngularUpgradeSnapshot.Prepare();
+        // The engine runs the repository's yarn 4.8.1 and sets it in memory: the committed file names another one.
+        var path = app.AppendPart( "package.json" );
+        var text = File.ReadAllText( path );
+        text.ShouldContain( "\"packageManager\": \"yarn@4.8.1\"" );
+        File.WriteAllText( path, text.Replace( "\"packageManager\": \"yarn@4.8.1\"", "\"packageManager\": \"yarn@4.0.2\"" ) );
+        Git( app, "-c user.name=ck -c user.email=ck@localhost -c commit.gpgsign=false commit -q --no-verify -am yarn402" );
+        WriteMarker( app, readable: true );
+
+        // The step after the recovery saves package.json first, then fails offline: its undo stashes that save.
+        var run = await RunEngineOfflineAsync( app );
+
+        run.Status.ShouldBe( RunStatus.Failed );
+        run.Errors.ShouldContain( e => e.Text.Contains( "20 to 21" ) && e.Text.Contains( "'yarn install'" ) );
+        Git( app, "show stash@{0}:package.json" ).ShouldContain( l => l.Contains( "\"packageManager\": \"yarn@4.8.1\"" ) );
     }
 
     [Test]
