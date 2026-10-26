@@ -27,17 +27,25 @@ internal sealed record AngularUpgradePackage( string Name, int FromMajor, int To
 /// </param>
 /// <param name="PreUpdateBounds">The row's pre-update bounds of the packages the app has.</param>
 /// <param name="ReplacedPackages">The row's replaced packages that the app has.</param>
+/// <param name="PinnedGroupPackages">
+/// The <c>@angular/core</c> package group members the app has that the package command names at <paramref name="ToMajor"/>:
+/// otherwise the CLI takes the target of an unnamed package from the first peer range that claims it, and <c>@angular/cdk</c>
+/// accepts the next major for <c>@angular/common</c>, which drags the whole group one major too far. They have no migrations
+/// of their own, so they are not <see cref="Packages"/>.
+/// </param>
 internal sealed record AngularUpgradeStep( int FromMajor,
                                            int ToMajor,
                                            AngularMajorTooling Tooling,
                                            IReadOnlyList<AngularUpgradePackage> Packages,
                                            IReadOnlyList<(string Name, SVersionBound Version, DependencyKind Kind)> PreUpdateBounds,
-                                           IReadOnlyList<(string Package, string Replacement)> ReplacedPackages )
+                                           IReadOnlyList<(string Package, string Replacement)> ReplacedPackages,
+                                           IReadOnlyList<string> PinnedGroupPackages )
 {
     /// <summary>
-    /// Gets the <c>ng update</c> command that updates every <see cref="Packages"/> (without the <c>yarn </c> prefix).
+    /// Gets the <c>ng update</c> command that updates every <see cref="Packages"/> and <see cref="PinnedGroupPackages"/>
+    /// (without the <c>yarn </c> prefix).
     /// </summary>
-    internal string PackageCommand => $"ng update {string.Join( " ", Packages.Select( p => $"{p.Name}@{p.ToMajor}" ) )} --allow-dirty";
+    internal string PackageCommand => $"ng update {string.Join( " ", Packages.Select( p => $"{p.Name}@{p.ToMajor}" ).Concat( PinnedGroupPackages.Select( n => $"{n}@{ToMajor}" ) ) )} --allow-dirty";
 
     /// <summary>
     /// Gets the <c>ng update --migrate-only</c> command of a package (without the <c>yarn </c> prefix).
@@ -60,6 +68,17 @@ internal static class AngularUpgradePlanner
     /// Libraries that follow Angular's major numbering: updated at each step when the app has them.
     /// </summary>
     static readonly string[] _sameMajorLibraries = ["ng-zorro-antd", "@angular/cdk"];
+
+    /// <summary>
+    /// The members of the <c>packageGroup</c> that <c>@angular/core</c> declares in its <c>ng-update</c> metadata (Angular 21
+    /// and 22), without <c>@angular/core</c> itself and without <c>@angular/animations</c> and <c>@angular/platform-browser-dynamic</c>:
+    /// every release of these two is deprecated, and the CLI refuses a command line range that only matches deprecated
+    /// releases. The group update of <c>@angular/common</c> still moves them to the step's major.
+    /// </summary>
+    static readonly string[] _pinnedCoreGroup = ["@angular/common", "@angular/compiler", "@angular/compiler-cli",
+                                                 "@angular/elements", "@angular/forms", "@angular/language-service",
+                                                 "@angular/localize", "@angular/platform-browser", "@angular/platform-server",
+                                                 "@angular/router", "@angular/service-worker", "@angular/upgrade"];
 
     /// <summary>
     /// Gets the major of the app's <c>@angular/core</c>.
@@ -86,6 +105,7 @@ internal static class AngularUpgradePlanner
                                                             IReadOnlyDictionary<string, SVersionBound> declaredLibraries )
     {
         var steps = new List<AngularUpgradeStep>();
+        var pinned = _pinnedCoreGroup.Where( appDependencies.ContainsKey ).ToList();
         for( int to = appMajor + 1; to <= targetMajor; to++ )
         {
             if( !AngularMajorTooling.Rows.TryGetValue( to, out var row ) )
@@ -103,7 +123,8 @@ internal static class AngularUpgradePlanner
                                                row,
                                                packages,
                                                row.PreUpdateBounds.Where( b => appDependencies.ContainsKey( b.Name ) ).ToList(),
-                                               row.ReplacedPackages.Where( r => appDependencies.ContainsKey( r.Package ) ).ToList() ) );
+                                               row.ReplacedPackages.Where( r => appDependencies.ContainsKey( r.Package ) ).ToList(),
+                                               pinned ) );
         }
         return steps;
     }

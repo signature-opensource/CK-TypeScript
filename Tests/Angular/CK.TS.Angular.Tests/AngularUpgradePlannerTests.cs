@@ -50,6 +50,22 @@ public class AngularUpgradePlannerTests
     }
 
     [Test]
+    public void core_group_packages_are_pinned_in_the_package_command()
+    {
+        var app = D( ("@angular/core", "^20"),
+                     ("@angular/cli", "^20"),
+                     ("@angular/cdk", "^20"),
+                     ("@angular/common", "^20"),
+                     ("@angular/platform-browser", "^20"),
+                     ("@angular/compiler-cli", "^20"),
+                     ("@angular/animations", "^20"),
+                     ("@angular/platform-browser-dynamic", "^20"),
+                     ("@angular/build", "^20") );
+        var step = AngularUpgradePlanner.Plan( 20, 21, app, _declared22 )[0];
+        step.PackageCommand.ShouldBe( "ng update @angular/core@21 @angular/cli@21 @angular/cdk@21 @angular/common@21 @angular/compiler-cli@21 @angular/platform-browser@21 --allow-dirty" );
+    }
+
+    [Test]
     public void from_21_to_22_runs_one_step_with_fontawesome()
     {
         var app = D( ("@angular/core", "^21.1.0"),
@@ -66,7 +82,7 @@ public class AngularUpgradePlannerTests
     {
         var row = new AngularMajorTooling( 22, [], V( "^22.0.0" ), [], [], [] );
         var core = new AngularUpgradePackage( "@angular/core", 21, 22 );
-        var step = new AngularUpgradeStep( 21, 22, row, [core], [], [] );
+        var step = new AngularUpgradeStep( 21, 22, row, [core], [], [], [] );
         step.MigrationCommand( core, "21.2.27" ).ShouldBe( "ng update @angular/core --migrate-only --from 21.2.27 --to 22 --allow-dirty" );
     }
 
