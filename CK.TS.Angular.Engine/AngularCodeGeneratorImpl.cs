@@ -258,7 +258,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         using( monitor.OpenInfo( $"Initialize a new Angular '{newFolderPath.LastPart}' project in the folder '{newFolderPath}'." ) )
                         {
                             Directory.CreateDirectory( tempFolderPath );
-                            var angularCliVersion = ResolveAngularCliVersion( monitor, context.IntegrationContext );
+                            if( !context.IntegrationContext.ConfiguredLibraries.TryGetValue( "@angular/cli", out var angularCliVersion ) )
+                            {
+                                Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", _defaultAngularCliBound != SVersionBound.All );
+                                angularCliVersion = _defaultAngularCliBound;
+                                monitor.Info( $"Using @angular/cli default version '{DefaultAngularCliVersion}'." );
+                            }
+                            else
+                            {
+                                monitor.Info( $"Using @angular/cli version '{angularCliVersion}' from configured LibraryVersions." );
+                            }
                             monitor.Info( $"Creating a temporary package.json." );
                             File.WriteAllText( tempPackageJsonPath, "{}" );
                             // Required by Yarn, otherwise the _new_ project must be a workspace in the parent project.

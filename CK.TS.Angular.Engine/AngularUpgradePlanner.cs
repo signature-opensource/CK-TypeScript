@@ -225,7 +225,7 @@ internal static class AngularUpgradePlanner
                             .Concat( step.Packages.Where( p => p.Name != "@angular/cli" && p.Name != "@angular/core" ) );
     }
 
-    static bool HasMajor( SVersionBound bound ) => bound != SVersionBound.None && bound.NormalizeNpmVersionBoundAll() != SVersionBound.All;
+    internal static bool HasMajor( SVersionBound bound ) => bound != SVersionBound.None && bound.NormalizeNpmVersionBoundAll() != SVersionBound.All;
 
     // ToNpmString shortens "~0.15.0" to "~0.15": this keeps the three parts package.json files usually hold.
     static string ToPackageJsonRange( SVersionBound bound ) => bound.Lock switch

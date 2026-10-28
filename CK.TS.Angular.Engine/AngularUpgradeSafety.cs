@@ -82,8 +82,10 @@ internal static class AngularUpgradeSafety
         int target = input.TargetMajor;
         int supportedMajor = rows.Keys.Min() - 1;
 
+        var crossedMajors = Enumerable.Range( input.AppMajor + 1, Math.Max( 0, target - input.AppMajor ) ).ToList();
+
         // Condition 1: a row for every crossed major.
-        var missing = Enumerable.Range( input.AppMajor + 1, Math.Max( 0, target - input.AppMajor ) ).Where( m => !rows.ContainsKey( m ) ).ToList();
+        var missing = crossedMajors.Where( m => !rows.ContainsKey( m ) ).ToList();
         if( input.AppMajor < supportedMajor )
         {
             failures.Add( new SafetyFailure( $"The app is on Angular {input.AppMajor}: the engine upgrades from Angular {supportedMajor} or above. Upgrade the app by hand to Angular {supportedMajor} first, then rerun the builder, or stay on the previous CK major.",
@@ -95,10 +97,7 @@ internal static class AngularUpgradeSafety
         }
 
         // Condition 2: Node satisfies every crossed row.
-        var crossed = Enumerable.Range( input.AppMajor + 1, Math.Max( 0, target - input.AppMajor ) )
-                                .Where( rows.ContainsKey )
-                                .Select( m => rows[m] )
-                                .ToList();
+        var crossed = crossedMajors.Where( rows.ContainsKey ).Select( m => rows[m] ).ToList();
         if( input.NodeVersion == null )
         {
             failures.Add( new SafetyFailure( $"The Node.js version is unknown: 'node --version' did not run. The Angular CLI refuses a Node.js version outside its range in the middle of an upgrade. Check that Node.js runs, in a version listed at {_nodeVersionsLink}.",
@@ -141,7 +140,7 @@ internal static class AngularUpgradeSafety
         // Condition 4: each CK declaration of an Angular-numbered library accepts the target major.
         foreach( var library in input.DeclaredLibraries )
         {
-            if( !IsAngularNumbered( library.Name ) || !HasMajor( library.Version ) || AcceptsMajor( library.Version, target ) )
+            if( !IsAngularNumbered( library.Name ) || !AngularUpgradePlanner.HasMajor( library.Version ) || AcceptsMajor( library.Version, target ) )
             {
                 continue;
             }
@@ -153,7 +152,7 @@ internal static class AngularUpgradeSafety
 
         // Condition 5: the CLI pin's base major is the target major, so ~22.1.0 passes and >=20.0.0 does not.
         // A pin without a major (*) names no other major.
-        if( input.ConfiguredCli is SVersionBound cli && HasMajor( cli ) && cli.Base.Major != target )
+        if( input.ConfiguredCli is SVersionBound cli && AngularUpgradePlanner.HasMajor( cli ) && cli.Base.Major != target )
         {
             failures.Add( new SafetyFailure( $"The LibraryVersions entry '@angular/cli' {cli.ToNpmString()} pins another major than Angular {target}, the major of this CK version. Remove the pin, or stay on the previous CK major.", false ) );
         }
@@ -221,11 +220,7 @@ internal static class AngularUpgradeSafety
     /// <param name="appMajor">The app's Angular major.</param>
     /// <param name="targetMajor">The Angular major of the engine.</param>
     /// <param name="failures">The failures from <see cref="Check(AngularUpgradeSafetyInput)"/>.</param>
-    /// <param name="manualCommands">
-    /// The manual upgrade commands, shown as the second next action only when every failure has
-    /// <see cref="SafetyFailure.HandUpgradeHelps"/>. Otherwise, the second next action refers by number to the
-    /// issues the manual commands do not apply to, whose texts give their own action.
-    /// </param>
+    /// <param name="manualCommands">The manual upgrade commands, or null when there is no upgrade plan.</param>
     /// <returns>The message.</returns>
     internal static string RenderMessage( NormalizedPath appPath,
                                           int appMajor,
@@ -273,6 +268,4 @@ internal static class AngularUpgradeSafety
     // A bound's versions run from its base up to its lock: it holds a version of the major when it holds
     // major.0.0 or starts inside the major.
     static bool AcceptsMajor( SVersionBound bound, int major ) => bound.Base.Major == major || bound.Satisfy( SVersion.Create( major, 0, 0 ) );
-
-    static bool HasMajor( SVersionBound bound ) => bound != SVersionBound.None && bound.NormalizeNpmVersionBoundAll() != SVersionBound.All;
 }

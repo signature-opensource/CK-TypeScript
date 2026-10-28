@@ -18,9 +18,13 @@ internal sealed record AngularUpgradeMarker( int FromMajor, DateTime StartedUtc 
     /// </summary>
     internal const string FileName = ".ck-angular-upgrade";
 
+    /// <summary>
+    /// The format of the start time in the marker file, also used by the stash message and the recovery warning.
+    /// </summary>
+    internal const string StartedFormat = "yyyy-MM-ddTHH:mm:ssZ";
+
     const string _fromMajorKey = "fromMajor=";
     const string _startedKey = "started=";
-    const string _startedFormat = "yyyy-MM-ddTHH:mm:ssZ";
 
     /// <summary>
     /// Gets whether the marker file exists, readable or not.
@@ -60,7 +64,7 @@ internal sealed record AngularUpgradeMarker( int FromMajor, DateTime StartedUtc 
             }
             else if( line.StartsWith( _startedKey, StringComparison.Ordinal )
                      && DateTime.TryParseExact( line.AsSpan( _startedKey.Length ),
-                                                _startedFormat,
+                                                StartedFormat,
                                                 CultureInfo.InvariantCulture,
                                                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
                                                 out var time ) )
@@ -78,7 +82,7 @@ internal sealed record AngularUpgradeMarker( int FromMajor, DateTime StartedUtc 
     internal void Write( NormalizedPath appFolder )
     {
         File.WriteAllText( appFolder.AppendPart( FileName ),
-                           $"{_fromMajorKey}{FromMajor.ToString( CultureInfo.InvariantCulture )}\n{_startedKey}{StartedUtc.ToString( _startedFormat, CultureInfo.InvariantCulture )}\n" );
+                           $"{_fromMajorKey}{FromMajor.ToString( CultureInfo.InvariantCulture )}\n{_startedKey}{StartedUtc.ToString( StartedFormat, CultureInfo.InvariantCulture )}\n" );
     }
 
     /// <summary>

@@ -21,17 +21,12 @@ namespace CK.TS.Angular.Engine;
 /// <param name="Steps">The steps done.</param>
 /// <param name="OptionalMigrations">The optional migrations the migration commands listed and did not run.</param>
 /// <param name="PackagesWithoutMigrations">The packages whose migration command found no migration.</param>
-/// <param name="Elapsed">
-/// The time from the marker write to the end of the last step. The summary shows the whole run instead: it replaces
-/// this value with the time to the end of the compile check.
-/// </param>
 internal sealed record AngularUpgradeRun( NormalizedPath AppPath,
                                           int FromMajor,
                                           int ToMajor,
                                           IReadOnlyList<AngularUpgradeStep> Steps,
                                           IReadOnlyList<(string Package, string Name)> OptionalMigrations,
-                                          IReadOnlyList<string> PackagesWithoutMigrations,
-                                          TimeSpan Elapsed );
+                                          IReadOnlyList<string> PackagesWithoutMigrations );
 
 public partial class AngularCodeGeneratorImpl
 {
@@ -70,59 +65,38 @@ public partial class AngularCodeGeneratorImpl
         internal static int TargetMajor => _defaultAngularCliBound.Base.Major;
 
         /// <summary>
-        /// Gets the <c>@angular/cli</c> version: the <c>LibraryVersions</c> entry when there is one, else
-        /// <see cref="DefaultAngularCliVersion"/>.
-        /// </summary>
-        /// <param name="monitor">The monitor.</param>
-        /// <param name="integrationContext">The integration context.</param>
-        /// <returns>The version bound.</returns>
-        internal static SVersionBound ResolveAngularCliVersion( IActivityMonitor monitor, TypeScriptIntegrationContext integrationContext )
-        {
-            if( integrationContext.ConfiguredLibraries.TryGetValue( "@angular/cli", out var configured ) )
-            {
-                monitor.Info( $"Using @angular/cli version '{configured}' from configured LibraryVersions." );
-                return configured;
-            }
-            Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", _defaultAngularCliBound != SVersionBound.All );
-            monitor.Info( $"Using @angular/cli default version '{DefaultAngularCliVersion}'." );
-            return _defaultAngularCliBound;
-        }
-
-        /// <summary>
         /// Gets the message of the undo stash of an app folder: <c>ck-angular-upgrade undo &lt;app folder name&gt; &lt;UTC time&gt;</c>.
         /// </summary>
         /// <param name="appPath">The app folder.</param>
         /// <returns>The stash message.</returns>
         internal static string CreateStashMessage( NormalizedPath appPath )
         {
-            return $"ck-angular-upgrade undo {appPath.LastPart} {DateTime.UtcNow.ToString( "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture )}";
+            return $"ck-angular-upgrade undo {appPath.LastPart} {DateTime.UtcNow.ToString( AngularUpgradeMarker.StartedFormat, CultureInfo.InvariantCulture )}";
         }
 
         /// <summary>
         /// Undoes an upgrade that failed after its first write: moves the changes of the app folder into the stash
-        /// <paramref name="stashMessage"/>, runs <c>yarn install</c> on the restored files when <paramref name="runYarnInstall"/>
-        /// is true, then deletes the <see cref="AngularUpgradeMarker"/>. The marker stays when the stash fails.
+        /// <paramref name="stashMessage"/>, runs <c>yarn install</c> on the restored files, then deletes the
+        /// <see cref="AngularUpgradeMarker"/>. The marker stays when the stash fails.
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="integrationContext">The integration context.</param>
         /// <param name="appPath">The app folder.</param>
         /// <param name="stashMessage">The stash message, from <see cref="CreateStashMessage"/>.</param>
         /// <param name="stashCreated">Whether a stash has been created, as <see cref="AngularGitHelper.StashUndo"/> reports it.</param>
-        /// <param name="runYarnInstall">False to skip <c>yarn install</c>.</param>
         /// <returns>The outcome of the undo.</returns>
         internal static AngularUndoOutcome UndoUpgrade( IActivityMonitor monitor,
                                                         TypeScriptIntegrationContext integrationContext,
                                                         NormalizedPath appPath,
                                                         string stashMessage,
-                                                        out bool stashCreated,
-                                                        bool runYarnInstall = true )
+                                                        out bool stashCreated )
         {
             if( !AngularGitHelper.StashUndo( monitor, appPath, stashMessage, out stashCreated ) )
             {
                 return AngularUndoOutcome.NotRestored;
             }
             var outcome = AngularUndoOutcome.Restored;
-            if( runYarnInstall && !RunYarnInstall( monitor, integrationContext, appPath ) )
+            if( !RunYarnInstall( monitor, integrationContext, appPath ) )
             {
                 outcome = AngularUndoOutcome.RestoredInstallFailed;
             }
@@ -181,10 +155,8 @@ public partial class AngularCodeGeneratorImpl
             var integrationContext = context.IntegrationContext;
             var monitor = e.Monitor;
             var appPath = integrationContext.Configuration.TargetProjectPath;
-            // Initialize has set it in memory, and every reload resets it from the file.
-            var packageManager = integrationContext.TargetPackageJson.PackageManager;
 
-            if( AngularUpgradeMarker.Exists( appPath ) && !RecoverPreviousUpgrade( monitor, integrationContext, appPath, packageManager ) )
+            if( AngularUpgradeMarker.Exists( appPath ) && !RecoverPreviousUpgrade( monitor, integrationContext, appPath ) )
             {
                 return;
             }
@@ -214,20 +186,17 @@ public partial class AngularCodeGeneratorImpl
             var failures = AngularUpgradeSafety.Check( input );
             // Without a tooling row for every crossed major (the first condition), there is no plan.
             bool hasPath = Enumerable.Range( fromMajor + 1, targetMajor - fromMajor ).All( AngularMajorTooling.Rows.ContainsKey );
+            var steps = hasPath ? AngularUpgradePlanner.Plan( fromMajor, targetMajor, appDependencies, declaredBounds ) : null;
             if( failures.Count > 0 )
             {
-                string? manualCommands = null;
-                if( hasPath )
-                {
-                    var plan = AngularUpgradePlanner.Plan( fromMajor, targetMajor, appDependencies, declaredBounds );
-                    manualCommands = AngularUpgradePlanner.RenderManualCommands( plan, ReadInstalledVersions( appPath, plan ) );
-                }
+                var manualCommands = steps != null
+                                        ? AngularUpgradePlanner.RenderManualCommands( steps, ReadInstalledVersions( appPath, steps ) )
+                                        : null;
                 monitor.Error( AngularUpgradeSafety.RenderMessage( appPath, fromMajor, targetMajor, failures, manualCommands ) );
                 return;
             }
-            Throw.DebugAssert( "The first safety condition checks the path.", hasPath );
-            var steps = AngularUpgradePlanner.Plan( fromMajor, targetMajor, appDependencies, declaredBounds );
-            RunUpgrade( monitor, integrationContext, appPath, fromMajor, steps, declaredLibraries, packageManager );
+            Throw.DebugAssert( "The first safety condition checks the path.", steps != null );
+            RunUpgrade( monitor, integrationContext, appPath, fromMajor, steps, declaredLibraries );
         }
 
         void RunUpgrade( IActivityMonitor monitor,
@@ -235,8 +204,7 @@ public partial class AngularCodeGeneratorImpl
                          NormalizedPath appPath,
                          int fromMajor,
                          IReadOnlyList<AngularUpgradeStep> steps,
-                         IReadOnlyList<DeclaredLibrary> declaredLibraries,
-                         string? packageManager )
+                         IReadOnlyList<DeclaredLibrary> declaredLibraries )
         {
             int toMajor = steps[^1].ToMajor;
             // Read before the first write: the manual commands of a failure message start from the restored app.
@@ -254,7 +222,7 @@ public partial class AngularCodeGeneratorImpl
                         StepFailure? failed;
                         try
                         {
-                            failed = RunStep( monitor, integrationContext, appPath, step, packageManager, optionalMigrations, packagesWithoutMigrations );
+                            failed = RunStep( monitor, integrationContext, appPath, step, optionalMigrations, packagesWithoutMigrations );
                         }
                         catch( Exception ex )
                         {
@@ -269,7 +237,7 @@ public partial class AngularCodeGeneratorImpl
                         }
                     }
                 }
-                _upgradeRun = new AngularUpgradeRun( appPath, fromMajor, toMajor, steps, optionalMigrations, packagesWithoutMigrations, Stopwatch.GetElapsedTime( _upgradeStarted ) );
+                _upgradeRun = new AngularUpgradeRun( appPath, fromMajor, toMajor, steps, optionalMigrations, packagesWithoutMigrations );
             }
         }
 
@@ -326,7 +294,8 @@ public partial class AngularCodeGeneratorImpl
             // After GetDirtyFiles: an unknown file list refers to its warning above.
             using( monitor.OpenWarn( $"Summary of the Angular upgrade of '{appPath}'." ) )
             {
-                monitor.Warn( AngularUpgradeReport.RenderSummary( run with { Elapsed = elapsed },
+                monitor.Warn( AngularUpgradeReport.RenderSummary( run,
+                                                                  elapsed,
                                                                   changedFiles,
                                                                   compileCheck,
                                                                   CreateStashMessage( appPath ),
@@ -340,7 +309,7 @@ public partial class AngularCodeGeneratorImpl
             }
             else if( compileCheck.Outcome == CompileCheckOutcome.DidNotRun )
             {
-                monitor.Error( AngularUpgradeReport.RenderCompileCheckNotRun( appPath, AngularUpgradeReport.CompileCheckCommand, compileCheck, guideLink ) );
+                monitor.Error( AngularUpgradeReport.RenderCompileCheckNotRun( appPath, compileCheck, guideLink ) );
             }
         }
 
@@ -358,7 +327,6 @@ public partial class AngularCodeGeneratorImpl
                                      TypeScriptIntegrationContext integrationContext,
                                      NormalizedPath appPath,
                                      AngularUpgradeStep step,
-                                     string? packageManager,
                                      List<(string Package, string Name)> optionalMigrations,
                                      List<string> packagesWithoutMigrations )
         {
@@ -368,13 +336,12 @@ public partial class AngularCodeGeneratorImpl
                 packageJson.Dependencies.AddOrReplace( new PackageDependency( name, version, kind, _upgradeSource ), cloneAddedDependency: false );
             }
             packageJson.Save();
-            var failed = RunClassified( monitor, integrationContext, appPath, "install", _strictEnvironment, UpgradeCommandKind.YarnInstall );
+            var failed = RunClassified( monitor, integrationContext, appPath, "install", _strictEnvironment );
             if( failed != null )
             {
                 return failed;
             }
-            var yarnLockPath = appPath.AppendPart( "yarn.lock" );
-            var yarnLock = File.Exists( yarnLockPath ) ? File.ReadAllText( yarnLockPath ) : null;
+            var yarnLock = ReadYarnLock( appPath );
             var fromVersions = step.Packages.ToDictionary( p => p.Name, p => YarnLockReader.GetFromVersion( monitor, yarnLock, p.Name, p.FromMajor ).ToString() );
 
             // Under PnP, the package command is expected to crash in its migration phase: the migrations run below.
@@ -388,13 +355,13 @@ public partial class AngularCodeGeneratorImpl
             if( packageFailure.Kind == UpgradeFailureKind.InstallInsideNgUpdate )
             {
                 // ng update hides yarn's output: yarn's own install says what failed.
-                failed = RunClassified( monitor, integrationContext, appPath, "install", _strictEnvironment, UpgradeCommandKind.YarnInstall );
+                failed = RunClassified( monitor, integrationContext, appPath, "install", _strictEnvironment );
                 if( failed != null )
                 {
                     return failed;
                 }
             }
-            if( !ReloadAppFiles( monitor, integrationContext, packageManager ) )
+            if( !ReloadAppFiles( monitor, integrationContext ) )
             {
                 return new StepFailure( step.PackageCommand, packageCommand, packageFailure, $"The package.json or tsconfig.json of '{appPath}' cannot be read after the command (see the errors above)." );
             }
@@ -408,8 +375,8 @@ public partial class AngularCodeGeneratorImpl
                 var core = packageJson.Dependencies.TryGetValue( "@angular/core", out var c ) ? $"'{c.NpmVersionRange}'" : "missing";
                 return new StepFailure( step.PackageCommand, packageCommand, packageFailure, $"Afterwards, @angular/core in package.json is {core}, not Angular {step.ToMajor}." );
             }
-            failed = RunClassified( monitor, integrationContext, appPath, "dedupe", _strictEnvironment, UpgradeCommandKind.YarnInstall )
-                     ?? RunClassified( monitor, integrationContext, appPath, "install", _looseEnvironment, UpgradeCommandKind.YarnInstall );
+            failed = RunClassified( monitor, integrationContext, appPath, "dedupe", _strictEnvironment )
+                     ?? RunClassified( monitor, integrationContext, appPath, "install", _looseEnvironment );
             if( failed != null )
             {
                 return failed;
@@ -437,7 +404,7 @@ public partial class AngularCodeGeneratorImpl
                 }
             }
             // The migrations may edit package.json and tsconfig.json: the next step and the integration start from the files.
-            if( !ReloadAppFiles( monitor, integrationContext, packageManager ) )
+            if( !ReloadAppFiles( monitor, integrationContext ) )
             {
                 return new StepFailure( "", default, null, $"The package.json or tsconfig.json of '{appPath}' cannot be read after the migrations (see the errors above)." );
             }
@@ -474,11 +441,10 @@ public partial class AngularCodeGeneratorImpl
                                            TypeScriptIntegrationContext integrationContext,
                                            NormalizedPath appPath,
                                            string command,
-                                           Dictionary<string, string?> environment,
-                                           UpgradeCommandKind kind )
+                                           Dictionary<string, string?> environment )
         {
             var result = RunCommand( monitor, integrationContext, appPath, command, environment, out var output );
-            var failure = UpgradeFailureClassifier.Classify( kind, result.ExitCode, result.TimedOut, output );
+            var failure = UpgradeFailureClassifier.Classify( UpgradeCommandKind.YarnInstall, result.ExitCode, result.TimedOut, output );
             return failure.Kind == UpgradeFailureKind.None ? null : new StepFailure( command, result, failure );
         }
 
@@ -550,8 +516,7 @@ public partial class AngularCodeGeneratorImpl
         // Undoes the upgrade an in-progress marker reports. Returns false when the run must stop: an error has been logged.
         static bool RecoverPreviousUpgrade( IActivityMonitor monitor,
                                             TypeScriptIntegrationContext integrationContext,
-                                            NormalizedPath appPath,
-                                            string? packageManager )
+                                            NormalizedPath appPath )
         {
             var marker = AngularUpgradeMarker.Read( appPath );
             var stashMessage = CreateStashMessage( appPath );
@@ -570,7 +535,7 @@ public partial class AngularCodeGeneratorImpl
                     return false;
                 }
                 // The model was read before the run: a stale one would be compared, then written over the restored file.
-                if( !ReloadAppFiles( monitor, integrationContext, packageManager ) )
+                if( !ReloadAppFiles( monitor, integrationContext ) )
                 {
                     monitor.Error( $"Unable to read the package.json and tsconfig.json of '{appPath}' after the undo of the previous Angular upgrade." );
                     return false;
@@ -585,7 +550,7 @@ public partial class AngularCodeGeneratorImpl
                 bool installed = RunYarnInstall( monitor, integrationContext, appPath );
                 AngularUpgradeMarker.Delete( appPath );
                 var started = marker != null
-                                ? $"started {marker.StartedUtc.ToString( "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture )}"
+                                ? $"started {marker.StartedUtc.ToString( AngularUpgradeMarker.StartedFormat, CultureInfo.InvariantCulture )}"
                                 : "started at an unknown time";
                 var undone = stashCreated
                                 ? $"It has been undone (stash '{stashMessage}')."
@@ -627,9 +592,10 @@ public partial class AngularCodeGeneratorImpl
         }
 
         // Reload resets CKVersion and PackageManager from the file: both are set in memory before code generation.
-        static bool ReloadAppFiles( IActivityMonitor monitor, TypeScriptIntegrationContext integrationContext, string? packageManager )
+        static bool ReloadAppFiles( IActivityMonitor monitor, TypeScriptIntegrationContext integrationContext )
         {
             var packageJson = integrationContext.TargetPackageJson;
+            var packageManager = packageJson.PackageManager;
             if( !packageJson.Reload( monitor ) || !integrationContext.TSConfigJson.Reload( monitor ) )
             {
                 return false;
@@ -679,20 +645,26 @@ public partial class AngularCodeGeneratorImpl
         static Dictionary<string, SVersion> ReadInstalledVersions( NormalizedPath appPath, IReadOnlyList<AngularUpgradeStep> steps )
         {
             var installed = new Dictionary<string, SVersion>();
-            var yarnLockPath = appPath.AppendPart( "yarn.lock" );
-            if( File.Exists( yarnLockPath ) )
+            var yarnLock = ReadYarnLock( appPath );
+            if( yarnLock == null )
             {
-                var yarnLock = File.ReadAllText( yarnLockPath );
-                foreach( var name in steps.SelectMany( s => s.Packages ).Select( p => p.Name ).Distinct() )
+                return installed;
+            }
+            foreach( var name in steps.SelectMany( s => s.Packages ).Select( p => p.Name ).Distinct() )
+            {
+                var version = YarnLockReader.GetInstalledVersion( yarnLock, name );
+                if( version != null )
                 {
-                    var version = YarnLockReader.GetInstalledVersion( yarnLock, name );
-                    if( version != null )
-                    {
-                        installed.Add( name, version );
-                    }
+                    installed.Add( name, version );
                 }
             }
             return installed;
+        }
+
+        static string? ReadYarnLock( NormalizedPath appPath )
+        {
+            var yarnLockPath = appPath.AppendPart( "yarn.lock" );
+            return File.Exists( yarnLockPath ) ? File.ReadAllText( yarnLockPath ) : null;
         }
     }
 }

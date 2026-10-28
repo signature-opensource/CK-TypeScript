@@ -73,7 +73,7 @@ internal static partial class AngularUpgradeReport
     /// </summary>
     /// <param name="outputLines">The output lines of the compile check.</param>
     /// <returns>The error lines, ANSI-stripped.</returns>
-    internal static IReadOnlyList<string> GetCompileErrors( IReadOnlyList<string> outputLines )
+    static IReadOnlyList<string> GetCompileErrors( IReadOnlyList<string> outputLines )
     {
         return outputLines.Select( l => AnsiRegex().Replace( l, "" ) )
                           .Where( l => l.Contains( "error TS", StringComparison.Ordinal ) || l.Contains( "error NG", StringComparison.Ordinal ) )
@@ -108,10 +108,7 @@ internal static partial class AngularUpgradeReport
     }
 
     /// <summary>
-    /// Renders the message of a compile check that reported errors, in four parts: the check that ran, the error count
-    /// and the first 50 error lines grouped by file (in the order files first appear, each matching hint on the line
-    /// after its error, a file under <c>ck-gen</c> said to be fixed in its CK package), the app folder state (upgraded,
-    /// not undone) and the next actions.
+    /// Renders the message of a compile check that reported errors.
     /// </summary>
     /// <param name="appPath">The app folder.</param>
     /// <param name="errors">The errors, from <see cref="GetCompileErrors"/>.</param>
@@ -158,51 +155,39 @@ internal static partial class AngularUpgradeReport
         b.AppendLine( $"The app folder '{appPath}' stays upgraded: the upgrade is not undone, fixing the app code is up to you." );
         b.AppendLine( "Next actions:" );
         b.AppendLine( $"1. Fix these errors before committing: a rerun of the builder passes without this check, which runs only after an upgrade. Run 'yarn {CompileCheckCommand}' in the app folder to check again." );
-        b.Append( $"2. Review the diff with the Angular update guide, for the changes no compiler sees: {guideLink} (tick 'I use Angular Material' if the app uses it)." );
+        b.Append( $"2. Review the diff with the {GuideSentence( guideLink )}" );
         return b.ToString();
     }
 
     /// <summary>
-    /// Renders the message of a compile check that did not run, in four parts: the check that ran, why it gave no
-    /// answer with its last output lines, the app folder state (upgraded, not checked) and the next actions.
+    /// Renders the message of a compile check that did not run.
     /// </summary>
     /// <param name="appPath">The app folder.</param>
-    /// <param name="command">The compile check command, without the <c>yarn </c> prefix.</param>
     /// <param name="result">The <see cref="CompileCheckOutcome.DidNotRun"/> result.</param>
     /// <param name="guideLink">The link from <see cref="GuideLink"/>.</param>
     /// <returns>The message.</returns>
-    internal static string RenderCompileCheckNotRun( NormalizedPath appPath, string command, CompileCheckResult result, string guideLink )
+    internal static string RenderCompileCheckNotRun( NormalizedPath appPath, CompileCheckResult result, string guideLink )
     {
         var b = new StringBuilder();
-        b.AppendLine( $"Checking the upgraded Angular app '{appPath}': running 'yarn {command}' in the app folder." );
-        if( result.LastLines.Count > 0 )
+        b.AppendLine( $"Checking the upgraded Angular app '{appPath}': running 'yarn {CompileCheckCommand}' in the app folder." );
+        var printed = result.LastLines.Count > 0 ? "Its last output lines:" : "It printed nothing.";
+        b.AppendLine( $"The upgrade is done, but the compile check did not run ({result.NotRunReason}). {printed}" );
+        foreach( var line in result.LastLines )
         {
-            b.AppendLine( $"The upgrade is done, but the compile check did not run ({result.NotRunReason}). Its last output lines:" );
-            foreach( var line in result.LastLines )
-            {
-                b.AppendLine( $"  {line}" );
-            }
-        }
-        else
-        {
-            b.AppendLine( $"The upgrade is done, but the compile check did not run ({result.NotRunReason}). It printed nothing." );
+            b.AppendLine( $"  {line}" );
         }
         b.AppendLine( $"The app folder '{appPath}' stays upgraded, but its code has not been checked." );
         b.AppendLine( "Next actions:" );
-        b.AppendLine( $"1. Run 'yarn {command}' in the app folder and fix what it reports before committing: a rerun of the builder does not repeat the check." );
-        b.Append( $"2. Review the diff with the Angular update guide, for the changes no compiler sees: {guideLink} (tick 'I use Angular Material' if the app uses it)." );
+        b.AppendLine( $"1. Run 'yarn {CompileCheckCommand}' in the app folder and fix what it reports before committing: a rerun of the builder does not repeat the check." );
+        b.Append( $"2. Review the diff with the {GuideSentence( guideLink )}" );
         return b.ToString();
     }
 
     /// <summary>
-    /// Renders the summary of an upgrade: the majors reached, the steps done and the elapsed time, the files changed,
-    /// the compile check result (<c>passed</c>, <c>&lt;n&gt; errors</c> or <c>did not run (&lt;reason&gt;)</c>), the hints
-    /// of the rows crossed, the optional migrations not run with their commands, the packages without migrations, the
-    /// replaced packages, the update guide link and how to undo the upgrade: the stash command of the in-run undo
-    /// (<see cref="AngularGitHelper.StashPushArguments"/>), then <c>yarn install</c>. Repeated optional migrations and
-    /// packages are listed once.
+    /// Renders the summary of an upgrade. Repeated optional migrations and packages are listed once.
     /// </summary>
-    /// <param name="run">The upgrade run. Its <see cref="AngularUpgradeRun.Elapsed"/> is the elapsed time shown.</param>
+    /// <param name="run">The upgrade run.</param>
+    /// <param name="elapsed">The elapsed time shown.</param>
     /// <param name="changedFiles">The <c>git status --porcelain</c> lines of the app folder, or null when git did not answer.</param>
     /// <param name="compileCheck">The compile check result.</param>
     /// <param name="stashMessage">The stash message of the printed undo command.</param>
@@ -212,13 +197,13 @@ internal static partial class AngularUpgradeReport
     /// </param>
     /// <returns>The summary.</returns>
     internal static string RenderSummary( AngularUpgradeRun run,
+                                          TimeSpan elapsed,
                                           IReadOnlyList<string>? changedFiles,
                                           CompileCheckResult compileCheck,
                                           string stashMessage,
                                           bool excludeRootGitIgnore )
     {
         var b = new StringBuilder();
-        var elapsed = run.Elapsed;
         b.AppendLine( $"The Angular app '{run.AppPath}' has been upgraded from Angular {run.FromMajor} to {run.ToMajor}. Elapsed time: {(int)elapsed.TotalMinutes} min {elapsed.Seconds} s." );
         b.AppendLine( $"Steps: {string.Join( ", ", run.Steps.Select( s => $"{s.FromMajor} to {s.ToMajor}" ) )}." );
         b.AppendLine( compileCheck.Outcome switch
@@ -275,7 +260,7 @@ internal static partial class AngularUpgradeReport
                 b.AppendLine( $"  {line}" );
             }
         }
-        b.AppendLine( $"Angular update guide, for the changes no compiler sees: {GuideLink( run.FromMajor, run.ToMajor )} (tick 'I use Angular Material' if the app uses it)." );
+        b.AppendLine( GuideSentence( GuideLink( run.FromMajor, run.ToMajor ) ) );
         b.AppendLine( "Review the diff before committing. To undo the upgrade, run these commands in the app folder, in PowerShell: the stash keeps the changes (find it with 'git stash list')." );
         b.AppendLine( "git " + AngularGitHelper.StashPushArguments( stashMessage, excludeRootGitIgnore ) );
         b.Append( "yarn install" );
@@ -335,15 +320,9 @@ internal static partial class AngularUpgradeReport
         return m.Success ? m.Groups[1].Value : "";
     }
 
-    static bool Matches( AngularUpgradeHint hint, string error )
-    {
-        if( hint.MatchFragment == null && hint.MatchErrorCode == null )
-        {
-            return false;
-        }
-        return (hint.MatchFragment == null || error.Contains( hint.MatchFragment, StringComparison.Ordinal ))
-               && (hint.MatchErrorCode == null || Regex.IsMatch( error, $@"\berror {Regex.Escape( hint.MatchErrorCode )}\b" ));
-    }
+    static bool Matches( AngularUpgradeHint hint, string error ) => hint.MatchFragment != null && error.Contains( hint.MatchFragment, StringComparison.Ordinal );
+
+    static string GuideSentence( string guideLink ) => $"Angular update guide, for the changes no compiler sees: {guideLink} (tick 'I use Angular Material' if the app uses it).";
 
     static string Plural( int count, string noun ) => count.ToString( CultureInfo.InvariantCulture ) + " " + (count == 1 ? noun : noun + "s");
 

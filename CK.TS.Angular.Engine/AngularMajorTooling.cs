@@ -7,13 +7,12 @@ namespace CK.TS.Angular.Engine;
 
 /// <summary>
 /// A short text shown when a tooling row is crossed, optionally tied to a compile error.
-/// A compile error line matches when it contains every match value that is set; a hint
-/// with neither <paramref name="MatchFragment"/> nor <paramref name="MatchErrorCode"/> never matches a line.
+/// A compile error line matches when it contains <paramref name="MatchFragment"/>; a hint
+/// without one never matches a line.
 /// </summary>
 /// <param name="Text">The hint text.</param>
 /// <param name="MatchFragment">Optional text fragment, such as <c>NzToolTipModule</c>.</param>
-/// <param name="MatchErrorCode">Optional compiler error code, such as <c>NG8023</c>.</param>
-internal sealed record AngularUpgradeHint( string Text, string? MatchFragment = null, string? MatchErrorCode = null );
+internal sealed record AngularUpgradeHint( string Text, string? MatchFragment = null );
 
 /// <summary>
 /// What the engine needs to reach one Angular major.
@@ -41,11 +40,6 @@ internal sealed record AngularMajorTooling( int Major,
     /// Gets the known rows, indexed by <see cref="Major"/>.
     /// </summary>
     internal static IReadOnlyDictionary<int, AngularMajorTooling> Rows { get; } = CreateRows();
-
-    /// <summary>
-    /// Gets the lowest major of <see cref="Rows"/>.
-    /// </summary>
-    internal static int FirstMajor { get; } = Rows.Keys.Min();
 
     static Dictionary<int, AngularMajorTooling> CreateRows()
     {

@@ -39,21 +39,9 @@ internal static class AngularUpgradeFailureMessage
     /// <param name="found">What it found: the failure and its data.</param>
     /// <param name="appPath">The app folder.</param>
     /// <param name="stashMessage">The message of the undo stash.</param>
-    /// <param name="undo">
-    /// The outcome of the undo. Restored outcomes name the stash and how to drop it, or say that the folder is as it was
-    /// when no stash has been created, and say to install again when <c>yarn install</c> failed.
-    /// <see cref="AngularUndoOutcome.NotRestored"/> gives the commands to run in the app folder: the stash command of
-    /// <see cref="AngularGitHelper.StashPushArguments"/>, <c>yarn install</c>, then the deletion of the
-    /// <see cref="AngularUpgradeMarker"/> file.
-    /// </param>
-    /// <param name="stashCreated">
-    /// Whether the undo created a stash, as <see cref="AngularGitHelper.StashUndo"/> reports it. Ignored by
-    /// <see cref="AngularUndoOutcome.NotRestored"/>.
-    /// </param>
-    /// <param name="excludeRootGitIgnore">
-    /// Whether the app root <c>.gitignore</c> is untracked, so that the printed stash command excludes it as
-    /// <see cref="AngularGitHelper.StashUndo"/> does.
-    /// </param>
+    /// <param name="undo">The outcome of the undo.</param>
+    /// <param name="stashCreated">Whether the undo created a stash, as <see cref="AngularGitHelper.StashUndo"/> reports it.</param>
+    /// <param name="excludeRootGitIgnore">Whether the printed stash command excludes the app root <c>.gitignore</c>.</param>
     /// <param name="nextActions">The next actions, the recommended one first. They are numbered here.</param>
     /// <returns>The message.</returns>
     internal static string Render( string doing,

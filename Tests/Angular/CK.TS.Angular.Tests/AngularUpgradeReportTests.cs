@@ -18,6 +18,8 @@ public class AngularUpgradeReportTests
 
     static readonly NormalizedPath _app = "D:/Dev/MyApp/CK_TS_Angular";
 
+    static readonly TimeSpan _elapsed = new TimeSpan( 0, 3, 12 );
+
     static List<string> Lines( string text ) => text.Split( '\n' ).Select( l => l.TrimEnd( '\r' ) ).ToList();
 
     static int Count( string text, string value ) => (text.Length - text.Replace( value, "" ).Length) / value.Length;
@@ -37,15 +39,14 @@ public class AngularUpgradeReportTests
                                       22,
                                       steps,
                                       optionalMigrations ?? [],
-                                      packagesWithoutMigrations ?? [],
-                                      new TimeSpan( 0, 3, 12 ) );
+                                      packagesWithoutMigrations ?? [] );
     }
 
     static CompileCheckResult Passed() => new( CompileCheckOutcome.Passed, [], null, [] );
 
     static string Summary( AngularUpgradeRun run, IReadOnlyList<string> changedFiles, CompileCheckResult compileCheck )
     {
-        return AngularUpgradeReport.RenderSummary( run, changedFiles, compileCheck, _stash, excludeRootGitIgnore: false );
+        return AngularUpgradeReport.RenderSummary( run, _elapsed, changedFiles, compileCheck, _stash, excludeRootGitIgnore: false );
     }
 
     [Test]
@@ -63,15 +64,15 @@ public class AngularUpgradeReportTests
                            "src/app/app.ts:2:1 - warning NG8107: The left side of this optional chain operation does not include 'null' or 'undefined'.",
                            "Found 2 errors."];
 
-        AngularUpgradeReport.GetCompileErrors( output ).ShouldBe( ["ck-gen/a.ts:1:32 - error TS2307: Cannot find module 'x'.",
-                                                                    "src/app/app.html:8:5 - error NG8002: Can't bind to 'ckNotAProperty' since it isn't a known property of 'h1'."] );
+        AngularUpgradeReport.EvaluateCompileCheck( 1, false, output ).Errors.ShouldBe( ["ck-gen/a.ts:1:32 - error TS2307: Cannot find module 'x'.",
+                                                                                         "src/app/app.html:8:5 - error NG8002: Can't bind to 'ckNotAProperty' since it isn't a known property of 'h1'."] );
     }
 
     [Test]
     public void matching_hint_is_shown_next_to_its_error()
     {
         var rename = AngularMajorTooling.Rows[22].Hints.Single( h => h.MatchFragment == "NzToolTipModule" );
-        var duplicate = new AngularUpgradeHint( "Two components share a selector.", MatchErrorCode: "NG8023" );
+        var duplicate = new AngularUpgradeHint( "Two components share a selector.", MatchFragment: "Multiple components match" );
         var neverMatched = new AngularUpgradeHint( "A hint without a match." );
         string[] errors = ["src/app/a.ts:3:10 - error TS2724: '\"ng-zorro-antd/tooltip\"' has no exported member named 'NzToolTipModule'. Did you mean 'NzTooltipModule'?",
                            "src/app/b.html:1:1 - error NG8023: Multiple components match node with tagname b-item.",
@@ -90,34 +91,6 @@ public class AngularUpgradeReportTests
         Count( text, duplicate.Text ).ShouldBe( 1 );
         Count( text, rename.Text ).ShouldBe( 1 );
         text.ShouldNotContain( neverMatched.Text );
-    }
-
-    [Test]
-    public void error_code_hint_matches_the_whole_code_only()
-    {
-        var hint = new AngularUpgradeHint( "Two components share a selector.", MatchErrorCode: "NG8023" );
-        string[] errors = ["src/app/a.html:1:1 - error NG80231: Some later error.",
-                           "src/app/b.html:1:1 - error NG8023: Multiple components match node with tagname b-item."];
-
-        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, [hint], _guide ) );
-
-        lines[lines.FindIndex( l => l.Contains( "error NG80231" ) ) + 1].ShouldNotContain( hint.Text );
-        lines[lines.FindIndex( l => l.Contains( "error NG8023:" ) ) + 1].ShouldContain( hint.Text );
-    }
-
-    [Test]
-    public void hint_with_a_fragment_and_a_code_needs_both()
-    {
-        var hint = new AngularUpgradeHint( "Import NzTooltipModule.", MatchFragment: "NzToolTipModule", MatchErrorCode: "NG8001" );
-        string[] errors = ["src/app/a.ts:3:10 - error TS2724: has no exported member named 'NzToolTipModule'.",
-                           "src/app/b.html:1:1 - error NG8001: 'nz-x' is not a known element.",
-                           "src/app/c.html:2:2 - error NG8001: 'nz-tooltip' is not a known element: import NzToolTipModule."];
-
-        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [hint], _guide );
-        var lines = Lines( text );
-
-        Count( text, hint.Text ).ShouldBe( 1 );
-        lines[lines.FindIndex( l => l.Contains( "import NzToolTipModule." ) ) + 1].ShouldContain( hint.Text );
     }
 
     [Test]
@@ -197,7 +170,7 @@ public class AngularUpgradeReportTests
         exited.Outcome.ShouldBe( CompileCheckOutcome.DidNotRun );
         timedOut.Outcome.ShouldBe( CompileCheckOutcome.DidNotRun );
         timedOut.NotRunReason.ShouldBe( "timed out after 10 minutes" );
-        var text = AngularUpgradeReport.RenderCompileCheckNotRun( _app, AngularUpgradeReport.CompileCheckCommand, exited, _guide );
+        var text = AngularUpgradeReport.RenderCompileCheckNotRun( _app, exited, _guide );
         text.ShouldContain( $"yarn {AngularUpgradeReport.CompileCheckCommand}" );
         text.ShouldContain( "exit code 1" );
         text.ShouldContain( "Error: Cannot find module 'typescript'." );
@@ -236,7 +209,7 @@ public class AngularUpgradeReportTests
         var errors = new CompileCheckResult( CompileCheckOutcome.Errors, ["a", "b", "c"], null, [] );
         var notRun = new CompileCheckResult( CompileCheckOutcome.DidNotRun, [], "exit code 1", [] );
 
-        var text = AngularUpgradeReport.RenderSummary( run, changed, Passed(), _stash, excludeRootGitIgnore: true );
+        var text = AngularUpgradeReport.RenderSummary( run, _elapsed, changed, Passed(), _stash, excludeRootGitIgnore: true );
         var lines = Lines( text );
 
         text.ShouldContain( "upgraded from Angular 20 to 22" );

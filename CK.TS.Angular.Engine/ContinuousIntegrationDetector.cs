@@ -89,14 +89,13 @@ internal static class ContinuousIntegrationDetector
         ];
 
     /// <summary>
-    /// Detects a CI run: <c>CI</c> is not the string <c>false</c>, and a known vendor matches or one of
-    /// <c>BUILD_ID</c>, <c>BUILD_NUMBER</c>, <c>CI</c>, <c>CI_APP_ID</c>, <c>CI_BUILD_ID</c>, <c>CI_BUILD_NUMBER</c>,
-    /// <c>CI_NAME</c>, <c>CONTINUOUS_INTEGRATION</c>, <c>RUN_ID</c> is not empty.
+    /// Detects a CI run: <c>CI</c> is not the string <c>false</c>, and a known vendor matches or one of the
+    /// <see cref="_genericVariables"/> is not empty.
     /// </summary>
     /// <param name="getEnvironmentVariable">Returns the value of an environment variable, null when it is not set.</param>
     /// <returns>
     /// Null when this is not a CI run. Otherwise the vendor name, as ci-info names it (the last matching vendor of the table),
-    /// or, when no vendor matches, the first non-empty variable of the list above.
+    /// or, when no vendor matches, the first non-empty variable of <see cref="_genericVariables"/>.
     /// </returns>
     internal static string? Detect( Func<string, string?> getEnvironmentVariable )
     {

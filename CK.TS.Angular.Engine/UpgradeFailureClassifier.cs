@@ -25,12 +25,7 @@ internal enum UpgradeCommandKind
     /// <summary>
     /// An <c>ng update &lt;package&gt; --migrate-only</c> command.
     /// </summary>
-    Migration,
-
-    /// <summary>
-    /// The compile check that runs after the upgrade.
-    /// </summary>
-    CompileCheck
+    Migration
 }
 
 /// <summary>
@@ -38,14 +33,8 @@ internal enum UpgradeCommandKind
 /// </summary>
 internal enum UpgradeFailureKind
 {
-    /// <summary>
-    /// The command succeeded.
-    /// </summary>
     None,
 
-    /// <summary>
-    /// The engine timeout expired.
-    /// </summary>
     Timeout,
 
     /// <summary>
@@ -83,14 +72,8 @@ internal enum UpgradeFailureKind
     /// </summary>
     NoMigrations,
 
-    /// <summary>
-    /// A migration failed or crashed.
-    /// </summary>
     MigrationFailed,
 
-    /// <summary>
-    /// The output matches no known failure.
-    /// </summary>
     Generic
 }
 
@@ -134,8 +117,6 @@ internal sealed record UpgradeFailure( UpgradeFailureKind Kind,
 /// </summary>
 internal static partial class UpgradeFailureClassifier
 {
-    const int GenericLineCount = 30;
-
     /// <summary>
     /// The timeout of every yarn command of an upgrade. The <see cref="UpgradeFailureKind.Timeout"/> hint names it.
     /// </summary>
@@ -144,11 +125,7 @@ internal static partial class UpgradeFailureClassifier
     static readonly string[] _pacoteNetworkCodes = ["ENOTFOUND", "ECONNREFUSED", "ETIMEDOUT"];
 
     /// <summary>
-    /// Classifies the output of a command. ANSI codes are stripped first. The rules are tried in this order:
-    /// timeout, exit code 0, exit code 3, Yarn error codes, registry texts, peer refusal (a summary line and at least one
-    /// parsed conflict line), install inside <c>ng update</c>,
-    /// then, for a <see cref="UpgradeCommandKind.Migration"/> only, no migrations and migration failure; anything else is
-    /// <see cref="UpgradeFailureKind.Generic"/>.
+    /// Classifies the output of a command. ANSI codes are stripped first.
     /// </summary>
     /// <param name="command">The kind of command that ran.</param>
     /// <param name="exitCode">The exit code. Ignored when <paramref name="timedOut"/> is true.</param>
@@ -165,7 +142,7 @@ internal static partial class UpgradeFailureClassifier
         {
             return Of( UpgradeFailureKind.None, [] );
         }
-        var raw = outputLines.Select( l => AnsiRegex().Replace( l, "" ) ).ToArray();
+        var raw = outputLines.Select( l => AngularUpgradeReport.AnsiRegex().Replace( l, "" ) ).ToArray();
         var lines = raw.Select( l => l.Trim() ).ToArray();
         if( exitCode == 3 )
         {
@@ -221,7 +198,7 @@ internal static partial class UpgradeFailureClassifier
                 return migration;
             }
         }
-        return Of( UpgradeFailureKind.Generic, raw.Skip( Math.Max( 0, raw.Length - GenericLineCount ) ) );
+        return Of( UpgradeFailureKind.Generic, AngularUpgradeReport.LastLines( outputLines ) );
     }
 
     static UpgradeFailure Of( UpgradeFailureKind kind, IEnumerable<string> details ) => new UpgradeFailure( kind, details.ToArray(), [], null, null );
@@ -555,9 +532,6 @@ internal static partial class UpgradeFailureClassifier
         int end = line.IndexOf( '\'', prefix.Length );
         return end > prefix.Length ? line.Substring( prefix.Length, end - prefix.Length ) : null;
     }
-
-    [GeneratedRegex( @"\x1b\[[0-9;]*m" )]
-    private static partial Regex AnsiRegex();
 
     [GeneratedRegex( @"^\s*Package ""([^""]+)"" has an incompatible peer dependency to ""([^""]+)"" \(requires ""([^""]+)""(?: \(extended\))?, would install ""([^""]+)""\)\.?\s*$" )]
     private static partial Regex PeerLineRegex();
