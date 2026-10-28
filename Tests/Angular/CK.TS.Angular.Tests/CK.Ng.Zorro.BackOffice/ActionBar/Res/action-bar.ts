@@ -1,15 +1,15 @@
 import { Component, HostBinding, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActionBarAction, ActionBarContent } from './action-bar.model';
+import { ActionBarAction, ActionBarContent } from './action-bar-model';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 @Component({
     selector: 'ck-backoffice-action-bar',
     templateUrl: './action-bar.html',
-    imports: [CommonModule, FormsModule, FontAwesomeModule, NzButtonModule, NzToolTipModule]
+    imports: [CommonModule, FormsModule, FontAwesomeModule, NzButtonModule, NzTooltipModule]
 })
 export class ActionBar<T> {
     @HostBinding('class') class = 'ck-backoffice-action-bar';

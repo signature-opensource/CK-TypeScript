@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -11,14 +11,14 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 @Component( {
   selector: 'ck-basic-login-form',
   imports: [
     CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
+    FormField,
+    FormRoot,
     TranslateModule,
     FontAwesomeModule,
     NzButtonModule,
@@ -26,14 +26,13 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     NzDividerModule,
     NzFormModule,
     NzInputModule,
-    NzToolTipModule
+    NzTooltipModule
   ],
     templateUrl: './basic-login-form.html'
 } )
 export class BasicLoginForm {
   // <PreDependencyInjection revert />
   readonly #authService = inject( AuthService );
-  readonly #formBuilder = inject( FormBuilder );
   readonly #notifService = inject( NotificationService );
   readonly #translateService = inject( TranslateService );
   // <PostDependencyInjection />
@@ -46,21 +45,22 @@ export class BasicLoginForm {
   // <PostIconsDefinition />
 
   // <PreLocalVariables revert />
-  loginForm: FormGroup = this.#formBuilder.group( {
-    userName: new FormControl( this.#authService.authenticationInfo.unsafeUser.userName, { nonNullable: true, validators: [Validators.required] } ),
-    password: new FormControl( '', { nonNullable: true, validators: [Validators.required] } ),
-    rememberMe: new FormControl( this.#authService.rememberMe, { nonNullable: true } )
+  readonly loginModel = signal( {
+    userName: this.#authService.authenticationInfo.unsafeUser.userName,
+    password: '',
+    rememberMe: this.#authService.rememberMe
   } );
+  readonly loginForm = form( this.loginModel, p => {
+    required( p.userName );
+    required( p.password );
+  }, { name: 'login' } );
   showPassword: boolean = false;
   // <PostLocalVariables />
 
   async submit(): Promise<void> {
-    if ( this.loginForm && this.loginForm.valid ) {
-      await this.#authService.basicLogin(
-        this.loginForm.get( 'userName' )!.value.trim(),
-        this.loginForm.get( 'password' )!.value,
-        this.loginForm.get( 'rememberMe' )!.value
-      );
+    if ( this.loginForm().valid() ) {
+      const { userName, password, rememberMe } = this.loginModel();
+      await this.#authService.basicLogin( userName.trim(), password, rememberMe );
 
       if ( this.#authService.lastResult.error ) {
         this.#notifService.displaySimpleMessage( 'error', this.#translateService.instant( this.#authService.lastResult.error.errorId ) );
