@@ -6,6 +6,6 @@
     <PackageReference Include="CSemVer" Version="13.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.EmbeddedResources" Version="4.0.2-0.cris-auth.0.ci.2" />
+    <PackageReference Include="CK.EmbeddedResources" Version="5.0.0-0.cris-auth.0.ci.7" />
   </ItemGroup>
 </Project>
