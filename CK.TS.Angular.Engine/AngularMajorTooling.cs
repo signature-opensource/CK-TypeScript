@@ -62,7 +62,9 @@ internal sealed record AngularMajorTooling( int Major,
                                      [("@angular/platform-browser-dynamic", "@angular/platform-browser")],
                                      [new AngularUpgradeHint( "ng-zorro-antd 22 renames NzToolTipModule to NzTooltipModule: update the imports.", MatchFragment: "NzToolTipModule" ),
                                       new AngularUpgradeHint( "ng-zorro-antd 22 renames NzDropDownModule to NzDropdownModule: update the imports.", MatchFragment: "NzDropDownModule" ),
-                                      new AngularUpgradeHint( "@angular/animations is deprecated in Angular 22 and ng-zorro-antd 22 no longer uses it: remove provideAnimationsAsync() and the @angular/animations dependency, unless the app's own components still use trigger()." ),
+                                      new AngularUpgradeHint( "ng-zorro-antd 22 removes the nz-tabset element: rename it to nz-tabs.", MatchFragment: "'nz-tabset'" ),
+                                      new AngularUpgradeHint( "ng-zorro-antd 22 removes nz-input-group: use nz-input-wrapper, with nzInputPrefix and nzInputSuffix on the prefix and suffix content. The wrapper shows only the input, its prefix, suffix and addons: move any other content, such as an nz-select, out of it.", MatchFragment: "'nz-input-group'" ),
+                                      new AngularUpgradeHint( "@angular/animations is deprecated in Angular 22 and ng-zorro-antd 22 no longer uses it: remove provideAnimations() or provideAnimationsAsync() and the @angular/animations dependency, unless the app's own components still use trigger()." ),
                                       new AngularUpgradeHint( "The change-detection-eager and strict-templates-default migrations touch many files." )] )
         };
         return rows.ToDictionary( r => r.Major );

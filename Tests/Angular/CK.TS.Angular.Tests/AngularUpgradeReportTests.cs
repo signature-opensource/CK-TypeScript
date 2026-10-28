@@ -94,6 +94,19 @@ public class AngularUpgradeReportTests
     }
 
     [Test]
+    public void elements_removed_by_ng_zorro_22_get_their_hint()
+    {
+        var hints = AngularMajorTooling.Rows[22].Hints;
+        string[] errors = ["ck-gen/CK/Ng/UserProfile/user-profile-page/user-profile-page.html:46:5 - error NG8001: 'nz-tabset' is not a known element:",
+                           "ck-gen/CK/Ng/Zorro/search-modal/search-modal.html:3:5 - error NG8001: 'nz-input-group' is not a known element:"];
+
+        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, hints, _guide ) );
+
+        lines[lines.FindIndex( l => l.Contains( "'nz-tabset'" ) ) + 1].ShouldContain( "rename it to nz-tabs" );
+        lines[lines.FindIndex( l => l.Contains( "'nz-input-group'" ) ) + 1].ShouldContain( "use nz-input-wrapper" );
+    }
+
+    [Test]
     public void compile_failure_groups_errors_by_file_and_caps_at_50_lines()
     {
         string[] files = ["src/app/a.ts", "src/app/b.ts", "src/app/c.ts"];
