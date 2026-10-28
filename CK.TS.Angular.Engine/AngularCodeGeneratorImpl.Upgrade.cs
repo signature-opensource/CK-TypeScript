@@ -305,7 +305,9 @@ public partial class AngularCodeGeneratorImpl
             if( compileCheck.Outcome == CompileCheckOutcome.Errors )
             {
                 var hints = run.Steps.SelectMany( s => s.Tooling.Hints ).ToList();
-                monitor.Error( AngularUpgradeReport.RenderCompileFailure( appPath, compileCheck.Errors, hints, guideLink ) );
+                var yarnLock = ReadYarnLock( appPath );
+                var typeScriptVersion = yarnLock != null ? YarnLockReader.GetInstalledVersion( yarnLock, "typescript" ) : null;
+                monitor.Error( AngularUpgradeReport.RenderCompileFailure( appPath, compileCheck.Errors, hints, guideLink, typeScriptVersion ) );
             }
             else if( compileCheck.Outcome == CompileCheckOutcome.DidNotRun )
             {

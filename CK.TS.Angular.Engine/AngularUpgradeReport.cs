@@ -1,4 +1,5 @@
 using CK.Core;
+using CSemVer;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -114,15 +115,52 @@ internal static partial class AngularUpgradeReport
     /// <param name="errors">The errors, from <see cref="GetCompileErrors"/>.</param>
     /// <param name="hints">The hints of the rows crossed by the upgrade.</param>
     /// <param name="guideLink">The link from <see cref="GuideLink"/>.</param>
+    /// <param name="typeScriptVersion">The TypeScript version of the app's yarn.lock, or null when it does not name one.</param>
     /// <returns>The message.</returns>
-    internal static string RenderCompileFailure( NormalizedPath appPath, IReadOnlyList<string> errors, IReadOnlyList<AngularUpgradeHint> hints, string guideLink )
+    internal static string RenderCompileFailure( NormalizedPath appPath,
+                                                 IReadOnlyList<string> errors,
+                                                 IReadOnlyList<AngularUpgradeHint> hints,
+                                                 string guideLink,
+                                                 SVersion? typeScriptVersion )
     {
         var b = new StringBuilder();
         b.AppendLine( $"Checking the upgraded Angular app '{appPath}': running 'yarn {CompileCheckCommand}' in the app folder." );
-        var count = Plural( errors.Count, "error" );
+        var crashes = errors.Where( IsCompilerCrash ).ToList();
+        if( crashes.Count > 0 )
+        {
+            var typeScript = typeScriptVersion != null ? $"TypeScript {typeScriptVersion}" : "TypeScript version unknown, the app's yarn.lock does not name it";
+            b.AppendLine( $"The Angular compiler crashed ({typeScript}): this is a failure of the compiler, not an error in the app code." );
+            foreach( var crash in crashes )
+            {
+                b.AppendLine( $"  {crash}" );
+            }
+            errors = errors.Where( e => !IsCompilerCrash( e ) ).ToList();
+        }
+        if( errors.Count > 0 )
+        {
+            AppendErrors( b, errors, hints, crashes.Count > 0 );
+        }
+        b.AppendLine( $"The app folder '{appPath}' stays upgraded: the upgrade is not undone, fixing the app code is up to you." );
+        b.AppendLine( "Next actions:" );
+        int action = 1;
+        if( crashes.Count > 0 )
+        {
+            b.AppendLine( $"{action++}. Run 'yarn {CompileCheckCommand}' in the app folder to see the stack trace of the crash. Find the code that triggers it and write it another way, or look for a known issue of this TypeScript version." );
+        }
+        if( errors.Count > 0 )
+        {
+            b.AppendLine( $"{action++}. Fix these errors before committing: a rerun of the builder passes without this check, which runs only after an upgrade. Run 'yarn {CompileCheckCommand}' in the app folder to check again." );
+        }
+        b.Append( $"{action}. Review the diff with the {GuideSentence( guideLink )}" );
+        return b.ToString();
+    }
+
+    static void AppendErrors( StringBuilder b, IReadOnlyList<string> errors, IReadOnlyList<AngularUpgradeHint> hints, bool afterCrash )
+    {
+        var found = $"{(afterCrash ? "Before it crashed, the compile check found" : "The compile check found")} {Plural( errors.Count, "error" )}";
         b.AppendLine( errors.Count > _maxErrorLines
-                        ? $"The compile check found {count}. The first {_maxErrorLines}, grouped by file:"
-                        : $"The compile check found {count}, grouped by file:" );
+                        ? $"{found}. The first {_maxErrorLines}, grouped by file:"
+                        : $"{found}, grouped by file:" );
         var shown = errors.GroupBy( GetErrorFile ).SelectMany( g => g ).Take( _maxErrorLines );
         string? file = null;
         foreach( var error in shown )
@@ -152,12 +190,10 @@ internal static partial class AngularUpgradeReport
         {
             b.AppendLine( "While TypeScript errors (TS codes) remain, the Angular compiler does not check the templates: more errors (NG codes) can show once these are fixed." );
         }
-        b.AppendLine( $"The app folder '{appPath}' stays upgraded: the upgrade is not undone, fixing the app code is up to you." );
-        b.AppendLine( "Next actions:" );
-        b.AppendLine( $"1. Fix these errors before committing: a rerun of the builder passes without this check, which runs only after an upgrade. Run 'yarn {CompileCheckCommand}' in the app folder to check again." );
-        b.Append( $"2. Review the diff with the {GuideSentence( guideLink )}" );
-        return b.ToString();
     }
+
+    // @angular/compiler-cli reports an exception thrown while compiling as its UNKNOWN_ERROR_CODE, printed as TS500.
+    static bool IsCompilerCrash( string error ) => error.Contains( "error TS500:", StringComparison.Ordinal );
 
     /// <summary>
     /// Renders the message of a compile check that did not run.

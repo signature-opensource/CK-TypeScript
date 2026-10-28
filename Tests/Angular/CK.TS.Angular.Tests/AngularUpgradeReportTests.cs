@@ -78,7 +78,7 @@ public class AngularUpgradeReportTests
                            "src/app/b.html:1:1 - error NG8023: Multiple components match node with tagname b-item.",
                            "src/app/c.html:2:2 - error NG8002: Can't bind to 'x' since it isn't a known property of 'div'."];
 
-        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [rename, duplicate, neverMatched], _guide );
+        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [rename, duplicate, neverMatched], _guide, null );
         var lines = Lines( text );
 
         int renamed = lines.FindIndex( l => l.Contains( "error TS2724" ) );
@@ -100,7 +100,7 @@ public class AngularUpgradeReportTests
         string[] errors = ["ck-gen/CK/Ng/UserProfile/user-profile-page/user-profile-page.html:46:5 - error NG8001: 'nz-tabset' is not a known element:",
                            "ck-gen/CK/Ng/Zorro/search-modal/search-modal.html:3:5 - error NG8001: 'nz-input-group' is not a known element:"];
 
-        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, hints, _guide ) );
+        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, hints, _guide, null ) );
 
         lines[lines.FindIndex( l => l.Contains( "'nz-tabset'" ) ) + 1].ShouldContain( "rename it to nz-tabs" );
         lines[lines.FindIndex( l => l.Contains( "'nz-input-group'" ) ) + 1].ShouldContain( "use nz-input-wrapper" );
@@ -112,7 +112,7 @@ public class AngularUpgradeReportTests
         string[] files = ["src/app/a.ts", "src/app/b.ts", "src/app/c.ts"];
         var errors = Enumerable.Range( 0, 60 ).Select( i => $"{files[i % 3]}:{i + 1}:1 - error TS2304: Cannot find name 'x{i}'." ).ToList();
 
-        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide );
+        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide, null );
         var lines = Lines( text );
 
         text.ShouldContain( "60 errors" );
@@ -137,7 +137,7 @@ public class AngularUpgradeReportTests
         string[] errors = ["ck-gen/CK/Ng/Zorro/action-bar/action-bar.ts:4:10 - error TS2724: has no exported member named 'NzToolTipModule'.",
                            "src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'."];
 
-        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide ) );
+        var lines = Lines( AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide, null ) );
 
         lines.Single( l => l.StartsWith( "ck-gen/CK/Ng/Zorro/action-bar/action-bar.ts" ) ).ShouldContain( "fix it in that package" );
         lines.Single( l => l.StartsWith( "src/app/a.ts" ) ).ShouldNotContain( "package" );
@@ -146,7 +146,7 @@ public class AngularUpgradeReportTests
     [Test]
     public void compile_failure_message_says_a_rerun_passes_without_the_check()
     {
-        var text = AngularUpgradeReport.RenderCompileFailure( _app, ["src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'."], [], _guide );
+        var text = AngularUpgradeReport.RenderCompileFailure( _app, ["src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'."], [], _guide, null );
 
         text.ShouldContain( "a rerun of the builder passes without this check" );
         text.ShouldContain( "before committing" );
@@ -162,14 +162,53 @@ public class AngularUpgradeReportTests
                                                                 ["src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'.",
                                                                  "src/app/b.ts:1:1 - error NG2009: Component selector is invalid."],
                                                                 [],
-                                                                _guide );
+                                                                _guide,
+                                                                null );
         var templatesOnly = AngularUpgradeReport.RenderCompileFailure( _app,
                                                                        ["src/app/c.html:2:2 - error NG8002: Can't bind to 'x' since it isn't a known property of 'div'."],
                                                                        [],
-                                                                       _guide );
+                                                                       _guide,
+                                                                       null );
 
         withTs.ShouldContain( warning );
         templatesOnly.ShouldNotContain( warning );
+    }
+
+    [Test]
+    public void compiler_crash_is_not_reported_as_an_app_error()
+    {
+        // @angular/compiler-cli 22.2.3 performCompilation: an exception thrown by the compiler becomes error TS500.
+        string[] errors = ["error TS500: TypeError: Cannot read properties of undefined (reading 'flags')"];
+
+        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide, SVersion.Parse( "6.0.3" ) );
+
+        text.ShouldContain( "The Angular compiler crashed" );
+        text.ShouldContain( "TypeScript 6.0.3" );
+        text.ShouldContain( "reading 'flags'" );
+        text.ShouldNotContain( "grouped by file" );
+        text.ShouldNotContain( "the Angular compiler does not check the templates" );
+        text.ShouldNotContain( "Fix these errors" );
+    }
+
+    [Test]
+    public void compiler_crash_without_typescript_in_yarn_lock_says_so()
+    {
+        var text = AngularUpgradeReport.RenderCompileFailure( _app, ["error TS500: Error: Debug Failure."], [], _guide, null );
+
+        text.ShouldContain( "TypeScript version unknown" );
+    }
+
+    [Test]
+    public void compiler_crash_keeps_the_errors_found_before_it()
+    {
+        string[] errors = ["src/app/a.ts:1:1 - error TS2304: Cannot find name 'x'.",
+                           "error TS500: Error: Debug Failure."];
+
+        var text = AngularUpgradeReport.RenderCompileFailure( _app, errors, [], _guide, SVersion.Parse( "6.0.3" ) );
+
+        text.ShouldContain( "The Angular compiler crashed" );
+        text.ShouldContain( "error TS2304" );
+        text.ShouldContain( "the Angular compiler does not check the templates" );
     }
 
     [Test]
