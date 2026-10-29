@@ -139,6 +139,11 @@ describe('Command serialization', () => {
       const c2 = CTSType.parse( s );
       const s2 = CTSType.stringify( c2 );
       expect( s ).toBe( s2 );
+      // A TimeSpan below a millisecond (zero included) or negative.
+      for( const [ticks, ms] of [["0", 0], ["9999", 0], ["-37120000", -3712]] as const ) {
+        const t = CTSType.parse( s.replace( '"timeSpan":"37120000"', `"timeSpan":"${ticks}"` ) ) as TestSerializationCommand;
+        expect( t.timeSpan.toMillis() ).toBe( ms );
+      }
     });
 
     it( 'Command with records.', () => {

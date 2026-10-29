@@ -27,7 +27,9 @@ public sealed partial class CTSTypeSystem
         }
         else if( t.Type == typeof( TimeSpan ) )
         {
-            part.Append( "return o != null ? Duration.fromMillis( Number.parseInt(o.substring(0,o.length-4)) ) : undefined;" );
+            // The .Net 10th of microseconds (100 nanoseconds) to milliseconds: a BigInt division handles any value (zero,
+            // below a millisecond, negative).
+            part.Append( "return o != null ? Duration.fromMillis( Number( BigInt( o ) / 10000n ) ) : undefined;" );
         }
         else if( t.Type == typeof( long ) || t.Type == typeof( ulong ) || t.Type == typeof( BigInteger ) )
         {
