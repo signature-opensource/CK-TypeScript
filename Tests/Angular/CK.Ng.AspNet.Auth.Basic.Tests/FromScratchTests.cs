@@ -23,7 +23,7 @@ public class FromScratchTests
         TestHelper.CleanupFolder( targetProjectPath.AppendPart( "src" ), ensureFolderAvailable: false );
         TestHelper.CleanupFolder( targetProjectPath.AppendPart( ".vscode" ), ensureFolderAvailable: false );
         DeleteFiles( targetProjectPath,
-                     ".editorconfig", ".gitignore", ".pnp.cjs", ".pnp.loader.mjs",
+                     ".editorconfig", ".gitignore", ".pnp.cjs", ".pnp.loader.mjs", ".prettierrc",
                      "angular.json", "package.json",
                      "README.md",
                      "tsconfig.app.json", "tsconfig.json", "tsconfig.spec.json",
