@@ -1030,7 +1030,7 @@ nosj( o: any ) {return o != null ? DateTime.fromISO( o, {zone: 'UTC'}) : undefin
 name: "TimeSpan",
 set( o: Duration ): Duration {  (o as any)[SymCTS] = this; return o; },
 json( o: any ) {return o != null ? o.toMillis().toString()+'0000' : null; },
-nosj( o: any ) {return o != null ? Duration.fromMillis( Number.parseInt(o.substring(0,o.length-4)) ) : undefined; },
+nosj( o: any ) {return o != null ? Duration.fromMillis( Number( BigInt( o ) / 10000n ) ) : undefined; },
 },
 "decimal": {
 name: "decimal",
