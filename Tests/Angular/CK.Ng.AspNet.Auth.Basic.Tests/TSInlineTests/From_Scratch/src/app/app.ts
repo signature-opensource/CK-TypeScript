@@ -3,9 +3,9 @@ import { RouterOutlet } from '@angular/router';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 
 @Component({
-  selector: 'app-root',
   imports: [RouterOutlet, CKGenAppModule],
+  selector: 'app-root',
+  styleUrl: './app.less',
   templateUrl: './app.html',
-  styleUrl: './app.less'
 })
 export class App { }

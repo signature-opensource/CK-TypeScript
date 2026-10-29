@@ -16,5 +16,5 @@
     "typescript": "=5.4.5"
   },
   "ckVersion": 1,
-  "packageManager": "yarn@4.8.1"
+  "packageManager": "yarn@4.18.1"
 }
