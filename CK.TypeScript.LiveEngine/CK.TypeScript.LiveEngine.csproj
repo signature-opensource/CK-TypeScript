@@ -6,8 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CSemVer" Version="13.0.0" />
-    <PackageReference Include="CK.ResourceSpace.Assets" Version="3.0.0-0.cris-auth" />
-    <PackageReference Include="CK.ResourceSpace.Globalization" Version="3.0.0-0.cris-auth" />
+    <PackageReference Include="CK.ResourceSpace.Assets" Version="3.0.0-0.cris-auth.0.ci.15" />
+    <PackageReference Include="CK.ResourceSpace.Globalization" Version="3.0.0-0.cris-auth.0.ci.15" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.ResourceSpace.Transformable\CK.ResourceSpace.Transformable.csproj" />
