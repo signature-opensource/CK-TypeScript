@@ -22,12 +22,10 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/CK.ResourceSpace.Globalization.Tests/CK.ResourceSpace.Globalization.Tests.csproj" />
-    <Project Path="Tests/CK.TS.AspNet.Auth.Tests/CK.TS.AspNet.Auth.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.WebSocketChannel.Tests/CK.TS.AspNet.WebSocketChannel.Tests.csproj" />
   <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/Angular/">
-    <Project Path="Tests/Angular/CK.Ng.AspNet.Auth.Basic.Tests/CK.Ng.AspNet.Auth.Basic.Tests.csproj" />
     <Project Path="Tests/Angular/CK.TS.Angular.Tests/CK.TS.Angular.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/BuildMode/" />

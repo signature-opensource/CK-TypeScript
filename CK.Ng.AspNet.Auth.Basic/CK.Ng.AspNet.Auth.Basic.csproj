@@ -1,20 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\CK.Ng.AspNet.Auth\CK.Ng.AspNet.Auth.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="MSBuild/CK.Ng.AspNet.Auth.Basic.targets">
-            <Pack>true</Pack>
-            <PackagePath>buildTransitive\CK.Ng.AspNet.Auth.Basic.targets</PackagePath>
-        </Content>
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Tombstone: no assembly, no dependencies. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- NU5128: the package has no lib/ folder, on purpose. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <Description>Deprecated: replaced by CK.Ng.Cris.AspNet.Authentication.Basic.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="MSBuild/CK.Ng.AspNet.Auth.Basic.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.Ng.AspNet.Auth.Basic.targets</PackagePath>
+    </Content>
+  </ItemGroup>
 </Project>

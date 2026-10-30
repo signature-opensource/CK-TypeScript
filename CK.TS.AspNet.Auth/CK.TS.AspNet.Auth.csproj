@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>CK.AspNet.Auth</RootNamespace>
+    <!-- Tombstone: no assembly, no dependencies. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- NU5128: the package has no lib/ folder, on purpose. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <Description>Deprecated: replaced by CK.Cris.AspNet.Authentication (its AuthService.ts).</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AspNet.Auth" Version="33.0.0-0.cris-auth.0.ci.8" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
+    <Content Include="MSBuild/CK.TS.AspNet.Auth.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.TS.AspNet.Auth.targets</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>

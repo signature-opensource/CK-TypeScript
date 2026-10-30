@@ -1,9 +1,0 @@
-{
-    "mappings": {
-        "azure.png": "login-providers",
-        "google.png": "login-providers",
-        "github.png": "login-providers",
-        "gitlab.png": "login-providers",
-        "microsoft.png": "login-providers"
-    }
-}
