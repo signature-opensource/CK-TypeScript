@@ -1,9 +1,11 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Shouldly;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -41,6 +43,8 @@ public class ClientConfigurationTests
         var projectPath = TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false );
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
         engineConfig.FirstBinPath.ProjectPath = projectPath;
+        // The generated sources must not be written in the test project (they would be compiled by it).
+        engineConfig.FirstBinPath.GenerateSourceFiles = false;
         engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
         var ts = engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         ts.Name = "MiniApp";
@@ -50,6 +54,35 @@ public class ClientConfigurationTests
 
         ts.TargetProjectPath.ShouldBe( projectPath.Combine( "Clients/MiniApp" ) );
         Directory.Exists( projectPath.Combine( "Clients/MiniApp/ck-gen" ) ).ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task the_ClientDirectory_lists_the_client_applications_Async()
+    {
+        var projectPath = TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false );
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+        engineConfig.FirstBinPath.ProjectPath = projectPath;
+        // The generated sources must not be written in the test project (they would be compiled by it).
+        engineConfig.FirstBinPath.GenerateSourceFiles = false;
+        engineConfig.FirstBinPath.Types.Add( typeof( ClientDirectory ) );
+        engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
+        var app = engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+        app.Name = "App";
+        app.Kind = ClientKind.DefaultApp;
+        app.IntegrationMode = CKGenIntegrationMode.None;
+        app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "MiniApp", Kind = ClientKind.App, IntegrationMode = CKGenIntegrationMode.None } );
+        // Not a client application.
+        app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "Lib", IntegrationMode = CKGenIntegrationMode.None } );
+
+        await using var auto = (await engineConfig.RunSuccessfullyAsync()).CreateAutomaticServices();
+        var clients = auto.Services.GetRequiredService<ClientDirectory>().Clients;
+        // The default client application is the last one.
+        clients.Select( c => c.ToString() ).ShouldBe( ["MiniApp (/mini-app)", "App (/)"] );
+        var mini = clients[0];
+        mini.ProjectPath.Path.ShouldBe( "Clients/MiniApp" );
+        mini.OutputPath.Path.ShouldBe( "dist/MiniApp/browser" );
+        mini.TypeFilterName.ShouldBe( "TypeScriptMiniApp" );
+        clients[1].TypeFilterName.ShouldBe( "TypeScriptApp" );
     }
 
     static EngineConfiguration CreateTwoConfigurations( TypeScriptBinPathAspectConfiguration c1, TypeScriptBinPathAspectConfiguration c2 )
