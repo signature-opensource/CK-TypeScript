@@ -84,6 +84,7 @@ sealed class TSContextInitializer
                                binPathConfiguration,
                                regTypes,
                                allPackages,
+                               globalFactories,
                                out var packages,
                                out var unselectedPackages )
             && InitializeIntegrationContext( monitor, binPathConfiguration, libVersionsConfig, out var integrationContext )
@@ -195,10 +196,10 @@ sealed class TSContextInitializer
                                                                   Dictionary<Type, RegisteredType> registeredTypes,
                                                                   IEnumerable<ITypeAttributesCache> attributes,
                                                                   IPocoTypeSet allExchangeableSet,
-                                                                  out List<ITSCodeGeneratorFactory> globals,
+                                                                  out List<(Type Type, ITSCodeGeneratorFactory Factory)> globals,
                                                                   out List<TypeScriptGroupOrPackageAttributeImpl> packages )
     {
-        globals = new List<ITSCodeGeneratorFactory>();
+        globals = new List<(Type, ITSCodeGeneratorFactory)>();
         packages = new List<TypeScriptGroupOrPackageAttributeImpl>();
         using( monitor.OpenInfo( "Analyzing types with [TypeScript], [TypeScriptGroup/Package] and/or ITSCodeGeneratorType or ITSCodeGeneratorFactory attributes." ) )
         {
@@ -238,7 +239,7 @@ sealed class TSContextInitializer
                     }
                     if( m is ITSCodeGeneratorFactory g )
                     {
-                        globals.Add( g );
+                        globals.Add( (attributeCache.Type, g) );
                     }
                     if( m is ITSCodeGeneratorType tG )
                     {
@@ -319,6 +320,8 @@ sealed class TSContextInitializer
     // Only the selected packages are handled: their [RegisterTypeScriptType] define the TypeScriptExchangeableSet.
     // The other ones are registered as optional packages in the resource space (that drops them but knows their
     // resources: a transformer that targets one of them is ignored).
+    // The global code generators declared by the excluded types and the unselected packages are removed: an unselected
+    // package doesn't import its libraries.
     static bool SelectPackages( IActivityMonitor monitor,
                                 GlobalTypeCache typeCache,
                                 IReadOnlySet<ICachedType> typeSet,
@@ -326,6 +329,7 @@ sealed class TSContextInitializer
                                 TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                 Dictionary<Type, RegisteredType> regTypes,
                                 List<TypeScriptGroupOrPackageAttributeImpl> allPackages,
+                                List<(Type Type, ITSCodeGeneratorFactory Factory)> globalFactories,
                                 out List<TypeScriptGroupOrPackageAttributeImpl> packages,
                                 out IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> unselectedPackages )
     {
@@ -428,6 +432,12 @@ sealed class TSContextInitializer
             packages = allPackages.Where( p => !p.HasResPackage || closure.Contains( typeCache.Get( p.DecoratedType ) ) ).ToList();
             unselectedPackages = allPackages.Where( p => p.HasResPackage && !closure.Contains( typeCache.Get( p.DecoratedType ) ) ).ToList();
             monitor.CloseGroup( $"Selected {closure.Count} packages." );
+        }
+        excluded.UnionWith( unselectedPackages.Select( p => p.DecoratedType ) );
+        int removed = globalFactories.RemoveAll( f => excluded.Contains( f.Type ) );
+        if( removed > 0 )
+        {
+            monitor.Info( $"Removed {removed} global generators of the excluded types and unselected packages." );
         }
         return true;
 
@@ -541,7 +551,7 @@ sealed class TSContextInitializer
                                                        IPocoTypeSet allExchangeableSet,
                                                        IPocoJsonSerializationServiceEngine? jsonSerialization,
                                                        List<TypeScriptGroupOrPackageAttributeImpl> packages,
-                                                       List<ITSCodeGeneratorFactory> globalFactories,
+                                                       List<(Type Type, ITSCodeGeneratorFactory Factory)> globalFactories,
                                                        out ImmutableArray<ITSCodeGenerator> globals,
                                                        out IDictionary<object,object?>? rootMemory )
     {
@@ -550,7 +560,7 @@ sealed class TSContextInitializer
         {
             bool success = true;
             var b = ImmutableArray.CreateBuilder<ITSCodeGenerator>( globalFactories.Count );
-            foreach( var f in globalFactories )
+            foreach( var (_, f) in globalFactories )
             {
                 var g = f.CreateTypeScriptGenerator( monitor, i );
                 if( g == null )

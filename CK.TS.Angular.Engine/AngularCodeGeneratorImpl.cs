@@ -799,7 +799,8 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             static void EnsureClientSettings( IActivityMonitor monitor, NormalizedPath angularJsonPath, string requestPath, int? devServerPort )
             {
                 var baseHref = requestPath.EndsWith( '/' ) ? requestPath : requestPath + '/';
-                var root = JsonNode.Parse( File.ReadAllText( angularJsonPath ) );
+                var text = File.ReadAllText( angularJsonPath );
+                var root = JsonNode.Parse( text );
                 var architect = root?["projects"]?.AsObject().FirstOrDefault().Value?["architect"];
                 var buildOptions = architect?["build"]?["options"]?.AsObject();
                 var serve = architect?["serve"]?.AsObject();
@@ -830,7 +831,10 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 }
                 if( changed )
                 {
-                    File.WriteAllText( angularJsonPath, root!.ToJsonString( new System.Text.Json.JsonSerializerOptions { WriteIndented = true } ) );
+                    // Keeps the line endings and the final new line of the file.
+                    var newLine = text.Contains( "\r\n" ) ? "\r\n" : "\n";
+                    var json = root!.ToJsonString( new System.Text.Json.JsonSerializerOptions { WriteIndented = true, NewLine = newLine } );
+                    File.WriteAllText( angularJsonPath, text.EndsWith( '\n' ) ? json + newLine : json );
                 }
             }
 

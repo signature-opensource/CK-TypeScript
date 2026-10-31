@@ -29,6 +29,11 @@ public sealed class PackageB : TypeScriptPackage { }
 [RegisterTypeScriptType( typeof( EnumC ) )]
 public sealed class PackageC : TypeScriptPackage { }
 
+// Its library has an invalid version: registering it is an error.
+[TypeScriptPackage]
+[TypeScriptImportLibrary( "some-library", "not a version", DependencyKind.Dependency )]
+public sealed class BadLibraryPackage : TypeScriptPackage { }
+
 [TestFixture]
 public class PackageSelectionTests
 {
@@ -93,5 +98,25 @@ public class PackageSelectionTests
         ts.ExcludedTypes.Add( typeof( PackageB ) );
         await engineConfig.GetFailedAutomaticServicesAsync(
             "'CK.TypeScript.Tests.PackageSelection.PackageA' references 'CK.TypeScript.Tests.PackageSelection.PackageB' (Requires) that is not a candidate package." );
+    }
+
+    [TestCase( "Selected" )]
+    [TestCase( "NotListed" )]
+    [TestCase( "Excluded" )]
+    public async Task an_unselected_package_does_not_import_its_libraries_Async( string mode )
+    {
+        var targetProjectPath = TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false );
+        var engineConfig = CreateConfiguration( out var ts, targetProjectPath );
+        engineConfig.FirstBinPath.Types.Add( typeof( BadLibraryPackage ) );
+        switch( mode )
+        {
+            case "Selected":
+                await engineConfig.GetFailedAutomaticServicesAsync( "not a version" );
+                return;
+            case "NotListed": ts.Types.Add( typeof( PackageA ), null ); break;
+            case "Excluded": ts.ExcludedTypes.Add( typeof( BadLibraryPackage ) ); break;
+        }
+        await engineConfig.RunSuccessfullyAsync();
+        GeneratedEnums( targetProjectPath ).ShouldBe( mode == "NotListed" ? ["EnumA", "EnumB"] : ["EnumA", "EnumB", "EnumC"] );
     }
 }
