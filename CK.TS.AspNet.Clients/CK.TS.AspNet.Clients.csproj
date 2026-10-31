@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>Serves the client applications of an ASP.NET host (its TypeScript configurations that are client applications) under the host's origin: their built files in production, their dev server in development.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The dev server of a client application is reached through the host by YARP direct forwarding. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.TypeScript\CK.TypeScript.csproj" />
+  </ItemGroup>
+</Project>

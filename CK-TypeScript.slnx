@@ -22,6 +22,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/CK.ResourceSpace.Globalization.Tests/CK.ResourceSpace.Globalization.Tests.csproj" />
+    <Project Path="Tests/CK.TS.AspNet.Clients.Tests/CK.TS.AspNet.Clients.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.WebSocketChannel.Tests/CK.TS.AspNet.WebSocketChannel.Tests.csproj" />
   <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
   </Folder>
@@ -53,6 +54,7 @@
   <Project Path="CK.TypeScript.CodeGen/CK.TypeScript.CodeGen.csproj" />
   <Project Path="CK.TypeScript.Engine/CK.TypeScript.Engine.csproj" />
   <Project Path="CK.TypeScript.LiveEngine/CK.TypeScript.LiveEngine.csproj" />
+  <Project Path="CK.TS.AspNet.Clients/CK.TS.AspNet.Clients.csproj" />
   <Project Path="CK.TS.AspNet.WebSocketChannel/CK.TS.AspNet.WebSocketChannel.csproj" />
   <Project Path="CK.TypeScript/CK.TypeScript.csproj" />
 </Solution>

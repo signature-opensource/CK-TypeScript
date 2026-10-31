@@ -26,6 +26,31 @@ This is enough to drive the generation: the heavy stuff is in the [CK.TypeScript
 Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath:
 Poco compliant types can be generated with or without serialization support.
 
+## Client applications
+
+A `<TypeScript>` configuration can have a `Name`, from which its other properties derive, and a `Kind` that says
+whether it is a client application served by its host:
+
+```xml
+<TypeScript Name="App" Kind="DefaultApp" />
+<TypeScript Name="MiniApp" Kind="App" />
+```
+
+| Property | Derived from the `Name` (an explicit value wins) |
+|---|---|
+| `TargetProjectPath` | `{ProjectPath}/Clients/{Name}` |
+| `TypeFilterName` | `TypeScript{Name}` |
+| `RequestPath` | `/` for the `DefaultApp`, `/{kebab-name}` for an `App` (`/mini-app`), none for `None` (the default kind) |
+
+The `Name` is an identifier (letters and digits, starting with a letter), unique in its BinPath; a client application
+requires one and there is at most one `DefaultApp` per BinPath. Without a `Name`, the defaults are unchanged
+(`TypeFilterName` is `"TypeScript"`).
+
+The Angular engine writes the request path of a client application as the `"baseHref"` of its `angular.json`. The
+engine generates the [`ClientDirectory`](ClientDirectory.cs) of the host: its [`ClientInfo`](ClientInfo.cs) list the
+client applications (the default one last). The [CK.TS.AspNet.Clients](../CK.TS.AspNet.Clients/README.md) package
+serves them; the link goes to a package built on this one because it is the consumer of this list.
+
 ## Selecting the packages of a configuration
 
 A BinPath can have multiple `<TypeScript>` configurations (one per target project, each with its `TypeFilterName`).
