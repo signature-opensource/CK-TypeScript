@@ -1,25 +1,57 @@
+using CK.Core;
 using CK.TypeScript;
 using System.Xml.Linq;
 
 namespace CK.Setup;
 
 /// <summary>
-/// Types with * wildcard. The * can appear for the type name (this applies to the namespace) and/or the assembly name
-/// or as a suffix for them. Leading and internal * are forbidden.
+/// A <see cref="TypeNamePattern"/> in the <see cref="TypeScriptBinPathAspectConfiguration.Types"/>: it selects the
+/// types of the BinPath that match it. Unlike an explicit type (that must be handled by a TypeScript code generator),
+/// a pattern only selects:
+/// <list type="bullet">
+///     <item>The exchangeable Poco compliant types: they are registered.</item>
+///     <item>The <see cref="TypeScriptGroup"/> and <see cref="TypeScriptPackage"/>: they are roots of the package selection.</item>
+/// </list>
+/// The other types are ignored. An explicit type configuration wins over a pattern and the excluded types
+/// (<see cref="TypeScriptBinPathAspectConfiguration.ExcludedTypes"/> and <see cref="TypeScriptBinPathAspectConfiguration.ExcludedTypePatterns"/>)
+/// are never selected.
 /// </summary>
-/// <param name="AssemblyQualifiedNamePattern">The assembly qualified name pattern to consider.</param>
-/// <param name="Configuration">
-/// The configuration to apply to the type. When specified, this overrides the <see cref="TypeScriptTypeAttribute"/> that may
-/// decorate the type.
-/// </param>
-/// <param name="RegistrationMode">The registration mode to consider for all the types.</param>
-public sealed record class TypeScriptTypeGlobConfiguration( string AssemblyQualifiedNamePattern,
-                                                            TypeScriptTypeAttribute? Configuration = null )
+public sealed class TypeScriptTypeGlobConfiguration
 {
-    internal XElement? ToXml()
+    /// <summary>
+    /// Initializes a new type pattern configuration.
+    /// </summary>
+    /// <param name="pattern">The pattern.</param>
+    /// <param name="configuration">
+    /// Optional configuration of the registered Poco types. Only the <see cref="TypeScriptTypeAttribute.Folder"/> can be
+    /// set: the type and file names can only apply to a single type.
+    /// </param>
+    public TypeScriptTypeGlobConfiguration( TypeNamePattern pattern, TypeScriptTypeAttribute? configuration = null )
+    {
+        Throw.CheckNotNullArgument( pattern );
+        if( configuration != null
+            && (configuration.TypeName != null || configuration.FileName != null || configuration.SameFileAs != null || configuration.SameFolderAs != null) )
+        {
+            Throw.ArgumentException( nameof( configuration ), $"Only the Folder can be configured for the type name pattern '{pattern}'." );
+        }
+        Pattern = pattern;
+        Configuration = configuration;
+    }
+
+    /// <summary>
+    /// Gets the pattern.
+    /// </summary>
+    public TypeNamePattern Pattern { get; }
+
+    /// <summary>
+    /// Gets the optional configuration of the registered Poco types (only the <see cref="TypeScriptTypeAttribute.Folder"/>).
+    /// </summary>
+    public TypeScriptTypeAttribute? Configuration { get; }
+
+    internal XElement ToXml()
     {
         return new XElement( EngineConfiguration.xType,
                              Configuration?.ToXmlAttributes(),
-                             AssemblyQualifiedNamePattern );
+                             Pattern.ToString() );
     }
 }

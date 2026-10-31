@@ -28,6 +28,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         Types = new Dictionary<Type, TypeScriptTypeAttribute?>();
         GlobTypes = new List<TypeScriptTypeGlobConfiguration>();
         ExcludedTypes = new HashSet<Type>();
+        ExcludedTypePatterns = new List<TypeNamePattern>();
 
         _defaultCulture = NormalizedCultureInfo.CodeDefault;
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
@@ -132,10 +133,9 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public Dictionary<Type,TypeScriptTypeAttribute?> Types { get; }
 
     /// <summary>
-    /// Gets the list of <see cref="TypeScriptTypeGlobConfiguration"/>.
-    /// <para>
-    /// This is not implemented yet: the engine ignores it.
-    /// </para>
+    /// Gets the list of <see cref="TypeScriptTypeGlobConfiguration"/>: the patterns of the <see cref="Types"/>
+    /// (in the Xml, a type name that contains a '*'). A pattern selects the exchangeable Poco compliant types and the
+    /// TypeScript packages of the BinPath that match it, the other types are ignored.
     /// </summary>
     public List<TypeScriptTypeGlobConfiguration> GlobTypes { get; }
 
@@ -148,6 +148,15 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </para>
     /// </summary>
     public HashSet<Type> ExcludedTypes { get; }
+
+    /// <summary>
+    /// Gets the patterns of the excluded types (in the Xml, a type name that contains a '*' in the &lt;ExcludedTypes&gt;):
+    /// the types of the BinPath that match one of them are excluded like the <see cref="ExcludedTypes"/>.
+    /// <para>
+    /// An explicit type of the <see cref="Types"/> that matches one of them is an error.
+    /// </para>
+    /// </summary>
+    public List<TypeNamePattern> ExcludedTypePatterns { get; }
 
     /// <summary>
     /// Gets or sets the name of this TypeScript configuration that is the <see cref="ExchangeableRuntimeFilter.Name"/>
@@ -268,15 +277,37 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         // Starts with ExcludedTypes: if an excluded type appears in Types, this will throw because
         // it is a bad configuration.
         ExcludedTypes.Clear();
-        ExcludedTypes.AddRange(
-            e.Elements( EngineConfiguration.xExcludedTypes )
-             .Elements( EngineConfiguration.xType )
-             .Select( e => SimpleTypeFinder.WeakResolver( (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value, throwOnError: true )! ) );
+        ExcludedTypePatterns.Clear();
+        foreach( var x in e.Elements( EngineConfiguration.xExcludedTypes ).Elements( EngineConfiguration.xType ) )
+        {
+            var name = (string?)x.Attribute( EngineConfiguration.xName ) ?? x.Value;
+            if( TypeNamePattern.IsPattern( name ) )
+            {
+                ExcludedTypePatterns.Add( ParsePattern( x, name ) );
+            }
+            else
+            {
+                ExcludedTypes.Add( SimpleTypeFinder.WeakResolver( name, throwOnError: true )! );
+            }
+        }
         Types.Clear();
         GlobTypes.Clear();
         FillTypesAndGlobTypes( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ) );
 
         TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
+    }
+
+    static TypeNamePattern ParsePattern( XElement e, string name )
+    {
+        if( !TypeNamePattern.TryParse( name, out var pattern, out var error ) )
+        {
+            Throw.XmlException( $"""
+                        Configuration error:
+                        {e}
+                        {error}
+                        """ );
+        }
+        return pattern;
     }
 
     void FillTypesAndGlobTypes( IEnumerable<XElement> typeElements )
@@ -293,9 +324,21 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                     The type name can also appear as the element value: <Type>Namespace.TypeName, SomeAssembly</Type>
                     """ );
             }
-            if( tName.Contains( '*' ) )
+            if( TypeNamePattern.IsPattern( tName ) )
             {
-                GlobTypes.Add( new TypeScriptTypeGlobConfiguration( tName, TypeScriptTypeAttribute.ReadFrom( e ) ) );
+                var pattern = ParsePattern( e, tName );
+                try
+                {
+                    GlobTypes.Add( new TypeScriptTypeGlobConfiguration( pattern, TypeScriptTypeAttribute.ReadFrom( e ) ) );
+                }
+                catch( ArgumentException ex )
+                {
+                    Throw.XmlException( $"""
+                                Configuration error in <Types>:
+                                {e}
+                                {ex.Message}
+                                """ );
+                }
             }
             else
             {
@@ -369,7 +412,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                                 .Concat( GlobTypes.Select( g => g.ToXml() ) )
                            ),
                new XElement( EngineConfiguration.xExcludedTypes,
-                             ExcludedTypes.Select( t => new XElement( EngineConfiguration.xType, t.GetWeakAssemblyQualifiedName() ) ) )
+                             ExcludedTypes.Select( t => new XElement( EngineConfiguration.xType, t.GetWeakAssemblyQualifiedName() ) ),
+                             ExcludedTypePatterns.Select( p => new XElement( EngineConfiguration.xType, p.ToString() ) ) )
             );
     }
 }

@@ -79,6 +79,8 @@ sealed class TSContextInitializer
                                                                  out var allPackages )
             && SelectPackages( monitor,
                                genBinPath.ConfigurationGroup.TypeCache,
+                               genBinPath.ConfigurationGroup.TypeSet,
+                               allExchangeableSet,
                                binPathConfiguration,
                                regTypes,
                                allPackages,
@@ -302,7 +304,13 @@ sealed class TSContextInitializer
         return pocoType;
     }
 
-    // Step 3: the package selection.
+    // Step 3: the excluded types, the type name patterns and the package selection.
+    //
+    // The ExcludedTypes and the types of the BinPath that match the ExcludedTypePatterns are excluded: they are not
+    // registered and are not candidate packages. An explicit type of the configuration's Types matched by an exclusion
+    // pattern is an error.
+    // The GlobTypes (type name patterns of the Types) select among the (non excluded) types of the BinPath: the exchangeable
+    // Poco compliant types are registered (unless already registered) and the packages are listed. The other types are ignored.
     //
     // The packages listed in the configuration's Types are the roots (they are not TypeScript types). When no package
     // is listed, the roots are the packages that are not optional. The ExcludedTypes are not candidates (and are not
@@ -313,6 +321,8 @@ sealed class TSContextInitializer
     // resources: a transformer that targets one of them is ignored).
     static bool SelectPackages( IActivityMonitor monitor,
                                 GlobalTypeCache typeCache,
+                                IReadOnlySet<ICachedType> typeSet,
+                                IPocoTypeSet allExchangeableSet,
                                 TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                 Dictionary<Type, RegisteredType> regTypes,
                                 List<TypeScriptGroupOrPackageAttributeImpl> allPackages,
@@ -321,8 +331,23 @@ sealed class TSContextInitializer
     {
         packages = allPackages;
         unselectedPackages = [];
-        var excluded = binPathConfiguration.ExcludedTypes;
         bool success = true;
+        var excluded = new HashSet<Type>( binPathConfiguration.ExcludedTypes );
+        foreach( var pattern in binPathConfiguration.ExcludedTypePatterns )
+        {
+            foreach( var t in typeSet )
+            {
+                if( pattern.Matches( t.Type ) )
+                {
+                    if( binPathConfiguration.Types.ContainsKey( t.Type ) )
+                    {
+                        monitor.Error( $"Type '{t.Type:C}' is in the Types and matches the excluded type pattern '{pattern}'." );
+                        success = false;
+                    }
+                    excluded.Add( t.Type );
+                }
+            }
+        }
         var listed = new HashSet<Type>();
         foreach( var p in allPackages )
         {
@@ -349,6 +374,43 @@ sealed class TSContextInitializer
         // Excluded types are never registered.
         foreach( var t in excluded ) regTypes.Remove( t );
         if( !success ) return false;
+
+        // The type name patterns select the exchangeable Poco types and the packages.
+        if( binPathConfiguration.GlobTypes.Count > 0 )
+        {
+            var packageTypes = allPackages.Where( p => p.HasResPackage ).Select( p => p.DecoratedType ).ToHashSet();
+            foreach( var g in binPathConfiguration.GlobTypes )
+            {
+                int pocoCount = 0;
+                int packageCount = 0;
+                foreach( var t in typeSet )
+                {
+                    var type = t.Type;
+                    if( excluded.Contains( type ) || !g.Pattern.Matches( type ) ) continue;
+                    if( packageTypes.Contains( type ) )
+                    {
+                        if( listed.Add( type ) ) ++packageCount;
+                    }
+                    else if( !regTypes.ContainsKey( type ) )
+                    {
+                        var pocoType = allExchangeableSet.TypeSystem.FindByType( type )?.NonNullable;
+                        if( pocoType != null && allExchangeableSet.Contains( pocoType ) )
+                        {
+                            regTypes.Add( type, new RegisteredType( null, pocoType, g.Configuration ) );
+                            ++pocoCount;
+                        }
+                    }
+                }
+                if( pocoCount == 0 && packageCount == 0 )
+                {
+                    monitor.Warn( $"The type name pattern '{g.Pattern}' selects no Poco compliant type nor package." );
+                }
+                else
+                {
+                    monitor.Info( $"The type name pattern '{g.Pattern}' selects {pocoCount} Poco compliant types and {packageCount} packages." );
+                }
+            }
+        }
 
         var candidates = allPackages.Where( p => p.HasResPackage && !excluded.Contains( p.DecoratedType ) ).ToList();
         var roots = listed.Count > 0

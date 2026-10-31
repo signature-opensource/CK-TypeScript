@@ -42,6 +42,13 @@ Only the selected packages are handled: their resources and transformers, and th
 (`[RegisterTypeScriptType]`) that define the set of Poco types this configuration exchanges. The other packages
 are known by the resource space as dropped optional packages: a transformer that targets one of them is ignored.
 
+A type name in `<Types>` or `<ExcludedTypes>` can be a pattern: `"Type, Assembly"` where each part is an exact name or a
+prefix followed by a `*` (`"Acme.Front.*, Acme.Front"`, `"*, Acme.Commands"`). A pattern of the `<Types>` doesn't demand
+a TypeScript generator for each type it matches (an explicit type does): it selects among the BinPath's types the
+exchangeable Poco compliant types (they are registered) and the packages (they are listed), and ignores the other
+ones. It can only configure the `Folder` of the registered types. A pattern of the `<ExcludedTypes>` excludes the
+matching types; an explicit type of the `<Types>` that it matches is an error.
+
 ```xml
 <!-- Illustrative names: a small front that only needs one package of the BinPath. -->
 <TypeScript TargetProjectPath="{ProjectPath}/Clients/MiniApp" TypeFilterName="TypeScriptMiniApp">
@@ -50,9 +57,12 @@ are known by the resource space as dropped optional packages: a transformer that
     <Type Name="Acme.Front.MiniAppPackage, Acme.Front" />
     <!-- A Poco type exchanged by the MiniApp. -->
     <Type Name="Acme.Front.IInfoCommand, Acme.Front" />
+    <!-- All the Poco commands of a namespace (and the packages there, if any). -->
+    <Type Name="Acme.Front.Mini.*, Acme.Front" />
   </Types>
   <ExcludedTypes>
     <Type Name="Acme.Front.HeavyChartsPackage, Acme.Front" />
+    <Type Name="Acme.Front.Experimental.*, Acme.Front" />
   </ExcludedTypes>
 </TypeScript>
 ```
