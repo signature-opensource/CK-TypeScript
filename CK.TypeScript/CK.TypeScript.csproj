@@ -3,6 +3,6 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json" Version="36.0.0-0.cris-auth.0.ci.14" />
+    <PackageReference Include="CK.Poco.Exc.Json" Version="36.0.0-0.cris-auth.0.ci.18" />
   </ItemGroup>
 </Project>
