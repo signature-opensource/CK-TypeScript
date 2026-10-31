@@ -61,7 +61,7 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
 
 
     /// <summary>
-    /// Overridden to handle "{braces}", "{class}", "{import}".
+    /// Overridden to handle "{braces}", "{brackets}", "{parens}", "{class}", "{import}".
     /// </summary>
     /// <param name="tokenSpec">The span specification to analyze.</param>
     /// <returns>The provider or an error string.</returns>
@@ -102,8 +102,8 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
             "()" or
             "parens" => new SpanEnclosedOperator( "{parens}", ( tokens, idx ) => tokens[idx].TokenType switch
                             {
-                                TokenType.OpenBracket => EnclosingTokenType.Open,
-                                TokenType.CloseBracket => EnclosingTokenType.Close,
+                                TokenType.OpenParen => EnclosingTokenType.Open,
+                                TokenType.CloseParen => EnclosingTokenType.Close,
                                 _ => EnclosingTokenType.None
                             } ),
             "^()" or
@@ -119,7 +119,7 @@ public sealed partial class TypeScriptAnalyzer : TargetLanguageAnalyzer
             _ => $$"""
                         Invalid span type '{spanSpec}'.
                         Allowed are "braces", "{}", "^braces", "^{}", "brackets", "[]", "^brackets", "^[]",
-                        "class", "^class", "import".
+                        "parens", "()", "^parens", "^()", "class", "^class", "import".
                         """
         };
     }

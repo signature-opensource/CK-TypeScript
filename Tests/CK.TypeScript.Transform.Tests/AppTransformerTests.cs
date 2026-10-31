@@ -81,6 +81,30 @@ public class AppTransformerTests
     }
 
     [Test]
+    public void parens_span_matches_parentheses()
+    {
+        const string source = """
+            const a = [1, 2];
+            f( a, [3] );
+            """;
+        const string transformer = """"
+            create <ts> transformer
+            begin
+                in first {()}
+                    replace "a" with "b";
+            end
+            """";
+
+        const string result = """
+            const a = [1, 2];
+            f( b, [3] );
+            """;
+
+        var h = new TransformerHost( new TypeScriptLanguage() );
+        h.ApplyAndCheck( source, transformer, result );
+    }
+
+    [Test]
     public void cleanup_app()
     {
         const string source = """
