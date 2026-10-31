@@ -250,7 +250,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                // We remove the "src/styles.less" file because we have already created it. 
                                && DeleteStylesLess( monitor, newFolderPath )
                                && TransformAppComponent( monitor, newFolderPath.Combine( "src/app/app.ts" ) )
-                               && TransformAppComponentSpec( monitor, newFolderPath.Combine( "src/app/app.spec.ts" ) )
+                               && WriteAppComponentSpec( monitor, newFolderPath )
                                && TransformAppComponentConfig( monitor, newFolderPath.Combine( "src/app/app.config.ts" ) )
                                && TransformAppComponentRoutes( monitor, newFolderPath.Combine( "src/app/app.routes.ts" ) )
                                && CleanupAppComponentHtml( monitor, newFolderPath )
@@ -374,35 +374,36 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         return false;
                     }
 
-                    static bool TransformAppComponentSpec( IActivityMonitor monitor, NormalizedPath appFilePath )
+                    static bool WriteAppComponentSpec( IActivityMonitor monitor, NormalizedPath newFolderPath )
                     {
-                        var _ = monitor.OpenInfo( "Adding appConfig providers to TestBed in 'src/app/app.spec.ts'." );
-                        var code = new TransformerHost( new TypeScriptLanguage() ).Transform( monitor,
-                                                                                              File.ReadAllText( appFilePath ),
-                                                                                              """"
-                            create <ts> transformer
-                            begin
-                                ensure import { appConfig } from './app.config';
-                                in after "await TestBed.configureTestingModule"
-                                    in first {^{}}
-                                        insert """
-                                                     // Added by CK.TS.AngularEngine: DI is fully configured and available in tests.
-                                                     providers: appConfig.providers,
-                            
-                                               """
-                                            before "imports:";
-                                in after last "it"
-                                   replace * with "nomore";
-                                reparse;
-                                replace "itnomore" with "} );"
-                            end
-                            """" );
-                        if( code != null )
-                        {
-                            File.WriteAllText( appFilePath, code.ToString() );
-                            return true;
-                        }
-                        return false;
+                        // The 'ng new' spec is not transformed: it varies with the Angular version (the zoneless
+                        // 'providers', the tests of the template's title) and App is emptied by TransformAppComponent.
+                        // The appConfig.providers contain the change detection provider.
+                        NormalizedPath filePath = newFolderPath.Combine( "src/app/app.spec.ts" );
+                        const string defaultSpec = """
+                        import { TestBed } from '@angular/core/testing';
+                        import { App } from './app';
+                        import { appConfig } from './app.config';
+
+                        describe( 'App', () => {
+                          beforeEach( async () => {
+                            await TestBed.configureTestingModule( {
+                              // Added by CK.TS.AngularEngine: DI is fully configured and available in tests.
+                              providers: appConfig.providers,
+                              imports: [App]
+                            } ).compileComponents();
+                          } );
+
+                          it( 'should create the app', () => {
+                            const fixture = TestBed.createComponent( App );
+                            expect( fixture.componentInstance ).toBeTruthy();
+                          } );
+                        } );
+
+                        """;
+                        File.WriteAllText( filePath, defaultSpec );
+                        monitor.Trace( "File 'src/app/app.spec.ts' written." );
+                        return true;
                     }
 
                     static bool TransformAppComponentConfig( IActivityMonitor monitor, NormalizedPath configFilePath )
