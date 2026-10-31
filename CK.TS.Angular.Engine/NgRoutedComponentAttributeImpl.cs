@@ -38,16 +38,4 @@ public class NgRoutedComponentAttributeImpl : NgComponentAttributeImpl
     /// Gets the route to register under the <see cref="NgRoutedComponentAttribute.TargetComponent"/>.
     /// </summary>
     public string Route => Attribute.Route ?? FileComponentName;
-
-    protected override bool OnCreateResPackageDescriptor( IActivityMonitor monitor,
-                                                          TypeScriptContext context,
-                                                          ResSpaceConfiguration spaceBuilder,
-                                                          ResPackageDescriptor d )
-    {
-        if( Attribute.TargetComponent != typeof( AppComponent ) )
-        {
-            d.Requires.Add( Attribute.TargetComponent );
-        }
-        return base.OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );
-    }
 }

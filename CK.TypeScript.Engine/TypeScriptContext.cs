@@ -4,6 +4,7 @@ using CK.TypeScript.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using CK.Transform.Core;
 using CK.TypeScript.Transform;
 using CK.Html.Transform;
@@ -167,6 +168,7 @@ public sealed partial class TypeScriptContext
     /// </summary>
     public IReadOnlyList<ITSCodeGenerator> GlobalGenerators => _initializer.GlobalCodeGenerators;
 
+
     /// <summary>
     /// Relays the <see cref="TypeScriptRoot.BeforeCodeGeneration"/> but with this <see cref="TypeScriptContext"/>
     /// as the sender.
@@ -246,6 +248,16 @@ public sealed partial class TypeScriptContext
         using( monitor.OpenInfo( $"Configuring {_initializer.Packages.Count} TypeScript resource packages." ) )
         {
             success &= SafePackageCall( monitor, _initializer.Packages, ( monitor, p ) => p.CreateResPackageDescriptor( monitor, this, resSpaceConfiguration ) );
+            // The packages that are not selected by this configuration are registered as optional ones, without their
+            // specific handling: the resource space drops them but knows their resources (a transformer that targets
+            // one of them is ignored).
+            foreach( var p in _initializer.UnselectedPackages )
+            {
+                success &= resSpaceConfiguration.RegisterPackage( monitor,
+                                                                  resSpaceConfiguration.TypeCache.Get( p.DecoratedType ),
+                                                                  p.TypeScriptFolder,
+                                                                  isOptional: true ) != null;
+            }
         }
 
         var resSpaceCollector = resSpaceConfiguration.Build( monitor );
@@ -283,6 +295,24 @@ public sealed partial class TypeScriptContext
         var dataSpaceBuilder = new ResSpaceDataBuilder( resSpaceCollector );
         var spaceData = dataSpaceBuilder.Build( monitor );
         if( spaceData == null ) return false;
+
+        // The selected packages are the closure of the roots computed from the types: the space must keep them,
+        // and only them. A difference means a relation that is not declared by an attribute (the closure cannot see it).
+        var typeCache = _codeContext.CurrentRun.ConfigurationGroup.TypeCache;
+        var dropped = _initializer.Packages.Where( p => p.HasResPackage && !spaceData.CoreData.PackageIndex.ContainsKey( typeCache.Get( p.DecoratedType ) ) )
+                                           .Select( p => p.DecoratedType.ToCSharpName() )
+                                           .ToList();
+        var kept = _initializer.UnselectedPackages.Where( p => spaceData.CoreData.PackageIndex.ContainsKey( typeCache.Get( p.DecoratedType ) ) )
+                                                  .Select( p => p.DecoratedType.ToCSharpName() )
+                                                  .ToList();
+        if( dropped.Count > 0 || kept.Count > 0 )
+        {
+            monitor.Error( $"""
+                The resource space doesn't keep the selected packages (dropped: '{dropped.Concatenate( "', '" )}', kept: '{kept.Concatenate( "', '" )}').
+                The package selection reads the relations declared by the attributes: a relation added by code is not seen by it.
+                """ );
+            return false;
+        }
 
 
         // With CK-ReaDI, the ResPackage that comes from a ResPackageDescriptor created by an

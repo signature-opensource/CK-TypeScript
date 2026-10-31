@@ -74,25 +74,12 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
     public string TypeScriptName => _typeScriptName;
 
     /// <summary>
-    /// Overridden to skip the <see cref="IsAppComponent"/>.
+    /// Gets false for the <see cref="IsAppComponent"/>: it has no resources, there is no ResPackage for it.
     /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="context">The context.</param>
-    /// <param name="spaceBuilder">The resource space builder.</param>
-    /// <returns>True on success, false on error.</returns>
-    protected override bool CreateResPackageDescriptor( IActivityMonitor monitor, TypeScriptContext context, ResSpaceConfiguration spaceBuilder )
-    {
-        // Skip the AppComponent.
-        // It has no resources, we don't create a ResPackage for it.
-        if( IsAppComponent )
-        {
-            return true;
-        }
-        return base.CreateResPackageDescriptor( monitor, context, spaceBuilder );
-    }
+    public override bool HasResPackage => !IsAppComponent;
 
     /// <summary>
-    /// Overridden to handle discovery and mapping of a possible <see cref="NgSingleAbstractComponentAttribute"/>
+    /// Overridden to check the component name of a possible <see cref="NgSingleAbstractComponentAttribute"/>
     /// interface.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -124,10 +111,8 @@ public partial class NgComponentAttributeImpl : TypeScriptGroupOrPackageAttribut
                     """ );
                 return false;
             }
-            if( !package.AddSingleMapping( monitor, singleInterface ) )
-            {
-                return false;
-            }
+            // The package is mapped to its single abstract component by the resource space
+            // (NgSingleAbstractComponentAttribute is a ISingleMappingAttribute).
         }
         return base.OnCreateResPackageDescriptor( monitor, context, spaceConfiguration, package );
 

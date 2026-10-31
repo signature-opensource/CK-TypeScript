@@ -52,6 +52,15 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
     public Type DecoratedType => _type;
 
     /// <summary>
+    /// Gets whether this group or package has a ResPackage in the resource space. Defaults to true.
+    /// <para>
+    /// When false, <see cref="CreateResPackageDescriptor(IActivityMonitor, TypeScriptContext, ResSpaceConfiguration)"/> does nothing
+    /// and this is not a candidate of the package selection: it is always handled by the <see cref="TypeScriptContext"/>.
+    /// </para>
+    /// </summary>
+    public virtual bool HasResPackage => true;
+
+    /// <summary>
     /// Initializes a new <see cref="TypeScriptGroupOrPackageAttributeImpl"/>.
     /// </summary>
     /// <param name="monitor">Required monitor.</param>
@@ -159,7 +168,13 @@ public class TypeScriptGroupOrPackageAttributeImpl : IAttributeContextBoundIniti
                                                                 TypeScriptContext context,
                                                                 ResSpaceConfiguration spaceBuilder )
     {
-        var d = spaceBuilder.RegisterPackage( monitor, spaceBuilder.TypeCache.Get( DecoratedType ), _typeScriptFolder );
+        if( !HasResPackage ) return true;
+        // This package is selected by the configuration: it is registered as a required one (the packages
+        // that are not selected are registered as optional ones by the TypeScriptContext).
+        var d = spaceBuilder.RegisterPackage( monitor,
+                                              spaceBuilder.TypeCache.Get( DecoratedType ),
+                                              _typeScriptFolder,
+                                              isOptional: false );
         if( d == null ) return false;
         d.IsGroup = _isGroup;
         return OnCreateResPackageDescriptor( monitor, context, spaceBuilder, d );

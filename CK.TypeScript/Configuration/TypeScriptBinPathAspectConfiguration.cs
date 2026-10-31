@@ -122,20 +122,30 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </para>
     /// Other types registered here must be handled by a TypeScript code generator.
     /// <para>
-    /// <see cref="TypeScriptGroup"/> or <see cref="TypeScriptPackage"/> MUST NOT be registered here.
-    /// They are handled automatically.
+    /// A <see cref="TypeScriptGroup"/> or <see cref="TypeScriptPackage"/> registered here (without a <see cref="TypeScriptTypeAttribute"/>)
+    /// selects the packages of this configuration: the listed packages are the roots, the selected packages are the roots and
+    /// the packages they reach through their required relations (Requires, Children, etc., declared by attributes). When no package
+    /// is listed, the roots are all the packages that are not optional. Only the selected packages are handled: their resources and
+    /// their [RegisterTypeScriptType] types.
     /// </para>
     /// </summary>
     public Dictionary<Type,TypeScriptTypeAttribute?> Types { get; }
 
     /// <summary>
     /// Gets the list of <see cref="TypeScriptTypeGlobConfiguration"/>.
+    /// <para>
+    /// This is not implemented yet: the engine ignores it.
+    /// </para>
     /// </summary>
     public List<TypeScriptTypeGlobConfiguration> GlobTypes { get; }
 
     /// <summary>
     /// Gets the set of excluded types. When a type appears in this set, it is always
     /// ignored even if it appears in <see cref="Types"/> or <see cref="GlobTypes"/>.
+    /// <para>
+    /// An excluded <see cref="TypeScriptGroup"/> or <see cref="TypeScriptPackage"/> is never selected: it is an error
+    /// if a selected package requires it.
+    /// </para>
     /// </summary>
     public HashSet<Type> ExcludedTypes { get; }
 
@@ -359,7 +369,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
                                 .Concat( GlobTypes.Select( g => g.ToXml() ) )
                            ),
                new XElement( EngineConfiguration.xExcludedTypes,
-                             ExcludedTypes.Select( TypeExtensions.GetWeakAssemblyQualifiedName ) )
+                             ExcludedTypes.Select( t => new XElement( EngineConfiguration.xType, t.GetWeakAssemblyQualifiedName() ) ) )
             );
     }
 }

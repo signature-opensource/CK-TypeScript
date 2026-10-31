@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -5,9 +6,15 @@ namespace CK.TS.Angular;
 
 /// <summary>
 /// Required attribute for <see cref="NgRoutedComponent"/>.
+/// <para>
+/// This is a <see cref="IResourceGroupTopologyAttribute"/>: the decorated component requires its <see cref="TargetComponent"/>
+/// (unless it is the <see cref="AppComponent"/> that has no resources).
+/// </para>
 /// </summary>
-public class NgRoutedComponentAttribute : NgComponentAttribute
+public class NgRoutedComponentAttribute : NgComponentAttribute, IResourceGroupTopologyAttribute
 {
+    readonly Type[] _requires;
+
     /// <summary>
     /// Initializes a new <see cref="NgComponentAttribute"/>.
     /// </summary>
@@ -18,7 +25,10 @@ public class NgRoutedComponentAttribute : NgComponentAttribute
         : base( "CK.TS.Angular.Engine.NgRoutedComponentAttributeImpl, CK.TS.Angular.Engine", callerFilePath )
     {
         TargetComponent = targetRoutedComponent;
+        _requires = targetRoutedComponent == typeof( AppComponent ) ? [] : [targetRoutedComponent];
     }
+
+    ReadOnlySpan<Type> IResourceGroupTopologyAttribute.Requires => _requires;
 
     /// <summary>
     /// Gets the component type under which this component must appear.

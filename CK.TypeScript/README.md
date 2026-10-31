@@ -1,7 +1,7 @@
 # TypeScript source code generator
 
-This assembly introduces the [TypeScriptAspectConfiguration](TypeScriptAspectConfiguration.cs) and the
-BinPath specific [TypeScriptBinPathAspectConfiguration](TypeScriptBinPathAspectConfiguration.cs).
+This assembly introduces the [TypeScriptAspectConfiguration](Configuration/TypeScriptAspectConfiguration.cs) and the
+BinPath specific [TypeScriptBinPathAspectConfiguration](Configuration/TypeScriptBinPathAspectConfiguration.cs).
 
 
 [TypeScriptTypeAttribute](TypeScriptTypeAttribute.cs) can decorate any C# type to optionnaly specify its generated
@@ -25,6 +25,37 @@ This is enough to drive the generation: the heavy stuff is in the [CK.TypeScript
 
 Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath:
 Poco compliant types can be generated with or without serialization support.
+
+## Selecting the packages of a configuration
+
+A BinPath can have multiple `<TypeScript>` configurations (one per target project, each with its `TypeFilterName`).
+Each configuration selects its packages among the BinPath's TypeScript packages and groups:
+
+- The packages listed in its `<Types>` are its roots. When no package is listed, the roots are all the packages that
+  are not optional (`[TypeScriptPackage( IsOptional = true )]`).
+- The packages of its `<ExcludedTypes>` are never selected: a selected package that requires one of them is an error.
+- The selected packages are the roots and the packages they reach through their required relations (`[Requires]`,
+  `[Children]`, `[Package]`, etc., and the abstractions they reference: see the resource space's mappings). Only the
+  relations declared by attributes are considered.
+
+Only the selected packages are handled: their resources and transformers, and the types they register
+(`[RegisterTypeScriptType]`) that define the set of Poco types this configuration exchanges. The other packages
+are known by the resource space as dropped optional packages: a transformer that targets one of them is ignored.
+
+```xml
+<!-- Illustrative names: a small front that only needs one package of the BinPath. -->
+<TypeScript TargetProjectPath="{ProjectPath}/Clients/MiniApp" TypeFilterName="TypeScriptMiniApp">
+  <Types>
+    <!-- A package: the MiniApp gets it and what it requires, nothing else. -->
+    <Type Name="Acme.Front.MiniAppPackage, Acme.Front" />
+    <!-- A Poco type exchanged by the MiniApp. -->
+    <Type Name="Acme.Front.IInfoCommand, Acme.Front" />
+  </Types>
+  <ExcludedTypes>
+    <Type Name="Acme.Front.HeavyChartsPackage, Acme.Front" />
+  </ExcludedTypes>
+</TypeScript>
+```
 
 ## Basic types & Code Generator
 

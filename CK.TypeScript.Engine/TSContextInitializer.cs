@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using CK.Setup.PocoJson;
 using CK.TypeScript;
 using CK.TypeScript.Engine;
@@ -18,6 +19,7 @@ sealed class TSContextInitializer
     readonly TypeScriptIntegrationContext? _integrationContext;
     readonly ImmutableDictionary<string, SVersionBound> _libVersionsConfig;
     readonly IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> _packages;
+    readonly IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> _unselectedPackages;
     readonly IDictionary<object, object?>? _rootMemory;
 
     /// <summary>
@@ -31,9 +33,15 @@ sealed class TSContextInitializer
     public ImmutableArray<ITSCodeGenerator> GlobalCodeGenerators => _globals;
 
     /// <summary>
-    /// Gets the TypeScriptGroupOrPackageAttributeImpl.
+    /// Gets the selected TypeScriptGroupOrPackageAttributeImpl (see SelectPackages).
     /// </summary>
     public IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> Packages => _packages;
+
+    /// <summary>
+    /// Gets the packages that are not selected (including the excluded ones) and have a ResPackage: they are
+    /// registered as optional packages in the resource space, without their specific handling.
+    /// </summary>
+    public IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> UnselectedPackages => _unselectedPackages;
 
     /// <summary>
     /// Gets the set of Poco compliant types that must be handled in TypeScript.
@@ -68,7 +76,14 @@ sealed class TSContextInitializer
                                                                  genBinPath.EngineMap.AllTypesAttributesCache.Values,
                                                                  allExchangeableSet,
                                                                  out var globalFactories,
-                                                                 out var packages )
+                                                                 out var allPackages )
+            && SelectPackages( monitor,
+                               genBinPath.ConfigurationGroup.TypeCache,
+                               binPathConfiguration,
+                               regTypes,
+                               allPackages,
+                               out var packages,
+                               out var unselectedPackages )
             && InitializeIntegrationContext( monitor, binPathConfiguration, libVersionsConfig, out var integrationContext )
             && InitializeGlobalGeneratorsAndPackages( monitor,
                                                       binPathConfiguration,
@@ -112,6 +127,7 @@ sealed class TSContextInitializer
                                              integrationContext,
                                              libVersionsConfig,
                                              packages,
+                                             unselectedPackages,
                                              rootMemory );
         }
         return null;
@@ -123,8 +139,10 @@ sealed class TSContextInitializer
                           TypeScriptIntegrationContext? integrationContext,
                           ImmutableDictionary<string, SVersionBound> libVersionsConfig,
                           IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> packages,
+                          IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> unselectedPackages,
                           IDictionary<object, object?>? rootMemory )
     {
+        _unselectedPackages = unselectedPackages;
         _registeredTypes = r;
         _globals = g;
         _typeScriptExchangeableSet = s;
@@ -284,7 +302,78 @@ sealed class TSContextInitializer
         return pocoType;
     }
 
-    // Step 3
+    // Step 3: the package selection.
+    //
+    // The packages listed in the configuration's Types are the roots (they are not TypeScript types). When no package
+    // is listed, the roots are the packages that are not optional. The ExcludedTypes are not candidates (and are not
+    // registered types). The selected packages are the closure of the roots among the candidates, computed from the
+    // types' attributes (and mappings), plus the packages that have no ResPackage (the AppComponent).
+    // Only the selected packages are handled: their [RegisterTypeScriptType] define the TypeScriptExchangeableSet.
+    // The other ones are registered as optional packages in the resource space (that drops them but knows their
+    // resources: a transformer that targets one of them is ignored).
+    static bool SelectPackages( IActivityMonitor monitor,
+                                GlobalTypeCache typeCache,
+                                TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                Dictionary<Type, RegisteredType> regTypes,
+                                List<TypeScriptGroupOrPackageAttributeImpl> allPackages,
+                                out List<TypeScriptGroupOrPackageAttributeImpl> packages,
+                                out IReadOnlyList<TypeScriptGroupOrPackageAttributeImpl> unselectedPackages )
+    {
+        packages = allPackages;
+        unselectedPackages = [];
+        var excluded = binPathConfiguration.ExcludedTypes;
+        bool success = true;
+        var listed = new HashSet<Type>();
+        foreach( var p in allPackages )
+        {
+            if( regTypes.Remove( p.DecoratedType, out var reg ) )
+            {
+                if( reg.Attribute != null )
+                {
+                    monitor.Error( $"TypeScript package '{p.DecoratedType:C}' is listed in the Types with a TypeScript type configuration: a package is not a TypeScript type." );
+                    success = false;
+                }
+                if( excluded.Contains( p.DecoratedType ) )
+                {
+                    monitor.Error( $"TypeScript package '{p.DecoratedType:C}' is both listed in the Types and in the ExcludedTypes." );
+                    success = false;
+                }
+                if( !p.HasResPackage )
+                {
+                    monitor.Error( $"TypeScript package '{p.DecoratedType:C}' cannot be listed in the Types: it has no resources and is always handled." );
+                    success = false;
+                }
+                listed.Add( p.DecoratedType );
+            }
+        }
+        // Excluded types are never registered.
+        foreach( var t in excluded ) regTypes.Remove( t );
+        if( !success ) return false;
+
+        var candidates = allPackages.Where( p => p.HasResPackage && !excluded.Contains( p.DecoratedType ) ).ToList();
+        var roots = listed.Count > 0
+                        ? listed
+                        : candidates.Where( p => !IsOptional( typeCache.Get( p.DecoratedType ) ) ).Select( p => p.DecoratedType ).ToHashSet();
+        using( monitor.OpenInfo( listed.Count > 0
+                                    ? $"Selecting the TypeScript packages from {listed.Count} listed packages (out of {candidates.Count} candidates)."
+                                    : $"Selecting the TypeScript packages from {roots.Count} non optional packages (out of {candidates.Count} candidates)." ) )
+        {
+            var closure = ResPackageClosure.Compute( monitor,
+                                                     typeCache,
+                                                     candidates.Select( p => typeCache.Get( p.DecoratedType ) ),
+                                                     t => roots.Contains( t.Type ) );
+            if( closure == null ) return false;
+            packages = allPackages.Where( p => !p.HasResPackage || closure.Contains( typeCache.Get( p.DecoratedType ) ) ).ToList();
+            unselectedPackages = allPackages.Where( p => p.HasResPackage && !closure.Contains( typeCache.Get( p.DecoratedType ) ) ).ToList();
+            monitor.CloseGroup( $"Selected {closure.Count} packages." );
+        }
+        return true;
+
+        // Same as the resource space: optional if a IOptionalResourceGroupAttribute says so.
+        static bool IsOptional( ICachedType t ) => t.RawAttributes.OfType<IOptionalResourceGroupAttribute>().Any( a => a.IsOptional );
+    }
+
+    // Step 4
     static bool InitializeIntegrationContext( IActivityMonitor monitor,
                                               TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                               ImmutableDictionary<string, SVersionBound> libVersionsConfig,
@@ -382,7 +471,7 @@ sealed class TSContextInitializer
         }
     }
 
-    // Step 4.
+    // Step 5.
     static bool InitializeGlobalGeneratorsAndPackages( IActivityMonitor monitor,
                                                        TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                                        TypeScriptIntegrationContext? integrationContext,
