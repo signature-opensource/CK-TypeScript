@@ -788,6 +788,30 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             // Awful implementations.
             // Waiting for transformers.
             TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ) );
+            // A client application served by its host: its base href is its request path.
+            var requestPath = e.IntegrationContext.Configuration.RequestPath;
+            if( requestPath != null )
+            {
+                EnsureBaseHref( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), requestPath );
+            }
+
+            static void EnsureBaseHref( IActivityMonitor monitor, NormalizedPath angularJsonPath, string requestPath )
+            {
+                var baseHref = requestPath.EndsWith( '/' ) ? requestPath : requestPath + '/';
+                var root = JsonNode.Parse( File.ReadAllText( angularJsonPath ) );
+                var options = root?["projects"]?.AsObject().FirstOrDefault().Value?["architect"]?["build"]?["options"]?.AsObject();
+                if( options == null )
+                {
+                    monitor.Warn( $"Unable to find the build options of the project in '{angularJsonPath}': its \"baseHref\" must be \"{baseHref}\"." );
+                    return;
+                }
+                if( (string?)options["baseHref"] != baseHref )
+                {
+                    options["baseHref"] = baseHref;
+                    File.WriteAllText( angularJsonPath, root!.ToJsonString( new System.Text.Json.JsonSerializerOptions { WriteIndented = true } ) );
+                    monitor.Info( $"Set \"baseHref\": \"{baseHref}\" in angular.json." );
+                }
+            }
 
             static void TransformAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath )
             {

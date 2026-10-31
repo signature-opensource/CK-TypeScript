@@ -3,6 +3,7 @@ using CK.MiscDemo;
 using CK.Setup;
 using CK.Testing;
 using NUnit.Framework;
+using Shouldly;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -28,7 +29,12 @@ public class FromScratchTests
             var ts = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
             ts.TargetProjectPath = root;
             ts.IntegrationMode = CKGenIntegrationMode.Inline;
+            // A client application: its base href is its request path.
+            ts.Name = "DemoApp";
+            ts.Kind = ClientKind.App;
             await configuration.RunSuccessfullyAsync();
+
+            File.ReadAllText( root.AppendPart( "angular.json" ) ).ShouldContain( "\"baseHref\": \"/demo-app/\"" );
 
             await using var runner = TestHelper.CreateTypeScriptRunner( root );
             await TestHelper.SuspendAsync( resume => resume );
