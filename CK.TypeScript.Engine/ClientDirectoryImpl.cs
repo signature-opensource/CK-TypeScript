@@ -36,7 +36,9 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
                  .AppendSourceString( ts.RequestPath ).Append( ", " )
                  .AppendSourceString( projectPath.Path ).Append( ", " )
                  .AppendSourceString( outputPath.Path ).Append( ", " )
-                 .AppendSourceString( ts.TypeFilterName ).Append( " )," ).NewLine();
+                 .AppendSourceString( ts.TypeFilterName ).Append( ", " )
+                 .Append( ts.DevServerPort!.Value ).Append( ", " )
+                 .Append( ts.UseDist ? "true" : "false" ).Append( " )," ).NewLine();
             monitor.Info( $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}'." );
         }
         scope.Append( "} ) {}" ).NewLine();

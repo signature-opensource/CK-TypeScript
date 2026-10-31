@@ -134,4 +134,14 @@ public sealed partial class TypeScriptAspectConfiguration
     /// </summary>
     public static readonly XName xKind = XNamespace.None + "Kind";
 
+    /// <summary>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.DevServerPort"/> attribute name.
+    /// </summary>
+    public static readonly XName xDevServerPort = XNamespace.None + "DevServerPort";
+
+    /// <summary>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.UseDist"/> attribute name.
+    /// </summary>
+    public static readonly XName xUseDist = XNamespace.None + "UseDist";
+
 }

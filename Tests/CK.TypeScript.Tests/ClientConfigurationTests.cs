@@ -49,6 +49,7 @@ public class ClientConfigurationTests
         var ts = engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         ts.Name = "MiniApp";
         ts.Kind = ClientKind.App;
+        ts.DevServerPort = 4201;
         ts.IntegrationMode = CKGenIntegrationMode.None;
         await engineConfig.RunSuccessfullyAsync();
 
@@ -69,8 +70,9 @@ public class ClientConfigurationTests
         var app = engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         app.Name = "App";
         app.Kind = ClientKind.DefaultApp;
+        app.DevServerPort = 4200;
         app.IntegrationMode = CKGenIntegrationMode.None;
-        app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "MiniApp", Kind = ClientKind.App, IntegrationMode = CKGenIntegrationMode.None } );
+        app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "MiniApp", Kind = ClientKind.App, DevServerPort = 4201, UseDist = true, IntegrationMode = CKGenIntegrationMode.None } );
         // Not a client application.
         app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "Lib", IntegrationMode = CKGenIntegrationMode.None } );
 
@@ -82,7 +84,11 @@ public class ClientConfigurationTests
         mini.ProjectPath.Path.ShouldBe( "Clients/MiniApp" );
         mini.OutputPath.Path.ShouldBe( "dist/MiniApp/browser" );
         mini.TypeFilterName.ShouldBe( "TypeScriptMiniApp" );
+        mini.DevServerPort.ShouldBe( 4201 );
+        mini.UseDist.ShouldBeTrue();
         clients[1].TypeFilterName.ShouldBe( "TypeScriptApp" );
+        clients[1].DevServerPort.ShouldBe( 4200 );
+        clients[1].UseDist.ShouldBeFalse();
     }
 
     static EngineConfiguration CreateTwoConfigurations( TypeScriptBinPathAspectConfiguration c1, TypeScriptBinPathAspectConfiguration c2 )
@@ -118,9 +124,25 @@ public class ClientConfigurationTests
     [Test]
     public async Task there_is_at_most_one_default_client_application_Async()
     {
-        var engineConfig = CreateTwoConfigurations( new TypeScriptBinPathAspectConfiguration { Name = "App", Kind = ClientKind.DefaultApp },
-                                                    new TypeScriptBinPathAspectConfiguration { Name = "Other", Kind = ClientKind.DefaultApp } );
+        var engineConfig = CreateTwoConfigurations( new TypeScriptBinPathAspectConfiguration { Name = "App", Kind = ClientKind.DefaultApp, DevServerPort = 4200 },
+                                                    new TypeScriptBinPathAspectConfiguration { Name = "Other", Kind = ClientKind.DefaultApp, DevServerPort = 4201 } );
         await engineConfig.GetFailedAutomaticServicesAsync( "BinPath 'First' has more than one default client application: 'App', 'Other'." );
+    }
+
+    [Test]
+    public async Task a_client_application_requires_a_DevServerPort_Async()
+    {
+        var engineConfig = CreateTwoConfigurations( new TypeScriptBinPathAspectConfiguration { Name = "App", Kind = ClientKind.App },
+                                                    new TypeScriptBinPathAspectConfiguration { Name = "Other" } );
+        await engineConfig.GetFailedAutomaticServicesAsync( "TypeScript configuration 'App' is a client application: it requires a DevServerPort (between 1 and 65535)." );
+    }
+
+    [Test]
+    public async Task the_DevServerPorts_are_unique_Async()
+    {
+        var engineConfig = CreateTwoConfigurations( new TypeScriptBinPathAspectConfiguration { Name = "App", Kind = ClientKind.DefaultApp, DevServerPort = 4200 },
+                                                    new TypeScriptBinPathAspectConfiguration { Name = "Other", Kind = ClientKind.App, DevServerPort = 4200 } );
+        await engineConfig.GetFailedAutomaticServicesAsync( "Client applications 'App', 'Other' of BinPath 'First' have the same DevServerPort 4200." );
     }
 
     [Test]

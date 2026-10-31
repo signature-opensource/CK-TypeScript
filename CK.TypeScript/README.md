@@ -32,8 +32,8 @@ A `<TypeScript>` configuration can have a `Name`, from which its other propertie
 whether it is a client application served by its host:
 
 ```xml
-<TypeScript Name="App" Kind="DefaultApp" />
-<TypeScript Name="MiniApp" Kind="App" />
+<TypeScript Name="App" Kind="DefaultApp" DevServerPort="4200" />
+<TypeScript Name="MiniApp" Kind="App" DevServerPort="4201" />
 ```
 
 | Property | Derived from the `Name` (an explicit value wins) |
@@ -46,7 +46,12 @@ The `Name` is an identifier (letters and digits, starting with a letter), unique
 requires one and there is at most one `DefaultApp` per BinPath. Without a `Name`, the defaults are unchanged
 (`TypeFilterName` is `"TypeScript"`).
 
-The Angular engine writes the request path of a client application as the `"baseHref"` of its `angular.json`. The
+A client application also requires a `DevServerPort`, unique in its BinPath (choose distinct ports for the hosts that
+run together): in Development, the host starts its dev server on this port. Its optional `UseDist` makes the host serve
+its built files even in Development.
+
+The Angular engine writes the request path of a client application as the `"baseHref"` of its `angular.json`, and its
+`DevServerPort` as the port of its `serve` target. The
 engine generates the [`ClientDirectory`](ClientDirectory.cs) of the host: its [`ClientInfo`](ClientInfo.cs) list the
 client applications (the default one last). The [CK.TS.AspNet.Clients](../CK.TS.AspNet.Clients/README.md) package
 serves them; the link goes to a package built on this one because it is the consumer of this list.

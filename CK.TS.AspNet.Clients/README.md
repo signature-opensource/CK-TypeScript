@@ -10,13 +10,13 @@ A `<TypeScript>` configuration with a `Kind` is a client application (see
 [CK.TypeScript](../CK.TypeScript/README.md#client-applications)):
 
 ```xml
-<TypeScript Name="App" Kind="DefaultApp" />
-<TypeScript Name="MiniApp" Kind="App" />
+<TypeScript Name="App" Kind="DefaultApp" DevServerPort="4200" />
+<TypeScript Name="MiniApp" Kind="App" DevServerPort="4201" UseDist="true" />
 ```
 
 The engine generates the `ClientDirectory` of the host from them: each `ClientInfo` has its `Name`, its `RequestPath`
 (`/` for the default one, `/mini-app` here), its `ProjectPath` (`Clients/MiniApp`, relative to the host's project), its
-`OutputPath` (`dist/MiniApp/browser`) and its `TypeFilterName`.
+`OutputPath` (`dist/MiniApp/browser`), its `TypeFilterName`, its `DevServerPort` and its `UseDist`.
 
 ## One call serves them
 
@@ -28,12 +28,19 @@ app.MapClients();
 
 `ClientsApplicationExtensions.MapClients` serves each client application under its request path, the default one last:
 
-- **Its built files**: the static files of `{ContentRoot}/{ProjectPath}/{OutputPath}`, with a fallback to its `index.html`
-  for its client routes (a deep link like `/mini-app/some/route`). A client application that is not built is skipped
-  with a warning.
-- **Its dev server, in Development**: when `Clients:{Name}:DevServer` is configured (typically on the command line,
-  `--Clients:MiniApp:DevServer=http://localhost:4201`), what the host doesn't handle under the request path is forwarded
-  to it (YARP direct forwarding). The host stays the origin: the dev server's live reload goes through it too.
+- **In Development, by its dev server.** The host starts it (`ng serve --port {DevServerPort}`, through the yarn found in
+  or above the client's project) unless something already listens on its port (a `yarn start` launched by hand is used
+  as is), and stops it with the host. What the host doesn't handle under the request path is forwarded to it (YARP direct
+  forwarding): the host stays the origin, the dev server's live reload goes through it too. The dev server compiles
+  before it answers: the first requests may fail.
+- **Otherwise, by its built files ("dist")**: the static files of `{ContentRoot}/{ProjectPath}/{OutputPath}`, with a
+  fallback to its `index.html` for its client routes (a deep link like `/mini-app/some/route`). A client application that
+  is not built is skipped with a warning.
+
+In Development, a client application whose `UseDist` is true uses its built files too: the configuration's `UseDist` is
+its default (a client application nobody develops in this host), the host's configuration overrides it for a run:
+`Clients:UseDist=true` for all the client applications (a UI test, a backend-only debugging session),
+`Clients:{Name}:UseDist=true|false` for one of them (`dotnet run -- --Clients:MiniApp:UseDist=false`).
 
 The real object `ClientsHosting` registers the HTTP forwarder: the host doesn't call `AddHttpForwarder()`.
 

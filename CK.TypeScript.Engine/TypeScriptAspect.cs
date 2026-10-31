@@ -145,6 +145,11 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
                     monitor.Error( $"TypeScript configuration with TargetProjectPath=\"{c.TargetProjectPath}\" is a client application (Kind=\"{c.Kind}\"): it requires a Name." );
                     success = false;
                 }
+                if( c.Kind != ClientKind.None && c.DevServerPort is not (> 0 and <= 65535) )
+                {
+                    monitor.Error( $"TypeScript configuration '{c.Name}' is a client application: it requires a DevServerPort (between 1 and 65535)." );
+                    success = false;
+                }
             }
             // In a BinPath (a host): the names and the request paths are unique, there is at most one default client application.
             foreach( var gBinPath in configurations.GroupBy( c => c.Owner ) )
@@ -157,6 +162,11 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
                 foreach( var g in gBinPath.Where( c => c.RequestPath != null ).GroupBy( c => c.RequestPath!, StringComparer.OrdinalIgnoreCase ).Where( g => g.Count() > 1 ) )
                 {
                     monitor.Error( $"TypeScript configurations '{g.Select( c => c.Name ).Concatenate( "', '" )}' of BinPath '{gBinPath.Key!.Name}' have the same request path \"{g.Key}\"." );
+                    success = false;
+                }
+                foreach( var g in gBinPath.Where( c => c.Kind != ClientKind.None && c.DevServerPort != null ).GroupBy( c => c.DevServerPort ).Where( g => g.Count() > 1 ) )
+                {
+                    monitor.Error( $"Client applications '{g.Select( c => c.Name ).Concatenate( "', '" )}' of BinPath '{gBinPath.Key!.Name}' have the same DevServerPort {g.Key}." );
                     success = false;
                 }
                 var defaults = gBinPath.Where( c => c.Kind == ClientKind.DefaultApp ).ToList();

@@ -16,8 +16,18 @@ public sealed class ClientInfo
     /// <param name="projectPath">The <see cref="ProjectPath"/>.</param>
     /// <param name="outputPath">The <see cref="OutputPath"/>.</param>
     /// <param name="typeFilterName">The <see cref="TypeFilterName"/>.</param>
-    public ClientInfo( string name, string requestPath, NormalizedPath projectPath, NormalizedPath outputPath, string typeFilterName )
+    /// <param name="devServerPort">The <see cref="DevServerPort"/>.</param>
+    /// <param name="useDist">The <see cref="UseDist"/>.</param>
+    public ClientInfo( string name,
+                       string requestPath,
+                       NormalizedPath projectPath,
+                       NormalizedPath outputPath,
+                       string typeFilterName,
+                       int devServerPort,
+                       bool useDist )
     {
+        DevServerPort = devServerPort;
+        UseDist = useDist;
         Name = name;
         RequestPath = requestPath;
         ProjectPath = projectPath;
@@ -53,6 +63,18 @@ public sealed class ClientInfo
     /// (see <see cref="CK.Setup.TypeScriptBinPathAspectConfiguration.TypeFilterName"/>).
     /// </summary>
     public string TypeFilterName { get; }
+
+    /// <summary>
+    /// Gets the port of the dev server: in Development, the host starts it (unless something already listens on it)
+    /// and forwards to it (unless the <see cref="UseDist"/> applies).
+    /// </summary>
+    public int DevServerPort { get; }
+
+    /// <summary>
+    /// Gets whether the built files are served even in Development (the configured default: the host's configuration
+    /// can override it for a run).
+    /// </summary>
+    public bool UseDist { get; }
 
     /// <summary>
     /// Returns "Name (RequestPath)".

@@ -788,28 +788,49 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             // Awful implementations.
             // Waiting for transformers.
             TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ) );
-            // A client application served by its host: its base href is its request path.
-            var requestPath = e.IntegrationContext.Configuration.RequestPath;
-            if( requestPath != null )
+            // A client application served by its host: its base href is its request path and
+            // its dev server port is the configured one.
+            var configuration = e.IntegrationContext.Configuration;
+            if( configuration.RequestPath != null )
             {
-                EnsureBaseHref( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), requestPath );
+                EnsureClientSettings( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), configuration.RequestPath, configuration.DevServerPort );
             }
 
-            static void EnsureBaseHref( IActivityMonitor monitor, NormalizedPath angularJsonPath, string requestPath )
+            static void EnsureClientSettings( IActivityMonitor monitor, NormalizedPath angularJsonPath, string requestPath, int? devServerPort )
             {
                 var baseHref = requestPath.EndsWith( '/' ) ? requestPath : requestPath + '/';
                 var root = JsonNode.Parse( File.ReadAllText( angularJsonPath ) );
-                var options = root?["projects"]?.AsObject().FirstOrDefault().Value?["architect"]?["build"]?["options"]?.AsObject();
-                if( options == null )
+                var architect = root?["projects"]?.AsObject().FirstOrDefault().Value?["architect"];
+                var buildOptions = architect?["build"]?["options"]?.AsObject();
+                var serve = architect?["serve"]?.AsObject();
+                if( buildOptions == null || serve == null )
                 {
-                    monitor.Warn( $"Unable to find the build options of the project in '{angularJsonPath}': its \"baseHref\" must be \"{baseHref}\"." );
+                    monitor.Warn( $"Unable to find the build options and the serve target of the project in '{angularJsonPath}': its \"baseHref\" must be \"{baseHref}\" and its dev server port {devServerPort}." );
                     return;
                 }
-                if( (string?)options["baseHref"] != baseHref )
+                bool changed = false;
+                if( (string?)buildOptions["baseHref"] != baseHref )
                 {
-                    options["baseHref"] = baseHref;
-                    File.WriteAllText( angularJsonPath, root!.ToJsonString( new System.Text.Json.JsonSerializerOptions { WriteIndented = true } ) );
+                    buildOptions["baseHref"] = baseHref;
                     monitor.Info( $"Set \"baseHref\": \"{baseHref}\" in angular.json." );
+                    changed = true;
+                }
+                if( devServerPort != null )
+                {
+                    if( serve["options"] is not JsonObject serveOptions )
+                    {
+                        serve["options"] = serveOptions = new JsonObject();
+                    }
+                    if( (int?)serveOptions["port"] != devServerPort )
+                    {
+                        serveOptions["port"] = devServerPort.Value;
+                        monitor.Info( $"Set the dev server \"port\": {devServerPort} in angular.json." );
+                        changed = true;
+                    }
+                }
+                if( changed )
+                {
+                    File.WriteAllText( angularJsonPath, root!.ToJsonString( new System.Text.Json.JsonSerializerOptions { WriteIndented = true } ) );
                 }
             }
 

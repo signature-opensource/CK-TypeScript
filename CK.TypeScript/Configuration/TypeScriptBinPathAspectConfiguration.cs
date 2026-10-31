@@ -72,6 +72,20 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     };
 
     /// <summary>
+    /// Gets or sets the port of the dev server of a client application (see <see cref="Kind"/>): required for a client
+    /// application and unique in its BinPath. In Development, the host starts the dev server ("ng serve") on this port
+    /// (unless something already listens on it) and forwards to it. The Angular engine writes it in the angular.json.
+    /// </summary>
+    public int? DevServerPort { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the host serves the built files ("dist") of this client application even in Development,
+    /// rather than its dev server. The host's configuration can override it for a run ("Clients:UseDist" for all the
+    /// client applications, "Clients:{Name}:UseDist" for one of them). Defaults to false.
+    /// </summary>
+    public bool UseDist { get; set; }
+
+    /// <summary>
     /// Gets or sets the TypeScript target project path that contains the "ck-gen" folder.
     /// This path can be absolute or relative to <see cref="EngineConfiguration.BasePath"/>.
     /// It can start with the "{BasePath}", "{OutputPath}" or "{ProjectPath}" placeholders.
@@ -279,6 +293,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         Name = (string?)e.Attribute( TypeScriptAspectConfiguration.xName );
         var kind = (string?)e.Attribute( TypeScriptAspectConfiguration.xKind );
         Kind = kind == null ? ClientKind.None : Enum.Parse<ClientKind>( kind, ignoreCase: true );
+        DevServerPort = (int?)e.Attribute( TypeScriptAspectConfiguration.xDevServerPort );
+        UseDist = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseDist ) ?? false;
         TargetProjectPath = e.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value;
         Barrels.Clear();
         Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
@@ -423,6 +439,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     {
         e.Add( Name != null ? new XAttribute( TypeScriptAspectConfiguration.xName, Name ) : null,
                Kind != ClientKind.None ? new XAttribute( TypeScriptAspectConfiguration.xKind, Kind.ToString() ) : null,
+               DevServerPort != null ? new XAttribute( TypeScriptAspectConfiguration.xDevServerPort, DevServerPort.Value ) : null,
+               UseDist ? new XAttribute( TypeScriptAspectConfiguration.xUseDist, true ) : null,
                new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                new XElement( TypeScriptAspectConfiguration.xBarrels,
                                 Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),

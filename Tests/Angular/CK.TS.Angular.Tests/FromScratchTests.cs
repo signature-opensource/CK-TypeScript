@@ -32,9 +32,12 @@ public class FromScratchTests
             // A client application: its base href is its request path.
             ts.Name = "DemoApp";
             ts.Kind = ClientKind.App;
+            ts.DevServerPort = 4277;
             await configuration.RunSuccessfullyAsync();
 
-            File.ReadAllText( root.AppendPart( "angular.json" ) ).ShouldContain( "\"baseHref\": \"/demo-app/\"" );
+            var angularJson = File.ReadAllText( root.AppendPart( "angular.json" ) );
+            angularJson.ShouldContain( "\"baseHref\": \"/demo-app/\"" );
+            angularJson.ShouldContain( "\"port\": 4277" );
 
             await using var runner = TestHelper.CreateTypeScriptRunner( root );
             await TestHelper.SuspendAsync( resume => resume );
