@@ -80,7 +80,13 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
             {
                 if( ts.TargetProjectPath.IsEmptyPath || string.IsNullOrWhiteSpace( ts.TargetProjectPath ) )
                 {
-                    if( owner == owner.Owner?.FirstBinPath )
+                    if( ts.Name != null && !owner.ProjectPath.IsEmptyPath )
+                    {
+                        // A named configuration: its target project is "{ProjectPath}/Clients/{Name}".
+                        ts.TargetProjectPath = owner.ProjectPath.AppendPart( "Clients" ).AppendPart( ts.Name );
+                        monitor.Info( $"Set TypeScript configuration '{ts.Name}' TargetProjectPath to '{ts.TargetProjectPath}'." );
+                    }
+                    else if( owner == owner.Owner?.FirstBinPath )
                     {
                         ts.TargetProjectPath = owner.ProjectPath.AppendPart( "Client" );
                         monitor.Info( $"Set first BinPath (named '{owner.Name}') empty TypeScript TargetProjectPath to '{ts.TargetProjectPath}'." );
@@ -125,6 +131,41 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
                 }
                 success = false;
             }
+            // The Name is an identifier (it is used in a folder, a TypeFilterName and a request path).
+            // A client application requires a Name.
+            foreach( var c in configurations )
+            {
+                if( c.Name != null && !IsValidName( c.Name ) )
+                {
+                    monitor.Error( $"Invalid TypeScript configuration Name '{c.Name}': it must contain only letters and digits and start with a letter." );
+                    success = false;
+                }
+                if( c.Kind != ClientKind.None && c.Name == null )
+                {
+                    monitor.Error( $"TypeScript configuration with TargetProjectPath=\"{c.TargetProjectPath}\" is a client application (Kind=\"{c.Kind}\"): it requires a Name." );
+                    success = false;
+                }
+            }
+            // In a BinPath (a host): the names and the request paths are unique, there is at most one default client application.
+            foreach( var gBinPath in configurations.GroupBy( c => c.Owner ) )
+            {
+                foreach( var g in gBinPath.Where( c => c.Name != null ).GroupBy( c => c.Name!, StringComparer.OrdinalIgnoreCase ).Where( g => g.Count() > 1 ) )
+                {
+                    monitor.Error( $"TypeScript configuration Name \"{g.Key}\" appears more than once in BinPath '{gBinPath.Key!.Name}'." );
+                    success = false;
+                }
+                foreach( var g in gBinPath.Where( c => c.RequestPath != null ).GroupBy( c => c.RequestPath!, StringComparer.OrdinalIgnoreCase ).Where( g => g.Count() > 1 ) )
+                {
+                    monitor.Error( $"TypeScript configurations '{g.Select( c => c.Name ).Concatenate( "', '" )}' of BinPath '{gBinPath.Key!.Name}' have the same request path \"{g.Key}\"." );
+                    success = false;
+                }
+                var defaults = gBinPath.Where( c => c.Kind == ClientKind.DefaultApp ).ToList();
+                if( defaults.Count > 1 )
+                {
+                    monitor.Error( $"BinPath '{gBinPath.Key!.Name}' has more than one default client application: '{defaults.Select( c => c.Name ).Concatenate( "', '" )}'." );
+                    success = false;
+                }
+            }
             // This test is important: the TypeFilterName MUST be "None" or start with "TypeScript".
             var badNames = configurations.Where( c => c.TypeFilterName != "None" && !c.TypeFilterName.StartsWith( "TypeScript" ) );
             if( badNames.Any() )
@@ -151,6 +192,8 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
             }
             return success;
         }
+
+        static bool IsValidName( string name ) => name.Length > 0 && char.IsAsciiLetter( name[0] ) && name.All( char.IsAsciiLetterOrDigit );
 
         static string NormalizeFolderPath( string p )
         {

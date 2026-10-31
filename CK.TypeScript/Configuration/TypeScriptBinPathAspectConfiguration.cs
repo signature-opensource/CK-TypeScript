@@ -17,6 +17,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     NormalizedPath _targetProjectPath;
     NormalizedPath _targetCKGenPath;
     NormalizedCultureInfo _defaultCulture;
+    string? _typeFilterName;
 
     /// <summary>
     /// Initializes a new empty configuration.
@@ -32,7 +33,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
 
         _defaultCulture = NormalizedCultureInfo.CodeDefault;
         ActiveCultures = new HashSet<NormalizedCultureInfo>();
-        TypeFilterName = "TypeScript";
         GitIgnoreCKGenFolder = true;
         AutoInstallJest = true;
     }
@@ -41,6 +41,35 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// Gets the Engine level configuration.
     /// </summary>
     public new TypeScriptAspectConfiguration? AspectConfiguration => (TypeScriptAspectConfiguration?)base.AspectConfiguration;
+
+    /// <summary>
+    /// Gets or sets the optional name of this configuration. When set, it must be an identifier (letters and digits,
+    /// starting with a letter) unique in its BinPath, and the other properties derive from it:
+    /// <list type="bullet">
+    ///   <item>The <see cref="TargetProjectPath"/> defaults to "{ProjectPath}/Clients/{Name}".</item>
+    ///   <item>The <see cref="TypeFilterName"/> defaults to "TypeScript{Name}".</item>
+    ///   <item>The <see cref="RequestPath"/> of a client application (see <see cref="Kind"/>) is "/{kebab-name}".</item>
+    /// </list>
+    /// </summary>
+    public string? Name { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this configuration is a client application served by its host.
+    /// Defaults to <see cref="ClientKind.None"/>. A client application requires a <see cref="Name"/>.
+    /// </summary>
+    public ClientKind Kind { get; set; }
+
+    /// <summary>
+    /// Gets the request path under which the host serves this client application: "/" for the
+    /// <see cref="ClientKind.DefaultApp"/>, "/{kebab-name}" for a <see cref="ClientKind.App"/> ("MiniApp" is served
+    /// under "/mini-app"), null when <see cref="Kind"/> is <see cref="ClientKind.None"/> (or when there is no <see cref="Name"/>).
+    /// </summary>
+    public string? RequestPath => Kind switch
+    {
+        ClientKind.DefaultApp => "/",
+        ClientKind.App when Name != null => "/" + System.Text.Json.JsonNamingPolicy.KebabCaseLower.ConvertName( Name ),
+        _ => null
+    };
 
     /// <summary>
     /// Gets or sets the TypeScript target project path that contains the "ck-gen" folder.
@@ -162,7 +191,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// Gets or sets the name of this TypeScript configuration that is the <see cref="ExchangeableRuntimeFilter.Name"/>
     /// of the exhangeable type set defined by this configuration.
     /// <para>
-    /// This defaults to "TypeScript". Any other name MUST be "None" or start with "TypeScript": this acts as a simple yet effective
+    /// This defaults to "TypeScript{Name}" when a <see cref="Name"/> is set, otherwise to "TypeScript".
+    /// Any other name MUST be "None" or start with "TypeScript": this acts as a simple yet effective
     /// filter to secure a endpoint that exchange Poco compliant types to/from TypeScript. Any endpoint that handles
     /// exchange with an external javascript/TypeScript application MUST reject any ExchangeableRuntimeFilter whose name
     /// is not or doesn't start with "TypeScript".
@@ -172,7 +202,15 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// When set to "None", no <c>/ck-gen/CK/Core/CTSType.ts</c> file is generated.
     /// </para>
     /// </summary>
-    public string TypeFilterName { get; set; }
+    public string TypeFilterName
+    {
+        get => _typeFilterName ?? (Name != null ? "TypeScript" + Name : "TypeScript");
+        set
+        {
+            Throw.CheckNotNullOrWhiteSpaceArgument( value );
+            _typeFilterName = value;
+        }
+    }
 
     /// <summary>
     /// Gets or sets how the /ck-gen generated sources are integrated in the <see cref="TargetProjectPath"/>.
@@ -238,6 +276,9 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// <inheritdoc />
     protected override void InitializeOnlyThisFrom( XElement e )
     {
+        Name = (string?)e.Attribute( TypeScriptAspectConfiguration.xName );
+        var kind = (string?)e.Attribute( TypeScriptAspectConfiguration.xKind );
+        Kind = kind == null ? ClientKind.None : Enum.Parse<ClientKind>( kind, ignoreCase: true );
         TargetProjectPath = e.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value;
         Barrels.Clear();
         Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
@@ -294,7 +335,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         GlobTypes.Clear();
         FillTypesAndGlobTypes( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ) );
 
-        TypeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName ) ?? "TypeScript";
+        // Only an explicit TypeFilterName is kept: it is otherwise derived (from the Name).
+        _typeFilterName = (string?)e.Attribute( TypeScriptAspectConfiguration.xTypeFilterName );
     }
 
     static TypeNamePattern ParsePattern( XElement e, string name )
@@ -379,10 +421,12 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// <inheritdoc />
     protected override void WriteOnlyThisXml( XElement e )
     {
-        e.Add( new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
+        e.Add( Name != null ? new XAttribute( TypeScriptAspectConfiguration.xName, Name ) : null,
+               Kind != ClientKind.None ? new XAttribute( TypeScriptAspectConfiguration.xKind, Kind.ToString() ) : null,
+               new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                new XElement( TypeScriptAspectConfiguration.xBarrels,
                                 Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
-               new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, TypeFilterName ),
+               _typeFilterName != null ? new XAttribute( TypeScriptAspectConfiguration.xTypeFilterName, _typeFilterName ) : null,
                DefaultTypeScriptVersion != null
                 ? new XAttribute( TypeScriptAspectConfiguration.xDefaultTypeScriptVersion, DefaultTypeScriptVersion )
                 : null,

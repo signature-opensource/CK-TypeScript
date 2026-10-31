@@ -124,4 +124,14 @@ public sealed partial class TypeScriptAspectConfiguration
     /// </summary>
     public static readonly XName xDeferFileSave = XNamespace.None + "DeferFileSave";
 
+    /// <summary>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.Name"/> attribute name.
+    /// </summary>
+    public static readonly XName xName = XNamespace.None + "Name";
+
+    /// <summary>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.Kind"/> attribute name.
+    /// </summary>
+    public static readonly XName xKind = XNamespace.None + "Kind";
+
 }
