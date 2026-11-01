@@ -28,6 +28,29 @@ public class SourceSpanTests
         code.ToString().ShouldBe( "A { D } { B } C { E }" );
     }
 
+    // The moved span can be nested anywhere after the target: the spans between them shift, a span that contains both
+    // keeps its tokens, a span that contains only the moved one loses them.
+    [TestCase( "X { P } { Q { R } S } T", 2, 0, "X { R } { P } { Q S } T",
+               "BraceSpan [1,4[, BraceSpan [4,7[, BraceSpan [7,11[" )]
+    [TestCase( "{ A { P } B { Q { R } } C } { E }", 3, 1, "{ A { R } { P } B { Q } C } { E }",
+               "BraceSpan [0,14[, BraceSpan [2,5[, BraceSpan [5,8[, BraceSpan [9,12[, BraceSpan [14,17[" )]
+    [TestCase( "{ A { P { x } } B { Q { R { y } } } C } { E }", 4, 1, "{ A { R { y } } { P { x } } B { Q } C } { E }",
+               "BraceSpan [0,20[, BraceSpan [2,8[, BraceSpan [4,7[, BraceSpan [8,14[, BraceSpan [10,13[, BraceSpan [15,18[, BraceSpan [20,23[" )]
+    [TestCase( "{ A { P } } { Q { R } }", 3, 1, "{ A { R } { P } } { Q }",
+               "BraceSpan [0,9[, BraceSpan [2,5[, BraceSpan [5,8[, BraceSpan [9,12[" )]
+    public void moving_nested_spans( string source, int movedIndex, int targetIndex, string expectedCode, string expectedSpans )
+    {
+        var a = new TestAnalyzer( useSourceSpanBraceAndBrackets: true );
+        SourceCode code = a.ParseOrThrow( source );
+        var all = code.Spans.AllSpans.ToList();
+        using( var editor = new SourceCodeEditor( TestHelper.Monitor, code ) )
+        {
+            editor.MoveSpanBefore( all[movedIndex], all[targetIndex] );
+        }
+        code.ToString().ShouldBe( expectedCode );
+        code.Spans.AllSpans.Select( s => s.ToString() ).Concatenate().ShouldBe( expectedSpans );
+    }
+
     [Test]
     public void spans_braces_brackets_parens()
     {

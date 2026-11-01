@@ -404,6 +404,37 @@ public abstract partial class SourceSpan
         }
     }
 
+    // The tokens [movedBeg, movedBeg + movedLength[ (of a detached span) are moved at index target (that is before them).
+    // Only the spans that intersect [target, movedBeg + movedLength[ change (the children are ordered: the walk
+    // stops at the first one after the moved tokens):
+    // - a span that starts in [target, movedBeg[ is shifted (and loses the moved tokens if it contains them);
+    // - a span that starts before target and ends in ]target, movedBeg] now contains the moved tokens;
+    // - a span that starts before target and contains the moved tokens keeps its tokens.
+    internal void DoOnMoveTokensBefore( int target, int movedBeg, int movedLength )
+    {
+        Throw.DebugAssert( target < movedBeg && movedLength > 0 );
+        int movedEnd = movedBeg + movedLength;
+        var c = _firstChild;
+        while( c != null && c.Span.Beg < movedEnd )
+        {
+            if( c.Span.End > target )
+            {
+                if( c.Span.Beg >= target )
+                {
+                    c._span = c.Span.End <= movedBeg
+                                ? c._span.Offset( movedLength )
+                                : new TokenSpan( c.Span.Beg + movedLength, c.Span.End );
+                }
+                else if( c.Span.End <= movedBeg )
+                {
+                    c._span = new TokenSpan( c.Span.Beg, c.Span.End + movedLength );
+                }
+                c.DoOnMoveTokensBefore( target, movedBeg, movedLength );
+            }
+            c = c._nextSibling;
+        }
+    }
+
     internal void DoOnRemoveTokens( TokenSpan removedHead, ref List<SourceSpan>? toRemove )
     {
         var c = _firstChild;

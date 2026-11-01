@@ -6,9 +6,13 @@ namespace CK.Setup;
 public static class CKomposableAppBuilderExtensions
 {
     /// <summary>
-    /// Ensures that at least one <see cref="TypeScriptBinPathAspectConfiguration"/> exists in the given <paramref name="binPathName"/>.
-    /// If <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/> is empty, configures it to target the
-    /// conventional "<see cref="ICKomposableAppBuilder.GetHostFolderPath">HostFolderPath</see>/<see cref="ICKomposableAppBuilder.ApplicationName">ApplicationName</see>.Web" path.
+    /// Ensures that the <see cref="TypeScriptAspectConfiguration"/> and at least one <see cref="TypeScriptBinPathAspectConfiguration"/>
+    /// exist in the given <paramref name="binPathName"/>.
+    /// <para>
+    /// The <see cref="TypeScriptBinPathAspectConfiguration.TargetProjectPath"/> is left as-is: when empty, the engine derives it
+    /// from the <see cref="BinPathConfiguration.ProjectPath"/> (the host folder of the builder), "{ProjectPath}/Clients/{Name}" for
+    /// a named configuration (see <see cref="TypeScriptBinPathAspectConfiguration.Name"/>).
+    /// </para>
     /// </summary>
     /// <param name="builder">This builder.</param>
     /// <param name="binPathName">The <see cref="BinPathConfiguration.Name"/> to consider.</param>
@@ -17,11 +21,6 @@ public static class CKomposableAppBuilderExtensions
     {
         builder.EngineConfiguration.EnsureAspect<TypeScriptAspectConfiguration>();
         var binPath = builder.EngineConfiguration.FindRequiredBinPath( binPathName );
-        var tsBinPathAspect = binPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
-        if( tsBinPathAspect.TargetProjectPath.IsEmptyPath )
-        {
-            tsBinPathAspect.TargetProjectPath = builder.GetHostFolderPath().AppendPart( builder.ApplicationName + ".Web" );
-        }
-        return tsBinPathAspect;
+        return binPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
     }
 }

@@ -115,16 +115,9 @@ sealed class SourceSpanRoot : SourceSpan, ISourceSpanRoot
         actualMoved.DoOnRemoveTokens( new TokenSpan( 0, lenOffset ), ref toRemove );
         Throw.DebugAssert( "All the spans here are after the removed span.", toRemove == null );
 
-        // "Remove" its tokens: all spans after be offsetted... for nothing because when we'll
-        // "add" the tokens back before, they will be offsetted back to their original position.
-        // TODO: improve this by walking the structure to offset only the touched spans...
-        DoOnRemoveTokens( movedTokenSpan, ref toRemove );
-        Throw.DebugAssert( "We detached any spans that may have been removed.", toRemove == null );
-
-        // We don't need to find an exact covering span for the target.
-        // We simply "insert" the moved tokens right before the target spans: we call
-        // the root DoOnInsertTokens here.
-        DoOnInsertTokens( target.Span.Beg, actualMoved.Span.Length, insertBefore: true );
+        // Moves its tokens before the target: only the spans between the target and the moved tokens
+        // (and the ones that contain the target) are updated.
+        DoOnMoveTokensBefore( target.Span.Beg, movedTokenSpan.Beg, movedTokenSpan.Length );
 
         // Then we attach the moved span before the target.
         actualMoved._parent = target._parent;

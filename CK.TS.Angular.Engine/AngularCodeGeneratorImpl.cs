@@ -11,7 +11,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using CK.TypeScript.Transform;
 
 namespace CK.TS.Angular.Engine;
@@ -762,8 +761,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         bool ITSCodeGenerator.OnResolveType( IActivityMonitor monitor, TypeScriptContext context, RequireTSFromTypeEventArgs builder ) => true;
 
-#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute': no need (single shot), we keep the interpreted regex.
-
         void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
         {
             // Adds @angular/platform-browser-dynamic as regular dependency if not already here (jest requirement).
@@ -785,80 +782,70 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnAfterIntegration( object? sender, TypeScriptIntegrationContext.AfterEventArgs e )
         {
-            // Awful implementations.
-            // Waiting for transformers.
-            TransformAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ) );
-            // A client application served by its host: its base href is its request path and
-            // its dev server port is the configured one.
-            var configuration = e.IntegrationContext.Configuration;
-            if( configuration.RequestPath != null )
-            {
-                EnsureClientSettings( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), configuration.RequestPath, configuration.DevServerPort );
-            }
+            UpdateAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), e.IntegrationContext.Configuration );
 
-            static void EnsureClientSettings( IActivityMonitor monitor, NormalizedPath angularJsonPath, string requestPath, int? devServerPort )
+            // The angular.json is parsed and written once (when something changed), keeping its line endings and its final new line:
+            // - The "ck-gen/ts-assets" folder is the first entry of the build assets.
+            // - A client application served by its host: its base href is its request path and its dev server port is the configured one.
+            static void UpdateAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath, TypeScriptBinPathAspectConfiguration configuration )
             {
-                var baseHref = requestPath.EndsWith( '/' ) ? requestPath : requestPath + '/';
                 var text = File.ReadAllText( angularJsonPath );
                 var root = JsonNode.Parse( text );
                 var architect = root?["projects"]?.AsObject().FirstOrDefault().Value?["architect"];
                 var buildOptions = architect?["build"]?["options"]?.AsObject();
-                var serve = architect?["serve"]?.AsObject();
-                if( buildOptions == null || serve == null )
+                if( buildOptions == null )
                 {
-                    monitor.Warn( $"Unable to find the build options and the serve target of the project in '{angularJsonPath}': its \"baseHref\" must be \"{baseHref}\" and its dev server port {devServerPort}." );
+                    monitor.Warn( $"Unable to find the build options of the project in '{angularJsonPath}': it is left as-is." );
                     return;
                 }
                 bool changed = false;
-                if( (string?)buildOptions["baseHref"] != baseHref )
+                if( buildOptions["assets"] is JsonArray assets
+                    && !assets.Any( a => a is JsonObject o && (string?)o["input"] == "ck-gen/ts-assets" ) )
                 {
-                    buildOptions["baseHref"] = baseHref;
-                    monitor.Info( $"Set \"baseHref\": \"{baseHref}\" in angular.json." );
+                    assets.Insert( 0, new JsonObject { ["glob"] = "**/*", ["input"] = "ck-gen/ts-assets" } );
+                    monitor.Info( "Added ck-gen/ts-assets to angular.json assets." );
                     changed = true;
                 }
-                if( devServerPort != null )
+                if( configuration.RequestPath != null )
                 {
-                    if( serve["options"] is not JsonObject serveOptions )
+                    var requestPath = configuration.RequestPath;
+                    var baseHref = requestPath.EndsWith( '/' ) ? requestPath : requestPath + '/';
+                    if( (string?)buildOptions["baseHref"] != baseHref )
                     {
-                        serve["options"] = serveOptions = new JsonObject();
-                    }
-                    if( (int?)serveOptions["port"] != devServerPort )
-                    {
-                        serveOptions["port"] = devServerPort.Value;
-                        monitor.Info( $"Set the dev server \"port\": {devServerPort} in angular.json." );
+                        buildOptions["baseHref"] = baseHref;
+                        monitor.Info( $"Set \"baseHref\": \"{baseHref}\" in angular.json." );
                         changed = true;
+                    }
+                    if( configuration.DevServerPort is int port )
+                    {
+                        if( architect?["serve"] is not JsonObject serve )
+                        {
+                            monitor.Warn( $"Unable to find the serve target of the project in '{angularJsonPath}': its dev server port must be {port}." );
+                        }
+                        else
+                        {
+                            if( serve["options"] is not JsonObject serveOptions )
+                            {
+                                serve["options"] = serveOptions = new JsonObject();
+                            }
+                            if( (int?)serveOptions["port"] != port )
+                            {
+                                serveOptions["port"] = port;
+                                monitor.Info( $"Set the dev server \"port\": {port} in angular.json." );
+                                changed = true;
+                            }
+                        }
                     }
                 }
                 if( changed )
                 {
-                    // Keeps the line endings and the final new line of the file.
                     var newLine = text.Contains( "\r\n" ) ? "\r\n" : "\n";
-                    var json = root!.ToJsonString( new System.Text.Json.JsonSerializerOptions { WriteIndented = true, NewLine = newLine } );
+                    var json = root!.ToJsonString( new JsonSerializerOptions { WriteIndented = true, NewLine = newLine } );
                     File.WriteAllText( angularJsonPath, text.EndsWith( '\n' ) ? json + newLine : json );
-                }
-            }
-
-            static void TransformAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath )
-            {
-                var text = File.ReadAllText( angularJsonPath );
-                var m = Regex.Match( text, """
-                            "assets"\s*:\s*\[\s*{
-                            """ );
-                if( m.Success )
-                {
-                    if( !text.AsSpan( m.Index + m.Length ).Contains( "ck-gen/ts-assets", StringComparison.Ordinal ) )
-                    {
-                        var start = text.Substring( 0, m.Index + m.Length - 1 );
-                        start += """{ "glob": "**/*", "input": "ck-gen/ts-assets" }, """;
-                        start += text.Substring( m.Index + m.Length - 1 );
-                        File.WriteAllText( angularJsonPath, start );
-                        monitor.Info( "Added ck-gen/ts-assets to angular.json assets." );
-                    }
                 }
             }
         }
 
-#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'
     }
 }
 
