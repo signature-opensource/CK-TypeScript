@@ -196,7 +196,8 @@ public class MapClientsTests
     }
 
     [Test]
-    [CancelAfter( 10000 )]
+    // The engine runs in the test: the parallel builds of the stack can make it slow.
+    [CancelAfter( 60000 )]
     public async Task in_Development_a_client_application_is_serving_once_its_dev_server_answers_Async( CancellationToken cancel )
     {
         // The probe tries IPv4 and IPv6 at once: the failed attempt must be observed.
