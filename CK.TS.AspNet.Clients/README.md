@@ -44,7 +44,16 @@ its default (a client application nobody develops in this host), the host's conf
 
 The real object `ClientsHosting` registers the HTTP forwarder: the host doesn't call `AddHttpForwarder()`.
 
+## Or no call at all
+
+`ClientsApplicationExtensions.EnableClients` is the same in one gesture on the `WebApplicationBuilder` (the "Enable"
+convention of CK.AspNet: it is idempotent). `ClientsHosting` contributes it to the web applications of the host
+(`WebApplicationContributions`): a host that applies the contributions, like the "HttpEndpoint" feature of
+CK.AppIdentity.HttpEndpoint, serves the client applications without calling anything.
+
 ## Requires.
 
 - [CK.TypeScript](../CK.TypeScript/README.md) for the `ClientDirectory`.
+- [CK.AspNet](https://github.com/signature-opensource/CK-AspNet/blob/stable/CK.AspNet/README.md#the-enable-convention-and-the-contributions-of-the-packages)
+  for the "Enable" convention and the contributions.
 - [Yarp.ReverseProxy](https://github.com/dotnet/yarp) for the forwarding to the dev servers.

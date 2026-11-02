@@ -35,6 +35,28 @@ public static class ClientsApplicationExtensions
     /// <returns>This application.</returns>
     public static WebApplication MapClients( this WebApplication app )
     {
+        MapClientsCore( app );
+        return app;
+    }
+
+    /// <summary>
+    /// Serves the client applications (see <see cref="MapClients"/>) in one gesture on the builder (the "Enable" convention
+    /// of CK.AspNet: this is idempotent). <see cref="ClientsHosting"/> contributes it to the web applications of the host.
+    /// </summary>
+    /// <param name="builder">This builder.</param>
+    /// <returns>This builder.</returns>
+    public static WebApplicationBuilder EnableClients( this WebApplicationBuilder builder )
+    {
+        if( builder.TryEnable( "Clients" ) )
+        {
+            // CKBuild gives the WebApplication.
+            builder.AppendApplicationBuilder( app => MapClientsCore( (WebApplication)app ) );
+        }
+        return builder;
+    }
+
+    static void MapClientsCore( WebApplication app )
+    {
         var monitor = ActivityMonitor.StaticLogger;
         var isDevelopment = app.Environment.IsDevelopment();
         foreach( var client in app.Services.GetRequiredService<ClientDirectory>().Clients )
@@ -53,7 +75,6 @@ public static class ClientsApplicationExtensions
                 MapDist( monitor, app, client, requestPath, Path.Combine( projectPath, client.OutputPath ) );
             }
         }
-        return app;
     }
 
     static bool UseDist( IStaticLogger monitor, IConfiguration configuration, ClientInfo client )

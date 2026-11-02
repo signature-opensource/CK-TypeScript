@@ -1,9 +1,11 @@
+using CK.AspNet;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Shouldly;
 using System;
@@ -94,6 +96,26 @@ public class MapClientsTests
         (await GetAsync( server, "/mini-app/" )).ShouldBe( "THE-MINI-APP" );
         (await GetAsync( server, "/mini-app/main.js" )).ShouldBe( "// MiniApp" );
         // A client route of the MiniApp.
+        (await GetAsync( server, "/mini-app/some/route" )).ShouldBe( "THE-MINI-APP" );
+    }
+
+    [Test]
+    public async Task the_contribution_of_ClientsHosting_serves_the_client_applications_once_Async()
+    {
+        var map = await CreateMapAsync( TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false ), 4200, 4201 );
+        var builder = WebApplication.CreateSlimBuilder( new WebApplicationOptions
+        {
+            ContentRootPath = TestHelper.TestProjectFolder,
+            EnvironmentName = "Production"
+        } );
+        // The map registers the contribution of ClientsHosting: the host applies it (as the "HttpEndpoint" feature does).
+        builder.Services.AddStObjMap( TestHelper.Monitor, map );
+        WebApplicationContributions.FindOrAdd( builder.Services ).ApplyTo( builder );
+        // The application enables it too: the client applications are mapped once (twice would be ambiguous routes).
+        builder.EnableClients();
+        await using var server = await builder.CreateRunningAspNetServerAsync();
+
+        (await GetAsync( server, "/some/route" )).ShouldBe( "THE-APP" );
         (await GetAsync( server, "/mini-app/some/route" )).ShouldBe( "THE-MINI-APP" );
     }
 
