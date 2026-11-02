@@ -137,17 +137,24 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
     // about 2 seconds (connecting to "localhost" would wait for "::1" before trying "127.0.0.1").
     internal static bool IsListening( int port )
     {
-        using var v4 = new TcpClient( AddressFamily.InterNetwork );
-        using var v6 = new TcpClient( AddressFamily.InterNetworkV6 );
-        var attempts = new[] { v4.ConnectAsync( IPAddress.Loopback, port ), v6.ConnectAsync( IPAddress.IPv6Loopback, port ) };
+        var attempts = Task.WhenAll( TryConnectAsync( IPAddress.Loopback, port ), TryConnectAsync( IPAddress.IPv6Loopback, port ) );
+        return attempts.GetAwaiter().GetResult().Any( connected => connected );
+    }
+
+    // Each attempt is awaited (its failure is observed) and canceled after 500 ms (no pending connection is left behind).
+    static async Task<bool> TryConnectAsync( IPAddress address, int port )
+    {
+        using var timeout = new CancellationTokenSource( 500 );
+        using var c = new TcpClient( address.AddressFamily );
         try
         {
-            Task.WaitAll( attempts, 500 );
+            await c.ConnectAsync( address, port, timeout.Token ).ConfigureAwait( false );
+            return true;
         }
-        catch( AggregateException )
+        catch( Exception )
         {
+            return false;
         }
-        return attempts.Any( a => a.IsCompletedSuccessfully );
     }
 
     /// <summary>

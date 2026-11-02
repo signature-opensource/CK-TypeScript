@@ -199,6 +199,10 @@ public class MapClientsTests
     [CancelAfter( 10000 )]
     public async Task in_Development_a_client_application_is_serving_once_its_dev_server_answers_Async( CancellationToken cancel )
     {
+        // The probe tries IPv4 and IPv6 at once: the failed attempt must be observed.
+        Exception? unobserved = null;
+        EventHandler<UnobservedTaskExceptionEventArgs> onUnobserved = ( _, e ) => unobserved = e.Exception;
+        TaskScheduler.UnobservedTaskException += onUnobserved;
         await using var appDev = await StartDevServerAsync( "APP-DEV" );
         await using var miniDev = await StartDevServerAsync( "MINI-DEV" );
         var map = await CreateMapAsync( TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false ), Port( appDev ), Port( miniDev ), miniAppUseDist: true );
@@ -214,5 +218,13 @@ public class MapClientsTests
         server.Services.GetRequiredService<ClientsDevRunningStatusContributor>().Activate( TestHelper.Monitor, () => changed.TrySetResult() );
         await changed.Task.WaitAsync( cancel );
         GetStatus( server )["App"].GetProperty( "Serving" ).GetBoolean().ShouldBeTrue();
+
+        // The losing attempt (the dev server listens on 127.0.0.1 only) is refused after about 2 seconds on Windows.
+        await Task.Delay( 2500, cancel );
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        TaskScheduler.UnobservedTaskException -= onUnobserved;
+        unobserved.ShouldBeNull();
     }
 }
