@@ -785,20 +785,23 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
             UpdateAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), e.IntegrationContext.Configuration );
 
             // The angular.json is parsed and written once (when something changed), keeping its line endings and its final new line:
+            // - The Angular CLI analytics are disabled ("cli": { "analytics": false }): an analytics identifier never belongs in a
+            //   committed project file (it is replaced), and the CLI doesn't prompt for it (a host starts "ng serve").
             // - The "ck-gen/ts-assets" folder is the first entry of the build assets.
             // - A client application served by its host: its base href is its request path and its dev server port is the configured one.
             static void UpdateAngularJson( IActivityMonitor monitor, NormalizedPath angularJsonPath, TypeScriptBinPathAspectConfiguration configuration )
             {
                 var text = File.ReadAllText( angularJsonPath );
                 var root = JsonNode.Parse( text );
+                bool changed = DisableCliAnalytics( monitor, root );
                 var architect = root?["projects"]?.AsObject().FirstOrDefault().Value?["architect"];
                 var buildOptions = architect?["build"]?["options"]?.AsObject();
                 if( buildOptions == null )
                 {
-                    monitor.Warn( $"Unable to find the build options of the project in '{angularJsonPath}': it is left as-is." );
+                    monitor.Warn( $"Unable to find the build options of the project in '{angularJsonPath}': they are left as-is." );
+                    if( changed ) Write( angularJsonPath, text, root! );
                     return;
                 }
-                bool changed = false;
                 if( buildOptions["assets"] is JsonArray assets
                     && !assets.Any( a => a is JsonObject o && (string?)o["input"] == "ck-gen/ts-assets" ) )
                 {
@@ -837,12 +840,30 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                         }
                     }
                 }
-                if( changed )
+                if( changed ) Write( angularJsonPath, text, root! );
+            }
+
+            static bool DisableCliAnalytics( IActivityMonitor monitor, JsonNode? root )
+            {
+                if( root is not JsonObject rootObject ) return false;
+                if( rootObject["cli"] is not JsonObject cli )
                 {
-                    var newLine = text.Contains( "\r\n" ) ? "\r\n" : "\n";
-                    var json = root!.ToJsonString( new JsonSerializerOptions { WriteIndented = true, NewLine = newLine } );
-                    File.WriteAllText( angularJsonPath, text.EndsWith( '\n' ) ? json + newLine : json );
+                    rootObject["cli"] = cli = new JsonObject();
                 }
+                var analytics = cli["analytics"];
+                if( analytics is JsonValue v && v.GetValueKind() == JsonValueKind.False ) return false;
+                cli["analytics"] = false;
+                monitor.Info( analytics == null
+                                ? "Set \"cli\": { \"analytics\": false } in angular.json."
+                                : $"Replaced the Angular CLI analytics setting {analytics.ToJsonString()} with false in angular.json: an analytics identifier never belongs in a committed project file." );
+                return true;
+            }
+
+            static void Write( NormalizedPath angularJsonPath, string text, JsonNode root )
+            {
+                var newLine = text.Contains( "\r\n" ) ? "\r\n" : "\n";
+                var json = root.ToJsonString( new JsonSerializerOptions { WriteIndented = true, NewLine = newLine } );
+                File.WriteAllText( angularJsonPath, text.EndsWith( '\n' ) ? json + newLine : json );
             }
         }
 

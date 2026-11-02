@@ -4,6 +4,8 @@ using CK.Ng.PublicSection;
 using CK.Ng.AspNet.Auth;
 using CK.Testing;
 using NUnit.Framework;
+using Shouldly;
+using System.IO;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 using CK.Ng.PublicPage;
@@ -17,6 +19,11 @@ public class AngularTests
     public async Task CK_TS_Angular_Async()
     {
         var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
+        // An Angular CLI analytics identifier (the CLI writes it when a user answers its prompt) is replaced by false.
+        var angularJsonPath = targetProjectPath.AppendPart( "angular.json" );
+        var angularJson = File.ReadAllText( angularJsonPath );
+        angularJson.ShouldContain( "\"analytics\": false" );
+        File.WriteAllText( angularJsonPath, angularJson.Replace( "\"analytics\": false", "\"analytics\": \"00000000-0000-0000-0000-000000000000\"" ) );
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         var ts = configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath );
@@ -46,6 +53,7 @@ public class AngularTests
                                               typeof( CK.Ng.Zorro.GenericFormComponent )
                                             );
         await configuration.RunSuccessfullyAsync();
+        File.ReadAllText( angularJsonPath ).ShouldContain( "\"analytics\": false" );
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
         await TestHelper.SuspendAsync( resume => resume );
