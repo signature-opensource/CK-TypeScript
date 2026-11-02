@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -32,7 +34,7 @@ public class MapClientsTests
     static async Task<IStObjMap> CreateMapAsync( NormalizedPath root, int appPort, int miniAppPort, bool miniAppUseDist = false )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( ClientDirectory ), typeof( ClientsHosting ) );
+        configuration.FirstBinPath.Types.Add( typeof( ClientDirectory ), typeof( ClientsHosting ), typeof( ClientsDevRunningStatusContributor ) );
         configuration.EnsureAspect<TypeScriptAspectConfiguration>();
         var app = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         app.Name = "App";
@@ -156,5 +158,61 @@ public class MapClientsTests
         {
             (await GetAsync( server, "/mini-app/some/route" )).ShouldBe( "MINI-DEV:/mini-app/some/route" );
         }
+    }
+
+    // The "Clients" section of the running status, by client name.
+    static Dictionary<string, JsonElement> GetStatus( RunningAspNetServer server )
+    {
+        var contributor = server.Services.GetRequiredService<ClientsDevRunningStatusContributor>();
+        using var stream = new MemoryStream();
+        using( var w = new Utf8JsonWriter( stream ) )
+        {
+            w.WriteStartObject();
+            contributor.Write( w );
+            w.WriteEndObject();
+        }
+        return JsonDocument.Parse( stream.ToArray() ).RootElement.GetProperty( "Clients" ).EnumerateArray()
+                           .ToDictionary( c => c.GetProperty( "Name" ).GetString()!, c => c.Clone() );
+    }
+
+    [Test]
+    public async Task in_Production_the_running_status_has_the_built_client_applications_serving_Async()
+    {
+        var map = await CreateMapAsync( TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false ), 4200, 4201 );
+        await using var server = await CreateHostAsync( map, "Production" );
+        server.Services.GetRequiredService<ClientsDevRunningStatusContributor>().IsReady.ShouldBeTrue();
+        var status = GetStatus( server );
+        status.Count.ShouldBe( 2 );
+        status["App"].GetProperty( "Kind" ).GetString().ShouldBe( "DefaultApp" );
+        status["App"].GetProperty( "RequestPath" ).GetString().ShouldBe( "/" );
+        status["App"].GetProperty( "DevServerPort" ).GetInt32().ShouldBe( 4200 );
+        status["MiniApp"].GetProperty( "Kind" ).GetString().ShouldBe( "App" );
+        status["MiniApp"].GetProperty( "RequestPath" ).GetString().ShouldBe( "/mini-app" );
+        foreach( var c in status.Values )
+        {
+            c.GetProperty( "UseDist" ).GetBoolean().ShouldBeTrue();
+            c.GetProperty( "Serving" ).GetBoolean().ShouldBeTrue();
+        }
+    }
+
+    [Test]
+    [CancelAfter( 10000 )]
+    public async Task in_Development_a_client_application_is_serving_once_its_dev_server_answers_Async( CancellationToken cancel )
+    {
+        await using var appDev = await StartDevServerAsync( "APP-DEV" );
+        await using var miniDev = await StartDevServerAsync( "MINI-DEV" );
+        var map = await CreateMapAsync( TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false ), Port( appDev ), Port( miniDev ), miniAppUseDist: true );
+        await using var server = await CreateHostAsync( map, "Development" );
+        var status = GetStatus( server );
+        status["App"].GetProperty( "UseDist" ).GetBoolean().ShouldBeFalse();
+        status["App"].GetProperty( "Serving" ).GetBoolean().ShouldBeFalse( "Not probed until the status is written." );
+        status["MiniApp"].GetProperty( "UseDist" ).GetBoolean().ShouldBeTrue();
+        status["MiniApp"].GetProperty( "Serving" ).GetBoolean().ShouldBeTrue();
+
+        // The DevRunningStatus feature activates the contributor: the dev server is probed, a change is signaled.
+        var changed = new TaskCompletionSource();
+        server.Services.GetRequiredService<ClientsDevRunningStatusContributor>().Activate( TestHelper.Monitor, () => changed.TrySetResult() );
+        await changed.Task.WaitAsync( cancel );
+        GetStatus( server )["App"].GetProperty( "Serving" ).GetBoolean().ShouldBeTrue();
     }
 }

@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 
 namespace CK.TypeScript;
 
@@ -16,7 +15,7 @@ static class DevServer
     internal static void EnsureRunning( IStaticLogger monitor, WebApplication app, ClientInfo client, string projectPath )
     {
         var port = client.DevServerPort;
-        if( IsListening( port ) )
+        if( ClientsDevRunningStatusContributor.IsListening( port ) )
         {
             monitor.Info( $"Something listens on port {port}: it is used as the dev server of the client application '{client}'." );
             return;
@@ -72,19 +71,6 @@ static class DevServer
             process.Dispose();
         } );
         monitor.Info( $"Started the dev server of the client application '{client}' on port {port} (it compiles before it answers)." );
-    }
-
-    static bool IsListening( int port )
-    {
-        try
-        {
-            using var c = new TcpClient();
-            return c.ConnectAsync( "localhost", port ).Wait( 500 ) && c.Connected;
-        }
-        catch( Exception )
-        {
-            return false;
-        }
     }
 
     // Same lookup as the TypeScript engine: the first ".yarn/releases/yarn*js" in or above the project folder.

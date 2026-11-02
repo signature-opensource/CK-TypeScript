@@ -59,6 +59,8 @@ public static class ClientsApplicationExtensions
     {
         var monitor = ActivityMonitor.StaticLogger;
         var isDevelopment = app.Environment.IsDevelopment();
+        // The running status of a development party (when the DevRunningStatus feature of CK.AppIdentity is here).
+        var status = app.Services.GetService<ClientsDevRunningStatusContributor>();
         foreach( var client in app.Services.GetRequiredService<ClientDirectory>().Clients )
         {
             // The default client application ("/") has an empty path prefix.
@@ -69,10 +71,11 @@ public static class ClientsApplicationExtensions
                 DevServer.EnsureRunning( monitor, app, client, projectPath );
                 app.MapForwarder( $"{requestPath}/{{**catch-all}}", $"http://localhost:{client.DevServerPort}" )
                    .Add( b => ((RouteEndpointBuilder)b).Order = int.MaxValue );
+                status?.OnMapped( client, useDist: false );
             }
-            else
+            else if( MapDist( monitor, app, client, requestPath, Path.Combine( projectPath, client.OutputPath ) ) )
             {
-                MapDist( monitor, app, client, requestPath, Path.Combine( projectPath, client.OutputPath ) );
+                status?.OnMapped( client, useDist: true );
             }
         }
     }
@@ -92,12 +95,12 @@ public static class ClientsApplicationExtensions
         return client.UseDist;
     }
 
-    static void MapDist( IStaticLogger monitor, WebApplication app, ClientInfo client, string requestPath, string output )
+    static bool MapDist( IStaticLogger monitor, WebApplication app, ClientInfo client, string requestPath, string output )
     {
         if( !Directory.Exists( output ) )
         {
             monitor.Warn( $"Client application '{client}' is not built ('{output}' not found): it is not served." );
-            return;
+            return false;
         }
         monitor.Info( $"Client application '{client}' is served from '{output}'." );
         var files = new PhysicalFileProvider( output );
@@ -107,5 +110,6 @@ public static class ClientsApplicationExtensions
         app.MapFallbackToFile( $"{requestPath}/{{*path:nonfile}}",
                                $"{requestPath.TrimStart( '/' )}/index.html".TrimStart( '/' ),
                                new StaticFileOptions { FileProvider = files, RequestPath = requestPath } );
+        return true;
     }
 }

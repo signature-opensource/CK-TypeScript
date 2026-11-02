@@ -1,0 +1,165 @@
+using CK.AppIdentity;
+using CK.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CK.TypeScript;
+
+/// <summary>
+/// Contributes the "Clients" section of the running status of a development party (the "DevRunningStatus" feature of
+/// CK.AppIdentity): the client applications served by <see cref="ClientsApplicationExtensions.MapClients"/>, with their
+/// "Name", "Kind" ("DefaultApp" or "App"), "RequestPath", "DevServerPort", "UseDist" (the effective one) and "Serving".
+/// <para>
+/// A client application that uses its "dist" is serving. One that uses its dev server is serving once its port answers:
+/// the dev server compiles before it listens. The port is probed every second while the status is written and a dev
+/// server doesn't answer yet. A client application that is not built (and not served) doesn't appear.
+/// </para>
+/// </summary>
+public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContributor, IDisposable
+{
+    readonly object _lock;
+    readonly List<Client> _clients;
+    Action? _onChanged;
+    Timer? _probe;
+
+    sealed class Client
+    {
+        public required ClientInfo Info { get; init; }
+        public required bool UseDist { get; init; }
+        public bool Serving { get; set; }
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="ClientsDevRunningStatusContributor"/>.
+    /// </summary>
+    public ClientsDevRunningStatusContributor()
+    {
+        _lock = new object();
+        _clients = new List<Client>();
+    }
+
+    // Called by MapClients for each client application it serves (once per web application: the first one wins).
+    internal void OnMapped( ClientInfo client, bool useDist )
+    {
+        Action? onChanged;
+        lock( _lock )
+        {
+            if( _clients.Any( c => c.Info.Name == client.Name ) ) return;
+            _clients.Add( new Client { Info = client, UseDist = useDist, Serving = useDist } );
+            onChanged = _onChanged;
+            if( onChanged != null ) EnsureProbe();
+        }
+        onChanged?.Invoke();
+    }
+
+    /// <inheritdoc />
+    public void Activate( IActivityMonitor monitor, Action onChanged )
+    {
+        lock( _lock )
+        {
+            _onChanged = onChanged;
+            EnsureProbe();
+        }
+    }
+
+    /// <summary>
+    /// Always true: the client applications are served after the party is ready ("Serving").
+    /// </summary>
+    public bool IsReady => true;
+
+    /// <inheritdoc />
+    public void Write( Utf8JsonWriter writer )
+    {
+        writer.WriteStartArray( "Clients" );
+        lock( _lock )
+        {
+            foreach( var c in _clients )
+            {
+                writer.WriteStartObject();
+                writer.WriteString( "Name", c.Info.Name );
+                // The default client application is the one served at the root.
+                writer.WriteString( "Kind", c.Info.RequestPath == "/" ? "DefaultApp" : "App" );
+                writer.WriteString( "RequestPath", c.Info.RequestPath );
+                writer.WriteNumber( "DevServerPort", c.Info.DevServerPort );
+                writer.WriteBoolean( "UseDist", c.UseDist );
+                writer.WriteBoolean( "Serving", c.Serving );
+                writer.WriteEndObject();
+            }
+        }
+        writer.WriteEndArray();
+    }
+
+    // Called in the lock.
+    void EnsureProbe()
+    {
+        if( _probe == null && _clients.Any( c => !c.Serving ) )
+        {
+            _probe = new Timer( Probe, null, TimeSpan.Zero, TimeSpan.FromSeconds( 1 ) );
+        }
+    }
+
+    void Probe( object? _ )
+    {
+        Client[] waiting;
+        lock( _lock )
+        {
+            waiting = _clients.Where( c => !c.Serving ).ToArray();
+        }
+        bool changed = false;
+        foreach( var c in waiting )
+        {
+            if( IsListening( c.Info.DevServerPort ) )
+            {
+                lock( _lock ) c.Serving = true;
+                changed = true;
+            }
+        }
+        Action? onChanged;
+        lock( _lock )
+        {
+            onChanged = _onChanged;
+            if( _probe != null && _clients.All( c => c.Serving ) )
+            {
+                _probe.Dispose();
+                _probe = null;
+            }
+        }
+        if( changed ) onChanged?.Invoke();
+    }
+
+    // A dev server listens on "localhost": IPv4 or IPv6. Both are tried at once: on Windows, a refused connection takes
+    // about 2 seconds (connecting to "localhost" would wait for "::1" before trying "127.0.0.1").
+    internal static bool IsListening( int port )
+    {
+        using var v4 = new TcpClient( AddressFamily.InterNetwork );
+        using var v6 = new TcpClient( AddressFamily.InterNetworkV6 );
+        var attempts = new[] { v4.ConnectAsync( IPAddress.Loopback, port ), v6.ConnectAsync( IPAddress.IPv6Loopback, port ) };
+        try
+        {
+            Task.WaitAll( attempts, 500 );
+        }
+        catch( AggregateException )
+        {
+        }
+        return attempts.Any( a => a.IsCompletedSuccessfully );
+    }
+
+    /// <summary>
+    /// Stops the probe of the dev servers.
+    /// </summary>
+    public void Dispose()
+    {
+        lock( _lock )
+        {
+            _probe?.Dispose();
+            _probe = null;
+            _onChanged = null;
+        }
+    }
+}

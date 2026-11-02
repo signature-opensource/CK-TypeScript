@@ -51,6 +51,16 @@ convention of CK.AspNet: it is idempotent). `ClientsHosting` contributes it to t
 (`WebApplicationContributions`): a host that applies the contributions, like the "HttpEndpoint" feature of
 CK.AppIdentity.HttpEndpoint, serves the client applications without calling anything.
 
+## The running status of a development party
+
+In a development solution, the "DevRunningStatus" feature of
+[CK.AppIdentity](https://github.com/signature-opensource/CK-AppIdentity) writes the running status of the party
+(`#Dev/Store/.../DevRunningStatus.json`, read by the `#Dev/Start.ps1` launcher). The
+[`ClientsDevRunningStatusContributor`](ClientsDevRunningStatusContributor.cs) adds the `Clients` section: the client
+applications that `MapClients` serves, with their `Name`, `Kind`, `RequestPath`, `DevServerPort`, effective `UseDist`
+and `Serving`. A client application that uses its `dist` is serving; one that uses its dev server is serving once its
+port answers (it is probed every second while it doesn't).
+
 ## Requires.
 
 - [CK.TypeScript](../CK.TypeScript/README.md) for the `ClientDirectory`.
