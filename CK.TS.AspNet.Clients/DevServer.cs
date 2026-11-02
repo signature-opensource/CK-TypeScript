@@ -48,7 +48,22 @@ static class DevServer
         {
             try
             {
-                if( !process.HasExited ) process.Kill( entireProcessTree: true );
+                if( process.HasExited )
+                {
+                    monitor.Info( $"The dev server of the client application '{client}' (port {port}) had already exited." );
+                }
+                else
+                {
+                    process.Kill( entireProcessTree: true );
+                    if( process.WaitForExit( 5000 ) )
+                    {
+                        monitor.Info( $"Stopped the dev server of the client application '{client}' (port {port})." );
+                    }
+                    else
+                    {
+                        monitor.Warn( $"The dev server of the client application '{client}' (port {port}) didn't exit within 5 seconds after being killed." );
+                    }
+                }
             }
             catch( Exception ex )
             {
