@@ -271,11 +271,15 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             File.WriteAllText( tempPackageJsonPath, "{}" );
                             // Required by Yarn, otherwise the _new_ project must be a workspace in the parent project.
                             File.WriteAllText( tempFolderPath.AppendPart( "yarn.lock" ), "" );
-                            if( !context.IntegrationContext.RunYarn( monitor,
-                                            $"add @angular/cli@{angularCliVersion.ToNpmString()}",
-                                            workingDirectory: tempFolderPath ) )
+                            // Parallel creations of the same yarn root share its ".yarn/cache".
+                            using( context.IntegrationContext.AcquireYarnRootLock( monitor ) )
                             {
-                                return false;
+                                if( !context.IntegrationContext.RunYarn( monitor,
+                                                $"add @angular/cli@{angularCliVersion.ToNpmString()}",
+                                                workingDirectory: tempFolderPath ) )
+                                {
+                                    return false;
+                                }
                             }
                             if( !context.IntegrationContext.RunYarn(
                                             monitor,

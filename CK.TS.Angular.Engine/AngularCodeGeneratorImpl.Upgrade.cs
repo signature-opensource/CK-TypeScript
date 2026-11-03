@@ -459,7 +459,12 @@ public partial class AngularCodeGeneratorImpl
         {
             monitor.Info( $"Running 'yarn {command}'." );
             output = new List<string>();
-            return integrationContext.RunYarnProcess( monitor, command, environment, appPath, output, UpgradeFailureClassifier.CommandTimeout );
+            // The upgrade commands install packages (ng update installs too): parallel upgrades of the same yarn root
+            // share its ".yarn/cache".
+            using( integrationContext.AcquireYarnRootLock( monitor ) )
+            {
+                return integrationContext.RunYarnProcess( monitor, command, environment, appPath, output, UpgradeFailureClassifier.CommandTimeout );
+            }
         }
 
         // The "doing" and "found" parts of a step failure message.
@@ -609,7 +614,11 @@ public partial class AngularCodeGeneratorImpl
 
         static bool RunYarnInstall( IActivityMonitor monitor, TypeScriptIntegrationContext integrationContext, NormalizedPath appPath )
         {
-            var result = integrationContext.RunYarnProcess( monitor, "install", workingDirectory: appPath, timeout: UpgradeFailureClassifier.CommandTimeout );
+            TypeScriptIntegrationContext.ProcessResult result;
+            using( integrationContext.AcquireYarnRootLock( monitor ) )
+            {
+                result = integrationContext.RunYarnProcess( monitor, "install", workingDirectory: appPath, timeout: UpgradeFailureClassifier.CommandTimeout );
+            }
             if( result.TimedOut || result.ExitCode != 0 )
             {
                 monitor.Warn( result.TimedOut

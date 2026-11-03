@@ -193,6 +193,16 @@ public sealed partial class TypeScriptIntegrationContext
         }
     }
 
+    /// <summary>
+    /// Acquires the machine-wide lock on the yarn root (the folder of ".yarn/releases"): the installs of parallel
+    /// processes (test projects) share its ".yarn/cache" and can fail on Windows when they write the same package.
+    /// A command run by <see cref="RunYarnProcess"/> that installs packages (a "yarn install", an "ng update")
+    /// should run under it. The lock must be released (disposed) on the thread that acquired it.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <returns>A disposable that releases the lock.</returns>
+    public IDisposable AcquireYarnRootLock( IActivityMonitor monitor ) => YarnHelper.AcquireYarnRootLock( monitor, _yarnPath );
+
 
     /// <summary>
     /// Raised before the integration step when <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/> is

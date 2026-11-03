@@ -414,11 +414,15 @@ public static class YarnHelper
                 {
                     using( monitor.OpenError( failedMessage + " Running a yarn install and retrying." ) )
                     {
-                        code = RunProcess( monitor.ParallelLogger,
-                                           "node", $"\"{yarnPath}\" install",
-                                           workingDirectory,
-                                           environmentVariables,
-                                           out _ );
+                        // Parallel test runs of the same yarn root do this at the same time: their installs share its ".yarn/cache".
+                        using( AcquireYarnRootLock( monitor, yarnPath ) )
+                        {
+                            code = RunProcess( monitor.ParallelLogger,
+                                               "node", $"\"{yarnPath}\" install",
+                                               workingDirectory,
+                                               environmentVariables,
+                                               out _ );
+                        }
                         if( code != 0 )
                         {
                             monitor.CloseGroup( "Failed." );
