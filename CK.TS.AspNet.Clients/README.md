@@ -64,6 +64,14 @@ its port answers (it is probed every second while it doesn't). `Error` is null, 
 the host runs: it is then its exit code and its last output lines, `Serving` is false, and the launcher stops waiting for
 this client application.
 
+## The client applications in the description of the party
+
+The [`ClientsPartyDescriptionContributor`](ClientsPartyDescriptionContributor.cs) adds the client applications of the
+`ClientDirectory` (their `Name` and `RequestPath`) to the description of the party (its `IParty.Description`, see the
+"PartyDescription" feature of [CK.AppIdentity](https://github.com/signature-opensource/CK-AppIdentity/blob/stable/CK.AppIdentity/README.md#the-description-of-a-party)):
+the party announces them to its remotes, and the links that a remote builds for it (the mails of an Authentication
+Center) target them (`PartyDescription.GetClientApplicationUrl`).
+
 ## Requires.
 
 - [CK.TypeScript](../CK.TypeScript/README.md) for the `ClientDirectory`.

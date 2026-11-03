@@ -34,7 +34,10 @@ public class MapClientsTests
     static async Task<IStObjMap> CreateMapAsync( NormalizedPath root, int appPort, int miniAppPort, bool miniAppUseDist = false )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( ClientDirectory ), typeof( ClientsHosting ), typeof( ClientsDevRunningStatusContributor ) );
+        configuration.FirstBinPath.Types.Add( typeof( ClientDirectory ),
+                                              typeof( ClientsHosting ),
+                                              typeof( ClientsDevRunningStatusContributor ),
+                                              typeof( ClientsPartyDescriptionContributor ) );
         configuration.EnsureAspect<TypeScriptAspectConfiguration>();
         var app = configuration.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
         app.Name = "App";
@@ -265,5 +268,19 @@ public class MapClientsTests
         var miniApp = GetStatus( server )["MiniApp"];
         miniApp.GetProperty( "Serving" ).GetBoolean().ShouldBeTrue();
         miniApp.GetProperty( "Error" ).ValueKind.ShouldBe( JsonValueKind.Null );
+    }
+
+    [Test]
+    public async Task the_client_applications_are_contributed_to_the_description_of_the_party_Async()
+    {
+        var map = await CreateMapAsync( TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false ), 4200, 4201 );
+        await using var server = await CreateHostAsync( map, "Production" );
+        var builder = new CK.AppIdentity.PartyDescription.Builder { PublicUrl = new Uri( "https://acme.example.com" ) };
+        server.Services.GetRequiredService<ClientsPartyDescriptionContributor>().Contribute( builder );
+        var description = builder.Build();
+        description.ClientApplications.Select( a => a.Name ).ShouldBe( ["App", "MiniApp"], ignoreOrder: true );
+        // The links of the other parties derive from them.
+        description.GetClientApplicationUrl().ShouldBe( "https://acme.example.com" );
+        description.GetClientApplicationUrl( "MiniApp" ).ShouldBe( "https://acme.example.com/mini-app" );
     }
 }
