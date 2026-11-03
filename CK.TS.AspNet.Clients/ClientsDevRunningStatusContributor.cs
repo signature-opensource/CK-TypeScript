@@ -14,11 +14,16 @@ namespace CK.TypeScript;
 /// <summary>
 /// Contributes the "Clients" section of the running status of a development party (the "DevRunningStatus" feature of
 /// CK.AppIdentity): the client applications served by <see cref="ClientsApplicationExtensions.MapClients"/>, with their
-/// "Name", "Kind" ("DefaultApp" or "App"), "RequestPath", "DevServerPort", "UseDist" (the effective one) and "Serving".
+/// "Name", "Kind" ("DefaultApp" or "App"), "RequestPath", "DevServerPort", "UseDist" (the effective one), "Serving" and
+/// "Error".
 /// <para>
 /// A client application that uses its "dist" is serving. One that uses its dev server is serving once its port answers:
 /// the dev server compiles before it listens. The port is probed every second while the status is written and a dev
 /// server doesn't answer yet. A client application that is not built (and not served) doesn't appear.
+/// </para>
+/// <para>
+/// "Error" is null while the client application compiles or serves. When its dev server exits while the host runs, it is
+/// the exit code and the last output lines of the dev server, and "Serving" is false: it will not be served.
 /// </para>
 /// </summary>
 public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContributor, IDisposable
@@ -33,6 +38,7 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
         public required ClientInfo Info { get; init; }
         public required bool UseDist { get; init; }
         public bool Serving { get; set; }
+        public string? Error { get; set; }
     }
 
     /// <summary>
@@ -54,6 +60,21 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
             _clients.Add( new Client { Info = client, UseDist = useDist, Serving = useDist } );
             onChanged = _onChanged;
             if( onChanged != null ) EnsureProbe();
+        }
+        onChanged?.Invoke();
+    }
+
+    // Called by the DevServer when the dev server of a mapped client application exits while the host runs.
+    internal void OnFailed( ClientInfo client, string error )
+    {
+        Action? onChanged;
+        lock( _lock )
+        {
+            var c = _clients.FirstOrDefault( c => c.Info.Name == client.Name );
+            if( c == null ) return;
+            c.Serving = false;
+            c.Error = error;
+            onChanged = _onChanged;
         }
         onChanged?.Invoke();
     }
@@ -89,6 +110,8 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
                 writer.WriteNumber( "DevServerPort", c.Info.DevServerPort );
                 writer.WriteBoolean( "UseDist", c.UseDist );
                 writer.WriteBoolean( "Serving", c.Serving );
+                if( c.Error != null ) writer.WriteString( "Error", c.Error );
+                else writer.WriteNull( "Error" );
                 writer.WriteEndObject();
             }
         }
@@ -98,7 +121,7 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
     // Called in the lock.
     void EnsureProbe()
     {
-        if( _probe == null && _clients.Any( c => !c.Serving ) )
+        if( _probe == null && _clients.Any( IsWaiting ) )
         {
             _probe = new Timer( Probe, null, TimeSpan.Zero, TimeSpan.FromSeconds( 1 ) );
         }
@@ -109,22 +132,29 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
         Client[] waiting;
         lock( _lock )
         {
-            waiting = _clients.Where( c => !c.Serving ).ToArray();
+            waiting = _clients.Where( IsWaiting ).ToArray();
         }
         bool changed = false;
         foreach( var c in waiting )
         {
             if( IsListening( c.Info.DevServerPort ) )
             {
-                lock( _lock ) c.Serving = true;
-                changed = true;
+                lock( _lock )
+                {
+                    // It may have failed meanwhile (something else may listen on its port).
+                    if( c.Error == null )
+                    {
+                        c.Serving = true;
+                        changed = true;
+                    }
+                }
             }
         }
         Action? onChanged;
         lock( _lock )
         {
             onChanged = _onChanged;
-            if( _probe != null && _clients.All( c => c.Serving ) )
+            if( _probe != null && !_clients.Any( IsWaiting ) )
             {
                 _probe.Dispose();
                 _probe = null;
@@ -132,6 +162,9 @@ public sealed class ClientsDevRunningStatusContributor : IDevRunningStatusContri
         }
         if( changed ) onChanged?.Invoke();
     }
+
+    // A client application that is not serving yet and has not failed: its dev server compiles. Called in the lock.
+    static bool IsWaiting( Client c ) => !c.Serving && c.Error == null;
 
     // A dev server listens on "localhost": IPv4 or IPv6. Both are tried at once: on Windows, a refused connection takes
     // about 2 seconds (connecting to "localhost" would wait for "::1" before trying "127.0.0.1").

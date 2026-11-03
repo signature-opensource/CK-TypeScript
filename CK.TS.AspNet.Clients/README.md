@@ -32,7 +32,8 @@ app.MapClients();
   or above the client's project) unless something already listens on its port (a `yarn start` launched by hand is used
   as is), and stops it with the host. What the host doesn't handle under the request path is forwarded to it (YARP direct
   forwarding): the host stays the origin, the dev server's live reload goes through it too. The dev server compiles
-  before it answers: the first requests may fail.
+  before it answers: the first requests may fail. A dev server that exits while the host runs is an error in the log,
+  with its exit code and its last output lines.
 - **Otherwise, by its built files ("dist")**: the static files of `{ContentRoot}/{ProjectPath}/{OutputPath}`, with a
   fallback to its `index.html` for its client routes (a deep link like `/mini-app/some/route`). A client application that
   is not built is skipped with a warning.
@@ -57,9 +58,11 @@ In a development solution, the "DevRunningStatus" feature of
 [CK.AppIdentity](https://github.com/signature-opensource/CK-AppIdentity) writes the running status of the party
 (`#Dev/Store/.../DevRunningStatus.json`, read by the `#Dev/Start.ps1` launcher). The
 [`ClientsDevRunningStatusContributor`](ClientsDevRunningStatusContributor.cs) adds the `Clients` section: the client
-applications that `MapClients` serves, with their `Name`, `Kind`, `RequestPath`, `DevServerPort`, effective `UseDist`
-and `Serving`. A client application that uses its `dist` is serving; one that uses its dev server is serving once its
-port answers (it is probed every second while it doesn't).
+applications that `MapClients` serves, with their `Name`, `Kind`, `RequestPath`, `DevServerPort`, effective `UseDist`,
+`Serving` and `Error`. A client application that uses its `dist` is serving; one that uses its dev server is serving once
+its port answers (it is probed every second while it doesn't). `Error` is null, except when the dev server exited while
+the host runs: it is then its exit code and its last output lines, `Serving` is false, and the launcher stops waiting for
+this client application.
 
 ## Requires.
 

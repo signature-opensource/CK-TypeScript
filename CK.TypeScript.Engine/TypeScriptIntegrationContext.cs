@@ -384,6 +384,13 @@ public sealed partial class TypeScriptIntegrationContext
                 monitor.Trace( $"No 'yarn.lock' file found. 'yarn install' will be done. " );
                 canSkipRun = false;
             }
+            else if( !YarnHelper.HasWorkspaceEntry( _configuration.TargetProjectPath, _targetPackageJson.Name ) )
+            {
+                // The "name" of the package.json changed since the last install: the install state is stale (yarn
+                // doesn't find the workspace of the project).
+                monitor.Trace( $"The 'yarn.lock' has no entry for the workspace '{_targetPackageJson.Name}'. 'yarn install' will be done. " );
+                canSkipRun = false;
+            }
         }
         ExtractLatestDependencies( monitor,
                                    _targetPackageJson,

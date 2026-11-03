@@ -228,4 +228,42 @@ public class MapClientsTests
         TaskScheduler.UnobservedTaskException -= onUnobserved;
         unobserved.ShouldBeNull();
     }
+
+    [Test]
+    [CancelAfter( 60000 )]
+    public async Task in_Development_a_dev_server_that_exits_is_the_Error_of_its_client_application_Async( CancellationToken cancel )
+    {
+        var root = TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false );
+        // Nothing listens on its port: the host starts its dev server.
+        var listener = new System.Net.Sockets.TcpListener( System.Net.IPAddress.Loopback, 0 );
+        listener.Start();
+        var appPort = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        var map = await CreateMapAsync( root, appPort, 4201, miniAppUseDist: true );
+        // The yarn of the App fails at once, like a "package.json" whose workspace is not installed.
+        var releases = root.Combine( "App/.yarn/releases" );
+        Directory.CreateDirectory( releases );
+        File.WriteAllText( releases.AppendPart( "yarn-fake.cjs" ), """
+            console.log( "Starting." );
+            console.error( "Usage Error: The project in App/package.json doesn't seem to have been installed" );
+            process.exit( 3 );
+            """ );
+        await using var server = await CreateHostAsync( map, "Development" );
+        var changed = new SemaphoreSlim( 0 );
+        server.Services.GetRequiredService<ClientsDevRunningStatusContributor>().Activate( TestHelper.Monitor, () => changed.Release() );
+        JsonElement app;
+        while( (app = GetStatus( server )["App"]).GetProperty( "Error" ).ValueKind == JsonValueKind.Null )
+        {
+            await changed.WaitAsync( cancel );
+        }
+        app.GetProperty( "Serving" ).GetBoolean().ShouldBeFalse();
+        var error = app.GetProperty( "Error" ).GetString().ShouldNotBeNull();
+        error.ShouldContain( "exit code 3" );
+        error.ShouldContain( "Starting." );
+        error.ShouldContain( "doesn't seem to have been installed" );
+        // The MiniApp uses its dist: it is serving.
+        var miniApp = GetStatus( server )["MiniApp"];
+        miniApp.GetProperty( "Serving" ).GetBoolean().ShouldBeTrue();
+        miniApp.GetProperty( "Error" ).ValueKind.ShouldBe( JsonValueKind.Null );
+    }
 }

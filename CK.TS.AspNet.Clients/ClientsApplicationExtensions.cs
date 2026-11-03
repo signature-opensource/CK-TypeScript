@@ -21,7 +21,8 @@ public static class ClientsApplicationExtensions
     ///   <item>
     ///   In Development, by its dev server: the host starts it ("ng serve" on its <see cref="ClientInfo.DevServerPort"/>, stopped
     ///   with the host) unless something already listens on this port, and forwards to it what the host doesn't handle under the
-    ///   request path: the host stays the origin.
+    ///   request path: the host stays the origin. A dev server that exits while the host runs is an error (its exit code and its
+    ///   last output lines), that the running status reports (<see cref="ClientsDevRunningStatusContributor"/>).
     ///   </item>
     ///   <item>
     ///   Otherwise, or when its "dist" is used (<see cref="ClientInfo.UseDist"/>, that the host's configuration overrides with
@@ -68,10 +69,11 @@ public static class ClientsApplicationExtensions
             var projectPath = Path.Combine( app.Environment.ContentRootPath, client.ProjectPath );
             if( isDevelopment && !UseDist( monitor, app.Configuration, client ) )
             {
-                DevServer.EnsureRunning( monitor, app, client, projectPath );
+                // Mapped first: the dev server can fail at once.
+                status?.OnMapped( client, useDist: false );
+                DevServer.EnsureRunning( monitor, app, client, projectPath, status );
                 app.MapForwarder( $"{requestPath}/{{**catch-all}}", $"http://localhost:{client.DevServerPort}" )
                    .Add( b => ((RouteEndpointBuilder)b).Order = int.MaxValue );
-                status?.OnMapped( client, useDist: false );
             }
             else if( MapDist( monitor, app, client, requestPath, Path.Combine( projectPath, client.OutputPath ) ) )
             {

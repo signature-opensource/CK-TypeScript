@@ -312,6 +312,17 @@ public static class YarnHelper
         return File.Exists( f );
     }
 
+    /// <summary>
+    /// Gets whether the existing "yarn.lock" has the entry of the project's workspace (its resolution
+    /// "<paramref name="name"/>@workspace:."). A package.json without name is not checked (yarn names its workspace).
+    /// </summary>
+    internal static bool HasWorkspaceEntry( NormalizedPath targetProjectPath, string? name )
+    {
+        if( string.IsNullOrWhiteSpace( name ) ) return true;
+        var f = targetProjectPath.AppendPart( "yarn.lock" );
+        return File.ReadAllText( f ).Contains( $"resolution: \"{name}@workspace:.\"", StringComparison.Ordinal );
+    }
+
     static NormalizedPath? TryFindYarn( NormalizedPath currentDirectory, out int aboveCount )
     {
         // Here we should find a .yarnrc.yml:
