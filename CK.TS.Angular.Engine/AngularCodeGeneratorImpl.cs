@@ -20,7 +20,7 @@ namespace CK.TS.Angular.Engine;
 /// </summary>
 public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 {
-    const string _defaultAngularCliVersion = "^20";
+    internal const string DefaultAngularCliVersion = "^22";
     const string _conflictFolderName = "_ckConflict_";
 
     ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
@@ -35,7 +35,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
         return codeGen;
     }
 
-    internal sealed class AngularCodeGen : ITSCodeGenerator, IAngularContext
+    internal sealed partial class AngularCodeGen : ITSCodeGenerator, IAngularContext
     {
         [AllowNull] ComponentManager _components;
         [AllowNull] LibraryImport _angularCore;
@@ -161,6 +161,7 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 """ );
 
             _components = new ComponentManager( context, _angularCore );
+            context.AfterCodeGeneration += OnAfterCodeGeneration;
             context.IntegrationContext.OnBeforeIntegration += OnBeforeIntegration;
             context.IntegrationContext.OnAfterIntegration += OnAfterIntegration;
             return true;
@@ -176,19 +177,6 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                 if( File.Exists( angularJsonPath ) )
                 {
                     monitor.Info( "Found existing 'angular.json' file." );
-
-                    // TODO: Update angular deps if needed
-
-                    // Read package.json to retrieve @angular/core version.
-                    // Check if it matches _defaultAngularCliVersion
-                    // Maybe only upgrade if current installed version is inferior to _defaultAngularCliVersion
-                    // do apply _defaultAngularCliVersion on @angular/* packages.
-                    // yarn ng update ng-zorro-antd
-                    // yarn ng update @angular/cli@^20 @angular/core@^20 ng-zorro-antd@^20 --allow-dirty --migrate-only
-                    // Note: @angular/cli requires nodejs >= v22.12 (note: v22.18 works with PnP, versions below don't)
-
-                    // choco install nodejs version="22.18.0"
-
                     return true;
                 }
                 return CreateAngularApp( monitor, context );
@@ -271,10 +259,9 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                             Directory.CreateDirectory( tempFolderPath );
                             if( !context.IntegrationContext.ConfiguredLibraries.TryGetValue( "@angular/cli", out var angularCliVersion ) )
                             {
-                                var parseResult = SVersionBound.NpmTryParse( _defaultAngularCliVersion );
-                                Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", parseResult.IsValid && parseResult.Result != SVersionBound.All );
-                                angularCliVersion = parseResult.Result;
-                                monitor.Info( $"Using @angular/cli default version '{_defaultAngularCliVersion}'." );
+                                Throw.DebugAssert( "The version defined in code is necessarily valid and not All.", _defaultAngularCliBound != SVersionBound.All );
+                                angularCliVersion = _defaultAngularCliBound;
+                                monitor.Info( $"Using @angular/cli default version '{DefaultAngularCliVersion}'." );
                             }
                             else
                             {
@@ -763,9 +750,10 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
 
         void OnBeforeIntegration( object? sender, TypeScriptIntegrationContext.BeforeEventArgs e )
         {
-            // Adds @angular/platform-browser-dynamic as regular dependency if not already here (jest requirement).
-            e.AddOrUpdateTargetProjectDependency( "@angular/platform-browser-dynamic",
-                                                  new SVersionBound( SVersion.Create( 20, 3, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+            var targetRow = AngularMajorTooling.Rows[TargetMajor];
+            // Adds @angular/platform-browser as regular dependency if not already here (jest requirement).
+            e.AddOrUpdateTargetProjectDependency( "@angular/platform-browser",
+                                                  targetRow.PlatformBrowser,
                                                   DependencyKind.Dependency );
 
             // Workaround: https://github.com/angular/angular-cli/issues/30503
@@ -773,15 +761,16 @@ public partial class AngularCodeGeneratorImpl : ITSCodeGeneratorFactory
                                                   new SVersionBound( SVersion.Create( 4, 4, 1 ), SVersionLock.LockMajor, PackageQuality.Stable ),
                                                   DependencyKind.DevDependency );
 
-            // Adds the jest-preset-angular "15.0.0" if not alreay here.
+            // Adds the jest-preset-angular of the target row if not already here.
             e.AddOrUpdateTargetProjectDependency( "jest-preset-angular",
-                                                  new SVersionBound( SVersion.Create( 15, 0, 0 ), SVersionLock.LockMajor, PackageQuality.Stable ),
+                                                  targetRow.PreUpdateBounds.Single( b => b.Name == "jest-preset-angular" ).Version,
                                                   DependencyKind.DevDependency );
             e.JestSetup = new AngularJestSetupHandler( e.IntegrationContext );
         }
 
         void OnAfterIntegration( object? sender, TypeScriptIntegrationContext.AfterEventArgs e )
         {
+            OnAfterIntegrationUpgrade( e );
             UpdateAngularJson( e.Monitor, e.TargetProjectPath.AppendPart( "angular.json" ), e.IntegrationContext.Configuration );
 
             // The angular.json is parsed and written once (when something changed), keeping its line endings and its final new line:

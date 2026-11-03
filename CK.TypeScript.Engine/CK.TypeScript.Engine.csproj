@@ -4,7 +4,10 @@
     <LangVersion>13</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../.yarn/releases/yarn-4.8.1.cjs" />
+    <EmbeddedResource Include="../.yarn/releases/yarn-4.18.1.cjs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="CK.TypeScript.Tests" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="36.0.0-0.cris-auth.0.ci.27" />

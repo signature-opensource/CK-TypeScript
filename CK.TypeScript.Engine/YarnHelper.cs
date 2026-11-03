@@ -27,7 +27,7 @@ public static class YarnHelper
     /// The current yarn version that is embedded in the CK.TypeScript.Engine assembly
     /// and can be automatically installed. See <see cref="TypeScriptBinPathAspectConfiguration.InstallYarn"/>.
     /// </summary>
-    public const string AutomaticYarnVersion = "4.8.1";
+    public const string AutomaticYarnVersion = "4.18.1";
 
     const string _yarnFileName = $"yarn-{AutomaticYarnVersion}.cjs";
     const string _autoYarnPath = $".yarn/releases/{_yarnFileName}";
@@ -199,46 +199,47 @@ public static class YarnHelper
                 }
             }
             return yarnPath;
+        }
+    }
 
-            static void HandleGitIgnore( IActivityMonitor monitor, NormalizedPath yarnRootPath )
+    internal static void HandleGitIgnore( IActivityMonitor monitor, NormalizedPath yarnRootPath )
+    {
+        var gitIgnore = yarnRootPath.AppendPart( ".gitignore" );
+        const string yarnDefault = """
+                      # Yarn - Not using Zero-Install (.yarn/cache and .pnp.* are not commited).
+                      .pnp.*
+                      .yarn/*
+                      !.yarn/.gitattributes
+                      !.yarn/patches
+                      !.yarn/plugins
+                      !.yarn/releases
+                      !.yarn/sdks
+                      !.yarn/versions
+
+                      # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz
+                      # and yarn/unplugged since we don't use Zero-Install.
+                      **/.yarn/install-state.gz
+                      **/.yarn/unplugged
+
+                      """;
+        if( File.Exists( gitIgnore ) )
+        {
+            var ignore = File.ReadAllText( gitIgnore );
+            if( !ignore.Contains( ".yarn/*" ) )
             {
-                var gitIgnore = yarnRootPath.AppendPart( ".gitignore" );
-                const string yarnDefault = """
-                              # Yarn - Not using Zero-Install (.yarn/cache and .pnp.* are not commited).
-                              .pnp.*
-                              .yarn/*
-                              !.yarn/.gitattributes
-                              !.yarn/patches
-                              !.yarn/plugins
-                              !.yarn/releases
-                              !.yarn/sdks
-                              !.yarn/versions
-
-                              # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz
-                              # and yarn/unplugged since we don't use Zero-Install.
-                              **/.yarn/install-state.gz
-                              **/.yarn/unplugged
-
-                              """;
-                if( File.Exists( gitIgnore ) )
-                {
-                    var ignore = File.ReadAllText( gitIgnore );
-                    if( !ignore.Contains( ".yarn/*" ) )
-                    {
-                        monitor.Info( $"No '.yarn/*' found in '{gitIgnore}'. Adding default section:{yarnDefault}" );
-                        ignore += yarnDefault;
-                    }
-                    else
-                    {
-                        monitor.Info( $"At least '.yarn/*' found in '{gitIgnore}'. Skipping the injection of the default section:{yarnDefault}" );
-                    }
-                }
-                else
-                {
-                    monitor.Info( $"No '{gitIgnore}' found. Creating one with the default section:{yarnDefault}" );
-                    File.WriteAllText( gitIgnore, yarnDefault );
-                }
+                monitor.Info( $"No '.yarn/*' found in '{gitIgnore}'. Adding default section:{yarnDefault}" );
+                if( ignore.Length > 0 && !ignore.EndsWith( '\n' ) ) ignore += Environment.NewLine;
+                File.WriteAllText( gitIgnore, ignore + yarnDefault );
             }
+            else
+            {
+                monitor.Info( $"At least '.yarn/*' found in '{gitIgnore}'. Skipping the injection of the default section:{yarnDefault}" );
+            }
+        }
+        else
+        {
+            monitor.Info( $"No '{gitIgnore}' found. Creating one with the default section:{yarnDefault}" );
+            File.WriteAllText( gitIgnore, yarnDefault );
         }
     }
 
@@ -441,6 +442,7 @@ public static class YarnHelper
 
     static CKTrait StdErrTag = ActivityMonitor.Tags.Register( "StdErr" );
     static CKTrait StdOutTag = ActivityMonitor.Tags.Register( "StdOut" );
+    static readonly TimeSpan _outputEndTimeout = TimeSpan.FromSeconds( 5 );
 
     internal static int RunProcess( IParallelLogger logger,
                                     string fileName,
@@ -448,6 +450,45 @@ public static class YarnHelper
                                     string workingDirectory,
                                     Dictionary<string, string>? environmentVariables,
                                     out bool foundInstallYarnErrorMessage )
+    {
+        return RunProcess( logger,
+                           fileName,
+                           arguments,
+                           workingDirectory,
+                           environmentVariables?.ToDictionary( kv => kv.Key, kv => (string?)kv.Value ),
+                           outputLines: null,
+                           timeout: TimeSpan.Zero,
+                           out foundInstallYarnErrorMessage ).ExitCode;
+    }
+
+    /// <summary>
+    /// Runs a process and logs its standard output and error lines at the Trace level.
+    /// </summary>
+    /// <param name="logger">The logger to use.</param>
+    /// <param name="fileName">The process file name.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="workingDirectory">The working directory.</param>
+    /// <param name="environmentVariables">
+    /// Optional variables that override the inherited environment. A null value removes the variable.
+    /// </param>
+    /// <param name="outputLines">Optional list that receives the standard output and error lines.</param>
+    /// <param name="timeout">
+    /// Zero or negative for no limit. Otherwise the process tree is killed when the process still runs after it,
+    /// and the wait for the end of the output is bounded too.
+    /// </param>
+    /// <param name="foundInstallYarnErrorMessage">True when the standard output contains "running an install might help".</param>
+    /// <returns>
+    /// The exit code and whether the process has been killed by the timeout. The exit code is -1 when the killed
+    /// process has still not ended once the wait for the end of the output is over.
+    /// </returns>
+    internal static (int ExitCode, bool TimedOut) RunProcess( IParallelLogger logger,
+                                                              string fileName,
+                                                              string arguments,
+                                                              string workingDirectory,
+                                                              Dictionary<string, string?>? environmentVariables,
+                                                              List<string>? outputLines,
+                                                              TimeSpan timeout,
+                                                              out bool foundInstallYarnErrorMessage )
     {
         var info = new ProcessStartInfo( fileName, arguments )
         {
@@ -459,10 +500,22 @@ public static class YarnHelper
         };
         if( environmentVariables != null && environmentVariables.Count > 0 )
         {
-            foreach( var kv in environmentVariables ) info.EnvironmentVariables.Add( kv.Key, kv.Value );
+            // Environment already holds the inherited variables: Add would throw on them.
+            foreach( var kv in environmentVariables )
+            {
+                if( kv.Value == null )
+                {
+                    info.Environment.Remove( kv.Key );
+                }
+                else
+                {
+                    info.Environment[kv.Key] = kv.Value;
+                }
+            }
         }
 
         bool localFoundInstallYarnErrorMessage = false;
+        bool outputClosed = false;
         using var process = new Process { StartInfo = info };
         process.OutputDataReceived += ( sender, data ) =>
         {
@@ -470,20 +523,75 @@ public static class YarnHelper
             {
                 localFoundInstallYarnErrorMessage |= data.Data.Contains( "running an install might help" );
                 logger.Trace( StdOutTag, data.Data );
+                Collect( data.Data );
             }
         };
         process.ErrorDataReceived += ( sender, data ) =>
         {
-            if( data.Data != null ) logger.Trace( StdErrTag, data.Data );
+            if( data.Data != null )
+            {
+                logger.Trace( StdErrTag, data.Data );
+                Collect( data.Data );
+            }
         };
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        process.WaitForExit();
+        bool timedOut = false;
+        if( timeout <= TimeSpan.Zero )
+        {
+            process.WaitForExit();
+        }
+        else
+        {
+            if( !process.WaitForExit( timeout ) )
+            {
+                process.Kill( entireProcessTree: true );
+                timedOut = true;
+            }
+            // The end of both streams is awaited for a bounded time: a process that left the tree can keep them open.
+            using var cts = new CancellationTokenSource( _outputEndTimeout );
+            try
+            {
+                process.WaitForExitAsync( cts.Token ).GetAwaiter().GetResult();
+            }
+            catch( OperationCanceledException )
+            {
+                if( process.HasExited )
+                {
+                    logger.Warn( $"The output of '{fileName} {arguments}' is still open {_outputEndTimeout.TotalSeconds} seconds after the process exit: it may be incomplete." );
+                }
+                else
+                {
+                    logger.Warn( $"'{fileName} {arguments}' has not ended {_outputEndTimeout.TotalSeconds} seconds after it was killed." );
+                }
+            }
+        }
+        if( outputLines != null )
+        {
+            // The caller reads the list once this method returns: later lines are dropped.
+            lock( outputLines )
+            {
+                outputClosed = true;
+            }
+        }
         foundInstallYarnErrorMessage = localFoundInstallYarnErrorMessage;
+        // Only a killed process can still run here: -1 is also what a killed process exits with on Windows.
+        return (process.HasExited ? process.ExitCode : -1, timedOut);
 
-        return process.ExitCode;
-
+        void Collect( string line )
+        {
+            if( outputLines != null )
+            {
+                lock( outputLines )
+                {
+                    if( !outputClosed )
+                    {
+                        outputLines.Add( line );
+                    }
+                }
+            }
+        }
     }
 
     #endregion
