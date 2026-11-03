@@ -61,6 +61,9 @@ sealed class AngularJestSetupHandler : TypeScriptIntegrationContext.JestSetupHan
                     url: 'http://localhost' 
                     // Stop-CKTypeScriptSrv
                 },
+                // The tests run against a real server (TestHelper.CreateTypeScriptTestRunner): the 5 seconds default of Jest
+                // is too short for a first test (a cold compilation and server calls) on a loaded machine.
+                testTimeout: 30000,
                 setupFilesAfterEnv: ['<rootDir>/{{JestSetupTSFileName}}']
             };
             """;
