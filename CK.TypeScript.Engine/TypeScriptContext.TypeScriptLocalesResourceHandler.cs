@@ -90,6 +90,7 @@ public sealed partial class TypeScriptContext
                     if( hasNgLocalization )
                     {
                         localesBody.AppendLine( "import { TranslateService } from '@ngx-translate/core';" );
+                        localesBody.AppendLine( "import { firstValueFrom } from 'rxjs';" );
                     }
 
                     bool hasNgZorro = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Zorro.ZorroPackage" );
@@ -278,13 +279,15 @@ public sealed partial class TypeScriptContext
                                 this.currentLocale.set( locale );
                             
                             """ );
-                        if( hasNgLocalization )
-                        {
-                            localesBody.AppendLine( "    this.#translate.use( config.ngxTranslate );" );
-                        }
                         if( hasNgZorro )
                         {
                             localesBody.AppendLine( "    this.#zorro.setLocale( config.zorro );" );
+                        }
+                        if( hasNgLocalization )
+                        {
+                            // ngx-translate switches its current language once the translations of the language are
+                            // loaded: setLocale resolves then.
+                            localesBody.AppendLine( "    await firstValueFrom( this.#translate.use( config.ngxTranslate ) );" );
                         }
                         localesBody.AppendLine( "  }" );
 
