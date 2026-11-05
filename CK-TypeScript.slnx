@@ -14,9 +14,6 @@
     <Project Path="Tests/CK.TS.AspNet.WebSocketChannel.Tests/CK.TS.AspNet.WebSocketChannel.Tests.csproj" />
     <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
   </Folder>
-  <Folder Name="/Tests/Angular/">
-    <Project Path="Tests/Angular/CK.TS.Angular.Tests/CK.TS.Angular.Tests.csproj" />
-  </Folder>
   <Folder Name="/Tests/BuildMode/" />
   <Folder Name="/Tests/BuildMode/CK-ObservableDomain/">
     <Project Path="Tests/BuildMode/CK-ObservableDomain/CK.TS.ObservableDomain.Tests/CK.TS.ObservableDomain.Tests.csproj" />
@@ -27,17 +24,8 @@
     <Project Path="Tests/BuildMode/CK-TS-JsonGraphSerializer/CK.TS.JsonGraphSerializer/CK.TS.JsonGraphSerializer.csproj" />
   </Folder>
   <Project Path="CK.IO.Core/CK.IO.Core.csproj" />
-  <Project Path="CK.Ng.AspNet.Auth.Basic/CK.Ng.AspNet.Auth.Basic.csproj" />
-  <Project Path="CK.Ng.AspNet.Auth/CK.Ng.AspNet.Auth.csproj" />
-  <Project Path="CK.Ng.Axios/CK.Ng.Axios.csproj" />
-  <Project Path="CK.Ng.Localization/CK.Ng.Localization.csproj" />
-  <Project Path="CK.Ng.PublicPage/CK.Ng.PublicPage.csproj" />
-  <Project Path="CK.Ng.AspNet.WebSocketChannel/CK.Ng.AspNet.WebSocketChannel.csproj" />
-  <Project Path="CK.Ng.Zorro/CK.Ng.Zorro.csproj" />
   <Project Path="CK.ResourceSpace.Transformable/CK.ResourceSpace.Transformable.csproj" />
   <Project Path="CK.Testing.TypeScriptEngine/CK.Testing.TypeScriptEngine.csproj" />
-  <Project Path="CK.TS.Angular.Engine/CK.TS.Angular.Engine.csproj" />
-  <Project Path="CK.TS.Angular/CK.TS.Angular.csproj" />
   <Project Path="CK.TS.AspNet.Auth/CK.TS.AspNet.Auth.csproj" />
   <Project Path="CK.TypeScript.CodeGen/CK.TypeScript.CodeGen.csproj" />
   <Project Path="CK.TypeScript.Engine/CK.TypeScript.Engine.csproj" />
