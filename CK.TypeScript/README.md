@@ -53,7 +53,7 @@ its built files even in Development.
 The Angular engine writes the request path of a client application as the `"baseHref"` of its `angular.json`, and its
 `DevServerPort` as the port of its `serve` target. The
 engine generates the [`ClientDirectory`](ClientDirectory.cs) of the host: its [`ClientInfo`](ClientInfo.cs) list the
-client applications (the default one last). The [CK.TS.AspNet.Clients](../CK.TS.AspNet.Clients/README.md) package
+client applications (the default one last). The [CK.TS.AspNet.Clients](https://github.com/signature-opensource/CK-TS-AspNet/blob/stable/CK.TS.AspNet.Clients/README.md) package
 serves them; the link goes to a package built on this one because it is the consumer of this list.
 
 ## Selecting the packages of a configuration
