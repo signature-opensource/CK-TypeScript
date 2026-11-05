@@ -19,7 +19,8 @@ namespace CK.Setup;
 public static class YarnHelper
 {
     /// <summary>
-    /// The Jest's setupFile name.
+    /// The name of the Jest setup file of the previous versions of the engine: it is deleted when it is found
+    /// in the target project (the setup is now in "jest.config.js" and "jest-setup.ts").
     /// </summary>
     public const string JestSetupFileName = "jest.CKTypeScriptEngine.ts";
 

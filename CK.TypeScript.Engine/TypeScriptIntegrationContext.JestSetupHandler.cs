@@ -93,10 +93,10 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
         /// <returns>True on success, false otherwise (error should be logged).</returns>
         protected virtual bool Run( IActivityMonitor monitor )
         {
-            var legacyFile = TargetProjectPath.AppendPart( "jest.CKTypeScriptEngine.ts" );
+            var legacyFile = TargetProjectPath.AppendPart( YarnHelper.JestSetupFileName );
             if( File.Exists( legacyFile ) )
             {
-                monitor.Info( "Removing no more used 'jest.CKTypeScriptEngine.ts' file." );
+                monitor.Info( $"Removing no more used '{YarnHelper.JestSetupFileName}' file." );
                 File.Delete( legacyFile );
             }
             return WriteJestConfigFile( monitor )

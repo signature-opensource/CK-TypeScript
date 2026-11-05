@@ -32,14 +32,14 @@ sealed partial class TFunction : ITransformable
 
     internal static string ComputeName( FunctionSource source, TransformerFunction function, ITransformable target )
     {
-        return function.Name ?? $"{source.Resources.Package.FullName}({target.TransfomableTargetName})";
+        return function.Name ?? $"{source.Resources.Package.FullName}({target.TransformableTargetName})";
     }
 
     public string FunctionName => _functionName;
 
     public TFunction? NextFunction => _nextFunction;
 
-    string ITransformable.TransfomableTargetName => _functionName;
+    string ITransformable.TransformableTargetName => _functionName;
 
     TFunction? ITransformable.FirstFunction => _transformableImpl.FirstFunction;
 

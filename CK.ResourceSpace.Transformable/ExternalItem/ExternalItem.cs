@@ -26,7 +26,7 @@ sealed class ExternalItem : ITransformable
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 
-    string ITransformable.TransfomableTargetName => _item.ExternalPath;
+    string ITransformable.TransformableTargetName => _item.ExternalPath;
 
     bool ITransformable.TryFindInsertionPoint( IActivityMonitor monitor, FunctionSource source, TransformerFunction f, out TFunction? before )
         => _transformableImpl.TryFindInsertionPoint( monitor, source, f, out before );

@@ -8,7 +8,7 @@ namespace CK.Core;
 /// </summary>
 interface ITransformable
 {
-    string TransfomableTargetName { get; }
+    string TransformableTargetName { get; }
 
     TFunction? FirstFunction { get; }
 

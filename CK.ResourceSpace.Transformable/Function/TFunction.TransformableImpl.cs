@@ -42,7 +42,7 @@ sealed partial class TFunction
                     And {before._source.Origin} defines: 
                     {before._function.Text}
 
-                    Both targets '{before._target.TransfomableTargetName}'.
+                    Both targets '{before._target.TransformableTargetName}'.
                     """ );
                 return false;   
             }

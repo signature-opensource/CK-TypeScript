@@ -142,7 +142,7 @@ partial class FunctionSource : IResourceInput
                                         And: 
                                         {already.F.Text}
 
-                                        Both target '{target.TransfomableTargetName}'.
+                                        Both target '{target.TransformableTargetName}'.
                                         """ );
                             success = false;
                         }

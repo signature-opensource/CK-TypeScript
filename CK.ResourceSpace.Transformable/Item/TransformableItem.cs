@@ -50,7 +50,7 @@ partial class TransformableItem : IResourceInput, ITransformable, ITransformInst
 
     public TFunction? FirstFunction => _transformableImpl.FirstFunction;
 
-    string ITransformable.TransfomableTargetName => _targetPath.Path;
+    string ITransformable.TransformableTargetName => _targetPath.Path;
 
     TFunction? ITransformable.LastFunction => _transformableImpl.LastFunction;
 

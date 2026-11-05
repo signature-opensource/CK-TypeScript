@@ -132,7 +132,7 @@ sealed partial class TransformEnvironment
     internal int Rebind( IActivityMonitor monitor, ITransformable newItem )
     {
         Throw.DebugAssert( IsLive );
-        var toRebind = UnboundFunctions.Where( u => u.Target.TransfomableTargetName == newItem.TransfomableTargetName )
+        var toRebind = UnboundFunctions.Where( u => u.Target.TransformableTargetName == newItem.TransformableTargetName )
                                        .OrderBy( f => f.Source.Resources.Index )
                                        .ToList();
         TFunction? previous = null;
