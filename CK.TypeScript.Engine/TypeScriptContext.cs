@@ -380,7 +380,6 @@ public sealed partial class TypeScriptContext
                                                                                                 typeScriptContext.ActiveCultures,
                                                                                                 typeScriptContext.BinPathConfiguration.DefaultCulture,
                                                                                                 sortKeys: spaceData.CoreData.HasLiveState,
-                                                                                                _codeContext.CurrentRun.ConfigurationGroup.EngineMap!.Features,
                                                                                                 GetLocalesContributors() ) );
         var transformerHost = new TransformerHost( new TypeScriptLanguage(), new HtmlLanguage(), new LessLanguage() );
         var externalItemResolver = _integrationContext != null

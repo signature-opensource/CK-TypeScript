@@ -93,8 +93,7 @@ from the `OnResPackageAvailable` of one of its attribute implementations (an eng
 package, from `ITSCodeGenerator.StartCodeGeneration`: it comes first). A contributor adds import lines, a prelude
 written after the imports, fields of `LocaleInfo` (`TSLocaleInfoField`: a name, a TypeScript type and the value of each
 culture) and an epilogue written after `DEFAULT_LOCALE_INFO`; the contributions are written in the order of their
-packages. While no contributor is registered, the engine still writes the Angular, ngx-translate and ng-zorro parts
-itself (when the `CK.TS.Angular` feature, the `CK.Ng.Localization` or the `CK.Ng.Zorro` package is present).
+packages (the contributions of an engine first).
 
 ## Integration in the target project
 
