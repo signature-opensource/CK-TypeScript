@@ -8,11 +8,39 @@ namespace CK.Setup;
 
 public sealed partial class TypeScriptContext
 {
+    // Collector of the TSLocalesContributor (ordered by package, then by registration).
+    List<(int Order, TSLocalesContributor Contributor)>? _localesContributors;
+
+    /// <summary>
+    /// Registers a contributor to the generated "ck-gen/ts-locales/locales.ts" file. This must be called before the
+    /// resource space is built (typically from <see cref="TypeScriptGroupOrPackageAttributeImplExtension"/>'s
+    /// <c>OnResPackageAvailable</c>). The contributions are written in the order of their packages, then in the
+    /// order of their registration.
+    /// </summary>
+    /// <param name="package">The package that brings the contribution.</param>
+    /// <param name="contributor">The contributor.</param>
+    public void AddLocalesContributor( ResPackage package, TSLocalesContributor contributor )
+    {
+        Throw.CheckNotNullArgument( package );
+        Throw.CheckNotNullArgument( contributor );
+        _localesContributors ??= new List<(int, TSLocalesContributor)>();
+        _localesContributors.Add( (package.Index, contributor) );
+    }
+
+    IReadOnlyList<TSLocalesContributor> GetLocalesContributors()
+    {
+        // OrderBy is a stable sort: the registration order is kept for the same package.
+        return _localesContributors == null
+                ? []
+                : _localesContributors.OrderBy( c => c.Order ).Select( c => c.Contributor ).ToArray();
+    }
+
     sealed class TypeScriptLocalesResourceHandler : LocalesResourceHandler
     {
         readonly ResCoreData _resCoreData;
         readonly NormalizedCultureInfo _defaultCulture;
         readonly IReadOnlyCollection<VFeature> _features;
+        readonly IReadOnlyList<TSLocalesContributor> _contributors;
         readonly Dictionary<string, string> _angularLocaleImportByCultureName;
         readonly Dictionary<string, string> _zorroImportNameByCultureName;
 
@@ -21,7 +49,8 @@ public sealed partial class TypeScriptContext
                                                  ActiveCultureSet activeCultures,
                                                  NormalizedCultureInfo defaultCulture,
                                                  bool sortKeys,
-                                                 IReadOnlyCollection<VFeature> features )
+                                                 IReadOnlyCollection<VFeature> features,
+                                                 IReadOnlyList<TSLocalesContributor> contributors )
             : base( installer,
                     resCoreData.SpaceDataCache,
                     "ts-locales",
@@ -33,6 +62,7 @@ public sealed partial class TypeScriptContext
             _resCoreData = resCoreData;
             _defaultCulture = defaultCulture;
             _features = features;
+            _contributors = contributors;
             _angularLocaleImportByCultureName = new Dictionary<string, string>()
             {
                 // https://app.unpkg.com/@angular/common@20.2.3/files/locales
@@ -80,20 +110,23 @@ public sealed partial class TypeScriptContext
                 using( Installer.PushSubPath( RootFolderName ) )
                 {
                     var localesBody = new StringBuilder();
-                    bool isAngularProject = _features.Any( f => f.Name == "CK.TS.Angular" );
+                    // Transitional: the Angular, ngx-translate and ng-zorro parts are written here until their
+                    // packages contribute them (TSLocalesContributor). Once a contributor exists, they are not.
+                    bool hardCodedParts = _contributors.Count == 0;
+                    bool isAngularProject = hardCodedParts && _features.Any( f => f.Name == "CK.TS.Angular" );
                     if( isAngularProject )
                     {
                         localesBody.Append( "import { inject, Injectable, LOCALE_ID, Provider, signal } from '@angular/core';" ).AppendLine();
                     }
 
-                    bool hasNgLocalization = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Localization.LocalizationPackage" );
+                    bool hasNgLocalization = hardCodedParts && _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Localization.LocalizationPackage" );
                     if( hasNgLocalization )
                     {
                         localesBody.AppendLine( "import { TranslateService } from '@ngx-translate/core';" );
                         localesBody.AppendLine( "import { firstValueFrom } from 'rxjs';" );
                     }
 
-                    bool hasNgZorro = _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Zorro.ZorroPackage" );
+                    bool hasNgZorro = hardCodedParts && _resCoreData.PackageIndex.ContainsKey( "CK.Ng.Zorro.ZorroPackage" );
                     if( hasNgZorro )
                     {
                         var zorroI18nImports = new StringBuilder( "{ NzI18nInterface, NzI18nService" );
@@ -109,6 +142,20 @@ public sealed partial class TypeScriptContext
                         }
                         zorroI18nImports.Append( " }" );
                         localesBody.AppendLine( $"import {zorroI18nImports.ToString()} from 'ng-zorro-antd/i18n';" );
+                    }
+                    // The imports of the contributors, then their preludes.
+                    var imports = new List<string>();
+                    foreach( var c in _contributors )
+                    {
+                        c.AddImports( monitor, ActiveCultures, imports );
+                    }
+                    foreach( var i in imports )
+                    {
+                        localesBody.AppendLine( i );
+                    }
+                    foreach( var c in _contributors )
+                    {
+                        if( !c.WritePrelude( monitor, ActiveCultures, _defaultCulture, localesBody ) ) return false;
                     }
                     if( isAngularProject )
                     {
@@ -184,6 +231,11 @@ public sealed partial class TypeScriptContext
                           zorro: NzI18nInterface;
                         """ );
                     }
+                    var fields = _contributors.SelectMany( c => c.LocaleInfoFields ).ToList();
+                    foreach( var f in fields )
+                    {
+                        localesBody.Append( "  " ).Append( f.Name ).Append( ": " ).Append( f.TypeScriptType ).Append( ';' ).AppendLine();
+                    }
 
                     localesBody.AppendLine( """
                         };
@@ -226,6 +278,12 @@ public sealed partial class TypeScriptContext
                                 monitor.Warn( $"Unable to find NzI18nInterface associated to culture '{c.Culture.Name}'. The default 'en_US' has been associated instead." );
                             }
                             localesBody.Append( ", \"zorro\": " ).Append( zorroImport ?? "en_US" );
+                        }
+                        foreach( var f in fields )
+                        {
+                            var value = f.GetValue( monitor, c.Culture );
+                            if( value == null ) return false;
+                            localesBody.Append( ", \"" ).Append( f.Name ).Append( "\": " ).Append( value );
                         }
 
                         localesBody.Append( " }," ).AppendLine();
@@ -315,6 +373,10 @@ public sealed partial class TypeScriptContext
                               deps: [LocaleService],
                             };
                             """ );
+                    }
+                    foreach( var c in _contributors )
+                    {
+                        if( !c.WriteEpilogue( monitor, ActiveCultures, _defaultCulture, localesBody ) ) return false;
                     }
 
                     Installer.Write( $"locales.ts", localesBody.ToString() );
