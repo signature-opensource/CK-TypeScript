@@ -47,9 +47,9 @@ static bool DisplayHeaderAndHandleHelpArguments( string[] args )
     {
         Console.WriteLine( """
         Usage:
-            -?, -h, -help:   Display help.
+            -?, -h, --help:  Display help.
 
-            -v, --vervosity: Set log verbosity
+            -v, --verbosity: Set log verbosity
                                  Q[uiet]       Error groups and line only.
                                  M[inimal]     Information groups and Warning lines.
                                  N[ormal]      Trace groups and Warning lines.
@@ -126,7 +126,7 @@ static (LogFilter LogFilter, uint Debounce, bool LaunchDebugger) HandleArguments
         }
         else
         {
-            if( !uint.TryParse( args[idxV], out var dValue ) )
+            if( !uint.TryParse( args[idxD], out var dValue ) )
             {
                 Console.WriteLine( "Invalid debounce time." );
             }
