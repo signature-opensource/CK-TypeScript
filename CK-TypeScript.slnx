@@ -1,16 +1,4 @@
 <Solution>
-  <Folder Name="/CK-Transform/">
-    <Project Path="CK.Html.Transform/CK.Html.Transform.csproj" />
-    <Project Path="CK.Less.Transform/CK.Less.Transform.csproj" />
-    <Project Path="CK.Transform.Core/CK.Transform.Core.csproj" />
-    <Project Path="CK.TypeScript.Transform/CK.TypeScript.Transform.csproj" />
-  </Folder>
-  <Folder Name="/CK-Transform/Tests/">
-    <Project Path="Tests/CK.Html.Transform.Tests/CK.Html.Transform.Tests.csproj" />
-    <Project Path="Tests/CK.Less.Transform.Tests/CK.Less.Transform.Tests.csproj" />
-    <Project Path="Tests/CK.Transform.Core.Tests/CK.Transform.Core.Tests.csproj" />
-    <Project Path="Tests/CK.TypeScript.Transform.Tests/CK.TypeScript.Transform.Tests.csproj" />
-  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
@@ -24,7 +12,7 @@
     <Project Path="Tests/CK.ResourceSpace.Globalization.Tests/CK.ResourceSpace.Globalization.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.Clients.Tests/CK.TS.AspNet.Clients.Tests.csproj" />
     <Project Path="Tests/CK.TS.AspNet.WebSocketChannel.Tests/CK.TS.AspNet.WebSocketChannel.Tests.csproj" />
-  <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
+    <Project Path="Tests/CK.TypeScript.Tests/CK.TypeScript.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/Angular/">
     <Project Path="Tests/Angular/CK.TS.Angular.Tests/CK.TS.Angular.Tests.csproj" />
