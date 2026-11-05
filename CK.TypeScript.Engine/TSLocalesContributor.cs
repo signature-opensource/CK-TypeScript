@@ -8,14 +8,14 @@ namespace CK.Setup;
 /// <summary>
 /// Contributes a feature to the generated "ck-gen/ts-locales/locales.ts" file. A package brings its feature (a
 /// framework's locale data, a translation library, a component library's culture...) through a contributor registered
-/// with <see cref="TypeScriptContext.AddLocalesContributor(ResPackage, TSLocalesContributor)"/>: the engine only writes
+/// with <see cref="TypeScriptContext.AddLocalesContributor(ResPackage?, TSLocalesContributor)"/>: the engine only writes
 /// the generic part (<c>loadTranslations</c>, <c>LocaleInfo</c>, <c>CKLocales</c>, <c>locales</c> and
 /// <c>DEFAULT_LOCALE_INFO</c>).
 /// <para>
 /// The file is written in this order, each part in the order of the contributors (the order of their packages):
 /// the <see cref="AddImports"/> lines, the <see cref="WritePrelude"/> codes, the generic part with the
 /// <see cref="LocaleInfoFields"/> (in the <c>LocaleInfo</c> type and in the value of each active culture),
-/// then the <see cref="WriteEpilogue"/> codes.
+/// then the <see cref="WriteEpilogue"/> codes. The contributions of an engine (registered without package) come first.
 /// </para>
 /// </summary>
 public abstract class TSLocalesContributor

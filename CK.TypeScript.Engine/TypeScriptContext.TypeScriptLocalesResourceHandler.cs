@@ -14,17 +14,19 @@ public sealed partial class TypeScriptContext
     /// <summary>
     /// Registers a contributor to the generated "ck-gen/ts-locales/locales.ts" file. This must be called before the
     /// resource space is built (typically from <see cref="TypeScriptGroupOrPackageAttributeImplExtension"/>'s
-    /// <c>OnResPackageAvailable</c>). The contributions are written in the order of their packages, then in the
-    /// order of their registration.
+    /// <c>OnResPackageAvailable</c>, or from <see cref="ITSCodeGenerator.StartCodeGeneration"/>). The contributions
+    /// without package come first, then the ones of the packages in their order, each in the order of their registration.
     /// </summary>
-    /// <param name="package">The package that brings the contribution.</param>
+    /// <param name="package">
+    /// The package that brings the contribution, or null for a contribution of an engine (a code generator) that comes
+    /// before the packages' ones.
+    /// </param>
     /// <param name="contributor">The contributor.</param>
-    public void AddLocalesContributor( ResPackage package, TSLocalesContributor contributor )
+    public void AddLocalesContributor( ResPackage? package, TSLocalesContributor contributor )
     {
-        Throw.CheckNotNullArgument( package );
         Throw.CheckNotNullArgument( contributor );
         _localesContributors ??= new List<(int, TSLocalesContributor)>();
-        _localesContributors.Add( (package.Index, contributor) );
+        _localesContributors.Add( (package?.Index ?? -1, contributor) );
     }
 
     IReadOnlyList<TSLocalesContributor> GetLocalesContributors()
