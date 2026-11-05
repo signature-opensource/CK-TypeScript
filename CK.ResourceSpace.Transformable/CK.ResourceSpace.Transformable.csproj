@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Transform.Core" Version="3.0.1" />
+    <PackageReference Include="CK.Transform.Core" Version="3.0.1-0.cris-auth.0.ci.1" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.BinarySerialization.Sliced" Version="16.0.0-0.cris-auth.0.ci.26" />
