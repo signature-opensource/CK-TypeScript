@@ -114,7 +114,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
                 {
                     monitor.Error( $"""
                         Type '{tHook:C}' requires a method:
-                        public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, ResSpaceData spaceData, IBinaryDeserializer d );
+                        public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor, ResCoreData spaceData, IBinaryDeserializer d );
                         """ );
                     // Don't continue here: we haven't consume the stream data!
                     success = false;

@@ -3,7 +3,7 @@ using System;
 namespace CK.IO.Core;
 
 /// <summary>
-/// Five standard log levels in increasing order used by <see cref="IActivityMonitor"/>.
+/// Six standard log levels in increasing order used by <see cref="IActivityMonitor"/>.
 /// </summary>
 [Flags]
 public enum LogLevel

@@ -49,7 +49,7 @@ sealed class TSContextInitializer
     public IPocoTypeSet TypeScriptExchangeableSet => _typeScriptExchangeableSet;
 
     /// <summary>
-    /// Gets the intergation context if integration mode is not null.
+    /// Gets the integration context if integration mode is not null.
     /// </summary>
     public TypeScriptIntegrationContext? IntegrationContext => _integrationContext;
 

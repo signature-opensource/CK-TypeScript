@@ -92,9 +92,11 @@ public abstract class TransformableFileInstallHook : ITransformableFileInstallHo
     ///     /// &lt;/para&gt;
     ///     /// &lt;/summary&gt;
     ///     /// &lt;param name="monitor"&gt;The monitor to use.&lt;/param&gt;
+    ///     /// &lt;param name="spaceData"&gt;The deserialized resource space data.&lt;/param&gt;
     ///     /// &lt;param name="d"&gt;The deserializer.&lt;/param&gt;
     ///     /// &lt;returns&gt;The live updater on success, null on error. Errors must be logged.&lt;/returns&gt;
     ///     public static ILiveTransformableFileInstallHook? ReadLiveState( IActivityMonitor monitor,
+    ///                                                                     ResCoreData spaceData,
     ///                                                                     IBinaryDeserializer d )
     ///     { ... }
     ///

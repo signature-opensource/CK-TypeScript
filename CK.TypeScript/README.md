@@ -16,12 +16,12 @@ package: the most often used ones are `[Requires<T1,...Tn>]`, `[RequiredBy<T1,..
 that defines the ownership. The `[Children]` and `[Groups]` attributes can also be used. 
 
 Resources are in "Res/" and "Res[After]/" folders. They don't need to be declared on the C# side.
-The [TypeScriptFilesAttribute](TypeScriptFilesAttribute.cs) can be used to declare TypeScript type/symbol name that
+The [TypeScriptFileAttribute](TypeScriptFileAttribute.cs) can be used to declare TypeScript type/symbol name that
 are exported by a resource file.
 
 The [TypeScriptImportLibraryAttribute](TypeScriptImportLibraryAttribute.cs) is used to declare dependencies on npm packages.
 
-This is enough to drive the generation: the heavy stuff is in the [CK.TypeScript.Engine](..\CK.TypeScript.Engine).
+This is enough to drive the generation: the heavy stuff is in the [CK.TypeScript.Engine](../CK.TypeScript.Engine).
 
 Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath:
 Poco compliant types can be generated with or without serialization support.
@@ -111,8 +111,8 @@ There is no need of any `.ts` file for the folllowing types:
    - `long`, `ulong`, `BigInteger` are mapped to [bigint](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
    - `bool` is mapped to `boolean`.
    - `string` is mapped to `string`.
- - C# `object` are mapped to `unknown`. This is cleaner and safer than `any` (see [here](https://stackoverflow.com/a/51439876/190380)).
-   (Note that `{}` or `Object` could have been chosen, but not `object` - see [here](https://stackoverflow.com/a/28795689/190380).)
+ - C# `object` is mapped to `{}`: the TypeScript type that contains objects and JavaScript primitive types except `undefined`
+   and `null` (unlike `object` - see [here](https://stackoverflow.com/a/28795689/190380)).
  - `IDictionary<,>` and `Dictionary<,>` can be mapped to [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
  - `ISet<>` and HashSet<> can be mapped to [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set).
  - C# arrays, `IList<>` and `List<>` can be mapped to [js array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array).
@@ -134,7 +134,7 @@ simple enough to be unambiguously mapped:
 /// <summary>
 /// Folder for this type is explicitly "TheFolder" at the root of the /ck-gen folder.
 /// </summary>
-[TypeScript( Folder = "TheFolder" )]
+[TypeScriptType( Folder = "TheFolder" )]
 public enum DemoEnum : byte
 {
     /// <summary>
@@ -145,7 +145,7 @@ public enum DemoEnum : byte
     /// <summary>
     /// Beta.
     /// </summary>
-    Beta
+    Beta,
 
     Chi = 3712
 }
@@ -172,16 +172,16 @@ export enum DemoEnum {
 ```
 In the `ck-gen/TheFolder/DemoEnum.ts` file of the target project path.
 
-## The [TypeScript] attribute
+## The [TypeScriptType] attribute
 
-A `TypeScriptAttribute` on interfaces, classes or structs configures the generation (target folder, file name and TypeScript type name)
+A `TypeScriptTypeAttribute` on interfaces, classes or structs configures the generation (target folder, file name and TypeScript type name)
 and requests a code generation for it (but does not provide a generator).
 
-Actual generators are either global [ITSCodeGenerator](../CK.StObj.TypeScript.Engine/ITSCodeGenerator.cs) or bound
-to a type [ITSCodeGeneratorType](../CK.StObj.TypeScript.Engine/ITSCodeGeneratorType.cs)
+Actual generators are either global [ITSCodeGenerator](../CK.TypeScript.Engine/ITSCodeGenerator.cs) or bound
+to a type [ITSCodeGeneratorType](../CK.TypeScript.Engine/ITSCodeGeneratorType.cs)
 
-`TypeScriptAttribute` is optional: when no attribute is set, a type can be declared as a being a "TypeScript type" thanks to at least
-one call to `ResolveTSType` methods of the central [TypeScriptContext](../CK.StObj.TypeScript.Engine/TypeScriptContext.cs) during code generation.
+`TypeScriptTypeAttribute` is optional: when no attribute is set, a type can be declared as a being a "TypeScript type" thanks to at least
+one call to `TSTypeManager.ResolveTSType` (the `Root.TSTypes` of the central [TypeScriptContext](../CK.TypeScript.Engine/TypeScriptContext.cs)) during code generation.
 
 This *optionality* has many advantages:
   - It enables the support of generic generators for some types (based on interfaces, other attributes or any other hints) without the exported types 
@@ -191,7 +191,7 @@ This *optionality* has many advantages:
 
 ## Samples of implementations
    
-An example of a global code generator is the `IPoco` generator [PocoCodeGenerator](../CK.StObj.TypeScript.Engine/Globals/PocoCodeGenerator.cs) that
+An example of a global code generator is the `IPoco` generator [PocoCodeGenerator](../CK.TypeScript.Engine/Poco/PocoCodeGenerator.cs) that
 is available by default.
 It is not simple and rely on the IPoco discovery mechanism that captures the Poco model (their multiple interfaces with their properties).
 

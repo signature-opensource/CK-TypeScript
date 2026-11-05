@@ -688,8 +688,8 @@ public sealed partial class TypeScriptIntegrationContext
         bool shouldSaveTSConfig = _tsConfigJson.EnsureDefault( monitor );
 
         // Ensure that the compilerOptions:paths has entries:
-        //   "@local/ck-gen": ["./ck-gen/src"]
-        //   "@local/ck-gen/*": ["./ck-gen/src/*"]
+        //   "@local/ck-gen": ["./ck-gen"]
+        //   "@local/ck-gen/*": ["./ck-gen/*"]
         if( !_tsConfigJson.ResolvedBaseUrl.TryGetRelativePathTo( _configuration.TargetCKGenPath, out NormalizedPath mapping ) )
         {
             monitor.Error( $"Unable to compute relative path from tsConfig.json baseUrl '{_tsConfigJson.ResolvedBaseUrl}' to {_configuration.TargetCKGenPath}." );

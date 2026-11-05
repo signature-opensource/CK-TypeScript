@@ -5,7 +5,8 @@ namespace CK.TypeScript;
 
 /// <summary>
 /// Decorates any class (that can even be static) to specify a library that will be
-/// included in the /ck-gen/package.json file.
+/// added to the dependencies of the target project's package.json file
+/// (when the <see cref="TypeScriptBinPathAspectConfiguration.IntegrationMode"/> is <see cref="CKGenIntegrationMode.Inline"/>).
 /// </summary>
 [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
 public sealed class TypeScriptImportLibraryAttribute : ContextBoundDelegationAttribute

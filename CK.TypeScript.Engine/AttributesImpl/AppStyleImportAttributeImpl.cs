@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace CK.TypeScript.Engine;
 
 /// <summary>
-/// Implements <see cref="NgAppStyleImportAttribute"/>.
+/// Implements <see cref="AppStyleImportAttribute"/>.
 /// </summary>
 public partial class AppStyleImportAttributeImpl : TypeScriptGroupOrPackageAttributeImplExtension
 {

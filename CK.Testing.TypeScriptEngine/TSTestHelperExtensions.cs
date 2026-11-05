@@ -106,7 +106,7 @@ public static partial class TSTestHelperExtensions
     /// <summary>
     /// Creates a <see cref="Runner"/> that MUST be disposed once <see cref="Runner.Run()"/> has been called:
     /// <code>
-    /// await using var runner = TestHelper.CreateTypeScriptTestRunner( targetProjectPath );
+    /// await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath );
     /// //
     /// // The TypeScript environment is setup with Jest and can be used to develop/fix the TS code.
     /// // By using the SuspendAsync trick, when running in Debug, the C# application is running (a web server
