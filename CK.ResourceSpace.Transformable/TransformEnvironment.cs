@@ -143,6 +143,7 @@ sealed partial class TransformEnvironment
         {
             newItem.Add( f, previous );
             f.SetNewTarget( newItem );
+            f.UpdateComputedName( monitor, this );
             previous = f;
             UnboundFunctions.Remove( f );
         }

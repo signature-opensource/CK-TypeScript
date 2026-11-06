@@ -144,6 +144,58 @@ public class TransformableLiveTests
         }
     }
 
+    [Test]
+    public async Task an_unnamed_function_rebound_to_a_moved_item_is_renamed_Async( CancellationToken testCancellation )
+    {
+        Assume.That( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "FileSystemWatcher on Unix has to be tested." );
+
+        var root = TestHelper.CleanupFolder( TestHelper.TestProjectFolder.AppendPart( "TransformableLiveRename" ), ensureFolderAvailable: true );
+        File.WriteAllText( root.AppendPart( ".gitignore" ), "*" );
+        var target = root.AppendPart( "Target" );
+
+        // B's function has no name: its name is computed from its target, "B(A/Comp/hello.html)".
+        Write( root.Combine( "A/Comp/hello.html" ), "<p>Hello</p>" );
+        Write( root.Combine( "B/hello.t" ), UnnamedTransformerWithInjectionPoint( "<b>B</b>" ) );
+        Directory.CreateDirectory( root.AppendPart( "C" ) );
+
+        var space = Install( root, target, "A", "B", "C" );
+        File.ReadAllText( target.Combine( "A/Comp/hello.html" ) ).ShouldBe( "<b>B</b><p>Hello</p>" );
+
+        var cts = new CancellationTokenSource();
+        using var fromTest = testCancellation.UnsafeRegister( cts => ((CancellationTokenSource)cts!).Cancel(), cts );
+        var running = Runner.RunAsync( new ActivityMonitor( "Live monitor." ),
+                                       space.Data.LiveStatePath + ResSpace.LiveStateFileName,
+                                       100,
+                                       cts.Token );
+        try
+        {
+            await Task.Delay( 500, testCancellation );
+
+            Directory.Move( root.Combine( "A/Comp" ), root.Combine( "A/Comp2" ) );
+            var moved = target.Combine( "A/Comp2/hello.html" );
+            await WaitForAsync( moved, "<b>B</b><p>Hello</p>" );
+
+            // The rebound function is now "B(A/Comp2/hello.html)": a new transformer of transformer finds it by this name.
+            Write( root.Combine( "C/more.t" ), TransformerOfTransformer( "<u>C</u>", "B(A/Comp2/hello.html)" ) );
+            await WaitForAsync( moved, "<b>B</b><u>C</u><p>Hello</p>" );
+        }
+        finally
+        {
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
+            cts.Cancel( throwOnFirstException: true );
+#pragma warning restore VSTHRD103
+            await running.WaitAsync( testCancellation );
+        }
+    }
+
+    static string UnnamedTransformerWithInjectionPoint( string inserted ) => $$""""
+        create <html> transformer
+        begin
+            insert """{{inserted}}""" before "<p>";
+            //<More/>
+        end
+        """";
+
     static string NamedTransformer( string inserted ) => $$""""
         create <html> transformer BHello as
         begin
@@ -152,8 +204,8 @@ public class TransformableLiveTests
         end
         """";
 
-    static string TransformerOfTransformer( string inserted ) => $$"""""
-        create <t> transformer on "BHello"
+    static string TransformerOfTransformer( string inserted, string targetFunction = "BHello" ) => $$"""""
+        create <t> transformer on "{{targetFunction}}"
         begin
             inject """"
                    insert """{{inserted}}""" before "<p>";

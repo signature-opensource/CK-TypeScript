@@ -53,6 +53,32 @@ sealed partial class TFunction : ITransformable
 
     internal void SetNewTarget( ITransformable t ) => _target = t;
 
+    // Live: the name of an unnamed function is computed from its target. When it is rebound to a target with
+    // another TransformableTargetName (a moved item), its name changes, and so do the computed names of its own
+    // transformers. A name already used by another function is a warning: the former name is kept.
+    internal void UpdateComputedName( IActivityMonitor monitor, TransformEnvironment environment )
+    {
+        if( _function.Name != null ) return;
+        var newName = ComputeName( _source, _function, _target );
+        if( newName == _functionName ) return;
+        var functions = environment.TransformFunctions;
+        if( functions.TryGetValue( newName, out var homonym ) )
+        {
+            monitor.Warn( $"Transformer '{_functionName}' in {_source.Origin} cannot be renamed '{newName}': this name is used by a transformer in {homonym.Source.Origin}." );
+            return;
+        }
+        if( functions.TryGetValue( _functionName, out var current ) && current == this )
+        {
+            functions.Remove( _functionName );
+        }
+        functions.Add( newName, this );
+        _functionName = newName;
+        for( var f = _transformableImpl.FirstFunction; f != null; f = f.NextFunction )
+        {
+            f.UpdateComputedName( monitor, environment );
+        }
+    }
+
     /// <summary>
     /// Follows the transform functions until the ultimate item to transform is reached:
     /// it is a <see cref="TransformableItem"/> or a <see cref="ExternalItem"/>.
