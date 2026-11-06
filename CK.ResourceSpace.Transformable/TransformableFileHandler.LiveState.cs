@@ -153,7 +153,6 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
             Throw.DebugAssert( changed.Resources.LocalPath != null );
-            // This is NOT right!
             if( _environment.FindFromFileName( changed.SubPath, out _ ) != null )
             {
                 if( _environment.Tracker.OnChange( monitor, changed ) )
