@@ -154,6 +154,43 @@ public class YarnSettingsTests
     }
 
     [Test]
+    public void the_yarn_root_and_the_application_can_share_the_same_yarnrc()
+    {
+        // Without a git root above the application, Yarn is installed in the application's folder: its .yarnrc.yml
+        // holds the yarnPath (EnsureYarnRcFileAtYarnLevel) and the packageExtensions (UpdateYarnRc).
+        NormalizedPath root = TestHelper.TestProjectFolder.Combine( "Obj/YarnRootIsTheApplication" );
+        TestHelper.CleanupFolder( root );
+        var yarnRc = root.AppendPart( ".yarnrc.yml" );
+        var yarnPath = root.Combine( ".yarn/releases/yarn-4.18.1.cjs" );
+        YarnHelper.EnsureYarnRcFileAtYarnLevel( TestHelper.Monitor, yarnPath );
+        var rootOnly = File.ReadAllText( yarnRc );
+        rootOnly.ShouldStartWith( "yarnPath: \"./.yarn/releases/yarn-4.18.1.cjs\"" );
+
+        var s = Create( [(new YarnPackageExtensionAttribute( "ng-zorro-antd@*", DependencyKind.PeerDependency, "rxjs", "*" ), "P")], [] );
+        Throw.DebugAssert( s != null );
+        var both = YarnSettings.UpdateYarnRc( rootOnly, s );
+        Throw.DebugAssert( both != null );
+        both.ShouldStartWith( rootOnly );
+        both.ShouldContain( "\"ng-zorro-antd@*\":" );
+        File.WriteAllText( yarnRc, both );
+
+        // The yarnPath fix-up (another Yarn version) keeps the package extensions.
+        YarnHelper.EnsureYarnRcFileAtYarnLevel( TestHelper.Monitor, root.Combine( ".yarn/releases/yarn-4.20.0.cjs" ) );
+        var upgraded = File.ReadAllText( yarnRc );
+        upgraded.ShouldStartWith( "yarnPath: \"./.yarn/releases/yarn-4.20.0.cjs\"" );
+        YarnSettings.UpdateYarnRc( upgraded, s ).ShouldBe( upgraded );
+        // And the yarnPath stays as is when it is right.
+        YarnHelper.EnsureYarnRcFileAtYarnLevel( TestHelper.Monitor, root.Combine( ".yarn/releases/yarn-4.20.0.cjs" ) );
+        File.ReadAllText( yarnRc ).ShouldBe( upgraded );
+
+        // No more extensions: the file stays (the yarnPath remains), without the block.
+        var removed = YarnSettings.UpdateYarnRc( upgraded, null );
+        Throw.DebugAssert( removed != null );
+        removed.ShouldNotContain( "packageExtensions" );
+        removed.TrimEnd().ShouldBe( rootOnly.Replace( "yarn-4.18.1", "yarn-4.20.0" ).TrimEnd() );
+    }
+
+    [Test]
     public void the_install_marker_is_ignored_by_an_existing_yarn_gitignore()
     {
         NormalizedPath root = TestHelper.TestProjectFolder.Combine( "Obj/YarnInstallMarkerGitIgnore" );

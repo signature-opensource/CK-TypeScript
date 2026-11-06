@@ -263,7 +263,7 @@ public static class YarnHelper
         File.WriteAllText( gitIgnore, ignore );
     }
 
-    static void EnsureYarnRcFileAtYarnLevel( IActivityMonitor monitor, NormalizedPath yarnPath )
+    internal static void EnsureYarnRcFileAtYarnLevel( IActivityMonitor monitor, NormalizedPath yarnPath )
     {
         Throw.DebugAssert( yarnPath.Parts.Count > 3 && yarnPath.Parts[^3] == ".yarn" && yarnPath.Parts[^2] == "releases" );
         var firstLine = $"yarnPath: \"./{yarnPath.RemoveFirstPart( yarnPath.Parts.Count - 3 )}\"";
