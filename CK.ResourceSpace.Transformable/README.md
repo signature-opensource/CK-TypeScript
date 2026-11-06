@@ -85,10 +85,12 @@ Its Live update is disabled unless its installer is a `FileSystemInstaller`. Its
 target path, the hooks, the types of the transform languages (each one needs a public default constructor) and the
 items and functions. `TransformableFileHandler.ReadLiveState` restores the Live updater, which:
 
-- tracks the changes of the local files of the handled languages;
+- tracks the changes of the local files of the handled languages, and of the folders: a folder that appears (renamed,
+  moved, the package's folder restored) brings its files, outside the root folders of the folder handlers;
 - applies them: an item whose text changed is installed again with its transform functions, a local item that
   disappeared is removed, and a changed source of transform functions updates the items they target;
-- keeps the functions that lost their target, and binds them again when an item with this target appears.
+- keeps the functions that lost their target, and binds them again to a new item at the same target path, or to the
+  new item that the initial binding would find (by name, in the reachable packages, when it is the only candidate).
 
 ## Requires.
 
