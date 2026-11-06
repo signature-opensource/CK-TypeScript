@@ -117,6 +117,11 @@ When the `IntegrationMode` is `Inline` (the default), the [`TypeScriptIntegratio
   the engine writes `.yarn/ck-install-state`, the hash of the `package.json` and `.yarnrc.yml` texts, and installs again
   when they don't match it (the marker is deleted before an install: a failed one leaves none). The marker describes
   the local install: the yarn root's `.gitignore` ignores it (`**/.yarn/ck-install-state`);
+- after an install, warns when a package of the application's runtime graph (reached from its `dependencies`, at any
+  depth) is installed as more than one instance by Yarn Plug'n'Play: a library doesn't declare a peer, and the
+  application runs two copies of the package. The warning names the instances and the packages that use them; the fix
+  is a `[YarnPackageExtension]`. [`YarnPnpDuplicatedInstances`](YarnPnpDuplicatedInstances.cs) explains its design
+  (its cost, why the runtime graph only, why a warning);
 - raises `OnBeforeIntegration` (its arguments can add dependencies and run the Yarn install) and `OnAfterIntegration`;
   both can replace the `JestSetup` handler;
 - with `AutoInstallJest`, adds Jest to the dev dependencies and a `"test": "jest"` script, and its `JestSetupHandler`

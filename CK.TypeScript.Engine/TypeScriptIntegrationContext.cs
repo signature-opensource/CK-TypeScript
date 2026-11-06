@@ -519,6 +519,12 @@ public sealed partial class TypeScriptIntegrationContext
         }
         YarnHelper.EnsureYarnSdksGitAttributes( monitor, _configuration.TargetProjectPath );
         ReloadAndUpdateLatestDependencies( monitor, _targetPackageJson, manualPeerDeps );
+        // Only after an install: the .pnp.cjs is the one it wrote (see YarnPnpDuplicatedInstances for the design).
+        YarnPnpDuplicatedInstances.Check( monitor,
+                                          _configuration.TargetProjectPath,
+                                          _targetPackageJson.Dependencies.Values
+                                                .Where( d => d.DependencyKind is DependencyKind.Dependency or DependencyKind.PeerDependency )
+                                                .Select( d => d.Name ) );
         _lastInstalledTargetPackageJsonContent = _targetPackageJson.WriteAsString();
         // Yarn may have written the .yarnrc.yml (a migration): the marker hashes what is on disk.
         var installedYarnRc = File.Exists( yarnRcPath ) ? File.ReadAllText( yarnRcPath ) : null;

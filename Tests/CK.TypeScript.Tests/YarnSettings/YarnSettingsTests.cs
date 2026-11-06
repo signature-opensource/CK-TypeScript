@@ -190,6 +190,65 @@ public class YarnSettingsTests
         removed.TrimEnd().ShouldBe( rootOnly.Replace( "yarn-4.18.1", "yarn-4.20.0" ).TrimEnd() );
     }
 
+    // The data part of the .pnp.cjs of https://github.com/olivier-spinelli/ng-zorro-antd-bug (ng-zorro-antd 22.2.0
+    // without the rxjs peer): two instances of @angular/cdk.
+    static string[] DuplicatedCdkPnp() => File.ReadAllLines( TestHelper.TestProjectFolder.Combine( "YarnSettings/duplicated-cdk.pnp.cjs.txt" ) );
+
+    static readonly string[] _reproRuntimeDependencies = [ "@angular/animations", "@angular/cdk", "@angular/common", "@angular/core",
+                                                           "@angular/forms", "@angular/platform-browser", "@angular/router",
+                                                           "ng-zorro-antd", "rxjs", "tslib" ];
+
+    [Test]
+    public void duplicated_instances_of_the_runtime_graph_are_found()
+    {
+        var duplicates = YarnPnpDuplicatedInstances.Find( DuplicatedCdkPnp(), _reproRuntimeDependencies );
+        Throw.DebugAssert( duplicates != null );
+        var cdk = duplicates.ShouldHaveSingleItem();
+        cdk.Name.ShouldBe( "@angular/cdk" );
+        cdk.Instances.Count.ShouldBe( 2 );
+        // The application's instance and the one of ng-zorro-antd (without rxjs).
+        cdk.Instances.ShouldContain( i => i.Reference == "npm:22.2.6 [e2df7]" && i.UsedBy.Contains( "the application" ) );
+        cdk.Instances.ShouldContain( i => i.Reference == "npm:22.2.6 [d1970]" && i.UsedBy.Contains( "ng-zorro-antd@npm:22.2.0 [e2df7]" ) );
+    }
+
+    [Test]
+    public void duplicated_instances_are_found_at_any_depth_of_the_runtime_graph_only()
+    {
+        // The application depends on ng-zorro-antd only: the CDK is reached through it (and through
+        // @ant-design/icons-angular), its duplicate is still found.
+        var duplicates = YarnPnpDuplicatedInstances.Find( DuplicatedCdkPnp(), ["ng-zorro-antd", "@angular/cdk"] );
+        Throw.DebugAssert( duplicates != null );
+        duplicates.ShouldHaveSingleItem().Name.ShouldBe( "@angular/cdk" );
+        // A package outside of the runtime graph (here: only rxjs and tslib are runtime dependencies) is not checked.
+        var none = YarnPnpDuplicatedInstances.Find( DuplicatedCdkPnp(), ["rxjs", "tslib"] );
+        Throw.DebugAssert( none != null );
+        none.ShouldBeEmpty();
+    }
+
+    [Test]
+    public void an_unknown_pnp_format_is_not_checked()
+    {
+        YarnPnpDuplicatedInstances.Find( ["// Not a .pnp.cjs file.", "module.exports = {};"], _reproRuntimeDependencies ).ShouldBeNull();
+        // The check only traces when there is no .pnp.cjs or an unknown one: it never fails.
+        NormalizedPath root = TestHelper.TestProjectFolder.Combine( "Obj/YarnPnpDuplicatedInstances" );
+        TestHelper.CleanupFolder( root );
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            YarnPnpDuplicatedInstances.Check( TestHelper.Monitor, root, _reproRuntimeDependencies );
+            File.WriteAllText( root.AppendPart( ".pnp.cjs" ), "module.exports = {};" );
+            YarnPnpDuplicatedInstances.Check( TestHelper.Monitor, root, _reproRuntimeDependencies );
+            logs.ShouldContain( t => t.Contains( "No '.pnp.cjs'" ) );
+            logs.ShouldContain( t => t.Contains( "is not recognized" ) );
+        }
+        // The real file gives the warning.
+        File.WriteAllLines( root.AppendPart( ".pnp.cjs" ), DuplicatedCdkPnp() );
+        using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+        {
+            YarnPnpDuplicatedInstances.Check( TestHelper.Monitor, root, _reproRuntimeDependencies );
+            entries.ShouldHaveSingleItem().Text.ShouldStartWith( "Package '@angular/cdk' is installed as 2 instances by Yarn Plug'n'Play" );
+        }
+    }
+
     [Test]
     public void the_install_marker_is_ignored_by_an_existing_yarn_gitignore()
     {
