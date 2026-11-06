@@ -14,6 +14,8 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
     readonly IExternalTransformableItemResolver? _externalItemResolver;
     readonly ImmutableArray<TransformableFileInstallHook> _installHooks;
     TransformEnvironment? _environment;
+    // The root folders of the folder handlers: the Live side needs them when it scans a folder.
+    ImmutableArray<string> _excludedFolderNames;
 
     /// <summary>
     /// Initializes a new <see cref="TransformableFileHandler"/> for all the file extensions from
@@ -60,6 +62,7 @@ public sealed partial class TransformableFileHandler : ResourceSpaceFileHandler
         if( success )
         {
             _environment = environment;
+            _excludedFolderNames = folderFilter.ExcludedFolderNames;
             foreach( var item in _installHooks )
             {
                 item.Initialize( spaceData, _transformerHost );

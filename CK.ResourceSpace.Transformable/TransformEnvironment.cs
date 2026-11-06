@@ -132,7 +132,10 @@ sealed partial class TransformEnvironment
     internal int Rebind( IActivityMonitor monitor, ITransformable newItem )
     {
         Throw.DebugAssert( IsLive );
-        var toRebind = UnboundFunctions.Where( u => u.Target.TransformableTargetName == newItem.TransformableTargetName )
+        // An unbound function is rebound to an item at its former target path (the file came back),
+        // or to the item that the initial binding would find (the file moved: a folder renamed...).
+        var toRebind = UnboundFunctions.Where( u => u.Target.TransformableTargetName == newItem.TransformableTargetName
+                                                    || (newItem is TransformableItem item && IsUniqueTargetOf( monitor, u, item )) )
                                        .OrderBy( f => f.Source.Resources.Index )
                                        .ToList();
         TFunction? previous = null;

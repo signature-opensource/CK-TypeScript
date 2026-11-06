@@ -121,6 +121,37 @@ sealed partial class TransformEnvironment // TargetFinder
         return false;
     }
 
+    // Live: whether the unbound function f targets the item, with the rules of FindTransformableItemsInReachableResources,
+    // the item being the only candidate among the reachable items (an ambiguity is a warning: the function stays unbound).
+    bool IsUniqueTargetOf( IActivityMonitor monitor, TFunction f, TransformableItem item )
+    {
+        var fn = f.Function;
+        if( fn.Language.IsTransformLanguage || fn.Language.Index != item.LanguageIndex ) return false;
+        var source = f.Source;
+        if( !source.Resources.Reachables.Contains( item.Resources.Package ) ) return false;
+        GetTargetNameToFind( source, fn, out var expectedPath, out var isNamePrefix, out var name );
+        if( name.Length == 0
+            || expectedPath.StartsWith( "../" )
+            || !MatchCandidatePath( expectedPath, isNamePrefix, name, item.TargetPath.Path ) )
+        {
+            return false;
+        }
+        int count = 0;
+        foreach( var p in source.Resources.Reachables )
+        {
+            foreach( var candidate in _tracker.GetItems( p, fn.Language.Index ) )
+            {
+                if( MatchCandidatePath( expectedPath, isNamePrefix, name, candidate.TargetPath.Path ) ) ++count;
+            }
+        }
+        if( count != 1 )
+        {
+            monitor.Warn( $"Transformer of {source.Origin} matches {count} items: it is not bound to '{item.TargetPath}'." );
+            return false;
+        }
+        return true;
+    }
+
     static void GetTargetNameToFind( FunctionSource source,
                                      TransformerFunction f,
                                      out ReadOnlySpan<char> expectedPath,

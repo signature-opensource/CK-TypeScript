@@ -1,7 +1,9 @@
 using CK.EmbeddedResources;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace CK.Core;
@@ -32,6 +34,8 @@ sealed partial class StableItemOrInputTracker
     // The HashSet contains a changed ILocalInput or the full path string of a new file candidate.
     readonly HashSet<object>?[] _localChanges;
     readonly ResCoreData _coreData;
+    // Lazily computed by OnFolderChange.
+    HashSet<string>? _codeHandledFiles;
 
     internal StableItemOrInputTracker( ResCoreData spaceData )
     {
@@ -69,7 +73,78 @@ sealed partial class StableItemOrInputTracker
         }
     }
 
-    // Currently called only when changed.FullPath ends with one of our TransformerHost's file extensions.
+    // Returns whether a local input is at or below the changed path: a folder that disappeared
+    // with some of our inputs is a change, even if its name has no language.
+    internal bool HasLocalInputIn( PathChangedEvent changed )
+    {
+        var resources = changed.Resources;
+        Throw.DebugAssert( resources.LocalPath != null );
+        int lenRoot = resources.LocalPath.Length;
+        for( var i = _o[resources.Index] as ILocalInput; i != null; i = i.Next )
+        {
+            if( changed.MatchSubPath( i.FullPath.AsSpan( lenRoot ) ) ) return true;
+        }
+        return false;
+    }
+
+    // Called for a folder that exists or for the package's folder itself (an empty SubPath): its files
+    // have no event of their own (a folder renamed or moved here, the package's folder restored...).
+    // The local inputs below it are changed (they are removed if their file is gone), and the files
+    // below it that are not known inputs are new candidates, unless a folder handler or the code handles them.
+    internal void OnFolderChange( IActivityMonitor monitor,
+                                  PathChangedEvent changed,
+                                  TransformEnvironment environment,
+                                  ImmutableArray<string> excludedFolderNames )
+    {
+        var resources = changed.Resources;
+        Throw.DebugAssert( resources.LocalPath != null && resources.LocalIndex >= 0 );
+        ref var changes = ref _localChanges[resources.LocalIndex];
+        changes ??= new HashSet<object>();
+        int lenRoot = resources.LocalPath.Length;
+        bool isRoot = changed.SubPath.IsEmpty;
+        HashSet<string>? known = null;
+        for( var i = _o[resources.Index] as ILocalInput; i != null; i = i.Next )
+        {
+            if( isRoot || changed.MatchSubPath( i.FullPath.AsSpan( lenRoot ) ) )
+            {
+                changes.Add( i );
+                known ??= new HashSet<string>();
+                known.Add( i.FullPath );
+            }
+        }
+        if( !Directory.Exists( changed.FullPath ) ) return;
+        _codeHandledFiles ??= new HashSet<string>( _coreData.CodeHandledResources
+                                                            .Select( r => r.LocalFilePath )
+                                                            .Where( p => p != null )! );
+        int count = 0;
+        foreach( var f in Directory.EnumerateFiles( changed.FullPath, "*", SearchOption.AllDirectories ) )
+        {
+            if( known != null && known.Contains( f ) ) continue;
+            if( IsExcluded( f.AsSpan( lenRoot ), excludedFolderNames ) || _codeHandledFiles.Contains( f ) ) continue;
+            if( environment.FindFromFileName( f, out _ ) == null ) continue;
+            changes.Add( f );
+            ++count;
+        }
+        monitor.Debug( $"Folder '{changed.FullPath}': {count} new candidate files." );
+
+        static bool IsExcluded( ReadOnlySpan<char> subPath, ImmutableArray<string> folders )
+        {
+            // Same as ResourceSpaceFileHandler.FolderExclusion.IsExcluded.
+            foreach( var p in folders )
+            {
+                int len = p.Length;
+                if( subPath.Length > len
+                    && (subPath[len] == '\\' || subPath[len] == '/')
+                    && subPath.StartsWith( p, StringComparison.Ordinal ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    // Called for a file of our TransformerHost's languages, or for a folder that disappeared (HasLocalInputIn).
     // Always returns true except if the file is not in one of our local package resources.
     internal bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
     {

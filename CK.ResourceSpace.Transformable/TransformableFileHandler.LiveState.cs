@@ -2,6 +2,7 @@ using CK.BinarySerialization;
 using CK.Transform.Core;
 using System;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -37,6 +38,11 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         Throw.DebugAssert( "Environment is null only during deserialization.", _environment != null );
 
         s.Writer.Write( ((FileSystemInstaller)Installer).TargetPath );
+        s.Writer.WriteNonNegativeSmallInt32( _excludedFolderNames.Length );
+        foreach( var f in _excludedFolderNames )
+        {
+            s.Writer.Write( f );
+        }
         foreach( var hook in _installHooks )
         {
             Throw.DebugAssert( hook is TransformableFileInstallHook );
@@ -80,6 +86,11 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
     public static ILiveUpdater? ReadLiveState( IActivityMonitor monitor, ResCoreData spaceData, IBinaryDeserializer d )
     {
         var installer = new FileSystemInstaller( d.Reader.ReadString() );
+        var excludedFolderNames = new string[d.Reader.ReadNonNegativeSmallInt32()];
+        for( int i = 0; i < excludedFolderNames.Length; ++i )
+        {
+            excludedFolderNames[i] = d.Reader.ReadString();
+        }
 
         var hooksBuilder = ImmutableArray.CreateBuilder<ITransformableFileInstallHook>();
         bool success = ReadInstallHooks( monitor, spaceData, d, hooksBuilder );
@@ -95,7 +106,7 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         var transformerHost = new TransformerHost( languages );
         var environment = new TransformEnvironment( spaceData, transformerHost, d );
         environment.PostDeserialization( monitor );
-        return new LiveState( environment, installHooks, installer );
+        return new LiveState( environment, installHooks, installer, ImmutableArray.Create( excludedFolderNames ) );
 
         static bool ReadInstallHooks( IActivityMonitor monitor,
                                       ResCoreData spaceData,
@@ -141,27 +152,42 @@ public sealed partial class TransformableFileHandler : ILiveResourceSpaceHandler
         readonly TransformEnvironment _environment;
         readonly ImmutableArray<ITransformableFileInstallHook> _installHooks;
         readonly FileSystemInstaller _installer;
+        readonly ImmutableArray<string> _excludedFolderNames;
         int _changeCount;
 
-        public LiveState( TransformEnvironment environment, ImmutableArray<ITransformableFileInstallHook> hooks, FileSystemInstaller installer )
+        public LiveState( TransformEnvironment environment,
+                          ImmutableArray<ITransformableFileInstallHook> hooks,
+                          FileSystemInstaller installer,
+                          ImmutableArray<string> excludedFolderNames )
         {
             _environment = environment;
             _installHooks = hooks;
             _installer = installer;
+            _excludedFolderNames = excludedFolderNames;
         }
 
         public bool OnChange( IActivityMonitor monitor, PathChangedEvent changed )
         {
             Throw.DebugAssert( changed.Resources.LocalPath != null );
-            if( _environment.FindFromFileName( changed.SubPath, out _ ) != null )
+            var tracker = _environment.Tracker;
+            // A folder that exists (renamed or moved here, restored...) or the package's folder itself
+            // (an empty SubPath): its files have no event of their own.
+            if( changed.SubPath.IsEmpty || Directory.Exists( changed.FullPath ) )
             {
-                if( _environment.Tracker.OnChange( monitor, changed ) )
-                {
-                    ++_changeCount;
-                }
-                return true;
+                tracker.OnFolderChange( monitor, changed, _environment, _excludedFolderNames );
             }
-            return false;
+            // A file of our languages, or a folder that disappeared with some of our inputs.
+            else if( _environment.FindFromFileName( changed.SubPath, out _ ) != null
+                     || tracker.HasLocalInputIn( changed ) )
+            {
+                tracker.OnChange( monitor, changed );
+            }
+            else
+            {
+                return false;
+            }
+            ++_changeCount;
+            return true;
         }
 
         public void ApplyChanges( IActivityMonitor monitor )
