@@ -36,7 +36,7 @@ public class TransformableLiveTests
         Write( pathA.Combine( "Comp/hello.html" ), "<p>Hello</p>" );
         Write( pathB.AppendPart( "hello.t" ), Transformer( "<b>B</b>" ) );
 
-        var space = Install( root, pathA, pathB, target );
+        var space = Install( root, target, "A", "B" );
         var installed = target.Combine( "A/Comp/hello.html" );
         File.ReadAllText( installed ).ShouldBe( "<b>B</b><p>Hello</p>" );
 
@@ -87,6 +87,80 @@ public class TransformableLiveTests
         }
     }
 
+    [Test]
+    public async Task transformers_of_transformers_changes_Async( CancellationToken testCancellation )
+    {
+        Assume.That( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "FileSystemWatcher on Unix has to be tested." );
+
+        var root = TestHelper.CleanupFolder( TestHelper.TestProjectFolder.AppendPart( "TransformableLiveTT" ), ensureFolderAvailable: true );
+        File.WriteAllText( root.AppendPart( ".gitignore" ), "*" );
+        var target = root.AppendPart( "Target" );
+
+        // A has an item, B transforms it with a named function that has an injection point,
+        // C transforms B's function: it injects a statement.
+        Write( root.Combine( "A/hello.html" ), "<p>Hello</p>" );
+        Write( root.Combine( "B/hello.t" ), NamedTransformer( "<b>B</b>" ) );
+        var more = root.Combine( "C/more.t" );
+        Write( more, TransformerOfTransformer( "<u>C</u>" ) );
+
+        var space = Install( root, target, "A", "B", "C" );
+        var installed = target.Combine( "A/hello.html" );
+        File.ReadAllText( installed ).ShouldBe( "<b>B</b><u>C</u><p>Hello</p>" );
+
+        var cts = new CancellationTokenSource();
+        using var fromTest = testCancellation.UnsafeRegister( cts => ((CancellationTokenSource)cts!).Cancel(), cts );
+        var running = Runner.RunAsync( new ActivityMonitor( "Live monitor." ),
+                                       space.Data.LiveStatePath + ResSpace.LiveStateFileName,
+                                       100,
+                                       cts.Token );
+        try
+        {
+            await Task.Delay( 500, testCancellation );
+
+            using( TestHelper.Monitor.OpenInfo( "The transformer of transformer changes." ) )
+            {
+                Write( more, TransformerOfTransformer( "<i>C2</i>" ) );
+                await WaitForAsync( installed, "<b>B</b><i>C2</i><p>Hello</p>" );
+            }
+            using( TestHelper.Monitor.OpenInfo( "The transformed transformer changes." ) )
+            {
+                Write( root.Combine( "B/hello.t" ), NamedTransformer( "<b>B2</b>" ) );
+                await WaitForAsync( installed, "<b>B2</b><i>C2</i><p>Hello</p>" );
+            }
+            using( TestHelper.Monitor.OpenInfo( "The transformer of transformer disappears, and comes back." ) )
+            {
+                File.Delete( more );
+                await WaitForAsync( installed, "<b>B2</b><p>Hello</p>" );
+                Write( more, TransformerOfTransformer( "<u>C3</u>" ) );
+                await WaitForAsync( installed, "<b>B2</b><u>C3</u><p>Hello</p>" );
+            }
+        }
+        finally
+        {
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
+            cts.Cancel( throwOnFirstException: true );
+#pragma warning restore VSTHRD103
+            await running.WaitAsync( testCancellation );
+        }
+    }
+
+    static string NamedTransformer( string inserted ) => $$""""
+        create <html> transformer BHello as
+        begin
+            insert """{{inserted}}""" before "<p>";
+            //<More/>
+        end
+        """";
+
+    static string TransformerOfTransformer( string inserted ) => $$"""""
+        create <t> transformer on "BHello"
+        begin
+            inject """"
+                   insert """{{inserted}}""" before "<p>";
+                   """" into <More>;
+        end
+        """"";
+
     static string Transformer( string inserted ) => $$""""
         create <html> transformer
         begin
@@ -123,20 +197,22 @@ public class TransformableLiveTests
         text.ShouldBe( expected, $"File '{path}' after {timeoutMs} ms." );
     }
 
-    static ResSpace Install( NormalizedPath root, NormalizedPath pathA, NormalizedPath pathB, NormalizedPath target )
+    // Registers the local packages (in the root/<name> folders): each one requires the previous one.
+    static ResSpace Install( NormalizedPath root, NormalizedPath target, params string[] names )
     {
         var config = new ResSpaceConfiguration();
         config.AppResourcesLocalPath = root.AppendPart( "App" );
         Directory.CreateDirectory( config.AppResourcesLocalPath );
-        var a = config.RegisterPackage( TestHelper.Monitor, "A", "A",
-                                        new FileSystemResourceContainer( pathA + Path.DirectorySeparatorChar, "A" ),
-                                        new FileSystemResourceContainer( root.AppendPart( "A[After]" ) + Path.DirectorySeparatorChar, "A[After]" ),
-                                        isOptional: false ).ShouldNotBeNull();
-        var b = config.RegisterPackage( TestHelper.Monitor, "B", "B",
-                                        new FileSystemResourceContainer( pathB + Path.DirectorySeparatorChar, "B" ),
-                                        new FileSystemResourceContainer( root.AppendPart( "B[After]" ) + Path.DirectorySeparatorChar, "B[After]" ),
-                                        isOptional: false ).ShouldNotBeNull();
-        b.Requires.Add( a );
+        ResPackageDescriptor? previous = null;
+        foreach( var name in names )
+        {
+            var d = config.RegisterPackage( TestHelper.Monitor, name, name,
+                                            new FileSystemResourceContainer( root.AppendPart( name ) + Path.DirectorySeparatorChar, name ),
+                                            new FileSystemResourceContainer( root.AppendPart( name + "[After]" ) + Path.DirectorySeparatorChar, name + "[After]" ),
+                                            isOptional: false ).ShouldNotBeNull();
+            if( previous != null ) d.Requires.Add( previous );
+            previous = d;
+        }
 
         var collector = config.Build( TestHelper.Monitor ).ShouldNotBeNull();
         var spaceData = new ResSpaceDataBuilder( collector ).Build( TestHelper.Monitor ).ShouldNotBeNull();
