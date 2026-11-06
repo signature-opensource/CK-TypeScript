@@ -87,12 +87,14 @@ public class TransformableLiveTests
         }
     }
 
-    [Test]
-    public async Task transformers_of_transformers_changes_Async( CancellationToken testCancellation )
+    // The generic transformer language (<t>), and the auto language of the transformers of html transformers (<html.t>).
+    [TestCase( "t", "more.t" )]
+    [TestCase( "html.t", "more.html.t.t" )]
+    public async Task transformers_of_transformers_changes_Async( string language, string fileName, CancellationToken testCancellation )
     {
         Assume.That( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "FileSystemWatcher on Unix has to be tested." );
 
-        var root = TestHelper.CleanupFolder( TestHelper.TestProjectFolder.AppendPart( "TransformableLiveTT" ), ensureFolderAvailable: true );
+        var root = TestHelper.CleanupFolder( TestHelper.TestProjectFolder.AppendPart( $"TransformableLiveTT-{language}" ), ensureFolderAvailable: true );
         File.WriteAllText( root.AppendPart( ".gitignore" ), "*" );
         var target = root.AppendPart( "Target" );
 
@@ -100,8 +102,8 @@ public class TransformableLiveTests
         // C transforms B's function: it injects a statement.
         Write( root.Combine( "A/hello.html" ), "<p>Hello</p>" );
         Write( root.Combine( "B/hello.t" ), NamedTransformer( "<b>B</b>" ) );
-        var more = root.Combine( "C/more.t" );
-        Write( more, TransformerOfTransformer( "<u>C</u>" ) );
+        var more = root.Combine( "C" ).AppendPart( fileName );
+        Write( more, TransformerOfTransformer( "<u>C</u>", language: language ) );
 
         var space = Install( root, target, "A", "B", "C" );
         var installed = target.Combine( "A/hello.html" );
@@ -119,7 +121,7 @@ public class TransformableLiveTests
 
             using( TestHelper.Monitor.OpenInfo( "The transformer of transformer changes." ) )
             {
-                Write( more, TransformerOfTransformer( "<i>C2</i>" ) );
+                Write( more, TransformerOfTransformer( "<i>C2</i>", language: language ) );
                 await WaitForAsync( installed, "<b>B</b><i>C2</i><p>Hello</p>" );
             }
             using( TestHelper.Monitor.OpenInfo( "The transformed transformer changes." ) )
@@ -131,7 +133,7 @@ public class TransformableLiveTests
             {
                 File.Delete( more );
                 await WaitForAsync( installed, "<b>B2</b><p>Hello</p>" );
-                Write( more, TransformerOfTransformer( "<u>C3</u>" ) );
+                Write( more, TransformerOfTransformer( "<u>C3</u>", language: language ) );
                 await WaitForAsync( installed, "<b>B2</b><u>C3</u><p>Hello</p>" );
             }
         }
@@ -204,8 +206,8 @@ public class TransformableLiveTests
         end
         """";
 
-    static string TransformerOfTransformer( string inserted, string targetFunction = "BHello" ) => $$"""""
-        create <t> transformer on "{{targetFunction}}"
+    static string TransformerOfTransformer( string inserted, string targetFunction = "BHello", string language = "t" ) => $$"""""
+        create <{{language}}> transformer on "{{targetFunction}}"
         begin
             inject """"
                    insert """{{inserted}}""" before "<p>";
