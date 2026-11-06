@@ -343,21 +343,29 @@ public sealed class PackageJsonFile
     public int CKVersion { get => _ckVersion; set => _ckVersion = value; }
 
     /// <summary>
-    /// Ensures that a Yarn "resolutions" entry exists for <paramref name="packageName"/>.
-    /// An existing entry for this package is never changed: the user's choice wins.
+    /// Sets a Yarn "resolutions" entry for <paramref name="packageName"/>: the value of an existing entry is replaced.
+    /// The other entries of the "resolutions" are kept.
     /// </summary>
     /// <param name="packageName">The package name (or Yarn resolution pattern).</param>
     /// <param name="version">The version to use.</param>
-    /// <returns>True if the resolution has been added, false if it already exists.</returns>
-    public bool EnsureResolution( string packageName, string version )
+    /// <param name="previous">The previous value of the entry, null if there was no entry.</param>
+    /// <returns>True if the resolution has been added or changed, false if it already had this value.</returns>
+    public bool SetResolution( string packageName, string version, out string? previous )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( packageName );
         Throw.CheckNotNullOrWhiteSpaceArgument( version );
         if( _file.Root["resolutions"] is not JsonObject resolutions )
         {
+            // The properties of the model are written in the root first: a new "resolutions" comes after them
+            // (instead of being the first property of a new file).
+            UpdateFileRoot();
             _file.Root["resolutions"] = resolutions = new JsonObject();
         }
-        return resolutions.TryAdd( packageName, version );
+        var existing = resolutions[packageName];
+        previous = existing is JsonValue v && v.TryGetValue<string>( out var s ) ? s : existing?.ToJsonString();
+        if( previous == version ) return false;
+        resolutions[packageName] = version;
+        return true;
     }
 
     /// <summary>

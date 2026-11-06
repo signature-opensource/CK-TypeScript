@@ -165,6 +165,7 @@ public static class YarnHelper
         if( yarnPath.HasValue )
         {
             EnsureYarnRcFileAtYarnLevel( monitor, yarnPath.Value );
+            EnsureInstallMarkerIgnored( monitor, yarnPath.Value.RemoveLastPart( 3 ) );
         }
         return yarnPath;
 
@@ -221,6 +222,8 @@ public static class YarnHelper
                       # and yarn/unplugged since we don't use Zero-Install.
                       **/.yarn/install-state.gz
                       **/.yarn/unplugged
+                      # The install marker of the CK.TypeScript engine (it describes the local install).
+                      **/.yarn/ck-install-state
 
                       """;
         if( File.Exists( gitIgnore ) )
@@ -235,6 +238,7 @@ public static class YarnHelper
             else
             {
                 monitor.Info( $"At least '.yarn/*' found in '{gitIgnore}'. Skipping the injection of the default section:{yarnDefault}" );
+                EnsureInstallMarkerIgnored( monitor, yarnRootPath );
             }
         }
         else
@@ -242,6 +246,21 @@ public static class YarnHelper
             monitor.Info( $"No '{gitIgnore}' found. Creating one with the default section:{yarnDefault}" );
             File.WriteAllText( gitIgnore, yarnDefault );
         }
+    }
+
+    // The .gitignore of an existing yarn root (with the default section) must also ignore the install marker:
+    // a committed marker would match the files of a "git pull" while the local install is older.
+    internal static void EnsureInstallMarkerIgnored( IActivityMonitor monitor, NormalizedPath yarnRootPath )
+    {
+        var gitIgnore = yarnRootPath.AppendPart( ".gitignore" );
+        if( !File.Exists( gitIgnore ) ) return;
+        var ignore = File.ReadAllText( gitIgnore );
+        if( !ignore.Contains( ".yarn/*" ) || ignore.Contains( InstallMarkerFileName ) ) return;
+        var newLine = ignore.Contains( "\r\n" ) ? "\r\n" : "\n";
+        if( ignore.Length > 0 && !ignore.EndsWith( '\n' ) ) ignore += newLine;
+        ignore += $"{newLine}# The install marker of the CK.TypeScript engine (it describes the local install).{newLine}**/.yarn/{InstallMarkerFileName}{newLine}";
+        monitor.Info( $"Adding '**/.yarn/{InstallMarkerFileName}' to '{gitIgnore}'." );
+        File.WriteAllText( gitIgnore, ignore );
     }
 
     static void EnsureYarnRcFileAtYarnLevel( IActivityMonitor monitor, NormalizedPath yarnPath )
@@ -300,6 +319,26 @@ public static class YarnHelper
             monitor.Info( $"Creating '{yarnrcFile}':{Environment.NewLine}{def}" );
             File.WriteAllText( yarnrcFile, def );
         }
+    }
+
+    /// <summary>
+    /// The name of the install marker in the ".yarn" folder of a target project: the hash of the package.json and
+    /// .yarnrc.yml texts of the last successful install (see <see cref="ComputeInstallHash"/>).
+    /// </summary>
+    public const string InstallMarkerFileName = "ck-install-state";
+
+    internal static NormalizedPath GetInstallMarkerPath( NormalizedPath targetProjectPath ) => targetProjectPath.Combine( ".yarn/" + InstallMarkerFileName );
+
+    /// <summary>
+    /// Computes the install marker: the SHA-256 of the package.json text and the .yarnrc.yml text (empty when there is no file).
+    /// </summary>
+    /// <param name="packageJson">The package.json text.</param>
+    /// <param name="yarnRc">The .yarnrc.yml text. Null when there is no file.</param>
+    /// <returns>The hash, in hexadecimal.</returns>
+    public static string ComputeInstallHash( string packageJson, string? yarnRc )
+    {
+        var bytes = Encoding.UTF8.GetBytes( packageJson + '\0' + yarnRc );
+        return Convert.ToHexString( SHA256.HashData( bytes ) );
     }
 
     internal static bool HasInstallStateGZ( NormalizedPath targetProjectPath )

@@ -1,0 +1,258 @@
+using CK.Core;
+using CK.Setup;
+using CK.Testing;
+using NUnit.Framework;
+using Shouldly;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using static CK.Testing.MonitorTestHelper;
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+namespace CK.TypeScript.Tests.YarnSettingsSupport;
+
+// tslib has no dependencies: the extension adds "is-number" to it, the resolution pins it.
+[TypeScriptPackage]
+[TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency )]
+[YarnPackageExtension( "tslib@*", DependencyKind.Dependency, "is-number", "^7.0.0", Reason = "Test extension." )]
+[PackageResolution( "is-number", "7.0.0", Reason = "Test resolution." )]
+public sealed class WithExtension : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[TypeScriptImportLibrary( "tslib", "^2.6.0", DependencyKind.Dependency )]
+public sealed class WithoutExtension : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[YarnPackageExtension( "tslib@*", DependencyKind.DevDependency, "is-number", "*" )]
+public sealed class DevExtension : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[YarnPackageExtension( "tslib", DependencyKind.PeerDependency, "is-number", "*" )]
+public sealed class NoRangeSelector : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[YarnPackageExtension( "tslib@*", DependencyKind.PeerDependency, "is-number", "*" )]
+public sealed class AnySelector : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[YarnPackageExtension( "tslib@^2", DependencyKind.PeerDependency, "is-number", "*" )]
+public sealed class OverlappingSelector : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[PackageResolution( "is-number", "^6.0.0" )]
+public sealed class Resolution6 : TypeScriptPackage { }
+
+[TypeScriptPackage]
+[PackageResolution( "is-number", "^7.0.0" )]
+public sealed class Resolution7 : TypeScriptPackage { }
+
+[TestFixture]
+public class YarnSettingsTests
+{
+    static YarnSettings? Create( (YarnPackageExtensionAttribute, string)[] extensions, (PackageResolutionAttribute, string)[] resolutions, bool ignoreVersionsBound = false )
+    {
+        return YarnSettings.Create( TestHelper.Monitor, extensions, resolutions, ignoreVersionsBound );
+    }
+
+    [Test]
+    public void versions_are_merged_and_the_more_specific_wins()
+    {
+        var s = Create( [(new YarnPackageExtensionAttribute( "a@*", DependencyKind.PeerDependency, "rxjs", "*" ), "P1"),
+                         (new YarnPackageExtensionAttribute( "a@*", DependencyKind.PeerDependency, "rxjs", "^7.4.0" ), "P2"),
+                         (new YarnPackageExtensionAttribute( "a@*", DependencyKind.PeerDependency, "rxjs", "*" ), "P3")],
+                        [(new PackageResolutionAttribute( "rxjs", "^7.4.0" ), "P1"),
+                         (new PackageResolutionAttribute( "rxjs", "7.8.1" ), "P2")] );
+        Throw.DebugAssert( s != null );
+        s.Extensions.Count.ShouldBe( 1 );
+        s.Extensions[0].Range.Value.ShouldBe( "^7.4.0" );
+        s.Extensions[0].Range.Source.ShouldBe( "P2" );
+        s.Resolutions["rxjs"].Value.ShouldBe( "7.8.1" );
+        s.Resolutions["rxjs"].Source.ShouldBe( "P2" );
+    }
+
+    [Test]
+    public void non_version_values_are_resolved_by_the_last_declaration()
+    {
+        var s = Create( [],
+                        [(new PackageResolutionAttribute( "rxjs", "^7.4.0" ), "P1"),
+                         (new PackageResolutionAttribute( "rxjs", "npm:rxjs@7.5.0" ), "P2"),
+                         (new PackageResolutionAttribute( "rxjs", "patch:rxjs@npm%3A7.5.0#./p.patch" ), "P3")] );
+        Throw.DebugAssert( s != null );
+        s.Resolutions["rxjs"].Value.ShouldBe( "patch:rxjs@npm%3A7.5.0#./p.patch" );
+        s.Resolutions["rxjs"].Source.ShouldBe( "P3" );
+    }
+
+    [Test]
+    public void incompatible_versions_are_an_error_unless_IgnoreVersionsBound()
+    {
+        (PackageResolutionAttribute, string)[] resolutions = [(new PackageResolutionAttribute( "rxjs", "^6.0.0" ), "P1"),
+                                                              (new PackageResolutionAttribute( "rxjs", "^7.0.0" ), "P2")];
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            Create( [], resolutions ).ShouldBeNull();
+            logs.ShouldContain( t => t.Contains( "incompatible versions" ) );
+        }
+        var s = Create( [], resolutions, ignoreVersionsBound: true );
+        Throw.DebugAssert( s != null );
+        s.Resolutions["rxjs"].Value.ShouldBe( "^7.0.0" );
+    }
+
+    [Test]
+    public void overlapping_selectors_are_an_error()
+    {
+        Create( [(new YarnPackageExtensionAttribute( "a@*", DependencyKind.PeerDependency, "rxjs", "*" ), "P1"),
+                 (new YarnPackageExtensionAttribute( "a@^2", DependencyKind.PeerDependency, "rxjs", "*" ), "P2")], [] )
+            .ShouldBeNull();
+        // Disjoint ranges, another kind or another name are fine.
+        var s = Create( [(new YarnPackageExtensionAttribute( "a@^1", DependencyKind.PeerDependency, "rxjs", "*" ), "P1"),
+                         (new YarnPackageExtensionAttribute( "a@^2", DependencyKind.PeerDependency, "rxjs", "*" ), "P2"),
+                         (new YarnPackageExtensionAttribute( "a@*", DependencyKind.Dependency, "tslib", "*" ), "P3"),
+                         (new YarnPackageExtensionAttribute( "@scope/a@*", DependencyKind.PeerDependency, "rxjs", "*" ), "P4")], [] );
+        Throw.DebugAssert( s != null );
+        s.Extensions.Count.ShouldBe( 4 );
+    }
+
+    [Test]
+    public void the_yarnrc_packageExtensions_setting_is_owned_and_the_others_are_kept()
+    {
+        var s = Create( [(new YarnPackageExtensionAttribute( "ng-zorro-antd@*", DependencyKind.PeerDependency, "rxjs", "*" ) { Reason = "The reason." }, "CK.Ng.Zorro.ZorroPackage"),
+                         (new YarnPackageExtensionAttribute( "ng-zorro-antd@*", DependencyKind.Dependency, "tslib", "^2" ), "Other")], [] );
+        Throw.DebugAssert( s != null );
+        const string block = """
+            packageExtensions:
+              "ng-zorro-antd@*":
+                dependencies:
+                  # Other
+                  "tslib": "^2"
+                peerDependencies:
+                  # CK.Ng.Zorro.ZorroPackage: The reason.
+                  "rxjs": "*"
+
+            """;
+        var nl = Environment.NewLine;
+        var expectedBlock = block.ReplaceLineEndings( nl );
+        // No file: the block only.
+        YarnSettings.UpdateYarnRc( null, s ).ShouldBe( expectedBlock );
+        // No file and no extension: no file.
+        YarnSettings.UpdateYarnRc( null, null ).ShouldBeNull();
+
+        // Settings written by Yarn (a lockfile migration) are kept.
+        var yarnWritten = $"approvedGitRepositories:{nl}  - \"**\"{nl}{nl}enableScripts: true{nl}";
+        var withBlock = YarnSettings.UpdateYarnRc( yarnWritten, s );
+        withBlock.ShouldBe( yarnWritten + nl + expectedBlock );
+        // Idempotent.
+        YarnSettings.UpdateYarnRc( withBlock, s ).ShouldBe( withBlock );
+        // Replaced in place, whatever its format (Yarn writes it without quotes nor comments), before a column-0 comment.
+        var yarnFormat = $"packageExtensions:{nl}  ng-zorro-antd@*:{nl}    peerDependencies:{nl}      rxjs: \"*\"{nl}{nl}# Comment of the next one.{nl}enableScripts: true{nl}";
+        YarnSettings.UpdateYarnRc( yarnFormat, s ).ShouldBe( expectedBlock + $"{nl}# Comment of the next one.{nl}enableScripts: true{nl}" );
+        // Removed: the other settings stay.
+        YarnSettings.UpdateYarnRc( withBlock, null ).ShouldBe( yarnWritten + nl );
+        // Removed: nothing else, no file.
+        YarnSettings.UpdateYarnRc( expectedBlock, null ).ShouldBeNull();
+    }
+
+    [Test]
+    public void the_install_marker_is_ignored_by_an_existing_yarn_gitignore()
+    {
+        NormalizedPath root = TestHelper.TestProjectFolder.Combine( "Obj/YarnInstallMarkerGitIgnore" );
+        TestHelper.CleanupFolder( root );
+        var yarnPath = root.Combine( ".yarn/releases/yarn-4.18.1.cjs" );
+        Directory.CreateDirectory( yarnPath.RemoveLastPart() );
+        var gitIgnore = root.AppendPart( ".gitignore" );
+        File.WriteAllText( gitIgnore, "bin/\r\n.yarn/*\r\n" );
+
+        YarnHelper.EnsureInstallMarkerIgnored( TestHelper.Monitor, root );
+        File.ReadAllLines( gitIgnore ).ShouldContain( "**/.yarn/ck-install-state" );
+        var once = File.ReadAllText( gitIgnore );
+        YarnHelper.EnsureInstallMarkerIgnored( TestHelper.Monitor, root );
+        File.ReadAllText( gitIgnore ).ShouldBe( once );
+    }
+
+    static EngineConfiguration CreateNoIntegrationConfiguration( params Type[] types )
+    {
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );
+        engineConfig.FirstBinPath.Types.Add( types );
+        engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
+        var ts = engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+        ts.TargetProjectPath = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath( "YarnSettingsErrors" );
+        ts.IntegrationMode = CKGenIntegrationMode.None;
+        return engineConfig;
+    }
+
+    [TestCase( typeof( DevExtension ), "a package extension can add a Dependency or a PeerDependency only" )]
+    [TestCase( typeof( NoRangeSelector ), "the selector must be a package name followed by a range" )]
+    public async Task invalid_declarations_are_generation_errors_Async( Type package, string message )
+    {
+        await CreateNoIntegrationConfiguration( package ).GetFailedAutomaticServicesAsync( message );
+    }
+
+    [Test]
+    public async Task overlapping_selectors_and_incompatible_resolutions_are_generation_errors_Async()
+    {
+        await CreateNoIntegrationConfiguration( typeof( AnySelector ), typeof( OverlappingSelector ) ).GetFailedAutomaticServicesAsync( "their ranges overlap" );
+        await CreateNoIntegrationConfiguration( typeof( Resolution6 ), typeof( Resolution7 ) ).GetFailedAutomaticServicesAsync( "incompatible versions" );
+    }
+
+    [Test]
+    public async Task package_extensions_and_resolutions_are_installed_Async()
+    {
+        var targetProjectPath = TestHelper.GetTypeScriptInlineTargetProjectPath();
+        var yarnRc = targetProjectPath.AppendPart( ".yarnrc.yml" );
+        var marker = targetProjectPath.Combine( ".yarn/ck-install-state" );
+        var pnp = targetProjectPath.AppendPart( ".pnp.cjs" );
+
+        // 1 - The extension and the resolution are written and installed.
+        await RunAsync( targetProjectPath, typeof( WithExtension ) );
+        File.ReadAllText( yarnRc ).ShouldBe( """
+            packageExtensions:
+              "tslib@*":
+                dependencies:
+                  # CK.TypeScript.Tests.YarnSettingsSupport.WithExtension: Test extension.
+                  "is-number": "^7.0.0"
+
+            """.ReplaceLineEndings( Environment.NewLine ) );
+        File.ReadAllText( targetProjectPath.AppendPart( "package.json" ) ).ShouldContain( "\"is-number\": \"7.0.0\"" );
+        // The dependency added by the extension is redirected by the resolution. The yarn.lock keeps the original
+        // manifest of tslib: the installed dependencies are in the .pnp.cjs.
+        TslibDependencies( pnp ).ShouldContain( "[\"is-number\", \"npm:7.0.0\"]" );
+        File.Exists( marker ).ShouldBeTrue();
+        var markerTime = File.GetLastWriteTimeUtc( marker );
+
+        // 2 - Nothing changed: no install (the marker is not rewritten).
+        await RunAsync( targetProjectPath, typeof( WithExtension ) );
+        File.GetLastWriteTimeUtc( marker ).ShouldBe( markerTime );
+
+        // 3 - The extension is no more declared: the .yarnrc.yml changes and the install runs.
+        //     The resolution stays in the package.json (the engine can't tell its entries from the author's ones).
+        await RunAsync( targetProjectPath, typeof( WithoutExtension ) );
+        File.Exists( yarnRc ).ShouldBe( false, "The file contained only the package extensions." );
+        TslibDependencies( pnp ).ShouldNotContain( "is-number" );
+        File.GetLastWriteTimeUtc( marker ).ShouldNotBe( markerTime );
+
+        // 4 - A failed (or interrupted) install leaves no marker: the next run installs.
+        File.Delete( marker );
+        await RunAsync( targetProjectPath, typeof( WithoutExtension ) );
+        File.Exists( marker ).ShouldBeTrue();
+
+        // The "packageDependencies" of tslib in the .pnp.cjs.
+        static string TslibDependencies( NormalizedPath pnp )
+        {
+            var text = File.ReadAllText( pnp );
+            int start = text.IndexOf( "[\"tslib\", [" );
+            start.ShouldBeGreaterThan( 0 );
+            start = text.IndexOf( "\"packageDependencies\"", start );
+            int end = text.IndexOf( "\"linkType\"", start );
+            return text.Substring( start, end - start );
+        }
+
+        static async Task RunAsync( NormalizedPath targetProjectPath, Type package )
+        {
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( package );
+            configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, package );
+            await configuration.RunSuccessfullyAsync();
+        }
+    }
+}

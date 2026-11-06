@@ -21,6 +21,8 @@ public sealed partial class TypeScriptContext // Save
         {
             var generatedDependencies = _tsRoot.LibraryManager.ExportDependencyCollection( monitor );
             if( generatedDependencies == null ) return false;
+            var yarnSettings = CreateYarnSettings( monitor );
+            if( yarnSettings == null ) return false;
             // Fix stupid mistake in code that may have declared typescript as a regular dependency.
             if( generatedDependencies.TryGetValue( "typescript", out var typeScriptFromCode ) )
             {
@@ -38,6 +40,10 @@ public sealed partial class TypeScriptContext // Save
             if( _integrationContext == null )
             {
                 monitor.Info( "Skipping any TypeScript project setup since IntegrationMode is None." );
+                if( yarnSettings.Extensions.Count > 0 || yarnSettings.Resolutions.Count > 0 )
+                {
+                    monitor.Info( "The declared Yarn package extensions and resolutions are ignored since IntegrationMode is None." );
+                }
             }
             else
             {
@@ -60,7 +66,7 @@ public sealed partial class TypeScriptContext // Save
                         """ );
                     _integrationContext.TargetPackageJson.Scripts.Remove( "ck-watch" );
                 }
-                success &= _integrationContext.Run( monitor, generatedDependencies );
+                success &= _integrationContext.Run( monitor, generatedDependencies, yarnSettings );
             }
         }
         return success;

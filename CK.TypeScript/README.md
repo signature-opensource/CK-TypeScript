@@ -21,6 +21,27 @@ are exported by a resource file.
 
 The [TypeScriptImportLibraryAttribute](TypeScriptImportLibraryAttribute.cs) is used to declare dependencies on npm packages.
 
+Two attributes of a package fix the manifests of the libraries it brings, in the generated application:
+
+| Attribute | Writes | Use it to |
+|---|---|---|
+| [`[YarnPackageExtension( selector, kind, name, range )]`](YarnPackageExtensionAttribute.cs) | the `packageExtensions` of the application's `.yarnrc.yml` | add a dependency or a peer that a package doesn't declare. |
+| [`[PackageResolution( pattern, version )]`](PackageResolutionAttribute.cs) | the `resolutions` of the application's `package.json` | redirect a declared dependency to another version. |
+
+For instance, ng-zorro-antd uses rxjs (through @angular/cdk) but doesn't declare it: without the peer, Yarn
+Plug'n'Play creates a second instance of its CDK.
+
+```csharp
+[YarnPackageExtension( "ng-zorro-antd@*", DependencyKind.PeerDependency, "rxjs", "*", Reason = "..." )]
+```
+
+- The selector of an extension must carry a range (`@*` unless a later version fixes the manifest): Yarn rejects a bare
+  name and silently ignores a range that matches nothing. The kind is `Dependency` or `PeerDependency` (only the
+  `peerDependencies`, unlike `[TypeScriptImportLibrary]`): Yarn has no dev dependencies in an extension.
+- A resolution also redirects a dependency added by an extension, never a peer (a peer is provided by the dependent).
+- When two packages declare the same entry, two versions are merged like the library versions (the more specific one
+  wins); otherwise the last one in the topological order of the packages wins.
+
 This is enough to drive the generation: the heavy stuff is in the [CK.TypeScript.Engine](../CK.TypeScript.Engine).
 
 Note that this package depends on the CK.Poco.Exc.Json but Json serialization may be available or not for each BinPath:

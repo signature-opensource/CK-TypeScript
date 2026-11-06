@@ -273,3 +273,6 @@ CodeCakeBuilder/[Rr]eleases/
 **/.yarn/install-state.gz
 **/.yarn/unplugged
 /Tests/Angular/CK.TS.Angular.Tests/TSInlineTests/CK_TS_Angular_with_Ng_Localization/
+
+# The install marker of the CK.TypeScript engine (it describes the local install).
+**/.yarn/ck-install-state

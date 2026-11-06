@@ -66,8 +66,11 @@ creates the package of the resource space (`CreateResPackageDescriptor`, `OnCrea
 when its package is available (`OnResPackageAvailable`) and when the resource space is (`OnResSpaceAvailable`).
 `HasResPackage` false means no package in the resource space. The other attributes of a package derive from
 [`TypeScriptGroupOrPackageAttributeImplExtension`](AttributesImpl/TypeScriptGroupOrPackageAttributeImplExtension.cs), like
-[`TypeScriptFileAttributeImpl`](AttributesImpl/TypeScriptFileAttributeImpl.cs) and
-[`AppStyleImportAttributeImpl`](AttributesImpl/AppStyleImportAttributeImpl.cs).
+[`TypeScriptFileAttributeImpl`](AttributesImpl/TypeScriptFileAttributeImpl.cs),
+[`AppStyleImportAttributeImpl`](AttributesImpl/AppStyleImportAttributeImpl.cs),
+[`YarnPackageExtensionAttributeImpl`](AttributesImpl/YarnPackageExtensionAttributeImpl.cs) and
+[`PackageResolutionAttributeImpl`](AttributesImpl/PackageResolutionAttributeImpl.cs) (the invalid declarations are
+generation errors that name the decorated type).
 
 The resource space installs in `ck-gen/`:
 
@@ -104,7 +107,16 @@ When the `IntegrationMode` is `Inline` (the default), the [`TypeScriptIntegratio
 - updates the dependencies of `package.json` with the libraries of the generated code, and settles the TypeScript
   version, the first one of: the configured library version, the target project's, the one declared by the code, the
   Yarn TypeScript sdk's, the configuration's `DefaultTypeScriptVersion`, `TypeScriptIntegrationContext.DefaultTypeScriptVersion`;
-- runs the Yarn install when needed;
+- writes the Yarn settings declared by the packages, merged in their topological order by
+  [`YarnSettings`](YarnSettings.cs): the `[PackageResolution]` in the `resolutions` of `package.json` (the declared value
+  replaces the entry's, the other entries are kept) and the `[YarnPackageExtension]` in the `packageExtensions` setting of
+  the application's `.yarnrc.yml`, each entry preceded by a comment naming its declaring type and its reason. The engine
+  owns this setting only: the other settings of the file (Yarn writes some when it migrates an older lockfile) are kept,
+  and the file is deleted when nothing else remains;
+- runs the Yarn install when needed: Yarn never detects a change of its configuration, so after a successful install
+  the engine writes `.yarn/ck-install-state`, the hash of the `package.json` and `.yarnrc.yml` texts, and installs again
+  when they don't match it (the marker is deleted before an install: a failed one leaves none). The marker describes
+  the local install: the yarn root's `.gitignore` ignores it (`**/.yarn/ck-install-state`);
 - raises `OnBeforeIntegration` (its arguments can add dependencies and run the Yarn install) and `OnAfterIntegration`;
   both can replace the `JestSetup` handler;
 - with `AutoInstallJest`, adds Jest to the dev dependencies and a `"test": "jest"` script, and its `JestSetupHandler`

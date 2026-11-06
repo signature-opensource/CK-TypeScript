@@ -41,8 +41,10 @@ public sealed partial class TypeScriptIntegrationContext
     DependencyCollection? _saver;
     // Not null when AutoInstallJest is true. Can be substituted by BeforeEventArgs. 
     JestSetupHandler? _jestSetup;
-    // Cached content of the target package.json file.
+    // Cached content of the target package.json file (the content known on disk).
     string _lastInstalledTargetPackageJsonContent;
+    // The Yarn settings declared by the packages. Set by Run.
+    YarnSettings? _yarnSettings;
 
     TypeScriptIntegrationContext( TypeScriptBinPathAspectConfiguration configuration,
                                   PackageJsonFile targetPackageJson,
@@ -412,6 +414,15 @@ public sealed partial class TypeScriptIntegrationContext
         {
             return false;
         }
+        // The declared resolutions are (re)applied before each install: the package.json may have been
+        // recreated since the last one (OnBeforeIntegration).
+        if( _yarnSettings != null )
+        {
+            foreach( var (pattern, d) in _yarnSettings.Resolutions )
+            {
+                SetResolution( monitor, pattern, d );
+            }
+        }
         // We try to skip the run by default but if Yarn TypeScript sdk must be handled
         // or there are "latest" versions to install, this will not be possible.
         bool canSkipRun = true;
@@ -423,10 +434,15 @@ public sealed partial class TypeScriptIntegrationContext
             // with a "got": "patch:got@npm%3A11.8.2#~/.yarn/patches/..." dependency that references a patch file of the Yarn
             // repository itself: resolution fails with ENOENT in any project without a yarn.lock.
             // To be removed once a fixed @yarnpkg/core is published (the pin remains in the projects generated meanwhile).
-            if( _targetPackageJson.EnsureResolution( "@yarnpkg/core", "4.9.1" ) )
+            // This resolution is registered before the declared ones (a declared one is merged with it).
+            var pin = new YarnSettings.Declaration( "4.9.1", "CK.TypeScript.Engine", "version 4.9.2 is broken." );
+            if( _yarnSettings != null
+                && _yarnSettings.Resolutions.TryGetValue( "@yarnpkg/core", out var declared )
+                && !pin.Merge( monitor, "Package resolution '@yarnpkg/core'", declared, IgnoreVersionsBound ) )
             {
-                monitor.Warn( "Pinning '@yarnpkg/core' to '4.9.1' in package.json \"resolutions\": version 4.9.2 is broken." );
+                return false;
             }
+            SetResolution( monitor, "@yarnpkg/core", pin );
             finalCommand.Append( "yarn add -D @yarnpkg/sdks && yarn sdks vscode" );
             _shouldAlignYarnSdkVersion = false;
         }
@@ -456,20 +472,41 @@ public sealed partial class TypeScriptIntegrationContext
                                    finalCommand,
                                    out PackageDependency[] manualPeerDeps,
                                    ref canSkipRun );
+        // The application's .yarnrc.yml: the engine owns its "packageExtensions" setting only (Yarn itself
+        // writes settings in it, for instance when it migrates an older lockfile).
+        var yarnRcPath = _configuration.TargetProjectPath.AppendPart( ".yarnrc.yml" );
+        var currentYarnRc = File.Exists( yarnRcPath ) ? File.ReadAllText( yarnRcPath ) : null;
+        var newYarnRc = YarnSettings.UpdateYarnRc( currentYarnRc, _yarnSettings );
+        // The install marker is the hash of the package.json and .yarnrc.yml texts that have been installed.
+        var markerPath = YarnHelper.GetInstallMarkerPath( _configuration.TargetProjectPath );
         if( canSkipRun && manualPeerDeps.Length == 0 )
         {
             var text = _targetPackageJson.WriteAsString();
-            if( text == _lastInstalledTargetPackageJsonContent )
+            var marker = File.Exists( markerPath ) ? File.ReadAllText( markerPath ) : null;
+            if( marker == YarnHelper.ComputeInstallHash( text, newYarnRc ) )
             {
-                monitor.CloseGroup( "File package.json is up-to-date." );
+                // The files on disk are written only when they differ (no rewrite that reorders the package.json).
+                if( text != _lastInstalledTargetPackageJsonContent )
+                {
+                    File.WriteAllText( _targetPackageJson.FilePath, text );
+                    _lastInstalledTargetPackageJsonContent = text;
+                }
+                WriteYarnRc( monitor, yarnRcPath, currentYarnRc, newYarnRc );
+                monitor.CloseGroup( "Files package.json and .yarnrc.yml are installed." );
                 return true;
             }
+            monitor.Trace( marker == null
+                            ? "No install marker found. 'yarn install' will be done."
+                            : "The package.json or the .yarnrc.yml changed since the last install. 'yarn install' will be done." );
             File.WriteAllText( _targetPackageJson.FilePath, text );
         }
         else
         {
             _targetPackageJson.Save();
         }
+        WriteYarnRc( monitor, yarnRcPath, currentYarnRc, newYarnRc );
+        // Whatever stops the install (an error, a killed process) leaves no marker: the next run installs.
+        if( File.Exists( markerPath ) ) File.Delete( markerPath );
         bool success;
         // The installs of parallel test processes share the ".yarn/cache" of the yarn root.
         using( YarnHelper.AcquireYarnRootLock( monitor, _yarnPath ) )
@@ -483,7 +520,39 @@ public sealed partial class TypeScriptIntegrationContext
         YarnHelper.EnsureYarnSdksGitAttributes( monitor, _configuration.TargetProjectPath );
         ReloadAndUpdateLatestDependencies( monitor, _targetPackageJson, manualPeerDeps );
         _lastInstalledTargetPackageJsonContent = _targetPackageJson.WriteAsString();
+        // Yarn may have written the .yarnrc.yml (a migration): the marker hashes what is on disk.
+        var installedYarnRc = File.Exists( yarnRcPath ) ? File.ReadAllText( yarnRcPath ) : null;
+        Directory.CreateDirectory( markerPath.RemoveLastPart() );
+        File.WriteAllText( markerPath, YarnHelper.ComputeInstallHash( _lastInstalledTargetPackageJsonContent, installedYarnRc ) );
         return true;
+    }
+
+    static void WriteYarnRc( IActivityMonitor monitor, NormalizedPath yarnRcPath, string? current, string? newOne )
+    {
+        if( current == newOne ) return;
+        if( newOne == null )
+        {
+            monitor.Info( $"Deleting '{yarnRcPath}': no more package extensions." );
+            File.Delete( yarnRcPath );
+        }
+        else
+        {
+            monitor.Info( $"Writing '{yarnRcPath}':{Environment.NewLine}{newOne}" );
+            File.WriteAllText( yarnRcPath, newOne );
+        }
+    }
+
+    bool IgnoreVersionsBound => _configuration.AspectConfiguration?.IgnoreVersionsBound ?? false;
+
+    void SetResolution( IActivityMonitor monitor, string pattern, YarnSettings.Declaration d )
+    {
+        if( _targetPackageJson.SetResolution( pattern, d.Value, out var previous ) )
+        {
+            var reason = d.Reason != null ? $": {d.Reason}" : ".";
+            monitor.Info( previous == null
+                            ? $"Resolution \"{pattern}\": \"{d.Value}\" added by '{d.Source}'{reason}"
+                            : $"Resolution \"{pattern}\": \"{previous}\" replaced by \"{d.Value}\" by '{d.Source}'{reason}" );
+        }
     }
 
     static void ExtractLatestDependencies( IActivityMonitor monitor,
@@ -578,8 +647,9 @@ public sealed partial class TypeScriptIntegrationContext
     }
 
 
-    internal bool Run( IActivityMonitor monitor, DependencyCollection generatedDependencies )
+    internal bool Run( IActivityMonitor monitor, DependencyCollection generatedDependencies, YarnSettings yarnSettings )
     {
+        _yarnSettings = yarnSettings;
         // Setup the target project dependencies according to the integration mode.
         using( monitor.OpenInfo( $"Updating target package.json dependencies from code generated ones." ) )
         {

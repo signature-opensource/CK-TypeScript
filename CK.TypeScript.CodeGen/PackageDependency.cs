@@ -168,36 +168,86 @@ public sealed class PackageDependency
             }
             else
             {
-                if( _version.Contains( other._version ) )
+                if( !MergeVersionBound( monitor,
+                                        $"TypeScript library '{_name}'",
+                                        ref _version,
+                                        ref _definitionSource,
+                                        other._version,
+                                        other._definitionSource,
+                                        ignoreVersionsBound,
+                                        detailedLogLevel,
+                                        logWarn,
+                                        out _ ) )
                 {
-                    monitor.Log( detailedLogLevel, $"TypeScript library '{_name}': upgraded from '{_version}' (by '{_definitionSource}') to '{other._version}' (by '{other._definitionSource}')." );
-                    _version = other._version;
-                    _definitionSource = other._definitionSource;
-                }
-                else if( !other._version.Contains( _version ) )
-                {
-                    if( !ignoreVersionsBound )
-                    {
-                        monitor.Error( $"""
-                            TypeScript library '{_name}': incompatible versions detected between current '{_version}' (by '{_definitionSource}') and '{other._version}' (by '{other._definitionSource}').
-                            Set IgnoreVersionsBound to true to allow the upgrade.
-                            """ );
-                        return false;
-                    }
-                    var otherWins = other._version.Base > _version.Base
-                                    || (other._version.Base == _version.Base && other._version.Lock > _version.Lock);
-                    SVersionBound newV = otherWins ? other._version : _version;
-                    if( logWarn )
-                    {
-                        monitor.Warn( $"""
-                            TypeScript library '{_name}': current version '{_version}' (by '{_definitionSource}') is not compatible with '{other._version}' (by '{other._definitionSource}').
-                            Since IgnoreVersionsBound is true, the version is updated to '{newV}'.
-                            """ );
-                    }
-                    _version = newV;
-                    if( otherWins ) _definitionSource = other._definitionSource;
+                    return false;
                 }
             }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Merges two version bounds, the way the versions of the libraries are merged: when one bound contains the other,
+    /// the more specific one wins; bounds that don't overlap are an error unless <paramref name="ignoreVersionsBound"/>
+    /// is true (then the greater one wins, with a warning).
+    /// <para>
+    /// This is used by <see cref="Update(IActivityMonitor, PackageDependency, bool, LogLevel, bool)"/> and by the other
+    /// versioned declarations of the packages (the Yarn package extensions and resolutions).
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="subject">The subject of the log messages ("TypeScript library 'xxx'").</param>
+    /// <param name="version">The current version, updated with the merged one.</param>
+    /// <param name="definitionSource">The source of the current version, updated with the source of the merged one.</param>
+    /// <param name="otherVersion">The other version.</param>
+    /// <param name="otherDefinitionSource">The source of the other version.</param>
+    /// <param name="ignoreVersionsBound">True to accept bounds that don't overlap: the greater one wins.</param>
+    /// <param name="detailedLogLevel">The log level of an upgrade.</param>
+    /// <param name="logWarn">False to not log the warning of bounds that don't overlap when <paramref name="ignoreVersionsBound"/> is true.</param>
+    /// <param name="otherWins">True when the other version has been retained.</param>
+    /// <returns>True on success, false on error (bounds that don't overlap and <paramref name="ignoreVersionsBound"/> is false).</returns>
+    public static bool MergeVersionBound( IActivityMonitor monitor,
+                                          string subject,
+                                          ref SVersionBound version,
+                                          ref string definitionSource,
+                                          SVersionBound otherVersion,
+                                          string otherDefinitionSource,
+                                          bool ignoreVersionsBound,
+                                          LogLevel detailedLogLevel,
+                                          bool logWarn,
+                                          out bool otherWins )
+    {
+        otherWins = false;
+        if( version == otherVersion ) return true;
+        if( version.Contains( otherVersion ) )
+        {
+            monitor.Log( detailedLogLevel, $"{subject}: upgraded from '{version}' (by '{definitionSource}') to '{otherVersion}' (by '{otherDefinitionSource}')." );
+            version = otherVersion;
+            definitionSource = otherDefinitionSource;
+            otherWins = true;
+        }
+        else if( !otherVersion.Contains( version ) )
+        {
+            if( !ignoreVersionsBound )
+            {
+                monitor.Error( $"""
+                    {subject}: incompatible versions detected between current '{version}' (by '{definitionSource}') and '{otherVersion}' (by '{otherDefinitionSource}').
+                    Set IgnoreVersionsBound to true to allow the upgrade.
+                    """ );
+                return false;
+            }
+            otherWins = otherVersion.Base > version.Base
+                        || (otherVersion.Base == version.Base && otherVersion.Lock > version.Lock);
+            SVersionBound newV = otherWins ? otherVersion : version;
+            if( logWarn )
+            {
+                monitor.Warn( $"""
+                    {subject}: current version '{version}' (by '{definitionSource}') is not compatible with '{otherVersion}' (by '{otherDefinitionSource}').
+                    Since IgnoreVersionsBound is true, the version is updated to '{newV}'.
+                    """ );
+            }
+            version = newV;
+            if( otherWins ) definitionSource = otherDefinitionSource;
         }
         return true;
     }

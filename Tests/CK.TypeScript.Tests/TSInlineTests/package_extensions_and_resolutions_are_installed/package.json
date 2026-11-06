@@ -1,0 +1,27 @@
+{
+  "name": "package_extensions_and_resolutions_are_installed",
+  "private": true,
+  "packageManager": "yarn@4.18.1",
+  "scripts": {
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net10.0/CK.TypeScript.LiveEngine.dll\"",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^30",
+    "@types/node": "^26.6.6",
+    "@yarnpkg/sdks": "^3.3.1",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
+    "jest-util": "^30.5.1",
+    "ts-jest": "^29.4.15",
+    "typescript": "=5.4.5"
+  },
+  "dependencies": {
+    "tslib": "^2.6"
+  },
+  "ckVersion": 1,
+  "resolutions": {
+    "is-number": "7.0.0",
+    "@yarnpkg/core": "4.9.1"
+  }
+}
