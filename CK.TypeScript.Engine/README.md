@@ -32,6 +32,16 @@ configuration exist in a builder.
 The [`ClientDirectoryImpl`](ClientDirectoryImpl.cs) generates the `ClientDirectory` of the host from the configurations
 that are client applications.
 
+It also declares them in the host's configuration ([`HostClientDeclarations`](HostClientDeclarations.cs)), a temporary
+help waiting for a configuration that unifies the build and the deployment: a client application is a client of a
+party only when the party declares it (`CK-AppIdentity:Local:Client:{Name}`). For each BinPath of the group whose
+`ProjectPath` is a host project (its folder name ends with ".Host") with an `appsettings.json`, the missing declarations
+of the root party are added, and logged so that the change is committed:
+- it only adds: an existing declaration is never changed nor removed (the keys are compared without case);
+- the comments are kept (as block comments), the BOM and the line endings too; the layout is re-indented;
+- a `"CK-AppIdentity"`, `"Local"` or `"Client"` that is not a JSON object fails the generation;
+- the tenant domains declare their clients by hand.
+
 ## The TypeScript context
 
 A [`TypeScriptContext`](TypeScriptContext.cs) runs the generation of one configuration. It exposes the `Root`
