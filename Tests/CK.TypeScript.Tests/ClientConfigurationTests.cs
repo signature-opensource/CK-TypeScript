@@ -1,3 +1,4 @@
+using CK.AppIdentity;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
@@ -91,7 +92,51 @@ public class ClientConfigurationTests
         clients[1].UseDist.ShouldBeFalse();
     }
 
-    static EngineConfiguration CreateTwoConfigurations( TypeScriptBinPathAspectConfiguration c1, TypeScriptBinPathAspectConfiguration c2 )
+    [TypeScriptPackage]
+    [PartyClientFact( "Enlistment" )]
+    [Requires<AdminFactPackage>]
+    public sealed class EnlistmentFactPackage : TypeScriptPackage { }
+
+    [TypeScriptPackage]
+    [PartyClientFact( "Admin" )]
+    [PartyClientFact( "Console" )]
+    public sealed class AdminFactPackage : TypeScriptPackage { }
+
+    [TypeScriptPackage]
+    [PartyClientFact( "Other" )]
+    public sealed class OtherFactPackage : TypeScriptPackage { }
+
+    [Test]
+    public async Task the_facts_of_a_client_application_are_the_ones_of_its_selected_packages_Async()
+    {
+        var projectPath = TestHelper.CleanupFolder( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath(), false );
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+        engineConfig.FirstBinPath.ProjectPath = projectPath;
+        engineConfig.FirstBinPath.GenerateSourceFiles = false;
+        engineConfig.FirstBinPath.Types.Add( typeof( ClientDirectory ),
+                                             typeof( EnlistmentFactPackage ),
+                                             typeof( AdminFactPackage ),
+                                             typeof( OtherFactPackage ) );
+        engineConfig.EnsureAspect<TypeScriptAspectConfiguration>();
+        var app = engineConfig.FirstBinPath.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+        app.Name = "App";
+        app.Kind = ClientKind.DefaultApp;
+        app.DevServerPort = 4200;
+        app.IntegrationMode = CKGenIntegrationMode.None;
+        // The App lists the Enlistment package: it requires the Admin one.
+        app.Types.Add( typeof( EnlistmentFactPackage ), null );
+        var mini = new TypeScriptBinPathAspectConfiguration { Name = "MiniApp", Kind = ClientKind.App, DevServerPort = 4201, IntegrationMode = CKGenIntegrationMode.None };
+        mini.Types.Add( typeof( OtherFactPackage ), null );
+        app.AddOtherConfiguration( mini );
+
+        await using var auto = (await engineConfig.RunSuccessfullyAsync()).CreateAutomaticServices();
+        var clients = auto.Services.GetRequiredService<ClientDirectory>().Clients;
+        clients.Single( c => c.Name == "App" ).Facts.ToString().ShouldBe( "Admin|Console|Enlistment" );
+        clients.Single( c => c.Name == "MiniApp" ).Facts.ToString().ShouldBe( "Other" );
+        clients[0].Facts.Context.ShouldBeSameAs( CK.AppIdentity.ClientApplicationDescription.FactContext );
+    }
+
+    static EngineConfiguration CreateTwoConfigurations(TypeScriptBinPathAspectConfiguration c1, TypeScriptBinPathAspectConfiguration c2 )
     {
         var root = TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath();
         var engineConfig = TestHelper.CreateDefaultEngineConfiguration( compileOption: CompileOption.None );

@@ -30,7 +30,9 @@ the model of the generated code is [CK.TypeScript.CodeGen](../CK.TypeScript.Code
 configuration exist in a builder.
 
 The [`ClientDirectoryImpl`](ClientDirectoryImpl.cs) generates the `ClientDirectory` of the host from the configurations
-that are client applications.
+that are client applications. The facts of a client application (`ClientInfo.Facts`) are the union of the
+`[PartyClientFact]` of its selected TypeScript packages: it waits for the package selection of the `TypeScriptAspect`
+(the `TypeScriptPackageSelection` it publishes), and computes them once per build.
 
 It also declares them in the host's configuration ([`HostClientDeclarations`](HostClientDeclarations.cs)), a temporary
 help waiting for a configuration that unifies the build and the deployment: a client application is a client of a

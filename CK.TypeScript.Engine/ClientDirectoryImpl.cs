@@ -1,13 +1,20 @@
+using CK.AppIdentity;
 using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Linq;
+using System.Reflection;
 
 namespace CK.Setup;
 
 /// <summary>
 /// Code generator of the <see cref="CK.TypeScript.ClientDirectory"/> service: its client applications are the TypeScript
 /// configurations of the BinPath that are client applications (<see cref="TypeScriptBinPathAspectConfiguration.Kind"/>).
+/// <para>
+/// The facts of a client application (<see cref="CK.TypeScript.ClientInfo.Facts"/>) are the union of the
+/// <see cref="PartyClientFactAttribute"/> of its selected TypeScript packages: the generation waits for the package
+/// selection of the <see cref="TypeScriptAspect"/>.
+/// </para>
 /// </summary>
 public sealed class ClientDirectoryImpl : CSCodeGeneratorType
 {
@@ -16,7 +23,11 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
     {
         // Skips the purely unified BinPath.
         if( c.CurrentRun.ConfigurationGroup.IsUnifiedPure ) return CSCodeGenerationResult.Success;
+        return new CSCodeGenerationResult( nameof( Generate ) );
+    }
 
+    CSCodeGenerationResult Generate( IActivityMonitor monitor, ICSCodeGenerationContext c, ITypeScope scope, [WaitFor] TypeScriptPackageSelection selection )
+    {
         var binPath = c.CurrentRun.ConfigurationGroup.Configuration;
         // The default client application is the last one: the host maps it after the other ones.
         var clients = binPath.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
@@ -31,6 +42,8 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
                                 ? ts.TargetProjectPath.RemovePrefix( binPath.ProjectPath )
                                 : ts.TargetProjectPath;
             var outputPath = new NormalizedPath( "dist" ).AppendPart( ts.TargetProjectPath.LastPart ).AppendPart( "browser" );
+            // A client application has a name.
+            var facts = GetFacts( selection, ts.Name! );
             scope.Append( "new CK.TypeScript.ClientInfo( " )
                  .AppendSourceString( ts.Name ).Append( ", " )
                  .AppendSourceString( ts.RequestPath ).Append( ", " )
@@ -38,8 +51,11 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
                  .AppendSourceString( outputPath.Path ).Append( ", " )
                  .AppendSourceString( ts.TypeFilterName ).Append( ", " )
                  .Append( ts.DevServerPort!.Value ).Append( ", " )
-                 .Append( ts.UseDist ? "true" : "false" ).Append( " )," ).NewLine();
-            monitor.Info( $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}'." );
+                 .Append( ts.UseDist ? "true" : "false" ).Append( ", " )
+                 .AppendSourceString( facts.ToString() ).Append( " )," ).NewLine();
+            monitor.Info( facts.IsEmpty
+                            ? $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}'."
+                            : $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}' (facts: {facts})." );
         }
         scope.Append( "} ) {}" ).NewLine();
 
@@ -56,5 +72,19 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
             success &= HostClientDeclarations.EnsureDeclared( monitor, b.ProjectPath, names );
         }
         return success ? CSCodeGenerationResult.Success : CSCodeGenerationResult.Failed;
+    }
+
+    // The union of the facts of the selected packages of a client application.
+    static CKTrait GetFacts( TypeScriptPackageSelection selection, string configurationName )
+    {
+        var facts = ClientApplicationDescription.FactContext.EmptyTrait;
+        foreach( var t in selection.GetPackages( configurationName ) )
+        {
+            foreach( var a in t.GetCustomAttributes<PartyClientFactAttribute>( inherit: false ) )
+            {
+                facts = facts.Union( a.Trait );
+            }
+        }
+        return facts;
     }
 }

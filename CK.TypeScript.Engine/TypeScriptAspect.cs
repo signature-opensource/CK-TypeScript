@@ -293,6 +293,8 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
         // cachedKey is the last one.
         TypeScriptAspectConfiguration? cachedKey = null;
         ImmutableDictionary<string, SVersionBound>? cachedLibVersionsConfig = null;
+        // The selected packages of each configuration, for the facts of the client applications (ClientDirectoryImpl).
+        var selection = new Dictionary<string, IReadOnlyList<Type>>();
 
         foreach( var tsBinPathConfig in configs )
         {
@@ -343,7 +345,10 @@ public partial class TypeScriptAspect : IStObjEngineAspect, ICSCodeGeneratorWith
             // The TypeScriptContext for this configuration can now be initialized.
             // It will be run by FinalImplement.
             _runContexts.Add( new TypeScriptContext( codeContext, tsBinPathConfig, initializer, exchangeableNames ) );
+            // A similar BinPath has the same configurations: the first one is enough.
+            if( tsBinPathConfig.Name != null ) selection.TryAdd( tsBinPathConfig.Name, initializer.Packages.Select( p => p.DecoratedType ).ToArray() );
         }
+        codeContext.CurrentRun.ServiceContainer.Add( new TypeScriptPackageSelection( selection ) );
         if( _runContexts.Count == 0 )
         {
             monitor.Info( $"Skipped TypeScript generation for BinPathConfiguration '{binPath.ConfigurationGroup.Names}': no TypeScript BinPath configuration." );
