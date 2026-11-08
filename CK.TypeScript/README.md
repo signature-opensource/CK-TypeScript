@@ -78,8 +78,8 @@ client applications (the default one last). The [CK.TS.AspNet.Clients](https://g
 serves them; the link goes to a package built on this one because it is the consumer of this list.
 
 A client application is built by the BinPath, but it is a client of a party only when the party **declares** it in its
-configuration: `"CK-AppIdentity": { "Local": { "Client": { "App": {} } } }` (the "Client" feature of
-[CK.AppIdentity.Client](https://github.com/signature-opensource/CK-AppIdentity/blob/stable/CK.AppIdentity.Client/README.md)).
+configuration: `"CK-AppIdentity": { "Local": { "PartyClient": { "App": {} } } }` (the "PartyClient" feature of
+[CK.AppIdentity.PartyClient](https://github.com/signature-opensource/CK-AppIdentity/blob/stable/CK.AppIdentity.PartyClient/README.md)).
 Waiting for a configuration that unifies the build and the deployment, the engine adds the missing declarations of the
 root party to the `appsettings.json` of a host project (see [CK.TypeScript.Engine](../CK.TypeScript.Engine/README.md)):
 commit them.

@@ -23,7 +23,7 @@ public class HostClientDeclarationsTests
     static string[] Declared( string json )
     {
         using var d = JsonDocument.Parse( json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip } );
-        return d.RootElement.GetProperty( "CK-AppIdentity" ).GetProperty( "Local" ).GetProperty( "Client" )
+        return d.RootElement.GetProperty( "CK-AppIdentity" ).GetProperty( "Local" ).GetProperty( "PartyClient" )
                 .EnumerateObject().Select( p => p.Name ).ToArray();
     }
 
@@ -31,7 +31,7 @@ public class HostClientDeclarationsTests
     [TestCase( """{ "Logging": { "LogLevel": "Info" } }""" )]
     [TestCase( """{ "CK-AppIdentity": { "FullName": "D/$P" } }""" )]
     [TestCase( """{ "CK-AppIdentity": { "Local": { "PublicUrl": "https://acme.com" } } }""" )]
-    [TestCase( """{ "CK-AppIdentity": { "Local": { "Client": {} } } }""" )]
+    [TestCase( """{ "CK-AppIdentity": { "Local": { "PartyClient": {} } } }""" )]
     public void the_missing_sections_are_created( string json )
     {
         var result = Add( json, "App", "MiniApp" ).ShouldNotBeNull();
@@ -45,7 +45,7 @@ public class HostClientDeclarationsTests
     [Test]
     public void an_existing_declaration_is_kept_and_only_the_missing_ones_are_added()
     {
-        var result = Add( """{ "CK-AppIdentity": { "Local": { "Client": { "App": { "Color": "Blue" } } } } }""", "App", "MiniApp" ).ShouldNotBeNull();
+        var result = Add( """{ "CK-AppIdentity": { "Local": { "PartyClient": { "App": { "Color": "Blue" } } } } }""", "App", "MiniApp" ).ShouldNotBeNull();
         Declared( result ).ShouldBe( ["App", "MiniApp"] );
         result.ShouldContain( "\"Color\": \"Blue\"" );
     }
@@ -53,7 +53,7 @@ public class HostClientDeclarationsTests
     [Test]
     public void nothing_is_written_when_everything_is_declared_whatever_the_case()
     {
-        Add( """{ "ck-appidentity": { "local": { "client": { "app": {} } } } }""", "App" ).ShouldBeNull();
+        Add( """{ "ck-appidentity": { "local": { "partyclient": { "app": {} } } } }""", "App" ).ShouldBeNull();
     }
 
     [Test]
@@ -66,7 +66,7 @@ public class HostClientDeclarationsTests
         result.AsSpan().StartsWith( Encoding.UTF8.GetPreamble() ).ShouldBeTrue();
         // Only the new text is inserted.
         Encoding.UTF8.GetString( result.AsSpan( 3 ) ).ShouldBe(
-            "{\r\n  // The application.\r\n  \"CK-AppIdentity\": {\r\n    /* Its name. */\r\n    \"FullName\": \"D/$P\",\r\n    \"Local\": { \"Client\": { \"App\": {} } }\r\n  }\r\n}\r\n" );
+            "{\r\n  // The application.\r\n  \"CK-AppIdentity\": {\r\n    /* Its name. */\r\n    \"FullName\": \"D/$P\",\r\n    \"Local\": { \"PartyClient\": { \"App\": {} } }\r\n  }\r\n}\r\n" );
     }
 
     [Test]
@@ -95,7 +95,7 @@ public class HostClientDeclarationsTests
                         "AllowFeatures": "HttpEndpoint",
                         // The "Main" endpoint.
                         "HttpEndpoint": { "Main": { "Urls": "http://localhost:5302" } },
-                        "Client": { "App": {}, "MiniApp": {} }
+                        "PartyClient": { "App": {}, "MiniApp": {} }
                     }
                 },
                 "Logging": { "LogLevel": { "Default": "Warning" } }
@@ -110,7 +110,7 @@ public class HostClientDeclarationsTests
             {
               "CK-AppIdentity": {
                 "Local": {
-                  "Client": {
+                  "PartyClient": {
                     "App": {}, // The default one.
                   }
                 }
@@ -122,7 +122,7 @@ public class HostClientDeclarationsTests
             {
               "CK-AppIdentity": {
                 "Local": {
-                  "Client": {
+                  "PartyClient": {
                     "App": {}, // The default one.
                     "MiniApp": {},
                     "Other": {}
@@ -133,9 +133,9 @@ public class HostClientDeclarationsTests
             """ );
     }
 
-    [TestCase( """{}""", """{ "CK-AppIdentity": { "Local": { "Client": { "App": {} } } } }""" )]
-    [TestCase( """{ "CK-AppIdentity": { "Local": { "Client": {} } } }""", """{ "CK-AppIdentity": { "Local": { "Client": { "App": {} } } } }""" )]
-    [TestCase( """{ "A": 1 }""", """{ "A": 1, "CK-AppIdentity": { "Local": { "Client": { "App": {} } } } }""" )]
+    [TestCase( """{}""", """{ "CK-AppIdentity": { "Local": { "PartyClient": { "App": {} } } } }""" )]
+    [TestCase( """{ "CK-AppIdentity": { "Local": { "PartyClient": {} } } }""", """{ "CK-AppIdentity": { "Local": { "PartyClient": { "App": {} } } } }""" )]
+    [TestCase( """{ "A": 1 }""", """{ "A": 1, "CK-AppIdentity": { "Local": { "PartyClient": { "App": {} } } } }""" )]
     public void a_compact_object_receives_the_declarations_on_its_line( string json, string expected )
     {
         Add( json, "App" ).ShouldBe( expected );
@@ -143,7 +143,7 @@ public class HostClientDeclarationsTests
 
     [TestCase( """{ "CK-AppIdentity": "oops" }""" )]
     [TestCase( """{ "CK-AppIdentity": { "Local": [] } }""" )]
-    [TestCase( """{ "CK-AppIdentity": { "Local": { "Client": 3 } } }""" )]
+    [TestCase( """{ "CK-AppIdentity": { "Local": { "PartyClient": 3 } } }""" )]
     public void a_section_that_is_not_an_object_is_an_error( string json )
     {
         Util.Invokable( () => Add( json, "App" ) ).ShouldThrow<InvalidDataException>();

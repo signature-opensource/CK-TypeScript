@@ -10,7 +10,7 @@ namespace CK.Setup;
 
 /// <summary>
 /// A temporary help, waiting for the Unified Configuration: a client application of the BinPath must be declared by the
-/// party that uses it ("CK-AppIdentity:Local:Client:{Name}", see CK.AppIdentity.Client). When the BinPath's project is a
+/// party that uses it ("CK-AppIdentity:Local:PartyClient:{Name}", see CK.AppIdentity.PartyClient). When the BinPath's project is a
 /// host (its folder name ends with ".Host") that has an "appsettings.json", the missing declarations of the root party
 /// are added to it.
 /// <para>
@@ -22,7 +22,7 @@ static class HostClientDeclarations
 {
     const string AppIdentitySection = "CK-AppIdentity";
     const string LocalSection = "Local";
-    const string ClientSection = "Client";
+    const string PartyClientSection = "PartyClient";
 
     /// <summary>
     /// Adds the missing declarations to the "appsettings.json" of the host project.
@@ -48,7 +48,7 @@ static class HostClientDeclarations
             if( result == null ) return true;
             File.WriteAllBytes( file, result );
             monitor.Info( $"""
-                Added "{AppIdentitySection}:{LocalSection}:{ClientSection}:{added.Concatenate( $"\", \"{AppIdentitySection}:{LocalSection}:{ClientSection}:" )}" to '{file}': the root party declares its client applications.
+                Added "{AppIdentitySection}:{LocalSection}:{PartyClientSection}:{added.Concatenate( $"\", \"{AppIdentitySection}:{LocalSection}:{PartyClientSection}:" )}" to '{file}': the root party declares its client applications.
                 This is a temporary help waiting for the Unified Configuration: commit this change.
                 """ );
             return true;
@@ -84,13 +84,13 @@ static class HostClientDeclarations
             if( valid && a.ValueKind == JsonValueKind.Object )
             {
                 valid = IsObjectOrMissing( a, LocalSection, out var l );
-                if( valid && l.ValueKind == JsonValueKind.Object ) valid = IsObjectOrMissing( l, ClientSection, out _ );
+                if( valid && l.ValueKind == JsonValueKind.Object ) valid = IsObjectOrMissing( l, PartyClientSection, out _ );
             }
-            Throw.CheckData( $"\"{AppIdentitySection}\", its \"{LocalSection}\" and its \"{ClientSection}\" must be JSON objects.", valid );
+            Throw.CheckData( $"\"{AppIdentitySection}\", its \"{LocalSection}\" and its \"{PartyClientSection}\" must be JSON objects.", valid );
             var declared = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
             if( TryGetObject( root, AppIdentitySection, out var ckApp )
                 && TryGetObject( ckApp, LocalSection, out var local )
-                && TryGetObject( local, ClientSection, out var clients ) )
+                && TryGetObject( local, PartyClientSection, out var clients ) )
             {
                 foreach( var p in clients.EnumerateObject() ) declared.Add( p.Name );
             }
@@ -100,7 +100,7 @@ static class HostClientDeclarations
 
         // Textual insertion: only the new text is inserted, everything else is kept byte for byte (the comments, the
         // layout, the indentation). The reader finds where: before the closing brace of the deepest existing object
-        // of the path root / "CK-AppIdentity" / "Local" / "Client".
+        // of the path root / "CK-AppIdentity" / "Local" / "PartyClient".
         var found = new ObjectInfo?[4];
         var stack = new List<ObjectInfo>();
         string? pendingName = null;
@@ -120,7 +120,7 @@ static class HostClientDeclarations
                     if( top == null ) o.Level = 0;
                     else if( top.Level == 0 && Eq( pendingName, AppIdentitySection ) ) o.Level = 1;
                     else if( top.Level == 1 && Eq( pendingName, LocalSection ) ) o.Level = 2;
-                    else if( top.Level == 2 && Eq( pendingName, ClientSection ) ) o.Level = 3;
+                    else if( top.Level == 2 && Eq( pendingName, PartyClientSection ) ) o.Level = 3;
                     stack.Add( o );
                     break;
                 case JsonTokenType.StartArray:
@@ -153,7 +153,7 @@ static class HostClientDeclarations
 
         var text = content.ToArray();
         var newLine = content.IndexOf( "\r\n"u8 ) >= 0 ? "\r\n" : "\n";
-        string[] sections = [AppIdentitySection, LocalSection, ClientSection];
+        string[] sections = [AppIdentitySection, LocalSection, PartyClientSection];
         // The new members of the target: the client declarations, or the first missing section (on one line).
         var declarations = added.Select( n => $"\"{n}\": {{}}" ).ToList();
         List<string> members;
