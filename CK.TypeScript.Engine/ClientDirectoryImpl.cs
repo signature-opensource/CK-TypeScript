@@ -23,18 +23,32 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
     {
         // Skips the purely unified BinPath.
         if( c.CurrentRun.ConfigurationGroup.IsUnifiedPure ) return CSCodeGenerationResult.Success;
-        return new CSCodeGenerationResult( nameof( Generate ) );
+        // The facts of the client applications need the package selection of the TypeScriptAspect. Without client
+        // application (and maybe without TypeScript aspect), the directory is empty: nothing to wait for.
+        return GetClients( c ).Count > 0
+                ? new CSCodeGenerationResult( nameof( GenerateWithSelection ) )
+                : Generate( monitor, c, scope, null );
     }
 
-    CSCodeGenerationResult Generate( IActivityMonitor monitor, ICSCodeGenerationContext c, ITypeScope scope, [WaitFor] TypeScriptPackageSelection selection )
+    CSCodeGenerationResult GenerateWithSelection( IActivityMonitor monitor, ICSCodeGenerationContext c, ITypeScope scope, [WaitFor] TypeScriptPackageSelection selection )
+    {
+        return Generate( monitor, c, scope, selection );
+    }
+
+    // The default client application is the last one: the host maps it after the other ones.
+    static System.Collections.Generic.List<TypeScriptBinPathAspectConfiguration> GetClients( ICSCodeGenerationContext c )
+    {
+        return c.CurrentRun.ConfigurationGroup.Configuration.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
+                    .Where( ts => ts.RequestPath != null )
+                    .OrderBy( ts => ts.Kind == ClientKind.DefaultApp )
+                    .ToList()
+               ?? [];
+    }
+
+    CSCodeGenerationResult Generate( IActivityMonitor monitor, ICSCodeGenerationContext c, ITypeScope scope, TypeScriptPackageSelection? selection )
     {
         var binPath = c.CurrentRun.ConfigurationGroup.Configuration;
-        // The default client application is the last one: the host maps it after the other ones.
-        var clients = binPath.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
-                             .Where( ts => ts.RequestPath != null )
-                             .OrderBy( ts => ts.Kind == ClientKind.DefaultApp )
-                             .ToList()
-                      ?? [];
+        var clients = GetClients( c );
         scope.Append( "public " ).Append( scope.Name ).Append( "() : base( new CK.TypeScript.ClientInfo[] {" ).NewLine();
         foreach( var ts in clients )
         {
@@ -42,7 +56,8 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
                                 ? ts.TargetProjectPath.RemovePrefix( binPath.ProjectPath )
                                 : ts.TargetProjectPath;
             var outputPath = new NormalizedPath( "dist" ).AppendPart( ts.TargetProjectPath.LastPart ).AppendPart( "browser" );
-            // A client application has a name.
+            // A client application has a name, and there is a selection when there are client applications.
+            Throw.DebugAssert( selection != null );
             var facts = GetFacts( selection, ts.Name! );
             scope.Append( "new CK.TypeScript.ClientInfo( " )
                  .AppendSourceString( ts.Name ).Append( ", " )

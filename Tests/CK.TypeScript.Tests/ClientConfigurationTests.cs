@@ -92,6 +92,16 @@ public class ClientConfigurationTests
         clients[1].UseDist.ShouldBeFalse();
     }
 
+    [Test]
+    public async Task without_TypeScript_aspect_the_ClientDirectory_is_empty_Async()
+    {
+        // No package selection to wait for: the directory is generated at once.
+        var engineConfig = TestHelper.CreateDefaultEngineConfiguration();
+        engineConfig.FirstBinPath.Types.Add( typeof( ClientDirectory ) );
+        await using var auto = (await engineConfig.RunSuccessfullyAsync()).CreateAutomaticServices();
+        auto.Services.GetRequiredService<ClientDirectory>().Clients.ShouldBeEmpty();
+    }
+
     [TypeScriptPackage]
     [PartyClientFact( "Enlistment" )]
     [Requires<AdminFactPackage>]
