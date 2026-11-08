@@ -10,7 +10,7 @@
     <InternalsVisibleTo Include="CK.TypeScript.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="36.0.0-0.cris-auth.1.ci.38" />
+    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="36.0.0-0.cris-auth.1.ci.39" />
       
     <PackageReference Include="CK.Html.Transform" Version="3.0.1-0.cris-auth.0.ci.11" />
     <PackageReference Include="CK.Less.Transform" Version="3.0.1-0.cris-auth.0.ci.11" />
