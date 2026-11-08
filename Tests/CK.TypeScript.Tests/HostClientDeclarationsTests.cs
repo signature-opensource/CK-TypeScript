@@ -64,12 +64,81 @@ public class HostClientDeclarationsTests
         var result = HostClientDeclarations.AddMissing( bytes, ["App"], out var added ).ShouldNotBeNull();
         added.ShouldBe( ["App"] );
         result.AsSpan().StartsWith( Encoding.UTF8.GetPreamble() ).ShouldBeTrue();
-        var text = Encoding.UTF8.GetString( result.AsSpan( 3 ) );
-        text.ShouldContain( "The application." );
-        text.ShouldContain( "Its name." );
-        text.ShouldContain( "\r\n" );
-        text.Replace( "\r\n", "" ).ShouldNotContain( "\n" );
-        Declared( text ).ShouldBe( ["App"] );
+        // Only the new text is inserted.
+        Encoding.UTF8.GetString( result.AsSpan( 3 ) ).ShouldBe(
+            "{\r\n  // The application.\r\n  \"CK-AppIdentity\": {\r\n    /* Its name. */\r\n    \"FullName\": \"D/$P\",\r\n    \"Local\": { \"Client\": { \"App\": {} } }\r\n  }\r\n}\r\n" );
+    }
+
+    [Test]
+    public void the_layout_and_the_indentation_of_a_host_configuration_are_kept()
+    {
+        var json = """
+            {
+                // The application.
+                "CK-AppIdentity": {
+                    "FullName": "D/$P", // Its name.
+                    "Local": {
+                        "AllowFeatures": "HttpEndpoint",
+                        // The "Main" endpoint.
+                        "HttpEndpoint": { "Main": { "Urls": "http://localhost:5302" } }
+                    }
+                },
+                "Logging": { "LogLevel": { "Default": "Warning" } }
+            }
+            """;
+        Add( json, "App", "MiniApp" ).ShouldBe( """
+            {
+                // The application.
+                "CK-AppIdentity": {
+                    "FullName": "D/$P", // Its name.
+                    "Local": {
+                        "AllowFeatures": "HttpEndpoint",
+                        // The "Main" endpoint.
+                        "HttpEndpoint": { "Main": { "Urls": "http://localhost:5302" } },
+                        "Client": { "App": {}, "MiniApp": {} }
+                    }
+                },
+                "Logging": { "LogLevel": { "Default": "Warning" } }
+            }
+            """ );
+    }
+
+    [Test]
+    public void the_declarations_are_added_one_per_line_to_an_existing_multi_line_client_section()
+    {
+        var json = """
+            {
+              "CK-AppIdentity": {
+                "Local": {
+                  "Client": {
+                    "App": {}, // The default one.
+                  }
+                }
+              }
+            }
+            """;
+        // The existing trailing comma is kept, no other one is added.
+        Add( json, "App", "MiniApp", "Other" ).ShouldBe( """
+            {
+              "CK-AppIdentity": {
+                "Local": {
+                  "Client": {
+                    "App": {}, // The default one.
+                    "MiniApp": {},
+                    "Other": {}
+                  }
+                }
+              }
+            }
+            """ );
+    }
+
+    [TestCase( """{}""", """{ "CK-AppIdentity": { "Local": { "Client": { "App": {} } } } }""" )]
+    [TestCase( """{ "CK-AppIdentity": { "Local": { "Client": {} } } }""", """{ "CK-AppIdentity": { "Local": { "Client": { "App": {} } } } }""" )]
+    [TestCase( """{ "A": 1 }""", """{ "A": 1, "CK-AppIdentity": { "Local": { "Client": { "App": {} } } } }""" )]
+    public void a_compact_object_receives_the_declarations_on_its_line( string json, string expected )
+    {
+        Add( json, "App" ).ShouldBe( expected );
     }
 
     [TestCase( """{ "CK-AppIdentity": "oops" }""" )]

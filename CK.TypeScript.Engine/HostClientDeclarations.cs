@@ -1,11 +1,9 @@
 using CK.Core;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace CK.Setup;
@@ -16,8 +14,8 @@ namespace CK.Setup;
 /// host (its folder name ends with ".Host") that has an "appsettings.json", the missing declarations of the root party
 /// are added to it.
 /// <para>
-/// It only adds: an existing declaration is never changed nor removed. The comments are kept (as block comments); the
-/// layout is re-indented.
+/// It only adds: an existing declaration is never changed nor removed. Only the new text is inserted: the rest of the
+/// file (its comments, its layout, its indentation) is kept byte for byte.
 /// </para>
 /// </summary>
 static class HostClientDeclarations
@@ -100,103 +98,178 @@ static class HostClientDeclarations
         }
         if( added.Count == 0 ) return null;
 
-        var output = new ArrayBufferWriter<byte>();
-        var newLine = content.IndexOf( "\r\n"u8 ) >= 0 ? "\r\n" : "\n";
-        using( var w = new Utf8JsonWriter( output, new JsonWriterOptions { Indented = true, NewLine = newLine, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } ) )
+        // Textual insertion: only the new text is inserted, everything else is kept byte for byte (the comments, the
+        // layout, the indentation). The reader finds where: before the closing brace of the deepest existing object
+        // of the path root / "CK-AppIdentity" / "Local" / "Client".
+        var found = new ObjectInfo?[4];
+        var stack = new List<ObjectInfo>();
+        string? pendingName = null;
+        var r = new Utf8JsonReader( content, readerOptions );
+        while( r.Read() )
         {
-            var r = new Utf8JsonReader( content, readerOptions with { CommentHandling = JsonCommentHandling.Allow } );
-            // The property names of the opened objects: the path of the current object.
-            var path = new List<string?>();
-            string? pendingName = null;
-            // What exists along the path to the "Client" section.
-            bool hasAppIdentity = false, hasLocal = false, hasClient = false;
-            while( r.Read() )
+            var top = stack.Count > 0 ? stack[^1] : null;
+            switch( r.TokenType )
             {
-                switch( r.TokenType )
-                {
-                    case JsonTokenType.PropertyName:
-                        pendingName = r.GetString();
-                        w.WritePropertyName( pendingName! );
-                        continue;
-                    case JsonTokenType.StartObject:
-                        if( IsPath( path, pendingName, 0 ) && Eq( pendingName, AppIdentitySection ) ) hasAppIdentity = true;
-                        else if( IsPath( path, pendingName, 1 ) && Eq( pendingName, LocalSection ) ) hasLocal = true;
-                        else if( IsPath( path, pendingName, 2 ) && Eq( pendingName, ClientSection ) ) hasClient = true;
-                        path.Add( pendingName );
-                        w.WriteStartObject();
-                        break;
-                    case JsonTokenType.EndObject:
-                        // Before closing an object of the path to the "Client" section, adds what is missing in it.
-                        int depth = path.Count - 1;
-                        if( depth == 0 && !hasAppIdentity ) WriteSections( w, 0, added );
-                        else if( depth == 1 && Eq( path[1], AppIdentitySection ) && !hasLocal ) WriteSections( w, 1, added );
-                        else if( depth == 2 && Eq( path[1], AppIdentitySection ) && Eq( path[2], LocalSection ) && !hasClient ) WriteSections( w, 2, added );
-                        else if( depth == 3 && Eq( path[1], AppIdentitySection ) && Eq( path[2], LocalSection ) && Eq( path[3], ClientSection ) ) WriteSections( w, 3, added );
-                        path.RemoveAt( depth );
-                        w.WriteEndObject();
-                        break;
-                    case JsonTokenType.StartArray:
-                        path.Add( pendingName );
-                        w.WriteStartArray();
-                        break;
-                    case JsonTokenType.EndArray:
-                        path.RemoveAt( path.Count - 1 );
-                        w.WriteEndArray();
-                        break;
-                    case JsonTokenType.Comment:
-                        w.WriteCommentValue( r.GetComment() );
-                        continue;
-                    case JsonTokenType.String:
-                        w.WriteStringValue( r.GetString() );
-                        break;
-                    case JsonTokenType.Number:
-                        w.WriteRawValue( r.ValueSpan, skipInputValidation: true );
-                        break;
-                    case JsonTokenType.True: w.WriteBooleanValue( true ); break;
-                    case JsonTokenType.False: w.WriteBooleanValue( false ); break;
-                    case JsonTokenType.Null: w.WriteNullValue(); break;
-                }
-                pendingName = null;
+                case JsonTokenType.PropertyName:
+                    Throw.DebugAssert( top != null );
+                    if( top.FirstMember < 0 ) top.FirstMember = (int)r.TokenStartIndex;
+                    pendingName = r.GetString();
+                    continue;
+                case JsonTokenType.StartObject:
+                    var o = new ObjectInfo { Open = (int)r.TokenStartIndex };
+                    if( top == null ) o.Level = 0;
+                    else if( top.Level == 0 && Eq( pendingName, AppIdentitySection ) ) o.Level = 1;
+                    else if( top.Level == 1 && Eq( pendingName, LocalSection ) ) o.Level = 2;
+                    else if( top.Level == 2 && Eq( pendingName, ClientSection ) ) o.Level = 3;
+                    stack.Add( o );
+                    break;
+                case JsonTokenType.StartArray:
+                    // The objects of an array belong to no level.
+                    stack.Add( new ObjectInfo { IsArray = true } );
+                    break;
+                case JsonTokenType.EndObject:
+                case JsonTokenType.EndArray:
+                    var closed = stack[^1];
+                    stack.RemoveAt( stack.Count - 1 );
+                    if( !closed.IsArray )
+                    {
+                        closed.Close = (int)r.TokenStartIndex;
+                        if( closed.Level >= 0 && found[closed.Level] == null ) found[closed.Level] = closed;
+                    }
+                    if( stack.Count > 0 && !stack[^1].IsArray ) stack[^1].LastValueEnd = (int)r.BytesConsumed;
+                    break;
+                default:
+                    // A primitive value of a member.
+                    if( top is { IsArray: false } ) top.LastValueEnd = (int)r.BytesConsumed;
+                    break;
             }
+            pendingName = null;
         }
-        var written = output.WrittenSpan;
-        var result = new byte[(hasBom ? 3 : 0) + written.Length + Encoding.UTF8.GetByteCount( newLine )];
-        if( hasBom ) bom.CopyTo( result );
-        written.CopyTo( result.AsSpan( hasBom ? 3 : 0 ) );
-        Encoding.UTF8.GetBytes( newLine ).CopyTo( result.AsSpan( result.Length - Encoding.UTF8.GetByteCount( newLine ) ) );
-        return result;
+        var rootInfo = found[0];
+        Throw.DebugAssert( rootInfo != null );
+        // The deepest existing level: the missing ones are inserted in it.
+        int level = found[3] != null ? 3 : found[2] != null ? 2 : found[1] != null ? 1 : 0;
+        var target = found[level]!;
 
-        // The object that starts is at "depth" in the path to the "Client" section when its parents are the sections above it.
-        static bool IsPath( List<string?> path, string? name, int depth )
+        var text = content.ToArray();
+        var newLine = content.IndexOf( "\r\n"u8 ) >= 0 ? "\r\n" : "\n";
+        string[] sections = [AppIdentitySection, LocalSection, ClientSection];
+        // The new members of the target: the client declarations, or the first missing section (on one line).
+        var declarations = added.Select( n => $"\"{n}\": {{}}" ).ToList();
+        List<string> members;
+        if( level == 3 ) members = declarations;
+        else
         {
-            if( path.Count != depth + 1 ) return false;
-            return depth switch
+            var inner = $"{{ {string.Join( ", ", declarations )} }}";
+            for( int i = sections.Length - 1; i >= level; --i )
             {
-                0 => true,
-                1 => Eq( path[1], AppIdentitySection ),
-                _ => Eq( path[1], AppIdentitySection ) && Eq( path[2], LocalSection )
-            };
+                inner = i == level ? $"\"{sections[i]}\": {inner}" : $"{{ \"{sections[i]}\": {inner} }}";
+            }
+            members = [inner];
         }
+        bool hasMembers = target.FirstMember >= 0;
+        bool needsComma = hasMembers && !HasTrailingComma( text, target.LastValueEnd, target.Close );
+        var insertions = new List<(int At, string Text)>();
+        int closeLineStart = LineStart( text, target.Close );
+        if( IsBlank( text, closeLineStart, target.Close ) && LineStart( text, target.Open ) != closeLineStart )
+        {
+            // The closing brace is on its own line: one line per new member, before it.
+            string indent = hasMembers
+                            ? Indent( text, target.FirstMember )
+                            : Indent( text, target.Close ) + IndentUnit( text, rootInfo );
+            var b = new StringBuilder();
+            for( int i = 0; i < members.Count; ++i )
+            {
+                b.Append( indent ).Append( members[i] );
+                if( i < members.Count - 1 ) b.Append( ',' );
+                b.Append( newLine );
+            }
+            insertions.Add( (closeLineStart, b.ToString()) );
+        }
+        else
+        {
+            // A compact object ("{ ... }" on one line): the new members before its closing brace.
+            var inline = string.Join( ", ", members );
+            insertions.Add( (target.Close, (text[target.Close - 1] == (byte)' ' ? "" : " ") + inline + " ") );
+        }
+        if( needsComma ) insertions.Add( (target.LastValueEnd, ",") );
+
+        var result = new List<byte>( text.Length + 256 );
+        if( hasBom ) result.AddRange( bom.ToArray() );
+        int pos = 0;
+        foreach( var (at, t) in insertions.OrderBy( x => x.At ) )
+        {
+            result.AddRange( text.AsSpan( pos, at - pos ).ToArray() );
+            result.AddRange( Encoding.UTF8.GetBytes( t ) );
+            pos = at;
+        }
+        result.AddRange( text.AsSpan( pos ).ToArray() );
+        return result.ToArray();
 
         static bool Eq( string? a, string b ) => string.Equals( a, b, StringComparison.OrdinalIgnoreCase );
+    }
 
-        // Writes the missing sections from the given level (0: in the root object) down to the client declarations.
-        static void WriteSections( Utf8JsonWriter w, int level, List<string> names )
+    sealed class ObjectInfo
+    {
+        public bool IsArray;
+        public int Level = -1;
+        public int Open;
+        public int Close;
+        public int FirstMember = -1;
+        public int LastValueEnd = -1;
+    }
+
+    static int LineStart( byte[] text, int pos )
+    {
+        while( pos > 0 && text[pos - 1] != (byte)'\n' ) --pos;
+        return pos;
+    }
+
+    static bool IsBlank( byte[] text, int from, int to )
+    {
+        for( int i = from; i < to; ++i ) if( text[i] != (byte)' ' && text[i] != (byte)'\t' ) return false;
+        return true;
+    }
+
+    // The whitespace at the start of the line of a position.
+    static string Indent( byte[] text, int pos )
+    {
+        int start = LineStart( text, pos );
+        int end = start;
+        while( end < text.Length && (text[end] == (byte)' ' || text[end] == (byte)'\t') ) ++end;
+        return Encoding.UTF8.GetString( text, start, end - start );
+    }
+
+    // The indentation unit of the file: the one of the first member of the root (2 spaces by default).
+    static string IndentUnit( byte[] text, ObjectInfo root )
+    {
+        if( root.FirstMember < 0 || LineStart( text, root.FirstMember ) == LineStart( text, root.Open ) ) return "  ";
+        var unit = Indent( text, root.FirstMember );
+        return unit.Length > 0 ? unit : "  ";
+    }
+
+    // Whether a comma follows the last member's value (a trailing comma, allowed by the reader): skips the whitespace
+    // and the comments.
+    static bool HasTrailingComma( byte[] text, int from, int to )
+    {
+        int i = from;
+        while( i < to )
         {
-            string[] sections = [AppIdentitySection, LocalSection, ClientSection];
-            for( int i = level; i < sections.Length; ++i )
+            byte c = text[i];
+            if( c == (byte)',' ) return true;
+            if( c == (byte)'/' && i + 1 < to && text[i + 1] == (byte)'/' )
             {
-                w.WritePropertyName( sections[i] );
-                w.WriteStartObject();
+                while( i < to && text[i] != (byte)'\n' ) ++i;
             }
-            foreach( var n in names )
+            else if( c == (byte)'/' && i + 1 < to && text[i + 1] == (byte)'*' )
             {
-                w.WritePropertyName( n );
-                w.WriteStartObject();
-                w.WriteEndObject();
+                i += 2;
+                while( i + 1 < to && !(text[i] == (byte)'*' && text[i + 1] == (byte)'/') ) ++i;
+                i += 2;
             }
-            for( int i = level; i < sections.Length; ++i ) w.WriteEndObject();
+            else ++i;
         }
+        return false;
     }
 
     static bool IsObjectOrMissing( JsonElement e, string name, out JsonElement found )

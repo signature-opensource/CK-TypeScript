@@ -38,7 +38,8 @@ party only when the party declares it (`CK-AppIdentity:Local:Client:{Name}`). Fo
 `ProjectPath` is a host project (its folder name ends with ".Host") with an `appsettings.json`, the missing declarations
 of the root party are added, and logged so that the change is committed:
 - it only adds: an existing declaration is never changed nor removed (the keys are compared without case);
-- the comments are kept (as block comments), the BOM and the line endings too; the layout is re-indented;
+- only the new text is inserted (before the closing brace of the deepest existing section, indented like its
+  siblings, on one line in a compact object): the rest of the file is kept byte for byte (comments, layout, BOM);
 - a `"CK-AppIdentity"`, `"Local"` or `"Client"` that is not a JSON object fails the generation;
 - the tenant domains declare their clients by hand.
 
