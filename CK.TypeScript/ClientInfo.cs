@@ -18,7 +18,7 @@ public sealed class ClientInfo
     /// <param name="typeFilterName">The <see cref="TypeFilterName"/>.</param>
     /// <param name="devServerPort">The <see cref="DevServerPort"/>.</param>
     /// <param name="useDist">The <see cref="UseDist"/>.</param>
-    /// <param name="facts">The <see cref="Facts"/>, as a string ("Admin|Enlistment", empty for none).</param>
+    /// <param name="facts">The <see cref="Facts"/>, as (key, value) pairs (a fact without value has an empty value).</param>
     public ClientInfo( string name,
                        string requestPath,
                        NormalizedPath projectPath,
@@ -26,9 +26,9 @@ public sealed class ClientInfo
                        string typeFilterName,
                        int devServerPort,
                        bool useDist,
-                       string facts )
+                       (string Key, string Value)[] facts )
     {
-        Facts = CK.AppIdentity.ClientApplicationDescription.FactContext.FindOrCreate( facts );
+        Facts = CK.AppIdentity.ClientApplicationFacts.Create( facts );
         DevServerPort = devServerPort;
         UseDist = useDist;
         Name = name;
@@ -81,9 +81,9 @@ public sealed class ClientInfo
 
     /// <summary>
     /// Gets the facts of the client application: the union of the PartyClientFact attributes of its selected TypeScript
-    /// packages, computed by the engine (a trait of <see cref="CK.AppIdentity.ClientApplicationDescription.FactContext"/>).
+    /// packages, computed by the engine.
     /// </summary>
-    public CKTrait Facts { get; }
+    public CK.AppIdentity.ClientApplicationFacts Facts { get; }
 
     /// <summary>
     /// Returns "Name (RequestPath)".

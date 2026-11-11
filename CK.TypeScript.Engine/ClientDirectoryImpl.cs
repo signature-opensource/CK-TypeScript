@@ -67,7 +67,15 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
                  .AppendSourceString( ts.TypeFilterName ).Append( ", " )
                  .Append( ts.DevServerPort!.Value ).Append( ", " )
                  .Append( ts.UseDist ? "true" : "false" ).Append( ", " )
-                 .AppendSourceString( facts.ToString() ).Append( " )," ).NewLine();
+                 .Append( "[" );
+            bool first = true;
+            foreach( var (key, value) in facts.Pairs )
+            {
+                if( !first ) scope.Append( ", " );
+                first = false;
+                scope.Append( "(" ).AppendSourceString( key ).Append( ", " ).AppendSourceString( value ).Append( ")" );
+            }
+            scope.Append( "] )," ).NewLine();
             monitor.Info( facts.IsEmpty
                             ? $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}'."
                             : $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}' (facts: {facts})." );
@@ -90,16 +98,10 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
     }
 
     // The union of the facts of the selected packages of a client application.
-    static CKTrait GetFacts( TypeScriptPackageSelection selection, string configurationName )
+    static ClientApplicationFacts GetFacts( TypeScriptPackageSelection selection, string configurationName )
     {
-        var facts = ClientApplicationDescription.FactContext.EmptyTrait;
-        foreach( var t in selection.GetPackages( configurationName ) )
-        {
-            foreach( var a in t.GetCustomAttributes<PartyClientFactAttribute>( inherit: false ) )
-            {
-                facts = facts.Union( a.Trait );
-            }
-        }
-        return facts;
+        return ClientApplicationFacts.Create( selection.GetPackages( configurationName )
+                                                       .SelectMany( t => t.GetCustomAttributes<PartyClientFactAttribute>( inherit: false ) )
+                                                       .Select( a => new System.Collections.Generic.KeyValuePair<string, string>( a.Key, a.Value ) ) );
     }
 }

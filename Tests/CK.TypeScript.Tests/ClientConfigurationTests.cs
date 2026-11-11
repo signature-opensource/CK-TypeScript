@@ -103,7 +103,7 @@ public class ClientConfigurationTests
     }
 
     [TypeScriptPackage]
-    [PartyClientFact( "Enlistment" )]
+    [PartyClientFact( "Enlistment", "app-identity/enlist" )]
     [Requires<AdminFactPackage>]
     public sealed class EnlistmentFactPackage : TypeScriptPackage { }
 
@@ -141,9 +141,10 @@ public class ClientConfigurationTests
 
         await using var auto = (await engineConfig.RunSuccessfullyAsync()).CreateAutomaticServices();
         var clients = auto.Services.GetRequiredService<ClientDirectory>().Clients;
-        clients.Single( c => c.Name == "App" ).Facts.ToString().ShouldBe( "Admin|Console|Enlistment" );
+        var appFacts = clients.Single( c => c.Name == "App" ).Facts;
+        appFacts.ToString().ShouldBe( "Admin, Console, Enlistment=app-identity/enlist" );
+        appFacts.Get( "Enlistment" ).ShouldBe( ["app-identity/enlist"] );
         clients.Single( c => c.Name == "MiniApp" ).Facts.ToString().ShouldBe( "Other" );
-        clients[0].Facts.Context.ShouldBeSameAs( CK.AppIdentity.ClientApplicationDescription.FactContext );
     }
 
     static EngineConfiguration CreateTwoConfigurations(TypeScriptBinPathAspectConfiguration c1, TypeScriptBinPathAspectConfiguration c2 )

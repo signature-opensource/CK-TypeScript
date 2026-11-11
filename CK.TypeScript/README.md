@@ -78,9 +78,10 @@ client applications (the default one last). The [CK.TS.AspNet.Clients](https://g
 serves them; the link goes to a package built on this one because it is the consumer of this list.
 
 A client application is a party client: a TypeScript package states facts about the client applications it belongs to
-with the `[PartyClientFact( "..." )]` of CK.AppIdentity.PartyClient (a package that is an approval page states
-`[PartyClientFact( "Enlistment" )]`). The facts of a client application (`ClientInfo.Facts`) are the union of the ones
-of its selected packages, computed by the engine.
+with the `[PartyClientFact( key, value )]` of CK.AppIdentity.PartyClient (a package that is an approval page states
+`[PartyClientFact( "Enlistment", "app-identity/enlist" )]`, the path of its page). The facts of a client application
+(`ClientInfo.Facts`, a `ClientApplicationFacts`: a key has a set of values) are the union of the ones of its selected
+packages, computed by the engine.
 
 A client application is built by the BinPath, but it is a client of a party only when the party **declares** it in its
 configuration: `"CK-AppIdentity": { "Local": { "PartyClient": { "App": {} } } }` (the "PartyClient" feature of
