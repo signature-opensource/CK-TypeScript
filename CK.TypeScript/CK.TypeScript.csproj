@@ -5,6 +5,6 @@
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json" Version="36.0.0-0.cris-auth.1.ci.41" />
     <!-- A client application is a party client: its facts come from its packages ([PartyClientFact]). -->
-    <PackageReference Include="CK.AppIdentity.PartyClient" Version="3.0.0-0.cris-auth.1.ci.59" />
+    <PackageReference Include="CK.AppIdentity.PartyClient" Version="3.0.0-0.cris-auth.1.ci.61" />
   </ItemGroup>
 </Project>
