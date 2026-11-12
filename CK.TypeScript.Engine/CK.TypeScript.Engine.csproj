@@ -10,9 +10,9 @@
     <InternalsVisibleTo Include="CK.TypeScript.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="36.0.0-0.cris-auth.1.ci.41" />
+    <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="36.0.0-0.cris-auth.1.ci.42" />
     <!-- CK.TypeScript references CK.AppIdentity.PartyClient: its engine references the engine of CK.AppIdentity. -->
-    <PackageReference Include="CK.AppIdentity.Engine" Version="3.0.0-0.cris-auth.1.ci.61" />
+    <PackageReference Include="CK.AppIdentity.Engine" Version="3.0.0-0.cris-auth.1.ci.62" />
       
     <PackageReference Include="CK.Html.Transform" Version="3.0.1-0.cris-auth.0.ci.13" />
     <PackageReference Include="CK.Less.Transform" Version="3.0.1-0.cris-auth.0.ci.13" />
