@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.TypeScript.CodeGen;

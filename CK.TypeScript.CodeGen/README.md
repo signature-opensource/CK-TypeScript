@@ -75,8 +75,9 @@ the `package.json` and `tsconfig.json` files of the target project.
 
 ## Documentation
 
-The [`DocumentationBuilder`](Comment/DocumentationBuilder.cs) and the [`XmlDocumentationReader`](Comment/XmlDocumentationReader.cs)
-generate the TypeScript comments from the XML documentation of the C# types (`TSCodeWriterDocumentationExtensions`). The
+The [`DocumentationBuilder`](Comment/DocumentationBuilder.cs) generates the TypeScript comments from the XML documentation
+of the C# types (`TSCodeWriterDocumentationExtensions`), read by the `XmlDocumentationReader` of
+[CK.CodeGen](https://github.com/signature-opensource/CK-CodeGen/blob/stable/CK.CodeGen/README.md#xml-documentation). The
 limitations of the XML documentation files are in the [Comment folder](Comment/README.md).
 
 ## Publishing
@@ -89,4 +90,6 @@ The [`CodeGenResourceContainerTarget`](Integration/CodeGenResourceContainerTarge
 
 - [CK.EmbeddedResources](https://github.com/signature-opensource/CK-EmbeddedResources/blob/stable/CK.EmbeddedResources/README.md)
   for the resources and the `CodeGenResourceContainer`.
+- [CK.CodeGen](https://github.com/signature-opensource/CK-CodeGen/blob/stable/CK.CodeGen/README.md) for the
+  `XmlDocumentationReader`.
 - CSemVer for the versions of the libraries (`SVersionBound`).
