@@ -2,6 +2,7 @@ using CK.Core;
 using CK.TypeScript.CodeGen;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace CK.Setup;
@@ -52,7 +53,7 @@ public sealed partial class TypeScriptContext // Save
                                                                                     out var relative ) )
                 {
                     _integrationContext.TargetPackageJson.Scripts["ck-watch"] = $"""
-                    dotnet "$PROJECT_CWD/{relative}"
+                    dotnet "$PROJECT_CWD/{GetCKWatchPath( relative )}"
                     """;
                 }
                 else
@@ -70,6 +71,30 @@ public sealed partial class TypeScriptContext // Save
             }
         }
         return success;
+    }
+
+    /// <summary>
+    /// The "ck-watch" script must not depend on the build configuration: the package.json is committed and
+    /// a CI build (Debug) and a Release build would change it. The configuration folder (the part after the
+    /// last "bin" of ".../bin/Debug/net10.0/CK.TypeScript.LiveEngine.dll") is replaced by the
+    /// BUILD_CONFIGURATION environment variable that defaults to "Debug" (the Yarn shell expands it on every OS).
+    /// </summary>
+    /// <param name="relative">The relative path from the target project to the LiveEngine assembly.</param>
+    /// <returns>The path to use in the script.</returns>
+    internal static string GetCKWatchPath( NormalizedPath relative )
+    {
+        var parts = relative.Parts;
+        // "bin", the configuration, the target framework and the file.
+        for( int i = parts.Count - 4; i >= 0; --i )
+        {
+            if( parts[i].Equals( "bin", StringComparison.OrdinalIgnoreCase ) )
+            {
+                return string.Join( '/', parts.Take( i + 1 ) )
+                       + "/${BUILD_CONFIGURATION:-Debug}/"
+                       + string.Join( '/', parts.Skip( i + 2 ) );
+            }
+        }
+        return relative.Path;
     }
 
     /// <summary>

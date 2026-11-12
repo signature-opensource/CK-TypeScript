@@ -488,7 +488,7 @@ public sealed partial class TypeScriptIntegrationContext
                 // The files on disk are written only when they differ (no rewrite that reorders the package.json).
                 if( text != _lastInstalledTargetPackageJsonContent )
                 {
-                    File.WriteAllText( _targetPackageJson.FilePath, text );
+                    WritePackageJson( _targetPackageJson.FilePath, text );
                     _lastInstalledTargetPackageJsonContent = text;
                 }
                 WriteYarnRc( monitor, yarnRcPath, currentYarnRc, newYarnRc );
@@ -498,11 +498,11 @@ public sealed partial class TypeScriptIntegrationContext
             monitor.Trace( marker == null
                             ? "No install marker found. 'yarn install' will be done."
                             : "The package.json or the .yarnrc.yml changed since the last install. 'yarn install' will be done." );
-            File.WriteAllText( _targetPackageJson.FilePath, text );
+            WritePackageJson( _targetPackageJson.FilePath, text );
         }
         else
         {
-            _targetPackageJson.Save();
+            WritePackageJson( _targetPackageJson.FilePath, _targetPackageJson.WriteAsString() );
         }
         WriteYarnRc( monitor, yarnRcPath, currentYarnRc, newYarnRc );
         // Whatever stops the install (an error, a killed process) leaves no marker: the next run installs.
@@ -531,6 +531,20 @@ public sealed partial class TypeScriptIntegrationContext
         Directory.CreateDirectory( markerPath.RemoveLastPart() );
         File.WriteAllText( markerPath, YarnHelper.ComputeInstallHash( _lastInstalledTargetPackageJsonContent, installedYarnRc ) );
         return true;
+    }
+
+    /// <summary>
+    /// Writes the package.json only when its content changes: the file is usually committed, an unchanged
+    /// content keeps its bytes (its line endings and its final newline).
+    /// The written file ends with a newline, like the package.json that Yarn rewrites when it installs:
+    /// otherwise the final newline would flip between the engine's writes and Yarn's ones.
+    /// </summary>
+    static void WritePackageJson( NormalizedPath path, string text )
+    {
+        if( File.Exists( path ) && Normalize( File.ReadAllText( path ) ) == Normalize( text ) ) return;
+        File.WriteAllText( path, text.EndsWith( '\n' ) ? text : text + Environment.NewLine );
+
+        static string Normalize( string s ) => s.ReplaceLineEndings( "\n" ).TrimEnd( '\n' );
     }
 
     static void WriteYarnRc( IActivityMonitor monitor, NormalizedPath yarnRcPath, string? current, string? newOne )
@@ -605,7 +619,7 @@ public sealed partial class TypeScriptIntegrationContext
                         p.UnconditionalSetDependencyKind( DependencyKind.PeerDependency );
                     }
                 }
-                packageJson.Save();
+                WritePackageJson( packageJson.FilePath, packageJson.WriteAsString() );
             }
         }
     }

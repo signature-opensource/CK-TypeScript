@@ -309,16 +309,21 @@ public class YarnSettingsTests
                   "is-number": "^7.0.0"
 
             """.ReplaceLineEndings( Environment.NewLine ) );
-        File.ReadAllText( targetProjectPath.AppendPart( "package.json" ) ).ShouldContain( "\"is-number\": \"7.0.0\"" );
+        var packageJson = targetProjectPath.AppendPart( "package.json" );
+        File.ReadAllText( packageJson ).ShouldContain( "\"is-number\": \"7.0.0\"" );
+        // The "ck-watch" script doesn't depend on the build configuration.
+        File.ReadAllText( packageJson ).ShouldContain( "\"ck-watch\": \"dotnet \\\"$PROJECT_CWD/../../bin/${BUILD_CONFIGURATION:-Debug}/" );
         // The dependency added by the extension is redirected by the resolution. The yarn.lock keeps the original
         // manifest of tslib: the installed dependencies are in the .pnp.cjs.
         TslibDependencies( pnp ).ShouldContain( "[\"is-number\", \"npm:7.0.0\"]" );
         File.Exists( marker ).ShouldBeTrue();
         var markerTime = File.GetLastWriteTimeUtc( marker );
 
-        // 2 - Nothing changed: no install (the marker is not rewritten).
+        // 2 - Nothing changed: no install (the marker is not rewritten) and the package.json keeps its bytes.
+        var packageJsonBytes = File.ReadAllBytes( packageJson );
         await RunAsync( targetProjectPath, typeof( WithExtension ) );
         File.GetLastWriteTimeUtc( marker ).ShouldBe( markerTime );
+        File.ReadAllBytes( packageJson ).ShouldBe( packageJsonBytes );
 
         // 3 - The extension is no more declared: the .yarnrc.yml changes and the install runs.
         //     The resolution stays in the package.json (the engine can't tell its entries from the author's ones).
@@ -328,9 +333,21 @@ public class YarnSettingsTests
         File.GetLastWriteTimeUtc( marker ).ShouldNotBe( markerTime );
 
         // 4 - A failed (or interrupted) install leaves no marker: the next run installs.
+        //     The package.json has an old "ck-watch" script (with the configuration folder) and no final newline:
+        //     the script is fixed and the file ends with a newline, like the package.json that Yarn writes.
+        var oldScript = File.ReadAllText( packageJson ).Replace( "${BUILD_CONFIGURATION:-Debug}", "Release" ).TrimEnd();
+        File.WriteAllText( packageJson, oldScript );
         File.Delete( marker );
         await RunAsync( targetProjectPath, typeof( WithoutExtension ) );
         File.Exists( marker ).ShouldBeTrue();
+        var fixedScript = File.ReadAllText( packageJson );
+        fixedScript.ShouldContain( "/bin/${BUILD_CONFIGURATION:-Debug}/" );
+        fixedScript.ShouldEndWith( "}" + Environment.NewLine );
+
+        // 5 - Nothing changed: the package.json keeps its bytes.
+        packageJsonBytes = File.ReadAllBytes( packageJson );
+        await RunAsync( targetProjectPath, typeof( WithoutExtension ) );
+        File.ReadAllBytes( packageJson ).ShouldBe( packageJsonBytes );
 
         // The "packageDependencies" of tslib in the .pnp.cjs.
         static string TslibDependencies( NormalizedPath pnp )

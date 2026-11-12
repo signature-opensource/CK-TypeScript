@@ -141,7 +141,16 @@ When the `IntegrationMode` is `Inline` (the default), the [`TypeScriptIntegratio
   writes `jest.config.js`, `jest-setup.ts` and a sample `.spec.ts` in `src/` when there is none.
 
 It also adds the `ck-watch` script to `package.json`: `yarn ck-watch` runs the
-[CK.TypeScript.LiveEngine](../CK.TypeScript.LiveEngine/README.md) from the target project.
+[CK.TypeScript.LiveEngine](../CK.TypeScript.LiveEngine/README.md) from the target project. The `package.json` is
+usually committed, so the script doesn't depend on the build configuration: its configuration folder is the
+`BUILD_CONFIGURATION` environment variable, `Debug` by default (Yarn expands it on every OS):
+
+```json
+"ck-watch": "dotnet \"$PROJECT_CWD/../../bin/${BUILD_CONFIGURATION:-Debug}/net10.0/CK.TypeScript.LiveEngine.dll\""
+```
+
+Set `BUILD_CONFIGURATION=Release` to run the LiveEngine of a Release build. For the same reason, the engine writes
+`package.json` only when its content changes, and ends it with a newline like Yarn does.
 
 `TypeScriptIntegrationContext.RunYarn`, `TypeScriptIntegrationContext.RunYarnProcess` and
 `TypeScriptIntegrationContext.RunProcess` run commands in the target project.
