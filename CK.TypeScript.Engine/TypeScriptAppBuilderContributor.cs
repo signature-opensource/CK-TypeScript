@@ -7,8 +7,8 @@ using System.Xml.Linq;
 namespace CK.Setup;
 
 /// <summary>
-/// Configures the TypeScript aspect from the clients declared by the parties of the App ("ckonf.json"): a client whose
-/// "Type" is "TypeScript" is a <see cref="TypeScriptBinPathAspectConfiguration"/> of its BinPath (its name is the client
+/// Configures the TypeScript aspect from the clients declared by the parties of the Apps ("ckonf.json"): a client whose
+/// "Type" is "TypeScript" is a <see cref="TypeScriptBinPathAspectConfiguration"/> of its App (its name is the client
 /// name, its <see cref="TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys"/> configure it), and the presence of
 /// a client gives the <see cref="TypeScriptAspectConfiguration"/>. These keys are compile time keys: they are not projected
 /// in the host's "appsettings.json". The other keys of the client (its options) are the run time's.
@@ -30,10 +30,10 @@ public sealed class TypeScriptAppBuilderContributor : IAppBuilderContributor
     public bool Contribute( IActivityMonitor monitor, AppBuilderContext context )
     {
         bool success = true;
-        foreach( var binPath in _appIdentity.Clients.Where( c => c.Type == "TypeScript" ).GroupBy( c => c.BinPath ) )
+        foreach( var app in _appIdentity.Clients.Where( c => c.Type == "TypeScript" ).GroupBy( c => c.App ) )
         {
             var multiple = new XElement( EngineConfiguration.xMultiple );
-            foreach( var c in binPath )
+            foreach( var c in app )
             {
                 var x = ToXml( monitor, c );
                 if( x == null )
@@ -44,20 +44,20 @@ public sealed class TypeScriptAppBuilderContributor : IAppBuilderContributor
                 multiple.Add( x );
                 foreach( var k in c.Configuration.GetChildren().Where( k => TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys.Contains( k.Key ) ) )
                 {
-                    binPath.Key.AddCompileKey( $"{c.RelativePath}:{k.Key}" );
+                    app.Key.AddCompileKey( $"{c.RelativePath}:{k.Key}" );
                 }
                 c.SetHandled();
             }
             if( !success ) continue;
             context.EngineConfiguration.EnsureAspect<TypeScriptAspectConfiguration>();
-            var aspect = binPath.Key.BinPathConfiguration.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
+            var aspect = app.Key.BinPathConfiguration.EnsureAspect<TypeScriptBinPathAspectConfiguration>();
             try
             {
                 aspect.InitializeFrom( new XElement( "TypeScript", multiple ) );
             }
             catch( System.Exception ex )
             {
-                monitor.Error( $"Invalid TypeScript client configuration in {binPath.Key}.", ex );
+                monitor.Error( $"Invalid TypeScript client configuration in {app.Key}.", ex );
                 success = false;
             }
         }

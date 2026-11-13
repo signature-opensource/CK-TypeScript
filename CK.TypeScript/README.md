@@ -86,7 +86,8 @@ packages, computed by the engine.
 A client application is built by the BinPath, but it is a client of a party only when the party **declares** it in its
 configuration: `"CK-AppIdentity": { "Local": { "PartyClient": { "App": { ... } } } }` (the "PartyClient" feature of
 [CK.AppIdentity.PartyClient](https://github.com/signature-opensource/CK-AppIdentity/blob/stable/CK.AppIdentity.PartyClient/README.md)).
-With the App's `ckonf.json` (CK.AppBuilder), this declaration is the source: a client whose `"Type"` is `"TypeScript"`
+With the builder's `ckonf.json` (CK.AppBuilder), where the keys of the party are directly in its App
+(`"Local": { "PartyClient": { ... } }`), this declaration is the source: a client whose `"Type"` is `"TypeScript"`
 configures this aspect (see [CK.TypeScript.Engine](../CK.TypeScript.Engine/README.md)).
 
 ## Selecting the packages of a configuration

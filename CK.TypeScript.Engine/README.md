@@ -40,7 +40,7 @@ When a "XXX.Builder" project has a `ckonf.json` (see CK.AppBuilder), the
 [`TypeScriptAppBuilderContributor`](TypeScriptAppBuilderContributor.cs) configures this aspect from the clients that the
 parties declare (it requires the `AppIdentityAppBuilderContributor` of CK.AppIdentity.Engine):
 
-- a client whose `"Type"` is `"TypeScript"` is a `TypeScriptBinPathAspectConfiguration` of its BinPath: its name is the
+- a client whose `"Type"` is `"TypeScript"` is a `TypeScriptBinPathAspectConfiguration` of its App: its name is the
   client name, its keys are the `TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys` (the attributes of a
   `<TypeScript>` element: `Kind`, `DevServerPort`, `UseDist`...; `Types`, `ExcludedTypes` and `Barrels` are lists, a type
   being its assembly qualified name or an object whose keys are its attributes);

@@ -10,12 +10,12 @@ namespace CK.TypeScript.Tests;
 [TestFixture]
 public class TypeScriptAppBuilderContributorTests
 {
-    static (AppBuilderContext Context, AppIdentityAppBuilderContributor AppIdentity) Contribute( string binPathJson )
+    static (AppBuilderContext Context, AppIdentityAppBuilderContributor AppIdentity) Contribute( string appJson )
     {
         var engine = new EngineConfiguration();
-        var section = ImmutableConfigurationSection.CreateFromJson( "ckonf:App:BinPaths", "Front", binPathJson );
-        var binPath = new AppBinPath( "Front", TestHelper.TestProjectFolder, TestHelper.TestProjectFolder, section, engine.FirstBinPath );
-        var context = new AppBuilderContext( engine, [binPath] );
+        var section = ImmutableConfigurationSection.CreateFromJson( "ckonf:Apps", "Front", appJson );
+        var app = new AppConfiguration( "Front", TestHelper.TestProjectFolder, TestHelper.TestProjectFolder, section, engine.FirstBinPath );
+        var context = new AppBuilderContext( engine, [app] );
         var appIdentity = new AppIdentityAppBuilderContributor();
         appIdentity.Contribute( TestHelper.Monitor, context ).ShouldBeTrue();
         new TypeScriptAppBuilderContributor( appIdentity ).Contribute( TestHelper.Monitor, context ).ShouldBeTrue();
@@ -27,18 +27,16 @@ public class TypeScriptAppBuilderContributorTests
     {
         var (context, appIdentity) = Contribute( """
             {
-              "CK-AppIdentity": {
-                "FullName": "Sample/$Front",
-                "Local": {
-                  "PartyClient": {
-                    "App": { "Type": "TypeScript", "Kind": "DefaultApp", "DevServerPort": 4200 },
-                    "MiniApp": {
-                      "Type": "TypeScript", "Kind": "App", "DevServerPort": 4201, "UseDist": true, "ActiveCultures": [ "en", "fr" ],
-                      "Types": [ "CK.TypeScript.Tests.TypeScriptAppBuilderContributorTests, CK.TypeScript.Tests" ],
-                      "StaticFiles": { "AssetsMaxAge": "01:00:00" }
-                    },
-                    "Tool": { "Type": "Local" }
-                  }
+              "FullName": "Sample/$Front",
+              "Local": {
+                "PartyClient": {
+                  "App": { "Type": "TypeScript", "Kind": "DefaultApp", "DevServerPort": 4200 },
+                  "MiniApp": {
+                    "Type": "TypeScript", "Kind": "App", "DevServerPort": 4201, "UseDist": true, "ActiveCultures": [ "en", "fr" ],
+                    "Types": [ "CK.TypeScript.Tests.TypeScriptAppBuilderContributorTests, CK.TypeScript.Tests" ],
+                    "StaticFiles": { "AssetsMaxAge": "01:00:00" }
+                  },
+                  "Tool": { "Type": "Local" }
                 }
               }
             }
@@ -57,17 +55,17 @@ public class TypeScriptAppBuilderContributorTests
         // The TypeScript clients are handled, not the "Local" one.
         appIdentity.Clients.Where( c => c.IsHandled ).Select( c => c.Name ).ShouldBe( ["App", "MiniApp"], ignoreOrder: true );
         // The compile time keys: the "Type" (AppIdentity) and the aspect's keys; not the options of the client.
-        var keys = context.BinPaths[0].CompileKeys;
-        keys.ShouldContain( "CK-AppIdentity:Local:PartyClient:MiniApp:DevServerPort" );
-        keys.ShouldContain( "CK-AppIdentity:Local:PartyClient:MiniApp:Types" );
-        keys.ShouldContain( "CK-AppIdentity:Local:PartyClient:MiniApp:Type" );
-        keys.ShouldNotContain( "CK-AppIdentity:Local:PartyClient:MiniApp:StaticFiles" );
+        var keys = context.Apps[0].CompileKeys;
+        keys.ShouldContain( "Local:PartyClient:MiniApp:DevServerPort" );
+        keys.ShouldContain( "Local:PartyClient:MiniApp:Types" );
+        keys.ShouldContain( "Local:PartyClient:MiniApp:Type" );
+        keys.ShouldNotContain( "Local:PartyClient:MiniApp:StaticFiles" );
     }
 
     [Test]
     public void without_TypeScript_client_there_is_no_aspect()
     {
-        var (context, _) = Contribute( """{ "CK-AppIdentity": { "FullName": "Sample/$Front" } }""" );
+        var (context, _) = Contribute( """{ "FullName": "Sample/$Front" }""" );
         context.EngineConfiguration.FindAspect<TypeScriptAspectConfiguration>().ShouldBeNull();
     }
 }
