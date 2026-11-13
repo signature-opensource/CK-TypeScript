@@ -84,11 +84,10 @@ with the `[PartyClientFact( key, value )]` of CK.AppIdentity.PartyClient (a pack
 packages, computed by the engine.
 
 A client application is built by the BinPath, but it is a client of a party only when the party **declares** it in its
-configuration: `"CK-AppIdentity": { "Local": { "PartyClient": { "App": {} } } }` (the "PartyClient" feature of
+configuration: `"CK-AppIdentity": { "Local": { "PartyClient": { "App": { ... } } } }` (the "PartyClient" feature of
 [CK.AppIdentity.PartyClient](https://github.com/signature-opensource/CK-AppIdentity/blob/stable/CK.AppIdentity.PartyClient/README.md)).
-Waiting for a configuration that unifies the build and the deployment, the engine adds the missing declarations of the
-root party to the `appsettings.json` of a host project (see [CK.TypeScript.Engine](../CK.TypeScript.Engine/README.md)):
-commit them.
+With the App's `ckonf.json` (CK.AppBuilder), this declaration is the source: a client whose `"Type"` is `"TypeScript"`
+configures this aspect (see [CK.TypeScript.Engine](../CK.TypeScript.Engine/README.md)).
 
 ## Selecting the packages of a configuration
 

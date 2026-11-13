@@ -20,6 +20,20 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     string? _typeFilterName;
 
     /// <summary>
+    /// The keys of a TypeScript client declared by its party ("CK-AppIdentity:Local:PartyClient:{Name}", the "Type"
+    /// being "TypeScript"): they configure this aspect (the client name is the <see cref="Name"/>). They are compile time
+    /// keys: the projection of the host's configuration doesn't contain them (unless the App keeps them), and the run time
+    /// accepts them. The scalar keys are the attributes of this configuration, "Types", "ExcludedTypes" and "Barrels" its
+    /// lists.
+    /// </summary>
+    public static readonly IReadOnlySet<string> ClientConfigurationKeys = new HashSet<string>( StringComparer.OrdinalIgnoreCase )
+    {
+        "Kind", "DevServerPort", "UseDist", "TargetProjectPath", "DefaultTypeScriptVersion", "IntegrationMode", "InstallYarn",
+        "GitIgnoreCKGenFolder", "AutoInstallJest", "EnableTSProjectReferences", "DefaultCulture", "ActiveCultures",
+        "TypeFilterName", "Types", "ExcludedTypes", "Barrels"
+    };
+
+    /// <summary>
     /// Initializes a new empty configuration.
     /// </summary>
     public TypeScriptBinPathAspectConfiguration()

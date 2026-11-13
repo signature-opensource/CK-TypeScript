@@ -34,16 +34,27 @@ that are client applications. The facts of a client application (`ClientInfo.Fac
 `[PartyClientFact]` of its selected TypeScript packages: it waits for the package selection of the `TypeScriptAspect`
 (the `TypeScriptPackageSelection` it publishes), and computes them once per build.
 
-It also declares them in the host's configuration ([`HostClientDeclarations`](HostClientDeclarations.cs)), a temporary
-help waiting for a configuration that unifies the build and the deployment: a client application is a client of a
-party only when the party declares it (`CK-AppIdentity:Local:PartyClient:{Name}`). For each BinPath of the group whose
-`ProjectPath` is a host project (its folder name ends with ".Host") with an `appsettings.json`, the missing declarations
-of the root party are added, and logged so that the change is committed:
-- it only adds: an existing declaration is never changed nor removed (the keys are compared without case);
-- only the new text is inserted (before the closing brace of the deepest existing section, indented like its
-  siblings, on one line in a compact object): the rest of the file is kept byte for byte (comments, layout, BOM);
-- a `"CK-AppIdentity"`, `"Local"` or `"PartyClient"` that is not a JSON object fails the generation;
-- the tenant domains declare their clients by hand.
+## The TypeScript clients declared by the parties ("ckonf.json")
+
+When a "XXX.Builder" project has a `ckonf.json` (see CK.AppBuilder), the
+[`TypeScriptAppBuilderContributor`](TypeScriptAppBuilderContributor.cs) configures this aspect from the clients that the
+parties declare (it requires the `AppIdentityAppBuilderContributor` of CK.AppIdentity.Engine):
+
+- a client whose `"Type"` is `"TypeScript"` is a `TypeScriptBinPathAspectConfiguration` of its BinPath: its name is the
+  client name, its keys are the `TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys` (the attributes of a
+  `<TypeScript>` element: `Kind`, `DevServerPort`, `UseDist`...; `Types`, `ExcludedTypes` and `Barrels` are lists, a type
+  being its assembly qualified name or an object whose keys are its attributes);
+- the presence of a client gives the `TypeScriptAspectConfiguration`;
+- these keys are compile time keys: they are not projected in the host's `appsettings.json`. The other keys of the
+  client (its options, like `StaticFiles`) are the run time's.
+
+```jsonc
+"PartyClient": {
+  "App":     { "Type": "TypeScript", "Kind": "DefaultApp", "DevServerPort": 4200 },
+  "MiniApp": { "Type": "TypeScript", "Kind": "App", "DevServerPort": 4201,
+               "Types": [ "CK.Ng.Cris.AspNet.CrisAspNetPackage, CK.Ng.Cris.AspNet" ] }
+}
+```
 
 ## The TypeScript context
 

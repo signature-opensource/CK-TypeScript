@@ -82,19 +82,7 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
         }
         scope.Append( "} ) {}" ).NewLine();
 
-        // Temporary, waiting for the Unified Configuration: the root party of a host declares its client applications.
-        // Each BinPath of the group can be a different host.
-        bool success = true;
-        foreach( var b in c.CurrentRun.ConfigurationGroup.SimilarConfigurations )
-        {
-            var names = b.FindAspect<TypeScriptBinPathAspectConfiguration>()?.AllConfigurations
-                         .Where( ts => ts.RequestPath != null )
-                         .Select( ts => ts.Name! ) // A client application has a name.
-                         .ToList()
-                        ?? [];
-            success &= HostClientDeclarations.EnsureDeclared( monitor, b.ProjectPath, names );
-        }
-        return success ? CSCodeGenerationResult.Success : CSCodeGenerationResult.Failed;
+        return CSCodeGenerationResult.Success;
     }
 
     // The union of the facts of the selected packages of a client application.
