@@ -12,7 +12,7 @@
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json.Engine" Version="36.0.0-0.uc.0.ci.49" />
     <!-- CK.TypeScript references CK.AppIdentity.PartyClient: its engine references the engine of CK.AppIdentity. -->
-    <PackageReference Include="CK.AppIdentity.Engine" Version="3.0.0-0.uc.0.ci.69" />
+    <PackageReference Include="CK.AppIdentity.Engine" Version="3.0.0-0.uc.0.ci.70" />
       
     <PackageReference Include="CK.Html.Transform" Version="3.0.1-0.cris-auth.0.ci.13" />
     <PackageReference Include="CK.Less.Transform" Version="3.0.1-0.cris-auth.0.ci.13" />

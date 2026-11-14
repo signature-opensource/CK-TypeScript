@@ -5,6 +5,6 @@
   <ItemGroup>
     <PackageReference Include="CK.Poco.Exc.Json" Version="36.0.0-0.uc.0.ci.49" />
     <!-- A client application is a party client: its facts come from its packages ([PartyClientFact]). -->
-    <PackageReference Include="CK.AppIdentity.PartyClient" Version="3.0.0-0.uc.0.ci.69" />
+    <PackageReference Include="CK.AppIdentity.PartyClient" Version="3.0.0-0.uc.0.ci.70" />
   </ItemGroup>
 </Project>
