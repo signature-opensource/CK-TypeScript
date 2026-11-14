@@ -36,23 +36,31 @@ that are client applications. The facts of a client application (`ClientInfo.Fac
 
 ## The TypeScript clients declared by the parties ("ckonf.json")
 
-When a "XXX.Builder" project has a `ckonf.json` (see CK.AppBuilder), the
-[`TypeScriptAppBuilderContributor`](TypeScriptAppBuilderContributor.cs) configures this aspect from the clients that the
-parties declare (it requires the `AppIdentityAppBuilderContributor` of CK.AppIdentity.Engine):
+When a "XXX.Builder" project has a `ckonf.json` (see CK.AppBuilder), a TypeScript framework package configures this aspect
+from the clients that the parties declare with its client feature: CK.TS.Angular for `"NgApp"`. Its contributor
+specializes [`TypeScriptFrameworkAppBuilderContributor`](TypeScriptFrameworkAppBuilderContributor.cs) with its feature
+name (it requires the `AppIdentityAppBuilderContributor` of CK.AppIdentity.Engine):
 
-- a client whose `"Type"` is `"TypeScript"` is a `TypeScriptBinPathAspectConfiguration` of its App: its name is the
-  client name, its keys are the `TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys` (the attributes of a
-  `<TypeScript>` element: `Kind`, `DevServerPort`, `UseDist`...; `Types`, `ExcludedTypes` and `Barrels` are lists, a type
-  being its assembly qualified name or an object whose keys are its attributes);
+- a client that has the feature is a `TypeScriptBinPathAspectConfiguration` of its App: its name is the client name;
+  the keys of the feature section are the `TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys` (the attributes
+  of a `<TypeScript>` element: `ActiveCultures`, `IntegrationMode`, `TargetProjectPath`...; `Barrels` is a list); the
+  `Types` and `ExcludedTypes` of the client (its type set) are its types (a type being its assembly qualified name or an
+  object whose keys are its attributes); any other key is an error;
+- its `"Hosting"` feature (served by its party) gives its `RequestPath` (optional: `/{kebab-name}` by default, `/` for the
+  default client) and its `DevServerPort`; a client without `"Hosting"` is not supported yet, and two clients at the same
+  request path are an error;
+- the client is handled (`DeclaredClient.SetHandled( featureName )`): a client has one build feature;
 - the presence of a client gives the `TypeScriptAspectConfiguration`;
-- these keys are compile time keys: they are not projected in the host's `appsettings.json`. The other keys of the
-  client (its options, like `StaticFiles`) are the run time's.
+- these keys are compile time keys: they are not projected in the host's `appsettings.json`. The other keys of
+  `"Hosting"` (`UseDist`, its options like `StaticFiles`) are the run time's. The feature and `"Hosting"` stay declared
+  (written `true` when they are emptied, `AppConfiguration.AddDeclarationKey`).
 
 ```jsonc
 "PartyClient": {
-  "App":     { "Type": "TypeScript", "Kind": "DefaultApp", "DevServerPort": 4200 },
-  "MiniApp": { "Type": "TypeScript", "Kind": "App", "DevServerPort": 4201,
-               "Types": [ "CK.Ng.Cris.AspNet.CrisAspNetPackage, CK.Ng.Cris.AspNet" ] }
+  "App":     { "NgApp": true, "Hosting": { "RequestPath": "/", "DevServerPort": 4200 } },
+  "MiniApp": { "Types": [ "CK.Ng.Cris.AspNet.CrisAspNetPackage, CK.Ng.Cris.AspNet" ],
+               "NgApp": { "ActiveCultures": [ "en", "fr" ] },
+               "Hosting": { "DevServerPort": 4201 } }
 }
 ```
 

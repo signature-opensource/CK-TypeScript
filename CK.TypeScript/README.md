@@ -61,15 +61,14 @@ whether it is a client application served by its host:
 |---|---|
 | `TargetProjectPath` | `{ProjectPath}/Clients/{Name}` |
 | `TypeFilterName` | `TypeScript{Name}` |
-| `RequestPath` | `/` for the `DefaultApp`, `/{kebab-name}` for an `App` (`/mini-app`), none for `None` (the default kind) |
+| `RequestPath` | `/` for the `DefaultApp`, `/{kebab-name}` for an `App` (`/mini-app`), none for `None` (the default kind); setting it explicitly sets the `Kind` (`DefaultApp` for `/`, `App` otherwise) |
 
 The `Name` is an identifier (letters and digits, starting with a letter), unique in its BinPath; a client application
 requires one and there is at most one `DefaultApp` per BinPath. Without a `Name`, the defaults are unchanged
 (`TypeFilterName` is `"TypeScript"`).
 
 A client application also requires a `DevServerPort`, unique in its BinPath (choose distinct ports for the hosts that
-run together): in Development, the host starts its dev server on this port. Its optional `UseDist` makes the host serve
-its built files even in Development.
+run together): in Development, the host starts its dev server on this port.
 
 The Angular engine writes the request path of a client application as the `"baseHref"` of its `angular.json`, and its
 `DevServerPort` as the port of its `serve` target. The
@@ -87,8 +86,10 @@ A client application is built by the BinPath, but it is a client of a party only
 configuration: `"CK-AppIdentity": { "Local": { "PartyClient": { "App": { ... } } } }` (the "PartyClient" feature of
 [CK.AppIdentity.PartyClient](https://github.com/signature-opensource/CK-AppIdentity/blob/stable/CK.AppIdentity.PartyClient/README.md)).
 With the builder's `ckonf.json` (CK.AppBuilder), where the keys of the party are directly in its App
-(`"Local": { "PartyClient": { ... } }`), this declaration is the source: a client whose `"Type"` is `"TypeScript"`
-configures this aspect (see [CK.TypeScript.Engine](../CK.TypeScript.Engine/README.md)).
+(`"Local": { "PartyClient": { ... } }`), this declaration is the source: a client is a bag of client features, and a
+client that has the feature of a TypeScript framework (`"NgApp"`, CK.TS.Angular) configures this aspect (see
+[CK.TypeScript.Engine](../CK.TypeScript.Engine/README.md)). [`ITypeScriptFramework`](ITypeScriptFramework.cs) is the
+abstraction of these features (a client has at most one): its `Info` is the `ClientInfo` of the client.
 
 ## Selecting the packages of a configuration
 
