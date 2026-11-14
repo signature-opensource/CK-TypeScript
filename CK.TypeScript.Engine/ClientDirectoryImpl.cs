@@ -66,7 +66,6 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
                  .AppendSourceString( outputPath.Path ).Append( ", " )
                  .AppendSourceString( ts.TypeFilterName ).Append( ", " )
                  .Append( ts.DevServerPort!.Value ).Append( ", " )
-                 .Append( ts.UseDist ? "true" : "false" ).Append( ", " )
                  .Append( "[" );
             bool first = true;
             foreach( var (key, value) in facts.Pairs )

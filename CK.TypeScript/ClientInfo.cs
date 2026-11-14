@@ -17,7 +17,6 @@ public sealed class ClientInfo
     /// <param name="outputPath">The <see cref="OutputPath"/>.</param>
     /// <param name="typeFilterName">The <see cref="TypeFilterName"/>.</param>
     /// <param name="devServerPort">The <see cref="DevServerPort"/>.</param>
-    /// <param name="useDist">The <see cref="UseDist"/>.</param>
     /// <param name="facts">The <see cref="Facts"/>, as (key, value) pairs (a fact without value has an empty value).</param>
     public ClientInfo( string name,
                        string requestPath,
@@ -25,12 +24,10 @@ public sealed class ClientInfo
                        NormalizedPath outputPath,
                        string typeFilterName,
                        int devServerPort,
-                       bool useDist,
                        (string Key, string Value)[] facts )
     {
         Facts = CK.AppIdentity.ClientApplicationFacts.Create( facts );
         DevServerPort = devServerPort;
-        UseDist = useDist;
         Name = name;
         RequestPath = requestPath;
         ProjectPath = projectPath;
@@ -69,15 +66,9 @@ public sealed class ClientInfo
 
     /// <summary>
     /// Gets the port of the dev server: in Development, the host starts it (unless something already listens on it)
-    /// and forwards to it (unless the <see cref="UseDist"/> applies).
+    /// and forwards to it (unless it serves the built files).
     /// </summary>
     public int DevServerPort { get; }
-
-    /// <summary>
-    /// Gets whether the built files are served even in Development (the configured default: the host's configuration
-    /// can override it for a run).
-    /// </summary>
-    public bool UseDist { get; }
 
     /// <summary>
     /// Gets the facts of the client application: the union of the PartyClientFact attributes of its selected TypeScript

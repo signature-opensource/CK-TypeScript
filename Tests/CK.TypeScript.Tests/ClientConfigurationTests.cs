@@ -32,6 +32,12 @@ public class ClientConfigurationTests
         c.RequestPath.ShouldBe( "/mini-app" );
         c.Kind = ClientKind.DefaultApp;
         c.RequestPath.ShouldBe( "/" );
+        // An explicit RequestPath sets the Kind.
+        c.RequestPath = "/admin";
+        c.Kind.ShouldBe( ClientKind.App );
+        c.RequestPath.ShouldBe( "/admin" );
+        c.RequestPath = "/";
+        c.Kind.ShouldBe( ClientKind.DefaultApp );
 
         // An explicit TypeFilterName wins.
         c.TypeFilterName = "TypeScriptOther";
@@ -73,7 +79,7 @@ public class ClientConfigurationTests
         app.Kind = ClientKind.DefaultApp;
         app.DevServerPort = 4200;
         app.IntegrationMode = CKGenIntegrationMode.None;
-        app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "MiniApp", Kind = ClientKind.App, DevServerPort = 4201, UseDist = true, IntegrationMode = CKGenIntegrationMode.None } );
+        app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "MiniApp", Kind = ClientKind.App, DevServerPort = 4201, IntegrationMode = CKGenIntegrationMode.None } );
         // Not a client application.
         app.AddOtherConfiguration( new TypeScriptBinPathAspectConfiguration { Name = "Lib", IntegrationMode = CKGenIntegrationMode.None } );
 
@@ -86,10 +92,8 @@ public class ClientConfigurationTests
         mini.OutputPath.Path.ShouldBe( "dist/MiniApp/browser" );
         mini.TypeFilterName.ShouldBe( "TypeScriptMiniApp" );
         mini.DevServerPort.ShouldBe( 4201 );
-        mini.UseDist.ShouldBeTrue();
         clients[1].TypeFilterName.ShouldBe( "TypeScriptApp" );
         clients[1].DevServerPort.ShouldBe( 4200 );
-        clients[1].UseDist.ShouldBeFalse();
     }
 
     [Test]

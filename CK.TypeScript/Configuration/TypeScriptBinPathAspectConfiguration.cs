@@ -18,19 +18,19 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     NormalizedPath _targetCKGenPath;
     NormalizedCultureInfo _defaultCulture;
     string? _typeFilterName;
+    string? _requestPath;
 
     /// <summary>
-    /// The keys of a TypeScript client declared by its party ("CK-AppIdentity:Local:PartyClient:{Name}", the "Type"
-    /// being "TypeScript"): they configure this aspect (the client name is the <see cref="Name"/>). They are compile time
-    /// keys: the projection of the host's configuration doesn't contain them (unless the App keeps them), and the run time
-    /// accepts them. The scalar keys are the attributes of this configuration, "Types", "ExcludedTypes" and "Barrels" its
-    /// lists.
+    /// The keys of the section of the TypeScript framework feature of a client declared by its party
+    /// ("CK-AppIdentity:Local:PartyClient:{Name}:NgApp"): they configure this aspect (the client name is the
+    /// <see cref="Name"/>, the "Types" and "ExcludedTypes" of the client are its type set). They are compile time keys:
+    /// the projection of the host's configuration doesn't contain them (unless the App keeps them). The scalar keys are the
+    /// attributes of this configuration, "Barrels" a list.
     /// </summary>
     public static readonly IReadOnlySet<string> ClientConfigurationKeys = new HashSet<string>( StringComparer.OrdinalIgnoreCase )
     {
-        "Kind", "DevServerPort", "UseDist", "TargetProjectPath", "DefaultTypeScriptVersion", "IntegrationMode", "InstallYarn",
-        "GitIgnoreCKGenFolder", "AutoInstallJest", "EnableTSProjectReferences", "DefaultCulture", "ActiveCultures",
-        "TypeFilterName", "Types", "ExcludedTypes", "Barrels"
+        "TargetProjectPath", "DefaultTypeScriptVersion", "IntegrationMode", "InstallYarn", "GitIgnoreCKGenFolder",
+        "AutoInstallJest", "EnableTSProjectReferences", "DefaultCulture", "ActiveCultures", "TypeFilterName", "Barrels"
     };
 
     /// <summary>
@@ -74,16 +74,31 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     public ClientKind Kind { get; set; }
 
     /// <summary>
-    /// Gets the request path under which the host serves this client application: "/" for the
+    /// Gets or sets the request path under which the host serves this client application. By default: "/" for the
     /// <see cref="ClientKind.DefaultApp"/>, "/{kebab-name}" for a <see cref="ClientKind.App"/> ("MiniApp" is served
     /// under "/mini-app"), null when <see cref="Kind"/> is <see cref="ClientKind.None"/> (or when there is no <see cref="Name"/>).
+    /// <para>
+    /// Setting it makes this configuration a client application: the <see cref="Kind"/> is <see cref="ClientKind.DefaultApp"/>
+    /// for "/", <see cref="ClientKind.App"/> otherwise. It must start with a '/'.
+    /// </para>
     /// </summary>
-    public string? RequestPath => Kind switch
+    public string? RequestPath
     {
-        ClientKind.DefaultApp => "/",
-        ClientKind.App when Name != null => "/" + System.Text.Json.JsonNamingPolicy.KebabCaseLower.ConvertName( Name ),
-        _ => null
-    };
+        get => Kind switch
+        {
+            ClientKind.None => null,
+            _ when _requestPath != null => _requestPath,
+            ClientKind.DefaultApp => "/",
+            ClientKind.App when Name != null => "/" + System.Text.Json.JsonNamingPolicy.KebabCaseLower.ConvertName( Name ),
+            _ => null
+        };
+        set
+        {
+            Throw.CheckArgument( value == null || value.StartsWith( '/' ) );
+            _requestPath = value;
+            if( value != null ) Kind = value == "/" ? ClientKind.DefaultApp : ClientKind.App;
+        }
+    }
 
     /// <summary>
     /// Gets or sets the port of the dev server of a client application (see <see cref="Kind"/>): required for a client
@@ -92,12 +107,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     /// </summary>
     public int? DevServerPort { get; set; }
 
-    /// <summary>
-    /// Gets or sets whether the host serves the built files ("dist") of this client application even in Development,
-    /// rather than its dev server. The host's configuration can override it for a run ("Clients:UseDist" for all the
-    /// client applications, "Clients:{Name}:UseDist" for one of them). Defaults to false.
-    /// </summary>
-    public bool UseDist { get; set; }
 
     /// <summary>
     /// Gets or sets the TypeScript target project path that contains the "ck-gen" folder.
@@ -308,7 +317,8 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         var kind = (string?)e.Attribute( TypeScriptAspectConfiguration.xKind );
         Kind = kind == null ? ClientKind.None : Enum.Parse<ClientKind>( kind, ignoreCase: true );
         DevServerPort = (int?)e.Attribute( TypeScriptAspectConfiguration.xDevServerPort );
-        UseDist = (bool?)e.Attribute( TypeScriptAspectConfiguration.xUseDist ) ?? false;
+        var requestPath = (string?)e.Attribute( TypeScriptAspectConfiguration.xRequestPath );
+        if( requestPath != null ) RequestPath = requestPath;
         TargetProjectPath = e.Attribute( TypeScriptAspectConfiguration.xTargetProjectPath )?.Value;
         Barrels.Clear();
         Barrels.AddRange( e.Elements( TypeScriptAspectConfiguration.xBarrels )
@@ -454,7 +464,7 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
         e.Add( Name != null ? new XAttribute( TypeScriptAspectConfiguration.xName, Name ) : null,
                Kind != ClientKind.None ? new XAttribute( TypeScriptAspectConfiguration.xKind, Kind.ToString() ) : null,
                DevServerPort != null ? new XAttribute( TypeScriptAspectConfiguration.xDevServerPort, DevServerPort.Value ) : null,
-               UseDist ? new XAttribute( TypeScriptAspectConfiguration.xUseDist, true ) : null,
+               _requestPath != null ? new XAttribute( TypeScriptAspectConfiguration.xRequestPath, _requestPath ) : null,
                new XAttribute( TypeScriptAspectConfiguration.xTargetProjectPath, TargetProjectPath ),
                new XElement( TypeScriptAspectConfiguration.xBarrels,
                                 Barrels.Select( p => new XElement( TypeScriptAspectConfiguration.xBarrel, new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
