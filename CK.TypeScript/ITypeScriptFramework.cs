@@ -1,4 +1,5 @@
 using CK.AppIdentity;
+using CK.Core;
 
 namespace CK.TypeScript;
 
@@ -6,6 +7,7 @@ namespace CK.TypeScript;
 /// The TypeScript framework of a client: the client feature of a framework into which the TypeScript code of the client
 /// is generated ("NgApp" for an Angular application, CK.TS.Angular). A client has at most one.
 /// </summary>
+[IsSingle]
 public interface ITypeScriptFramework : IPartyComponentAbstraction
 {
     /// <summary>
