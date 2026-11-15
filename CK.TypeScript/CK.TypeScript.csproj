@@ -3,8 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Poco.Exc.Json" Version="36.0.1-0.uc.0.ci.16" />
+    <PackageReference Include="CK.Poco.Exc.Json" Version="36.0.1-0.uc.0.ci.17" />
     <!-- A client application is a party client: its facts come from its packages ([PartyClientFact]). -->
-    <PackageReference Include="CK.AppIdentity.PartyClient" Version="3.0.0-0.uc.0.ci.84" />
+    <PackageReference Include="CK.AppIdentity.PartyClient" Version="3.0.0-0.uc.0.ci.87" />
   </ItemGroup>
 </Project>
