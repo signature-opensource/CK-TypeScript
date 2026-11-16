@@ -12,6 +12,7 @@ TypeScript application, and the tools to test it and to see the changes of the r
 | [CK.ResourceSpace.Transformable](CK.ResourceSpace.Transformable) | The transformable resources of a resource space: the transform functions and the items they apply to. | [![nuget](https://img.shields.io/nuget/v/CK.ResourceSpace.Transformable.svg?label=CK.ResourceSpace.Transformable)](https://www.nuget.org/packages/CK.ResourceSpace.Transformable/) |
 | [CK.IO.Core](CK.IO.Core) | Serializable data: the representation of an exception (`ICKExceptionData`) and the log levels (`LogLevel`, Debug to Fatal). | [![nuget](https://img.shields.io/nuget/v/CK.IO.Core.svg?label=CK.IO.Core)](https://www.nuget.org/packages/CK.IO.Core/) |
 | [CK.Testing.Engine.TypeScript](CK.Testing.Engine.TypeScript/README.md) | Tests of the generated TypeScript: runs the engine on a test application and its tests (Jest by default). | [![nuget](https://img.shields.io/nuget/v/CK.Testing.Engine.TypeScript.svg?label=CK.Testing.Engine.TypeScript)](https://www.nuget.org/packages/CK.Testing.Engine.TypeScript/) |
+| [CK.Testing.TypeScriptEngine](CK.Testing.TypeScriptEngine/README.md) | **Deprecated**: replaced by CK.Testing.Engine.TypeScript. | |
 
 The transformer languages are in [CK-Transform](https://github.com/signature-opensource/CK-Transform), the ASP.NET
 support in [CK-TS-AspNet](https://github.com/signature-opensource/CK-TS-AspNet) and the Angular support in
