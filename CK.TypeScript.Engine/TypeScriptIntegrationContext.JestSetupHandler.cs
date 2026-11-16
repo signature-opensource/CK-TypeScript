@@ -204,7 +204,7 @@ public sealed partial class TypeScriptIntegrationContext // JestSetup
                     moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths ?? {}, { prefix: '<rootDir>/' } ),
                     testEnvironment: 'jsdom',
                     globals: {
-                        // CK.Testing.TypeScriptEngine uses this:
+                        // CK.Testing.Engine.TypeScript uses this:
                         // TestHelper.CreateTypeScriptRunner inject test environment variables here
                         // in a "persistent" way: these environment variables will be available until
                         // the Runner returned by TestHelper.CreateTypeScriptRunner is disposed.

@@ -23,7 +23,7 @@
   </Folder>
   <Project Path="CK.IO.Core/CK.IO.Core.csproj" />
   <Project Path="CK.ResourceSpace.Transformable/CK.ResourceSpace.Transformable.csproj" />
-  <Project Path="CK.Testing.TypeScriptEngine/CK.Testing.TypeScriptEngine.csproj" />
+  <Project Path="CK.Testing.Engine.TypeScript/CK.Testing.Engine.TypeScript.csproj" />
   <Project Path="CK.TypeScript.CodeGen/CK.TypeScript.CodeGen.csproj" />
   <Project Path="CK.TypeScript.Engine/CK.TypeScript.Engine.csproj" />
   <Project Path="CK.TypeScript.LiveEngine/CK.TypeScript.LiveEngine.csproj" />
