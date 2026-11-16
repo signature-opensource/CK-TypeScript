@@ -70,7 +70,17 @@ sealed class TSContextInitializer
                                                 IPocoTypeSet allExchangeableSet,
                                                 IPocoJsonSerializationServiceEngine? jsonSerialization )
     {
-        if( BuildRegTypesFromConfiguration( monitor, binPathConfiguration, allExchangeableSet, out var regTypes )
+        // The type set of the client (named after it, see the App builder): the types drive. The TypeScript packages are
+        // selected among its members, its listed types are the roots (its exchangeable Pocos, its TypeScript packages);
+        // the other listed types (a client feature...) are members of the set for the run time, not TypeScript types.
+        var clientSet = binPathConfiguration.Name != null ? binPathConfiguration.Owner?.FindTypeSet( binPathConfiguration.Name ) : null;
+        IReadOnlySet<ICachedType>? members = clientSet != null && genBinPath.ConfigurationGroup.TypeSets.TryGetValue( clientSet.Name, out var m ) ? m : null;
+        if( clientSet != null && members == null )
+        {
+            monitor.Error( $"The type set '{clientSet.Name}' of the TypeScript client '{binPathConfiguration.Name}' has not been computed." );
+            return null;
+        }
+        if( BuildRegTypesFromConfiguration( monitor, binPathConfiguration, clientSet, allExchangeableSet, out var regTypes )
             && BuildRegTypesFromAttributesAndDiscoverGenerators( monitor,
                                                                  regTypes,
                                                                  genBinPath.EngineMap.AllTypesAttributesCache.Values,
@@ -79,7 +89,8 @@ sealed class TSContextInitializer
                                                                  out var allPackages )
             && SelectPackages( monitor,
                                genBinPath.ConfigurationGroup.TypeCache,
-                               genBinPath.ConfigurationGroup.TypeSet,
+                               members ?? genBinPath.ConfigurationGroup.TypeSet,
+                               clientSet,
                                allExchangeableSet,
                                binPathConfiguration,
                                regTypes,
@@ -158,6 +169,7 @@ sealed class TSContextInitializer
     // Step 1.
     static bool BuildRegTypesFromConfiguration( IActivityMonitor monitor,
                                                 TypeScriptBinPathAspectConfiguration binPathConfiguration,
+                                                TypeSetConfiguration? clientSet,
                                                 IPocoTypeSet allExchangeableSet,
                                                 out Dictionary<Type, RegisteredType> registeredTypes )
     {
@@ -185,6 +197,24 @@ sealed class TSContextInitializer
                 if( success )
                 {
                     registeredTypes.Add( type, new RegisteredType( null, pocoType, attr ) );
+                }
+            }
+            // The exchangeable Pocos listed by the type set of the client are registered (the Types of the TypeScript
+            // configuration are the ones that override their TypeScript configuration).
+            if( clientSet != null )
+            {
+                foreach( var type in clientSet.Types )
+                {
+                    if( registeredTypes.ContainsKey( type ) ) continue;
+                    var pocoType = allExchangeableSet.TypeSystem.FindByType( type )?.NonNullable;
+                    if( pocoType == null ) continue;
+                    if( !allExchangeableSet.Contains( pocoType ) )
+                    {
+                        monitor.Error( $"The Poco type '{pocoType}' listed by the type set of the client '{clientSet.Name}' is not exchangeable." );
+                        success = false;
+                        continue;
+                    }
+                    registeredTypes.Add( type, new RegisteredType( null, pocoType, null ) );
                 }
             }
             return success;
@@ -325,6 +355,7 @@ sealed class TSContextInitializer
     static bool SelectPackages( IActivityMonitor monitor,
                                 GlobalTypeCache typeCache,
                                 IReadOnlySet<ICachedType> typeSet,
+                                TypeSetConfiguration? clientSet,
                                 IPocoTypeSet allExchangeableSet,
                                 TypeScriptBinPathAspectConfiguration binPathConfiguration,
                                 Dictionary<Type, RegisteredType> regTypes,
@@ -374,6 +405,12 @@ sealed class TSContextInitializer
                 }
                 listed.Add( p.DecoratedType );
             }
+            // The TypeScript packages listed by the type set of the client are the roots (one without resources is always
+            // handled: it is not a root).
+            else if( clientSet != null && p.HasResPackage && clientSet.Types.Contains( p.DecoratedType ) )
+            {
+                listed.Add( p.DecoratedType );
+            }
         }
         // Excluded types are never registered.
         foreach( var t in excluded ) regTypes.Remove( t );
@@ -416,7 +453,10 @@ sealed class TSContextInitializer
             }
         }
 
-        var candidates = allPackages.Where( p => p.HasResPackage && !excluded.Contains( p.DecoratedType ) ).ToList();
+        // The candidates are in the type set (the members of the client's set when it has one).
+        var candidates = allPackages.Where( p => p.HasResPackage
+                                                 && !excluded.Contains( p.DecoratedType )
+                                                 && typeSet.Contains( typeCache.Get( p.DecoratedType ) ) ).ToList();
         var roots = listed.Count > 0
                         ? listed
                         : candidates.Where( p => !IsOptional( typeCache.Get( p.DecoratedType ) ) ).Select( p => p.DecoratedType ).ToHashSet();

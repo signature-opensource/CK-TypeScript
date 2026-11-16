@@ -12,7 +12,9 @@ namespace CK.Setup;
 /// client is a <see cref="TypeScriptBinPathAspectConfiguration"/> of its App, named after the client.
 /// <list type="bullet">
 ///   <item>The keys of the framework section (<see cref="TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys"/>)
-///   configure it; the "Types" and "ExcludedTypes" of the client (its type set) are its types.</item>
+///   configure it. The "Types" and "ExcludedTypes" of the client are its type set: the TypeScript engine reads the
+///   computed set (its TypeScript packages, the Pocos it lists); only the entries that configure the TypeScript of a type
+///   (an object with other keys than its "Name") are given to the aspect.</item>
 ///   <item>Its "Hosting" section (the client served by its party) gives its <see cref="TypeScriptBinPathAspectConfiguration.RequestPath"/>
 ///   (optional: "/{kebab-name}" by default, "/" for the default client) and its <see cref="TypeScriptBinPathAspectConfiguration.DevServerPort"/>.
 ///   A client without "Hosting" is not supported yet.</item>
@@ -135,13 +137,13 @@ public abstract class TypeScriptFrameworkAppBuilderContributor : IAppBuilderCont
         }
         // The run time needs the feature (its build output): its emptied section is written true.
         c.App.AddDeclarationKey( $"{c.RelativePath}:{FeatureName}" );
-        // The type set of the client: its Types and ExcludedTypes (the AppIdentity contributor made them compile keys).
-        foreach( var key in (string[])["Types", "ExcludedTypes"] )
+        // The type set of the client (its Types and ExcludedTypes, the AppIdentity contributor made them compile keys) is
+        // read by the TypeScript engine from the computed set (the types drive). Only the entries that configure the
+        // TypeScript of a type (an object with other keys than its "Name") are given to the aspect: they override it.
+        if( c.Configuration.TryGetSection( "Types" ) is { Value: null } types )
         {
-            var list = c.Configuration.TryGetSection( key );
-            if( list == null ) continue;
-            var items = list.Value != null ? new[] { list } : list.GetChildren();
-            x.Add( new XElement( key == "Types" ? EngineConfiguration.xTypes : EngineConfiguration.xExcludedTypes, items.Select( ToTypeXml ) ) );
+            var configured = types.GetChildren().Where( t => t.Value == null && t.GetChildren().Any( a => a.Key != "Name" ) ).ToList();
+            if( configured.Count > 0 ) x.Add( new XElement( EngineConfiguration.xTypes, configured.Select( ToTypeXml ) ) );
         }
         // The hosting: its compile time keys.
         if( !c.Features.TryGetValue( HostingFeatureName, out var hosting ) )

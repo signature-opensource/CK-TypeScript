@@ -10,6 +10,8 @@ namespace CK.TypeScript.Tests;
 [TestFixture]
 public class TypeScriptFrameworkAppBuilderContributorTests
 {
+    public sealed class Configured { }
+
     // What a framework package does (CK.TS.Angular for "NgApp").
     sealed class TestFrameworkContributor : TypeScriptFrameworkAppBuilderContributor
     {
@@ -38,7 +40,10 @@ public class TypeScriptFrameworkAppBuilderContributorTests
                 "PartyClient": {
                   "App": { "NgApp": true, "Hosting": { "RequestPath": "/", "DevServerPort": 4200 } },
                   "MiniApp": {
-                    "Types": [ "CK.TypeScript.Tests.TypeScriptFrameworkAppBuilderContributorTests, CK.TypeScript.Tests" ],
+                    "Types": [
+                      "CK.TypeScript.Tests.TypeScriptFrameworkAppBuilderContributorTests, CK.TypeScript.Tests",
+                      { "Name": "CK.TypeScript.Tests.TypeScriptFrameworkAppBuilderContributorTests+Configured, CK.TypeScript.Tests", "TypeName": "Renamed" }
+                    ],
                     "NgApp": { "ActiveCultures": [ "en", "fr" ] },
                     "Hosting": { "DevServerPort": 4201, "UseDist": true, "StaticFiles": { "AssetsMaxAge": "01:00:00" } }
                   },
@@ -58,7 +63,10 @@ public class TypeScriptFrameworkAppBuilderContributorTests
         all["MiniApp"].Kind.ShouldBe( ClientKind.App );
         all["MiniApp"].RequestPath.ShouldBe( "/mini-app" );
         all["MiniApp"].ActiveCultures.Select( c => c.Name ).ShouldBe( ["en", "fr"], ignoreOrder: true );
-        all["MiniApp"].Types.Keys.ShouldBe( [typeof( TypeScriptFrameworkAppBuilderContributorTests )] );
+        // The type set of the client is read by the TypeScript engine from the computed set: only the entries that
+        // configure the TypeScript of a type are given to the aspect.
+        all["MiniApp"].Types.Keys.ShouldBe( [typeof( Configured )] );
+        all["MiniApp"].Types[typeof( Configured )].ShouldNotBeNull().TypeName.ShouldBe( "Renamed" );
 
         // The NgApp clients are handled, not the "Native" one.
         appIdentity.Clients.Where( c => c.IsHandled ).Select( c => c.Name ).ShouldBe( ["App", "MiniApp"], ignoreOrder: true );
