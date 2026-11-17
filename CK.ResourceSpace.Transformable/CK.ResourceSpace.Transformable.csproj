@@ -5,10 +5,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Transform.Core" Version="3.0.1-0.cris-auth.0.ci.13" />
+    <PackageReference Include="CK.Transform.Core" Version="3.0.1-0.uc" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization.Sliced" Version="16.0.0-0.uc.0.ci.42" />
-    <PackageReference Include="CK.ResourceSpace" Version="36.0.2-0.uc.0.ci.23" />
+    <PackageReference Include="CK.BinarySerialization.Sliced" Version="16.0.0-0.uc" />
+    <PackageReference Include="CK.ResourceSpace" Version="36.0.2-0.uc" />
   </ItemGroup>
 </Project>
