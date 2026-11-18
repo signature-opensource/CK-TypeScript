@@ -442,11 +442,11 @@ public static class YarnHelper
         {
             bool retriedInstallDone = false;
             retry:
-            int code = RunProcess( monitor.ParallelLogger,
-                                   "node", $"\"{yarnPath}\" {command}",
-                                   workingDirectory,
-                                   environmentVariables,
-                                   out bool foundInstallYarnErrorMessage );
+            int code = RunNodeProcess( monitor.ParallelLogger,
+                                       "node", $"\"{yarnPath}\" {command}",
+                                       workingDirectory,
+                                       environmentVariables,
+                                       out bool foundInstallYarnErrorMessage );
             if( code != 0 )
             {
                 string failedMessage = $"'yarn {command}' failed with code {code}.";
@@ -455,13 +455,14 @@ public static class YarnHelper
                     using( monitor.OpenError( failedMessage + " Running a yarn install and retrying." ) )
                     {
                         // Parallel test runs of the same yarn root do this at the same time: their installs share its ".yarn/cache".
+                        // The root lock is taken before the node slot (the only order: the slots can't deadlock).
                         using( AcquireYarnRootLock( monitor, yarnPath ) )
                         {
-                            code = RunProcess( monitor.ParallelLogger,
-                                               "node", $"\"{yarnPath}\" install",
-                                               workingDirectory,
-                                               environmentVariables,
-                                               out _ );
+                            code = RunNodeProcess( monitor.ParallelLogger,
+                                                   "node", $"\"{yarnPath}\" install",
+                                                   workingDirectory,
+                                                   environmentVariables,
+                                                   out _ );
                         }
                         if( code != 0 )
                         {
@@ -487,6 +488,42 @@ public static class YarnHelper
     static CKTrait StdErrTag = ActivityMonitor.Tags.Register( "StdErr" );
     static CKTrait StdOutTag = ActivityMonitor.Tags.Register( "StdOut" );
     static readonly TimeSpan _outputEndTimeout = TimeSpan.FromSeconds( 5 );
+
+    /// <summary>
+    /// Runs a node process (yarn, a build) in a node slot (see <see cref="NodeSlots"/>): it waits for a free slot and holds
+    /// it only while the process runs.
+    /// </summary>
+    internal static int RunNodeProcess( IParallelLogger logger,
+                                        string fileName,
+                                        string arguments,
+                                        string workingDirectory,
+                                        Dictionary<string, string>? environmentVariables,
+                                        out bool foundInstallYarnErrorMessage )
+    {
+        using( NodeSlots.Acquire( logger ) )
+        {
+            return RunProcess( logger, fileName, arguments, workingDirectory, environmentVariables, out foundInstallYarnErrorMessage );
+        }
+    }
+
+    /// <summary>
+    /// Runs a node process (yarn, a build) in a node slot (see <see cref="NodeSlots"/>): it waits for a free slot and holds
+    /// it only while the process runs.
+    /// </summary>
+    internal static (int ExitCode, bool TimedOut) RunNodeProcess( IParallelLogger logger,
+                                                                  string fileName,
+                                                                  string arguments,
+                                                                  string workingDirectory,
+                                                                  Dictionary<string, string?>? environmentVariables,
+                                                                  List<string>? outputLines,
+                                                                  TimeSpan timeout,
+                                                                  out bool foundInstallYarnErrorMessage )
+    {
+        using( NodeSlots.Acquire( logger ) )
+        {
+            return RunProcess( logger, fileName, arguments, workingDirectory, environmentVariables, outputLines, timeout, out foundInstallYarnErrorMessage );
+        }
+    }
 
     internal static int RunProcess( IParallelLogger logger,
                                     string fileName,
