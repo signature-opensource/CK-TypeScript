@@ -182,13 +182,13 @@ public sealed partial class TypeScriptIntegrationContext
         if( workingDirectory.IsEmptyPath ) workingDirectory = _configuration.TargetProjectPath;
         using( monitor.OpenTrace( $"Running 'yarn {command}' in '{workingDirectory}'." ) )
         {
-            var (exitCode, timedOut) = YarnHelper.RunProcess( monitor.ParallelLogger,
-                                                              "node", $"\"{_yarnPath}\" {command}",
-                                                              workingDirectory,
-                                                              environmentVariables,
-                                                              outputLines,
-                                                              timeout,
-                                                              out _ );
+            var (exitCode, timedOut) = YarnHelper.RunNodeProcess( monitor.ParallelLogger,
+                                                                  "node", $"\"{_yarnPath}\" {command}",
+                                                                  workingDirectory,
+                                                                  environmentVariables,
+                                                                  outputLines,
+                                                                  timeout,
+                                                                  out _ );
             return new ProcessResult( exitCode, timedOut );
         }
     }
@@ -527,11 +527,11 @@ public sealed partial class TypeScriptIntegrationContext
             int code;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                code = YarnHelper.RunProcess( monitor.ParallelLogger, "cmd.exe", "/C " + cmd, targetProjectPath, null, out _ );
+                code = YarnHelper.RunNodeProcess( monitor.ParallelLogger, "cmd.exe", "/C " + cmd, targetProjectPath, null, out _ );
             }
             else
             {
-                code = YarnHelper.RunProcess( monitor.ParallelLogger, "/bin/bash", "-c \"" + cmd + "\"", targetProjectPath, null, out _ );
+                code = YarnHelper.RunNodeProcess( monitor.ParallelLogger, "/bin/bash", "-c \"" + cmd + "\"", targetProjectPath, null, out _ );
             }
             if( code != 0 )
             {
