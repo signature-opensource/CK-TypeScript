@@ -17,7 +17,7 @@ namespace CK.Setup;
 /// </para>
 /// <para>
 /// It also writes the "$StObjGen/Clients.props" of the host (<see cref="ClientsPropsFileName"/>): one
-/// <c>CKClientApplication</c> item per client application (its folder, its built output, its yarn), that the publication
+/// <c>CKClientApplication</c> item per client application (its folder, its built output, the absolute path of its yarn), that the publication
 /// of the host reads to build them (the "buildTransitive" targets of CK.TS.AspNet.Clients).
 /// </para>
 /// </summary>
@@ -90,7 +90,7 @@ public sealed class ClientDirectoryImpl : CSCodeGeneratorType
             items.Append( "    <CKClientApplication Include=\"" ).Append( Escape( projectPath.Path ) )
                  .Append( "\" Name=\"" ).Append( Escape( ts.Name! ) )
                  .Append( "\" OutputPath=\"" ).Append( Escape( outputPath.Path ) )
-                 .Append( "\" Yarn=\"" ).Append( yarn == null ? "" : Escape( yarn.Value.StartsWith( binPath.ProjectPath ) ? yarn.Value.RemovePrefix( binPath.ProjectPath ).Path : yarn.Value.Path ) )
+                 .Append( "\" Yarn=\"" ).Append( yarn == null ? "" : Escape( yarn.Value.Path ) )
                  .Append( "\" />" ).Append( Environment.NewLine );
             monitor.Info( facts.IsEmpty
                             ? $"Client application '{ts.Name}' served at '{ts.RequestPath}' from '{projectPath}'."
