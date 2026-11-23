@@ -76,8 +76,11 @@ the `package.json` and `tsconfig.json` files of the target project.
 ## Documentation
 
 The [`DocumentationBuilder`](Comment/DocumentationBuilder.cs) generates the TypeScript comments from the XML documentation
-of the C# types (`TSCodeWriterDocumentationExtensions`), read by the `XmlDocumentationReader` of
-[CK.CodeGen](https://github.com/signature-opensource/CK-CodeGen/blob/stable/CK.CodeGen/README.md#xml-documentation). The
+of the C# types (`TSCodeWriterDocumentationExtensions`), read by the `XmlDocumentationReader` and converted to Markdown
+by the `DocumentationTextBuilder` of
+[CK.CodeGen](https://github.com/signature-opensource/CK-CodeGen/blob/stable/CK.CodeGen/README.md#xml-documentation): it
+adds the comment markers, the `@typeParam`, `@param` and `@returns` tags and the code references of the
+`TypeScriptRoot.DocumentationCodeRefHandler` (`{@link X}` or the text only). The
 limitations of the XML documentation files are in the [Comment folder](Comment/README.md).
 
 ## Publishing
@@ -91,5 +94,5 @@ The [`CodeGenResourceContainerTarget`](Integration/CodeGenResourceContainerTarge
 - [CK.EmbeddedResources](https://github.com/signature-opensource/CK-EmbeddedResources/blob/stable/CK.EmbeddedResources/README.md)
   for the resources and the `CodeGenResourceContainer`.
 - [CK.CodeGen](https://github.com/signature-opensource/CK-CodeGen/blob/stable/CK.CodeGen/README.md) for the
-  `XmlDocumentationReader`.
+  `XmlDocumentationReader` and the `DocumentationTextBuilder`.
 - CSemVer for the versions of the libraries (`SVersionBound`).
