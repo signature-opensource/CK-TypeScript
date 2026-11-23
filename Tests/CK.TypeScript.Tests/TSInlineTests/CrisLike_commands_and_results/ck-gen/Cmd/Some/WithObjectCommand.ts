@@ -6,11 +6,9 @@ import { CTSType } from '../../CK/Core/CTSType';
 /**
  * This command requires authentication and is device dependent.
  * It returns an optional object as its result.
- * Secondary definition that makes IWithObjectCommand return a 
- * IResult and requires
+ * Secondary definition that makes IWithObjectCommand return a IResult and requires
  * the device identifier.
- * Secondary definition that makes IWithObjectSpecializedAsPocoCommand return a 
- * ISuperResult.
+ * Secondary definition that makes IWithObjectSpecializedAsPocoCommand return a ISuperResult.
  **/
 export class WithObjectCommand implements ICommandAuthDeviceId, ICommand<Result|undefined> {
 /**

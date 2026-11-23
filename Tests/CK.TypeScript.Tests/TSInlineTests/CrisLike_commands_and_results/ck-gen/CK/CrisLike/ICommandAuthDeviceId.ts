@@ -1,8 +1,7 @@
 import { ICommandAuthUnsafe } from './ICommandAuthUnsafe';
 
 /**
- * Extends the basic ICommandAuthUnsafe to add the 
- * ICommandAuthDeviceId.deviceId field.
+ * Extends the basic ICommandAuthUnsafe to add the ICommandAuthDeviceId.deviceId field.
  **/
 export interface ICommandAuthDeviceId extends ICommandAuthUnsafe {
 /**

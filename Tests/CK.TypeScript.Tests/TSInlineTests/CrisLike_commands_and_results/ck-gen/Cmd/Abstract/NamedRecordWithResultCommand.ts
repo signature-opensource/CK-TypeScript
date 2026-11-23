@@ -4,8 +4,7 @@ import { NamedRecord } from './NamedRecord';
 import { CTSType } from '../../CK/Core/CTSType';
 
 /**
- * Concrete command where ICommandAbsWithResult works with 
- * NamedRecord.
+ * Concrete command where ICommandAbsWithResult works with NamedRecord.
  **/
 export class NamedRecordWithResultCommand implements ICommand, ICommandAbsWithResult {
 /**

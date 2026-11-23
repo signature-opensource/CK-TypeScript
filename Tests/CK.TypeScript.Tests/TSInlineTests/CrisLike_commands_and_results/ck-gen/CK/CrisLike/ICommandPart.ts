@@ -8,8 +8,7 @@ import { IAbstractCommand } from '../Cris/Model';
  * should be suffixed with "Command".
  * 
  * Parts can also be extended: when defining a specialized part that extends an
- * existing ICommandPart, the 
- * CKTypeDefinerAttribute must be
+ * existing ICommandPart, the CKTypeDefinerAttribute must be
  * applied to the specialized part.
  **/
 export interface ICommandPart extends IAbstractCommand {

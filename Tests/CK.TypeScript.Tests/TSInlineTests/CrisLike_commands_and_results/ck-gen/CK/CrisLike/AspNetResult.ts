@@ -20,9 +20,8 @@ export class AspNetResult implements IPoco {
  **/
 public result?: {};
 /**
- * An optional list of UserMessageLevel.info, 
- * UserMessageLevel.warn or 
- * UserMessageLevel.error messages issued by the validation of the command.
+ * An optional list of UserMessageLevel.info, UserMessageLevel.warn or UserMessageLevel.error
+ * messages issued by the validation of the command.
  * Validation error messages also appear in the IAspNetCrisResultError.errors.
  **/
 public validationMessages?: Array<SimpleUserMessage>;
