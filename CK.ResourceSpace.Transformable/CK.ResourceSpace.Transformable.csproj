@@ -9,6 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.BinarySerialization.Sliced" Version="16.0.0-0.uc.0.ci.46" />
-    <PackageReference Include="CK.ResourceSpace" Version="36.0.2-0.uc.2.ci.64" />
+    <PackageReference Include="CK.ResourceSpace" Version="36.0.2-0.uc.2.ci.66" />
   </ItemGroup>
 </Project>
