@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Transform.Core" Version="3.0.1-0.uc.0.ci.18" />
+    <PackageReference Include="CK.Transform.Core" Version="3.0.1-0.uc.0.ci.19" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.BinarySerialization.Sliced" Version="16.0.0-0.uc.0.ci.46" />
