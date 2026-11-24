@@ -64,9 +64,10 @@ public class HostClientDeclarationsTests
         var result = HostClientDeclarations.AddMissing( bytes, ["App"], out var added ).ShouldNotBeNull();
         added.ShouldBe( ["App"] );
         result.AsSpan().StartsWith( Encoding.UTF8.GetPreamble() ).ShouldBeTrue();
-        // Only the new text is inserted.
+        // Only the new text is inserted. The comparer makes the comparison exact: ShouldBe( string ) ignores the newline style.
         Encoding.UTF8.GetString( result.AsSpan( 3 ) ).ShouldBe(
-            "{\r\n  // The application.\r\n  \"CK-AppIdentity\": {\r\n    /* Its name. */\r\n    \"FullName\": \"D/$P\",\r\n    \"Local\": { \"PartyClient\": { \"App\": {} } }\r\n  }\r\n}\r\n" );
+            "{\r\n  // The application.\r\n  \"CK-AppIdentity\": {\r\n    /* Its name. */\r\n    \"FullName\": \"D/$P\",\r\n    \"Local\": { \"PartyClient\": { \"App\": {} } }\r\n  }\r\n}\r\n",
+            StringComparer.Ordinal );
     }
 
     [Test]
