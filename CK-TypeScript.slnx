@@ -3,7 +3,6 @@
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path=".yarnrc.yml" />
-    <File Path="appveyor.yml" />
     <File Path="Directory.Build.props" />
     <File Path="LICENSE" />
     <File Path="NuGet.config" />
